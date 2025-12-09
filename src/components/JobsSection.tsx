@@ -203,7 +203,7 @@ const JobsSection = () => {
             Join Our Talent Pool
           </h3>
           <p className="text-lg text-muted-foreground mb-6 max-w-lg mx-auto">
-            Don't see the perfect role? We're always looking for exceptional talent to join our community.
+            Didn't find a role for you? Join our OutSta community for future openings.
           </p>
           <Button 
             variant="default" 
@@ -211,7 +211,7 @@ const JobsSection = () => {
             className="text-lg px-8 py-6"
             onClick={() => window.open('https://docs.google.com/forms/d/e/1FAIpQLScTA302hqdCmDBphLwsRdHm2wH0U5dxnzu28JQWaJ8_dB9aeQ/viewform?usp=header', '_blank')}
           >
-            Join Our Talent Pool
+            Join our Talent Pool here
           </Button>
         </div>
       </div>
