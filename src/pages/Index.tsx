@@ -7,14 +7,11 @@ import ClientReviewsSection from "@/components/ClientReviewsSection";
 import RecruitmentProcess from "@/components/RecruitmentProcess";
 import ValuesSection from "@/components/ValuesSection";
 import JobsSection from "@/components/JobsSection";
-import AboutSection from "@/components/AboutSection";
-
 const Index = () => {
   return (
     <div className="min-h-screen">
       <Navigation />
       <HeroSection />
-      <AboutSection />
       <BenefitsSection />
       <JobsSection />
       <RecruitmentProcess />
