@@ -198,11 +198,19 @@ const JobsSection = () => {
           </div>
         </div>
         
-        <div className="text-center mt-12">
-          <p className="text-muted-foreground mb-4">
-            Don't see the perfect role? We're always looking for exceptional talent.
+        <div className="text-center mt-16 py-12 px-8 bg-primary/5 rounded-2xl border border-primary/10">
+          <h3 className="text-2xl font-bold text-foreground mb-3">
+            Join Our Talent Pool
+          </h3>
+          <p className="text-lg text-muted-foreground mb-6 max-w-lg mx-auto">
+            Don't see the perfect role? We're always looking for exceptional talent to join our community.
           </p>
-          <Button variant="outline" size="lg">
+          <Button 
+            variant="default" 
+            size="lg"
+            className="text-lg px-8 py-6"
+            onClick={() => window.open('https://docs.google.com/forms/d/e/1FAIpQLScTA302hqdCmDBphLwsRdHm2wH0U5dxnzu28JQWaJ8_dB9aeQ/viewform?usp=header', '_blank')}
+          >
             Join Our Talent Pool
           </Button>
         </div>
