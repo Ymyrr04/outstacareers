@@ -213,13 +213,18 @@ const JobsSection = () => {
           </CardHeader>
           
           <CardContent className="flex flex-col flex-grow space-y-4">
-            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+            {/* Rate - centered and highlighted in blue */}
+            {job.rate && (
+              <p className="text-xl font-bold text-primary text-center py-2">
+                {job.rate}
+              </p>
+            )}
+            
+            {/* Remote badge - right aligned, above Apply Now */}
+            <div className="flex items-center justify-end space-x-2 text-sm text-muted-foreground">
               <MapPin className="w-4 h-4" />
               <span>Remote</span>
             </div>
-            {job.rate && (
-              <p className="text-sm text-muted-foreground">{job.rate}</p>
-            )}
             
             <Button 
               onClick={() => handleApplyClick(job.apply_url)}
