@@ -1,6 +1,6 @@
 import adamTabari from "@/assets/team/adam-tabari.png";
 import adamW from "@/assets/team/adam-w.png";
-import adri from "@/assets/team/adri.png";
+
 import eduardo from "@/assets/team/eduardo.png";
 import cza from "@/assets/team/cza.png";
 import kristine from "@/assets/team/kristine.png";
@@ -19,12 +19,6 @@ const teamMembers = [
     role: "Client Growth & Optimization Specialist",
     description: "Adam harnesses data science, creative insights, and both emerging and proven tech platforms to enhance client-candidate alignment and drive business growth. His expertise in managing complex technology projects from start to finish significantly improves client outcomes, fostering sustainable and mutually beneficial relationships. Adam consistently leverages machine learning to refine decision-making processes, utilizes real-time data for creative insights, and employs algorithms to continually optimize the client experience at Outsta.",
     image: adamW,
-  },
-  {
-    name: "Adri",
-    role: "Contractor Onboarding & Performance",
-    description: "Adrianne spearheads marketing and onboarding at Outsta, ensuring engaging and effective processes. She is adept at creating memorable onboarding experiences that allow new hires to integrate seamlessly into our culture from their very first day. Adrianne's passion for dynamic marketing and employee engagement plays a crucial role in cultivating a welcoming and vibrant work environment.",
-    image: adri,
   },
   {
     name: "Eduardo",
