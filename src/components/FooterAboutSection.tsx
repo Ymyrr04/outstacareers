@@ -9,6 +9,7 @@ import mark from "@/assets/team/mark.png";
 import sean from "@/assets/team/sean.png";
 
 const teamMembers = [
+  // Row 1
   {
     name: "Adam Tabari",
     role: "Founder, CEO",
@@ -21,6 +22,19 @@ const teamMembers = [
     description: "Adam uses cutting-edge technology and data insights to match you with the perfect role. He works to understand your unique strengths and find positions where you'll excel, ensuring a great fit between your skills and employer needs.",
     image: adamW,
   },
+  {
+    name: "Liezl De Dios",
+    role: "Client & Contractor Operations and Hiring Strategy",
+    description: "With her background as a virtual assistant and global experience, Liezl understands exactly what you need to succeed in remote work. She'll help align your talents with the right opportunities and support you throughout your journey.",
+    image: liezl,
+  },
+  {
+    name: "Sean de Luna",
+    role: "Strategic Engagement Advisor",
+    description: "Sean brings extensive experience to help you stand out. He's passionate about diversity and inclusion, and works to ensure every candidate receives fair consideration and has their unique strengths recognized.",
+    image: sean,
+  },
+  // Row 2
   {
     name: "Eduardo",
     role: "Bilingual Contractor Recruitment and Client HR Strategy & Support",
@@ -44,18 +58,6 @@ const teamMembers = [
     role: "Client Satisfaction & Development",
     description: "Mark is committed to your long-term success. He nurtures meaningful partnerships that help you grow professionally, ensuring you have the support you need to build an enduring and rewarding career.",
     image: mark,
-  },
-  {
-    name: "Sean de Luna",
-    role: "Strategic Engagement Advisor",
-    description: "Sean brings extensive experience to help you stand out. He's passionate about diversity and inclusion, and works to ensure every candidate receives fair consideration and has their unique strengths recognized.",
-    image: sean,
-  },
-  {
-    name: "Liezl De Dios",
-    role: "Client & Contractor Operations and Hiring Strategy",
-    description: "With her background as a virtual assistant and global experience, Liezl understands exactly what you need to succeed in remote work. She'll help align your talents with the right opportunities and support you throughout your journey.",
-    image: liezl,
   },
 ];
 
