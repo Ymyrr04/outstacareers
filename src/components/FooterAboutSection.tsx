@@ -1,6 +1,6 @@
 import adamTabari from "@/assets/team/adam-tabari.png";
 import adamW from "@/assets/team/adam-w.png";
-
+import adri from "@/assets/team/adri.png";
 import eduardo from "@/assets/team/eduardo.png";
 import cza from "@/assets/team/cza.png";
 import kristine from "@/assets/team/kristine.png";
