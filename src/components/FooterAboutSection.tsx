@@ -11,19 +11,19 @@ const teamMembers = [
   {
     name: "Adam Tabari",
     role: "Founder, CEO",
-    description: "Adam Tabari, the founder and CEO of Outsta, is committed to bridging the gap between exceptional global talent and Western businesses, achieving significant savings and ongoing support. His visionary approach to cost-effective, skilled staffing solutions profoundly impacts the staffing sector.",
+    description: "Adam Tabari, the founder and CEO of Outsta, is committed to bridging the gap between exceptional global talent and Western businesses, achieving significant savings and ongoing support. His visionary approach to cost-effective, skilled staffing solutions profoundly impacts the staffing sector. His leadership philosophy is inspired by the idea that \"Innovation distinguishes between a leader and a follower.\" – Steve Jobs. This perspective drives Outsta's commitment to leading the industry through innovative, inclusive, and strategic practices.",
     image: adamTabari,
   },
   {
     name: "Adam W.",
     role: "Client Growth & Optimization Specialist",
-    description: "Adam harnesses data science, creative insights, and both emerging and proven tech platforms to enhance client-candidate alignment and drive business growth.",
+    description: "Adam harnesses data science, creative insights, and both emerging and proven tech platforms to enhance client-candidate alignment and drive business growth. His expertise in managing complex technology projects from start to finish significantly improves client outcomes, fostering sustainable and mutually beneficial relationships. Adam consistently leverages machine learning to refine decision-making processes, utilizes real-time data for creative insights, and employs algorithms to continually optimize the client experience at Outsta.",
     image: adamW,
   },
   {
     name: "Adri",
     role: "Contractor Onboarding & Performance",
-    description: "Adrianne spearheads marketing and onboarding at Outsta, ensuring engaging and effective processes. She is adept at creating memorable onboarding experiences that allow new hires to integrate seamlessly into our culture.",
+    description: "Adrianne spearheads marketing and onboarding at Outsta, ensuring engaging and effective processes. She is adept at creating memorable onboarding experiences that allow new hires to integrate seamlessly into our culture from their very first day. Adrianne's passion for dynamic marketing and employee engagement plays a crucial role in cultivating a welcoming and vibrant work environment.",
     image: adri,
   },
   {
@@ -47,13 +47,13 @@ const teamMembers = [
   {
     name: "Mark",
     role: "Client Satisfaction & Development",
-    description: "Mark is committed to establishing strong connections that drive growth and enduring success for both clients and contractors. His focus on fostering meaningful partnerships underscores Outsta's mission.",
+    description: "Mark is committed to establishing strong connections that drive growth and enduring success for both clients and contractors. His focus on fostering meaningful partnerships underscores Outsta's mission to propel businesses forward.",
     image: mark,
   },
   {
     name: "Sean de Luna",
     role: "Strategic Engagement Advisor",
-    description: "With extensive experience in marketing and personnel optimizations, Sean is a strategic leader proficient in enhancing audience engagement and campaign effectiveness.",
+    description: "With extensive experience in marketing and personnel optimizations, Sean is a strategic leader proficient in enhancing audience engagement and campaign effectiveness. His expertise in leveraging data-driven strategies and his commitment to diversity and inclusion significantly enrich Outsta's marketing efforts, ensuring meticulous attention to both client and contractor needs.",
     image: sean,
   },
 ];
