@@ -1,9 +1,46 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { MapPin } from "lucide-react";
 import { useJobs, Job } from "@/hooks/useJobs";
+
+// Fixed conversion values for Philippines
+const USD_TO_PHP_RATE = 56;
+const WEEKS_PER_MONTH = 4;
+const MIN_HOURS_PER_WEEK = 40;
+const MAX_HOURS_PER_WEEK = 50;
+
+// Helper function to parse USD hourly rate
+const parseUsdHourlyRate = (rate: string): number | null => {
+  // Skip if already in PHP
+  if (rate.startsWith('₱')) return null;
+  
+  const match = rate.match(/\$?([\d,]+(?:\.\d{2})?)\s*\/?\s*(hour|hr)?/i);
+  if (!match) return null;
+  
+  const amount = parseFloat(match[1].replace(/,/g, ''));
+  const period = match[2]?.toLowerCase() || '';
+  
+  // Only convert hourly rates
+  if (period && period !== 'hour' && period !== 'hr') return null;
+  
+  return amount;
+};
+
+// Helper function to convert USD hourly rate to PHP monthly range
+const convertToPhpMonthlyRange = (rate: string): string => {
+  const hourlyRate = parseUsdHourlyRate(rate);
+  if (!hourlyRate) return rate; // Return original if can't parse
+  
+  const minMonthly = Math.round(hourlyRate * USD_TO_PHP_RATE * MIN_HOURS_PER_WEEK * WEEKS_PER_MONTH);
+  const maxMonthly = Math.round(hourlyRate * USD_TO_PHP_RATE * MAX_HOURS_PER_WEEK * WEEKS_PER_MONTH);
+  
+  const formattedMin = minMonthly.toLocaleString('en-PH');
+  const formattedMax = maxMonthly.toLocaleString('en-PH');
+  
+  return `₱${formattedMin} - ₱${formattedMax}/month`;
+};
 
 // Static fallback jobs for when database is empty
 const staticJobs = [
@@ -198,58 +235,74 @@ const JobsSection = () => {
 
   const displayedJobs = selectedRegion === "philippines" ? philippinesJobs : latinAmericaJobs;
 
-  const JobCard = ({ job, index }: { job: Job; index: number }) => (
-    <HoverCard openDelay={200} closeDelay={100}>
-      <HoverCardTrigger asChild>
-        <Card 
-          key={job.id} 
-          className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-fade-in flex flex-col h-full cursor-pointer"
-          style={{ animationDelay: `${index * 0.05}s` }}
-        >
-          <CardHeader className="pb-2">
-            <CardTitle className="text-lg group-hover:text-primary transition-colors duration-300 min-h-[3.5rem]">
-              {job.title}
-            </CardTitle>
-          </CardHeader>
-          
-          <CardContent className="flex flex-col flex-grow space-y-3 pt-0">
-            {/* Rate - centered and highlighted in blue */}
-            {job.rate && (
-              <p className="text-xl font-bold text-primary text-center py-1">
-                {job.rate}
-              </p>
-            )}
+  // Get the display rate based on selected region
+  const getDisplayRate = (job: Job): string | null => {
+    if (!job.rate) return null;
+    
+    // Convert to PHP monthly range when viewing Philippines section
+    if (selectedRegion === 'philippines') {
+      return convertToPhpMonthlyRange(job.rate);
+    }
+    
+    return job.rate;
+  };
+
+  const JobCard = ({ job, index }: { job: Job; index: number }) => {
+    const displayRate = getDisplayRate(job);
+    
+    return (
+      <HoverCard openDelay={200} closeDelay={100}>
+        <HoverCardTrigger asChild>
+          <Card 
+            key={job.id} 
+            className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-fade-in flex flex-col h-full cursor-pointer"
+            style={{ animationDelay: `${index * 0.05}s` }}
+          >
+            <CardHeader className="pb-2">
+              <CardTitle className="text-lg group-hover:text-primary transition-colors duration-300 min-h-[3.5rem]">
+                {job.title}
+              </CardTitle>
+            </CardHeader>
             
-            {/* Remote & Full time - opposite sides, above Apply Now */}
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <div className="flex items-center space-x-1">
-                <MapPin className="w-4 h-4" />
-                <span>Remote</span>
+            <CardContent className="flex flex-col flex-grow space-y-3 pt-0">
+              {/* Rate - centered and highlighted in blue */}
+              {displayRate && (
+                <p className="text-xl font-bold text-primary text-center py-1">
+                  {displayRate}
+                </p>
+              )}
+              
+              {/* Remote & Full time - opposite sides, above Apply Now */}
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <div className="flex items-center space-x-1">
+                  <MapPin className="w-4 h-4" />
+                  <span>Remote</span>
+                </div>
+                <span>Full time</span>
               </div>
-              <span>Full time</span>
+              
+              <Button 
+                onClick={() => handleApplyClick(job.apply_url)}
+                className="w-full group-hover:shadow-button transition-all duration-300 mt-auto"
+              >
+                Apply Now
+              </Button>
+            </CardContent>
+          </Card>
+        </HoverCardTrigger>
+        {job.description && (
+          <HoverCardContent className="w-80 p-4" side="top" align="center">
+            <div className="space-y-2">
+              <h4 className="font-semibold text-sm">{job.title}</h4>
+              <p className="text-sm text-muted-foreground line-clamp-6">
+                {job.description}
+              </p>
             </div>
-            
-            <Button 
-              onClick={() => handleApplyClick(job.apply_url)}
-              className="w-full group-hover:shadow-button transition-all duration-300 mt-auto"
-            >
-              Apply Now
-            </Button>
-          </CardContent>
-        </Card>
-      </HoverCardTrigger>
-      {job.description && (
-        <HoverCardContent className="w-80 p-4" side="top" align="center">
-          <div className="space-y-2">
-            <h4 className="font-semibold text-sm">{job.title}</h4>
-            <p className="text-sm text-muted-foreground line-clamp-6">
-              {job.description}
-            </p>
-          </div>
-        </HoverCardContent>
-      )}
-    </HoverCard>
-  );
+          </HoverCardContent>
+        )}
+      </HoverCard>
+    );
+  };
 
   return (
     <section id="positions" className="py-20 bg-gradient-section">
