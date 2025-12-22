@@ -4,6 +4,7 @@ import adamW from "@/assets/team/adam-w.png";
 import eduardo from "@/assets/team/eduardo.png";
 import cza from "@/assets/team/cza.png";
 import kristine from "@/assets/team/kristine.png";
+import liezl from "@/assets/team/liezl.png";
 import mark from "@/assets/team/mark.png";
 import sean from "@/assets/team/sean.png";
 
@@ -49,6 +50,12 @@ const teamMembers = [
     role: "Strategic Engagement Advisor",
     description: "With extensive experience in marketing and personnel optimizations, Sean is a strategic leader proficient in enhancing audience engagement and campaign effectiveness. His expertise in leveraging data-driven strategies and his commitment to diversity and inclusion significantly enrich Outsta's marketing efforts, ensuring meticulous attention to both client and contractor needs.",
     image: sean,
+  },
+  {
+    name: "Liezl De Dios",
+    role: "Client & Contractor Operations and Hiring Strategy",
+    description: "With a robust background as a virtual assistant and extensive global experience, Liezl excels at aligning businesses with optimal remote talent. Her deep understanding of client and contractor needs makes her a pivotal member of the Outsta team.",
+    image: liezl,
   },
 ];
 
