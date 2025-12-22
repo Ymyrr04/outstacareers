@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
+import EditJobDialog from '@/components/EditJobDialog';
 import { LogOut, Trash2, Eye, EyeOff, ArrowLeft } from 'lucide-react';
 
 interface Job {
@@ -193,6 +194,7 @@ const Admin = () => {
                       )}
                     </div>
                     <div className="flex items-center gap-2">
+                      <EditJobDialog job={job} onJobUpdated={fetchJobs} />
                       <Button
                         variant="outline"
                         size="sm"
