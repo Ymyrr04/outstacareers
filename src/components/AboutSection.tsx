@@ -5,13 +5,13 @@ const AboutSection = () => {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           <div>
             <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-6">
-              Meet Outsta: Where Exceptional People Power Your Success
+              Meet Outsta: Where Your Career Takes Flight
             </h2>
             <h3 className="text-2xl font-semibold text-primary mb-6">
-              Empowering Your Growth with Expert Staffing Solutions
+              Empowering Talented Professionals to Reach Their Full Potential
             </h3>
             <p className="text-lg text-muted-foreground leading-relaxed">
-              At Outsta, we recognize that the core of your business is its people, which is why we mirror that importance in our own operations. We prioritize having the best talent on our team to ensure we identify and match the best candidates for our clients. As your strategic HR partner, we go beyond simple staffing; we deeply integrate into your operations to streamline recruitment processes, reduce long-term staffing costs, and significantly enhance operational efficiency. This commitment to quality in both our team and the candidates we provide safeguards your bottom line and drives your business success.
+              At Outsta, we believe that exceptional talent deserves exceptional opportunities. We're committed to connecting skilled professionals like you with companies that truly value your abilities. As your career partner, we go beyond simple job placement — we advocate for your growth, negotiate competitive compensation, and match you with roles where you can thrive. Our dedication to understanding your unique skills, goals, and aspirations ensures we find opportunities that advance your career and unlock your full potential.
             </p>
           </div>
           <div className="relative">
