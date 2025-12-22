@@ -206,24 +206,27 @@ const JobsSection = () => {
           className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-fade-in flex flex-col h-full cursor-pointer"
           style={{ animationDelay: `${index * 0.05}s` }}
         >
-          <CardHeader>
+          <CardHeader className="pb-2">
             <CardTitle className="text-lg group-hover:text-primary transition-colors duration-300 min-h-[3.5rem]">
               {job.title}
             </CardTitle>
           </CardHeader>
           
-          <CardContent className="flex flex-col flex-grow space-y-4">
+          <CardContent className="flex flex-col flex-grow space-y-3 pt-0">
             {/* Rate - centered and highlighted in blue */}
             {job.rate && (
-              <p className="text-xl font-bold text-primary text-center py-2">
+              <p className="text-xl font-bold text-primary text-center py-1">
                 {job.rate}
               </p>
             )}
             
-            {/* Remote badge - right aligned, above Apply Now */}
-            <div className="flex items-center justify-end space-x-2 text-sm text-muted-foreground">
-              <MapPin className="w-4 h-4" />
-              <span>Remote</span>
+            {/* Remote & Full time - opposite sides, above Apply Now */}
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <div className="flex items-center space-x-1">
+                <MapPin className="w-4 h-4" />
+                <span>Remote</span>
+              </div>
+              <span>Full time</span>
             </div>
             
             <Button 
