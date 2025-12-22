@@ -33,6 +33,25 @@ const BenefitsSection = () => {
             Join a community that values your skills, supports your growth, and connects you with opportunities where you can thrive.
           </p>
         </div>
+
+        {/* About Section - Moved here */}
+        <div className="mb-20 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div>
+            <h3 className="text-2xl font-semibold text-primary mb-6">
+              Empowering Talented Professionals to Reach Their Full Potential
+            </h3>
+            <p className="text-lg text-muted-foreground leading-relaxed">
+              At Outsta, we believe that exceptional talent deserves exceptional opportunities. We're committed to connecting skilled professionals like you with companies that truly value your abilities. As your career partner, we go beyond simple job placement — we advocate for your growth, negotiate competitive compensation, and match you with roles where you can thrive. Our dedication to understanding your unique skills, goals, and aspirations ensures we find opportunities that advance your career and unlock your full potential.
+            </p>
+          </div>
+          <div className="relative">
+            <img 
+              src="https://outsta.io/wp-content/uploads/2024/10/A7309868-scaled.jpg" 
+              alt="Outsta team collaboration"
+              className="rounded-2xl shadow-xl w-full object-cover"
+            />
+          </div>
+        </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {benefits.map((benefit, index) => {
@@ -58,25 +77,6 @@ const BenefitsSection = () => {
               </div>
             );
           })}
-        </div>
-
-        {/* About Section */}
-        <div className="mt-20 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-          <div>
-            <h3 className="text-2xl font-semibold text-primary mb-6">
-              Empowering Talented Professionals to Reach Their Full Potential
-            </h3>
-            <p className="text-lg text-muted-foreground leading-relaxed">
-              At Outsta, we believe that exceptional talent deserves exceptional opportunities. We're committed to connecting skilled professionals like you with companies that truly value your abilities. As your career partner, we go beyond simple job placement — we advocate for your growth, negotiate competitive compensation, and match you with roles where you can thrive. Our dedication to understanding your unique skills, goals, and aspirations ensures we find opportunities that advance your career and unlock your full potential.
-            </p>
-          </div>
-          <div className="relative">
-            <img 
-              src="https://outsta.io/wp-content/uploads/2024/10/A7309868-scaled.jpg" 
-              alt="Outsta team collaboration"
-              className="rounded-2xl shadow-xl w-full object-cover"
-            />
-          </div>
         </div>
       </div>
     </section>
