@@ -19,7 +19,6 @@ import { Plus } from 'lucide-react';
 
 const jobSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
-  department: z.string().min(1, 'Department is required').max(100),
   rate: z.string().max(100).optional(),
   apply_url: z.string().url('Must be a valid URL'),
   description: z.string().max(2000).optional(),
@@ -35,7 +34,6 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     title: '',
-    department: '',
     rate: '',
     apply_url: '',
     description: '',
@@ -60,7 +58,6 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
 
     const { error } = await supabase.from('jobs').insert({
       title: formData.title,
-      department: formData.department,
       rate: formData.rate || null,
       apply_url: formData.apply_url,
       description: formData.description || null,
@@ -80,7 +77,6 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
       });
       setFormData({
         title: '',
-        department: '',
         rate: '',
         apply_url: '',
         description: '',
@@ -116,17 +112,6 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               placeholder="e.g., Senior Developer"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="department">Department *</Label>
-            <Input
-              id="department"
-              value={formData.department}
-              onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-              placeholder="e.g., Engineering"
               required
             />
           </div>

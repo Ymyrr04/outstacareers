@@ -18,7 +18,7 @@ export type Database = {
         Row: {
           apply_url: string
           created_at: string
-          department: string
+          department: string | null
           description: string | null
           id: string
           is_active: boolean | null
@@ -30,7 +30,7 @@ export type Database = {
         Insert: {
           apply_url: string
           created_at?: string
-          department: string
+          department?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
@@ -42,7 +42,7 @@ export type Database = {
         Update: {
           apply_url?: string
           created_at?: string
-          department?: string
+          department?: string | null
           description?: string | null
           id?: string
           is_active?: boolean | null
