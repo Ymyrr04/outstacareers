@@ -12,13 +12,13 @@ const teamMembers = [
     name: "Adam Tabari",
     role: "Founder, CEO",
     description: "Adam Tabari, the founder and CEO of Outsta, is committed to bridging the gap between exceptional global talent and Western businesses, achieving significant savings and ongoing support. His visionary approach to cost-effective, skilled staffing solutions profoundly impacts the staffing sector. His leadership philosophy is inspired by the idea that \"Innovation distinguishes between a leader and a follower.\" – Steve Jobs. This perspective drives Outsta's commitment to leading the industry through innovative, inclusive, and strategic practices.",
-    image: adamTabari,
+    image: adamW,
   },
   {
     name: "Adam W.",
     role: "Client Growth & Optimization Specialist",
     description: "Adam harnesses data science, creative insights, and both emerging and proven tech platforms to enhance client-candidate alignment and drive business growth. His expertise in managing complex technology projects from start to finish significantly improves client outcomes, fostering sustainable and mutually beneficial relationships. Adam consistently leverages machine learning to refine decision-making processes, utilizes real-time data for creative insights, and employs algorithms to continually optimize the client experience at Outsta.",
-    image: adamW,
+    image: adamTabari,
   },
   {
     name: "Eduardo",
