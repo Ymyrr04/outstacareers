@@ -15,7 +15,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Loader2 } from 'lucide-react';
+import { Plus } from 'lucide-react';
 
 const jobSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
@@ -29,34 +29,43 @@ interface AddJobDialogProps {
   onJobAdded: () => void;
 }
 
-// Helper function to parse USD rate and extract amount and period
-const parseUsdRate = (rate: string): { amount: number; period: string } | null => {
-  const match = rate.match(/\$?([\d,]+(?:\.\d{2})?)\s*\/?\s*(hour|month|hr|mo)?/i);
+// Fixed conversion values for Philippines
+const USD_TO_PHP_RATE = 56;
+const WEEKS_PER_MONTH = 4;
+const MIN_HOURS_PER_WEEK = 40;
+const MAX_HOURS_PER_WEEK = 50;
+
+// Helper function to parse USD hourly rate
+const parseUsdHourlyRate = (rate: string): number | null => {
+  const match = rate.match(/\$?([\d,]+(?:\.\d{2})?)\s*\/?\s*(hour|hr)?/i);
   if (!match) return null;
   
   const amount = parseFloat(match[1].replace(/,/g, ''));
-  let period = match[2]?.toLowerCase() || '';
+  const period = match[2]?.toLowerCase() || '';
   
-  // Normalize period
-  if (period === 'hr') period = 'hour';
-  if (period === 'mo') period = 'month';
-  if (!period) period = 'month'; // Default to month if not specified
+  // Only accept hourly rates
+  if (period && period !== 'hour' && period !== 'hr') return null;
   
-  return { amount, period };
+  return amount;
 };
 
-// Helper function to format PHP amount
-const formatPhpRate = (amount: number, period: string): string => {
-  const rounded = Math.round(amount);
-  const formatted = rounded.toLocaleString('en-PH');
-  return `₱${formatted}/${period}`;
+// Helper function to calculate PHP monthly range from USD hourly rate
+const calculatePhpMonthlyRange = (usdHourlyRate: number): { min: number; max: number } => {
+  const minMonthly = Math.round(usdHourlyRate * USD_TO_PHP_RATE * MIN_HOURS_PER_WEEK * WEEKS_PER_MONTH);
+  const maxMonthly = Math.round(usdHourlyRate * USD_TO_PHP_RATE * MAX_HOURS_PER_WEEK * WEEKS_PER_MONTH);
+  return { min: minMonthly, max: maxMonthly };
+};
+
+// Helper function to format PHP monthly range
+const formatPhpMonthlyRange = (min: number, max: number): string => {
+  const formattedMin = min.toLocaleString('en-PH');
+  const formattedMax = max.toLocaleString('en-PH');
+  return `₱${formattedMin} - ₱${formattedMax}/month`;
 };
 
 const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [isConverting, setIsConverting] = useState(false);
-  const [exchangeRate, setExchangeRate] = useState<number | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     rate: '',
@@ -67,44 +76,20 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
   const [convertedRate, setConvertedRate] = useState<string | null>(null);
   const { toast } = useToast();
 
-  // Fetch exchange rate when dialog opens
-  useEffect(() => {
-    if (open && !exchangeRate) {
-      fetchExchangeRate();
-    }
-  }, [open]);
-
   // Convert rate when region changes to Philippines or rate changes
   useEffect(() => {
-    if (formData.region === 'philippines' && formData.rate && exchangeRate) {
-      const parsed = parseUsdRate(formData.rate);
-      if (parsed) {
-        const phpAmount = parsed.amount * exchangeRate;
-        setConvertedRate(formatPhpRate(phpAmount, parsed.period));
+    if (formData.region === 'philippines' && formData.rate) {
+      const hourlyRate = parseUsdHourlyRate(formData.rate);
+      if (hourlyRate) {
+        const { min, max } = calculatePhpMonthlyRange(hourlyRate);
+        setConvertedRate(formatPhpMonthlyRange(min, max));
       } else {
         setConvertedRate(null);
       }
     } else {
       setConvertedRate(null);
     }
-  }, [formData.region, formData.rate, exchangeRate]);
-
-  const fetchExchangeRate = async () => {
-    setIsConverting(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('get-exchange-rate');
-      
-      if (error) throw error;
-      if (data?.success && data?.rate) {
-        setExchangeRate(data.rate);
-      }
-    } catch (error) {
-      console.error('Failed to fetch exchange rate:', error);
-      // Fail silently - rate will stay in USD
-    } finally {
-      setIsConverting(false);
-    }
-  };
+  }, [formData.region, formData.rate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,26 +178,17 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
               id="rate"
               value={formData.rate}
               onChange={(e) => setFormData({ ...formData, rate: e.target.value })}
-              placeholder="e.g., $25/hour or $4000/month"
+              placeholder="e.g., $5/hour"
             />
             {formData.region === 'philippines' && formData.rate && (
-              <div className="text-sm text-muted-foreground flex items-center gap-2">
-                {isConverting ? (
-                  <>
-                    <Loader2 className="w-3 h-3 animate-spin" />
-                    <span>Converting to PHP...</span>
-                  </>
-                ) : convertedRate ? (
+              <div className="text-sm text-muted-foreground">
+                {convertedRate ? (
                   <span className="text-primary font-medium">
                     Will be saved as: {convertedRate}
                   </span>
-                ) : exchangeRate ? (
-                  <span className="text-destructive">
-                    Could not parse USD amount. Enter format like "$25/hour"
-                  </span>
                 ) : (
-                  <span className="text-muted-foreground">
-                    Exchange rate unavailable - will save as USD
+                  <span className="text-destructive">
+                    Enter USD hourly rate (e.g., "$5/hour")
                   </span>
                 )}
               </div>
