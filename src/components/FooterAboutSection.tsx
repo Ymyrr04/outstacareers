@@ -68,10 +68,10 @@ const FooterAboutSection = () => {
             Our Team Values
           </h2>
           <h3 className="text-2xl font-semibold text-primary mb-6">
-            Our Team, Serving Your Team — Driven by Core Values, Dedicated to Your Success
+            Your Success Team — Driven by Core Values, Dedicated to Your Career Growth
           </h3>
           <p className="text-lg text-muted-foreground max-w-4xl mx-auto leading-relaxed">
-            Outsta is not just a staffing agency; we are a team driven by the principles of Empowerment, Adaptability, Integrity, Collaboration, and Continuous Improvement. These core values shape our interactions with clients and nurture robust relationships. By ensuring every professional we place is not only skilled but also a perfect fit for your company's culture, we solidify our commitment to making a tangible difference in your business.
+            Outsta is more than a staffing agency — we're your dedicated career partners, driven by the principles of Empowerment, Adaptability, Integrity, Collaboration, and Continuous Improvement. These core values guide how we support you throughout your journey. We're committed to finding opportunities where you're not only valued for your skills but also welcomed into a culture where you can thrive, ensuring we make a real difference in your professional life.
           </p>
         </div>
 
