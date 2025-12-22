@@ -2,113 +2,174 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin } from "lucide-react";
+import { useJobs, Job } from "@/hooks/useJobs";
 
-const jobs = [
-  // ... keep existing code (all job entries)
+// Static fallback jobs for when database is empty
+const staticJobs = [
   {
-    id: 1,
+    id: "1",
     title: "Construction Cost Estimator / Quantity Surveyor",
     department: "Construction",
-    location: "Remote",
-    applyUrl: "https://verifind.io/applicant/jobs/dd70583a-c117-48db-997a-481ef3f1db32"
+    apply_url: "https://verifind.io/applicant/jobs/dd70583a-c117-48db-997a-481ef3f1db32",
+    region: "philippines",
+    rate: null,
+    description: null,
+    is_active: true,
+    created_at: new Date().toISOString(),
   },
   {
-    id: 2,
+    id: "2",
     title: "Business Executive Assistant",
     department: "Administration",
-    location: "Remote",
-    applyUrl: "https://verifind.io/applicant/jobs/26f2861d-02fd-4ec2-b7c6-2dc94cd8bdc1"
+    apply_url: "https://verifind.io/applicant/jobs/26f2861d-02fd-4ec2-b7c6-2dc94cd8bdc1",
+    region: "philippines",
+    rate: null,
+    description: null,
+    is_active: true,
+    created_at: new Date().toISOString(),
   },
   {
-    id: 3,
+    id: "3",
     title: "SketchUp Designer (Architecture/Interior)",
     department: "Design",
-    location: "Remote",
-    applyUrl: "https://verifind.io/applicant/jobs/eb515337-a75e-45eb-8b0c-231c1d0df9c2"
+    apply_url: "https://verifind.io/applicant/jobs/eb515337-a75e-45eb-8b0c-231c1d0df9c2",
+    region: "philippines",
+    rate: null,
+    description: null,
+    is_active: true,
+    created_at: new Date().toISOString(),
   },
   {
-    id: 4,
+    id: "4",
     title: "Construction Client Outreach & Operations Coordinator",
     department: "Operations",
-    location: "Remote",
-    applyUrl: "https://verifind.io/applicant/jobs/f4d6dadb-cf45-4c35-972d-6d518293f6ea"
+    apply_url: "https://verifind.io/applicant/jobs/f4d6dadb-cf45-4c35-972d-6d518293f6ea",
+    region: "philippines",
+    rate: null,
+    description: null,
+    is_active: true,
+    created_at: new Date().toISOString(),
   },
   {
-    id: 5,
+    id: "5",
     title: "EB2 NIW Immigration Assistant",
     department: "Immigration",
-    location: "Remote",
-    applyUrl: "https://verifind.io/applicant/jobs/94f70b06-c1a3-462d-92aa-4e171c06422a"
+    apply_url: "https://verifind.io/applicant/jobs/94f70b06-c1a3-462d-92aa-4e171c06422a",
+    region: "philippines",
+    rate: null,
+    description: null,
+    is_active: true,
+    created_at: new Date().toISOString(),
   },
   {
-    id: 6,
+    id: "6",
     title: "Immigration Paralegal",
     department: "Legal",
-    location: "Remote",
-    applyUrl: "https://verifind.io/applicant/jobs/7ce2ecf5-12dc-45bb-a550-725f016d54ba"
+    apply_url: "https://verifind.io/applicant/jobs/7ce2ecf5-12dc-45bb-a550-725f016d54ba",
+    region: "philippines",
+    rate: null,
+    description: null,
+    is_active: true,
+    created_at: new Date().toISOString(),
   },
   {
-    id: 7,
+    id: "7",
     title: "Paralegal - Trusts and Estates",
     department: "Legal",
-    location: "Remote",
-    applyUrl: "https://verifind.io/applicant/jobs/4ff305cd-cd4a-4319-a912-de10a12d21d1"
+    apply_url: "https://verifind.io/applicant/jobs/4ff305cd-cd4a-4319-a912-de10a12d21d1",
+    region: "philippines",
+    rate: null,
+    description: null,
+    is_active: true,
+    created_at: new Date().toISOString(),
   },
   {
-    id: 8,
+    id: "8",
     title: "Intake Specialist",
     department: "Customer Service",
-    location: "Remote",
-    applyUrl: "https://verifind.io/applicant/jobs/38a683c2-a911-4327-bc1b-f1c81961326a"
+    apply_url: "https://verifind.io/applicant/jobs/38a683c2-a911-4327-bc1b-f1c81961326a",
+    region: "philippines",
+    rate: null,
+    description: null,
+    is_active: true,
+    created_at: new Date().toISOString(),
   },
   {
-    id: 9,
+    id: "9",
     title: "Graphic Designer and Video Editor",
     department: "Creative",
-    location: "Remote",
-    applyUrl: "https://verifind.io/applicant/jobs/154800ba-0f1a-4f02-8906-693b00e5eef8"
+    apply_url: "https://verifind.io/applicant/jobs/154800ba-0f1a-4f02-8906-693b00e5eef8",
+    region: "philippines",
+    rate: null,
+    description: null,
+    is_active: true,
+    created_at: new Date().toISOString(),
   },
   {
-    id: 10,
+    id: "10",
     title: "Operations Manager / Booking Manager",
     department: "Operations",
-    location: "Remote",
-    applyUrl: "https://verifind.io/applicant/jobs/0db946e8-7cae-4a6a-a463-3492c88e7e67"
+    apply_url: "https://verifind.io/applicant/jobs/0db946e8-7cae-4a6a-a463-3492c88e7e67",
+    region: "philippines",
+    rate: null,
+    description: null,
+    is_active: true,
+    created_at: new Date().toISOString(),
   },
   {
-    id: 11,
+    id: "11",
     title: "Mortgage Processor & Administrative Specialist",
     department: "Finance",
-    location: "Remote",
-    applyUrl: "https://verifind.io/applicant/jobs/b91e4878-0bb3-48d4-8d8a-ee9c826f1276"
+    apply_url: "https://verifind.io/applicant/jobs/b91e4878-0bb3-48d4-8d8a-ee9c826f1276",
+    region: "philippines",
+    rate: null,
+    description: null,
+    is_active: true,
+    created_at: new Date().toISOString(),
   },
   {
-    id: 13,
+    id: "13",
     title: "Marketing Specialist with SEO Expertise",
     department: "Marketing",
-    location: "Remote",
-    applyUrl: "https://verifind.io/applicant/jobs/fc8a989e-39a7-4f3b-9072-16a48d513f0a"
+    apply_url: "https://verifind.io/applicant/jobs/fc8a989e-39a7-4f3b-9072-16a48d513f0a",
+    region: "philippines",
+    rate: null,
+    description: null,
+    is_active: true,
+    created_at: new Date().toISOString(),
   },
   {
-    id: 14,
+    id: "14",
     title: "Bilingual Immigration Paralegal",
     department: "Legal",
-    location: "Remote",
-    applyUrl: "https://verifind.io/applicant/jobs/4786147d-7bdd-4d1c-a47b-e65514c5e0fa"
+    apply_url: "https://verifind.io/applicant/jobs/4786147d-7bdd-4d1c-a47b-e65514c5e0fa",
+    region: "latin-america",
+    rate: null,
+    description: null,
+    is_active: true,
+    created_at: new Date().toISOString(),
   },
   {
-    id: 15,
+    id: "15",
     title: "Immigration/Family Paralegal",
     department: "Legal",
-    location: "Remote",
-    applyUrl: "https://verifind.io/applicant/jobs/6b473a04-c982-498d-b5a3-9d151fe1ce5f"
+    apply_url: "https://verifind.io/applicant/jobs/6b473a04-c982-498d-b5a3-9d151fe1ce5f",
+    region: "philippines",
+    rate: null,
+    description: null,
+    is_active: true,
+    created_at: new Date().toISOString(),
   },
   {
-    id: 16,
+    id: "16",
     title: "Senior Multimedia Designer",
     department: "Creative",
-    location: "Remote",
-    applyUrl: "https://verifind.io/applicant/jobs/d8a0e728-30be-4b82-a0d8-6e4ee546470d"
+    apply_url: "https://verifind.io/applicant/jobs/d8a0e728-30be-4b82-a0d8-6e4ee546470d",
+    region: "philippines",
+    rate: null,
+    description: null,
+    is_active: true,
+    created_at: new Date().toISOString(),
   },
 ];
 
@@ -116,17 +177,27 @@ type Region = "philippines" | "latin-america";
 
 const JobsSection = () => {
   const [selectedRegion, setSelectedRegion] = useState<Region>("philippines");
+  const { jobs: dbJobs, loading } = useJobs();
+
+  // Use database jobs if available, otherwise use static jobs
+  const jobs: Job[] = dbJobs.length > 0 ? dbJobs : staticJobs;
 
   const handleApplyClick = (applyUrl: string) => {
     window.open(applyUrl, '_blank');
   };
 
-  const latinAmericaJobs = jobs.filter(job => job.title.toLowerCase().includes('bilingual'));
-  const philippinesJobs = jobs.filter(job => !job.title.toLowerCase().includes('bilingual'));
+  const philippinesJobs = jobs.filter(job => 
+    job.region === 'philippines' || job.region === 'all' || 
+    (!job.region && !job.title.toLowerCase().includes('bilingual'))
+  );
+  const latinAmericaJobs = jobs.filter(job => 
+    job.region === 'latin-america' || job.region === 'all' ||
+    (!job.region && job.title.toLowerCase().includes('bilingual'))
+  );
 
   const displayedJobs = selectedRegion === "philippines" ? philippinesJobs : latinAmericaJobs;
 
-  const JobCard = ({ job, index }: { job: typeof jobs[0]; index: number }) => (
+  const JobCard = ({ job, index }: { job: Job; index: number }) => (
     <Card 
       key={job.id} 
       className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-fade-in flex flex-col h-full"
@@ -141,11 +212,14 @@ const JobsSection = () => {
       <CardContent className="flex flex-col flex-grow space-y-4">
         <div className="flex items-center space-x-2 text-sm text-muted-foreground">
           <MapPin className="w-4 h-4" />
-          <span>{job.location}</span>
+          <span>Remote</span>
         </div>
+        {job.rate && (
+          <p className="text-sm text-muted-foreground">{job.rate}</p>
+        )}
         
         <Button 
-          onClick={() => handleApplyClick(job.applyUrl)}
+          onClick={() => handleApplyClick(job.apply_url)}
           className="w-full group-hover:shadow-button transition-all duration-300 mt-auto"
         >
           Apply Now
@@ -191,11 +265,15 @@ const JobsSection = () => {
           <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-8 text-center">
             {selectedRegion === "philippines" ? "Philippines" : "Latin America"} Roles
           </h3>
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {displayedJobs.map((job, index) => (
-              <JobCard key={job.id} job={job} index={index} />
-            ))}
-          </div>
+          {loading ? (
+            <p className="text-center text-muted-foreground">Loading jobs...</p>
+          ) : (
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {displayedJobs.map((job, index) => (
+                <JobCard key={job.id} job={job} index={index} />
+              ))}
+            </div>
+          )}
         </div>
         
         <div className="text-center mt-16 py-12 px-8 bg-primary/5 rounded-2xl border border-primary/10">
