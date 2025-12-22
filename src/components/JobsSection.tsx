@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { MapPin } from "lucide-react";
 import { useJobs, Job } from "@/hooks/useJobs";
 
@@ -198,34 +199,48 @@ const JobsSection = () => {
   const displayedJobs = selectedRegion === "philippines" ? philippinesJobs : latinAmericaJobs;
 
   const JobCard = ({ job, index }: { job: Job; index: number }) => (
-    <Card 
-      key={job.id} 
-      className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-fade-in flex flex-col h-full"
-      style={{ animationDelay: `${index * 0.05}s` }}
-    >
-      <CardHeader>
-        <CardTitle className="text-lg group-hover:text-primary transition-colors duration-300 min-h-[3.5rem]">
-          {job.title}
-        </CardTitle>
-      </CardHeader>
-      
-      <CardContent className="flex flex-col flex-grow space-y-4">
-        <div className="flex items-center space-x-2 text-sm text-muted-foreground">
-          <MapPin className="w-4 h-4" />
-          <span>Remote</span>
-        </div>
-        {job.rate && (
-          <p className="text-sm text-muted-foreground">{job.rate}</p>
-        )}
-        
-        <Button 
-          onClick={() => handleApplyClick(job.apply_url)}
-          className="w-full group-hover:shadow-button transition-all duration-300 mt-auto"
+    <HoverCard openDelay={200} closeDelay={100}>
+      <HoverCardTrigger asChild>
+        <Card 
+          key={job.id} 
+          className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-fade-in flex flex-col h-full cursor-pointer"
+          style={{ animationDelay: `${index * 0.05}s` }}
         >
-          Apply Now
-        </Button>
-      </CardContent>
-    </Card>
+          <CardHeader>
+            <CardTitle className="text-lg group-hover:text-primary transition-colors duration-300 min-h-[3.5rem]">
+              {job.title}
+            </CardTitle>
+          </CardHeader>
+          
+          <CardContent className="flex flex-col flex-grow space-y-4">
+            <div className="flex items-center space-x-2 text-sm text-muted-foreground">
+              <MapPin className="w-4 h-4" />
+              <span>Remote</span>
+            </div>
+            {job.rate && (
+              <p className="text-sm text-muted-foreground">{job.rate}</p>
+            )}
+            
+            <Button 
+              onClick={() => handleApplyClick(job.apply_url)}
+              className="w-full group-hover:shadow-button transition-all duration-300 mt-auto"
+            >
+              Apply Now
+            </Button>
+          </CardContent>
+        </Card>
+      </HoverCardTrigger>
+      {job.description && (
+        <HoverCardContent className="w-80 p-4" side="top" align="center">
+          <div className="space-y-2">
+            <h4 className="font-semibold text-sm">{job.title}</h4>
+            <p className="text-sm text-muted-foreground line-clamp-6">
+              {job.description}
+            </p>
+          </div>
+        </HoverCardContent>
+      )}
+    </HoverCard>
   );
 
   return (
