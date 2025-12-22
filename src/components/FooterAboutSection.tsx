@@ -1,74 +1,67 @@
-import adamsComposite from "@/assets/team/adams-composite.png";
-import liezlNew from "@/assets/team/liezl-new.png";
-import eduardoCzaKristine from "@/assets/team/eduardo-cza-kristine.png";
-import markSean from "@/assets/team/mark-sean.png";
+import adamTabari from "@/assets/team/adam-tabari.png";
+import adamW from "@/assets/team/adam-w.png";
+import liezl from "@/assets/team/liezl.png";
+import sean from "@/assets/team/sean.png";
+import eduardo from "@/assets/team/eduardo.png";
+import cza from "@/assets/team/cza.png";
+import kristine from "@/assets/team/kristine.png";
+import mark from "@/assets/team/mark.png";
 
 interface TeamMember {
   name: string;
   role: string;
   description: string;
   image: string;
-  objectPosition: string;
 }
 
 const teamMembers: TeamMember[] = [
-  // Row 1
   {
     name: "Adam Tabari",
     role: "Founder, CEO",
     description: "As our founder and CEO, Adam is dedicated to connecting you with opportunities at top Western businesses. He'll ensure you receive ongoing support and are valued for your exceptional skills. His vision is to help talented professionals like you thrive in rewarding remote careers.",
-    image: adamsComposite,
-    objectPosition: "left center",
+    image: adamTabari,
   },
   {
     name: "Adam W.",
     role: "Client Growth & Optimization Specialist",
     description: "Adam uses cutting-edge technology and data insights to match you with the perfect role. He works to understand your unique strengths and find positions where you'll excel, ensuring a great fit between your skills and employer needs.",
-    image: adamsComposite,
-    objectPosition: "right center",
+    image: adamW,
   },
   {
     name: "Liezl De Dios",
     role: "Client & Contractor Operations and Hiring Strategy",
     description: "With her background as a virtual assistant and global experience, Liezl understands exactly what you need to succeed in remote work. She'll help align your talents with the right opportunities and support you throughout your journey.",
-    image: liezlNew,
-    objectPosition: "center top",
+    image: liezl,
   },
   {
     name: "Sean de Luna",
     role: "Strategic Engagement Advisor",
     description: "Sean brings extensive experience to help you stand out. He's passionate about diversity and inclusion, and works to ensure every candidate receives fair consideration and has their unique strengths recognized.",
-    image: markSean,
-    objectPosition: "right center",
+    image: sean,
   },
-  // Row 2
   {
     name: "Eduardo",
     role: "Bilingual Contractor Recruitment and Client HR Strategy & Support",
     description: "Eduardo is your go-to specialist for bilingual opportunities across Latin America. He'll guide you through the hiring process, build a strong relationship with you, and advocate for your success every step of the way.",
-    image: eduardoCzaKristine,
-    objectPosition: "left center",
+    image: eduardo,
   },
   {
     name: "Cza",
     role: "Client HR Strategy & Support and Contractor Recruitment",
     description: "Czarina will be your main point of contact throughout the recruitment journey. She prioritizes clear communication and ensures you feel supported, helping you build strong connections with your future employer.",
-    image: eduardoCzaKristine,
-    objectPosition: "center center",
+    image: cza,
   },
   {
     name: "Kristine",
     role: "Client HR Strategy & Support and Candidate Recruitment",
     description: "Kristine is here to make your job search seamless. She focuses on understanding your capabilities and career goals, then works to match you with employers who truly value what you bring to the table.",
-    image: eduardoCzaKristine,
-    objectPosition: "right center",
+    image: kristine,
   },
   {
     name: "Mark",
     role: "Client Satisfaction & Development",
     description: "Mark is committed to your long-term success. He nurtures meaningful partnerships that help you grow professionally, ensuring you have the support you need to build an enduring and rewarding career.",
-    image: markSean,
-    objectPosition: "left center",
+    image: mark,
   },
 ];
 
@@ -106,7 +99,6 @@ const FooterAboutSection = () => {
                     src={member.image} 
                     alt={member.name}
                     className="w-full h-48 object-cover group-hover:scale-105 transition-transform duration-300"
-                    style={{ objectPosition: member.objectPosition }}
                   />
                 </div>
                 <h4 className="text-xl font-bold text-foreground mb-1">{member.name}</h4>
