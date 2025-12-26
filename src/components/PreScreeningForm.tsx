@@ -427,23 +427,30 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
             </div>
 
             {/* Hidden honeypot field - invisible to users, bots will fill it */}
-            <input
-              type="text"
-              name="website"
-              value={formData.honeypot_field}
-              onChange={(e) => handleTextChange("honeypot_field", e.target.value)}
-              autoComplete="off"
-              tabIndex={-1}
-              aria-hidden="true"
-              style={{
-                position: 'absolute',
-                left: '-9999px',
-                opacity: 0,
-                height: 0,
-                width: 0,
-                pointerEvents: 'none',
+            <div 
+              aria-hidden="true" 
+              style={{ 
+                position: 'absolute', 
+                left: '-9999px', 
+                top: '-9999px',
+                opacity: 0, 
+                height: 0, 
+                width: 0, 
+                overflow: 'hidden',
+                pointerEvents: 'none' 
               }}
-            />
+            >
+              <label htmlFor="fax_number_do_not_fill">Leave this empty</label>
+              <input
+                type="text"
+                id="fax_number_do_not_fill"
+                name="fax_number_do_not_fill"
+                value={formData.honeypot_field}
+                onChange={(e) => handleTextChange("honeypot_field", e.target.value)}
+                autoComplete="new-password"
+                tabIndex={-1}
+              />
+            </div>
 
             <div className="pt-4 border-t border-border">
               <Button
