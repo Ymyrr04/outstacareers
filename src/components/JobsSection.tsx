@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin } from "lucide-react";
+import { MapPin, X } from "lucide-react";
 import { useJobs, Job } from "@/hooks/useJobs";
 import { useAnalytics } from "@/hooks/useAnalytics";
 
@@ -375,29 +375,47 @@ const JobsSection = () => {
     const hasDetails = selectedJob.description || (selectedJob.qualifications && selectedJob.qualifications.length > 0);
     if (!hasDetails) return null;
 
+    const closePopup = () => {
+      setOpenJobId(null);
+      setHoveredJobId(null);
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = null;
+      }
+    };
+
     return (
       <>
-        {/* Subtle backdrop overlay */}
+        {/* Backdrop overlay - clickable to close */}
         <div 
-          className="fixed inset-0 z-40 bg-black/30 pointer-events-none animate-in fade-in duration-300" 
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm pointer-events-auto cursor-pointer animate-in fade-in duration-200" 
+          onClick={closePopup}
         />
         
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
           {/* Popup content */}
           <div 
-            className="pointer-events-auto w-full max-w-md max-h-[80vh] overflow-y-auto bg-background rounded-lg shadow-2xl border border-primary/20 p-6 animate-in fade-in zoom-in-95 duration-300"
+            className="pointer-events-auto w-full max-w-md max-h-[80vh] overflow-y-auto bg-background rounded-xl shadow-2xl border border-primary/20 animate-in fade-in slide-in-from-bottom-4 zoom-in-95 duration-300"
+            onMouseLeave={closePopup}
           >
-            <div className="space-y-4">
-              <h4 className="font-bold text-lg text-foreground">{selectedJob.title}</h4>
-              
+            {/* Header with close button */}
+            <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border px-6 py-4 flex items-start justify-between gap-4">
+              <h4 className="font-bold text-lg text-foreground leading-tight">{selectedJob.title}</h4>
+              <button 
+                onClick={closePopup}
+                className="flex-shrink-0 p-1 rounded-full hover:bg-muted transition-colors duration-200"
+                aria-label="Close popup"
+              >
+                <X className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
+              </button>
+            </div>
+            
+            {/* Content */}
+            <div className="p-6 space-y-4">
               {selectedJob.description && (
-                <div>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {selectedJob.description}
-                  </p>
-                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {selectedJob.description}
+                </p>
               )}
               
               {selectedJob.qualifications && selectedJob.qualifications.length > 0 && (
@@ -421,9 +439,7 @@ const JobsSection = () => {
               )}
               
               <Button 
-                onClick={() => {
-                  handleApplyClick(selectedJob.apply_url, selectedJob.id);
-                }}
+                onClick={() => handleApplyClick(selectedJob.apply_url, selectedJob.id)}
                 className="w-full mt-4"
               >
                 Apply Now
