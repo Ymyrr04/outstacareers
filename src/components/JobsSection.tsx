@@ -231,6 +231,7 @@ type Region = "philippines" | "latin-america";
 
 const JobsSection = () => {
   const [selectedRegion, setSelectedRegion] = useState<Region>("philippines");
+  const [openJobId, setOpenJobId] = useState<string | null>(null);
   const { jobs: dbJobs, loading } = useJobs();
   const { trackJobView, trackApplyClick } = useAnalytics();
   const viewedJobs = useRef<Set<string>>(new Set());
@@ -283,7 +284,12 @@ const JobsSection = () => {
     }, [job.id]);
     
     return (
-      <HoverCard openDelay={150} closeDelay={100}>
+      <HoverCard 
+        open={openJobId === job.id} 
+        onOpenChange={(open) => setOpenJobId(open ? job.id : null)}
+        openDelay={150} 
+        closeDelay={100}
+      >
         <Card 
           key={job.id} 
           className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-fade-in flex flex-col h-full"
