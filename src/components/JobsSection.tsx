@@ -382,7 +382,14 @@ const JobsSection = () => {
   };
 
   return (
-    <section id="positions" className="py-20 bg-gradient-section">
+    <section id="positions" className="py-20 bg-gradient-section relative">
+      {/* Backdrop overlay when popup is open */}
+      {openJobId && (
+        <div 
+          className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-200"
+          onClick={() => setOpenJobId(null)}
+        />
+      )}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
