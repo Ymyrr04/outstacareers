@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, X } from "lucide-react";
+import { MapPin, X, Eye } from "lucide-react";
 import { useJobs, Job } from "@/hooks/useJobs";
 import { useAnalytics } from "@/hooks/useAnalytics";
 
@@ -290,26 +290,15 @@ const JobsSection = () => {
 
     const handleMouseEnter = () => {
       setHoveredJobId(job.id);
-      if (hasDetails) {
-        // Clear any existing timeout
-        if (hoverTimeoutRef.current) {
-          clearTimeout(hoverTimeoutRef.current);
-        }
-        // Set new timeout for 500ms delay
-        hoverTimeoutRef.current = setTimeout(() => {
-          setOpenJobId(job.id);
-        }, 500);
-      }
     };
 
     const handleMouseLeave = () => {
       setHoveredJobId(null);
-      // Clear the timeout if mouse leaves before delay completes
-      if (hoverTimeoutRef.current) {
-        clearTimeout(hoverTimeoutRef.current);
-        hoverTimeoutRef.current = null;
-      }
-      setOpenJobId(null);
+    };
+
+    const handleViewDetails = (e: React.MouseEvent) => {
+      e.stopPropagation();
+      setOpenJobId(job.id);
     };
 
     const isActive = openJobId === job.id;
@@ -353,7 +342,21 @@ const JobsSection = () => {
           </CardContent>
         </div>
         
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 space-y-2">
+          {/* View Job Details button - appears on hover */}
+          <div className={`overflow-hidden transition-all duration-300 ease-out ${
+            isHovered && hasDetails && !isActive ? 'max-h-12 opacity-100' : 'max-h-0 opacity-0'
+          }`}>
+            <Button 
+              variant="outline"
+              onClick={handleViewDetails}
+              className="w-full flex items-center justify-center gap-2 border-primary/30 hover:bg-primary/10 hover:border-primary"
+            >
+              <Eye className="w-4 h-4" />
+              View Job Details
+            </Button>
+          </div>
+          
           <Button 
             onClick={(e) => {
               e.stopPropagation();
@@ -396,7 +399,6 @@ const JobsSection = () => {
           {/* Popup content */}
           <div 
             className="pointer-events-auto w-full max-w-md max-h-[80vh] overflow-y-auto bg-background rounded-xl shadow-2xl border border-primary/20 animate-in fade-in slide-in-from-bottom-4 zoom-in-95 duration-300"
-            onMouseLeave={closePopup}
           >
             {/* Header with close button */}
             <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border px-6 py-4 flex items-start justify-between gap-4">
