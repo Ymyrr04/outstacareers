@@ -1,8 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
-import { MapPin } from "lucide-react";
+import { MapPin, X } from "lucide-react";
 import { useJobs, Job } from "@/hooks/useJobs";
 import { useAnalytics } from "@/hooks/useAnalytics";
 
@@ -274,6 +273,10 @@ const JobsSection = () => {
     return job.rate;
   };
 
+  // Get the selected job details for the popup
+  const selectedJob = openJobId ? jobs.find(j => j.id === openJobId) : null;
+  const selectedJobDisplayRate = selectedJob ? getDisplayRate(selectedJob) : null;
+
   const JobCard = ({ job, index }: { job: Job; index: number }) => {
     const displayRate = getDisplayRate(job);
     const hasDetails = job.description || (job.qualifications && job.qualifications.length > 0);
@@ -284,118 +287,138 @@ const JobsSection = () => {
     }, [job.id]);
     
     return (
-      <HoverCard 
-        open={openJobId === job.id} 
-        onOpenChange={(open) => setOpenJobId(open ? job.id : null)}
-        openDelay={150} 
-        closeDelay={100}
+      <Card 
+        key={job.id} 
+        className={`animate-fade-in flex flex-col h-full cursor-pointer ${
+          openJobId === null 
+            ? 'group hover:shadow-xl transition-all duration-300 hover:-translate-y-1' 
+            : ''
+        } ${openJobId === job.id ? 'shadow-xl ring-2 ring-primary/50' : ''}`}
+        style={{ animationDelay: `${index * 0.05}s` }}
+        onClick={() => hasDetails && setOpenJobId(job.id)}
       >
-        <Card 
-          key={job.id} 
-          className={`animate-fade-in flex flex-col h-full ${
-            openJobId === null 
-              ? 'group hover:shadow-xl transition-all duration-300 hover:-translate-y-1' 
-              : 'transition-none'
-          } ${openJobId === job.id ? 'shadow-xl ring-2 ring-primary/50' : ''}`}
-          style={{ animationDelay: `${index * 0.05}s` }}
-        >
-          <HoverCardTrigger asChild>
-            <div className="cursor-pointer flex-grow">
-              <CardHeader className="pb-2">
-                <CardTitle className={`text-lg min-h-[3.5rem] ${
-                  openJobId === null ? 'group-hover:text-primary transition-colors duration-300' : ''
-                }`}>
-                  {job.title}
-                </CardTitle>
-              </CardHeader>
-              
-              <CardContent className="flex flex-col space-y-3 pt-0">
-                {/* Rate - centered and highlighted in blue */}
-                {displayRate && (
-                  <p className="text-xl font-bold text-primary text-center py-1">
-                    {displayRate}
-                  </p>
-                )}
-                
-                {/* Remote & Full time - opposite sides */}
-                <div className="flex items-center justify-between text-sm text-muted-foreground">
-                  <div className="flex items-center space-x-1">
-                    <MapPin className="w-4 h-4" />
-                    <span>Remote</span>
-                  </div>
-                  <span>Full time</span>
-                </div>
-              </CardContent>
-            </div>
-          </HoverCardTrigger>
+        <div className="flex-grow">
+          <CardHeader className="pb-2">
+            <CardTitle className={`text-lg min-h-[3.5rem] ${
+              openJobId === null ? 'group-hover:text-primary transition-colors duration-300' : ''
+            }`}>
+              {job.title}
+            </CardTitle>
+          </CardHeader>
           
-          <CardContent className="pt-0">
+          <CardContent className="flex flex-col space-y-3 pt-0">
+            {/* Rate - centered and highlighted in blue */}
+            {displayRate && (
+              <p className="text-xl font-bold text-primary text-center py-1">
+                {displayRate}
+              </p>
+            )}
+            
+            {/* Remote & Full time - opposite sides */}
+            <div className="flex items-center justify-between text-sm text-muted-foreground">
+              <div className="flex items-center space-x-1">
+                <MapPin className="w-4 h-4" />
+                <span>Remote</span>
+              </div>
+              <span>Full time</span>
+            </div>
+          </CardContent>
+        </div>
+        
+        <CardContent className="pt-0">
+          <Button 
+            onClick={(e) => {
+              e.stopPropagation();
+              handleApplyClick(job.apply_url, job.id);
+            }}
+            className={`w-full ${openJobId === null ? 'group-hover:shadow-button transition-all duration-300' : ''}`}
+          >
+            Apply Now
+          </Button>
+        </CardContent>
+      </Card>
+    );
+  };
+
+  // Job details popup component
+  const JobDetailsPopup = () => {
+    if (!selectedJob) return null;
+    
+    const hasDetails = selectedJob.description || (selectedJob.qualifications && selectedJob.qualifications.length > 0);
+    if (!hasDetails) return null;
+
+    return (
+      <div 
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        onClick={() => setOpenJobId(null)}
+      >
+        {/* Backdrop */}
+        <div className="absolute inset-0 bg-black/50" />
+        
+        {/* Popup content */}
+        <div 
+          className="relative w-full max-w-md max-h-[80vh] overflow-y-auto bg-background rounded-lg shadow-2xl border border-primary/20 p-6 animate-scale-in"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Close button */}
+          <button
+            onClick={() => setOpenJobId(null)}
+            className="absolute top-4 right-4 p-1 rounded-full hover:bg-muted transition-colors"
+          >
+            <X className="w-5 h-5 text-muted-foreground" />
+          </button>
+          
+          <div className="space-y-4 pr-6">
+            <h4 className="font-bold text-lg text-foreground">{selectedJob.title}</h4>
+            
+            {selectedJob.description && (
+              <div>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {selectedJob.description}
+                </p>
+              </div>
+            )}
+            
+            {selectedJob.qualifications && selectedJob.qualifications.length > 0 && (
+              <div>
+                <h5 className="font-semibold text-sm text-foreground mb-2">Key Qualifications:</h5>
+                <ul className="space-y-1.5">
+                  {selectedJob.qualifications.map((qual, idx) => (
+                    <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                      <span className="text-primary mt-1">•</span>
+                      <span>{qual}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            
+            {selectedJobDisplayRate && (
+              <div className="pt-2 border-t border-border">
+                <p className="text-sm font-semibold text-primary">{selectedJobDisplayRate}</p>
+              </div>
+            )}
+            
             <Button 
-              onClick={(e) => {
-                e.stopPropagation();
-                handleApplyClick(job.apply_url, job.id);
+              onClick={() => {
+                handleApplyClick(selectedJob.apply_url, selectedJob.id);
               }}
-              className={`w-full ${openJobId === null ? 'group-hover:shadow-button transition-all duration-300' : ''}`}
+              className="w-full mt-4"
             >
               Apply Now
             </Button>
-          </CardContent>
-        </Card>
-        
-        {hasDetails && (
-          <HoverCardContent 
-            className="w-[90vw] max-w-md max-h-[70vh] overflow-y-auto p-5 animate-scale-in shadow-2xl border-primary/20 fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50" 
-            side="top" 
-            align="center"
-            sideOffset={8}
-            avoidCollisions={false}
-          >
-            <div className="space-y-4">
-              <h4 className="font-bold text-base text-foreground">{job.title}</h4>
-              
-              {job.description && (
-                <div>
-                  <p className="text-sm text-muted-foreground leading-relaxed">
-                    {job.description}
-                  </p>
-                </div>
-              )}
-              
-              {job.qualifications && job.qualifications.length > 0 && (
-                <div>
-                  <h5 className="font-semibold text-sm text-foreground mb-2">Key Qualifications:</h5>
-                  <ul className="space-y-1.5">
-                    {job.qualifications.map((qual, idx) => (
-                      <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
-                        <span className="text-primary mt-1">•</span>
-                        <span>{qual}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              
-              {displayRate && (
-                <div className="pt-2 border-t border-border">
-                  <p className="text-sm font-semibold text-primary">{displayRate}</p>
-                </div>
-              )}
-            </div>
-          </HoverCardContent>
-        )}
-      </HoverCard>
+          </div>
+        </div>
+      </div>
     );
   };
 
   return (
-    <section id="positions" className="py-20 bg-gradient-section relative">
-      {/* Backdrop overlay when popup is open */}
-      {openJobId && (
-        <div 
-          className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-200"
-          onClick={() => setOpenJobId(null)}
-        />
-      )}
+    <>
+      {/* Job details popup */}
+      <JobDetailsPopup />
+      
+      <section id="positions" className="py-20 bg-gradient-section relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
@@ -459,7 +482,8 @@ const JobsSection = () => {
           </Button>
         </div>
       </div>
-    </section>
+      </section>
+    </>
   );
 };
 
