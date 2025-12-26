@@ -1,6 +1,23 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+// Check if we're on a production/published domain (not preview or localhost)
+const isProductionEnvironment = (): boolean => {
+  const hostname = window.location.hostname;
+  
+  // Exclude localhost and development environments
+  if (hostname === 'localhost' || hostname === '127.0.0.1') return false;
+  
+  // Exclude Lovable preview domains (id.lovableproject.com pattern)
+  if (hostname.includes('lovableproject.com')) return false;
+  
+  // Exclude other common preview/staging patterns
+  if (hostname.includes('preview.') || hostname.includes('staging.')) return false;
+  
+  // This is a production domain
+  return true;
+};
+
 // Generate a simple session ID for tracking
 const getSessionId = () => {
   let sessionId = sessionStorage.getItem('analytics_session_id');
@@ -27,6 +44,11 @@ export const useAnalytics = () => {
     eventType: 'page_view' | 'job_view' | 'apply_click',
     jobId?: string
   ) => {
+    // Only track in production environment
+    if (!isProductionEnvironment()) {
+      return;
+    }
+
     try {
       const sessionId = getSessionId();
       const userAgent = navigator.userAgent;
