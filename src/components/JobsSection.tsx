@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MapPin, X, Eye } from "lucide-react";
 import { useJobs, Job } from "@/hooks/useJobs";
 import { useAnalytics } from "@/hooks/useAnalytics";
-
+import PreScreeningForm from "@/components/PreScreeningForm";
 // Fixed conversion values for Philippines
 const USD_TO_PHP_RATE = 56;
 const WEEKS_PER_MONTH = 4;
@@ -232,6 +232,7 @@ const JobsSection = () => {
   const [selectedRegion, setSelectedRegion] = useState<Region>("philippines");
   const [openJobId, setOpenJobId] = useState<string | null>(null);
   const [hoveredJobId, setHoveredJobId] = useState<string | null>(null);
+  const [preScreeningJob, setPreScreeningJob] = useState<Job | null>(null);
   const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { jobs: dbJobs, loading } = useJobs();
   const { trackJobView, trackApplyClick } = useAnalytics();
@@ -240,9 +241,13 @@ const JobsSection = () => {
   // Use database jobs if available, otherwise use static jobs
   const jobs: Job[] = dbJobs.length > 0 ? dbJobs : staticJobs;
 
-  const handleApplyClick = (applyUrl: string, jobId: string) => {
-    trackApplyClick(jobId);
-    window.open(applyUrl, '_blank');
+  const handleApplyClick = (job: Job) => {
+    trackApplyClick(job.id);
+    setPreScreeningJob(job);
+  };
+
+  const handleClosePreScreening = () => {
+    setPreScreeningJob(null);
   };
 
   const handleJobView = (jobId: string) => {
@@ -362,7 +367,7 @@ const JobsSection = () => {
           <Button 
             onClick={(e) => {
               e.stopPropagation();
-              handleApplyClick(job.apply_url, job.id);
+              handleApplyClick(job);
             }}
             className={`w-full transition-all duration-300 ${isHovered || isActive ? 'shadow-button' : ''}`}
           >
@@ -455,7 +460,7 @@ const JobsSection = () => {
               )}
               
               <Button 
-                onClick={() => handleApplyClick(selectedJob.apply_url, selectedJob.id)}
+                onClick={() => handleApplyClick(selectedJob)}
                 className="w-full mt-4"
               >
                 Apply Now
@@ -469,6 +474,14 @@ const JobsSection = () => {
 
   return (
     <>
+      {/* Pre-screening form */}
+      {preScreeningJob && (
+        <PreScreeningForm
+          job={preScreeningJob}
+          onClose={handleClosePreScreening}
+        />
+      )}
+      
       {/* Job details popup */}
       <JobDetailsPopup />
       
