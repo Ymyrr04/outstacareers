@@ -283,89 +283,94 @@ const JobsSection = () => {
     }, [job.id]);
     
     return (
-      <Card 
-        key={job.id} 
-        className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-fade-in flex flex-col h-full"
-        style={{ animationDelay: `${index * 0.05}s` }}
-      >
-        <CardHeader className="pb-2">
-          <HoverCard openDelay={150} closeDelay={100}>
-            <HoverCardTrigger asChild>
-              <CardTitle className="text-lg group-hover:text-primary transition-colors duration-300 min-h-[3.5rem] cursor-pointer">
-                {job.title}
-              </CardTitle>
-            </HoverCardTrigger>
-            {hasDetails && (
-              <HoverCardContent 
-                className="w-96 p-5 animate-scale-in origin-bottom shadow-2xl border-primary/20" 
-                side="top" 
-                align="center"
-                sideOffset={8}
-              >
-                <div className="space-y-4">
-                  <h4 className="font-bold text-base text-foreground">{job.title}</h4>
-                  
-                  {job.description && (
-                    <div>
-                      <p className="text-sm text-muted-foreground leading-relaxed">
-                        {job.description}
-                      </p>
-                    </div>
-                  )}
-                  
-                  {job.qualifications && job.qualifications.length > 0 && (
-                    <div>
-                      <h5 className="font-semibold text-sm text-foreground mb-2">Key Qualifications:</h5>
-                      <ul className="space-y-1.5">
-                        {job.qualifications.map((qual, idx) => (
-                          <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
-                            <span className="text-primary mt-1">•</span>
-                            <span>{qual}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  )}
-                  
-                  {displayRate && (
-                    <div className="pt-2 border-t border-border">
-                      <p className="text-sm font-semibold text-primary">{displayRate}</p>
-                    </div>
-                  )}
+      <HoverCard openDelay={150} closeDelay={100}>
+        <Card 
+          key={job.id} 
+          className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-fade-in flex flex-col h-full"
+          style={{ animationDelay: `${index * 0.05}s` }}
+        >
+          <HoverCardTrigger asChild>
+            <div className="cursor-pointer flex-grow">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg group-hover:text-primary transition-colors duration-300 min-h-[3.5rem]">
+                  {job.title}
+                </CardTitle>
+              </CardHeader>
+              
+              <CardContent className="flex flex-col space-y-3 pt-0">
+                {/* Rate - centered and highlighted in blue */}
+                {displayRate && (
+                  <p className="text-xl font-bold text-primary text-center py-1">
+                    {displayRate}
+                  </p>
+                )}
+                
+                {/* Remote & Full time - opposite sides */}
+                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                  <div className="flex items-center space-x-1">
+                    <MapPin className="w-4 h-4" />
+                    <span>Remote</span>
+                  </div>
+                  <span>Full time</span>
                 </div>
-              </HoverCardContent>
-            )}
-          </HoverCard>
-        </CardHeader>
-        
-        <CardContent className="flex flex-col flex-grow space-y-3 pt-0">
-          {/* Rate - centered and highlighted in blue */}
-          {displayRate && (
-            <p className="text-xl font-bold text-primary text-center py-1">
-              {displayRate}
-            </p>
-          )}
-          
-          {/* Remote & Full time - opposite sides, above Apply Now */}
-          <div className="flex items-center justify-between text-sm text-muted-foreground">
-            <div className="flex items-center space-x-1">
-              <MapPin className="w-4 h-4" />
-              <span>Remote</span>
+              </CardContent>
             </div>
-            <span>Full time</span>
-          </div>
+          </HoverCardTrigger>
           
-          <Button 
-            onClick={(e) => {
-              e.stopPropagation();
-              handleApplyClick(job.apply_url, job.id);
-            }}
-            className="w-full group-hover:shadow-button transition-all duration-300 mt-auto"
+          <CardContent className="pt-0">
+            <Button 
+              onClick={(e) => {
+                e.stopPropagation();
+                handleApplyClick(job.apply_url, job.id);
+              }}
+              className="w-full group-hover:shadow-button transition-all duration-300"
+            >
+              Apply Now
+            </Button>
+          </CardContent>
+        </Card>
+        
+        {hasDetails && (
+          <HoverCardContent 
+            className="w-96 p-5 animate-scale-in origin-bottom shadow-2xl border-primary/20" 
+            side="top" 
+            align="center"
+            sideOffset={8}
           >
-            Apply Now
-          </Button>
-        </CardContent>
-      </Card>
+            <div className="space-y-4">
+              <h4 className="font-bold text-base text-foreground">{job.title}</h4>
+              
+              {job.description && (
+                <div>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {job.description}
+                  </p>
+                </div>
+              )}
+              
+              {job.qualifications && job.qualifications.length > 0 && (
+                <div>
+                  <h5 className="font-semibold text-sm text-foreground mb-2">Key Qualifications:</h5>
+                  <ul className="space-y-1.5">
+                    {job.qualifications.map((qual, idx) => (
+                      <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                        <span className="text-primary mt-1">•</span>
+                        <span>{qual}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {displayRate && (
+                <div className="pt-2 border-t border-border">
+                  <p className="text-sm font-semibold text-primary">{displayRate}</p>
+                </div>
+              )}
+            </div>
+          </HoverCardContent>
+        )}
+      </HoverCard>
     );
   };
 
