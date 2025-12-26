@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-// Check if we're on a production/published domain (not preview or localhost)
+// Check if current environment is production
 const isProductionEnvironment = (): boolean => {
   const hostname = window.location.hostname;
   
@@ -18,23 +18,26 @@ const isProductionEnvironment = (): boolean => {
   return true;
 };
 
-// Generate a simple session ID for tracking
-const getSessionId = () => {
-  let sessionId = sessionStorage.getItem('analytics_session_id');
+// Generate or retrieve session ID
+const getSessionId = (): string => {
+  const key = 'analytics_session_id';
+  let sessionId = sessionStorage.getItem(key);
+  
   if (!sessionId) {
     sessionId = crypto.randomUUID();
-    sessionStorage.setItem('analytics_session_id', sessionId);
+    sessionStorage.setItem(key, sessionId);
   }
+  
   return sessionId;
 };
 
-// Simple hash function for privacy
+// Hash function for privacy
 const hashString = async (str: string): Promise<string> => {
   const encoder = new TextEncoder();
   const data = encoder.encode(str);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
 };
 
 export const useAnalytics = () => {
@@ -58,15 +61,22 @@ export const useAnalytics = () => {
       // Create a pseudo IP hash from user agent and session for uniqueness
       const ipHash = await hashString(userAgent + sessionId);
 
-      await supabase.from('analytics_events').insert({
-        event_type: eventType,
-        job_id: jobId || null,
-        page_path: pagePath,
-        referrer: referrer,
-        user_agent: userAgent,
-        ip_hash: ipHash,
-        session_id: sessionId,
+      // Use edge function for secure analytics tracking
+      const { error } = await supabase.functions.invoke('track-analytics', {
+        body: {
+          event_type: eventType,
+          job_id: jobId || null,
+          page_path: pagePath,
+          referrer: referrer,
+          user_agent: userAgent,
+          ip_hash: ipHash,
+          session_id: sessionId,
+        },
       });
+
+      if (error) {
+        console.error('Analytics tracking error:', error);
+      }
     } catch (error) {
       console.error('Analytics tracking error:', error);
     }
