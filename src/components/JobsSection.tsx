@@ -319,20 +319,18 @@ const JobsSection = () => {
     return (
       <Card 
         key={job.id} 
-        className={`flex flex-col h-full ${
-          !hasActivePopup
-            ? 'group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-fade-in' 
-            : ''
-        } ${isActive ? 'shadow-xl ring-2 ring-primary/50 -translate-y-1 z-10' : ''} ${isHovered && !isActive ? 'shadow-lg' : ''}`}
-        style={{ animationDelay: !hasActivePopup ? `${index * 0.05}s` : undefined }}
+        className={`flex flex-col h-full animate-fade-in transition-all duration-300 ${
+          isHovered && !hasActivePopup ? 'shadow-xl -translate-y-1' : ''
+        } ${isActive ? 'shadow-xl ring-2 ring-primary/50 -translate-y-1 z-10' : ''} ${isHovered && !isActive && hasActivePopup ? '' : ''} ${!isHovered && !isActive ? '' : ''}`}
+        style={{ animationDelay: `${index * 0.05}s` }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
         <div className="flex-grow">
           <CardHeader className="pb-2">
-            <CardTitle className={`text-lg min-h-[3.5rem] ${
-              !hasActivePopup || isActive ? 'group-hover:text-primary transition-colors duration-300' : ''
-            } ${isActive ? 'text-primary' : ''}`}>
+            <CardTitle className={`text-lg min-h-[3.5rem] transition-colors duration-300 ${
+              isHovered || isActive ? 'text-primary' : ''
+            }`}>
               {job.title}
             </CardTitle>
           </CardHeader>
@@ -362,7 +360,7 @@ const JobsSection = () => {
               e.stopPropagation();
               handleApplyClick(job.apply_url, job.id);
             }}
-            className={`w-full ${!hasActivePopup || isActive ? 'group-hover:shadow-button transition-all duration-300' : ''}`}
+            className={`w-full transition-all duration-300 ${isHovered || isActive ? 'shadow-button' : ''}`}
           >
             Apply Now
           </Button>
