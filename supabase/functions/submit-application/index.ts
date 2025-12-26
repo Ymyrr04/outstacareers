@@ -40,15 +40,10 @@ serve(async (req) => {
 
     console.log(`Processing submission from IP hash: ${ipHash}`);
 
-    // Check honeypot field - if filled, it's likely a bot
-    if (body.honeypot_field && body.honeypot_field.trim() !== '') {
-      console.log('Honeypot field filled - likely bot submission, rejecting');
-      return new Response(JSON.stringify({ 
-        error: 'Submission failed validation' 
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    // Check honeypot field - if filled, log it but don't block (browser autofill can cause false positives)
+    const honeypotFilled = body.honeypot_field && body.honeypot_field.trim() !== '';
+    if (honeypotFilled) {
+      console.log(`Honeypot field filled with value: "${body.honeypot_field}" - flagging but allowing submission`);
     }
 
     // Validate required fields
