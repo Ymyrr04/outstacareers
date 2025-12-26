@@ -469,7 +469,10 @@ const JobsSection = () => {
               )}
               
               <Button 
-                onClick={() => handleApplyClick(selectedJob)}
+                onClick={() => {
+                  closePopup();
+                  handleApplyClick(selectedJob);
+                }}
                 className="w-full mt-4"
               >
                 Apply Now
