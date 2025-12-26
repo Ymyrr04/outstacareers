@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Eye, MousePointerClick, FileText, TrendingUp } from 'lucide-react';
+import { Eye, MousePointerClick, FileText, TrendingUp, Globe } from 'lucide-react';
 
 interface AnalyticsSummary {
   totalPageViews: number;
@@ -26,12 +26,47 @@ interface DailyStats {
   apply_clicks: number;
 }
 
-const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))'];
+interface ReferrerStats {
+  source: string;
+  count: number;
+  percentage: number;
+}
+
+const COLORS = ['hsl(var(--primary))', 'hsl(var(--secondary))', 'hsl(var(--accent))', 'hsl(var(--muted-foreground))', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
+
+// Helper to extract source name from referrer URL
+const parseReferrerSource = (referrer: string | null): string => {
+  if (!referrer || referrer === '') return 'Direct';
+  
+  try {
+    const url = new URL(referrer);
+    const hostname = url.hostname.toLowerCase();
+    
+    // Known sources
+    if (hostname.includes('google')) return 'Google';
+    if (hostname.includes('facebook') || hostname.includes('fb.com')) return 'Facebook';
+    if (hostname.includes('twitter') || hostname.includes('t.co') || hostname.includes('x.com')) return 'Twitter/X';
+    if (hostname.includes('linkedin')) return 'LinkedIn';
+    if (hostname.includes('instagram')) return 'Instagram';
+    if (hostname.includes('youtube')) return 'YouTube';
+    if (hostname.includes('tiktok')) return 'TikTok';
+    if (hostname.includes('reddit')) return 'Reddit';
+    if (hostname.includes('bing')) return 'Bing';
+    if (hostname.includes('yahoo')) return 'Yahoo';
+    if (hostname.includes('duckduckgo')) return 'DuckDuckGo';
+    
+    // Return domain for unknown sources
+    return hostname.replace('www.', '');
+  } catch {
+    return 'Other';
+  }
+};
 
 const AnalyticsDashboard = () => {
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null);
   const [jobAnalytics, setJobAnalytics] = useState<JobAnalytics[]>([]);
   const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
+  const [referrerStats, setReferrerStats] = useState<ReferrerStats[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -112,6 +147,27 @@ const AnalyticsDashboard = () => {
       }
       
       setDailyStats(dailyData);
+
+      // Calculate referrer stats
+      const referrerCounts = new Map<string, number>();
+      const pageViewEvents = events?.filter(e => e.event_type === 'page_view') || [];
+      
+      pageViewEvents.forEach(event => {
+        const source = parseReferrerSource(event.referrer);
+        referrerCounts.set(source, (referrerCounts.get(source) || 0) + 1);
+      });
+
+      const totalReferrers = pageViewEvents.length;
+      const referrerData: ReferrerStats[] = Array.from(referrerCounts.entries())
+        .map(([source, count]) => ({
+          source,
+          count,
+          percentage: totalReferrers > 0 ? Math.round((count / totalReferrers) * 100) : 0,
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 10);
+
+      setReferrerStats(referrerData);
     } catch (error) {
       console.error('Error fetching analytics:', error);
     } finally {
@@ -240,6 +296,89 @@ const AnalyticsDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Traffic Sources */}
+      {referrerStats.length > 0 && (
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Referrer Pie Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Globe className="h-5 w-5" />
+                Traffic Sources
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={referrerStats}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ source, percentage }) => percentage > 5 ? `${source}: ${percentage}%` : ''}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="count"
+                      nameKey="source"
+                    >
+                      {referrerStats.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value: number, name: string) => [`${value} visits`, name]}
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Referrer Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Traffic Sources Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2 px-4 font-medium">Source</th>
+                      <th className="text-right py-2 px-4 font-medium">Visits</th>
+                      <th className="text-right py-2 px-4 font-medium">%</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {referrerStats.map((referrer, index) => (
+                      <tr key={referrer.source} className="border-b last:border-0">
+                        <td className="py-2 px-4">
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full" 
+                              style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                            />
+                            {referrer.source}
+                          </div>
+                        </td>
+                        <td className="text-right py-2 px-4">{referrer.count}</td>
+                        <td className="text-right py-2 px-4">{referrer.percentage}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Top Jobs Table */}
       {jobAnalytics.length > 0 && (
