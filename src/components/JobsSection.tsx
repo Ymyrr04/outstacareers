@@ -332,10 +332,11 @@ const JobsSection = () => {
         
         {hasDetails && (
           <HoverCardContent 
-            className="w-96 p-5 animate-scale-in origin-bottom shadow-2xl border-primary/20" 
+            className="w-[90vw] max-w-md max-h-[70vh] overflow-y-auto p-5 animate-scale-in shadow-2xl border-primary/20 fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50" 
             side="top" 
             align="center"
             sideOffset={8}
+            avoidCollisions={false}
           >
             <div className="space-y-4">
               <h4 className="font-bold text-base text-foreground">{job.title}</h4>
