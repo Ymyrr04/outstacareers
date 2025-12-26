@@ -1,1 +1,10 @@
 project_id = "ohxtavjababtrcrkgndq"
+
+[functions.get-exchange-rate]
+verify_jwt = false
+
+[functions.track-analytics]
+verify_jwt = false
+
+[functions.submit-application]
+verify_jwt = false

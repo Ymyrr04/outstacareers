@@ -50,6 +50,7 @@ type FormData = {
   has_experience: boolean | null;
   currently_working: boolean | null;
   location: string;
+  honeypot_field: string; // Hidden field to catch bots
 };
 
 const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
@@ -73,6 +74,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
     has_experience: null,
     currently_working: null,
     location: "",
+    honeypot_field: "", // Hidden field - bots will fill this
   });
 
   const handleTextChange = (field: keyof FormData, value: string) => {
@@ -126,34 +128,46 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
     setIsSubmitting(true);
 
     try {
-      const insertData = {
-        full_name: formData.full_name,
-        email: formData.email,
-        home_office: formData.home_office!,
-        noise_canceling_headset: formData.noise_canceling_headset!,
-        laptop_or_pc: formData.laptop_or_pc!,
-        good_internet: formData.good_internet!,
-        internet_speed: formData.internet_speed,
-        power_backup: formData.power_backup!,
-        can_work_40_50: formData.can_work_40_50!,
-        us_timezone_ok: formData.us_timezone_ok!,
-        start_availability: formData.start_availability,
-        has_experience: formData.has_experience!,
-        currently_working: formData.currently_working!,
-        location: formData.location,
-        job_title: job.title,
-        job_id: job.id,
-        apply_url: job.apply_url,
-        status: "new",
-      };
+      // Use edge function for rate-limited, validated submissions
+      const response = await supabase.functions.invoke('submit-application', {
+        body: {
+          full_name: formData.full_name,
+          email: formData.email,
+          home_office: formData.home_office,
+          noise_canceling_headset: formData.noise_canceling_headset,
+          laptop_or_pc: formData.laptop_or_pc,
+          good_internet: formData.good_internet,
+          internet_speed: formData.internet_speed,
+          power_backup: formData.power_backup,
+          can_work_40_50: formData.can_work_40_50,
+          us_timezone_ok: formData.us_timezone_ok,
+          start_availability: formData.start_availability,
+          has_experience: formData.has_experience,
+          currently_working: formData.currently_working,
+          location: formData.location,
+          job_title: job.title,
+          job_id: job.id,
+          apply_url: job.apply_url,
+          honeypot_field: formData.honeypot_field, // Send honeypot for bot detection
+        },
+      });
 
-      const { error } = await supabase.from("applicants_prescreen").insert(insertData);
-
-      if (error) {
-        console.error("Error submitting pre-screening form:", error);
+      if (response.error) {
+        console.error("Error submitting pre-screening form:", response.error);
         toast({
           title: "Submission failed",
-          description: "There was an error submitting your application. Please try again.",
+          description: response.error.message || "There was an error submitting your application. Please try again.",
+          variant: "destructive",
+        });
+        setIsSubmitting(false);
+        return;
+      }
+
+      // Check if the response contains an error from the edge function
+      if (response.data?.error) {
+        toast({
+          title: "Submission failed",
+          description: response.data.error,
           variant: "destructive",
         });
         setIsSubmitting(false);
@@ -411,6 +425,25 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
               />
               {errors.location && <p className="text-sm text-destructive">{errors.location}</p>}
             </div>
+
+            {/* Hidden honeypot field - invisible to users, bots will fill it */}
+            <input
+              type="text"
+              name="website"
+              value={formData.honeypot_field}
+              onChange={(e) => handleTextChange("honeypot_field", e.target.value)}
+              autoComplete="off"
+              tabIndex={-1}
+              aria-hidden="true"
+              style={{
+                position: 'absolute',
+                left: '-9999px',
+                opacity: 0,
+                height: 0,
+                width: 0,
+                pointerEvents: 'none',
+              }}
+            />
 
             <div className="pt-4 border-t border-border">
               <Button
