@@ -1,9 +1,10 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { HoverCard, HoverCardContent, HoverCardTrigger } from "@/components/ui/hover-card";
 import { MapPin } from "lucide-react";
 import { useJobs, Job } from "@/hooks/useJobs";
+import { useAnalytics } from "@/hooks/useAnalytics";
 
 // Fixed conversion values for Philippines
 const USD_TO_PHP_RATE = 56;
@@ -216,12 +217,22 @@ type Region = "philippines" | "latin-america";
 const JobsSection = () => {
   const [selectedRegion, setSelectedRegion] = useState<Region>("philippines");
   const { jobs: dbJobs, loading } = useJobs();
+  const { trackJobView, trackApplyClick } = useAnalytics();
+  const viewedJobs = useRef<Set<string>>(new Set());
 
   // Use database jobs if available, otherwise use static jobs
   const jobs: Job[] = dbJobs.length > 0 ? dbJobs : staticJobs;
 
-  const handleApplyClick = (applyUrl: string) => {
+  const handleApplyClick = (applyUrl: string, jobId: string) => {
+    trackApplyClick(jobId);
     window.open(applyUrl, '_blank');
+  };
+
+  const handleJobView = (jobId: string) => {
+    if (!viewedJobs.current.has(jobId)) {
+      viewedJobs.current.add(jobId);
+      trackJobView(jobId);
+    }
   };
 
   const philippinesJobs = jobs.filter(job => 
@@ -249,6 +260,11 @@ const JobsSection = () => {
 
   const JobCard = ({ job, index }: { job: Job; index: number }) => {
     const displayRate = getDisplayRate(job);
+    
+    // Track job view when card is rendered/visible
+    useEffect(() => {
+      handleJobView(job.id);
+    }, [job.id]);
     
     return (
       <HoverCard openDelay={200} closeDelay={100}>
@@ -282,7 +298,7 @@ const JobsSection = () => {
               </div>
               
               <Button 
-                onClick={() => handleApplyClick(job.apply_url)}
+                onClick={() => handleApplyClick(job.apply_url, job.id)}
                 className="w-full group-hover:shadow-button transition-all duration-300 mt-auto"
               >
                 Apply Now
