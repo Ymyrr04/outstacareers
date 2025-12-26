@@ -8,8 +8,10 @@ import RecruitmentProcess from "@/components/RecruitmentProcess";
 import ValuesSection from "@/components/ValuesSection";
 import JobsSection from "@/components/JobsSection";
 import FooterAboutSection from "@/components/FooterAboutSection";
+import { usePageViewTracking } from "@/hooks/useAnalytics";
 
 const Index = () => {
+  usePageViewTracking();
   return (
     <div className="min-h-screen">
       <Navigation />

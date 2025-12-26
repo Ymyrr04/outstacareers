@@ -5,10 +5,12 @@ import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft } from 'lucide-react';
+import AnalyticsDashboard from '@/components/AnalyticsDashboard';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, BarChart3, Briefcase } from 'lucide-react';
 
 interface Job {
   id: string;
@@ -154,78 +156,97 @@ const Admin = () => {
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h2 className="text-2xl font-bold">All Jobs</h2>
-            <p className="text-muted-foreground">Manage your job listings</p>
-          </div>
-          <AddJobDialog onJobAdded={fetchJobs} />
-        </div>
+        <Tabs defaultValue="jobs" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="jobs" className="flex items-center gap-2">
+              <Briefcase className="w-4 h-4" />
+              Jobs
+            </TabsTrigger>
+            <TabsTrigger value="analytics" className="flex items-center gap-2">
+              <BarChart3 className="w-4 h-4" />
+              Analytics
+            </TabsTrigger>
+          </TabsList>
 
-        {jobsLoading ? (
-          <p className="text-center py-12">Loading jobs...</p>
-        ) : jobs.length === 0 ? (
-          <Card>
-            <CardContent className="py-12 text-center">
-              <p className="text-muted-foreground">No jobs yet. Add your first job listing!</p>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid gap-4">
-            {jobs.map((job) => (
-              <Card key={job.id} className={!job.is_active ? 'opacity-60' : ''}>
-                <CardContent className="py-4">
-                  <div className="flex items-start justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold">{job.title}</h3>
-                        {!job.is_active && (
-                          <Badge variant="secondary">Inactive</Badge>
-                        )}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {job.department} • {job.region === 'all' ? 'All Regions' : job.region}
-                        {job.rate && ` • ${job.rate}`}
-                      </p>
-                      {job.description && (
-                        <p className="text-sm mt-2 text-muted-foreground line-clamp-2">
-                          {job.description}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <EditJobDialog job={job} onJobUpdated={fetchJobs} />
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleToggleActive(job)}
-                      >
-                        {job.is_active ? (
-                          <>
-                            <EyeOff className="w-4 h-4 mr-1" />
-                            Hide
-                          </>
-                        ) : (
-                          <>
-                            <Eye className="w-4 h-4 mr-1" />
-                            Show
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => handleDelete(job.id)}
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  </div>
+          <TabsContent value="jobs" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">All Jobs</h2>
+                <p className="text-muted-foreground">Manage your job listings</p>
+              </div>
+              <AddJobDialog onJobAdded={fetchJobs} />
+            </div>
+
+            {jobsLoading ? (
+              <p className="text-center py-12">Loading jobs...</p>
+            ) : jobs.length === 0 ? (
+              <Card>
+                <CardContent className="py-12 text-center">
+                  <p className="text-muted-foreground">No jobs yet. Add your first job listing!</p>
                 </CardContent>
               </Card>
-            ))}
-          </div>
-        )}
+            ) : (
+              <div className="grid gap-4">
+                {jobs.map((job) => (
+                  <Card key={job.id} className={!job.is_active ? 'opacity-60' : ''}>
+                    <CardContent className="py-4">
+                      <div className="flex items-start justify-between gap-4">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="font-semibold">{job.title}</h3>
+                            {!job.is_active && (
+                              <Badge variant="secondary">Inactive</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {job.department} • {job.region === 'all' ? 'All Regions' : job.region}
+                            {job.rate && ` • ${job.rate}`}
+                          </p>
+                          {job.description && (
+                            <p className="text-sm mt-2 text-muted-foreground line-clamp-2">
+                              {job.description}
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <EditJobDialog job={job} onJobUpdated={fetchJobs} />
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleToggleActive(job)}
+                          >
+                            {job.is_active ? (
+                              <>
+                                <EyeOff className="w-4 h-4 mr-1" />
+                                Hide
+                              </>
+                            ) : (
+                              <>
+                                <Eye className="w-4 h-4 mr-1" />
+                                Show
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleDelete(job.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </TabsContent>
+
+          <TabsContent value="analytics">
+            <AnalyticsDashboard />
+          </TabsContent>
+        </Tabs>
       </main>
     </div>
   );
