@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, X } from "lucide-react";
+import { MapPin } from "lucide-react";
 import { useJobs, Job } from "@/hooks/useJobs";
 import { useAnalytics } from "@/hooks/useAnalytics";
 
@@ -285,22 +285,33 @@ const JobsSection = () => {
     useEffect(() => {
       handleJobView(job.id);
     }, [job.id]);
+
+    const handleMouseEnter = () => {
+      if (hasDetails) {
+        setOpenJobId(job.id);
+      }
+    };
+
+    const handleMouseLeave = () => {
+      setOpenJobId(null);
+    };
     
     return (
       <Card 
         key={job.id} 
-        className={`animate-fade-in flex flex-col h-full cursor-pointer ${
-          openJobId === null 
+        className={`animate-fade-in flex flex-col h-full ${
+          openJobId === null || openJobId === job.id
             ? 'group hover:shadow-xl transition-all duration-300 hover:-translate-y-1' 
-            : ''
-        } ${openJobId === job.id ? 'shadow-xl ring-2 ring-primary/50' : ''}`}
+            : 'transition-none'
+        } ${openJobId === job.id ? 'shadow-xl ring-2 ring-primary/50 -translate-y-1' : ''}`}
         style={{ animationDelay: `${index * 0.05}s` }}
-        onClick={() => hasDetails && setOpenJobId(job.id)}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <div className="flex-grow">
           <CardHeader className="pb-2">
             <CardTitle className={`text-lg min-h-[3.5rem] ${
-              openJobId === null ? 'group-hover:text-primary transition-colors duration-300' : ''
+              openJobId === null || openJobId === job.id ? 'group-hover:text-primary transition-colors duration-300' : ''
             }`}>
               {job.title}
             </CardTitle>
@@ -331,7 +342,7 @@ const JobsSection = () => {
               e.stopPropagation();
               handleApplyClick(job.apply_url, job.id);
             }}
-            className={`w-full ${openJobId === null ? 'group-hover:shadow-button transition-all duration-300' : ''}`}
+            className={`w-full ${openJobId === null || openJobId === job.id ? 'group-hover:shadow-button transition-all duration-300' : ''}`}
           >
             Apply Now
           </Button>
@@ -349,26 +360,13 @@ const JobsSection = () => {
 
     return (
       <div 
-        className="fixed inset-0 z-50 flex items-center justify-center p-4"
-        onClick={() => setOpenJobId(null)}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
       >
-        {/* Backdrop */}
-        <div className="absolute inset-0 bg-black/50" />
-        
         {/* Popup content */}
         <div 
-          className="relative w-full max-w-md max-h-[80vh] overflow-y-auto bg-background rounded-lg shadow-2xl border border-primary/20 p-6 animate-scale-in"
-          onClick={(e) => e.stopPropagation()}
+          className="pointer-events-auto w-full max-w-md max-h-[80vh] overflow-y-auto bg-background rounded-lg shadow-2xl border border-primary/20 p-6 animate-scale-in"
         >
-          {/* Close button */}
-          <button
-            onClick={() => setOpenJobId(null)}
-            className="absolute top-4 right-4 p-1 rounded-full hover:bg-muted transition-colors"
-          >
-            <X className="w-5 h-5 text-muted-foreground" />
-          </button>
-          
-          <div className="space-y-4 pr-6">
+          <div className="space-y-4">
             <h4 className="font-bold text-lg text-foreground">{selectedJob.title}</h4>
             
             {selectedJob.description && (
