@@ -58,6 +58,86 @@ export type Database = {
           },
         ]
       }
+      applicants_prescreen: {
+        Row: {
+          apply_url: string
+          can_work_40_50: boolean
+          created_at: string
+          currently_working: boolean
+          email: string
+          full_name: string
+          good_internet: boolean
+          has_experience: boolean
+          home_office: boolean
+          id: string
+          internet_speed: string
+          job_id: string | null
+          job_title: string
+          laptop_or_pc: boolean
+          location: string
+          noise_canceling_headset: boolean
+          power_backup: boolean
+          start_availability: string
+          status: string
+          submitted_at: string
+          us_timezone_ok: boolean
+        }
+        Insert: {
+          apply_url: string
+          can_work_40_50: boolean
+          created_at?: string
+          currently_working: boolean
+          email: string
+          full_name: string
+          good_internet: boolean
+          has_experience: boolean
+          home_office: boolean
+          id?: string
+          internet_speed: string
+          job_id?: string | null
+          job_title: string
+          laptop_or_pc: boolean
+          location: string
+          noise_canceling_headset: boolean
+          power_backup: boolean
+          start_availability: string
+          status?: string
+          submitted_at?: string
+          us_timezone_ok: boolean
+        }
+        Update: {
+          apply_url?: string
+          can_work_40_50?: boolean
+          created_at?: string
+          currently_working?: boolean
+          email?: string
+          full_name?: string
+          good_internet?: boolean
+          has_experience?: boolean
+          home_office?: boolean
+          id?: string
+          internet_speed?: string
+          job_id?: string | null
+          job_title?: string
+          laptop_or_pc?: boolean
+          location?: string
+          noise_canceling_headset?: boolean
+          power_backup?: boolean
+          start_availability?: string
+          status?: string
+          submitted_at?: string
+          us_timezone_ok?: boolean
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applicants_prescreen_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           apply_url: string
