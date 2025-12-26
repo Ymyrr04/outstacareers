@@ -3,10 +3,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { X, Loader2, CheckCircle } from "lucide-react";
+import { X, Loader2, CheckCircle, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
+import speedtestSample from "@/assets/speedtest-sample.png";
 
 interface PreScreeningFormProps {
   job: {
@@ -20,21 +21,36 @@ interface PreScreeningFormProps {
 const prescreenSchema = z.object({
   full_name: z.string().trim().min(1, "Full name is required").max(100, "Name must be less than 100 characters"),
   email: z.string().trim().email("Invalid email address").max(255, "Email must be less than 255 characters"),
-  home_office: z.boolean(),
-  noise_canceling_headset: z.boolean(),
-  laptop_or_pc: z.boolean(),
-  good_internet: z.boolean(),
-  internet_speed: z.string().trim().min(1, "Internet speed is required").max(100, "Must be less than 100 characters"),
-  power_backup: z.boolean(),
-  can_work_40_50: z.boolean(),
-  us_timezone_ok: z.boolean(),
+  home_office: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
+  noise_canceling_headset: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
+  laptop_or_pc: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
+  good_internet: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
+  internet_speed: z.string().trim().min(1, "Speedtest result link is required").max(500, "Must be less than 500 characters"),
+  power_backup: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
+  can_work_40_50: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
+  us_timezone_ok: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
   start_availability: z.string().trim().min(1, "Start availability is required").max(200, "Must be less than 200 characters"),
-  has_experience: z.boolean(),
-  currently_working: z.boolean(),
+  has_experience: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
+  currently_working: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
   location: z.string().trim().min(1, "Location is required").max(200, "Must be less than 200 characters"),
 });
 
-type FormData = z.infer<typeof prescreenSchema>;
+type FormData = {
+  full_name: string;
+  email: string;
+  home_office: boolean | null;
+  noise_canceling_headset: boolean | null;
+  laptop_or_pc: boolean | null;
+  good_internet: boolean | null;
+  internet_speed: string;
+  power_backup: boolean | null;
+  can_work_40_50: boolean | null;
+  us_timezone_ok: boolean | null;
+  start_availability: string;
+  has_experience: boolean | null;
+  currently_working: boolean | null;
+  location: string;
+};
 
 const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -44,17 +60,17 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
   const [formData, setFormData] = useState<FormData>({
     full_name: "",
     email: "",
-    home_office: false,
-    noise_canceling_headset: false,
-    laptop_or_pc: false,
-    good_internet: false,
+    home_office: null,
+    noise_canceling_headset: null,
+    laptop_or_pc: null,
+    good_internet: null,
     internet_speed: "",
-    power_backup: false,
-    can_work_40_50: false,
-    us_timezone_ok: false,
+    power_backup: null,
+    can_work_40_50: null,
+    us_timezone_ok: null,
     start_availability: "",
-    has_experience: false,
-    currently_working: false,
+    has_experience: null,
+    currently_working: null,
     location: "",
   });
 
@@ -67,6 +83,9 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
 
   const handleBooleanChange = (field: keyof FormData, value: boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: "" }));
+    }
   };
 
   const isFormComplete = () => {
@@ -75,7 +94,16 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
       formData.email.trim() !== "" &&
       formData.internet_speed.trim() !== "" &&
       formData.start_availability.trim() !== "" &&
-      formData.location.trim() !== ""
+      formData.location.trim() !== "" &&
+      formData.home_office !== null &&
+      formData.noise_canceling_headset !== null &&
+      formData.laptop_or_pc !== null &&
+      formData.good_internet !== null &&
+      formData.power_backup !== null &&
+      formData.can_work_40_50 !== null &&
+      formData.us_timezone_ok !== null &&
+      formData.has_experience !== null &&
+      formData.currently_working !== null
     );
   };
 
@@ -100,17 +128,17 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
       const insertData = {
         full_name: formData.full_name,
         email: formData.email,
-        home_office: formData.home_office,
-        noise_canceling_headset: formData.noise_canceling_headset,
-        laptop_or_pc: formData.laptop_or_pc,
-        good_internet: formData.good_internet,
+        home_office: formData.home_office!,
+        noise_canceling_headset: formData.noise_canceling_headset!,
+        laptop_or_pc: formData.laptop_or_pc!,
+        good_internet: formData.good_internet!,
         internet_speed: formData.internet_speed,
-        power_backup: formData.power_backup,
-        can_work_40_50: formData.can_work_40_50,
-        us_timezone_ok: formData.us_timezone_ok,
+        power_backup: formData.power_backup!,
+        can_work_40_50: formData.can_work_40_50!,
+        us_timezone_ok: formData.us_timezone_ok!,
         start_availability: formData.start_availability,
-        has_experience: formData.has_experience,
-        currently_working: formData.currently_working,
+        has_experience: formData.has_experience!,
+        currently_working: formData.currently_working!,
         location: formData.location,
         job_title: job.title,
         job_id: job.id,
@@ -133,7 +161,6 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
 
       setIsSuccess(true);
       
-      // Wait briefly to show success message, then redirect
       setTimeout(() => {
         window.open(job.apply_url, "_blank");
         onClose();
@@ -156,12 +183,12 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
   }: { 
     label: string; 
     field: keyof FormData; 
-    value: boolean;
+    value: boolean | null;
   }) => (
     <div className="space-y-2">
-      <Label className="text-sm font-medium">{label}</Label>
+      <Label className="text-sm font-medium">{label} *</Label>
       <RadioGroup
-        value={value ? "yes" : "no"}
+        value={value === null ? undefined : value ? "yes" : "no"}
         onValueChange={(val) => handleBooleanChange(field, val === "yes")}
         className="flex gap-4"
       >
@@ -174,6 +201,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
           <Label htmlFor={`${field}-no`} className="font-normal cursor-pointer">No</Label>
         </div>
       </RadioGroup>
+      {errors[field] && <p className="text-sm text-destructive">{errors[field]}</p>}
     </div>
   );
 
@@ -197,16 +225,13 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
 
   return (
     <>
-      {/* Backdrop */}
       <div 
         className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" 
         onClick={onClose}
       />
       
-      {/* Form Modal */}
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
         <div className="pointer-events-auto w-full max-w-lg max-h-[90vh] overflow-y-auto bg-background rounded-xl shadow-2xl border border-primary/20 animate-in fade-in slide-in-from-bottom-4 zoom-in-95 duration-300">
-          {/* Header */}
           <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border px-6 py-4 flex items-start justify-between gap-4">
             <div>
               <h3 className="font-bold text-lg text-foreground">Pre-Screening Questions</h3>
@@ -221,9 +246,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
             </button>
           </div>
 
-          {/* Form Content */}
           <div className="p-6 space-y-5">
-            {/* Text fields */}
             <div className="space-y-2">
               <Label htmlFor="full_name">Full Name *</Label>
               <Input
@@ -249,7 +272,6 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
               {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
             </div>
 
-            {/* Yes/No Questions */}
             <YesNoQuestion 
               label="Do you have a home office setup?" 
               field="home_office" 
@@ -275,15 +297,41 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
             />
 
             <div className="space-y-2">
-              <Label htmlFor="internet_speed">What is your average internet speed? *</Label>
+              <Label htmlFor="internet_speed">
+                Please run a speedtest on{" "}
+                <a 
+                  href="https://www.speedtest.net" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  speedtest.net
+                  <ExternalLink className="w-3 h-3" />
+                </a>
+                {" "}and share the result link *
+              </Label>
               <Input
                 id="internet_speed"
                 value={formData.internet_speed}
                 onChange={(e) => handleTextChange("internet_speed", e.target.value)}
-                placeholder="e.g., 50 Mbps"
+                placeholder="e.g., https://www.speedtest.net/result/12345678"
                 className={errors.internet_speed ? "border-destructive" : ""}
               />
               {errors.internet_speed && <p className="text-sm text-destructive">{errors.internet_speed}</p>}
+              <a 
+                href={speedtestSample} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="block mt-2"
+              >
+                <img 
+                  src={speedtestSample} 
+                  alt="Speedtest result sample" 
+                  className="rounded-md border border-border max-w-full h-auto cursor-pointer hover:opacity-80 transition-opacity"
+                  style={{ maxHeight: "120px" }}
+                />
+                <span className="text-xs text-muted-foreground mt-1 block">Click to view sample</span>
+              </a>
             </div>
 
             <YesNoQuestion 
@@ -340,7 +388,6 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
               {errors.location && <p className="text-sm text-destructive">{errors.location}</p>}
             </div>
 
-            {/* Submit Button */}
             <div className="pt-4 border-t border-border">
               <Button
                 onClick={handleSubmit}
