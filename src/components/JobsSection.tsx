@@ -231,6 +231,8 @@ type Region = "philippines" | "latin-america";
 const JobsSection = () => {
   const [selectedRegion, setSelectedRegion] = useState<Region>("philippines");
   const [openJobId, setOpenJobId] = useState<string | null>(null);
+  const [hoveredJobId, setHoveredJobId] = useState<string | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { jobs: dbJobs, loading } = useJobs();
   const { trackJobView, trackApplyClick } = useAnalytics();
   const viewedJobs = useRef<Set<string>>(new Set());
@@ -287,32 +289,50 @@ const JobsSection = () => {
     }, [job.id]);
 
     const handleMouseEnter = () => {
+      setHoveredJobId(job.id);
       if (hasDetails) {
-        setOpenJobId(job.id);
+        // Clear any existing timeout
+        if (hoverTimeoutRef.current) {
+          clearTimeout(hoverTimeoutRef.current);
+        }
+        // Set new timeout for 750ms delay
+        hoverTimeoutRef.current = setTimeout(() => {
+          setOpenJobId(job.id);
+        }, 750);
       }
     };
 
     const handleMouseLeave = () => {
+      setHoveredJobId(null);
+      // Clear the timeout if mouse leaves before delay completes
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = null;
+      }
       setOpenJobId(null);
     };
+
+    const isActive = openJobId === job.id;
+    const isHovered = hoveredJobId === job.id;
+    const hasActivePopup = openJobId !== null;
     
     return (
       <Card 
         key={job.id} 
-        className={`animate-fade-in flex flex-col h-full ${
-          openJobId === null || openJobId === job.id
-            ? 'group hover:shadow-xl transition-all duration-300 hover:-translate-y-1' 
-            : 'transition-none'
-        } ${openJobId === job.id ? 'shadow-xl ring-2 ring-primary/50 -translate-y-1' : ''}`}
-        style={{ animationDelay: `${index * 0.05}s` }}
+        className={`flex flex-col h-full ${
+          !hasActivePopup
+            ? 'group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-fade-in' 
+            : ''
+        } ${isActive ? 'shadow-xl ring-2 ring-primary/50 -translate-y-1 z-10' : ''} ${isHovered && !isActive ? 'shadow-lg' : ''}`}
+        style={{ animationDelay: !hasActivePopup ? `${index * 0.05}s` : undefined }}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
         <div className="flex-grow">
           <CardHeader className="pb-2">
             <CardTitle className={`text-lg min-h-[3.5rem] ${
-              openJobId === null || openJobId === job.id ? 'group-hover:text-primary transition-colors duration-300' : ''
-            }`}>
+              !hasActivePopup || isActive ? 'group-hover:text-primary transition-colors duration-300' : ''
+            } ${isActive ? 'text-primary' : ''}`}>
               {job.title}
             </CardTitle>
           </CardHeader>
@@ -342,7 +362,7 @@ const JobsSection = () => {
               e.stopPropagation();
               handleApplyClick(job.apply_url, job.id);
             }}
-            className={`w-full ${openJobId === null || openJobId === job.id ? 'group-hover:shadow-button transition-all duration-300' : ''}`}
+            className={`w-full ${!hasActivePopup || isActive ? 'group-hover:shadow-button transition-all duration-300' : ''}`}
           >
             Apply Now
           </Button>
@@ -359,55 +379,60 @@ const JobsSection = () => {
     if (!hasDetails) return null;
 
     return (
-      <div 
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
-      >
-        {/* Popup content */}
+      <>
+        {/* Subtle backdrop overlay */}
+        <div className="fixed inset-0 z-40 bg-black/30 pointer-events-none transition-opacity duration-200" />
+        
         <div 
-          className="pointer-events-auto w-full max-w-md max-h-[80vh] overflow-y-auto bg-background rounded-lg shadow-2xl border border-primary/20 p-6 animate-scale-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
         >
-          <div className="space-y-4">
-            <h4 className="font-bold text-lg text-foreground">{selectedJob.title}</h4>
-            
-            {selectedJob.description && (
-              <div>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {selectedJob.description}
-                </p>
-              </div>
-            )}
-            
-            {selectedJob.qualifications && selectedJob.qualifications.length > 0 && (
-              <div>
-                <h5 className="font-semibold text-sm text-foreground mb-2">Key Qualifications:</h5>
-                <ul className="space-y-1.5">
-                  {selectedJob.qualifications.map((qual, idx) => (
-                    <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
-                      <span className="text-primary mt-1">•</span>
-                      <span>{qual}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            
-            {selectedJobDisplayRate && (
-              <div className="pt-2 border-t border-border">
-                <p className="text-sm font-semibold text-primary">{selectedJobDisplayRate}</p>
-              </div>
-            )}
-            
-            <Button 
-              onClick={() => {
-                handleApplyClick(selectedJob.apply_url, selectedJob.id);
-              }}
-              className="w-full mt-4"
-            >
-              Apply Now
-            </Button>
+          {/* Popup content */}
+          <div 
+            className="pointer-events-auto w-full max-w-md max-h-[80vh] overflow-y-auto bg-background rounded-lg shadow-2xl border border-primary/20 p-6 animate-scale-in"
+          >
+            <div className="space-y-4">
+              <h4 className="font-bold text-lg text-foreground">{selectedJob.title}</h4>
+              
+              {selectedJob.description && (
+                <div>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
+                    {selectedJob.description}
+                  </p>
+                </div>
+              )}
+              
+              {selectedJob.qualifications && selectedJob.qualifications.length > 0 && (
+                <div>
+                  <h5 className="font-semibold text-sm text-foreground mb-2">Key Qualifications:</h5>
+                  <ul className="space-y-1.5">
+                    {selectedJob.qualifications.map((qual, idx) => (
+                      <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                        <span className="text-primary mt-1">•</span>
+                        <span>{qual}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              
+              {selectedJobDisplayRate && (
+                <div className="pt-2 border-t border-border">
+                  <p className="text-sm font-semibold text-primary">{selectedJobDisplayRate}</p>
+                </div>
+              )}
+              
+              <Button 
+                onClick={() => {
+                  handleApplyClick(selectedJob.apply_url, selectedJob.id);
+                }}
+                className="w-full mt-4"
+              >
+                Apply Now
+              </Button>
+            </div>
           </div>
         </div>
-      </div>
+      </>
     );
   };
 
