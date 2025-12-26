@@ -292,15 +292,19 @@ const JobsSection = () => {
       >
         <Card 
           key={job.id} 
-          className={`group transition-all duration-300 animate-fade-in flex flex-col h-full ${
-            openJobId === null ? 'hover:shadow-xl hover:-translate-y-1' : ''
+          className={`animate-fade-in flex flex-col h-full ${
+            openJobId === null 
+              ? 'group hover:shadow-xl transition-all duration-300 hover:-translate-y-1' 
+              : 'transition-none'
           } ${openJobId === job.id ? 'shadow-xl ring-2 ring-primary/50' : ''}`}
           style={{ animationDelay: `${index * 0.05}s` }}
         >
           <HoverCardTrigger asChild>
             <div className="cursor-pointer flex-grow">
               <CardHeader className="pb-2">
-                <CardTitle className="text-lg group-hover:text-primary transition-colors duration-300 min-h-[3.5rem]">
+                <CardTitle className={`text-lg min-h-[3.5rem] ${
+                  openJobId === null ? 'group-hover:text-primary transition-colors duration-300' : ''
+                }`}>
                   {job.title}
                 </CardTitle>
               </CardHeader>
@@ -331,7 +335,7 @@ const JobsSection = () => {
                 e.stopPropagation();
                 handleApplyClick(job.apply_url, job.id);
               }}
-              className="w-full group-hover:shadow-button transition-all duration-300"
+              className={`w-full ${openJobId === null ? 'group-hover:shadow-button transition-all duration-300' : ''}`}
             >
               Apply Now
             </Button>
