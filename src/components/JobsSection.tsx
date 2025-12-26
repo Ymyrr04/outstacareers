@@ -311,78 +311,79 @@ const JobsSection = () => {
     const hasActivePopup = openJobId !== null;
     
     return (
-      <Card 
-        key={job.id} 
-        className={`flex flex-col h-full transition-all duration-300 ease-out ${
-          isHovered && !hasActivePopup 
-            ? 'shadow-xl -translate-y-2 scale-[1.02] border-primary/30' 
-            : 'shadow-sm scale-100 border-border'
-        } ${isActive ? 'shadow-xl ring-2 ring-primary/50 -translate-y-2 scale-[1.02] z-10' : ''}`}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
-      >
-        <div className="flex-grow">
-          <CardHeader className="pb-2">
-            <CardTitle className={`text-lg min-h-[3.5rem] transition-colors duration-300 ${
-              isHovered || isActive ? 'text-primary' : ''
-            }`}>
-              {job.title}
-            </CardTitle>
-          </CardHeader>
-          
-          <CardContent className="flex flex-col space-y-3 pt-0">
-            {/* Rate - centered and highlighted in blue */}
-            {displayRate && (
-              <p className={`text-xl font-bold text-primary text-center py-1 transition-transform duration-300 ${
-                isHovered && !hasActivePopup ? 'scale-105' : 'scale-100'
+      <div className="relative">
+        <Card 
+          key={job.id} 
+          className={`flex flex-col h-full transition-all duration-300 ease-out will-change-transform ${
+            isHovered && !hasActivePopup 
+              ? 'shadow-2xl -translate-y-3 border-primary/30 z-20' 
+              : 'shadow-sm border-border z-0'
+          } ${isActive ? 'shadow-2xl ring-2 ring-primary/50 -translate-y-3 z-20' : ''}`}
+          style={{ position: 'relative' }}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
+          <div className="flex-grow">
+            <CardHeader className="pb-2">
+              <CardTitle className={`text-lg min-h-[3.5rem] transition-colors duration-300 ${
+                isHovered || isActive ? 'text-primary' : ''
               }`}>
-                {displayRate}
-              </p>
-            )}
+                {job.title}
+              </CardTitle>
+            </CardHeader>
             
-            {/* Remote & Full time - opposite sides */}
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
-              <div className="flex items-center space-x-1">
-                <MapPin className={`w-4 h-4 transition-colors duration-300 ${
-                  isHovered && !hasActivePopup ? 'text-primary' : ''
-                }`} />
-                <span>Remote</span>
+            <CardContent className="flex flex-col space-y-3 pt-0">
+              {/* Rate - centered and highlighted in blue */}
+              {displayRate && (
+                <p className="text-xl font-bold text-primary text-center py-1">
+                  {displayRate}
+                </p>
+              )}
+              
+              {/* Remote & Full time - opposite sides */}
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <div className="flex items-center space-x-1">
+                  <MapPin className={`w-4 h-4 transition-colors duration-300 ${
+                    isHovered && !hasActivePopup ? 'text-primary' : ''
+                  }`} />
+                  <span>Remote</span>
+                </div>
+                <span>Full time</span>
               </div>
-              <span>Full time</span>
-            </div>
-          </CardContent>
-        </div>
-        
-        <CardContent className="pt-0 space-y-2">
-          {/* View Job Details button - appears on hover with slide-up animation */}
-          <div className={`overflow-hidden transition-all duration-300 ease-out ${
-            isHovered && hasDetails && !isActive ? 'max-h-12 opacity-100' : 'max-h-0 opacity-0'
-          }`}>
-            <Button 
-              variant="outline"
-              onClick={handleViewDetails}
-              className={`w-full flex items-center justify-center gap-2 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary hover:text-primary transition-all duration-300 ${
-                isHovered && hasDetails && !isActive ? 'translate-y-0' : 'translate-y-4'
-              }`}
-            >
-              <Eye className="w-4 h-4" />
-              View Job Details
-            </Button>
+            </CardContent>
           </div>
           
-          <Button 
-            onClick={(e) => {
-              e.stopPropagation();
-              handleApplyClick(job);
-            }}
-            className={`w-full transition-all duration-300 ${
-              isHovered || isActive ? 'shadow-button scale-[1.02]' : 'scale-100'
-            }`}
-          >
-            Apply Now
-          </Button>
-        </CardContent>
-      </Card>
+          <CardContent className="pt-0 space-y-2">
+            {/* View Job Details button - appears on hover with slide-up animation */}
+            <div className={`overflow-hidden transition-all duration-300 ease-out ${
+              isHovered && hasDetails && !isActive ? 'max-h-12 opacity-100' : 'max-h-0 opacity-0'
+            }`}>
+              <Button 
+                variant="outline"
+                onClick={handleViewDetails}
+                className={`w-full flex items-center justify-center gap-2 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary hover:text-primary transition-all duration-300 ${
+                  isHovered && hasDetails && !isActive ? 'translate-y-0' : 'translate-y-4'
+                }`}
+              >
+                <Eye className="w-4 h-4" />
+                View Job Details
+              </Button>
+            </div>
+            
+            <Button 
+              onClick={(e) => {
+                e.stopPropagation();
+                handleApplyClick(job);
+              }}
+              className={`w-full transition-all duration-300 ${
+                isHovered || isActive ? 'shadow-button' : ''
+              }`}
+            >
+              Apply Now
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
     );
   };
 
