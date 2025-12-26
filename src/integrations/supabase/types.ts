@@ -69,8 +69,10 @@ export type Database = {
           good_internet: boolean
           has_experience: boolean
           home_office: boolean
+          honeypot_field: string | null
           id: string
           internet_speed: string
+          ip_hash: string | null
           job_id: string | null
           job_title: string
           laptop_or_pc: boolean
@@ -92,8 +94,10 @@ export type Database = {
           good_internet: boolean
           has_experience: boolean
           home_office: boolean
+          honeypot_field?: string | null
           id?: string
           internet_speed: string
+          ip_hash?: string | null
           job_id?: string | null
           job_title: string
           laptop_or_pc: boolean
@@ -115,8 +119,10 @@ export type Database = {
           good_internet?: boolean
           has_experience?: boolean
           home_office?: boolean
+          honeypot_field?: string | null
           id?: string
           internet_speed?: string
+          ip_hash?: string | null
           job_id?: string | null
           job_title?: string
           laptop_or_pc?: boolean
