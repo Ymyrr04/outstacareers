@@ -292,7 +292,9 @@ const JobsSection = () => {
       >
         <Card 
           key={job.id} 
-          className="group hover:shadow-xl transition-all duration-300 hover:-translate-y-1 animate-fade-in flex flex-col h-full"
+          className={`group transition-all duration-300 animate-fade-in flex flex-col h-full ${
+            openJobId === null ? 'hover:shadow-xl hover:-translate-y-1' : ''
+          } ${openJobId === job.id ? 'shadow-xl ring-2 ring-primary/50' : ''}`}
           style={{ animationDelay: `${index * 0.05}s` }}
         >
           <HoverCardTrigger asChild>
