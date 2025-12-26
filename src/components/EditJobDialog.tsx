@@ -15,7 +15,7 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Pencil } from 'lucide-react';
+import { Pencil, Plus, X } from 'lucide-react';
 
 const jobSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
@@ -23,6 +23,7 @@ const jobSchema = z.object({
   apply_url: z.string().url('Must be a valid URL'),
   description: z.string().max(2000).optional(),
   region: z.enum(['all', 'philippines', 'latin-america']),
+  qualifications: z.array(z.string().max(200)).max(10).optional(),
 });
 
 interface Job {
@@ -34,6 +35,7 @@ interface Job {
   description: string | null;
   region: string;
   is_active: boolean;
+  qualifications?: string[] | null;
 }
 
 interface EditJobDialogProps {
@@ -84,9 +86,31 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
     apply_url: job.apply_url,
     description: job.description || '',
     region: (job.region || 'all') as 'all' | 'philippines' | 'latin-america',
+    qualifications: (job.qualifications && job.qualifications.length > 0) 
+      ? job.qualifications 
+      : ['', '', '', '', ''] as string[],
   });
   const [convertedRate, setConvertedRate] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const updateQualification = (index: number, value: string) => {
+    const newQualifications = [...formData.qualifications];
+    newQualifications[index] = value;
+    setFormData({ ...formData, qualifications: newQualifications });
+  };
+
+  const addQualification = () => {
+    if (formData.qualifications.length < 10) {
+      setFormData({ ...formData, qualifications: [...formData.qualifications, ''] });
+    }
+  };
+
+  const removeQualification = (index: number) => {
+    if (formData.qualifications.length > 1) {
+      const newQualifications = formData.qualifications.filter((_, i) => i !== index);
+      setFormData({ ...formData, qualifications: newQualifications });
+    }
+  };
 
   // Reset form data when job changes or dialog opens
   useEffect(() => {
@@ -97,6 +121,9 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
         apply_url: job.apply_url,
         description: job.description || '',
         region: (job.region || 'all') as 'all' | 'philippines' | 'latin-america',
+        qualifications: (job.qualifications && job.qualifications.length > 0) 
+          ? job.qualifications 
+          : ['', '', '', '', ''],
       });
       setConvertedRate(null);
     }
@@ -142,6 +169,9 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
       ? convertedRate 
       : formData.rate || null;
 
+    // Filter out empty qualifications
+    const filteredQualifications = formData.qualifications.filter(q => q.trim() !== '');
+
     const { error } = await supabase
       .from('jobs')
       .update({
@@ -150,6 +180,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
         apply_url: formData.apply_url,
         description: formData.description || null,
         region: formData.region,
+        qualifications: filteredQualifications.length > 0 ? filteredQualifications : null,
       })
       .eq('id', job.id);
 
@@ -179,7 +210,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
           Edit
         </Button>
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Edit Job</DialogTitle>
           <DialogDescription>
@@ -261,6 +292,52 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
               placeholder="Short job description..."
               rows={3}
             />
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Key Qualifications (optional)</Label>
+              {formData.qualifications.length < 10 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addQualification}
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  Add
+                </Button>
+              )}
+            </div>
+            <div className="space-y-2">
+              {formData.qualifications.map((qual, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Input
+                    value={qual}
+                    onChange={(e) => updateQualification(index, e.target.value)}
+                    placeholder={
+                      index === 0 ? "Required skill or experience" :
+                      index === 1 ? "Required skill or experience" :
+                      index === 2 ? "Required skill or experience" :
+                      index === 3 ? "Tool, software, or platform experience" :
+                      index === 4 ? "Communication or availability requirement" :
+                      "Additional qualification"
+                    }
+                  />
+                  {formData.qualifications.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeQualification(index)}
+                      className="px-2"
+                    >
+                      <X className="w-4 h-4 text-muted-foreground" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
