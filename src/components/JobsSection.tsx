@@ -350,7 +350,7 @@ const JobsSection = () => {
             <Button 
               variant="outline"
               onClick={handleViewDetails}
-              className={`w-full flex items-center justify-center gap-2 border-primary/30 hover:bg-primary/10 hover:border-primary transition-transform duration-300 ${
+              className={`w-full flex items-center justify-center gap-2 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary hover:text-primary transition-transform duration-300 ${
                 isHovered && hasDetails && !isActive ? 'translate-y-0' : 'translate-y-4'
               }`}
             >
