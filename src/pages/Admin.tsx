@@ -107,7 +107,8 @@ const Admin = () => {
     );
   }
 
-  if (!isAdmin) {
+  // Check user first, then admin status - prevents rendering admin UI before auth check completes
+  if (!user || !isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
         <Card className="w-full max-w-md text-center">
