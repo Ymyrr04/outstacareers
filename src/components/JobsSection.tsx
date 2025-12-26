@@ -313,9 +313,11 @@ const JobsSection = () => {
     return (
       <Card 
         key={job.id} 
-        className={`flex flex-col h-full transition-all duration-300 ${
-          isHovered && !hasActivePopup ? 'shadow-xl -translate-y-1' : ''
-        } ${isActive ? 'shadow-xl ring-2 ring-primary/50 -translate-y-1 z-10' : ''}`}
+        className={`flex flex-col h-full transition-all duration-300 ease-out ${
+          isHovered && !hasActivePopup 
+            ? 'shadow-xl -translate-y-2 scale-[1.02] border-primary/30' 
+            : 'shadow-sm scale-100 border-border'
+        } ${isActive ? 'shadow-xl ring-2 ring-primary/50 -translate-y-2 scale-[1.02] z-10' : ''}`}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
@@ -331,7 +333,9 @@ const JobsSection = () => {
           <CardContent className="flex flex-col space-y-3 pt-0">
             {/* Rate - centered and highlighted in blue */}
             {displayRate && (
-              <p className="text-xl font-bold text-primary text-center py-1">
+              <p className={`text-xl font-bold text-primary text-center py-1 transition-transform duration-300 ${
+                isHovered && !hasActivePopup ? 'scale-105' : 'scale-100'
+              }`}>
                 {displayRate}
               </p>
             )}
@@ -339,7 +343,9 @@ const JobsSection = () => {
             {/* Remote & Full time - opposite sides */}
             <div className="flex items-center justify-between text-sm text-muted-foreground">
               <div className="flex items-center space-x-1">
-                <MapPin className="w-4 h-4" />
+                <MapPin className={`w-4 h-4 transition-colors duration-300 ${
+                  isHovered && !hasActivePopup ? 'text-primary' : ''
+                }`} />
                 <span>Remote</span>
               </div>
               <span>Full time</span>
@@ -355,7 +361,7 @@ const JobsSection = () => {
             <Button 
               variant="outline"
               onClick={handleViewDetails}
-              className={`w-full flex items-center justify-center gap-2 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary hover:text-primary transition-transform duration-300 ${
+              className={`w-full flex items-center justify-center gap-2 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary hover:text-primary transition-all duration-300 ${
                 isHovered && hasDetails && !isActive ? 'translate-y-0' : 'translate-y-4'
               }`}
             >
@@ -369,7 +375,9 @@ const JobsSection = () => {
               e.stopPropagation();
               handleApplyClick(job);
             }}
-            className={`w-full transition-all duration-300 ${isHovered || isActive ? 'shadow-button' : ''}`}
+            className={`w-full transition-all duration-300 ${
+              isHovered || isActive ? 'shadow-button scale-[1.02]' : 'scale-100'
+            }`}
           >
             Apply Now
           </Button>
