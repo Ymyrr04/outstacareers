@@ -56,6 +56,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [showSpeedtestSample, setShowSpeedtestSample] = useState(false);
   
   const [formData, setFormData] = useState<FormData>({
     full_name: "",
@@ -318,20 +319,21 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
                 className={errors.internet_speed ? "border-destructive" : ""}
               />
               {errors.internet_speed && <p className="text-sm text-destructive">{errors.internet_speed}</p>}
-              <a 
-                href={speedtestSample} 
-                target="_blank" 
-                rel="noopener noreferrer"
-                className="block mt-2"
+              <button
+                type="button"
+                onClick={() => setShowSpeedtestSample(!showSpeedtestSample)}
+                className="text-xs text-primary hover:underline mt-1"
               >
+                {showSpeedtestSample ? "Hide sample" : "View sample"}
+              </button>
+              {showSpeedtestSample && (
                 <img 
                   src={speedtestSample} 
                   alt="Speedtest result sample" 
-                  className="rounded-md border border-border max-w-full h-auto cursor-pointer hover:opacity-80 transition-opacity"
-                  style={{ maxHeight: "120px" }}
+                  className="rounded-md border border-border max-w-full h-auto mt-2"
+                  style={{ maxHeight: "200px" }}
                 />
-                <span className="text-xs text-muted-foreground mt-1 block">Click to view sample</span>
-              </a>
+              )}
             </div>
 
             <YesNoQuestion 
