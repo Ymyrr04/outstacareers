@@ -295,10 +295,10 @@ const JobsSection = () => {
         if (hoverTimeoutRef.current) {
           clearTimeout(hoverTimeoutRef.current);
         }
-        // Set new timeout for 750ms delay
+        // Set new timeout for 500ms delay
         hoverTimeoutRef.current = setTimeout(() => {
           setOpenJobId(job.id);
-        }, 750);
+        }, 500);
       }
     };
 
@@ -319,10 +319,9 @@ const JobsSection = () => {
     return (
       <Card 
         key={job.id} 
-        className={`flex flex-col h-full animate-fade-in transition-all duration-300 ${
+        className={`flex flex-col h-full transition-all duration-300 ${
           isHovered && !hasActivePopup ? 'shadow-xl -translate-y-1' : ''
-        } ${isActive ? 'shadow-xl ring-2 ring-primary/50 -translate-y-1 z-10' : ''} ${isHovered && !isActive && hasActivePopup ? '' : ''} ${!isHovered && !isActive ? '' : ''}`}
-        style={{ animationDelay: `${index * 0.05}s` }}
+        } ${isActive ? 'shadow-xl ring-2 ring-primary/50 -translate-y-1 z-10' : ''}`}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
       >
@@ -379,14 +378,16 @@ const JobsSection = () => {
     return (
       <>
         {/* Subtle backdrop overlay */}
-        <div className="fixed inset-0 z-40 bg-black/30 pointer-events-none transition-opacity duration-200" />
+        <div 
+          className="fixed inset-0 z-40 bg-black/30 pointer-events-none animate-in fade-in duration-300" 
+        />
         
         <div 
           className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none"
         >
           {/* Popup content */}
           <div 
-            className="pointer-events-auto w-full max-w-md max-h-[80vh] overflow-y-auto bg-background rounded-lg shadow-2xl border border-primary/20 p-6 animate-scale-in"
+            className="pointer-events-auto w-full max-w-md max-h-[80vh] overflow-y-auto bg-background rounded-lg shadow-2xl border border-primary/20 p-6 animate-in fade-in zoom-in-95 duration-300"
           >
             <div className="space-y-4">
               <h4 className="font-bold text-lg text-foreground">{selectedJob.title}</h4>
