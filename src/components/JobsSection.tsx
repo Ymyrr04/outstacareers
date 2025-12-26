@@ -343,14 +343,16 @@ const JobsSection = () => {
         </div>
         
         <CardContent className="pt-0 space-y-2">
-          {/* View Job Details button - appears on hover */}
+          {/* View Job Details button - appears on hover with slide-up animation */}
           <div className={`overflow-hidden transition-all duration-300 ease-out ${
             isHovered && hasDetails && !isActive ? 'max-h-12 opacity-100' : 'max-h-0 opacity-0'
           }`}>
             <Button 
               variant="outline"
               onClick={handleViewDetails}
-              className="w-full flex items-center justify-center gap-2 border-primary/30 hover:bg-primary/10 hover:border-primary"
+              className={`w-full flex items-center justify-center gap-2 border-primary/30 hover:bg-primary/10 hover:border-primary transition-transform duration-300 ${
+                isHovered && hasDetails && !isActive ? 'translate-y-0' : 'translate-y-4'
+              }`}
             >
               <Eye className="w-4 h-4" />
               View Job Details
@@ -373,11 +375,6 @@ const JobsSection = () => {
 
   // Job details popup component
   const JobDetailsPopup = () => {
-    if (!selectedJob) return null;
-    
-    const hasDetails = selectedJob.description || (selectedJob.qualifications && selectedJob.qualifications.length > 0);
-    if (!hasDetails) return null;
-
     const closePopup = () => {
       setOpenJobId(null);
       setHoveredJobId(null);
@@ -386,6 +383,23 @@ const JobsSection = () => {
         hoverTimeoutRef.current = null;
       }
     };
+
+    // Handle Escape key to close popup
+    useEffect(() => {
+      const handleKeyDown = (e: KeyboardEvent) => {
+        if (e.key === 'Escape' && selectedJob) {
+          closePopup();
+        }
+      };
+      
+      document.addEventListener('keydown', handleKeyDown);
+      return () => document.removeEventListener('keydown', handleKeyDown);
+    }, [selectedJob]);
+
+    if (!selectedJob) return null;
+    
+    const hasDetails = selectedJob.description || (selectedJob.qualifications && selectedJob.qualifications.length > 0);
+    if (!hasDetails) return null;
 
     return (
       <>
