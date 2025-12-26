@@ -321,20 +321,42 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
               {errors.internet_speed && <p className="text-sm text-destructive">{errors.internet_speed}</p>}
               <button
                 type="button"
-                onClick={() => setShowSpeedtestSample(!showSpeedtestSample)}
+                onClick={() => setShowSpeedtestSample(true)}
                 className="text-xs text-primary hover:underline mt-1"
               >
-                {showSpeedtestSample ? "Hide sample" : "View sample"}
+                View sample
               </button>
-              {showSpeedtestSample && (
-                <img 
-                  src={speedtestSample} 
-                  alt="Speedtest result sample" 
-                  className="rounded-md border border-border max-w-full h-auto mt-2"
-                  style={{ maxHeight: "200px" }}
-                />
-              )}
             </div>
+
+            {/* Speedtest Sample Modal */}
+            {showSpeedtestSample && (
+              <>
+                <div 
+                  className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in"
+                  onClick={() => setShowSpeedtestSample(false)}
+                />
+                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+                  <div className="pointer-events-auto relative animate-scale-in">
+                    <button
+                      type="button"
+                      onClick={() => setShowSpeedtestSample(false)}
+                      className="absolute -top-3 -right-3 bg-background rounded-full p-1.5 shadow-lg border border-border hover:bg-muted transition-colors z-10"
+                      aria-label="Close"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                    <img 
+                      src={speedtestSample} 
+                      alt="Speedtest result sample" 
+                      className="rounded-lg shadow-2xl max-w-[90vw] max-h-[80vh] object-contain"
+                    />
+                    <p className="text-center text-sm text-muted-foreground mt-3 bg-background/80 backdrop-blur-sm rounded-md py-2 px-4">
+                      Copy the result link from speedtest.net after running your test
+                    </p>
+                  </div>
+                </div>
+              </>
+            )}
 
             <YesNoQuestion 
               label="Do you have a power generator or backup for power cuts?" 
