@@ -8,6 +8,7 @@ export interface Job {
   rate: string | null;
   apply_url: string;
   description: string | null;
+  qualifications: string[] | null;
   region: string;
   is_active: boolean;
   created_at: string;
