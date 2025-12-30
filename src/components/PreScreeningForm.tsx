@@ -268,7 +268,9 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
       const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
       const filePath = `applications/${fileName}`;
 
-      const { error: uploadError } = await supabase.storage
+      console.log('Uploading CV to storage...', { fileName, filePath });
+
+      const { data: uploadData, error: uploadError } = await supabase.storage
         .from('cv-uploads')
         .upload(filePath, cvFile);
 
@@ -276,16 +278,18 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
         console.error('CV upload error:', uploadError);
         toast({
           title: "Upload failed",
-          description: "Failed to upload your CV. Please try again.",
+          description: uploadError.message || "Failed to upload your CV. Please try again.",
           variant: "destructive",
         });
         setIsScoring(false);
         return;
       }
 
+      console.log('CV uploaded successfully:', uploadData);
       setCvFileUrl(filePath);
 
       // Run AI scoring
+      console.log('Calling score-cv function...');
       const { data: scoreData, error: scoreError } = await supabase.functions.invoke('score-cv', {
         body: {
           job_title: job.title,
@@ -296,11 +300,15 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
         },
       });
 
+      console.log('Score-cv response:', { scoreData, scoreError });
+
       if (scoreError) {
         console.error('Scoring error:', scoreError);
         toast({
           title: "Scoring failed",
-          description: "Failed to score your CV. Please try again.",
+          description: typeof scoreError === 'object' && scoreError.message 
+            ? scoreError.message 
+            : "Failed to score your CV. Please try again.",
           variant: "destructive",
         });
         setIsScoring(false);
@@ -308,6 +316,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
       }
 
       if (scoreData?.error) {
+        console.error('Score-cv returned error:', scoreData.error);
         toast({
           title: "Scoring failed",
           description: scoreData.error,
@@ -317,13 +326,14 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
         return;
       }
 
+      console.log('CV scoring successful:', scoreData);
       setScoreResult(scoreData);
       setCurrentStep('vocaroo');
     } catch (error) {
       console.error('CV submission error:', error);
       toast({
         title: "Error",
-        description: "An unexpected error occurred. Please try again.",
+        description: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -382,9 +392,12 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
 
       if (response.error) {
         console.error("Error submitting application:", response.error);
+        const errorMessage = typeof response.error === 'object' 
+          ? (response.error.message || JSON.stringify(response.error))
+          : String(response.error);
         toast({
           title: "Submission failed",
-          description: response.error.message || "There was an error submitting your application. Please try again.",
+          description: errorMessage,
           variant: "destructive",
         });
         setIsSubmitting(false);
@@ -392,6 +405,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
       }
 
       if (response.data?.error) {
+        console.error("Application response error:", response.data.error);
         toast({
           title: "Submission failed",
           description: response.data.error,
@@ -411,7 +425,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
       console.error("Unexpected error:", err);
       toast({
         title: "Submission failed",
-        description: "An unexpected error occurred. Please try again.",
+        description: err instanceof Error ? err.message : "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
       setIsSubmitting(false);
