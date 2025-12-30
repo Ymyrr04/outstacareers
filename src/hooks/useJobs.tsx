@@ -9,6 +9,7 @@ export interface Job {
   apply_url: string;
   description: string | null;
   qualifications: string[] | null;
+  responsibilities: string[] | null;
   region: string;
   is_active: boolean;
   created_at: string;
