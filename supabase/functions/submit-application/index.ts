@@ -142,6 +142,7 @@ serve(async (req) => {
       total_score: body.total_score ?? null,
       ranking_status: body.ranking_status || null,
       ai_summary: body.ai_summary || null,
+      ai_assessment_details: body.ai_assessment_details || null,
       vocaroo_link: vocarooLink,
     };
 

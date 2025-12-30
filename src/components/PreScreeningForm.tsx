@@ -56,6 +56,27 @@ type FormData = {
   honeypot_field: string;
 };
 
+type ToolMatch = {
+  tool: string;
+  found: boolean;
+  context?: string;
+};
+
+type ExperienceHighlight = {
+  role: string;
+  company?: string;
+  duration?: string;
+  relevance: string;
+};
+
+type AssessmentDetails = {
+  matched_tools: ToolMatch[];
+  missing_tools: string[];
+  experience_highlights: ExperienceHighlight[];
+  strengths: string[];
+  concerns: string[];
+};
+
 type ScoreResult = {
   role_experience_score: number;
   skills_tools_score: number;
@@ -64,6 +85,7 @@ type ScoreResult = {
   total_score: number;
   ranking_status: string;
   summary: string;
+  assessment_details?: AssessmentDetails;
 };
 
 type Step = 'prescreening' | 'cv-upload' | 'vocaroo';
@@ -386,6 +408,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
           total_score: scoreResult?.total_score,
           ranking_status: scoreResult?.ranking_status,
           ai_summary: scoreResult?.summary,
+          ai_assessment_details: scoreResult?.assessment_details || null,
           vocaroo_link: vocarooLink,
         },
       });

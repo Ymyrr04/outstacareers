@@ -60,6 +60,7 @@ export type Database = {
       }
       applicants_prescreen: {
         Row: {
+          ai_assessment_details: Json | null
           ai_summary: string | null
           apply_url: string
           availability_setup_score: number | null
@@ -95,6 +96,7 @@ export type Database = {
           vocaroo_link: string | null
         }
         Insert: {
+          ai_assessment_details?: Json | null
           ai_summary?: string | null
           apply_url: string
           availability_setup_score?: number | null
@@ -130,6 +132,7 @@ export type Database = {
           vocaroo_link?: string | null
         }
         Update: {
+          ai_assessment_details?: Json | null
           ai_summary?: string | null
           apply_url?: string
           availability_setup_score?: number | null

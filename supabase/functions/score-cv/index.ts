@@ -13,6 +13,27 @@ interface ScoreRequest {
   cv_text: string;
 }
 
+interface ToolMatch {
+  tool: string;
+  found: boolean;
+  context?: string;
+}
+
+interface ExperienceHighlight {
+  role: string;
+  company?: string;
+  duration?: string;
+  relevance: string;
+}
+
+interface AssessmentDetails {
+  matched_tools: ToolMatch[];
+  missing_tools: string[];
+  experience_highlights: ExperienceHighlight[];
+  strengths: string[];
+  concerns: string[];
+}
+
 interface ScoreResponse {
   role_experience_score: number;
   skills_tools_score: number;
@@ -21,6 +42,7 @@ interface ScoreResponse {
   total_score: number;
   ranking_status: string;
   summary: string;
+  assessment_details: AssessmentDetails;
 }
 
 serve(async (req) => {
@@ -47,7 +69,7 @@ serve(async (req) => {
       );
     }
 
-    const systemPrompt = `You are an expert HR recruiter and CV evaluator. Your task is to score a candidate's CV against a job posting.
+    const systemPrompt = `You are an expert HR recruiter and CV evaluator. Your task is to score a candidate's CV against a job posting and provide detailed analysis.
 
 SCORING RULES (total = 100):
 - Role experience match: 0-45 points (how well their experience matches the role)
@@ -68,8 +90,25 @@ You MUST return ONLY valid JSON with NO additional text. The JSON must have this
   "bonus_red_flag_score": <number -5 to 5>,
   "total_score": <sum of all scores>,
   "ranking_status": "<Strong Match|Partial Match|Low Match>",
-  "summary": "<max 3 sentences summarizing the candidate's fit>"
-}`;
+  "summary": "<max 3 sentences summarizing the candidate's fit>",
+  "assessment_details": {
+    "matched_tools": [
+      {"tool": "<tool/skill name>", "found": true, "context": "<brief context from CV where this was found>"}
+    ],
+    "missing_tools": ["<required tool/skill not found in CV>"],
+    "experience_highlights": [
+      {"role": "<job title>", "company": "<company name if available>", "duration": "<time period if available>", "relevance": "<why this is relevant to the role>"}
+    ],
+    "strengths": ["<key strength 1>", "<key strength 2>"],
+    "concerns": ["<potential concern or gap if any>"]
+  }
+}
+
+IMPORTANT for assessment_details:
+- Extract ALL required tools/skills from the job qualifications and check if they appear in the CV
+- For matched_tools, include the context snippet from the CV where the tool/skill was mentioned
+- For experience_highlights, list the 2-3 most relevant past positions and explain why they matter
+- Be specific and cite actual information from the CV`;
 
     const userPrompt = `Evaluate this candidate's CV for the following job:
 
@@ -86,7 +125,7 @@ ${responsibilities?.length ? responsibilities.map((r, i) => `${i + 1}. ${r}`).jo
 CANDIDATE CV TEXT:
 ${cv_text}
 
-Return ONLY the JSON scoring object, no other text.`;
+Return ONLY the JSON scoring object with detailed assessment_details, no other text.`;
 
     console.log('Calling Lovable AI for CV scoring...');
 
@@ -174,6 +213,13 @@ Return ONLY the JSON scoring object, no other text.`;
       total_score: 0,
       ranking_status: scoreResult.ranking_status || 'Low Match',
       summary: scoreResult.summary || 'Unable to generate summary.',
+      assessment_details: scoreResult.assessment_details || {
+        matched_tools: [],
+        missing_tools: [],
+        experience_highlights: [],
+        strengths: [],
+        concerns: []
+      }
     };
 
     // Recalculate total to ensure accuracy
