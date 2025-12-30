@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2 } from 'lucide-react';
 
 interface Job {
   id: string;
@@ -88,6 +88,37 @@ const Admin = () => {
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [applicantsLoading, setApplicantsLoading] = useState(true);
   const [expandedApplicant, setExpandedApplicant] = useState<string | null>(null);
+  const [downloadingCv, setDownloadingCv] = useState<string | null>(null);
+
+  const handleDownloadCv = async (applicantId: string, cvPath: string) => {
+    setDownloadingCv(applicantId);
+    try {
+      // Create a signed URL for the private file
+      const { data, error } = await supabase.storage
+        .from('cv-uploads')
+        .createSignedUrl(cvPath, 60); // URL valid for 60 seconds
+
+      if (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to generate download link',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      // Open the signed URL in a new tab
+      window.open(data.signedUrl, '_blank');
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: 'Failed to download CV',
+        variant: 'destructive',
+      });
+    } finally {
+      setDownloadingCv(null);
+    }
+  };
 
   const fetchJobs = async () => {
     setJobsLoading(true);
@@ -606,15 +637,20 @@ const Admin = () => {
                           {/* CV and Vocaroo Links */}
                           <div className="flex flex-wrap gap-3 mb-4">
                             {applicant.cv_file_url && (
-                              <a 
-                                href={applicant.cv_file_url} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-3 py-2 bg-primary/10 text-primary rounded-md text-sm hover:bg-primary/20 transition-colors"
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDownloadCv(applicant.id, applicant.cv_file_url!)}
+                                disabled={downloadingCv === applicant.id}
+                                className="inline-flex items-center gap-2 bg-primary/10 text-primary hover:bg-primary/20"
                               >
-                                <FileText className="w-4 h-4" />
+                                {downloadingCv === applicant.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Download className="w-4 h-4" />
+                                )}
                                 Download CV
-                              </a>
+                              </Button>
                             )}
                             {applicant.vocaroo_link && (
                               <a 
