@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star } from 'lucide-react';
 
 interface Job {
   id: string;
@@ -44,6 +44,17 @@ interface Applicant {
   apply_url: string;
   status: string;
   submitted_at: string;
+  // CV Assessment fields
+  role_experience_score: number | null;
+  skills_tools_score: number | null;
+  availability_setup_score: number | null;
+  bonus_red_flag_score: number | null;
+  total_score: number | null;
+  ranking_status: string | null;
+  ai_summary: string | null;
+  cv_file_url: string | null;
+  cv_text: string | null;
+  vocaroo_link: string | null;
 }
 
 const Admin = () => {
@@ -358,6 +369,28 @@ const Admin = () => {
                             <Badge variant={applicant.status === 'new' ? 'default' : 'secondary'}>
                               {applicant.status}
                             </Badge>
+                            {applicant.ranking_status && (
+                              <Badge 
+                                variant={
+                                  applicant.ranking_status === 'Strong Match' ? 'default' :
+                                  applicant.ranking_status === 'Good Fit' ? 'secondary' :
+                                  'outline'
+                                }
+                                className={
+                                  applicant.ranking_status === 'Strong Match' ? 'bg-green-600' :
+                                  applicant.ranking_status === 'Good Fit' ? 'bg-blue-600 text-white' :
+                                  ''
+                                }
+                              >
+                                <Star className="w-3 h-3 mr-1" />
+                                {applicant.ranking_status}
+                              </Badge>
+                            )}
+                            {applicant.total_score !== null && (
+                              <Badge variant="outline" className="font-mono">
+                                Score: {applicant.total_score}/100
+                              </Badge>
+                            )}
                           </div>
                           <p className="text-sm text-muted-foreground">{applicant.email}</p>
                           <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
@@ -373,6 +406,18 @@ const Admin = () => {
                               <Clock className="w-3.5 h-3.5" />
                               {formatDate(applicant.submitted_at)}
                             </span>
+                            {applicant.cv_file_url && (
+                              <span className="flex items-center gap-1 text-primary">
+                                <FileText className="w-3.5 h-3.5" />
+                                CV
+                              </span>
+                            )}
+                            {applicant.vocaroo_link && (
+                              <span className="flex items-center gap-1 text-primary">
+                                <Mic className="w-3.5 h-3.5" />
+                                Voice
+                              </span>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -395,6 +440,71 @@ const Admin = () => {
 
                       {expandedApplicant === applicant.id && (
                         <div className="mt-4 pt-4 border-t border-border">
+                          {/* CV Assessment Section */}
+                          {applicant.total_score !== null && (
+                            <div className="mb-6 p-4 bg-muted/50 rounded-lg">
+                              <h4 className="font-semibold mb-3 flex items-center gap-2">
+                                <Star className="w-4 h-4" />
+                                AI CV Assessment
+                              </h4>
+                              <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                                <div className="text-center p-2 bg-background rounded">
+                                  <p className="text-xs text-muted-foreground">Role Experience</p>
+                                  <p className="text-lg font-bold">{applicant.role_experience_score ?? '-'}/40</p>
+                                </div>
+                                <div className="text-center p-2 bg-background rounded">
+                                  <p className="text-xs text-muted-foreground">Skills & Tools</p>
+                                  <p className="text-lg font-bold">{applicant.skills_tools_score ?? '-'}/40</p>
+                                </div>
+                                <div className="text-center p-2 bg-background rounded">
+                                  <p className="text-xs text-muted-foreground">Availability</p>
+                                  <p className="text-lg font-bold">{applicant.availability_setup_score ?? '-'}/10</p>
+                                </div>
+                                <div className="text-center p-2 bg-background rounded">
+                                  <p className="text-xs text-muted-foreground">Bonus/Red Flags</p>
+                                  <p className="text-lg font-bold">{applicant.bonus_red_flag_score ?? '-'}/10</p>
+                                </div>
+                                <div className="text-center p-2 bg-primary/10 rounded border border-primary/20">
+                                  <p className="text-xs text-muted-foreground">Total Score</p>
+                                  <p className="text-xl font-bold text-primary">{applicant.total_score}/100</p>
+                                </div>
+                              </div>
+                              {applicant.ai_summary && (
+                                <div className="mt-3">
+                                  <p className="text-sm font-medium mb-1">AI Summary</p>
+                                  <p className="text-sm text-muted-foreground">{applicant.ai_summary}</p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
+                          {/* CV and Vocaroo Links */}
+                          <div className="flex flex-wrap gap-3 mb-4">
+                            {applicant.cv_file_url && (
+                              <a 
+                                href={applicant.cv_file_url} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-3 py-2 bg-primary/10 text-primary rounded-md text-sm hover:bg-primary/20 transition-colors"
+                              >
+                                <FileText className="w-4 h-4" />
+                                Download CV
+                              </a>
+                            )}
+                            {applicant.vocaroo_link && (
+                              <a 
+                                href={applicant.vocaroo_link} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 px-3 py-2 bg-orange-500/10 text-orange-600 rounded-md text-sm hover:bg-orange-500/20 transition-colors"
+                              >
+                                <Mic className="w-4 h-4" />
+                                Listen to Voice Recording
+                              </a>
+                            )}
+                          </div>
+
+                          {/* Pre-screening Questions */}
                           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                             <BooleanBadge value={applicant.home_office} label="Home Office Setup" />
                             <BooleanBadge value={applicant.noise_canceling_headset} label="Noise-Canceling Headset" />
@@ -416,16 +526,17 @@ const Admin = () => {
                               <p className="text-sm text-muted-foreground">{applicant.start_availability}</p>
                             </div>
                           </div>
-                          <div className="mt-4">
-                            <a 
-                              href={applicant.apply_url} 
-                              target="_blank" 
-                              rel="noopener noreferrer"
-                              className="text-sm text-primary hover:underline"
-                            >
-                              View Application Link →
-                            </a>
-                          </div>
+
+                          {/* CV Text Preview */}
+                          {applicant.cv_text && (
+                            <div className="mt-4">
+                              <p className="text-sm font-medium mb-2">CV Content (Extracted)</p>
+                              <div className="bg-muted/30 p-3 rounded text-xs text-muted-foreground max-h-40 overflow-y-auto whitespace-pre-wrap">
+                                {applicant.cv_text.slice(0, 1500)}
+                                {applicant.cv_text.length > 1500 && '...'}
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                     </CardContent>
