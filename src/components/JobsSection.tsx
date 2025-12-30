@@ -53,6 +53,7 @@ const staticJobs: Job[] = [
     rate: null,
     description: null,
     qualifications: null,
+    responsibilities: null,
     is_active: true,
     created_at: new Date().toISOString(),
   },
@@ -65,6 +66,7 @@ const staticJobs: Job[] = [
     rate: null,
     description: null,
     qualifications: null,
+    responsibilities: null,
     is_active: true,
     created_at: new Date().toISOString(),
   },
@@ -77,6 +79,7 @@ const staticJobs: Job[] = [
     rate: null,
     description: null,
     qualifications: null,
+    responsibilities: null,
     is_active: true,
     created_at: new Date().toISOString(),
   },
@@ -89,6 +92,7 @@ const staticJobs: Job[] = [
     rate: null,
     description: null,
     qualifications: null,
+    responsibilities: null,
     is_active: true,
     created_at: new Date().toISOString(),
   },
@@ -101,6 +105,7 @@ const staticJobs: Job[] = [
     rate: null,
     description: null,
     qualifications: null,
+    responsibilities: null,
     is_active: true,
     created_at: new Date().toISOString(),
   },
@@ -113,6 +118,7 @@ const staticJobs: Job[] = [
     rate: null,
     description: null,
     qualifications: null,
+    responsibilities: null,
     is_active: true,
     created_at: new Date().toISOString(),
   },
@@ -125,6 +131,7 @@ const staticJobs: Job[] = [
     rate: null,
     description: null,
     qualifications: null,
+    responsibilities: null,
     is_active: true,
     created_at: new Date().toISOString(),
   },
@@ -137,6 +144,7 @@ const staticJobs: Job[] = [
     rate: null,
     description: null,
     qualifications: null,
+    responsibilities: null,
     is_active: true,
     created_at: new Date().toISOString(),
   },
@@ -149,6 +157,7 @@ const staticJobs: Job[] = [
     rate: null,
     description: null,
     qualifications: null,
+    responsibilities: null,
     is_active: true,
     created_at: new Date().toISOString(),
   },
@@ -161,6 +170,7 @@ const staticJobs: Job[] = [
     rate: null,
     description: null,
     qualifications: null,
+    responsibilities: null,
     is_active: true,
     created_at: new Date().toISOString(),
   },
@@ -173,6 +183,7 @@ const staticJobs: Job[] = [
     rate: null,
     description: null,
     qualifications: null,
+    responsibilities: null,
     is_active: true,
     created_at: new Date().toISOString(),
   },
@@ -185,6 +196,7 @@ const staticJobs: Job[] = [
     rate: null,
     description: null,
     qualifications: null,
+    responsibilities: null,
     is_active: true,
     created_at: new Date().toISOString(),
   },
@@ -197,6 +209,7 @@ const staticJobs: Job[] = [
     rate: null,
     description: null,
     qualifications: null,
+    responsibilities: null,
     is_active: true,
     created_at: new Date().toISOString(),
   },
@@ -209,6 +222,7 @@ const staticJobs: Job[] = [
     rate: null,
     description: null,
     qualifications: null,
+    responsibilities: null,
     is_active: true,
     created_at: new Date().toISOString(),
   },
@@ -221,6 +235,7 @@ const staticJobs: Job[] = [
     rate: null,
     description: null,
     qualifications: null,
+    responsibilities: null,
     is_active: true,
     created_at: new Date().toISOString(),
   },
@@ -446,6 +461,20 @@ const JobsSection = () => {
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   {selectedJob.description}
                 </p>
+              )}
+              
+              {selectedJob.responsibilities && selectedJob.responsibilities.length > 0 && (
+                <div>
+                  <h5 className="font-semibold text-sm text-foreground mb-2">Key Responsibilities:</h5>
+                  <ul className="space-y-1.5">
+                    {selectedJob.responsibilities.map((resp, idx) => (
+                      <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                        <span className="text-primary mt-1">•</span>
+                        <span>{resp}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               )}
               
               {selectedJob.qualifications && selectedJob.qualifications.length > 0 && (
