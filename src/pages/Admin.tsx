@@ -9,7 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle } from 'lucide-react';
 
 interface Job {
   id: string;
@@ -21,6 +21,27 @@ interface Job {
   region: string;
   is_active: boolean;
   created_at: string;
+}
+
+interface ToolMatch {
+  tool: string;
+  found: boolean;
+  context?: string;
+}
+
+interface ExperienceHighlight {
+  role: string;
+  company?: string;
+  duration?: string;
+  relevance: string;
+}
+
+interface AssessmentDetails {
+  matched_tools: ToolMatch[];
+  missing_tools: string[];
+  experience_highlights: ExperienceHighlight[];
+  strengths: string[];
+  concerns: string[];
 }
 
 interface Applicant {
@@ -55,6 +76,7 @@ interface Applicant {
   cv_file_url: string | null;
   cv_text: string | null;
   vocaroo_link: string | null;
+  ai_assessment_details: AssessmentDetails | null;
 }
 
 const Admin = () => {
@@ -100,7 +122,12 @@ const Admin = () => {
         variant: 'destructive',
       });
     } else {
-      setApplicants(data || []);
+      // Cast the data to handle JSON type for ai_assessment_details
+      const applicantsData = (data || []).map(item => ({
+        ...item,
+        ai_assessment_details: item.ai_assessment_details as unknown as AssessmentDetails | null
+      }));
+      setApplicants(applicantsData);
     }
     setApplicantsLoading(false);
   };
@@ -473,6 +500,104 @@ const Admin = () => {
                                 <div className="mt-3">
                                   <p className="text-sm font-medium mb-1">AI Summary</p>
                                   <p className="text-sm text-muted-foreground">{applicant.ai_summary}</p>
+                                </div>
+                              )}
+
+                              {/* Detailed Assessment Breakdown */}
+                              {applicant.ai_assessment_details && (
+                                <div className="mt-4 space-y-4">
+                                  {/* Skills & Tools Match */}
+                                  {(applicant.ai_assessment_details.matched_tools?.length > 0 || 
+                                    applicant.ai_assessment_details.missing_tools?.length > 0) && (
+                                    <div>
+                                      <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                                        <Zap className="w-4 h-4" />
+                                        Skills & Tools Match
+                                      </p>
+                                      <div className="space-y-2">
+                                        {applicant.ai_assessment_details.matched_tools?.map((tool, idx) => (
+                                          <div key={idx} className="flex items-start gap-2 p-2 bg-green-50 dark:bg-green-950/30 rounded text-sm">
+                                            <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                            <div>
+                                              <span className="font-medium text-green-700 dark:text-green-400">{tool.tool}</span>
+                                              {tool.context && (
+                                                <p className="text-xs text-muted-foreground mt-0.5">"{tool.context}"</p>
+                                              )}
+                                            </div>
+                                          </div>
+                                        ))}
+                                        {applicant.ai_assessment_details.missing_tools?.map((tool, idx) => (
+                                          <div key={idx} className="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-950/30 rounded text-sm">
+                                            <X className="w-4 h-4 text-red-600 flex-shrink-0" />
+                                            <span className="text-red-700 dark:text-red-400">{tool}</span>
+                                            <span className="text-xs text-muted-foreground ml-1">(not found)</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Relevant Experience */}
+                                  {applicant.ai_assessment_details.experience_highlights?.length > 0 && (
+                                    <div>
+                                      <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                                        <Briefcase className="w-4 h-4" />
+                                        Relevant Experience
+                                      </p>
+                                      <div className="space-y-2">
+                                        {applicant.ai_assessment_details.experience_highlights.map((exp, idx) => (
+                                          <div key={idx} className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded text-sm">
+                                            <div className="flex items-center gap-2 flex-wrap">
+                                              <span className="font-medium text-blue-700 dark:text-blue-400">{exp.role}</span>
+                                              {exp.company && (
+                                                <span className="text-muted-foreground">at {exp.company}</span>
+                                              )}
+                                              {exp.duration && (
+                                                <Badge variant="outline" className="text-xs">{exp.duration}</Badge>
+                                              )}
+                                            </div>
+                                            <p className="text-xs text-muted-foreground mt-1">{exp.relevance}</p>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
+
+                                  {/* Strengths & Concerns */}
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {applicant.ai_assessment_details.strengths?.length > 0 && (
+                                      <div>
+                                        <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                                          <CheckCircle className="w-4 h-4 text-green-600" />
+                                          Strengths
+                                        </p>
+                                        <ul className="space-y-1">
+                                          {applicant.ai_assessment_details.strengths.map((strength, idx) => (
+                                            <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                                              <span className="text-green-600">•</span>
+                                              {strength}
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                    {applicant.ai_assessment_details.concerns?.length > 0 && (
+                                      <div>
+                                        <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                                          <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                          Concerns
+                                        </p>
+                                        <ul className="space-y-1">
+                                          {applicant.ai_assessment_details.concerns.map((concern, idx) => (
+                                            <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                                              <span className="text-amber-600">•</span>
+                                              {concern}
+                                            </li>
+                                          ))}
+                                        </ul>
+                                      </div>
+                                    )}
+                                  </div>
                                 </div>
                               )}
                             </div>
