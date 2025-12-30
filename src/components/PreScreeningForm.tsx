@@ -418,9 +418,8 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
       setIsSuccess(true);
       
       setTimeout(() => {
-        window.open(job.apply_url, "_blank");
         onClose();
-      }, 1500);
+      }, 2000);
     } catch (err) {
       console.error("Unexpected error:", err);
       toast({
@@ -718,7 +717,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
                     disabled={!isPrescreeningComplete()}
                     className="w-full"
                   >
-                    Continue to CV Upload
+                    Continue
                   </Button>
                   <p className="text-xs text-muted-foreground text-center mt-2">
                     All fields marked with * are required
