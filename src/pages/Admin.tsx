@@ -652,16 +652,6 @@ const Admin = () => {
                             </div>
                           </div>
 
-                          {/* CV Text Preview */}
-                          {applicant.cv_text && (
-                            <div className="mt-4">
-                              <p className="text-sm font-medium mb-2">CV Content (Extracted)</p>
-                              <div className="bg-muted/30 p-3 rounded text-xs text-muted-foreground max-h-40 overflow-y-auto whitespace-pre-wrap">
-                                {applicant.cv_text.slice(0, 1500)}
-                                {applicant.cv_text.length > 1500 && '...'}
-                              </div>
-                            </div>
-                          )}
                         </div>
                       )}
                     </CardContent>
