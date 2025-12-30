@@ -60,10 +60,15 @@ export type Database = {
       }
       applicants_prescreen: {
         Row: {
+          ai_summary: string | null
           apply_url: string
+          availability_setup_score: number | null
+          bonus_red_flag_score: number | null
           can_work_40_50: boolean
           created_at: string
           currently_working: boolean
+          cv_file_url: string | null
+          cv_text: string | null
           email: string
           full_name: string
           good_internet: boolean
@@ -79,16 +84,26 @@ export type Database = {
           location: string
           noise_canceling_headset: boolean
           power_backup: boolean
+          ranking_status: string | null
+          role_experience_score: number | null
+          skills_tools_score: number | null
           start_availability: string
           status: string
           submitted_at: string
+          total_score: number | null
           us_timezone_ok: boolean
+          vocaroo_link: string | null
         }
         Insert: {
+          ai_summary?: string | null
           apply_url: string
+          availability_setup_score?: number | null
+          bonus_red_flag_score?: number | null
           can_work_40_50: boolean
           created_at?: string
           currently_working: boolean
+          cv_file_url?: string | null
+          cv_text?: string | null
           email: string
           full_name: string
           good_internet: boolean
@@ -104,16 +119,26 @@ export type Database = {
           location: string
           noise_canceling_headset: boolean
           power_backup: boolean
+          ranking_status?: string | null
+          role_experience_score?: number | null
+          skills_tools_score?: number | null
           start_availability: string
           status?: string
           submitted_at?: string
+          total_score?: number | null
           us_timezone_ok: boolean
+          vocaroo_link?: string | null
         }
         Update: {
+          ai_summary?: string | null
           apply_url?: string
+          availability_setup_score?: number | null
+          bonus_red_flag_score?: number | null
           can_work_40_50?: boolean
           created_at?: string
           currently_working?: boolean
+          cv_file_url?: string | null
+          cv_text?: string | null
           email?: string
           full_name?: string
           good_internet?: boolean
@@ -129,10 +154,15 @@ export type Database = {
           location?: string
           noise_canceling_headset?: boolean
           power_backup?: boolean
+          ranking_status?: string | null
+          role_experience_score?: number | null
+          skills_tools_score?: number | null
           start_availability?: string
           status?: string
           submitted_at?: string
+          total_score?: number | null
           us_timezone_ok?: boolean
+          vocaroo_link?: string | null
         }
         Relationships: [
           {

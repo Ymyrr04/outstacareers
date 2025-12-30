@@ -1,9 +1,9 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { X, Loader2, CheckCircle, ExternalLink } from "lucide-react";
+import { X, Loader2, CheckCircle, ExternalLink, Upload, FileText, Mic } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
@@ -14,6 +14,9 @@ interface PreScreeningFormProps {
     id: string;
     title: string;
     apply_url: string;
+    description?: string | null;
+    qualifications?: string[] | null;
+    responsibilities?: string[] | null;
   };
   onClose: () => void;
 }
@@ -50,14 +53,38 @@ type FormData = {
   has_experience: boolean | null;
   currently_working: boolean | null;
   location: string;
-  honeypot_field: string; // Hidden field to catch bots
+  honeypot_field: string;
 };
 
+type ScoreResult = {
+  role_experience_score: number;
+  skills_tools_score: number;
+  availability_setup_score: number;
+  bonus_red_flag_score: number;
+  total_score: number;
+  ranking_status: string;
+  summary: string;
+};
+
+type Step = 'prescreening' | 'cv-upload' | 'vocaroo';
+
 const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
+  const [currentStep, setCurrentStep] = useState<Step>('prescreening');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isScoring, setIsScoring] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showSpeedtestSample, setShowSpeedtestSample] = useState(false);
+  
+  // CV related state
+  const [cvFile, setCvFile] = useState<File | null>(null);
+  const [cvText, setCvText] = useState<string>("");
+  const [cvFileUrl, setCvFileUrl] = useState<string>("");
+  const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Vocaroo state
+  const [vocarooLink, setVocarooLink] = useState<string>("");
   
   const [formData, setFormData] = useState<FormData>({
     full_name: "",
@@ -74,7 +101,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
     has_experience: null,
     currently_working: null,
     location: "",
-    honeypot_field: "", // Hidden field - bots will fill this
+    honeypot_field: "",
   });
 
   const handleTextChange = (field: keyof FormData, value: string) => {
@@ -91,7 +118,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
     }
   };
 
-  const isFormComplete = () => {
+  const isPrescreeningComplete = () => {
     return (
       formData.full_name.trim() !== "" &&
       formData.email.trim() !== "" &&
@@ -110,7 +137,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
     );
   };
 
-  const handleSubmit = async () => {
+  const handlePrescreeningSubmit = () => {
     setErrors({});
     
     const result = prescreenSchema.safeParse(formData);
@@ -125,10 +152,200 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
       return;
     }
 
+    // Move to CV upload step
+    setCurrentStep('cv-upload');
+  };
+
+  const extractTextFromFile = async (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      
+      reader.onload = async (e) => {
+        try {
+          const arrayBuffer = e.target?.result as ArrayBuffer;
+          
+          if (file.type === 'application/pdf') {
+            // For PDF files, we'll extract text using a simple approach
+            // Convert to text by reading as text (basic extraction)
+            const textReader = new FileReader();
+            textReader.onload = (textEvent) => {
+              const text = textEvent.target?.result as string;
+              // Extract readable text from PDF (basic approach)
+              const cleanText = text
+                .replace(/[^\x20-\x7E\n\r\t]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+              resolve(cleanText || 'PDF content extracted - please verify manually');
+            };
+            textReader.onerror = () => reject(new Error('Failed to read PDF'));
+            textReader.readAsText(file);
+          } else if (file.type === 'application/msword' || 
+                     file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+            // For DOC/DOCX files
+            const textReader = new FileReader();
+            textReader.onload = (textEvent) => {
+              const text = textEvent.target?.result as string;
+              const cleanText = text
+                .replace(/[^\x20-\x7E\n\r\t]/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim();
+              resolve(cleanText || 'Document content extracted - please verify manually');
+            };
+            textReader.onerror = () => reject(new Error('Failed to read document'));
+            textReader.readAsText(file);
+          } else {
+            // Plain text files
+            const textReader = new FileReader();
+            textReader.onload = (textEvent) => {
+              resolve(textEvent.target?.result as string || '');
+            };
+            textReader.onerror = () => reject(new Error('Failed to read file'));
+            textReader.readAsText(file);
+          }
+        } catch (error) {
+          reject(error);
+        }
+      };
+      
+      reader.onerror = () => reject(new Error('Failed to read file'));
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = [
+      'application/pdf',
+      'application/msword',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+    ];
+    
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload a PDF or DOC/DOCX file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please upload a file smaller than 10MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setCvFile(file);
+    setErrors(prev => ({ ...prev, cv: "" }));
+
+    try {
+      const text = await extractTextFromFile(file);
+      setCvText(text);
+    } catch (error) {
+      console.error('Error extracting text:', error);
+      setCvText('Unable to extract text automatically');
+    }
+  };
+
+  const handleCvSubmit = async () => {
+    if (!cvFile) {
+      setErrors(prev => ({ ...prev, cv: "Please upload your CV" }));
+      return;
+    }
+
+    setIsScoring(true);
+
+    try {
+      // Upload CV to storage
+      const fileExt = cvFile.name.split('.').pop();
+      const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
+      const filePath = `applications/${fileName}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('cv-uploads')
+        .upload(filePath, cvFile);
+
+      if (uploadError) {
+        console.error('CV upload error:', uploadError);
+        toast({
+          title: "Upload failed",
+          description: "Failed to upload your CV. Please try again.",
+          variant: "destructive",
+        });
+        setIsScoring(false);
+        return;
+      }
+
+      setCvFileUrl(filePath);
+
+      // Run AI scoring
+      const { data: scoreData, error: scoreError } = await supabase.functions.invoke('score-cv', {
+        body: {
+          job_title: job.title,
+          job_description: job.description || '',
+          key_qualifications: job.qualifications || [],
+          responsibilities: job.responsibilities || [],
+          cv_text: cvText,
+        },
+      });
+
+      if (scoreError) {
+        console.error('Scoring error:', scoreError);
+        toast({
+          title: "Scoring failed",
+          description: "Failed to score your CV. Please try again.",
+          variant: "destructive",
+        });
+        setIsScoring(false);
+        return;
+      }
+
+      if (scoreData?.error) {
+        toast({
+          title: "Scoring failed",
+          description: scoreData.error,
+          variant: "destructive",
+        });
+        setIsScoring(false);
+        return;
+      }
+
+      setScoreResult(scoreData);
+      setCurrentStep('vocaroo');
+    } catch (error) {
+      console.error('CV submission error:', error);
+      toast({
+        title: "Error",
+        description: "An unexpected error occurred. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsScoring(false);
+    }
+  };
+
+  const handleFinalSubmit = async () => {
+    if (!vocarooLink.trim()) {
+      setErrors(prev => ({ ...prev, vocaroo: "Please provide your Vocaroo link" }));
+      return;
+    }
+
+    // Validate vocaroo link format
+    if (!vocarooLink.includes('vocaroo.com') && !vocarooLink.includes('voca.ro')) {
+      setErrors(prev => ({ ...prev, vocaroo: "Please provide a valid Vocaroo link" }));
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
-      // Use edge function for rate-limited, validated submissions
       const response = await supabase.functions.invoke('submit-application', {
         body: {
           full_name: formData.full_name,
@@ -148,12 +365,23 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
           job_title: job.title,
           job_id: job.id,
           apply_url: job.apply_url,
-          honeypot_field: formData.honeypot_field, // Send honeypot for bot detection
+          honeypot_field: formData.honeypot_field,
+          // New CV scoring fields
+          cv_file_url: cvFileUrl,
+          cv_text: cvText,
+          role_experience_score: scoreResult?.role_experience_score,
+          skills_tools_score: scoreResult?.skills_tools_score,
+          availability_setup_score: scoreResult?.availability_setup_score,
+          bonus_red_flag_score: scoreResult?.bonus_red_flag_score,
+          total_score: scoreResult?.total_score,
+          ranking_status: scoreResult?.ranking_status,
+          ai_summary: scoreResult?.summary,
+          vocaroo_link: vocarooLink,
         },
       });
 
       if (response.error) {
-        console.error("Error submitting pre-screening form:", response.error);
+        console.error("Error submitting application:", response.error);
         toast({
           title: "Submission failed",
           description: response.error.message || "There was an error submitting your application. Please try again.",
@@ -163,7 +391,6 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
         return;
       }
 
-      // Check if the response contains an error from the edge function
       if (response.data?.error) {
         toast({
           title: "Submission failed",
@@ -220,6 +447,16 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
     </div>
   );
 
+  const StepIndicator = () => (
+    <div className="flex items-center justify-center gap-2 mb-4">
+      <div className={`w-3 h-3 rounded-full ${currentStep === 'prescreening' ? 'bg-primary' : 'bg-primary/30'}`} />
+      <div className="w-8 h-0.5 bg-border" />
+      <div className={`w-3 h-3 rounded-full ${currentStep === 'cv-upload' ? 'bg-primary' : currentStep === 'vocaroo' ? 'bg-primary/30' : 'bg-muted'}`} />
+      <div className="w-8 h-0.5 bg-border" />
+      <div className={`w-3 h-3 rounded-full ${currentStep === 'vocaroo' ? 'bg-primary' : 'bg-muted'}`} />
+    </div>
+  );
+
   if (isSuccess) {
     return (
       <>
@@ -249,7 +486,11 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
         <div className="pointer-events-auto w-full max-w-lg max-h-[90vh] overflow-y-auto bg-background rounded-xl shadow-2xl border border-primary/20 animate-in fade-in slide-in-from-bottom-4 zoom-in-95 duration-300">
           <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border px-6 py-4 flex items-start justify-between gap-4">
             <div>
-              <h3 className="font-bold text-lg text-foreground">Pre-Screening Questions</h3>
+              <h3 className="font-bold text-lg text-foreground">
+                {currentStep === 'prescreening' && 'Pre-Screening Questions'}
+                {currentStep === 'cv-upload' && 'Upload Your CV'}
+                {currentStep === 'vocaroo' && 'Voice Introduction'}
+              </h3>
               <p className="text-sm text-muted-foreground mt-1">{job.title}</p>
             </div>
             <button 
@@ -261,216 +502,361 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
             </button>
           </div>
 
-          <div className="p-6 space-y-5">
-            <div className="space-y-2">
-              <Label htmlFor="full_name">Full Name *</Label>
-              <Input
-                id="full_name"
-                value={formData.full_name}
-                onChange={(e) => handleTextChange("full_name", e.target.value)}
-                placeholder="Enter your full name"
-                className={errors.full_name ? "border-destructive" : ""}
-              />
-              {errors.full_name && <p className="text-sm text-destructive">{errors.full_name}</p>}
-            </div>
+          <div className="p-6">
+            <StepIndicator />
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address *</Label>
-              <Input
-                id="email"
-                type="email"
-                value={formData.email}
-                onChange={(e) => handleTextChange("email", e.target.value)}
-                placeholder="Enter your email address"
-                className={errors.email ? "border-destructive" : ""}
-              />
-              {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-            </div>
-
-            <YesNoQuestion 
-              label="Do you have a home office setup?" 
-              field="home_office" 
-              value={formData.home_office} 
-            />
-
-            <YesNoQuestion 
-              label="Do you have a noise-canceling headset?" 
-              field="noise_canceling_headset" 
-              value={formData.noise_canceling_headset} 
-            />
-
-            <YesNoQuestion 
-              label="Do you have a fully functioning laptop or PC?" 
-              field="laptop_or_pc" 
-              value={formData.laptop_or_pc} 
-            />
-
-            <YesNoQuestion 
-              label="Do you have a good quality internet connection?" 
-              field="good_internet" 
-              value={formData.good_internet} 
-            />
-
-            <div className="space-y-2">
-              <Label htmlFor="internet_speed">
-                Please run a speedtest on{" "}
-                <a 
-                  href="https://www.speedtest.net" 
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline inline-flex items-center gap-1"
-                >
-                  speedtest.net
-                  <ExternalLink className="w-3 h-3" />
-                </a>
-                {" "}and share the result link *
-              </Label>
-              <Input
-                id="internet_speed"
-                value={formData.internet_speed}
-                onChange={(e) => handleTextChange("internet_speed", e.target.value)}
-                placeholder="e.g., https://www.speedtest.net/result/12345678"
-                className={errors.internet_speed ? "border-destructive" : ""}
-              />
-              {errors.internet_speed && <p className="text-sm text-destructive">{errors.internet_speed}</p>}
-              <button
-                type="button"
-                onClick={() => setShowSpeedtestSample(true)}
-                className="text-xs text-primary hover:underline mt-1"
-              >
-                View sample
-              </button>
-            </div>
-
-            {/* Speedtest Sample Modal */}
-            {showSpeedtestSample && (
-              <>
-                <div 
-                  className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in"
-                  onClick={() => setShowSpeedtestSample(false)}
-                />
-                <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
-                  <div className="pointer-events-auto relative animate-scale-in">
-                    <button
-                      type="button"
-                      onClick={() => setShowSpeedtestSample(false)}
-                      className="absolute -top-3 -right-3 bg-background rounded-full p-1.5 shadow-lg border border-border hover:bg-muted transition-colors z-10"
-                      aria-label="Close"
-                    >
-                      <X className="w-4 h-4" />
-                    </button>
-                    <img 
-                      src={speedtestSample} 
-                      alt="Speedtest result sample" 
-                      className="rounded-lg shadow-2xl max-w-[90vw] max-h-[80vh] object-contain"
-                    />
-                    <p className="text-center text-sm text-muted-foreground mt-3 bg-background/80 backdrop-blur-sm rounded-md py-2 px-4">
-                      Copy the result link from speedtest.net after running your test
-                    </p>
-                  </div>
+            {/* Step 1: Pre-screening Questions */}
+            {currentStep === 'prescreening' && (
+              <div className="space-y-5">
+                <div className="space-y-2">
+                  <Label htmlFor="full_name">Full Name *</Label>
+                  <Input
+                    id="full_name"
+                    value={formData.full_name}
+                    onChange={(e) => handleTextChange("full_name", e.target.value)}
+                    placeholder="Enter your full name"
+                    className={errors.full_name ? "border-destructive" : ""}
+                  />
+                  {errors.full_name && <p className="text-sm text-destructive">{errors.full_name}</p>}
                 </div>
-              </>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email Address *</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={formData.email}
+                    onChange={(e) => handleTextChange("email", e.target.value)}
+                    placeholder="Enter your email address"
+                    className={errors.email ? "border-destructive" : ""}
+                  />
+                  {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                </div>
+
+                <YesNoQuestion 
+                  label="Do you have a home office setup?" 
+                  field="home_office" 
+                  value={formData.home_office} 
+                />
+
+                <YesNoQuestion 
+                  label="Do you have a noise-canceling headset?" 
+                  field="noise_canceling_headset" 
+                  value={formData.noise_canceling_headset} 
+                />
+
+                <YesNoQuestion 
+                  label="Do you have a fully functioning laptop or PC?" 
+                  field="laptop_or_pc" 
+                  value={formData.laptop_or_pc} 
+                />
+
+                <YesNoQuestion 
+                  label="Do you have a good quality internet connection?" 
+                  field="good_internet" 
+                  value={formData.good_internet} 
+                />
+
+                <div className="space-y-2">
+                  <Label htmlFor="internet_speed">
+                    Please run a speedtest on{" "}
+                    <a 
+                      href="https://www.speedtest.net" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      speedtest.net
+                      <ExternalLink className="w-3 h-3" />
+                    </a>
+                    {" "}and share the result link *
+                  </Label>
+                  <Input
+                    id="internet_speed"
+                    value={formData.internet_speed}
+                    onChange={(e) => handleTextChange("internet_speed", e.target.value)}
+                    placeholder="e.g., https://www.speedtest.net/result/12345678"
+                    className={errors.internet_speed ? "border-destructive" : ""}
+                  />
+                  {errors.internet_speed && <p className="text-sm text-destructive">{errors.internet_speed}</p>}
+                  <button
+                    type="button"
+                    onClick={() => setShowSpeedtestSample(true)}
+                    className="text-xs text-primary hover:underline mt-1"
+                  >
+                    View sample
+                  </button>
+                </div>
+
+                {/* Speedtest Sample Modal */}
+                {showSpeedtestSample && (
+                  <>
+                    <div 
+                      className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in"
+                      onClick={() => setShowSpeedtestSample(false)}
+                    />
+                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+                      <div className="pointer-events-auto relative animate-scale-in">
+                        <button
+                          type="button"
+                          onClick={() => setShowSpeedtestSample(false)}
+                          className="absolute -top-3 -right-3 bg-background rounded-full p-1.5 shadow-lg border border-border hover:bg-muted transition-colors z-10"
+                          aria-label="Close"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                        <img 
+                          src={speedtestSample} 
+                          alt="Speedtest result sample" 
+                          className="rounded-lg shadow-2xl max-w-[90vw] max-h-[80vh] object-contain"
+                        />
+                        <p className="text-center text-sm text-muted-foreground mt-3 bg-background/80 backdrop-blur-sm rounded-md py-2 px-4">
+                          Copy the result link from speedtest.net after running your test
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <YesNoQuestion 
+                  label="Do you have a power generator or backup for power cuts?" 
+                  field="power_backup" 
+                  value={formData.power_backup} 
+                />
+
+                <YesNoQuestion 
+                  label="Are you willing to work 40–50 hours per week?" 
+                  field="can_work_40_50" 
+                  value={formData.can_work_40_50} 
+                />
+
+                <YesNoQuestion 
+                  label="Are you comfortable working US time zones?" 
+                  field="us_timezone_ok" 
+                  value={formData.us_timezone_ok} 
+                />
+
+                <div className="space-y-2">
+                  <Label htmlFor="start_availability">How soon can you start? *</Label>
+                  <Input
+                    id="start_availability"
+                    value={formData.start_availability}
+                    onChange={(e) => handleTextChange("start_availability", e.target.value)}
+                    placeholder="e.g., Immediately, 2 weeks notice"
+                    className={errors.start_availability ? "border-destructive" : ""}
+                  />
+                  {errors.start_availability && <p className="text-sm text-destructive">{errors.start_availability}</p>}
+                </div>
+
+                <YesNoQuestion 
+                  label="Do you have experience in a similar role?" 
+                  field="has_experience" 
+                  value={formData.has_experience} 
+                />
+
+                <YesNoQuestion 
+                  label="Are you currently working for another client or company?" 
+                  field="currently_working" 
+                  value={formData.currently_working} 
+                />
+
+                <div className="space-y-2">
+                  <Label htmlFor="location">Your current location (city, country) *</Label>
+                  <Input
+                    id="location"
+                    value={formData.location}
+                    onChange={(e) => handleTextChange("location", e.target.value)}
+                    placeholder="e.g., Manila, Philippines"
+                    className={errors.location ? "border-destructive" : ""}
+                  />
+                  {errors.location && <p className="text-sm text-destructive">{errors.location}</p>}
+                </div>
+
+                {/* Hidden honeypot field */}
+                <div 
+                  aria-hidden="true" 
+                  style={{ 
+                    position: 'absolute', 
+                    left: '-9999px', 
+                    top: '-9999px',
+                    opacity: 0, 
+                    height: 0, 
+                    width: 0, 
+                    overflow: 'hidden',
+                    pointerEvents: 'none' 
+                  }}
+                >
+                  <label htmlFor="fax_number_do_not_fill">Leave this empty</label>
+                  <input
+                    type="text"
+                    id="fax_number_do_not_fill"
+                    name="fax_number_do_not_fill"
+                    value={formData.honeypot_field}
+                    onChange={(e) => handleTextChange("honeypot_field", e.target.value)}
+                    autoComplete="new-password"
+                    tabIndex={-1}
+                  />
+                </div>
+
+                <div className="pt-4 border-t border-border">
+                  <Button
+                    onClick={handlePrescreeningSubmit}
+                    disabled={!isPrescreeningComplete()}
+                    className="w-full"
+                  >
+                    Continue to CV Upload
+                  </Button>
+                  <p className="text-xs text-muted-foreground text-center mt-2">
+                    All fields marked with * are required
+                  </p>
+                </div>
+              </div>
             )}
 
-            <YesNoQuestion 
-              label="Do you have a power generator or backup for power cuts?" 
-              field="power_backup" 
-              value={formData.power_backup} 
-            />
+            {/* Step 2: CV Upload */}
+            {currentStep === 'cv-upload' && (
+              <div className="space-y-5">
+                <div className="text-center mb-6">
+                  <FileText className="w-12 h-12 text-primary mx-auto mb-3" />
+                  <h4 className="font-semibold text-lg">Upload Your CV</h4>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Please upload your CV in PDF or DOC/DOCX format
+                  </p>
+                </div>
 
-            <YesNoQuestion 
-              label="Are you willing to work 40–50 hours per week?" 
-              field="can_work_40_50" 
-              value={formData.can_work_40_50} 
-            />
+                <div 
+                  className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+                    cvFile ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+                  } ${errors.cv ? 'border-destructive' : ''}`}
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                  
+                  {cvFile ? (
+                    <div className="space-y-2">
+                      <CheckCircle className="w-10 h-10 text-green-500 mx-auto" />
+                      <p className="font-medium text-foreground">{cvFile.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {(cvFile.size / 1024 / 1024).toFixed(2)} MB
+                      </p>
+                      <p className="text-xs text-primary">Click to change file</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <Upload className="w-10 h-10 text-muted-foreground mx-auto" />
+                      <p className="font-medium text-foreground">Click to upload your CV</p>
+                      <p className="text-sm text-muted-foreground">PDF, DOC, or DOCX (max 10MB)</p>
+                    </div>
+                  )}
+                </div>
+                {errors.cv && <p className="text-sm text-destructive">{errors.cv}</p>}
 
-            <YesNoQuestion 
-              label="Are you comfortable working US time zones?" 
-              field="us_timezone_ok" 
-              value={formData.us_timezone_ok} 
-            />
+                <div className="pt-4 border-t border-border flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentStep('prescreening')}
+                    className="flex-1"
+                    disabled={isScoring}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={handleCvSubmit}
+                    disabled={!cvFile || isScoring}
+                    className="flex-1"
+                  >
+                    {isScoring ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Analyzing CV...
+                      </>
+                    ) : (
+                      "Continue"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
 
-            <div className="space-y-2">
-              <Label htmlFor="start_availability">How soon can you start? *</Label>
-              <Input
-                id="start_availability"
-                value={formData.start_availability}
-                onChange={(e) => handleTextChange("start_availability", e.target.value)}
-                placeholder="e.g., Immediately, 2 weeks notice"
-                className={errors.start_availability ? "border-destructive" : ""}
-              />
-              {errors.start_availability && <p className="text-sm text-destructive">{errors.start_availability}</p>}
-            </div>
+            {/* Step 3: Vocaroo Link */}
+            {currentStep === 'vocaroo' && (
+              <div className="space-y-5">
+                <div className="text-center mb-6">
+                  <Mic className="w-12 h-12 text-primary mx-auto mb-3" />
+                  <h4 className="font-semibold text-lg">Voice Introduction</h4>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    This step is required to complete your application
+                  </p>
+                </div>
 
-            <YesNoQuestion 
-              label="Do you have experience in a similar role?" 
-              field="has_experience" 
-              value={formData.has_experience} 
-            />
+                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
+                  <p className="text-sm">
+                    Please record a <span className="font-semibold">1-minute voice introduction</span> using{" "}
+                    <a 
+                      href="https://vocaroo.com" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline inline-flex items-center gap-1"
+                    >
+                      Vocaroo
+                      <ExternalLink className="w-3 h-3" />
+                    </a>{" "}
+                    and paste the link below.
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    In your introduction, briefly tell us about yourself, your experience, and why you are interested in this role.
+                  </p>
+                </div>
 
-            <YesNoQuestion 
-              label="Are you currently working for another client or company?" 
-              field="currently_working" 
-              value={formData.currently_working} 
-            />
+                <div className="space-y-2">
+                  <Label htmlFor="vocaroo_link">Vocaroo Link *</Label>
+                  <Input
+                    id="vocaroo_link"
+                    value={vocarooLink}
+                    onChange={(e) => {
+                      setVocarooLink(e.target.value);
+                      if (errors.vocaroo) {
+                        setErrors(prev => ({ ...prev, vocaroo: "" }));
+                      }
+                    }}
+                    placeholder="e.g., https://vocaroo.com/1abc2def3ghi"
+                    className={errors.vocaroo ? "border-destructive" : ""}
+                  />
+                  {errors.vocaroo && <p className="text-sm text-destructive">{errors.vocaroo}</p>}
+                </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="location">Your current location (city, country) *</Label>
-              <Input
-                id="location"
-                value={formData.location}
-                onChange={(e) => handleTextChange("location", e.target.value)}
-                placeholder="e.g., Manila, Philippines"
-                className={errors.location ? "border-destructive" : ""}
-              />
-              {errors.location && <p className="text-sm text-destructive">{errors.location}</p>}
-            </div>
-
-            {/* Hidden honeypot field - invisible to users, bots will fill it */}
-            <div 
-              aria-hidden="true" 
-              style={{ 
-                position: 'absolute', 
-                left: '-9999px', 
-                top: '-9999px',
-                opacity: 0, 
-                height: 0, 
-                width: 0, 
-                overflow: 'hidden',
-                pointerEvents: 'none' 
-              }}
-            >
-              <label htmlFor="fax_number_do_not_fill">Leave this empty</label>
-              <input
-                type="text"
-                id="fax_number_do_not_fill"
-                name="fax_number_do_not_fill"
-                value={formData.honeypot_field}
-                onChange={(e) => handleTextChange("honeypot_field", e.target.value)}
-                autoComplete="new-password"
-                tabIndex={-1}
-              />
-            </div>
-
-            <div className="pt-4 border-t border-border">
-              <Button
-                onClick={handleSubmit}
-                disabled={!isFormComplete() || isSubmitting}
-                className="w-full"
-              >
-                {isSubmitting ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Submitting...
-                  </>
-                ) : (
-                  "Proceed to Application"
-                )}
-              </Button>
-              <p className="text-xs text-muted-foreground text-center mt-2">
-                All fields marked with * are required
-              </p>
-            </div>
+                <div className="pt-4 border-t border-border flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={() => setCurrentStep('cv-upload')}
+                    className="flex-1"
+                    disabled={isSubmitting}
+                  >
+                    Back
+                  </Button>
+                  <Button
+                    onClick={handleFinalSubmit}
+                    disabled={!vocarooLink.trim() || isSubmitting}
+                    className="flex-1"
+                  >
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Submitting...
+                      </>
+                    ) : (
+                      "Submit Application"
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>
