@@ -45,6 +45,16 @@ interface EditJobDialogProps {
   onJobUpdated: () => void;
 }
 
+// Helper function to clean pasted text (remove bullets, dashes, etc.)
+const cleanPastedText = (text: string): string => {
+  return text
+    .replace(/^[\s]*[-–—•◦▪▸►◆★✓✔☑︎●○]\s*/gm, '') // Remove common bullet characters
+    .replace(/^[\s]*\d+[.)]\s*/gm, '') // Remove numbered list markers (1. or 1))
+    .replace(/^[\s]*[a-zA-Z][.)]\s*/gm, '') // Remove letter list markers (a. or a))
+    .replace(/^\s*\*\s*/gm, '') // Remove asterisk bullets
+    .trim();
+};
+
 // Fixed conversion values for Philippines
 const USD_TO_PHP_RATE = 56;
 const WEEKS_PER_MONTH = 4;
@@ -104,6 +114,13 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
     setFormData({ ...formData, qualifications: newQualifications });
   };
 
+  const handleQualificationPaste = (index: number, e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData('text');
+    const cleanedText = cleanPastedText(pastedText);
+    updateQualification(index, cleanedText);
+  };
+
   const addQualification = () => {
     if (formData.qualifications.length < 10) {
       setFormData({ ...formData, qualifications: [...formData.qualifications, ''] });
@@ -121,6 +138,13 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
     const newResponsibilities = [...formData.responsibilities];
     newResponsibilities[index] = value;
     setFormData({ ...formData, responsibilities: newResponsibilities });
+  };
+
+  const handleResponsibilityPaste = (index: number, e: React.ClipboardEvent<HTMLInputElement>) => {
+    e.preventDefault();
+    const pastedText = e.clipboardData.getData('text');
+    const cleanedText = cleanPastedText(pastedText);
+    updateResponsibility(index, cleanedText);
   };
 
   const addResponsibility = () => {
@@ -344,6 +368,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
                   <Input
                     value={qual}
                     onChange={(e) => updateQualification(index, e.target.value)}
+                    onPaste={(e) => handleQualificationPaste(index, e)}
                     placeholder={
                       index === 0 ? "Required skill or experience" :
                       index === 1 ? "Required skill or experience" :
@@ -390,6 +415,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
                   <Input
                     value={resp}
                     onChange={(e) => updateResponsibility(index, e.target.value)}
+                    onPaste={(e) => handleResponsibilityPaste(index, e)}
                     placeholder={
                       index === 0 ? "Key responsibility or task" :
                       index === 1 ? "Key responsibility or task" :
