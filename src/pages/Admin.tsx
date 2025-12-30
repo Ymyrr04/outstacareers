@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
@@ -416,7 +417,7 @@ const Admin = () => {
           <TabsContent value="applicants" className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold">Pre-Screening Submissions</h2>
-              <p className="text-muted-foreground">View applicant pre-screening responses</p>
+              <p className="text-muted-foreground">View applicant pre-screening responses grouped by role</p>
             </div>
 
             {applicantsLoading ? (
@@ -428,8 +429,30 @@ const Admin = () => {
                 </CardContent>
               </Card>
             ) : (
-              <div className="grid gap-4">
-                {applicants.map((applicant) => (
+              <Accordion type="multiple" defaultValue={[...new Set(applicants.map(a => a.job_title))]} className="space-y-4">
+                {Object.entries(
+                  applicants.reduce((groups, applicant) => {
+                    const jobTitle = applicant.job_title;
+                    if (!groups[jobTitle]) {
+                      groups[jobTitle] = [];
+                    }
+                    groups[jobTitle].push(applicant);
+                    return groups;
+                  }, {} as Record<string, Applicant[]>)
+                ).map(([jobTitle, jobApplicants]) => (
+                  <AccordionItem key={jobTitle} value={jobTitle} className="border rounded-lg bg-card">
+                    <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                      <div className="flex items-center gap-3">
+                        <Briefcase className="w-5 h-5 text-primary" />
+                        <span className="font-semibold text-lg">{jobTitle}</span>
+                        <Badge variant="secondary" className="ml-2">
+                          {jobApplicants.length} applicant{jobApplicants.length !== 1 ? 's' : ''}
+                        </Badge>
+                      </div>
+                    </AccordionTrigger>
+                    <AccordionContent className="px-4 pb-4">
+                      <div className="grid gap-4">
+                {jobApplicants.map((applicant) => (
                   <Card key={applicant.id}>
                     <CardContent className="py-4">
                       <div className="flex items-start justify-between gap-4">
@@ -704,8 +727,12 @@ const Admin = () => {
                       )}
                     </CardContent>
                   </Card>
+                        ))}
+                      </div>
+                    </AccordionContent>
+                  </AccordionItem>
                 ))}
-              </div>
+              </Accordion>
             )}
           </TabsContent>
         </Tabs>
