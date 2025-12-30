@@ -93,22 +93,34 @@ const Admin = () => {
   const handleDownloadCv = async (applicantId: string, cvPath: string) => {
     setDownloadingCv(applicantId);
     try {
-      // Create a signed URL for the private file
+      // Download the file directly using Supabase storage
       const { data, error } = await supabase.storage
         .from('cv-uploads')
-        .createSignedUrl(cvPath, 60); // URL valid for 60 seconds
+        .download(cvPath);
 
       if (error) {
         toast({
           title: 'Error',
-          description: 'Failed to generate download link',
+          description: 'Failed to download CV: ' + error.message,
           variant: 'destructive',
         });
         return;
       }
 
-      // Open the signed URL in a new tab
-      window.open(data.signedUrl, '_blank');
+      // Create a blob URL and trigger download
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = cvPath.split('/').pop() || 'cv.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Success',
+        description: 'CV downloaded successfully',
+      });
     } catch (err) {
       toast({
         title: 'Error',
