@@ -155,6 +155,7 @@ export type Database = {
           qualifications: string[] | null
           rate: string | null
           region: string | null
+          responsibilities: string[] | null
           title: string
           updated_at: string
         }
@@ -168,6 +169,7 @@ export type Database = {
           qualifications?: string[] | null
           rate?: string | null
           region?: string | null
+          responsibilities?: string[] | null
           title: string
           updated_at?: string
         }
@@ -181,6 +183,7 @@ export type Database = {
           qualifications?: string[] | null
           rate?: string | null
           region?: string | null
+          responsibilities?: string[] | null
           title?: string
           updated_at?: string
         }

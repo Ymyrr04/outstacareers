@@ -24,6 +24,7 @@ const jobSchema = z.object({
   description: z.string().max(2000).optional(),
   region: z.enum(['all', 'philippines', 'latin-america']),
   qualifications: z.array(z.string().max(200)).max(10).optional(),
+  responsibilities: z.array(z.string().max(200)).max(10).optional(),
 });
 
 interface Job {
@@ -36,6 +37,7 @@ interface Job {
   region: string;
   is_active: boolean;
   qualifications?: string[] | null;
+  responsibilities?: string[] | null;
 }
 
 interface EditJobDialogProps {
@@ -89,6 +91,9 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
     qualifications: (job.qualifications && job.qualifications.length > 0) 
       ? job.qualifications 
       : ['', '', '', '', ''] as string[],
+    responsibilities: (job.responsibilities && job.responsibilities.length > 0)
+      ? job.responsibilities
+      : ['', '', '', '', ''] as string[],
   });
   const [convertedRate, setConvertedRate] = useState<string | null>(null);
   const { toast } = useToast();
@@ -112,6 +117,25 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
     }
   };
 
+  const updateResponsibility = (index: number, value: string) => {
+    const newResponsibilities = [...formData.responsibilities];
+    newResponsibilities[index] = value;
+    setFormData({ ...formData, responsibilities: newResponsibilities });
+  };
+
+  const addResponsibility = () => {
+    if (formData.responsibilities.length < 10) {
+      setFormData({ ...formData, responsibilities: [...formData.responsibilities, ''] });
+    }
+  };
+
+  const removeResponsibility = (index: number) => {
+    if (formData.responsibilities.length > 1) {
+      const newResponsibilities = formData.responsibilities.filter((_, i) => i !== index);
+      setFormData({ ...formData, responsibilities: newResponsibilities });
+    }
+  };
+
   // Reset form data when job changes or dialog opens
   useEffect(() => {
     if (open) {
@@ -123,6 +147,9 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
         region: (job.region || 'all') as 'all' | 'philippines' | 'latin-america',
         qualifications: (job.qualifications && job.qualifications.length > 0) 
           ? job.qualifications 
+          : ['', '', '', '', ''],
+        responsibilities: (job.responsibilities && job.responsibilities.length > 0)
+          ? job.responsibilities
           : ['', '', '', '', ''],
       });
       setConvertedRate(null);
@@ -169,8 +196,9 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
       ? convertedRate 
       : formData.rate || null;
 
-    // Filter out empty qualifications
+    // Filter out empty qualifications and responsibilities
     const filteredQualifications = formData.qualifications.filter(q => q.trim() !== '');
+    const filteredResponsibilities = formData.responsibilities.filter(r => r.trim() !== '');
 
     const { error } = await supabase
       .from('jobs')
@@ -181,6 +209,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
         description: formData.description || null,
         region: formData.region,
         qualifications: filteredQualifications.length > 0 ? filteredQualifications : null,
+        responsibilities: filteredResponsibilities.length > 0 ? filteredResponsibilities : null,
       })
       .eq('id', job.id);
 
@@ -330,6 +359,52 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
                       variant="ghost"
                       size="sm"
                       onClick={() => removeQualification(index)}
+                      className="px-2"
+                    >
+                      <X className="w-4 h-4 text-muted-foreground" />
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Responsibilities (optional)</Label>
+              {formData.responsibilities.length < 10 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addResponsibility}
+                >
+                  <Plus className="w-3 h-3 mr-1" />
+                  Add
+                </Button>
+              )}
+            </div>
+            <div className="space-y-2">
+              {formData.responsibilities.map((resp, index) => (
+                <div key={index} className="flex items-center gap-2">
+                  <Input
+                    value={resp}
+                    onChange={(e) => updateResponsibility(index, e.target.value)}
+                    placeholder={
+                      index === 0 ? "Key responsibility or task" :
+                      index === 1 ? "Key responsibility or task" :
+                      index === 2 ? "Key responsibility or task" :
+                      index === 3 ? "Project or team responsibility" :
+                      index === 4 ? "Communication or reporting duty" :
+                      "Additional responsibility"
+                    }
+                  />
+                  {formData.responsibilities.length > 1 && (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => removeResponsibility(index)}
                       className="px-2"
                     >
                       <X className="w-4 h-4 text-muted-foreground" />
