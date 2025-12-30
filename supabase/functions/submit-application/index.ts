@@ -70,6 +70,23 @@ serve(async (req) => {
       });
     }
 
+    // Validate Vocaroo link if provided (now required)
+    if (!body.vocaroo_link || body.vocaroo_link.trim() === '') {
+      return new Response(JSON.stringify({ error: 'Voice introduction (Vocaroo link) is required' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Validate Vocaroo link format
+    const vocarooLink = body.vocaroo_link.trim();
+    if (!vocarooLink.includes('vocaroo.com') && !vocarooLink.includes('voca.ro')) {
+      return new Response(JSON.stringify({ error: 'Please provide a valid Vocaroo link' }), {
+        status: 400,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     // Check rate limit - count submissions from this IP in the last hour
     const rateLimitWindow = new Date();
     rateLimitWindow.setHours(rateLimitWindow.getHours() - RATE_LIMIT_WINDOW_HOURS);
@@ -93,8 +110,8 @@ serve(async (req) => {
       });
     }
 
-    // Insert the application with IP hash for tracking
-    const insertData = {
+    // Insert the application with all fields including CV scoring and Vocaroo
+    const insertData: Record<string, unknown> = {
       full_name: body.full_name.trim(),
       email: body.email.trim().toLowerCase(),
       home_office: body.home_office,
@@ -114,8 +131,26 @@ serve(async (req) => {
       apply_url: body.apply_url,
       status: 'new',
       ip_hash: ipHash,
-      honeypot_field: null, // Always set to null for valid submissions
+      honeypot_field: null,
+      // New CV scoring fields
+      cv_file_url: body.cv_file_url || null,
+      cv_text: body.cv_text || null,
+      role_experience_score: body.role_experience_score ?? null,
+      skills_tools_score: body.skills_tools_score ?? null,
+      availability_setup_score: body.availability_setup_score ?? null,
+      bonus_red_flag_score: body.bonus_red_flag_score ?? null,
+      total_score: body.total_score ?? null,
+      ranking_status: body.ranking_status || null,
+      ai_summary: body.ai_summary || null,
+      vocaroo_link: vocarooLink,
     };
+
+    console.log('Inserting application with CV scoring data:', {
+      total_score: insertData.total_score,
+      ranking_status: insertData.ranking_status,
+      has_cv: !!insertData.cv_file_url,
+      has_vocaroo: !!insertData.vocaroo_link,
+    });
 
     const { error: insertError } = await supabase
       .from('applicants_prescreen')
