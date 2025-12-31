@@ -24,6 +24,17 @@ interface DuplicateCheckResult {
   reason?: string;
 }
 
+// Sanitize text to remove null bytes and other problematic Unicode characters
+function sanitizeText(text: string): string {
+  // Remove null bytes, control characters, and other problematic Unicode
+  return text
+    .replace(/\u0000/g, '') // Remove null bytes
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control chars except newline/tab
+    .replace(/\uFFFD/g, '') // Remove replacement characters
+    .replace(/[\uD800-\uDFFF]/g, '') // Remove lone surrogates
+    .trim();
+}
+
 // Simple text extraction from PDF (basic approach)
 async function extractTextFromPDF(base64Data: string): Promise<string> {
   try {
@@ -190,6 +201,9 @@ serve(async (req) => {
     } else {
       cvText = await extractTextFromDoc(file_base64);
     }
+
+    // Sanitize text to remove null bytes and problematic characters
+    cvText = sanitizeText(cvText);
 
     console.log('Extracted text length:', cvText.length);
 
