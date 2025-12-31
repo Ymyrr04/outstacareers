@@ -71,6 +71,7 @@ export type Database = {
           cv_file_url: string | null
           cv_text: string | null
           email: string
+          file_hash: string | null
           full_name: string
           good_internet: boolean
           has_experience: boolean
@@ -84,6 +85,7 @@ export type Database = {
           laptop_or_pc: boolean
           location: string
           noise_canceling_headset: boolean
+          phone: string | null
           power_backup: boolean
           ranking_status: string | null
           role_experience_score: number | null
@@ -107,6 +109,7 @@ export type Database = {
           cv_file_url?: string | null
           cv_text?: string | null
           email: string
+          file_hash?: string | null
           full_name: string
           good_internet: boolean
           has_experience: boolean
@@ -120,6 +123,7 @@ export type Database = {
           laptop_or_pc: boolean
           location: string
           noise_canceling_headset: boolean
+          phone?: string | null
           power_backup: boolean
           ranking_status?: string | null
           role_experience_score?: number | null
@@ -143,6 +147,7 @@ export type Database = {
           cv_file_url?: string | null
           cv_text?: string | null
           email?: string
+          file_hash?: string | null
           full_name?: string
           good_internet?: boolean
           has_experience?: boolean
@@ -156,6 +161,7 @@ export type Database = {
           laptop_or_pc?: boolean
           location?: string
           noise_canceling_headset?: boolean
+          phone?: string | null
           power_backup?: boolean
           ranking_status?: string | null
           role_experience_score?: number | null
