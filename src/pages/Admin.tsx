@@ -522,7 +522,7 @@ const Admin = () => {
                           </CardContent>
                         </Card>
                       ) : (
-                        <Accordion type="multiple" defaultValue={Object.keys(groupedByRole)} className="space-y-4">
+                        <Accordion type="multiple" className="space-y-4">
                           {Object.entries(groupedByRole).map(([jobTitle, jobApplicants]) => (
                             <AccordionItem key={jobTitle} value={jobTitle} className="border rounded-lg bg-card">
                               <AccordionTrigger className="px-4 py-3 hover:no-underline">
