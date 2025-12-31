@@ -11,7 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload } from 'lucide-react';
+import BulkUploadDialog from '@/components/BulkUploadDialog';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 const APPLICANT_STATUS_FOLDERS = [
@@ -50,6 +51,8 @@ interface Job {
   region: string;
   is_active: boolean;
   created_at: string;
+  qualifications: string[] | null;
+  responsibilities: string[] | null;
 }
 
 interface ToolMatch {
@@ -468,9 +471,21 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="applicants" className="space-y-6">
-            <div>
-              <h2 className="text-2xl font-bold">Pre-Screening Submissions</h2>
-              <p className="text-muted-foreground">View applicants organized by status and role</p>
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">Pre-Screening Submissions</h2>
+                <p className="text-muted-foreground">View applicants organized by status and role</p>
+              </div>
+              <BulkUploadDialog 
+                jobs={jobs.map(j => ({ 
+                  id: j.id, 
+                  title: j.title, 
+                  description: j.description,
+                  qualifications: j.qualifications,
+                  responsibilities: j.responsibilities
+                }))} 
+                onUploadComplete={fetchApplicants} 
+              />
             </div>
 
             {applicantsLoading ? (
