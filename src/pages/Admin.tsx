@@ -25,8 +25,9 @@ const APPLICANT_STATUS_FOLDERS = [
   'Bench'
 ] as const;
 
-// Dropdown options exclude "For Review" since it's the unreviewed state
+// Dropdown options include all statuses (For Review can be selected to move back)
 const APPLICANT_STATUS_OPTIONS = [
+  'For Review',
   'Reviewed',
   'Pass Screening',
   'Reject',
