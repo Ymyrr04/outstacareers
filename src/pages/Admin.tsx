@@ -7,10 +7,24 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2 } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen } from 'lucide-react';
+
+// Status options for applicant tracking
+const APPLICANT_STATUSES = [
+  'Reviewed',
+  'Pass Screening',
+  'Reject',
+  '50/50',
+  'For Interview',
+  'Candidate Successful',
+  'Bench'
+] as const;
+
+type ApplicantStatus = typeof APPLICANT_STATUSES[number];
 
 interface Job {
   id: string;
@@ -90,6 +104,7 @@ const Admin = () => {
   const [applicantsLoading, setApplicantsLoading] = useState(true);
   const [expandedApplicant, setExpandedApplicant] = useState<string | null>(null);
   const [downloadingCv, setDownloadingCv] = useState<string | null>(null);
+  const [activeStatusFolder, setActiveStatusFolder] = useState<ApplicantStatus>('Reviewed');
 
   const handleDownloadCv = async (applicantId: string, cvPath: string) => {
     setDownloadingCv(applicantId);
@@ -243,6 +258,30 @@ const Admin = () => {
         description: 'Applicant deleted successfully',
       });
       fetchApplicants();
+    }
+  };
+
+  const handleUpdateApplicantStatus = async (applicantId: string, newStatus: ApplicantStatus) => {
+    const { error } = await supabase
+      .from('applicants_prescreen')
+      .update({ status: newStatus })
+      .eq('id', applicantId);
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update status: ' + error.message,
+        variant: 'destructive',
+      });
+    } else {
+      // Update locally for immediate UI feedback
+      setApplicants(prev => prev.map(a => 
+        a.id === applicantId ? { ...a, status: newStatus } : a
+      ));
+      toast({
+        title: 'Status Updated',
+        description: `Applicant moved to "${newStatus}"`,
+      });
     }
   };
 
@@ -417,7 +456,7 @@ const Admin = () => {
           <TabsContent value="applicants" className="space-y-6">
             <div>
               <h2 className="text-2xl font-bold">Pre-Screening Submissions</h2>
-              <p className="text-muted-foreground">View applicant pre-screening responses grouped by role</p>
+              <p className="text-muted-foreground">View applicants organized by status and role</p>
             </div>
 
             {applicantsLoading ? (
@@ -429,39 +468,66 @@ const Admin = () => {
                 </CardContent>
               </Card>
             ) : (
-              <Accordion type="multiple" defaultValue={[...new Set(applicants.map(a => a.job_title))]} className="space-y-4">
-                {Object.entries(
-                  applicants.reduce((groups, applicant) => {
+              <Tabs value={activeStatusFolder} onValueChange={(v) => setActiveStatusFolder(v as ApplicantStatus)} className="space-y-4">
+                <TabsList className="flex-wrap h-auto gap-1">
+                  {APPLICANT_STATUSES.map((status) => {
+                    const count = applicants.filter(a => a.status === status).length;
+                    return (
+                      <TabsTrigger key={status} value={status} className="flex items-center gap-2">
+                        <FolderOpen className="w-4 h-4" />
+                        {status}
+                        {count > 0 && (
+                          <Badge variant="secondary" className="ml-1 text-xs">
+                            {count}
+                          </Badge>
+                        )}
+                      </TabsTrigger>
+                    );
+                  })}
+                </TabsList>
+
+                {APPLICANT_STATUSES.map((status) => {
+                  const statusApplicants = applicants.filter(a => a.status === status);
+                  const groupedByRole = statusApplicants.reduce((groups, applicant) => {
                     const jobTitle = applicant.job_title;
                     if (!groups[jobTitle]) {
                       groups[jobTitle] = [];
                     }
                     groups[jobTitle].push(applicant);
                     return groups;
-                  }, {} as Record<string, Applicant[]>)
-                ).map(([jobTitle, jobApplicants]) => (
-                  <AccordionItem key={jobTitle} value={jobTitle} className="border rounded-lg bg-card">
-                    <AccordionTrigger className="px-4 py-3 hover:no-underline">
-                      <div className="flex items-center gap-3">
-                        <Briefcase className="w-5 h-5 text-primary" />
-                        <span className="font-semibold text-lg">{jobTitle}</span>
-                        <Badge variant="secondary" className="ml-2">
-                          {jobApplicants.length} applicant{jobApplicants.length !== 1 ? 's' : ''}
-                        </Badge>
-                      </div>
-                    </AccordionTrigger>
-                    <AccordionContent className="px-4 pb-4">
-                      <div className="grid gap-4">
+                  }, {} as Record<string, Applicant[]>);
+
+                  return (
+                    <TabsContent key={status} value={status} className="space-y-4">
+                      {statusApplicants.length === 0 ? (
+                        <Card>
+                          <CardContent className="py-12 text-center">
+                            <FolderOpen className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+                            <p className="text-muted-foreground">No applicants in "{status}" folder.</p>
+                          </CardContent>
+                        </Card>
+                      ) : (
+                        <Accordion type="multiple" defaultValue={Object.keys(groupedByRole)} className="space-y-4">
+                          {Object.entries(groupedByRole).map(([jobTitle, jobApplicants]) => (
+                            <AccordionItem key={jobTitle} value={jobTitle} className="border rounded-lg bg-card">
+                              <AccordionTrigger className="px-4 py-3 hover:no-underline">
+                                <div className="flex items-center gap-3">
+                                  <Briefcase className="w-5 h-5 text-primary" />
+                                  <span className="font-semibold text-lg">{jobTitle}</span>
+                                  <Badge variant="secondary" className="ml-2">
+                                    {jobApplicants.length} applicant{jobApplicants.length !== 1 ? 's' : ''}
+                                  </Badge>
+                                </div>
+                              </AccordionTrigger>
+                              <AccordionContent className="px-4 pb-4">
+                                <div className="grid gap-4">
                 {jobApplicants.map((applicant) => (
                   <Card key={applicant.id}>
                     <CardContent className="py-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
+                          <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <h3 className="font-semibold">{applicant.full_name}</h3>
-                            <Badge variant={applicant.status === 'new' ? 'default' : 'secondary'}>
-                              {applicant.status}
-                            </Badge>
                             {applicant.ranking_status && (
                               <Badge 
                                 variant={
@@ -486,7 +552,7 @@ const Admin = () => {
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground">{applicant.email}</p>
-                          <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                          <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
                             <span className="flex items-center gap-1">
                               <Briefcase className="w-3.5 h-3.5" />
                               {applicant.job_title}
@@ -514,6 +580,21 @@ const Admin = () => {
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
+                          <Select
+                            value={applicant.status}
+                            onValueChange={(value) => handleUpdateApplicantStatus(applicant.id, value as ApplicantStatus)}
+                          >
+                            <SelectTrigger className="w-[160px]">
+                              <SelectValue placeholder="Select status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {APPLICANT_STATUSES.map((status) => (
+                                <SelectItem key={status} value={status}>
+                                  {status}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
                           <Button
                             variant="outline"
                             size="sm"
@@ -733,6 +814,11 @@ const Admin = () => {
                   </AccordionItem>
                 ))}
               </Accordion>
+                      )}
+                    </TabsContent>
+                  );
+                })}
+              </Tabs>
             )}
           </TabsContent>
         </Tabs>
