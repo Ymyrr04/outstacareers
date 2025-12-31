@@ -535,13 +535,23 @@ const Admin = () => {
                               </AccordionTrigger>
                               <AccordionContent className="px-4 pb-4">
                                 <div className="grid gap-4">
-                {jobApplicants.map((applicant) => (
-                  <Card key={applicant.id}>
+                {jobApplicants.map((applicant) => {
+                  const isUnreviewed = applicant.status === 'For Review';
+                  return (
+                  <Card 
+                    key={applicant.id}
+                    className={isUnreviewed ? 'border-l-4 border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20' : ''}
+                  >
                     <CardContent className="py-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <h3 className="font-semibold">{applicant.full_name}</h3>
+                            {isUnreviewed && (
+                              <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-xs">
+                                NEW
+                              </Badge>
+                            )}
                             {applicant.ranking_status && (
                               <Badge 
                                 variant={
@@ -822,7 +832,8 @@ const Admin = () => {
                       )}
                     </CardContent>
                   </Card>
-                        ))}
+                  );
+                })}
                       </div>
                     </AccordionContent>
                   </AccordionItem>
