@@ -13,8 +13,9 @@ import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen } from 'lucide-react';
 
-// Status options for applicant tracking
-const APPLICANT_STATUSES = [
+// Status options for applicant tracking - "For Review" is the default for new applicants
+const APPLICANT_STATUS_FOLDERS = [
+  'For Review',
   'Reviewed',
   'Pass Screening',
   'Reject',
@@ -24,7 +25,19 @@ const APPLICANT_STATUSES = [
   'Bench'
 ] as const;
 
-type ApplicantStatus = typeof APPLICANT_STATUSES[number];
+// Dropdown options exclude "For Review" since it's the unreviewed state
+const APPLICANT_STATUS_OPTIONS = [
+  'Reviewed',
+  'Pass Screening',
+  'Reject',
+  '50/50',
+  'For Interview',
+  'Candidate Successful',
+  'Bench'
+] as const;
+
+type ApplicantStatusFolder = typeof APPLICANT_STATUS_FOLDERS[number];
+type ApplicantStatusOption = typeof APPLICANT_STATUS_OPTIONS[number];
 
 interface Job {
   id: string;
@@ -104,7 +117,7 @@ const Admin = () => {
   const [applicantsLoading, setApplicantsLoading] = useState(true);
   const [expandedApplicant, setExpandedApplicant] = useState<string | null>(null);
   const [downloadingCv, setDownloadingCv] = useState<string | null>(null);
-  const [activeStatusFolder, setActiveStatusFolder] = useState<ApplicantStatus>('Reviewed');
+  const [activeStatusFolder, setActiveStatusFolder] = useState<ApplicantStatusFolder>('For Review');
 
   const handleDownloadCv = async (applicantId: string, cvPath: string) => {
     setDownloadingCv(applicantId);
@@ -261,7 +274,7 @@ const Admin = () => {
     }
   };
 
-  const handleUpdateApplicantStatus = async (applicantId: string, newStatus: ApplicantStatus) => {
+  const handleUpdateApplicantStatus = async (applicantId: string, newStatus: ApplicantStatusOption) => {
     const { error } = await supabase
       .from('applicants_prescreen')
       .update({ status: newStatus })
@@ -468,15 +481,16 @@ const Admin = () => {
                 </CardContent>
               </Card>
             ) : (
-              <Tabs value={activeStatusFolder} onValueChange={(v) => setActiveStatusFolder(v as ApplicantStatus)} className="space-y-4">
+              <Tabs value={activeStatusFolder} onValueChange={(v) => setActiveStatusFolder(v as ApplicantStatusFolder)} className="space-y-4">
                 <TabsList className="flex-wrap h-auto gap-1">
-                  {APPLICANT_STATUSES.map((status) => {
+                  {APPLICANT_STATUS_FOLDERS.map((status) => {
                     const count = applicants.filter(a => a.status === status).length;
                     return (
                       <TabsTrigger key={status} value={status} className="flex items-center gap-2">
                         <FolderOpen className="w-4 h-4" />
                         {status}
-                        {count > 0 && (
+                        {/* Only show count badge on "For Review" folder */}
+                        {status === 'For Review' && count > 0 && (
                           <Badge variant="secondary" className="ml-1 text-xs">
                             {count}
                           </Badge>
@@ -486,7 +500,7 @@ const Admin = () => {
                   })}
                 </TabsList>
 
-                {APPLICANT_STATUSES.map((status) => {
+                {APPLICANT_STATUS_FOLDERS.map((status) => {
                   const statusApplicants = applicants.filter(a => a.status === status);
                   const groupedByRole = statusApplicants.reduce((groups, applicant) => {
                     const jobTitle = applicant.job_title;
@@ -581,14 +595,14 @@ const Admin = () => {
                         </div>
                         <div className="flex items-center gap-2">
                           <Select
-                            value={applicant.status}
-                            onValueChange={(value) => handleUpdateApplicantStatus(applicant.id, value as ApplicantStatus)}
+                            value={applicant.status === 'For Review' ? '' : applicant.status}
+                            onValueChange={(value) => handleUpdateApplicantStatus(applicant.id, value as ApplicantStatusOption)}
                           >
                             <SelectTrigger className="w-[160px]">
                               <SelectValue placeholder="Select status" />
                             </SelectTrigger>
                             <SelectContent>
-                              {APPLICANT_STATUSES.map((status) => (
+                              {APPLICANT_STATUS_OPTIONS.map((status) => (
                                 <SelectItem key={status} value={status}>
                                   {status}
                                 </SelectItem>
