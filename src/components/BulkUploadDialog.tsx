@@ -53,12 +53,12 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
   const [selectedStatus, setSelectedStatus] = useState<string>('');
   const [isProcessing, setIsProcessing] = useState(false);
   const [fileStatuses, setFileStatuses] = useState<FileStatus[]>([]);
+  const [isDragOver, setIsDragOver] = useState(false);
   const { toast } = useToast();
 
   const selectedJob = jobs.find(j => j.id === selectedJobId);
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
+  const validateAndSetFiles = useCallback((files: File[]) => {
     const validFiles = files.filter(file => 
       file.type === 'application/pdf' || 
       file.type === 'application/msword' ||
@@ -76,6 +76,36 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
     setSelectedFiles(validFiles);
     setFileStatuses(validFiles.map(f => ({ name: f.name, status: 'pending' })));
   }, [toast]);
+
+  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    validateAndSetFiles(files);
+  }, [validateAndSetFiles]);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (!isProcessing) {
+      setIsDragOver(true);
+    }
+  }, [isProcessing]);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    
+    if (isProcessing) return;
+    
+    const files = Array.from(e.dataTransfer.files);
+    validateAndSetFiles(files);
+  }, [isProcessing, validateAndSetFiles]);
 
   const updateFileStatus = (index: number, updates: Partial<FileStatus>) => {
     setFileStatuses(prev => prev.map((fs, i) => 
@@ -275,24 +305,44 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
         </DialogHeader>
 
         <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
-          {/* File Input */}
+          {/* Drag & Drop File Input */}
           <div className="space-y-2">
             <Label>Select CV Files (PDF, DOC, DOCX)</Label>
-            <input
-              type="file"
-              multiple
-              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-              onChange={handleFileChange}
-              disabled={isProcessing}
-              className="block w-full text-sm text-muted-foreground
-                file:mr-4 file:py-2 file:px-4
-                file:rounded-md file:border-0
-                file:text-sm file:font-medium
-                file:bg-primary file:text-primary-foreground
-                hover:file:bg-primary/90
-                file:cursor-pointer cursor-pointer
-                disabled:opacity-50 disabled:cursor-not-allowed"
-            />
+            <div
+              onDragOver={handleDragOver}
+              onDragLeave={handleDragLeave}
+              onDrop={handleDrop}
+              className={`
+                relative border-2 border-dashed rounded-lg p-6 transition-all duration-200
+                ${isDragOver 
+                  ? 'border-primary bg-primary/5 scale-[1.02]' 
+                  : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+                }
+                ${isProcessing ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+              `}
+            >
+              <input
+                type="file"
+                multiple
+                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                onChange={handleFileChange}
+                disabled={isProcessing}
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
+              />
+              <div className="flex flex-col items-center justify-center gap-2 text-center pointer-events-none">
+                <div className={`p-3 rounded-full ${isDragOver ? 'bg-primary/10' : 'bg-muted'}`}>
+                  <Upload className={`w-6 h-6 ${isDragOver ? 'text-primary' : 'text-muted-foreground'}`} />
+                </div>
+                <div>
+                  <p className="font-medium text-sm">
+                    {isDragOver ? 'Drop files here' : 'Drag & drop CV files here'}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    or click to browse • PDF, DOC, DOCX
+                  </p>
+                </div>
+              </div>
+            </div>
             {selectedFiles.length > 0 && (
               <p className="text-sm text-muted-foreground">
                 {selectedFiles.length} file(s) selected
