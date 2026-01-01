@@ -959,11 +959,18 @@ const Admin = () => {
           </DialogHeader>
           <div className="flex-1 overflow-hidden rounded-lg border bg-muted">
             {previewCv?.url && previewCv.mimeType === 'application/pdf' ? (
-              <iframe
-                src={previewCv.url}
+              <object
+                data={`${previewCv.url}#toolbar=1&navpanes=0`}
+                type="application/pdf"
                 className="w-full h-full"
-                title="CV Preview"
-              />
+                aria-label="CV Preview"
+              >
+                <embed
+                  src={`${previewCv.url}#toolbar=1&navpanes=0`}
+                  type="application/pdf"
+                  className="w-full h-full"
+                />
+              </object>
             ) : previewCv?.url ? (
               <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
                 <FileText className="w-16 h-16 text-muted-foreground" />
