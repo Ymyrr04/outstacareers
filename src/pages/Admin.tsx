@@ -958,53 +958,66 @@ const Admin = () => {
             </DialogTitle>
           </DialogHeader>
           <div className="flex-1 overflow-hidden rounded-lg border bg-background">
-            {previewCv?.cvText ? (
-              <div className="h-full overflow-auto p-6">
-                <div className="flex items-center justify-between mb-4 pb-4 border-b">
-                  <h3 className="font-semibold text-lg">Extracted CV Content</h3>
+            {(() => {
+              // Check if cv_text is valid extracted text (not raw PDF/binary content)
+              const isValidText = previewCv?.cvText && 
+                !previewCv.cvText.startsWith('%PDF') && 
+                !previewCv.cvText.includes('endobj') &&
+                !previewCv.cvText.includes('/Type /') &&
+                previewCv.cvText.length > 50;
+
+              if (isValidText) {
+                return (
+                  <div className="h-full overflow-auto p-6">
+                    <div className="flex items-center justify-between mb-4 pb-4 border-b">
+                      <h3 className="font-semibold text-lg">Extracted CV Content</h3>
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => {
+                            window.open(previewCv.url, '_blank');
+                          }}
+                        >
+                          <Eye className="w-4 h-4 mr-2" />
+                          Open Original
+                        </Button>
+                      </div>
+                    </div>
+                    <pre className="whitespace-pre-wrap font-sans text-sm text-foreground leading-relaxed">
+                      {previewCv.cvText}
+                    </pre>
+                  </div>
+                );
+              }
+
+              return (
+                <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
+                  <FileText className="w-16 h-16 text-muted-foreground" />
+                  <div>
+                    <p className="text-lg font-medium">Preview Not Available</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      This document cannot be previewed here. Use the buttons below to view.
+                    </p>
+                  </div>
                   <div className="flex gap-2">
                     <Button
                       variant="outline"
-                      size="sm"
                       onClick={() => {
-                        window.open(previewCv.url, '_blank');
+                        window.open(previewCv?.url, '_blank');
                       }}
                     >
                       <Eye className="w-4 h-4 mr-2" />
-                      Open Original
+                      Open in New Tab
+                    </Button>
+                    <Button onClick={handleDownloadFromPreview}>
+                      <Download className="w-4 h-4 mr-2" />
+                      Download
                     </Button>
                   </div>
                 </div>
-                <pre className="whitespace-pre-wrap font-sans text-sm text-foreground leading-relaxed">
-                  {previewCv.cvText}
-                </pre>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
-                <FileText className="w-16 h-16 text-muted-foreground" />
-                <div>
-                  <p className="text-lg font-medium">No Preview Available</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    CV text was not extracted. Please download to view.
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      window.open(previewCv?.url, '_blank');
-                    }}
-                  >
-                    <Eye className="w-4 h-4 mr-2" />
-                    Open Original
-                  </Button>
-                  <Button onClick={handleDownloadFromPreview}>
-                    <Download className="w-4 h-4 mr-2" />
-                    Download
-                  </Button>
-                </div>
-              </div>
-            )}
+              );
+            })()}
           </div>
         </DialogContent>
       </Dialog>
