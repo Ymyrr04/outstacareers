@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload } from 'lucide-react';
 import BulkUploadDialog from '@/components/BulkUploadDialog';
 
@@ -122,6 +123,58 @@ const Admin = () => {
   const [expandedApplicant, setExpandedApplicant] = useState<string | null>(null);
   const [downloadingCv, setDownloadingCv] = useState<string | null>(null);
   const [activeStatusFolder, setActiveStatusFolder] = useState<ApplicantStatusFolder>('For Review');
+  const [previewCv, setPreviewCv] = useState<{ url: string; path: string; name: string } | null>(null);
+  const [loadingPreview, setLoadingPreview] = useState(false);
+
+  const handlePreviewCv = async (applicantId: string, cvPath: string, applicantName: string) => {
+    setLoadingPreview(true);
+    try {
+      const { data, error } = await supabase.storage
+        .from('cv-uploads')
+        .download(cvPath);
+
+      if (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to load CV preview: ' + error.message,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const url = URL.createObjectURL(data);
+      setPreviewCv({ url, path: cvPath, name: applicantName });
+    } catch (err) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load CV preview',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingPreview(false);
+    }
+  };
+
+  const handleClosePreview = () => {
+    if (previewCv?.url) {
+      URL.revokeObjectURL(previewCv.url);
+    }
+    setPreviewCv(null);
+  };
+
+  const handleDownloadFromPreview = () => {
+    if (!previewCv) return;
+    const a = document.createElement('a');
+    a.href = previewCv.url;
+    a.download = previewCv.path.split('/').pop() || 'cv.pdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    toast({
+      title: 'Success',
+      description: 'CV downloaded successfully',
+    });
+  };
 
   const handleDownloadCv = async (applicantId: string, cvPath: string) => {
     setDownloadingCv(applicantId);
@@ -606,10 +659,21 @@ const Admin = () => {
                               {formatDate(applicant.submitted_at)}
                             </span>
                             {applicant.cv_file_url && (
-                              <span className="flex items-center gap-1 text-primary">
-                                <FileText className="w-3.5 h-3.5" />
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePreviewCv(applicant.id, applicant.cv_file_url!, applicant.full_name);
+                                }}
+                                disabled={loadingPreview}
+                                className="flex items-center gap-1 text-primary hover:underline cursor-pointer disabled:opacity-50"
+                              >
+                                {loadingPreview ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <FileText className="w-3.5 h-3.5" />
+                                )}
                                 CV
-                              </span>
+                              </button>
                             )}
                             {applicant.vocaroo_link && (
                               <span className="flex items-center gap-1 text-primary">
@@ -864,6 +928,35 @@ const Admin = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* CV Preview Modal */}
+      <Dialog open={!!previewCv} onOpenChange={(open) => !open && handleClosePreview()}>
+        <DialogContent className="max-w-4xl h-[90vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
+            <DialogTitle className="flex items-center justify-between">
+              <span>CV Preview - {previewCv?.name}</span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleDownloadFromPreview}
+                className="flex items-center gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Download
+              </Button>
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden rounded-lg border">
+            {previewCv?.url && (
+              <iframe
+                src={previewCv.url}
+                className="w-full h-full"
+                title="CV Preview"
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
