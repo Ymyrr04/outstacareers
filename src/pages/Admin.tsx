@@ -123,10 +123,10 @@ const Admin = () => {
   const [expandedApplicant, setExpandedApplicant] = useState<string | null>(null);
   const [downloadingCv, setDownloadingCv] = useState<string | null>(null);
   const [activeStatusFolder, setActiveStatusFolder] = useState<ApplicantStatusFolder>('For Review');
-  const [previewCv, setPreviewCv] = useState<{ url: string; path: string; name: string; mimeType: string } | null>(null);
+  const [previewCv, setPreviewCv] = useState<{ url: string; path: string; name: string; cvText: string | null } | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
 
-  const handlePreviewCv = async (applicantId: string, cvPath: string, applicantName: string) => {
+  const handlePreviewCv = async (applicantId: string, cvPath: string, applicantName: string, cvText: string | null) => {
     setLoadingPreview(true);
     try {
       const { data, error } = await supabase.storage
@@ -136,7 +136,7 @@ const Admin = () => {
       if (error) {
         toast({
           title: 'Error',
-          description: 'Failed to load CV preview: ' + error.message,
+          description: 'Failed to load CV: ' + error.message,
           variant: 'destructive',
         });
         return;
@@ -154,11 +154,11 @@ const Admin = () => {
       // Create blob with correct MIME type
       const blob = new Blob([data], { type: mimeType });
       const url = URL.createObjectURL(blob);
-      setPreviewCv({ url, path: cvPath, name: applicantName, mimeType });
+      setPreviewCv({ url, path: cvPath, name: applicantName, cvText });
     } catch (err) {
       toast({
         title: 'Error',
-        description: 'Failed to load CV preview',
+        description: 'Failed to load CV',
         variant: 'destructive',
       });
     } finally {
@@ -673,7 +673,7 @@ const Admin = () => {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  handlePreviewCv(applicant.id, applicant.cv_file_url!, applicant.full_name);
+                                  handlePreviewCv(applicant.id, applicant.cv_file_url!, applicant.full_name, applicant.cv_text);
                                 }}
                                 disabled={loadingPreview}
                                 className="flex items-center gap-1 text-primary hover:underline cursor-pointer disabled:opacity-50"
@@ -957,35 +957,54 @@ const Admin = () => {
               </Button>
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden rounded-lg border bg-muted">
-            {previewCv?.url && previewCv.mimeType === 'application/pdf' ? (
-              <object
-                data={`${previewCv.url}#toolbar=1&navpanes=0`}
-                type="application/pdf"
-                className="w-full h-full"
-                aria-label="CV Preview"
-              >
-                <embed
-                  src={`${previewCv.url}#toolbar=1&navpanes=0`}
-                  type="application/pdf"
-                  className="w-full h-full"
-                />
-              </object>
-            ) : previewCv?.url ? (
+          <div className="flex-1 overflow-hidden rounded-lg border bg-background">
+            {previewCv?.cvText ? (
+              <div className="h-full overflow-auto p-6">
+                <div className="flex items-center justify-between mb-4 pb-4 border-b">
+                  <h3 className="font-semibold text-lg">Extracted CV Content</h3>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        window.open(previewCv.url, '_blank');
+                      }}
+                    >
+                      <Eye className="w-4 h-4 mr-2" />
+                      Open Original
+                    </Button>
+                  </div>
+                </div>
+                <pre className="whitespace-pre-wrap font-sans text-sm text-foreground leading-relaxed">
+                  {previewCv.cvText}
+                </pre>
+              </div>
+            ) : (
               <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
                 <FileText className="w-16 h-16 text-muted-foreground" />
                 <div>
-                  <p className="text-lg font-medium">Word Document Preview</p>
+                  <p className="text-lg font-medium">No Preview Available</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    Word documents cannot be previewed in browser. Please download to view.
+                    CV text was not extracted. Please download to view.
                   </p>
                 </div>
-                <Button onClick={handleDownloadFromPreview} className="mt-2">
-                  <Download className="w-4 h-4 mr-2" />
-                  Download Document
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      window.open(previewCv?.url, '_blank');
+                    }}
+                  >
+                    <Eye className="w-4 h-4 mr-2" />
+                    Open Original
+                  </Button>
+                  <Button onClick={handleDownloadFromPreview}>
+                    <Download className="w-4 h-4 mr-2" />
+                    Download
+                  </Button>
+                </div>
               </div>
-            ) : null}
+            )}
           </div>
         </DialogContent>
       </Dialog>
