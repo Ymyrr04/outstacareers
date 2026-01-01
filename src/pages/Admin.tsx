@@ -123,7 +123,7 @@ const Admin = () => {
   const [expandedApplicant, setExpandedApplicant] = useState<string | null>(null);
   const [downloadingCv, setDownloadingCv] = useState<string | null>(null);
   const [activeStatusFolder, setActiveStatusFolder] = useState<ApplicantStatusFolder>('For Review');
-  const [previewCv, setPreviewCv] = useState<{ url: string; path: string; name: string } | null>(null);
+  const [previewCv, setPreviewCv] = useState<{ url: string; path: string; name: string; mimeType: string } | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
 
   const handlePreviewCv = async (applicantId: string, cvPath: string, applicantName: string) => {
@@ -142,8 +142,19 @@ const Admin = () => {
         return;
       }
 
-      const url = URL.createObjectURL(data);
-      setPreviewCv({ url, path: cvPath, name: applicantName });
+      // Determine MIME type based on file extension
+      const extension = cvPath.split('.').pop()?.toLowerCase();
+      let mimeType = 'application/pdf';
+      if (extension === 'doc') {
+        mimeType = 'application/msword';
+      } else if (extension === 'docx') {
+        mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      }
+
+      // Create blob with correct MIME type
+      const blob = new Blob([data], { type: mimeType });
+      const url = URL.createObjectURL(blob);
+      setPreviewCv({ url, path: cvPath, name: applicantName, mimeType });
     } catch (err) {
       toast({
         title: 'Error',
@@ -946,14 +957,28 @@ const Admin = () => {
               </Button>
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden rounded-lg border">
-            {previewCv?.url && (
+          <div className="flex-1 overflow-hidden rounded-lg border bg-muted">
+            {previewCv?.url && previewCv.mimeType === 'application/pdf' ? (
               <iframe
                 src={previewCv.url}
                 className="w-full h-full"
                 title="CV Preview"
               />
-            )}
+            ) : previewCv?.url ? (
+              <div className="flex flex-col items-center justify-center h-full gap-4 p-8 text-center">
+                <FileText className="w-16 h-16 text-muted-foreground" />
+                <div>
+                  <p className="text-lg font-medium">Word Document Preview</p>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Word documents cannot be previewed in browser. Please download to view.
+                  </p>
+                </div>
+                <Button onClick={handleDownloadFromPreview} className="mt-2">
+                  <Download className="w-4 h-4 mr-2" />
+                  Download Document
+                </Button>
+              </div>
+            ) : null}
           </div>
         </DialogContent>
       </Dialog>
