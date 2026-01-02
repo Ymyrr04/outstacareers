@@ -12,7 +12,10 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import BulkUploadDialog from '@/components/BulkUploadDialog';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
@@ -81,6 +84,7 @@ interface Applicant {
   id: string;
   full_name: string;
   email: string;
+  phone: string | null;
   home_office: boolean;
   noise_canceling_headset: boolean;
   laptop_or_pc: boolean;
@@ -98,6 +102,7 @@ interface Applicant {
   apply_url: string;
   status: string;
   submitted_at: string;
+  notes: string | null;
   // CV Assessment fields
   role_experience_score: number | null;
   skills_tools_score: number | null;
@@ -125,6 +130,16 @@ const Admin = () => {
   const [activeStatusFolder, setActiveStatusFolder] = useState<ApplicantStatusFolder>('For Review');
   const [previewCv, setPreviewCv] = useState<{ url: string; path: string; name: string; cvText: string | null } | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
+  
+  // Edit mode state
+  const [editingApplicant, setEditingApplicant] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<{
+    full_name: string;
+    email: string;
+    phone: string;
+    notes: string;
+  }>({ full_name: '', email: '', phone: '', notes: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
 
   const handlePreviewCv = async (applicantId: string, cvPath: string, applicantName: string, cvText: string | null) => {
     setLoadingPreview(true);
@@ -364,6 +379,70 @@ const Admin = () => {
         description: `Applicant moved to "${newStatus}"`,
       });
     }
+  };
+
+  const handleStartEdit = (applicant: Applicant) => {
+    setEditingApplicant(applicant.id);
+    setEditForm({
+      full_name: applicant.full_name,
+      email: applicant.email,
+      phone: applicant.phone || '',
+      notes: applicant.notes || '',
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingApplicant(null);
+    setEditForm({ full_name: '', email: '', phone: '', notes: '' });
+  };
+
+  const handleSaveEdit = async (applicantId: string) => {
+    if (!editForm.full_name.trim() || !editForm.email.trim()) {
+      toast({
+        title: 'Validation Error',
+        description: 'Name and email are required',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSavingEdit(true);
+    const { error } = await supabase
+      .from('applicants_prescreen')
+      .update({
+        full_name: editForm.full_name.trim(),
+        email: editForm.email.trim(),
+        phone: editForm.phone.trim() || null,
+        notes: editForm.notes.trim() || null,
+      })
+      .eq('id', applicantId);
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update applicant: ' + error.message,
+        variant: 'destructive',
+      });
+    } else {
+      // Update locally for immediate UI feedback
+      setApplicants(prev => prev.map(a => 
+        a.id === applicantId 
+          ? { 
+              ...a, 
+              full_name: editForm.full_name.trim(),
+              email: editForm.email.trim(),
+              phone: editForm.phone.trim() || null,
+              notes: editForm.notes.trim() || null,
+            } 
+          : a
+      ));
+      toast({
+        title: 'Success',
+        description: 'Applicant information updated',
+      });
+      setEditingApplicant(null);
+    }
+    setSavingEdit(false);
   };
 
   const formatDate = (dateString: string) => {
@@ -864,6 +943,149 @@ const Admin = () => {
                               )}
                             </div>
                           )}
+
+                          {/* Editable Contact Info Section */}
+                          <div className="mb-6 p-4 bg-muted/30 rounded-lg">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="font-semibold flex items-center gap-2">
+                                <User className="w-4 h-4" />
+                                Contact Information
+                              </h4>
+                              {editingApplicant === applicant.id ? (
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={handleCancelEdit}
+                                    disabled={savingEdit}
+                                  >
+                                    Cancel
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleSaveEdit(applicant.id)}
+                                    disabled={savingEdit}
+                                  >
+                                    {savingEdit ? (
+                                      <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                                    ) : (
+                                      <Save className="w-4 h-4 mr-1" />
+                                    )}
+                                    Save
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleStartEdit(applicant)}
+                                >
+                                  <Pencil className="w-4 h-4 mr-1" />
+                                  Edit
+                                </Button>
+                              )}
+                            </div>
+                            
+                            {editingApplicant === applicant.id ? (
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="edit-name" className="flex items-center gap-1">
+                                    <User className="w-3.5 h-3.5" />
+                                    Full Name
+                                  </Label>
+                                  <Input
+                                    id="edit-name"
+                                    value={editForm.full_name}
+                                    onChange={(e) => setEditForm(prev => ({ ...prev, full_name: e.target.value }))}
+                                    placeholder="Full name"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="edit-email" className="flex items-center gap-1">
+                                    <Mail className="w-3.5 h-3.5" />
+                                    Email
+                                  </Label>
+                                  <Input
+                                    id="edit-email"
+                                    type="email"
+                                    value={editForm.email}
+                                    onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                                    placeholder="Email address"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="edit-phone" className="flex items-center gap-1">
+                                    <Phone className="w-3.5 h-3.5" />
+                                    Phone
+                                  </Label>
+                                  <Input
+                                    id="edit-phone"
+                                    type="tel"
+                                    value={editForm.phone}
+                                    onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                                    placeholder="Phone number"
+                                  />
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <div className="flex items-center gap-2">
+                                  <User className="w-4 h-4 text-muted-foreground" />
+                                  <span className="text-sm">{applicant.full_name}</span>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Mail className="w-4 h-4 text-muted-foreground" />
+                                  <a href={`mailto:${applicant.email}`} className="text-sm text-primary hover:underline">
+                                    {applicant.email}
+                                  </a>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Phone className="w-4 h-4 text-muted-foreground" />
+                                  {applicant.phone ? (
+                                    <a href={`tel:${applicant.phone}`} className="text-sm text-primary hover:underline">
+                                      {applicant.phone}
+                                    </a>
+                                  ) : (
+                                    <span className="text-sm text-muted-foreground">Not provided</span>
+                                  )}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Notes Section */}
+                          <div className="mb-6 p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/30">
+                            <div className="flex items-center justify-between mb-3">
+                              <h4 className="font-semibold flex items-center gap-2">
+                                <StickyNote className="w-4 h-4 text-amber-600" />
+                                Notes
+                              </h4>
+                              {editingApplicant !== applicant.id && (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleStartEdit(applicant)}
+                                  className="text-amber-700 hover:text-amber-800 hover:bg-amber-100"
+                                >
+                                  <Pencil className="w-4 h-4 mr-1" />
+                                  {applicant.notes ? 'Edit Note' : 'Add Note'}
+                                </Button>
+                              )}
+                            </div>
+                            
+                            {editingApplicant === applicant.id ? (
+                              <Textarea
+                                value={editForm.notes}
+                                onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
+                                placeholder="Add notes about this applicant..."
+                                className="min-h-[100px] bg-background"
+                              />
+                            ) : (
+                              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                                {applicant.notes || 'No notes yet. Click "Add Note" to add observations about this applicant.'}
+                              </p>
+                            )}
+                          </div>
 
                           {/* CV and Vocaroo Links */}
                           <div className="flex flex-wrap gap-3 mb-4">
