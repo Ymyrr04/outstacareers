@@ -85,6 +85,7 @@ export type Database = {
           laptop_or_pc: boolean
           location: string
           noise_canceling_headset: boolean
+          notes: string | null
           phone: string | null
           power_backup: boolean
           ranking_status: string | null
@@ -123,6 +124,7 @@ export type Database = {
           laptop_or_pc: boolean
           location: string
           noise_canceling_headset: boolean
+          notes?: string | null
           phone?: string | null
           power_backup: boolean
           ranking_status?: string | null
@@ -161,6 +163,7 @@ export type Database = {
           laptop_or_pc?: boolean
           location?: string
           noise_canceling_headset?: boolean
+          notes?: string | null
           phone?: string | null
           power_backup?: boolean
           ranking_status?: string | null
