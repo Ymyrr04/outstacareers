@@ -140,6 +140,9 @@ const Admin = () => {
     notes: string;
   }>({ full_name: '', email: '', phone: '', notes: '' });
   const [savingEdit, setSavingEdit] = useState(false);
+  
+  // Notes popup state
+  const [notesPopup, setNotesPopup] = useState<{ id: string; name: string; notes: string } | null>(null);
 
   const handlePreviewCv = async (applicantId: string, cvPath: string, applicantName: string, cvText: string | null) => {
     setLoadingPreview(true);
@@ -735,6 +738,12 @@ const Admin = () => {
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground">{applicant.email}</p>
+                          {applicant.phone && (
+                            <p className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Phone className="w-3 h-3" />
+                              {applicant.phone}
+                            </p>
+                          )}
                           <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
                             <span className="flex items-center gap-1">
                               <Briefcase className="w-3.5 h-3.5" />
@@ -766,11 +775,31 @@ const Admin = () => {
                               </button>
                             )}
                             {applicant.vocaroo_link && (
-                              <span className="flex items-center gap-1 text-primary">
+                              <a
+                                href={applicant.vocaroo_link}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                onClick={(e) => e.stopPropagation()}
+                                className="flex items-center gap-1 text-primary hover:underline cursor-pointer"
+                              >
                                 <Mic className="w-3.5 h-3.5" />
                                 Voice
-                              </span>
+                              </a>
                             )}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setNotesPopup({
+                                  id: applicant.id,
+                                  name: applicant.full_name,
+                                  notes: applicant.notes || ''
+                                });
+                              }}
+                              className={`flex items-center gap-1 cursor-pointer hover:underline ${applicant.notes ? 'text-amber-600' : 'text-muted-foreground'}`}
+                            >
+                              <StickyNote className="w-3.5 h-3.5" />
+                              Notes
+                            </button>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
@@ -1240,6 +1269,30 @@ const Admin = () => {
                 </div>
               );
             })()}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Notes Popup Modal */}
+      <Dialog open={!!notesPopup} onOpenChange={(open) => !open && setNotesPopup(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <StickyNote className="w-5 h-5 text-amber-600" />
+              Notes - {notesPopup?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/30 min-h-[100px]">
+            {notesPopup?.notes ? (
+              <p className="text-sm whitespace-pre-wrap">{notesPopup.notes}</p>
+            ) : (
+              <p className="text-sm text-muted-foreground italic">No notes have been added for this applicant yet.</p>
+            )}
+          </div>
+          <div className="flex justify-end">
+            <Button variant="outline" onClick={() => setNotesPopup(null)}>
+              Close
+            </Button>
           </div>
         </DialogContent>
       </Dialog>

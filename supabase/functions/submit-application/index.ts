@@ -114,6 +114,7 @@ serve(async (req) => {
     const insertData: Record<string, unknown> = {
       full_name: body.full_name.trim(),
       email: body.email.trim().toLowerCase(),
+      phone: body.phone?.trim() || null,
       home_office: body.home_office,
       noise_canceling_headset: body.noise_canceling_headset,
       laptop_or_pc: body.laptop_or_pc,
@@ -129,7 +130,7 @@ serve(async (req) => {
       job_title: body.job_title,
       job_id: body.job_id,
       apply_url: body.apply_url,
-      status: 'new',
+      status: 'For Review',
       ip_hash: ipHash,
       honeypot_field: null,
       // New CV scoring fields
