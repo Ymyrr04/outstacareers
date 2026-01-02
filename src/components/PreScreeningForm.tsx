@@ -24,6 +24,7 @@ interface PreScreeningFormProps {
 const prescreenSchema = z.object({
   full_name: z.string().trim().min(1, "Full name is required").max(100, "Name must be less than 100 characters"),
   email: z.string().trim().email("Invalid email address").max(255, "Email must be less than 255 characters"),
+  phone: z.string().trim().min(1, "Phone number is required").max(30, "Phone must be less than 30 characters"),
   home_office: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
   noise_canceling_headset: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
   laptop_or_pc: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
@@ -41,6 +42,7 @@ const prescreenSchema = z.object({
 type FormData = {
   full_name: string;
   email: string;
+  phone: string;
   home_office: boolean | null;
   noise_canceling_headset: boolean | null;
   laptop_or_pc: boolean | null;
@@ -111,6 +113,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
   const [formData, setFormData] = useState<FormData>({
     full_name: "",
     email: "",
+    phone: "",
     home_office: null,
     noise_canceling_headset: null,
     laptop_or_pc: null,
@@ -144,6 +147,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
     return (
       formData.full_name.trim() !== "" &&
       formData.email.trim() !== "" &&
+      formData.phone.trim() !== "" &&
       formData.internet_speed.trim() !== "" &&
       formData.start_availability.trim() !== "" &&
       formData.location.trim() !== "" &&
@@ -382,6 +386,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
         body: {
           full_name: formData.full_name,
           email: formData.email,
+          phone: formData.phone,
           home_office: formData.home_office,
           noise_canceling_headset: formData.noise_canceling_headset,
           laptop_or_pc: formData.laptop_or_pc,
@@ -567,6 +572,19 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
                     className={errors.email ? "border-destructive" : ""}
                   />
                   {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Phone Number *</Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={formData.phone}
+                    onChange={(e) => handleTextChange("phone", e.target.value)}
+                    placeholder="Enter your phone number"
+                    className={errors.phone ? "border-destructive" : ""}
+                  />
+                  {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
                 </div>
 
                 <YesNoQuestion 
