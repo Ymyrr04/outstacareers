@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
-  Users, 
   Mail, 
   Phone, 
   Briefcase, 
@@ -15,8 +18,39 @@ import {
   Search,
   MapPin,
   Clock,
-  Loader2
+  Loader2,
+  User,
+  Pencil,
+  Save,
+  Download,
+  CheckCircle,
+  XCircle,
+  Zap,
+  Check,
+  X,
+  AlertTriangle
 } from 'lucide-react';
+
+interface ToolMatch {
+  tool: string;
+  found: boolean;
+  context?: string;
+}
+
+interface ExperienceHighlight {
+  role: string;
+  company?: string;
+  duration?: string;
+  relevance: string;
+}
+
+interface AssessmentDetails {
+  matched_tools: ToolMatch[];
+  missing_tools: string[];
+  experience_highlights: ExperienceHighlight[];
+  strengths: string[];
+  concerns: string[];
+}
 
 interface Applicant {
   id: string;
@@ -36,6 +70,24 @@ interface Applicant {
   extracted_skills: string[] | null;
   extracted_tools: string[] | null;
   years_of_experience: number | null;
+  // Additional fields for details view
+  home_office?: boolean;
+  noise_canceling_headset?: boolean;
+  laptop_or_pc?: boolean;
+  good_internet?: boolean;
+  power_backup?: boolean;
+  can_work_40_50?: boolean;
+  us_timezone_ok?: boolean;
+  has_experience?: boolean;
+  currently_working?: boolean;
+  internet_speed?: string;
+  start_availability?: string;
+  role_experience_score?: number | null;
+  skills_tools_score?: number | null;
+  availability_setup_score?: number | null;
+  bonus_red_flag_score?: number | null;
+  ai_summary?: string | null;
+  ai_assessment_details?: AssessmentDetails | null;
 }
 
 interface ApplicantSearchResultsProps {
@@ -46,8 +98,11 @@ interface ApplicantSearchResultsProps {
   onDelete: (applicantId: string) => void;
   onPreviewCv: (applicantId: string, cvPath: string, name: string, cvText: string | null) => void;
   onShowNotes: (id: string, name: string, notes: string) => void;
+  onDownloadCv?: (applicantId: string, cvPath: string) => void;
+  onUpdateApplicant?: (applicantId: string, data: { full_name: string; email: string; phone: string | null; notes: string | null }) => Promise<void>;
   expandedApplicant: string | null;
   loadingPreview: boolean;
+  downloadingCv?: string | null;
 }
 
 export default function ApplicantSearchResults({
@@ -58,9 +113,16 @@ export default function ApplicantSearchResults({
   onDelete,
   onPreviewCv,
   onShowNotes,
+  onDownloadCv,
+  onUpdateApplicant,
   expandedApplicant,
   loadingPreview,
+  downloadingCv,
 }: ApplicantSearchResultsProps) {
+  const [editingApplicant, setEditingApplicant] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ full_name: '', email: '', phone: '', notes: '' });
+  const [savingEdit, setSavingEdit] = useState(false);
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       month: 'short',
@@ -68,6 +130,45 @@ export default function ApplicantSearchResults({
       year: 'numeric',
     });
   };
+
+  const handleStartEdit = (applicant: Applicant) => {
+    setEditingApplicant(applicant.id);
+    setEditForm({
+      full_name: applicant.full_name,
+      email: applicant.email,
+      phone: applicant.phone || '',
+      notes: applicant.notes || '',
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingApplicant(null);
+    setEditForm({ full_name: '', email: '', phone: '', notes: '' });
+  };
+
+  const handleSaveEdit = async (applicantId: string) => {
+    if (!onUpdateApplicant) return;
+    setSavingEdit(true);
+    await onUpdateApplicant(applicantId, {
+      full_name: editForm.full_name.trim(),
+      email: editForm.email.trim(),
+      phone: editForm.phone.trim() || null,
+      notes: editForm.notes.trim() || null,
+    });
+    setSavingEdit(false);
+    setEditingApplicant(null);
+  };
+
+  const BooleanBadge = ({ value, label }: { value: boolean | undefined; label: string }) => (
+    <div className="flex items-center gap-1.5 text-sm">
+      {value ? (
+        <CheckCircle className="w-4 h-4 text-green-500" />
+      ) : (
+        <XCircle className="w-4 h-4 text-red-500" />
+      )}
+      <span className={value ? 'text-green-700' : 'text-red-700'}>{label}</span>
+    </div>
+  );
 
   if (applicants.length === 0) {
     return (
@@ -257,6 +358,344 @@ export default function ApplicantSearchResults({
                 </Button>
               </div>
             </div>
+
+            {/* Expanded Details Section */}
+            {expandedApplicant === applicant.id && (
+              <div className="mt-4 pt-4 border-t border-border">
+                {/* CV Assessment Section */}
+                {applicant.total_score !== null && (
+                  <div className="mb-6 p-4 bg-muted/50 rounded-lg">
+                    <h4 className="font-semibold mb-3 flex items-center gap-2">
+                      <Star className="w-4 h-4" />
+                      AI CV Assessment
+                    </h4>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                      <div className="text-center p-2 bg-background rounded">
+                        <p className="text-xs text-muted-foreground">Role Experience</p>
+                        <p className="text-lg font-bold">{applicant.role_experience_score ?? '-'}/40</p>
+                      </div>
+                      <div className="text-center p-2 bg-background rounded">
+                        <p className="text-xs text-muted-foreground">Skills & Tools</p>
+                        <p className="text-lg font-bold">{applicant.skills_tools_score ?? '-'}/40</p>
+                      </div>
+                      <div className="text-center p-2 bg-background rounded">
+                        <p className="text-xs text-muted-foreground">Availability</p>
+                        <p className="text-lg font-bold">{applicant.availability_setup_score ?? '-'}/10</p>
+                      </div>
+                      <div className="text-center p-2 bg-background rounded">
+                        <p className="text-xs text-muted-foreground">Bonus/Red Flags</p>
+                        <p className="text-lg font-bold">{applicant.bonus_red_flag_score ?? '-'}/10</p>
+                      </div>
+                      <div className="text-center p-2 bg-primary/10 rounded border border-primary/20">
+                        <p className="text-xs text-muted-foreground">Total Score</p>
+                        <p className="text-xl font-bold text-primary">{applicant.total_score}/100</p>
+                      </div>
+                    </div>
+                    {applicant.ai_summary && (
+                      <div className="mt-3">
+                        <p className="text-sm font-medium mb-1">AI Summary</p>
+                        <p className="text-sm text-muted-foreground">{applicant.ai_summary}</p>
+                      </div>
+                    )}
+
+                    {/* Detailed Assessment Breakdown */}
+                    {applicant.ai_assessment_details && (
+                      <div className="mt-4 space-y-4">
+                        {/* Skills & Tools Match */}
+                        {(applicant.ai_assessment_details.matched_tools?.length > 0 || 
+                          applicant.ai_assessment_details.missing_tools?.length > 0) && (
+                          <div>
+                            <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                              <Zap className="w-4 h-4" />
+                              Skills & Tools Match
+                            </p>
+                            <div className="space-y-2">
+                              {applicant.ai_assessment_details.matched_tools?.map((tool, idx) => (
+                                <div key={idx} className="flex items-start gap-2 p-2 bg-green-50 dark:bg-green-950/30 rounded text-sm">
+                                  <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                  <div>
+                                    <span className="font-medium text-green-700 dark:text-green-400">{tool.tool}</span>
+                                    {tool.context && (
+                                      <p className="text-xs text-muted-foreground mt-0.5">"{tool.context}"</p>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                              {applicant.ai_assessment_details.missing_tools?.map((tool, idx) => (
+                                <div key={idx} className="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-950/30 rounded text-sm">
+                                  <X className="w-4 h-4 text-red-600 flex-shrink-0" />
+                                  <span className="text-red-700 dark:text-red-400">{tool}</span>
+                                  <span className="text-xs text-muted-foreground ml-1">(not found)</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Relevant Experience */}
+                        {applicant.ai_assessment_details.experience_highlights?.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                              <Briefcase className="w-4 h-4" />
+                              Relevant Experience
+                            </p>
+                            <div className="space-y-2">
+                              {applicant.ai_assessment_details.experience_highlights.map((exp, idx) => (
+                                <div key={idx} className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded text-sm">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-medium text-blue-700 dark:text-blue-400">{exp.role}</span>
+                                    {exp.company && (
+                                      <span className="text-muted-foreground">at {exp.company}</span>
+                                    )}
+                                    {exp.duration && (
+                                      <Badge variant="outline" className="text-xs">{exp.duration}</Badge>
+                                    )}
+                                  </div>
+                                  <p className="text-xs text-muted-foreground mt-1">{exp.relevance}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Strengths & Concerns */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          {applicant.ai_assessment_details.strengths?.length > 0 && (
+                            <div>
+                              <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                                <CheckCircle className="w-4 h-4 text-green-600" />
+                                Strengths
+                              </p>
+                              <ul className="space-y-1">
+                                {applicant.ai_assessment_details.strengths.map((strength, idx) => (
+                                  <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                                    <span className="text-green-600">•</span>
+                                    {strength}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                          {applicant.ai_assessment_details.concerns?.length > 0 && (
+                            <div>
+                              <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                                <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                Concerns
+                              </p>
+                              <ul className="space-y-1">
+                                {applicant.ai_assessment_details.concerns.map((concern, idx) => (
+                                  <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                                    <span className="text-amber-600">•</span>
+                                    {concern}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Editable Contact Info Section */}
+                <div className="mb-6 p-4 bg-muted/30 rounded-lg">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <User className="w-4 h-4" />
+                      Contact Information
+                    </h4>
+                    {editingApplicant === applicant.id ? (
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={handleCancelEdit}
+                          disabled={savingEdit}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          onClick={() => handleSaveEdit(applicant.id)}
+                          disabled={savingEdit || !onUpdateApplicant}
+                        >
+                          {savingEdit ? (
+                            <Loader2 className="w-4 h-4 animate-spin mr-1" />
+                          ) : (
+                            <Save className="w-4 h-4 mr-1" />
+                          )}
+                          Save
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleStartEdit(applicant)}
+                      >
+                        <Pencil className="w-4 h-4 mr-1" />
+                        Edit
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {editingApplicant === applicant.id ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-name" className="flex items-center gap-1">
+                          <User className="w-3.5 h-3.5" />
+                          Full Name
+                        </Label>
+                        <Input
+                          id="edit-name"
+                          value={editForm.full_name}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, full_name: e.target.value }))}
+                          placeholder="Full name"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-email" className="flex items-center gap-1">
+                          <Mail className="w-3.5 h-3.5" />
+                          Email
+                        </Label>
+                        <Input
+                          id="edit-email"
+                          type="email"
+                          value={editForm.email}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, email: e.target.value }))}
+                          placeholder="Email address"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-phone" className="flex items-center gap-1">
+                          <Phone className="w-3.5 h-3.5" />
+                          Phone
+                        </Label>
+                        <Input
+                          id="edit-phone"
+                          type="tel"
+                          value={editForm.phone}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
+                          placeholder="Phone number"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="flex items-center gap-2">
+                        <User className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm">{applicant.full_name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Mail className="w-4 h-4 text-muted-foreground" />
+                        <a href={`mailto:${applicant.email}`} className="text-sm text-primary hover:underline">
+                          {applicant.email}
+                        </a>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Phone className="w-4 h-4 text-muted-foreground" />
+                        {applicant.phone ? (
+                          <a href={`tel:${applicant.phone}`} className="text-sm text-primary hover:underline">
+                            {applicant.phone}
+                          </a>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Not provided</span>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Notes Section */}
+                <div className="mb-6 p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/30">
+                  <div className="flex items-center justify-between mb-3">
+                    <h4 className="font-semibold flex items-center gap-2">
+                      <StickyNote className="w-4 h-4 text-amber-600" />
+                      Notes
+                    </h4>
+                    {editingApplicant !== applicant.id && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleStartEdit(applicant)}
+                        className="text-amber-700 hover:text-amber-800 hover:bg-amber-100"
+                      >
+                        <Pencil className="w-4 h-4 mr-1" />
+                        {applicant.notes ? 'Edit Note' : 'Add Note'}
+                      </Button>
+                    )}
+                  </div>
+                  
+                  {editingApplicant === applicant.id ? (
+                    <Textarea
+                      value={editForm.notes}
+                      onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
+                      placeholder="Add notes about this applicant..."
+                      className="min-h-[100px] bg-background"
+                    />
+                  ) : (
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {applicant.notes || 'No notes yet. Click "Add Note" to add observations about this applicant.'}
+                    </p>
+                  )}
+                </div>
+
+                {/* CV and Vocaroo Links */}
+                <div className="flex flex-wrap gap-3 mb-4">
+                  {applicant.cv_file_url && onDownloadCv && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => onDownloadCv(applicant.id, applicant.cv_file_url!)}
+                      disabled={downloadingCv === applicant.id}
+                      className="inline-flex items-center gap-2 bg-primary/10 text-primary hover:bg-primary/20"
+                    >
+                      {downloadingCv === applicant.id ? (
+                        <Loader2 className="w-4 h-4 animate-spin" />
+                      ) : (
+                        <Download className="w-4 h-4" />
+                      )}
+                      Download CV
+                    </Button>
+                  )}
+                  {applicant.vocaroo_link && (
+                    <a 
+                      href={applicant.vocaroo_link} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-3 py-2 bg-orange-500/10 text-orange-600 rounded-md text-sm hover:bg-orange-500/20 transition-colors"
+                    >
+                      <Mic className="w-4 h-4" />
+                      Listen to Voice Recording
+                    </a>
+                  )}
+                </div>
+
+                {/* Pre-screening Questions */}
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  <BooleanBadge value={applicant.home_office} label="Home Office Setup" />
+                  <BooleanBadge value={applicant.noise_canceling_headset} label="Noise-Canceling Headset" />
+                  <BooleanBadge value={applicant.laptop_or_pc} label="Laptop/PC" />
+                  <BooleanBadge value={applicant.good_internet} label="Good Internet" />
+                  <BooleanBadge value={applicant.power_backup} label="Power Backup" />
+                  <BooleanBadge value={applicant.can_work_40_50} label="40-50 hrs/week" />
+                  <BooleanBadge value={applicant.us_timezone_ok} label="US Timezone OK" />
+                  <BooleanBadge value={applicant.has_experience} label="Has Experience" />
+                  <BooleanBadge value={applicant.currently_working} label="Currently Working" />
+                </div>
+                <div className="grid grid-cols-2 gap-4 mt-4">
+                  <div>
+                    <p className="text-sm font-medium">Internet Speed</p>
+                    <p className="text-sm text-muted-foreground">{applicant.internet_speed || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium">Start Availability</p>
+                    <p className="text-sm text-muted-foreground">{applicant.start_availability || 'Not specified'}</p>
+                  </div>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       ))}
