@@ -705,8 +705,39 @@ const Admin = () => {
                       onDelete={handleDeleteApplicant}
                       onPreviewCv={handlePreviewCv}
                       onShowNotes={(id, name, notes) => setNotesPopup({ id, name, notes })}
+                      onDownloadCv={handleDownloadCv}
+                      onUpdateApplicant={async (applicantId, data) => {
+                        const { error } = await supabase
+                          .from('applicants_prescreen')
+                          .update({
+                            full_name: data.full_name,
+                            email: data.email,
+                            phone: data.phone,
+                            notes: data.notes,
+                          })
+                          .eq('id', applicantId);
+                        
+                        if (error) {
+                          toast({
+                            title: 'Error',
+                            description: 'Failed to update applicant: ' + error.message,
+                            variant: 'destructive',
+                          });
+                        } else {
+                          setApplicants(prev => prev.map(a => 
+                            a.id === applicantId 
+                              ? { ...a, ...data } 
+                              : a
+                          ));
+                          toast({
+                            title: 'Success',
+                            description: 'Applicant information updated',
+                          });
+                        }
+                      }}
                       expandedApplicant={expandedApplicant}
                       loadingPreview={loadingPreview}
+                      downloadingCv={downloadingCv}
                     />
                   </TabsContent>
 
