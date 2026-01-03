@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -143,6 +143,9 @@ const Admin = () => {
   
   // Notes popup state
   const [notesPopup, setNotesPopup] = useState<{ id: string; name: string; notes: string } | null>(null);
+  
+  // Search state
+  const [searchTerm, setSearchTerm] = useState('');
 
   const handlePreviewCv = async (applicantId: string, cvPath: string, applicantName: string, cvText: string | null) => {
     setLoadingPreview(true);
@@ -643,7 +646,19 @@ const Admin = () => {
                 </CardContent>
               </Card>
             ) : (
-              <Tabs value={activeStatusFolder} onValueChange={(v) => setActiveStatusFolder(v as ApplicantStatusFolder)} className="space-y-4">
+              <>
+                {/* Search bar */}
+                <div className="relative mb-4">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Search by name, email, or score..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10"
+                  />
+                </div>
+                
+                <Tabs value={activeStatusFolder} onValueChange={(v) => setActiveStatusFolder(v as ApplicantStatusFolder)} className="space-y-4">
                 <TabsList className="flex-wrap h-auto gap-1">
                   {APPLICANT_STATUS_FOLDERS.map((status) => {
                     const count = applicants.filter(a => a.status === status).length;
@@ -663,7 +678,18 @@ const Admin = () => {
                 </TabsList>
 
                 {APPLICANT_STATUS_FOLDERS.map((status) => {
-                  const statusApplicants = applicants.filter(a => a.status === status);
+                  // Filter by status first, then by search term
+                  const statusApplicants = applicants.filter(a => {
+                    if (a.status !== status) return false;
+                    if (!searchTerm.trim()) return true;
+                    
+                    const term = searchTerm.toLowerCase();
+                    const matchesName = a.full_name.toLowerCase().includes(term);
+                    const matchesEmail = a.email.toLowerCase().includes(term);
+                    const matchesScore = a.total_score !== null && a.total_score.toString().includes(term);
+                    
+                    return matchesName || matchesEmail || matchesScore;
+                  });
                   const groupedByRole = statusApplicants.reduce((groups, applicant) => {
                     const jobTitle = applicant.job_title;
                     if (!groups[jobTitle]) {
@@ -1186,6 +1212,7 @@ const Admin = () => {
                   );
                 })}
               </Tabs>
+              </>
             )}
           </TabsContent>
         </Tabs>
