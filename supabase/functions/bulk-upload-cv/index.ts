@@ -26,32 +26,26 @@ interface DuplicateCheckResult {
 
 // Sanitize text to remove null bytes and other problematic Unicode characters
 function sanitizeText(text: string): string {
-  // Remove null bytes, control characters, and other problematic Unicode
   return text
-    .replace(/\u0000/g, '') // Remove null bytes
-    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Remove control chars except newline/tab
-    .replace(/\uFFFD/g, '') // Remove replacement characters
-    .replace(/[\uD800-\uDFFF]/g, '') // Remove lone surrogates
+    .replace(/\u0000/g, '')
+    .replace(/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+    .replace(/\uFFFD/g, '')
+    .replace(/[\uD800-\uDFFF]/g, '')
     .trim();
 }
 
 // Simple text extraction from PDF (basic approach)
 async function extractTextFromPDF(base64Data: string): Promise<string> {
   try {
-    // Decode base64 to binary
     const binaryString = atob(base64Data);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
       bytes[i] = binaryString.charCodeAt(i);
     }
     
-    // Convert to string and extract text between stream markers
     const content = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
-    
-    // Extract text content - look for text between parentheses in PDF
     const textMatches: string[] = [];
     
-    // Pattern 1: Text in parentheses (common in PDFs)
     const parenRegex = /\(([^)]+)\)/g;
     let match;
     while ((match = parenRegex.exec(content)) !== null) {
@@ -61,7 +55,6 @@ async function extractTextFromPDF(base64Data: string): Promise<string> {
       }
     }
     
-    // Pattern 2: Look for readable ASCII sequences
     const asciiRegex = /[\x20-\x7E]{10,}/g;
     while ((match = asciiRegex.exec(content)) !== null) {
       const text = match[0].trim();
@@ -88,11 +81,8 @@ async function extractTextFromDoc(base64Data: string): Promise<string> {
     }
     
     const content = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
-    
-    // For DOCX, look for text in XML content
     const textMatches: string[] = [];
     
-    // Extract text from XML tags
     const xmlTextRegex = />([^<]+)</g;
     let match;
     while ((match = xmlTextRegex.exec(content)) !== null) {
@@ -102,7 +92,6 @@ async function extractTextFromDoc(base64Data: string): Promise<string> {
       }
     }
     
-    // Also get readable ASCII
     const asciiRegex = /[\x20-\x7E]{15,}/g;
     while ((match = asciiRegex.exec(content)) !== null) {
       const text = match[0].trim();
@@ -122,31 +111,26 @@ async function extractTextFromDoc(base64Data: string): Promise<string> {
 function extractContactInfo(text: string): { email?: string; phone?: string; fullName?: string } {
   const result: { email?: string; phone?: string; fullName?: string } = {};
   
-  // Extract email
   const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
   const emails = text.match(emailRegex);
   if (emails && emails.length > 0) {
     result.email = emails[0].toLowerCase();
   }
   
-  // Extract phone (various formats)
   const phoneRegex = /(?:\+?1[-.\s]?)?(?:\(?[0-9]{3}\)?[-.\s]?)?[0-9]{3}[-.\s]?[0-9]{4}|\+?[0-9]{10,15}/g;
   const phones = text.match(phoneRegex);
   if (phones && phones.length > 0) {
     result.phone = phones[0].replace(/[^0-9+]/g, '');
   }
   
-  // Try to extract name (usually at the beginning, look for capitalized words)
   const lines = text.split(/[\n\r]+/).filter(line => line.trim().length > 0);
   for (const line of lines.slice(0, 5)) {
     const cleaned = line.trim();
-    // Look for 2-4 capitalized words that could be a name
     const nameMatch = cleaned.match(/^([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})$/);
     if (nameMatch) {
       result.fullName = nameMatch[1];
       break;
     }
-    // Alternative: Just look for capitalized words at start
     const capWords = cleaned.match(/^([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/);
     if (capWords && capWords[1].split(' ').length <= 4) {
       result.fullName = capWords[1];
@@ -163,7 +147,7 @@ function generateFileHash(base64Data: string): string {
   for (let i = 0; i < base64Data.length; i++) {
     const char = base64Data.charCodeAt(i);
     hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32bit integer
+    hash = hash & hash;
   }
   return Math.abs(hash).toString(16);
 }
@@ -202,9 +186,7 @@ serve(async (req) => {
       cvText = await extractTextFromDoc(file_base64);
     }
 
-    // Sanitize text to remove null bytes and problematic characters
     cvText = sanitizeText(cvText);
-
     console.log('Extracted text length:', cvText.length);
 
     // Step 2: Extract contact info
@@ -217,7 +199,6 @@ serve(async (req) => {
     // Step 3: Check for duplicates
     const duplicateCheck: DuplicateCheckResult = { isDuplicate: false };
 
-    // Check by email
     if (contactInfo.email) {
       const { data: emailMatch } = await supabase
         .from('applicants_prescreen')
@@ -231,7 +212,6 @@ serve(async (req) => {
       }
     }
 
-    // Check by phone
     if (!duplicateCheck.isDuplicate && contactInfo.phone) {
       const { data: phoneMatch } = await supabase
         .from('applicants_prescreen')
@@ -245,7 +225,6 @@ serve(async (req) => {
       }
     }
 
-    // Check by file hash
     if (!duplicateCheck.isDuplicate) {
       const { data: hashMatch } = await supabase
         .from('applicants_prescreen')
@@ -259,7 +238,6 @@ serve(async (req) => {
       }
     }
 
-    // Check by name + filename combination
     if (!duplicateCheck.isDuplicate && contactInfo.fullName) {
       const { data: nameMatch } = await supabase
         .from('applicants_prescreen')
@@ -273,7 +251,6 @@ serve(async (req) => {
       }
     }
 
-    // If duplicate, return early
     if (duplicateCheck.isDuplicate) {
       console.log('Duplicate detected:', duplicateCheck.reason);
       return new Response(
@@ -291,7 +268,6 @@ serve(async (req) => {
     const fileExt = file_name.split('.').pop();
     const storageName = `bulk/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
     
-    // Convert base64 to Uint8Array for upload
     const binaryString = atob(file_base64);
     const bytes = new Uint8Array(binaryString.length);
     for (let i = 0; i < binaryString.length; i++) {
@@ -316,7 +292,7 @@ serve(async (req) => {
     // Step 5: Run AI scoring if status is "Reviewed"
     let scoreResult = null;
     if (run_scoring && cvText && cvText.length > 50) {
-      console.log('Running AI scoring...');
+      console.log('Running AI scoring with metadata extraction...');
       
       const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
       if (LOVABLE_API_KEY) {
@@ -333,6 +309,14 @@ RANKING STATUS:
 - Partial Match: total_score >= 40 AND < 70
 - Low Match: total_score < 40
 
+EXTRACTION REQUIREMENTS:
+You MUST also extract searchable metadata from the CV:
+1. extracted_skills: List ALL skills mentioned (soft skills, hard skills, languages, certifications)
+   Examples: "Customer Service", "Sales", "Legal Intake", "Spanish", "Problem Solving"
+2. extracted_tools: List ALL software/tools/platforms mentioned
+   Examples: "Salesforce", "HubSpot", "Excel", "Google Workspace", "Clio", "Zendesk"
+3. years_of_experience: Estimate total professional experience in years (null if unclear)
+
 You MUST return ONLY valid JSON with NO additional text. The JSON must have this exact structure:
 {
   "role_experience_score": <number 0-45>,
@@ -348,7 +332,10 @@ You MUST return ONLY valid JSON with NO additional text. The JSON must have this
     "experience_highlights": [{"role": "<job title>", "company": "<company>", "duration": "<time>", "relevance": "<why relevant>"}],
     "strengths": ["<strength 1>", "<strength 2>"],
     "concerns": ["<concern if any>"]
-  }
+  },
+  "extracted_skills": ["<skill 1>", "<skill 2>", ...],
+  "extracted_tools": ["<tool 1>", "<tool 2>", ...],
+  "years_of_experience": <number or null>
 }`;
 
         const userPrompt = `Evaluate this candidate's CV for the following job:
@@ -366,7 +353,7 @@ ${job_responsibilities?.length ? job_responsibilities.map((r, i) => `${i + 1}. $
 CANDIDATE CV TEXT:
 ${cvText.substring(0, 8000)}
 
-Return ONLY the JSON scoring object with detailed assessment_details, no other text.`;
+Return ONLY the JSON scoring object with detailed assessment_details and extracted metadata, no other text.`;
 
         try {
           const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
@@ -381,7 +368,6 @@ Return ONLY the JSON scoring object with detailed assessment_details, no other t
                 { role: 'system', content: systemPrompt },
                 { role: 'user', content: userPrompt }
               ],
-              temperature: 0.3,
             }),
           });
 
@@ -402,7 +388,7 @@ Return ONLY the JSON scoring object with detailed assessment_details, no other t
               
               try {
                 scoreResult = JSON.parse(jsonContent.trim());
-                console.log('AI scoring complete:', scoreResult.total_score);
+                console.log('AI scoring complete with metadata:', scoreResult.total_score);
               } catch (parseError) {
                 console.error('Failed to parse AI response:', parseError);
               }
@@ -426,7 +412,7 @@ Return ONLY the JSON scoring object with detailed assessment_details, no other t
       apply_url: `/jobs/${job_id}`,
       status: status,
       cv_file_url: storageName,
-      cv_text: cvText.substring(0, 50000), // Limit text length
+      cv_text: cvText.substring(0, 50000),
       file_hash: fileHash,
       location: 'Unknown',
       home_office: false,
@@ -452,6 +438,10 @@ Return ONLY the JSON scoring object with detailed assessment_details, no other t
       applicantData.ranking_status = scoreResult.ranking_status || 'Low Match';
       applicantData.ai_summary = scoreResult.summary || null;
       applicantData.ai_assessment_details = scoreResult.assessment_details || null;
+      // Add extracted metadata
+      applicantData.extracted_skills = Array.isArray(scoreResult.extracted_skills) ? scoreResult.extracted_skills : [];
+      applicantData.extracted_tools = Array.isArray(scoreResult.extracted_tools) ? scoreResult.extracted_tools : [];
+      applicantData.years_of_experience = typeof scoreResult.years_of_experience === 'number' ? scoreResult.years_of_experience : null;
     }
 
     const { data: insertedApplicant, error: insertError } = await supabase

@@ -71,6 +71,8 @@ export type Database = {
           cv_file_url: string | null
           cv_text: string | null
           email: string
+          extracted_skills: string[] | null
+          extracted_tools: string[] | null
           file_hash: string | null
           full_name: string
           good_internet: boolean
@@ -97,6 +99,7 @@ export type Database = {
           total_score: number | null
           us_timezone_ok: boolean
           vocaroo_link: string | null
+          years_of_experience: number | null
         }
         Insert: {
           ai_assessment_details?: Json | null
@@ -110,6 +113,8 @@ export type Database = {
           cv_file_url?: string | null
           cv_text?: string | null
           email: string
+          extracted_skills?: string[] | null
+          extracted_tools?: string[] | null
           file_hash?: string | null
           full_name: string
           good_internet: boolean
@@ -136,6 +141,7 @@ export type Database = {
           total_score?: number | null
           us_timezone_ok: boolean
           vocaroo_link?: string | null
+          years_of_experience?: number | null
         }
         Update: {
           ai_assessment_details?: Json | null
@@ -149,6 +155,8 @@ export type Database = {
           cv_file_url?: string | null
           cv_text?: string | null
           email?: string
+          extracted_skills?: string[] | null
+          extracted_tools?: string[] | null
           file_hash?: string | null
           full_name?: string
           good_internet?: boolean
@@ -175,6 +183,7 @@ export type Database = {
           total_score?: number | null
           us_timezone_ok?: boolean
           vocaroo_link?: string | null
+          years_of_experience?: number | null
         }
         Relationships: [
           {

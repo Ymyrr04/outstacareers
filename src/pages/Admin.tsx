@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, useCallback } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -12,11 +12,13 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import BulkUploadDialog from '@/components/BulkUploadDialog';
+import ApplicantSearchFilters from '@/components/ApplicantSearchFilters';
+import ApplicantSearchResults from '@/components/ApplicantSearchResults';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 const APPLICANT_STATUS_FOLDERS = [
@@ -115,6 +117,10 @@ interface Applicant {
   cv_text: string | null;
   vocaroo_link: string | null;
   ai_assessment_details: AssessmentDetails | null;
+  // Extracted metadata for search
+  extracted_skills: string[] | null;
+  extracted_tools: string[] | null;
+  years_of_experience: number | null;
 }
 
 const Admin = () => {
@@ -146,6 +152,28 @@ const Admin = () => {
   
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeApplicantTab, setActiveApplicantTab] = useState<'folders' | 'search'>('folders');
+  const [searchFilteredApplicants, setSearchFilteredApplicants] = useState<Applicant[]>([]);
+
+  // Compute unique skills and tools from all applicants
+  const { allSkills, allTools } = useMemo(() => {
+    const skillsSet = new Set<string>();
+    const toolsSet = new Set<string>();
+    
+    applicants.forEach(a => {
+      a.extracted_skills?.forEach(s => skillsSet.add(s));
+      a.extracted_tools?.forEach(t => toolsSet.add(t));
+    });
+    
+    return {
+      allSkills: Array.from(skillsSet).sort((a, b) => a.localeCompare(b)),
+      allTools: Array.from(toolsSet).sort((a, b) => a.localeCompare(b))
+    };
+  }, [applicants]);
+
+  const handleSearchFilteredApplicants = useCallback((filtered: Applicant[]) => {
+    setSearchFilteredApplicants(filtered);
+  }, []);
 
   const handlePreviewCv = async (applicantId: string, cvPath: string, applicantName: string, cvText: string | null) => {
     setLoadingPreview(true);
@@ -647,35 +675,72 @@ const Admin = () => {
               </Card>
             ) : (
               <>
-                {/* Search bar */}
-                <div className="relative mb-4">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search by name, email, or score..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
+                {/* Toggle between Folder View and Search View */}
+                <Tabs value={activeApplicantTab} onValueChange={(v) => setActiveApplicantTab(v as 'folders' | 'search')} className="space-y-4">
+                  <TabsList>
+                    <TabsTrigger value="folders" className="flex items-center gap-2">
+                      <FolderOpen className="w-4 h-4" />
+                      Folders View
+                    </TabsTrigger>
+                    <TabsTrigger value="search" className="flex items-center gap-2">
+                      <SearchIcon className="w-4 h-4" />
+                      Advanced Search
+                    </TabsTrigger>
+                  </TabsList>
+
+                  {/* Advanced Search Tab */}
+                  <TabsContent value="search" className="space-y-4">
+                    <ApplicantSearchFilters
+                      applicants={applicants}
+                      onFilteredApplicants={handleSearchFilteredApplicants}
+                      allSkills={allSkills}
+                      allTools={allTools}
+                    />
+                    
+                    <ApplicantSearchResults
+                      applicants={searchFilteredApplicants}
+                      statusOptions={APPLICANT_STATUS_OPTIONS}
+                      onUpdateStatus={handleUpdateApplicantStatus}
+                      onViewDetails={(id) => setExpandedApplicant(expandedApplicant === id ? null : id)}
+                      onDelete={handleDeleteApplicant}
+                      onPreviewCv={handlePreviewCv}
+                      onShowNotes={(id, name, notes) => setNotesPopup({ id, name, notes })}
+                      expandedApplicant={expandedApplicant}
+                      loadingPreview={loadingPreview}
+                    />
+                  </TabsContent>
+
+                  {/* Folder View Tab */}
+                  <TabsContent value="folders" className="space-y-4">
+                    {/* Quick search for folder view */}
+                    <div className="relative">
+                      <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                      <Input
+                        placeholder="Quick search by name, email, or score..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="pl-10"
+                      />
+                    </div>
                 
-                <Tabs value={activeStatusFolder} onValueChange={(v) => setActiveStatusFolder(v as ApplicantStatusFolder)} className="space-y-4">
-                <TabsList className="flex-wrap h-auto gap-1">
-                  {APPLICANT_STATUS_FOLDERS.map((status) => {
-                    const count = applicants.filter(a => a.status === status).length;
-                    return (
-                      <TabsTrigger key={status} value={status} className="flex items-center gap-2">
-                        <FolderOpen className="w-4 h-4" />
-                        {status}
-                        {/* Only show count badge on "For Review" folder */}
-                        {status === 'For Review' && count > 0 && (
-                          <Badge variant="secondary" className="ml-1 text-xs">
-                            {count}
-                          </Badge>
-                        )}
-                      </TabsTrigger>
-                    );
-                  })}
-                </TabsList>
+                    <Tabs value={activeStatusFolder} onValueChange={(v) => setActiveStatusFolder(v as ApplicantStatusFolder)} className="space-y-4">
+                    <TabsList className="flex-wrap h-auto gap-1">
+                      {APPLICANT_STATUS_FOLDERS.map((status) => {
+                        const count = applicants.filter(a => a.status === status).length;
+                        return (
+                          <TabsTrigger key={status} value={status} className="flex items-center gap-2">
+                            <FolderOpen className="w-4 h-4" />
+                            {status}
+                            {/* Only show count badge on "For Review" folder */}
+                            {status === 'For Review' && count > 0 && (
+                              <Badge variant="secondary" className="ml-1 text-xs">
+                                {count}
+                              </Badge>
+                            )}
+                          </TabsTrigger>
+                        );
+                      })}
+                    </TabsList>
 
                 {APPLICANT_STATUS_FOLDERS.map((status) => {
                   // Filter by status first, then by search term
@@ -1211,7 +1276,9 @@ const Admin = () => {
                     </TabsContent>
                   );
                 })}
-              </Tabs>
+                    </Tabs>
+                  </TabsContent>
+                </Tabs>
               </>
             )}
           </TabsContent>

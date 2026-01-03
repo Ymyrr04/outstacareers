@@ -43,6 +43,10 @@ interface ScoreResponse {
   ranking_status: string;
   summary: string;
   assessment_details: AssessmentDetails;
+  // New fields for searchable metadata
+  extracted_skills: string[];
+  extracted_tools: string[];
+  years_of_experience: number | null;
 }
 
 serve(async (req) => {
@@ -82,6 +86,16 @@ RANKING STATUS:
 - Partial Match: total_score >= 40 AND < 70
 - Low Match: total_score < 40
 
+EXTRACTION REQUIREMENTS:
+You MUST also extract searchable metadata from the CV:
+1. extracted_skills: List ALL skills mentioned (soft skills, hard skills, languages, certifications)
+   Examples: "Customer Service", "Sales", "Legal Intake", "Spanish", "Problem Solving", "Time Management"
+2. extracted_tools: List ALL software/tools/platforms mentioned
+   Examples: "Salesforce", "HubSpot", "Excel", "Google Workspace", "Clio", "Zendesk", "Shopify", "GoHighLevel"
+3. years_of_experience: Estimate total professional experience in years (null if unclear)
+   - Calculate from work history dates if available
+   - Use career span to estimate
+
 You MUST return ONLY valid JSON with NO additional text. The JSON must have this exact structure:
 {
   "role_experience_score": <number 0-45>,
@@ -101,14 +115,23 @@ You MUST return ONLY valid JSON with NO additional text. The JSON must have this
     ],
     "strengths": ["<key strength 1>", "<key strength 2>"],
     "concerns": ["<potential concern or gap if any>"]
-  }
+  },
+  "extracted_skills": ["<skill 1>", "<skill 2>", ...],
+  "extracted_tools": ["<tool 1>", "<tool 2>", ...],
+  "years_of_experience": <number or null>
 }
 
 IMPORTANT for assessment_details:
 - Extract ALL required tools/skills from the job qualifications and check if they appear in the CV
 - For matched_tools, include the context snippet from the CV where the tool/skill was mentioned
 - For experience_highlights, list the 2-3 most relevant past positions and explain why they matter
-- Be specific and cite actual information from the CV`;
+- Be specific and cite actual information from the CV
+
+IMPORTANT for extracted metadata:
+- Be thorough - extract ALL skills and tools mentioned, not just job-relevant ones
+- Normalize names (e.g., "MS Excel" -> "Excel", "Google Sheets" -> "Google Workspace")
+- Include language skills as skills
+- Include certifications as skills`;
 
     const userPrompt = `Evaluate this candidate's CV for the following job:
 
@@ -125,9 +148,9 @@ ${responsibilities?.length ? responsibilities.map((r, i) => `${i + 1}. ${r}`).jo
 CANDIDATE CV TEXT:
 ${cv_text}
 
-Return ONLY the JSON scoring object with detailed assessment_details, no other text.`;
+Return ONLY the JSON scoring object with detailed assessment_details and extracted metadata, no other text.`;
 
-    console.log('Calling Lovable AI for CV scoring...');
+    console.log('Calling Lovable AI for CV scoring with metadata extraction...');
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -141,7 +164,6 @@ Return ONLY the JSON scoring object with detailed assessment_details, no other t
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
         ],
-        temperature: 0.3,
       }),
     });
 
@@ -219,7 +241,11 @@ Return ONLY the JSON scoring object with detailed assessment_details, no other t
         experience_highlights: [],
         strengths: [],
         concerns: []
-      }
+      },
+      // New extracted metadata
+      extracted_skills: Array.isArray(scoreResult.extracted_skills) ? scoreResult.extracted_skills : [],
+      extracted_tools: Array.isArray(scoreResult.extracted_tools) ? scoreResult.extracted_tools : [],
+      years_of_experience: typeof scoreResult.years_of_experience === 'number' ? scoreResult.years_of_experience : null
     };
 
     // Recalculate total to ensure accuracy
@@ -238,7 +264,7 @@ Return ONLY the JSON scoring object with detailed assessment_details, no other t
       validatedResult.ranking_status = 'Low Match';
     }
 
-    console.log('Validated score result:', validatedResult);
+    console.log('Validated score result with metadata:', validatedResult);
 
     return new Response(
       JSON.stringify(validatedResult),
