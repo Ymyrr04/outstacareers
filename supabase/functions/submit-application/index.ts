@@ -145,6 +145,10 @@ serve(async (req) => {
       ai_summary: body.ai_summary || null,
       ai_assessment_details: body.ai_assessment_details || null,
       vocaroo_link: vocarooLink,
+      // Extracted metadata for search/filtering
+      extracted_skills: Array.isArray(body.extracted_skills) ? body.extracted_skills : [],
+      extracted_tools: Array.isArray(body.extracted_tools) ? body.extracted_tools : [],
+      years_of_experience: typeof body.years_of_experience === 'number' ? body.years_of_experience : null,
     };
 
     console.log('Inserting application with CV scoring data:', {

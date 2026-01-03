@@ -88,6 +88,10 @@ type ScoreResult = {
   ranking_status: string;
   summary: string;
   assessment_details?: AssessmentDetails;
+  // Extracted metadata for search/filtering
+  extracted_skills?: string[];
+  extracted_tools?: string[];
+  years_of_experience?: number | null;
 };
 
 type Step = 'prescreening' | 'cv-upload' | 'vocaroo';
@@ -415,6 +419,10 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
           ai_summary: scoreResult?.summary,
           ai_assessment_details: scoreResult?.assessment_details || null,
           vocaroo_link: vocarooLink,
+          // Extracted metadata for search/filtering
+          extracted_skills: scoreResult?.extracted_skills || [],
+          extracted_tools: scoreResult?.extracted_tools || [],
+          years_of_experience: scoreResult?.years_of_experience ?? null,
         },
       });
 
