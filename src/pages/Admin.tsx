@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -20,6 +20,11 @@ import BulkUploadDialog from '@/components/BulkUploadDialog';
 import ApplicantSearchFilters from '@/components/ApplicantSearchFilters';
 import ApplicantSearchResults from '@/components/ApplicantSearchResults';
 import { InterviewInviteDialog } from '@/components/InterviewInviteDialog';
+import { EmailTemplateEditor } from '@/components/EmailTemplateEditor';
+import { CommunicationHistory } from '@/components/CommunicationHistory';
+import { SendEmailDialog } from '@/components/SendEmailDialog';
+import { useEmailTemplates, statusToTrigger } from '@/hooks/useEmailTemplates';
+import { addHours } from 'date-fns';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 const APPLICANT_STATUS_FOLDERS = [
@@ -153,6 +158,12 @@ const Admin = () => {
   
   // Interview invite state
   const [interviewInviteApplicant, setInterviewInviteApplicant] = useState<{ full_name: string; email: string; job_title: string } | null>(null);
+  
+  // Email system state
+  const [emailTemplateEditorOpen, setEmailTemplateEditorOpen] = useState(false);
+  const [communicationHistoryApplicant, setCommunicationHistoryApplicant] = useState<{ id: string; name: string } | null>(null);
+  const [sendEmailApplicant, setSendEmailApplicant] = useState<{ id: string; full_name: string; email: string; job_title: string; status: string } | null>(null);
+  const { templates, getTemplateByTrigger } = useEmailTemplates();
   
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
@@ -396,6 +407,9 @@ const Admin = () => {
   };
 
   const handleUpdateApplicantStatus = async (applicantId: string, newStatus: ApplicantStatusOption) => {
+    const applicant = applicants.find(a => a.id === applicantId);
+    if (!applicant) return;
+
     const { error } = await supabase
       .from('applicants_prescreen')
       .update({ status: newStatus })
@@ -416,6 +430,72 @@ const Admin = () => {
         title: 'Status Updated',
         description: `Applicant moved to "${newStatus}"`,
       });
+
+      // Send automated email if template is enabled
+      const trigger = statusToTrigger[newStatus];
+      if (trigger) {
+        const template = getTemplateByTrigger(trigger);
+        if (template && template.is_enabled) {
+          // Process template variables
+          let processedSubject = template.subject
+            .replace(/\{\{applicant_name\}\}/g, applicant.full_name)
+            .replace(/\{\{job_title\}\}/g, applicant.job_title);
+          
+          let processedBody = template.body_html
+            .replace(/\{\{applicant_name\}\}/g, applicant.full_name)
+            .replace(/\{\{job_title\}\}/g, applicant.job_title);
+
+          // Calculate schedule time for delayed emails (like rejection)
+          let scheduleFor: string | undefined;
+          if (template.delay_hours > 0) {
+            scheduleFor = addHours(new Date(), template.delay_hours).toISOString();
+          }
+
+          // For interview status, open the email dialog instead of auto-sending
+          if (trigger === 'for_interview') {
+            setSendEmailApplicant({
+              id: applicant.id,
+              full_name: applicant.full_name,
+              email: applicant.email,
+              job_title: applicant.job_title,
+              status: newStatus,
+            });
+            return;
+          }
+
+          // Send email
+          try {
+            const { data, error: emailError } = await supabase.functions.invoke('send-applicant-email', {
+              body: {
+                applicantId: applicant.id,
+                templateId: template.id,
+                subject: processedSubject,
+                bodyHtml: processedBody,
+                recipientEmail: applicant.email,
+                applicantStatusAtSend: newStatus,
+                isAutomated: true,
+                scheduleFor,
+              },
+            });
+
+            if (emailError) throw emailError;
+
+            toast({
+              title: data.scheduled ? 'Email Scheduled' : 'Email Sent',
+              description: data.scheduled 
+                ? `Email scheduled for ${applicant.email}`
+                : `Automated email sent to ${applicant.email}`,
+            });
+          } catch (emailErr: any) {
+            console.error('Failed to send automated email:', emailErr);
+            toast({
+              title: 'Email Failed',
+              description: 'Status updated but email failed to send',
+              variant: 'destructive',
+            });
+          }
+        }
+      }
     }
   };
 
@@ -657,16 +737,25 @@ const Admin = () => {
                 <h2 className="text-2xl font-bold">Pre-Screening Submissions</h2>
                 <p className="text-muted-foreground">View applicants organized by status and role</p>
               </div>
-              <BulkUploadDialog 
-                jobs={jobs.map(j => ({ 
-                  id: j.id, 
-                  title: j.title, 
-                  description: j.description,
-                  qualifications: j.qualifications,
-                  responsibilities: j.responsibilities
-                }))} 
-                onUploadComplete={fetchApplicants} 
-              />
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setEmailTemplateEditorOpen(true)}
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Email Templates
+                </Button>
+                <BulkUploadDialog 
+                  jobs={jobs.map(j => ({ 
+                    id: j.id, 
+                    title: j.title, 
+                    description: j.description,
+                    qualifications: j.qualifications,
+                    responsibilities: j.responsibilities
+                  }))} 
+                  onUploadComplete={fetchApplicants} 
+                />
+              </div>
             </div>
 
             {applicantsLoading ? (
@@ -740,6 +829,8 @@ const Admin = () => {
                         }
                       }}
                       onSendInvite={(applicant) => setInterviewInviteApplicant(applicant)}
+                      onSendEmail={(applicant) => setSendEmailApplicant(applicant)}
+                      onViewHistory={(applicant) => setCommunicationHistoryApplicant(applicant)}
                       expandedApplicant={expandedApplicant}
                       loadingPreview={loadingPreview}
                       downloadingCv={downloadingCv}
@@ -963,6 +1054,31 @@ const Admin = () => {
                             title="Send Interview Invite"
                           >
                             <CalendarPlus className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setSendEmailApplicant({
+                              id: applicant.id,
+                              full_name: applicant.full_name,
+                              email: applicant.email,
+                              job_title: applicant.job_title,
+                              status: applicant.status
+                            })}
+                            title="Send Email"
+                          >
+                            <Send className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setCommunicationHistoryApplicant({
+                              id: applicant.id,
+                              name: applicant.full_name
+                            })}
+                            title="Communication History"
+                          >
+                            <History className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="destructive"
@@ -1444,6 +1560,30 @@ const Admin = () => {
         open={!!interviewInviteApplicant}
         onOpenChange={(open) => !open && setInterviewInviteApplicant(null)}
         applicant={interviewInviteApplicant}
+      />
+
+      {/* Email Template Editor */}
+      <EmailTemplateEditor
+        open={emailTemplateEditorOpen}
+        onOpenChange={setEmailTemplateEditorOpen}
+      />
+
+      {/* Communication History */}
+      <CommunicationHistory
+        open={!!communicationHistoryApplicant}
+        onOpenChange={(open) => !open && setCommunicationHistoryApplicant(null)}
+        applicantId={communicationHistoryApplicant?.id || ''}
+        applicantName={communicationHistoryApplicant?.name || ''}
+      />
+
+      {/* Send Email Dialog */}
+      <SendEmailDialog
+        open={!!sendEmailApplicant}
+        onOpenChange={(open) => !open && setSendEmailApplicant(null)}
+        applicant={sendEmailApplicant}
+        onEmailSent={() => {
+          // Optionally refresh data
+        }}
       />
     </div>
   );
