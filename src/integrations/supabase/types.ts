@@ -255,6 +255,50 @@ export type Database = {
           },
         ]
       }
+      email_replies: {
+        Row: {
+          applicant_id: string
+          body_html: string | null
+          body_text: string | null
+          created_at: string
+          from_email: string
+          gmail_message_id: string
+          id: string
+          received_at: string
+          subject: string
+        }
+        Insert: {
+          applicant_id: string
+          body_html?: string | null
+          body_text?: string | null
+          created_at?: string
+          from_email: string
+          gmail_message_id: string
+          id?: string
+          received_at: string
+          subject: string
+        }
+        Update: {
+          applicant_id?: string
+          body_html?: string | null
+          body_text?: string | null
+          created_at?: string
+          from_email?: string
+          gmail_message_id?: string
+          id?: string
+          received_at?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_replies_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "applicants_prescreen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_templates: {
         Row: {
           body_html: string

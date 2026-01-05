@@ -255,3 +255,81 @@ export function useScheduledEmails(applicantId?: string) {
 
   return { scheduledEmails, loading, fetchScheduledEmails, cancelScheduledEmail };
 }
+
+export interface EmailReply {
+  id: string;
+  applicant_id: string;
+  from_email: string;
+  subject: string;
+  body_text: string | null;
+  body_html: string | null;
+  received_at: string;
+  gmail_message_id: string;
+  created_at: string;
+}
+
+export function useEmailReplies(applicantId?: string) {
+  const [replies, setReplies] = useState<EmailReply[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [fetching, setFetching] = useState(false);
+  const { toast } = useToast();
+
+  const fetchReplies = useCallback(async () => {
+    setLoading(true);
+    let query = supabase
+      .from('email_replies')
+      .select('*')
+      .order('received_at', { ascending: false });
+
+    if (applicantId) {
+      query = query.eq('applicant_id', applicantId);
+    }
+
+    const { data, error } = await query;
+
+    if (error) {
+      console.error('Failed to fetch email replies:', error);
+    } else {
+      setReplies(data || []);
+    }
+    setLoading(false);
+  }, [applicantId]);
+
+  useEffect(() => {
+    fetchReplies();
+  }, [fetchReplies]);
+
+  const fetchNewReplies = async () => {
+    setFetching(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('fetch-email-replies');
+      
+      if (error) {
+        throw error;
+      }
+
+      if (data?.repliesFound > 0) {
+        toast({
+          title: 'New replies found',
+          description: `Found ${data.repliesFound} new email replies`,
+        });
+        await fetchReplies();
+      } else {
+        toast({
+          title: 'No new replies',
+          description: 'No new email replies found',
+        });
+      }
+    } catch (error: any) {
+      console.error('Error fetching new replies:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch email replies: ' + error.message,
+        variant: 'destructive',
+      });
+    }
+    setFetching(false);
+  };
+
+  return { replies, loading, fetching, fetchReplies, fetchNewReplies };
+}

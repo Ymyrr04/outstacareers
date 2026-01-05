@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { useEmailLogs, useScheduledEmails, EmailLog, ScheduledEmail } from '@/hooks/useEmailTemplates';
+import { useEmailLogs, useScheduledEmails, useEmailReplies, EmailLog, ScheduledEmail, EmailReply } from '@/hooks/useEmailTemplates';
 import { formatDistanceToNow, format } from 'date-fns';
 import { 
   Mail, Clock, CheckCircle, XCircle, AlertTriangle, 
-  Loader2, Send, Ban, Calendar, ChevronDown, ChevronUp 
+  Loader2, Send, Ban, Calendar, ChevronDown, ChevronUp,
+  Reply, RefreshCw, Inbox
 } from 'lucide-react';
 
 interface CommunicationHistoryProps {
@@ -26,7 +27,9 @@ export function CommunicationHistory({
 }: CommunicationHistoryProps) {
   const { logs, loading: logsLoading, fetchLogs } = useEmailLogs(applicantId);
   const { scheduledEmails, loading: scheduledLoading, cancelScheduledEmail, fetchScheduledEmails } = useScheduledEmails(applicantId);
+  const { replies, loading: repliesLoading, fetching, fetchReplies, fetchNewReplies } = useEmailReplies(applicantId);
   const [expandedLog, setExpandedLog] = useState<string | null>(null);
+  const [expandedReply, setExpandedReply] = useState<string | null>(null);
   const [cancelingId, setCancelingId] = useState<string | null>(null);
 
   const handleCancel = async (id: string) => {
@@ -35,6 +38,10 @@ export function CommunicationHistory({
     setCancelingId(null);
     fetchLogs();
     fetchScheduledEmails();
+  };
+
+  const handleFetchReplies = async () => {
+    await fetchNewReplies();
   };
 
   const getStatusIcon = (status: string) => {
@@ -67,7 +74,7 @@ export function CommunicationHistory({
     }
   };
 
-  const loading = logsLoading || scheduledLoading;
+  const loading = logsLoading || scheduledLoading || repliesLoading;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -89,6 +96,23 @@ export function CommunicationHistory({
         ) : (
           <ScrollArea className="flex-1">
             <div className="p-6 space-y-6">
+              {/* Fetch Replies Button */}
+              <div className="flex justify-end">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleFetchReplies}
+                  disabled={fetching}
+                >
+                  {fetching ? (
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  ) : (
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                  )}
+                  Check for Replies
+                </Button>
+              </div>
+
               {/* Scheduled Emails Section */}
               {scheduledEmails.length > 0 && (
                 <div className="space-y-3">
@@ -137,11 +161,73 @@ export function CommunicationHistory({
                 </div>
               )}
 
+              {/* Received Replies Section */}
+              {replies.length > 0 && (
+                <div className="space-y-3">
+                  <h3 className="font-medium flex items-center gap-2 text-blue-600">
+                    <Inbox className="h-4 w-4" />
+                    Received Replies ({replies.length})
+                  </h3>
+                  {replies.map((reply) => (
+                    <div 
+                      key={reply.id}
+                      className="border border-blue-200 dark:border-blue-900 rounded-lg overflow-hidden"
+                    >
+                      <button
+                        onClick={() => setExpandedReply(expandedReply === reply.id ? null : reply.id)}
+                        className="w-full text-left p-4 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-colors"
+                      >
+                        <div className="flex items-start justify-between gap-4">
+                          <div className="flex items-start gap-3">
+                            <Reply className="h-4 w-4 text-blue-500 mt-1" />
+                            <div>
+                              <p className="font-medium">{reply.subject}</p>
+                              <p className="text-sm text-muted-foreground">
+                                From: {reply.from_email}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-3">
+                            <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                              Reply
+                            </Badge>
+                            {expandedReply === reply.id ? (
+                              <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            )}
+                          </div>
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-2">
+                          {format(new Date(reply.received_at), 'PPP p')}
+                          <span className="ml-2">
+                            ({formatDistanceToNow(new Date(reply.received_at), { addSuffix: true })})
+                          </span>
+                        </p>
+                      </button>
+
+                      {expandedReply === reply.id && (
+                        <div className="border-t bg-blue-50/30 dark:bg-blue-950/10 p-4">
+                          <div className="prose prose-sm max-w-none dark:prose-invert whitespace-pre-wrap">
+                            {reply.body_html ? (
+                              <div dangerouslySetInnerHTML={{ __html: reply.body_html }} />
+                            ) : (
+                              <p>{reply.body_text || '(No content)'}</p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                  <Separator />
+                </div>
+              )}
+
               {/* Email History */}
               <div className="space-y-3">
                 <h3 className="font-medium flex items-center gap-2">
                   <Mail className="h-4 w-4" />
-                  Email History
+                  Sent Emails
                 </h3>
 
                 {logs.length === 0 ? (
