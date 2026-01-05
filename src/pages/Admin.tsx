@@ -122,6 +122,7 @@ interface Applicant {
   cv_file_url: string | null;
   cv_text: string | null;
   vocaroo_link: string | null;
+  voice_recording_url: string | null;
   ai_assessment_details: AssessmentDetails | null;
   // Extracted metadata for search
   extracted_skills: string[] | null;
@@ -992,17 +993,26 @@ const Admin = () => {
                                 CV
                               </button>
                             )}
-                            {applicant.vocaroo_link && (
-                              <a
-                                href={applicant.vocaroo_link}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                onClick={(e) => e.stopPropagation()}
-                                className="flex items-center gap-1 text-primary hover:underline cursor-pointer"
-                              >
-                                <Mic className="w-3.5 h-3.5" />
-                                Voice
-                              </a>
+                            {(applicant.vocaroo_link || applicant.voice_recording_url) && (
+                              applicant.voice_recording_url ? (
+                                <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
+                                  <Mic className="w-3.5 h-3.5 text-primary" />
+                                  <audio controls className="h-8 w-32" src={applicant.voice_recording_url}>
+                                    Your browser does not support audio.
+                                  </audio>
+                                </div>
+                              ) : (
+                                <a
+                                  href={applicant.vocaroo_link!}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="flex items-center gap-1 text-primary hover:underline cursor-pointer"
+                                >
+                                  <Mic className="w-3.5 h-3.5" />
+                                  Voice
+                                </a>
+                              )
                             )}
                             <button
                               onClick={(e) => {
@@ -1390,16 +1400,25 @@ const Admin = () => {
                                 Download CV
                               </Button>
                             )}
-                            {applicant.vocaroo_link && (
-                              <a 
-                                href={applicant.vocaroo_link} 
-                                target="_blank" 
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-3 py-2 bg-orange-500/10 text-orange-600 rounded-md text-sm hover:bg-orange-500/20 transition-colors"
-                              >
-                                <Mic className="w-4 h-4" />
-                                Listen to Voice Recording
-                              </a>
+                            {(applicant.vocaroo_link || applicant.voice_recording_url) && (
+                              applicant.voice_recording_url ? (
+                                <div className="inline-flex items-center gap-2 px-3 py-2 bg-orange-500/10 text-orange-600 rounded-md text-sm">
+                                  <Mic className="w-4 h-4" />
+                                  <audio controls className="h-8" src={applicant.voice_recording_url}>
+                                    Your browser does not support audio.
+                                  </audio>
+                                </div>
+                              ) : (
+                                <a 
+                                  href={applicant.vocaroo_link!} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-2 px-3 py-2 bg-orange-500/10 text-orange-600 rounded-md text-sm hover:bg-orange-500/20 transition-colors"
+                                >
+                                  <Mic className="w-4 h-4" />
+                                  Listen to Voice Recording
+                                </a>
+                              )
                             )}
                           </div>
 
