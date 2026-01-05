@@ -28,7 +28,8 @@ import {
   Zap,
   Check,
   X,
-  AlertTriangle
+  AlertTriangle,
+  CalendarPlus
 } from 'lucide-react';
 
 interface ToolMatch {
@@ -100,6 +101,7 @@ interface ApplicantSearchResultsProps {
   onShowNotes: (id: string, name: string, notes: string) => void;
   onDownloadCv?: (applicantId: string, cvPath: string) => void;
   onUpdateApplicant?: (applicantId: string, data: { full_name: string; email: string; phone: string | null; notes: string | null }) => Promise<void>;
+  onSendInvite?: (applicant: { full_name: string; email: string; job_title: string }) => void;
   expandedApplicant: string | null;
   loadingPreview: boolean;
   downloadingCv?: string | null;
@@ -115,6 +117,7 @@ export default function ApplicantSearchResults({
   onShowNotes,
   onDownloadCv,
   onUpdateApplicant,
+  onSendInvite,
   expandedApplicant,
   loadingPreview,
   downloadingCv,
@@ -348,6 +351,21 @@ export default function ApplicantSearchResults({
                 >
                   {expandedApplicant === applicant.id ? 'Hide' : 'Details'}
                 </Button>
+                
+                {onSendInvite && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onSendInvite({
+                      full_name: applicant.full_name,
+                      email: applicant.email,
+                      job_title: applicant.job_title
+                    })}
+                    title="Send Interview Invite"
+                  >
+                    <CalendarPlus className="w-4 h-4" />
+                  </Button>
+                )}
                 
                 <Button
                   variant="destructive"

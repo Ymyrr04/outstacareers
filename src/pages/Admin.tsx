@@ -12,13 +12,14 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import BulkUploadDialog from '@/components/BulkUploadDialog';
 import ApplicantSearchFilters from '@/components/ApplicantSearchFilters';
 import ApplicantSearchResults from '@/components/ApplicantSearchResults';
+import { InterviewInviteDialog } from '@/components/InterviewInviteDialog';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 const APPLICANT_STATUS_FOLDERS = [
@@ -149,6 +150,9 @@ const Admin = () => {
   
   // Notes popup state
   const [notesPopup, setNotesPopup] = useState<{ id: string; name: string; notes: string } | null>(null);
+  
+  // Interview invite state
+  const [interviewInviteApplicant, setInterviewInviteApplicant] = useState<{ full_name: string; email: string; job_title: string } | null>(null);
   
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
@@ -735,6 +739,7 @@ const Admin = () => {
                           });
                         }
                       }}
+                      onSendInvite={(applicant) => setInterviewInviteApplicant(applicant)}
                       expandedApplicant={expandedApplicant}
                       loadingPreview={loadingPreview}
                       downloadingCv={downloadingCv}
@@ -946,6 +951,18 @@ const Admin = () => {
                             onClick={() => setExpandedApplicant(expandedApplicant === applicant.id ? null : applicant.id)}
                           >
                             {expandedApplicant === applicant.id ? 'Hide Details' : 'View Details'}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setInterviewInviteApplicant({
+                              full_name: applicant.full_name,
+                              email: applicant.email,
+                              job_title: applicant.job_title
+                            })}
+                            title="Send Interview Invite"
+                          >
+                            <CalendarPlus className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="destructive"
@@ -1421,6 +1438,13 @@ const Admin = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Interview Invite Dialog */}
+      <InterviewInviteDialog
+        open={!!interviewInviteApplicant}
+        onOpenChange={(open) => !open && setInterviewInviteApplicant(null)}
+        applicant={interviewInviteApplicant}
+      />
     </div>
   );
 };
