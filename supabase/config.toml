@@ -14,3 +14,12 @@ verify_jwt = false
 
 [functions.bulk-upload-cv]
 verify_jwt = true
+
+[functions.send-interview-invite]
+verify_jwt = true
+
+[functions.send-applicant-email]
+verify_jwt = true
+
+[functions.process-scheduled-emails]
+verify_jwt = false

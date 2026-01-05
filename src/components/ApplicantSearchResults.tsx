@@ -29,7 +29,9 @@ import {
   Check,
   X,
   AlertTriangle,
-  CalendarPlus
+  CalendarPlus,
+  Send,
+  History
 } from 'lucide-react';
 
 interface ToolMatch {
@@ -102,6 +104,8 @@ interface ApplicantSearchResultsProps {
   onDownloadCv?: (applicantId: string, cvPath: string) => void;
   onUpdateApplicant?: (applicantId: string, data: { full_name: string; email: string; phone: string | null; notes: string | null }) => Promise<void>;
   onSendInvite?: (applicant: { full_name: string; email: string; job_title: string }) => void;
+  onSendEmail?: (applicant: { id: string; full_name: string; email: string; job_title: string; status: string }) => void;
+  onViewHistory?: (applicant: { id: string; name: string }) => void;
   expandedApplicant: string | null;
   loadingPreview: boolean;
   downloadingCv?: string | null;
@@ -118,6 +122,8 @@ export default function ApplicantSearchResults({
   onDownloadCv,
   onUpdateApplicant,
   onSendInvite,
+  onSendEmail,
+  onViewHistory,
   expandedApplicant,
   loadingPreview,
   downloadingCv,
@@ -364,6 +370,37 @@ export default function ApplicantSearchResults({
                     title="Send Interview Invite"
                   >
                     <CalendarPlus className="w-4 h-4" />
+                  </Button>
+                )}
+
+                {onSendEmail && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onSendEmail({
+                      id: applicant.id,
+                      full_name: applicant.full_name,
+                      email: applicant.email,
+                      job_title: applicant.job_title,
+                      status: applicant.status
+                    })}
+                    title="Send Email"
+                  >
+                    <Send className="w-4 h-4" />
+                  </Button>
+                )}
+
+                {onViewHistory && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onViewHistory({
+                      id: applicant.id,
+                      name: applicant.full_name
+                    })}
+                    title="Communication History"
+                  >
+                    <History className="w-4 h-4" />
                   </Button>
                 )}
                 

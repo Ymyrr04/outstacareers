@@ -195,6 +195,99 @@ export type Database = {
           },
         ]
       }
+      email_logs: {
+        Row: {
+          applicant_id: string
+          applicant_status_at_send: string | null
+          body_html: string
+          created_at: string
+          error_message: string | null
+          id: string
+          is_automated: boolean
+          recipient_email: string
+          sent_at: string | null
+          status: string
+          subject: string
+          template_id: string | null
+        }
+        Insert: {
+          applicant_id: string
+          applicant_status_at_send?: string | null
+          body_html: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          is_automated?: boolean
+          recipient_email: string
+          sent_at?: string | null
+          status?: string
+          subject: string
+          template_id?: string | null
+        }
+        Update: {
+          applicant_id?: string
+          applicant_status_at_send?: string | null
+          body_html?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          is_automated?: boolean
+          recipient_email?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "email_logs_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "applicants_prescreen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "email_logs_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      email_templates: {
+        Row: {
+          body_html: string
+          created_at: string
+          delay_hours: number | null
+          id: string
+          is_enabled: boolean
+          status_trigger: string
+          subject: string
+          updated_at: string
+        }
+        Insert: {
+          body_html: string
+          created_at?: string
+          delay_hours?: number | null
+          id?: string
+          is_enabled?: boolean
+          status_trigger: string
+          subject: string
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string
+          created_at?: string
+          delay_hours?: number | null
+          id?: string
+          is_enabled?: boolean
+          status_trigger?: string
+          subject?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       jobs: {
         Row: {
           apply_url: string
@@ -239,6 +332,63 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      scheduled_emails: {
+        Row: {
+          applicant_id: string
+          body_html: string
+          canceled_at: string | null
+          canceled_by: string | null
+          created_at: string
+          id: string
+          recipient_email: string
+          scheduled_for: string
+          status: string
+          subject: string
+          template_id: string | null
+        }
+        Insert: {
+          applicant_id: string
+          body_html: string
+          canceled_at?: string | null
+          canceled_by?: string | null
+          created_at?: string
+          id?: string
+          recipient_email: string
+          scheduled_for: string
+          status?: string
+          subject: string
+          template_id?: string | null
+        }
+        Update: {
+          applicant_id?: string
+          body_html?: string
+          canceled_at?: string | null
+          canceled_by?: string | null
+          created_at?: string
+          id?: string
+          recipient_email?: string
+          scheduled_for?: string
+          status?: string
+          subject?: string
+          template_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_emails_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "applicants_prescreen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "scheduled_emails_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
