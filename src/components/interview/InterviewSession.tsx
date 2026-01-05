@@ -136,8 +136,8 @@ export function InterviewSession({
       setTextQuestions(textQs);
       setMcQuestions(mcQs);
 
-      // Save questions to database
-      const allQuestions = [
+      // Save questions to database and get actual IDs
+      const allQuestionsToInsert = [
         ...voiceQs.map((q: VoiceQuestion, i: number) => ({
           session_id: sessionId,
           section: 'voice',
@@ -162,13 +162,36 @@ export function InterviewSession({
         }))
       ];
 
-      if (allQuestions.length > 0) {
-        const { error: insertError } = await supabase
+      if (allQuestionsToInsert.length > 0) {
+        const { data: insertedQuestions, error: insertError } = await supabase
           .from('interview_questions')
-          .insert(allQuestions);
+          .insert(allQuestionsToInsert)
+          .select();
 
         if (insertError) {
           console.error('Failed to save questions:', insertError);
+        } else if (insertedQuestions) {
+          // Update local questions with actual database IDs
+          const voiceDbQuestions = insertedQuestions.filter(q => q.section === 'voice').sort((a, b) => a.question_order - b.question_order);
+          const textDbQuestions = insertedQuestions.filter(q => q.section === 'text').sort((a, b) => a.question_order - b.question_order);
+          const mcDbQuestions = insertedQuestions.filter(q => q.section === 'multiple_choice').sort((a, b) => a.question_order - b.question_order);
+
+          setVoiceQuestions(voiceDbQuestions.map((q, i) => ({
+            id: q.id,
+            question_text: q.question_text,
+            question_context: q.question_context || ''
+          })));
+          setTextQuestions(textDbQuestions.map((q, i) => ({
+            id: q.id,
+            question_text: q.question_text,
+            question_context: q.question_context || ''
+          })));
+          setMcQuestions(mcDbQuestions.map((q, i) => ({
+            id: q.id,
+            question_text: q.question_text,
+            question_context: q.question_context || '',
+            options: (q.options as unknown as MultipleChoiceOption[]) || []
+          })));
         }
       }
 
