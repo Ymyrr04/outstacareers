@@ -90,13 +90,16 @@ class SimpleIMAPClient {
   async searchFrom(fromEmail: string, sinceDaysAgo: number): Promise<number[]> {
     const since = new Date();
     since.setDate(since.getDate() - sinceDaysAgo);
-    const sinceStr = since.toLocaleDateString('en-US', { 
-      day: '2-digit', 
-      month: 'short', 
-      year: 'numeric' 
-    }).replace(',', '');
+    // IMAP date format: DD-Mon-YYYY (e.g., 01-Jan-2026)
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const sinceStr = `${since.getDate()}-${months[since.getMonth()]}-${since.getFullYear()}`;
     
-    const response = await this.sendCommand(`SEARCH FROM "${fromEmail}" SINCE ${sinceStr}`);
+    const searchCmd = `SEARCH FROM "${fromEmail}" SINCE ${sinceStr}`;
+    console.log(`IMAP Search: ${searchCmd}`);
+    
+    const response = await this.sendCommand(searchCmd);
+    console.log(`IMAP Response for ${fromEmail}:`, response.join(' | '));
+    
     const uids: number[] = [];
     
     for (const line of response) {
@@ -111,6 +114,7 @@ class SimpleIMAPClient {
       }
     }
     
+    console.log(`Found ${uids.length} emails from ${fromEmail}`);
     return uids;
   }
 
