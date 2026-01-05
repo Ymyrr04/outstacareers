@@ -23,3 +23,6 @@ verify_jwt = true
 
 [functions.process-scheduled-emails]
 verify_jwt = false
+
+[functions.fetch-email-replies]
+verify_jwt = true
