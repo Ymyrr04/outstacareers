@@ -267,6 +267,76 @@ export function CommunicationHistory({
                   </div>
                 ) : (
                   <div className="space-y-3">
+                    {/* Orphan Replies - shown first and prominently */}
+                    {orphanReplies.length > 0 && (
+                      <div className="space-y-3 mb-4">
+                        <h4 className="font-medium text-sm flex items-center gap-2 text-blue-600">
+                          <Inbox className="h-4 w-4" />
+                          Incoming Replies ({orphanReplies.length})
+                        </h4>
+                        {orphanReplies.map((reply) => {
+                          const isReplyExpanded = expandedReplies.has(reply.id);
+                          
+                          return (
+                            <div 
+                              key={reply.id}
+                              className="border border-blue-200 dark:border-blue-900 rounded-lg overflow-hidden"
+                            >
+                              <button
+                                onClick={() => toggleReply(reply.id)}
+                                className="w-full text-left p-4 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-colors"
+                              >
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex items-start gap-3">
+                                    <Reply className="h-4 w-4 text-blue-500 mt-1" />
+                                    <div>
+                                      <p className="font-medium">{reply.subject}</p>
+                                      <p className="text-sm text-muted-foreground">
+                                        From: {reply.from_email}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                                      Reply
+                                    </Badge>
+                                    {isReplyExpanded ? (
+                                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                    ) : (
+                                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                    )}
+                                  </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  {format(new Date(reply.received_at), 'PPP p')}
+                                  <span className="ml-2">
+                                    ({formatDistanceToNow(new Date(reply.received_at), { addSuffix: true })})
+                                  </span>
+                                </p>
+                              </button>
+
+                              {isReplyExpanded && (
+                                <div className="border-t bg-blue-50/30 dark:bg-blue-950/10 p-4">
+                                  <div className="prose prose-sm max-w-none dark:prose-invert break-words overflow-hidden">
+                                    {reply.body_html ? (
+                                      <div 
+                                        dangerouslySetInnerHTML={{ __html: reply.body_html }} 
+                                        className="break-words overflow-hidden [&>*]:max-w-full [&_a]:break-all"
+                                      />
+                                    ) : (
+                                      <p className="whitespace-pre-wrap break-words">{reply.body_text || '(No content)'}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        {threads.length > 0 && <Separator />}
+                      </div>
+                    )}
+
+                    {/* Sent Email Threads */}
                     {threads.map((thread) => {
                       const isExpanded = expandedThreads.has(thread.sentEmail.id);
                       const hasReplies = thread.replies.length > 0;
@@ -397,75 +467,6 @@ export function CommunicationHistory({
                         </div>
                       );
                     })}
-
-                    {/* Orphan Replies */}
-                    {orphanReplies.length > 0 && (
-                      <>
-                        <Separator />
-                        <h4 className="font-medium text-sm flex items-center gap-2 text-muted-foreground">
-                          <Inbox className="h-4 w-4" />
-                          Other Replies ({orphanReplies.length})
-                        </h4>
-                        {orphanReplies.map((reply) => {
-                          const isReplyExpanded = expandedReplies.has(reply.id);
-                          
-                          return (
-                            <div 
-                              key={reply.id}
-                              className="border border-blue-200 dark:border-blue-900 rounded-lg overflow-hidden"
-                            >
-                              <button
-                                onClick={() => toggleReply(reply.id)}
-                                className="w-full text-left p-4 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-colors"
-                              >
-                                <div className="flex items-start justify-between gap-4">
-                                  <div className="flex items-start gap-3">
-                                    <Reply className="h-4 w-4 text-blue-500 mt-1" />
-                                    <div>
-                                      <p className="font-medium">{reply.subject}</p>
-                                      <p className="text-sm text-muted-foreground">
-                                        From: {reply.from_email}
-                                      </p>
-                                    </div>
-                                  </div>
-                                  <div className="flex items-center gap-3">
-                                    <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                                      Reply
-                                    </Badge>
-                                    {isReplyExpanded ? (
-                                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                                    ) : (
-                                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                                    )}
-                                  </div>
-                                </div>
-                                <p className="text-xs text-muted-foreground mt-2">
-                                  {format(new Date(reply.received_at), 'PPP p')}
-                                  <span className="ml-2">
-                                    ({formatDistanceToNow(new Date(reply.received_at), { addSuffix: true })})
-                                  </span>
-                                </p>
-                              </button>
-
-                              {isReplyExpanded && (
-                                <div className="border-t bg-blue-50/30 dark:bg-blue-950/10 p-4">
-                                  <div className="prose prose-sm max-w-none dark:prose-invert break-words overflow-hidden">
-                                    {reply.body_html ? (
-                                      <div 
-                                        dangerouslySetInnerHTML={{ __html: reply.body_html }} 
-                                        className="break-words overflow-hidden [&>*]:max-w-full [&_a]:break-all"
-                                      />
-                                    ) : (
-                                      <p className="whitespace-pre-wrap break-words">{reply.body_text || '(No content)'}</p>
-                                    )}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </>
-                    )}
                   </div>
                 )}
               </div>
