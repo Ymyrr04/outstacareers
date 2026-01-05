@@ -208,11 +208,14 @@ export function CommunicationHistory({
 
                       {expandedReply === reply.id && (
                         <div className="border-t bg-blue-50/30 dark:bg-blue-950/10 p-4">
-                          <div className="prose prose-sm max-w-none dark:prose-invert whitespace-pre-wrap">
+                          <div className="prose prose-sm max-w-none dark:prose-invert break-words overflow-hidden">
                             {reply.body_html ? (
-                              <div dangerouslySetInnerHTML={{ __html: reply.body_html }} />
+                              <div 
+                                dangerouslySetInnerHTML={{ __html: reply.body_html }} 
+                                className="break-words overflow-hidden [&>*]:max-w-full [&_a]:break-all"
+                              />
                             ) : (
-                              <p>{reply.body_text || '(No content)'}</p>
+                              <p className="whitespace-pre-wrap break-words">{reply.body_text || '(No content)'}</p>
                             )}
                           </div>
                         </div>
