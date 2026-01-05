@@ -11,8 +11,8 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-// Rate limit: max 3 submissions per IP per hour
-const RATE_LIMIT_MAX = 3;
+// Rate limit: max 10 submissions per IP per hour
+const RATE_LIMIT_MAX = 10;
 const RATE_LIMIT_WINDOW_HOURS = 1;
 
 // Background task to run CV scoring
