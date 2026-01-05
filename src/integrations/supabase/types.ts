@@ -338,6 +338,182 @@ export type Database = {
         }
         Relationships: []
       }
+      interview_answers: {
+        Row: {
+          ai_feedback: string | null
+          ai_score: number | null
+          answered_at: string
+          created_at: string
+          id: string
+          question_id: string
+          selected_option_id: string | null
+          session_id: string
+          text_answer: string | null
+          voice_duration_seconds: number | null
+          voice_recording_url: string | null
+        }
+        Insert: {
+          ai_feedback?: string | null
+          ai_score?: number | null
+          answered_at?: string
+          created_at?: string
+          id?: string
+          question_id: string
+          selected_option_id?: string | null
+          session_id: string
+          text_answer?: string | null
+          voice_duration_seconds?: number | null
+          voice_recording_url?: string | null
+        }
+        Update: {
+          ai_feedback?: string | null
+          ai_score?: number | null
+          answered_at?: string
+          created_at?: string
+          id?: string
+          question_id?: string
+          selected_option_id?: string | null
+          session_id?: string
+          text_answer?: string | null
+          voice_duration_seconds?: number | null
+          voice_recording_url?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interview_answers_question_id_fkey"
+            columns: ["question_id"]
+            isOneToOne: false
+            referencedRelation: "interview_questions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interview_answers_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "interview_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      interview_questions: {
+        Row: {
+          created_at: string
+          id: string
+          options: Json | null
+          question_context: string | null
+          question_order: number
+          question_text: string
+          section: string
+          session_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          options?: Json | null
+          question_context?: string | null
+          question_order: number
+          question_text: string
+          section: string
+          session_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          options?: Json | null
+          question_context?: string | null
+          question_order?: number
+          question_text?: string
+          section?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interview_questions_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "interview_sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      interview_sessions: {
+        Row: {
+          ai_assessment_details: Json | null
+          ai_concerns: string[] | null
+          ai_strengths: string[] | null
+          ai_summary: string | null
+          applicant_id: string
+          communication_score: number | null
+          completed_at: string | null
+          created_at: string
+          experience_score: number | null
+          id: string
+          job_id: string | null
+          overall_score: number | null
+          personality_score: number | null
+          situational_score: number | null
+          started_at: string
+          status: string
+          technical_score: number | null
+          updated_at: string
+        }
+        Insert: {
+          ai_assessment_details?: Json | null
+          ai_concerns?: string[] | null
+          ai_strengths?: string[] | null
+          ai_summary?: string | null
+          applicant_id: string
+          communication_score?: number | null
+          completed_at?: string | null
+          created_at?: string
+          experience_score?: number | null
+          id?: string
+          job_id?: string | null
+          overall_score?: number | null
+          personality_score?: number | null
+          situational_score?: number | null
+          started_at?: string
+          status?: string
+          technical_score?: number | null
+          updated_at?: string
+        }
+        Update: {
+          ai_assessment_details?: Json | null
+          ai_concerns?: string[] | null
+          ai_strengths?: string[] | null
+          ai_summary?: string | null
+          applicant_id?: string
+          communication_score?: number | null
+          completed_at?: string | null
+          created_at?: string
+          experience_score?: number | null
+          id?: string
+          job_id?: string | null
+          overall_score?: number | null
+          personality_score?: number | null
+          situational_score?: number | null
+          started_at?: string
+          status?: string
+          technical_score?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "interview_sessions_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "applicants_prescreen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "interview_sessions_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           apply_url: string

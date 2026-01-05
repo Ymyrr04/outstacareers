@@ -255,30 +255,9 @@ serve(async (req) => {
       });
     }
 
-    // Validate voice introduction - must have either vocaroo link or voice recording
-    const hasVocarooLink = body.vocaroo_link && body.vocaroo_link.trim() !== '';
-    const hasVoiceRecording = body.voice_recording_url && body.voice_recording_url.trim() !== '';
-    
-    if (!hasVocarooLink && !hasVoiceRecording) {
-      return new Response(JSON.stringify({ error: 'Voice introduction is required (either record or use Vocaroo)' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
-    // Validate Vocaroo link format if provided
-    let vocarooLink = null;
-    if (hasVocarooLink) {
-      vocarooLink = body.vocaroo_link.trim();
-      if (!vocarooLink.includes('vocaroo.com') && !vocarooLink.includes('voca.ro')) {
-        return new Response(JSON.stringify({ error: 'Please provide a valid Vocaroo link' }), {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        });
-      }
-    }
-    
-    const voiceRecordingUrl = hasVoiceRecording ? body.voice_recording_url.trim() : null;
+    // Voice introduction is now handled via AI interview, so it's optional at this stage
+    const vocarooLink = body.vocaroo_link?.trim() || null;
+    const voiceRecordingUrl = body.voice_recording_url?.trim() || null;
 
     // Check rate limit - count submissions from this IP in the last hour
     const rateLimitWindow = new Date();
@@ -406,6 +385,7 @@ serve(async (req) => {
 
     return new Response(JSON.stringify({ 
       success: true,
+      applicant_id: applicantId,
       message: 'Application submitted successfully' 
     }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

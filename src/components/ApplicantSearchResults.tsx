@@ -55,6 +55,21 @@ interface AssessmentDetails {
   concerns: string[];
 }
 
+interface InterviewSession {
+  id: string;
+  status: string;
+  experience_score: number | null;
+  technical_score: number | null;
+  communication_score: number | null;
+  situational_score: number | null;
+  personality_score: number | null;
+  overall_score: number | null;
+  ai_summary: string | null;
+  ai_strengths: string[] | null;
+  ai_concerns: string[] | null;
+  completed_at: string | null;
+}
+
 interface Applicant {
   id: string;
   full_name: string;
@@ -74,6 +89,7 @@ interface Applicant {
   extracted_skills: string[] | null;
   extracted_tools: string[] | null;
   years_of_experience: number | null;
+  interview_session?: InterviewSession | null;
   // Additional fields for details view
   home_office?: boolean;
   noise_canceling_headset?: boolean;
@@ -225,7 +241,19 @@ export default function ApplicantSearchResults({
                   
                   {applicant.total_score !== null && (
                     <Badge variant="outline" className="font-mono">
-                      Score: {applicant.total_score}/100
+                      CV: {applicant.total_score}/100
+                    </Badge>
+                  )}
+
+                  {applicant.interview_session?.status === 'completed' && applicant.interview_session.overall_score !== null && (
+                    <Badge variant="outline" className="font-mono bg-purple-50 border-purple-300 text-purple-700">
+                      Interview: {applicant.interview_session.overall_score}/100
+                    </Badge>
+                  )}
+
+                  {applicant.interview_session?.status === 'in_progress' && (
+                    <Badge variant="outline" className="text-yellow-600 border-yellow-300">
+                      Interview in progress
                     </Badge>
                   )}
 

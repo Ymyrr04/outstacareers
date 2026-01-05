@@ -88,6 +88,21 @@ interface AssessmentDetails {
   concerns: string[];
 }
 
+interface InterviewSession {
+  id: string;
+  status: string;
+  experience_score: number | null;
+  technical_score: number | null;
+  communication_score: number | null;
+  situational_score: number | null;
+  personality_score: number | null;
+  overall_score: number | null;
+  ai_summary: string | null;
+  ai_strengths: string[] | null;
+  ai_concerns: string[] | null;
+  completed_at: string | null;
+}
+
 interface Applicant {
   id: string;
   full_name: string;
@@ -128,6 +143,8 @@ interface Applicant {
   extracted_skills: string[] | null;
   extracted_tools: string[] | null;
   years_of_experience: number | null;
+  // Interview session
+  interview_session: InterviewSession | null;
 }
 
 const Admin = () => {
@@ -315,25 +332,61 @@ const Admin = () => {
 
   const fetchApplicants = async () => {
     setApplicantsLoading(true);
-    const { data, error } = await supabase
+    
+    // Fetch applicants
+    const { data: applicantsData, error: applicantsError } = await supabase
       .from('applicants_prescreen')
       .select('*')
       .order('submitted_at', { ascending: false });
 
-    if (error) {
+    if (applicantsError) {
       toast({
         title: 'Error',
         description: 'Failed to fetch applicants',
         variant: 'destructive',
       });
-    } else {
-      // Cast the data to handle JSON type for ai_assessment_details
-      const applicantsData = (data || []).map(item => ({
-        ...item,
-        ai_assessment_details: item.ai_assessment_details as unknown as AssessmentDetails | null
-      }));
-      setApplicants(applicantsData);
+      setApplicantsLoading(false);
+      return;
     }
+
+    // Fetch interview sessions for all applicants
+    const applicantIds = (applicantsData || []).map(a => a.id);
+    let interviewSessions: Record<string, InterviewSession> = {};
+    
+    if (applicantIds.length > 0) {
+      const { data: sessionsData } = await supabase
+        .from('interview_sessions')
+        .select('*')
+        .in('applicant_id', applicantIds);
+      
+      if (sessionsData) {
+        sessionsData.forEach(session => {
+          interviewSessions[session.applicant_id] = {
+            id: session.id,
+            status: session.status,
+            experience_score: session.experience_score,
+            technical_score: session.technical_score,
+            communication_score: session.communication_score,
+            situational_score: session.situational_score,
+            personality_score: session.personality_score,
+            overall_score: session.overall_score,
+            ai_summary: session.ai_summary,
+            ai_strengths: session.ai_strengths,
+            ai_concerns: session.ai_concerns,
+            completed_at: session.completed_at
+          };
+        });
+      }
+    }
+
+    // Combine applicants with their interview sessions
+    const applicantsWithInterviews = (applicantsData || []).map(item => ({
+      ...item,
+      ai_assessment_details: item.ai_assessment_details as unknown as AssessmentDetails | null,
+      interview_session: interviewSessions[item.id] || null
+    }));
+    
+    setApplicants(applicantsWithInterviews);
     setApplicantsLoading(false);
   };
 
