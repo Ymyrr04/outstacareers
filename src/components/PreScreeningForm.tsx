@@ -3,11 +3,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { X, Loader2, CheckCircle, ExternalLink, Upload, FileText, Mic } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
 import speedtestSample from "@/assets/speedtest-sample.png";
+import { VoiceRecorder } from "./VoiceRecorder";
 
 interface PreScreeningFormProps {
   job: {
@@ -113,6 +115,8 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
   
   // Vocaroo state
   const [vocarooLink, setVocarooLink] = useState<string>("");
+  const [voiceRecordingUrl, setVoiceRecordingUrl] = useState<string>("");
+  const [voiceInputMethod, setVoiceInputMethod] = useState<'record' | 'vocaroo'>('record');
   
   const [formData, setFormData] = useState<FormData>({
     full_name: "",
@@ -372,13 +376,17 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
   };
 
   const handleFinalSubmit = async () => {
-    if (!vocarooLink.trim()) {
-      setErrors(prev => ({ ...prev, vocaroo: "Please provide your Vocaroo link" }));
+    // Check if we have either a voice recording or a vocaroo link
+    const hasVoiceRecording = voiceRecordingUrl.trim() !== '';
+    const hasVocarooLink = vocarooLink.trim() !== '';
+    
+    if (!hasVoiceRecording && !hasVocarooLink) {
+      setErrors(prev => ({ ...prev, vocaroo: "Please record your voice or provide a Vocaroo link" }));
       return;
     }
 
-    // Validate vocaroo link format
-    if (!vocarooLink.includes('vocaroo.com') && !vocarooLink.includes('voca.ro')) {
+    // Validate vocaroo link format if provided
+    if (hasVocarooLink && !vocarooLink.includes('vocaroo.com') && !vocarooLink.includes('voca.ro')) {
       setErrors(prev => ({ ...prev, vocaroo: "Please provide a valid Vocaroo link" }));
       return;
     }
@@ -418,7 +426,8 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
           ranking_status: scoreResult?.ranking_status,
           ai_summary: scoreResult?.summary,
           ai_assessment_details: scoreResult?.assessment_details || null,
-          vocaroo_link: vocarooLink,
+          vocaroo_link: vocarooLink || null,
+          voice_recording_url: voiceRecordingUrl || null,
           // Extracted metadata for search/filtering
           extracted_skills: scoreResult?.extracted_skills || [],
           extracted_tools: scoreResult?.extracted_tools || [],
@@ -846,52 +855,76 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
               </div>
             )}
 
-            {/* Step 3: Vocaroo Link */}
+            {/* Step 3: Voice Introduction */}
             {currentStep === 'vocaroo' && (
               <div className="space-y-5">
-                <div className="text-center mb-6">
+                <div className="text-center mb-4">
                   <Mic className="w-12 h-12 text-primary mx-auto mb-3" />
                   <h4 className="font-semibold text-lg">Voice Introduction</h4>
                   <p className="text-sm text-muted-foreground mt-1">
-                    This step is required to complete your application
+                    Record a brief intro about yourself and your experience
                   </p>
                 </div>
 
-                <div className="bg-muted/50 rounded-lg p-4 space-y-3">
-                  <p className="text-sm">
-                    Please record a <span className="font-semibold">1-minute voice introduction</span> using{" "}
-                    <a 
-                      href="https://vocaroo.com" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline inline-flex items-center gap-1"
-                    >
-                      Vocaroo
-                      <ExternalLink className="w-3 h-3" />
-                    </a>{" "}
-                    and paste the link below.
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    In your introduction, briefly tell us about yourself, your experience, and why you are interested in this role.
-                  </p>
-                </div>
+                <Tabs 
+                  value={voiceInputMethod} 
+                  onValueChange={(v) => setVoiceInputMethod(v as 'record' | 'vocaroo')}
+                  className="w-full"
+                >
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="record">Record Now</TabsTrigger>
+                    <TabsTrigger value="vocaroo">Use Vocaroo</TabsTrigger>
+                  </TabsList>
 
-                <div className="space-y-2">
-                  <Label htmlFor="vocaroo_link">Vocaroo Link *</Label>
-                  <Input
-                    id="vocaroo_link"
-                    value={vocarooLink}
-                    onChange={(e) => {
-                      setVocarooLink(e.target.value);
-                      if (errors.vocaroo) {
-                        setErrors(prev => ({ ...prev, vocaroo: "" }));
-                      }
-                    }}
-                    placeholder="e.g., https://vocaroo.com/1abc2def3ghi"
-                    className={errors.vocaroo ? "border-destructive" : ""}
-                  />
-                  {errors.vocaroo && <p className="text-sm text-destructive">{errors.vocaroo}</p>}
-                </div>
+                  <TabsContent value="record" className="mt-4">
+                    <VoiceRecorder
+                      onRecordingComplete={(url) => {
+                        setVoiceRecordingUrl(url);
+                        if (errors.vocaroo) {
+                          setErrors(prev => ({ ...prev, vocaroo: "" }));
+                        }
+                      }}
+                      maxDuration={120}
+                      existingUrl={voiceRecordingUrl}
+                    />
+                  </TabsContent>
+
+                  <TabsContent value="vocaroo" className="mt-4 space-y-4">
+                    <div className="bg-muted/50 rounded-lg p-4 space-y-2">
+                      <p className="text-sm">
+                        Record using{" "}
+                        <a 
+                          href="https://vocaroo.com" 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-primary hover:underline inline-flex items-center gap-1"
+                        >
+                          Vocaroo
+                          <ExternalLink className="w-3 h-3" />
+                        </a>{" "}
+                        and paste the link below.
+                      </p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="vocaroo_link">Vocaroo Link</Label>
+                      <Input
+                        id="vocaroo_link"
+                        value={vocarooLink}
+                        onChange={(e) => {
+                          setVocarooLink(e.target.value);
+                          if (errors.vocaroo) {
+                            setErrors(prev => ({ ...prev, vocaroo: "" }));
+                          }
+                        }}
+                        placeholder="e.g., https://vocaroo.com/1abc2def3ghi"
+                        className={errors.vocaroo ? "border-destructive" : ""}
+                      />
+                    </div>
+                  </TabsContent>
+                </Tabs>
+
+                {errors.vocaroo && <p className="text-sm text-destructive text-center">{errors.vocaroo}</p>}
 
                 <div className="pt-4 border-t border-border flex gap-3">
                   <Button
@@ -904,7 +937,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
                   </Button>
                   <Button
                     onClick={handleFinalSubmit}
-                    disabled={!vocarooLink.trim() || isSubmitting}
+                    disabled={(!vocarooLink.trim() && !voiceRecordingUrl.trim()) || isSubmitting}
                     className="flex-1"
                   >
                     {isSubmitting ? (

@@ -70,22 +70,30 @@ serve(async (req) => {
       });
     }
 
-    // Validate Vocaroo link if provided (now required)
-    if (!body.vocaroo_link || body.vocaroo_link.trim() === '') {
-      return new Response(JSON.stringify({ error: 'Voice introduction (Vocaroo link) is required' }), {
+    // Validate voice introduction - must have either vocaroo link or voice recording
+    const hasVocarooLink = body.vocaroo_link && body.vocaroo_link.trim() !== '';
+    const hasVoiceRecording = body.voice_recording_url && body.voice_recording_url.trim() !== '';
+    
+    if (!hasVocarooLink && !hasVoiceRecording) {
+      return new Response(JSON.stringify({ error: 'Voice introduction is required (either record or use Vocaroo)' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    // Validate Vocaroo link format
-    const vocarooLink = body.vocaroo_link.trim();
-    if (!vocarooLink.includes('vocaroo.com') && !vocarooLink.includes('voca.ro')) {
-      return new Response(JSON.stringify({ error: 'Please provide a valid Vocaroo link' }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+    // Validate Vocaroo link format if provided
+    let vocarooLink = null;
+    if (hasVocarooLink) {
+      vocarooLink = body.vocaroo_link.trim();
+      if (!vocarooLink.includes('vocaroo.com') && !vocarooLink.includes('voca.ro')) {
+        return new Response(JSON.stringify({ error: 'Please provide a valid Vocaroo link' }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
     }
+    
+    const voiceRecordingUrl = hasVoiceRecording ? body.voice_recording_url.trim() : null;
 
     // Check rate limit - count submissions from this IP in the last hour
     const rateLimitWindow = new Date();
@@ -145,6 +153,7 @@ serve(async (req) => {
       ai_summary: body.ai_summary || null,
       ai_assessment_details: body.ai_assessment_details || null,
       vocaroo_link: vocarooLink,
+      voice_recording_url: voiceRecordingUrl,
       // Extracted metadata for search/filtering
       extracted_skills: Array.isArray(body.extracted_skills) ? body.extracted_skills : [],
       extracted_tools: Array.isArray(body.extracted_tools) ? body.extracted_tools : [],
@@ -156,6 +165,7 @@ serve(async (req) => {
       ranking_status: insertData.ranking_status,
       has_cv: !!insertData.cv_file_url,
       has_vocaroo: !!insertData.vocaroo_link,
+      has_voice_recording: !!insertData.voice_recording_url,
     });
 
     const { error: insertError } = await supabase
