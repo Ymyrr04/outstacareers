@@ -118,12 +118,13 @@ class SimpleIMAPClient {
     return uids;
   }
 
-  async fetchMessage(msgNum: number): Promise<{ subject: string; date: string; messageId: string; body: string } | null> {
-    const response = await this.sendCommand(`FETCH ${msgNum} (BODY[HEADER.FIELDS (SUBJECT DATE MESSAGE-ID)] BODY[TEXT])`);
+  async fetchMessage(msgNum: number): Promise<{ subject: string; date: string; messageId: string; inReplyTo: string; body: string } | null> {
+    const response = await this.sendCommand(`FETCH ${msgNum} (BODY[HEADER.FIELDS (SUBJECT DATE MESSAGE-ID IN-REPLY-TO REFERENCES)] BODY[TEXT])`);
     
     let subject = "";
     let date = "";
     let messageId = "";
+    let inReplyTo = "";
     let body = "";
     let inBody = false;
     
@@ -137,6 +138,9 @@ class SimpleIMAPClient {
       if (line.includes("Message-ID:") || line.includes("Message-Id:")) {
         messageId = line.replace(/Message-I[dD]:\s*/i, "").trim();
       }
+      if (line.includes("In-Reply-To:")) {
+        inReplyTo = line.replace(/In-Reply-To:\s*/i, "").trim();
+      }
       // Capture body content
       if (inBody && !line.match(/^A\d+ OK|^\)/)) {
         body += line + "\n";
@@ -148,7 +152,54 @@ class SimpleIMAPClient {
     
     if (!messageId) return null;
     
-    return { subject, date, messageId, body: body.trim() };
+    // Clean up the body
+    body = this.cleanEmailBody(body);
+    
+    return { subject, date, messageId, inReplyTo, body: body.trim() };
+  }
+
+  private cleanEmailBody(rawBody: string): string {
+    let body = rawBody;
+    
+    // Remove MIME boundaries (lines starting with --)
+    body = body.replace(/^--[a-zA-Z0-9]+.*$/gm, "");
+    
+    // Remove Content-Type and Content-Transfer-Encoding headers
+    body = body.replace(/^Content-Type:.*$/gim, "");
+    body = body.replace(/^Content-Transfer-Encoding:.*$/gim, "");
+    
+    // Decode quoted-printable encoding
+    body = body.replace(/=\r?\n/g, ""); // Remove soft line breaks
+    body = body.replace(/=([0-9A-Fa-f]{2})/g, (_, hex) => {
+      return String.fromCharCode(parseInt(hex, 16));
+    });
+    
+    // Try to extract just the reply (before quoted original)
+    // Look for common reply markers
+    const replyMarkers = [
+      /^On .+ wrote:$/m,                    // "On [date] [person] wrote:"
+      /^>.*$/m,                              // Quoted text starting with >
+      /^-{2,}.*Original Message.*-{2,}$/im, // "--- Original Message ---"
+      /^From:.*Sent:.*To:.*Subject:/im,     // Outlook style quote header
+    ];
+    
+    for (const marker of replyMarkers) {
+      const match = body.match(marker);
+      if (match && match.index !== undefined && match.index > 20) {
+        // Only take content before the quote marker
+        body = body.substring(0, match.index);
+        break;
+      }
+    }
+    
+    // Remove lines that are just ">" (empty quoted lines)
+    body = body.replace(/^>\s*$/gm, "");
+    
+    // Clean up excessive whitespace
+    body = body.replace(/\n{3,}/g, "\n\n");
+    body = body.trim();
+    
+    return body;
   }
 
   async logout(): Promise<void> {
@@ -249,6 +300,7 @@ const handler = async (req: Request): Promise<Response> => {
               from_email: applicant.email,
               subject: message.subject || "(No Subject)",
               body_text: message.body.substring(0, 50000),
+              in_reply_to: message.inReplyTo || null,
               received_at: receivedAt,
               gmail_message_id: message.messageId,
             });
