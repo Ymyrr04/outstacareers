@@ -6,24 +6,62 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Separator } from '@/components/ui/separator';
 import { useEmailTemplates, triggerToStatus, EmailTemplate } from '@/hooks/useEmailTemplates';
-import { Mail, Save, Loader2, Clock, ToggleLeft, Eye, AlertTriangle } from 'lucide-react';
+import { Mail, Save, Loader2, Clock, Eye, AlertTriangle, Link2 } from 'lucide-react';
 
 interface EmailTemplateEditorProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
+// Convert HTML to plain text
+const htmlToPlainText = (html: string): string => {
+  // Replace <br> and </p> with newlines
+  let text = html.replace(/<br\s*\/?>/gi, '\n');
+  text = text.replace(/<\/p>/gi, '\n\n');
+  text = text.replace(/<\/div>/gi, '\n');
+  // Extract href from links and format as [text](url)
+  text = text.replace(/<a[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>/gi, '$2 ($1)');
+  // Remove remaining HTML tags
+  text = text.replace(/<[^>]+>/g, '');
+  // Decode HTML entities
+  text = text.replace(/&nbsp;/g, ' ');
+  text = text.replace(/&amp;/g, '&');
+  text = text.replace(/&lt;/g, '<');
+  text = text.replace(/&gt;/g, '>');
+  text = text.replace(/&quot;/g, '"');
+  // Trim extra whitespace
+  text = text.replace(/\n{3,}/g, '\n\n').trim();
+  return text;
+};
+
+// Convert plain text to simple HTML for email
+const plainTextToHtml = (text: string): string => {
+  // Escape HTML entities
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  
+  // Convert URLs to clickable links
+  html = html.replace(
+    /\b(https?:\/\/[^\s<>]+)/gi,
+    '<a href="$1" style="color: #0066cc;">$1</a>'
+  );
+  
+  // Convert newlines to <br>
+  html = html.replace(/\n/g, '<br>');
+  
+  return html;
+};
+
 export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorProps) {
   const { templates, loading, updateTemplate } = useEmailTemplates();
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [editForm, setEditForm] = useState({
     subject: '',
-    body_html: '',
+    body_text: '',
     is_enabled: true,
     delay_hours: 0,
   });
@@ -34,7 +72,7 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
     setSelectedTemplate(template);
     setEditForm({
       subject: template.subject,
-      body_html: template.body_html,
+      body_text: htmlToPlainText(template.body_html),
       is_enabled: template.is_enabled,
       delay_hours: template.delay_hours,
     });
@@ -45,16 +83,26 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
     if (!selectedTemplate) return;
     
     setSaving(true);
-    const success = await updateTemplate(selectedTemplate.id, editForm);
+    const success = await updateTemplate(selectedTemplate.id, {
+      subject: editForm.subject,
+      body_html: plainTextToHtml(editForm.body_text),
+      is_enabled: editForm.is_enabled,
+      delay_hours: editForm.delay_hours,
+    });
     if (success) {
-      setSelectedTemplate({ ...selectedTemplate, ...editForm });
+      setSelectedTemplate({ 
+        ...selectedTemplate, 
+        subject: editForm.subject,
+        body_html: plainTextToHtml(editForm.body_text),
+        is_enabled: editForm.is_enabled,
+        delay_hours: editForm.delay_hours,
+      });
     }
     setSaving(false);
   };
 
-  const getPreviewHtml = () => {
-    // Replace placeholders with sample data
-    return editForm.body_html
+  const getPreviewText = () => {
+    return editForm.body_text
       .replace(/\{\{applicant_name\}\}/g, 'John Doe')
       .replace(/\{\{job_title\}\}/g, 'Software Engineer')
       .replace(/\{\{interview_date\}\}/g, 'Monday, January 15, 2025')
@@ -63,52 +111,58 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
       .replace(/\{\{meeting_link\}\}/g, 'https://zoom.us/j/123456789');
   };
 
+  const placeholders = [
+    { key: '{{applicant_name}}', desc: 'Candidate name' },
+    { key: '{{job_title}}', desc: 'Position title' },
+    { key: '{{interview_date}}', desc: 'Interview date' },
+    { key: '{{interview_time}}', desc: 'Interview time' },
+    { key: '{{timezone}}', desc: 'Timezone' },
+    { key: '{{meeting_link}}', desc: 'Meeting URL' },
+  ];
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-5xl h-[85vh] flex flex-col p-0">
+      <DialogContent className="max-w-4xl h-[80vh] flex flex-col p-0">
         <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" />
-            Email Template Editor
+            Email Templates
           </DialogTitle>
           <DialogDescription>
-            Edit and manage automated email templates for each pipeline stage
+            Manage automated emails for each pipeline stage. Use plain text with links.
           </DialogDescription>
         </DialogHeader>
 
         <div className="flex flex-1 overflow-hidden">
-          {/* Template List Sidebar */}
-          <div className="w-72 border-r bg-muted/30">
+          {/* Template List */}
+          <div className="w-56 border-r bg-muted/20">
             <ScrollArea className="h-full">
-              <div className="p-4 space-y-2">
-                <p className="text-sm font-medium text-muted-foreground mb-3">Pipeline Stages</p>
+              <div className="p-3 space-y-1">
                 {loading ? (
                   <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin" />
+                    <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                   </div>
                 ) : (
                   templates.map((template) => (
                     <button
                       key={template.id}
                       onClick={() => handleSelectTemplate(template)}
-                      className={`w-full text-left p-3 rounded-lg transition-colors ${
+                      className={`w-full text-left px-3 py-2.5 rounded-md transition-colors text-sm ${
                         selectedTemplate?.id === template.id
                           ? 'bg-primary text-primary-foreground'
                           : 'hover:bg-muted'
                       }`}
                     >
-                      <div className="flex items-center justify-between">
-                        <span className="font-medium text-sm">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-medium truncate">
                           {triggerToStatus[template.status_trigger] || template.status_trigger}
                         </span>
-                        {template.is_enabled ? (
-                          <Badge variant="secondary" className="text-xs">ON</Badge>
-                        ) : (
-                          <Badge variant="outline" className="text-xs opacity-50">OFF</Badge>
+                        {!template.is_enabled && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 opacity-60">OFF</Badge>
                         )}
                       </div>
                       {template.delay_hours > 0 && (
-                        <div className="flex items-center gap-1 mt-1 text-xs opacity-70">
+                        <div className="flex items-center gap-1 mt-0.5 text-xs opacity-70">
                           <Clock className="h-3 w-3" />
                           {template.delay_hours}h delay
                         </div>
@@ -120,13 +174,13 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
             </ScrollArea>
           </div>
 
-          {/* Editor Area */}
+          {/* Editor */}
           <div className="flex-1 flex flex-col overflow-hidden">
             {selectedTemplate ? (
               <>
-                <div className="flex-1 overflow-auto p-6 space-y-6">
-                  {/* Settings Row */}
-                  <div className="flex items-center justify-between gap-4 flex-wrap">
+                <div className="flex-1 overflow-auto p-5 space-y-4">
+                  {/* Controls */}
+                  <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                       <div className="flex items-center gap-2">
                         <Switch
@@ -134,118 +188,129 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
                           checked={editForm.is_enabled}
                           onCheckedChange={(checked) => setEditForm(prev => ({ ...prev, is_enabled: checked }))}
                         />
-                        <Label htmlFor="enabled" className="text-sm">
+                        <Label htmlFor="enabled" className="text-sm cursor-pointer">
                           {editForm.is_enabled ? 'Enabled' : 'Disabled'}
                         </Label>
                       </div>
 
                       {selectedTemplate.status_trigger === 'reject' && (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 text-sm">
                           <Clock className="h-4 w-4 text-muted-foreground" />
-                          <Label htmlFor="delay" className="text-sm">Delay (hours):</Label>
+                          <span className="text-muted-foreground">Delay:</span>
                           <Input
-                            id="delay"
                             type="number"
                             min="0"
                             max="168"
                             value={editForm.delay_hours}
                             onChange={(e) => setEditForm(prev => ({ ...prev, delay_hours: parseInt(e.target.value) || 0 }))}
-                            className="w-20 h-8"
+                            className="w-16 h-8"
                           />
+                          <span className="text-muted-foreground">hours</span>
                         </div>
                       )}
                     </div>
 
                     <Button
-                      variant="outline"
+                      variant={previewMode ? "default" : "outline"}
                       size="sm"
                       onClick={() => setPreviewMode(!previewMode)}
                     >
-                      <Eye className="h-4 w-4 mr-2" />
+                      <Eye className="h-4 w-4 mr-1.5" />
                       {previewMode ? 'Edit' : 'Preview'}
                     </Button>
                   </div>
 
+                  {/* Delay warning */}
                   {selectedTemplate.status_trigger === 'reject' && editForm.delay_hours > 0 && (
-                    <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg">
-                      <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
-                      <div className="text-sm">
-                        <p className="font-medium text-amber-800 dark:text-amber-200">Delayed Sending</p>
-                        <p className="text-amber-700 dark:text-amber-300">
-                          Rejection emails will be held for {editForm.delay_hours} hour(s) before sending. 
-                          Admins can cancel during this period.
-                        </p>
-                      </div>
+                    <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md text-sm">
+                      <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+                      <p className="text-amber-800 dark:text-amber-200">
+                        Rejection emails will be held for {editForm.delay_hours} hours before sending, allowing you to cancel if needed.
+                      </p>
                     </div>
                   )}
 
                   {/* Subject */}
-                  <div className="space-y-2">
-                    <Label>Subject Line</Label>
+                  <div className="space-y-1.5">
+                    <Label className="text-sm font-medium">Subject</Label>
                     <Input
                       value={editForm.subject}
                       onChange={(e) => setEditForm(prev => ({ ...prev, subject: e.target.value }))}
                       placeholder="Email subject..."
                       disabled={previewMode}
+                      className="h-9"
                     />
-                    <p className="text-xs text-muted-foreground">
-                      Use placeholders: {'{{applicant_name}}'}, {'{{job_title}}'}
-                    </p>
                   </div>
 
                   {/* Body */}
-                  <div className="space-y-2 flex-1">
-                    <Label>Email Body (HTML)</Label>
+                  <div className="space-y-1.5 flex-1">
+                    <Label className="text-sm font-medium">Message</Label>
                     {previewMode ? (
-                      <Card>
-                        <CardContent className="p-4">
-                          <div 
-                            className="prose prose-sm max-w-none dark:prose-invert"
-                            dangerouslySetInnerHTML={{ __html: getPreviewHtml() }}
-                          />
-                        </CardContent>
-                      </Card>
+                      <div className="border rounded-md p-4 bg-muted/30 min-h-[250px] whitespace-pre-wrap text-sm font-mono">
+                        {getPreviewText()}
+                      </div>
                     ) : (
-                      <>
-                        <Textarea
-                          value={editForm.body_html}
-                          onChange={(e) => setEditForm(prev => ({ ...prev, body_html: e.target.value }))}
-                          placeholder="<p>Email content...</p>"
-                          className="min-h-[300px] font-mono text-sm"
-                        />
-                        <p className="text-xs text-muted-foreground">
-                          Available placeholders: {'{{applicant_name}}'}, {'{{job_title}}'}, {'{{interview_date}}'}, {'{{interview_time}}'}, {'{{timezone}}'}, {'{{meeting_link}}'}
-                        </p>
-                      </>
+                      <Textarea
+                        value={editForm.body_text}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, body_text: e.target.value }))}
+                        placeholder="Write your email message here...&#10;&#10;URLs will automatically become clickable links."
+                        className="min-h-[250px] text-sm resize-none"
+                      />
                     )}
                   </div>
+
+                  {/* Placeholders help */}
+                  {!previewMode && (
+                    <div className="bg-muted/40 rounded-md p-3">
+                      <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
+                        <Link2 className="h-3 w-3" />
+                        Available placeholders (will be replaced with actual values):
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {placeholders.map(p => (
+                          <button
+                            key={p.key}
+                            type="button"
+                            onClick={() => {
+                              const textarea = document.querySelector('textarea');
+                              if (textarea) {
+                                const start = textarea.selectionStart;
+                                const end = textarea.selectionEnd;
+                                const newText = editForm.body_text.substring(0, start) + p.key + editForm.body_text.substring(end);
+                                setEditForm(prev => ({ ...prev, body_text: newText }));
+                              }
+                            }}
+                            className="text-xs px-2 py-1 rounded bg-background border hover:bg-muted transition-colors"
+                            title={p.desc}
+                          >
+                            {p.key}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
-                {/* Footer Actions */}
-                <div className="border-t px-6 py-4 flex justify-end gap-3">
-                  <Button variant="outline" onClick={() => onOpenChange(false)}>
+                {/* Footer */}
+                <div className="border-t px-5 py-3 flex justify-end gap-2 bg-muted/20">
+                  <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
                     Cancel
                   </Button>
-                  <Button onClick={handleSave} disabled={saving}>
+                  <Button size="sm" onClick={handleSave} disabled={saving}>
                     {saving ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
+                      <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
                     ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save Template
-                      </>
+                      <Save className="mr-1.5 h-4 w-4" />
                     )}
+                    Save
                   </Button>
                 </div>
               </>
             ) : (
               <div className="flex-1 flex items-center justify-center text-muted-foreground">
                 <div className="text-center">
-                  <Mail className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                  <p>Select a template to edit</p>
+                  <Mail className="h-10 w-10 mx-auto mb-3 opacity-40" />
+                  <p className="text-sm">Select a template to edit</p>
                 </div>
               </div>
             )}
