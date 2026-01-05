@@ -4,12 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { useEmailLogs, useScheduledEmails, useEmailReplies, EmailLog, EmailReply } from '@/hooks/useEmailTemplates';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow, format } from 'date-fns';
 import { 
   Mail, Clock, CheckCircle, XCircle, AlertTriangle, 
   Loader2, Send, Ban, ChevronDown, ChevronUp,
-  Reply, RefreshCw, Inbox, MessageSquare
+  Reply, RefreshCw, Inbox, MessageSquare, CornerUpLeft
 } from 'lucide-react';
 
 interface CommunicationHistoryProps {
@@ -17,11 +22,19 @@ interface CommunicationHistoryProps {
   onOpenChange: (open: boolean) => void;
   applicantId: string;
   applicantName: string;
+  applicantEmail: string;
 }
 
 interface EmailThread {
   sentEmail: EmailLog;
   replies: EmailReply[];
+}
+
+interface ReplyContext {
+  subject: string;
+  originalBody: string;
+  fromEmail: string;
+  receivedAt: string;
 }
 
 // Helper to normalize subjects for matching
@@ -33,18 +46,41 @@ const normalizeSubject = (subject: string): string => {
     .toLowerCase();
 };
 
+// Convert plain text to simple HTML
+const plainTextToHtml = (text: string): string => {
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  html = html.replace(
+    /\b(https?:\/\/[^\s<>]+)/gi,
+    '<a href="$1" style="color: #0066cc;">$1</a>'
+  );
+  html = html.replace(/\n/g, '<br>');
+  return html;
+};
+
 export function CommunicationHistory({ 
   open, 
   onOpenChange, 
   applicantId,
-  applicantName 
+  applicantName,
+  applicantEmail
 }: CommunicationHistoryProps) {
   const { logs, loading: logsLoading, fetchLogs } = useEmailLogs(applicantId);
   const { scheduledEmails, loading: scheduledLoading, cancelScheduledEmail, fetchScheduledEmails } = useScheduledEmails(applicantId);
   const { replies, loading: repliesLoading, fetching, fetchNewReplies } = useEmailReplies(applicantId);
+  const { toast } = useToast();
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
   const [cancelingId, setCancelingId] = useState<string | null>(null);
+  
+  // Reply compose state
+  const [showReplyComposer, setShowReplyComposer] = useState(false);
+  const [replyContext, setReplyContext] = useState<ReplyContext | null>(null);
+  const [replySubject, setReplySubject] = useState('');
+  const [replyBody, setReplyBody] = useState('');
+  const [sendingReply, setSendingReply] = useState(false);
 
   const toggleThread = (id: string) => {
     setExpandedThreads(prev => {
@@ -134,6 +170,76 @@ export function CommunicationHistory({
 
   const handleFetchReplies = async () => {
     await fetchNewReplies();
+  };
+
+  // Open reply composer with context from a received email
+  const handleReplyToEmail = (reply: EmailReply) => {
+    const subject = reply.subject.startsWith('Re:') ? reply.subject : `Re: ${reply.subject}`;
+    setReplyContext({
+      subject: reply.subject,
+      originalBody: reply.body_text || '',
+      fromEmail: reply.from_email,
+      receivedAt: reply.received_at,
+    });
+    setReplySubject(subject);
+    setReplyBody('');
+    setShowReplyComposer(true);
+  };
+
+  // Send the reply
+  const handleSendReply = async () => {
+    if (!replySubject.trim() || !replyBody.trim()) {
+      toast({
+        title: 'Missing information',
+        description: 'Please fill in subject and message',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setSendingReply(true);
+
+    try {
+      const { error } = await supabase.functions.invoke('send-applicant-email', {
+        body: {
+          applicantId,
+          subject: replySubject,
+          bodyHtml: plainTextToHtml(replyBody),
+          recipientEmail: applicantEmail,
+          applicantStatusAtSend: null,
+          isAutomated: false,
+        },
+      });
+
+      if (error) throw error;
+
+      toast({
+        title: 'Reply sent',
+        description: `Sent to ${applicantEmail}`,
+      });
+
+      setShowReplyComposer(false);
+      setReplyContext(null);
+      setReplySubject('');
+      setReplyBody('');
+      fetchLogs();
+    } catch (error: any) {
+      console.error('Error sending reply:', error);
+      toast({
+        title: 'Failed to send',
+        description: error.message || 'Please try again',
+        variant: 'destructive',
+      });
+    } finally {
+      setSendingReply(false);
+    }
+  };
+
+  const cancelReplyComposer = () => {
+    setShowReplyComposer(false);
+    setReplyContext(null);
+    setReplySubject('');
+    setReplyBody('');
   };
 
   const getStatusIcon = (status: string) => {
@@ -327,6 +433,18 @@ export function CommunicationHistory({
                                       <p className="whitespace-pre-wrap break-words">{reply.body_text || '(No content)'}</p>
                                     )}
                                   </div>
+                                  <div className="mt-3 pt-3 border-t flex justify-end">
+                                    <Button
+                                      size="sm"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleReplyToEmail(reply);
+                                      }}
+                                    >
+                                      <CornerUpLeft className="h-4 w-4 mr-1.5" />
+                                      Reply
+                                    </Button>
+                                  </div>
                                 </div>
                               )}
                             </div>
@@ -457,6 +575,18 @@ export function CommunicationHistory({
                                             <p className="whitespace-pre-wrap break-words">{reply.body_text || '(No content)'}</p>
                                           )}
                                         </div>
+                                        <div className="mt-3 pt-3 border-t flex justify-end">
+                                          <Button
+                                            size="sm"
+                                            onClick={(e) => {
+                                              e.stopPropagation();
+                                              handleReplyToEmail(reply);
+                                            }}
+                                          >
+                                            <CornerUpLeft className="h-4 w-4 mr-1.5" />
+                                            Reply
+                                          </Button>
+                                        </div>
                                       </div>
                                     )}
                                   </div>
@@ -515,6 +645,73 @@ export function CommunicationHistory({
           </ScrollArea>
         )}
       </DialogContent>
+
+      {/* Reply Composer Dialog */}
+      <Dialog open={showReplyComposer} onOpenChange={(open) => !open && cancelReplyComposer()}>
+        <DialogContent className="max-w-xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CornerUpLeft className="h-5 w-5" />
+              Reply to {applicantName}
+            </DialogTitle>
+            <DialogDescription>
+              Replying to: {applicantEmail}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {/* Original context */}
+            {replyContext && (
+              <div className="p-3 bg-muted/50 rounded-md text-sm space-y-1">
+                <p className="text-muted-foreground">
+                  <span className="font-medium">Original subject:</span> {replyContext.subject}
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  Received {format(new Date(replyContext.receivedAt), 'PPP p')}
+                </p>
+              </div>
+            )}
+
+            {/* Subject */}
+            <div className="space-y-1.5">
+              <Label className="text-sm">Subject</Label>
+              <Input
+                value={replySubject}
+                onChange={(e) => setReplySubject(e.target.value)}
+                placeholder="Email subject..."
+              />
+            </div>
+
+            {/* Message */}
+            <div className="space-y-1.5">
+              <Label className="text-sm">Message</Label>
+              <Textarea
+                value={replyBody}
+                onChange={(e) => setReplyBody(e.target.value)}
+                placeholder="Write your reply...&#10;&#10;URLs will automatically become clickable links."
+                className="min-h-[150px] resize-none"
+              />
+              <p className="text-xs text-muted-foreground">
+                Links will be clickable in the sent email.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-2 pt-3 border-t">
+            <Button variant="outline" size="sm" onClick={cancelReplyComposer}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleSendReply} disabled={sendingReply}>
+              {sendingReply ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="mr-1.5 h-4 w-4" />
+              )}
+              Send Reply
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }

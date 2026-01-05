@@ -161,7 +161,7 @@ const Admin = () => {
   
   // Email system state
   const [emailTemplateEditorOpen, setEmailTemplateEditorOpen] = useState(false);
-  const [communicationHistoryApplicant, setCommunicationHistoryApplicant] = useState<{ id: string; name: string } | null>(null);
+  const [communicationHistoryApplicant, setCommunicationHistoryApplicant] = useState<{ id: string; name: string; email: string } | null>(null);
   const [sendEmailApplicant, setSendEmailApplicant] = useState<{ id: string; full_name: string; email: string; job_title: string; status: string } | null>(null);
   const { templates, getTemplateByTrigger } = useEmailTemplates();
   
@@ -1074,7 +1074,8 @@ const Admin = () => {
                             size="sm"
                             onClick={() => setCommunicationHistoryApplicant({
                               id: applicant.id,
-                              name: applicant.full_name
+                              name: applicant.full_name,
+                              email: applicant.email
                             })}
                             title="Communication History"
                           >
@@ -1574,6 +1575,7 @@ const Admin = () => {
         onOpenChange={(open) => !open && setCommunicationHistoryApplicant(null)}
         applicantId={communicationHistoryApplicant?.id || ''}
         applicantName={communicationHistoryApplicant?.name || ''}
+        applicantEmail={communicationHistoryApplicant?.email || ''}
       />
 
       {/* Send Email Dialog */}

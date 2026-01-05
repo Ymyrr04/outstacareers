@@ -105,7 +105,7 @@ interface ApplicantSearchResultsProps {
   onUpdateApplicant?: (applicantId: string, data: { full_name: string; email: string; phone: string | null; notes: string | null }) => Promise<void>;
   onSendInvite?: (applicant: { full_name: string; email: string; job_title: string }) => void;
   onSendEmail?: (applicant: { id: string; full_name: string; email: string; job_title: string; status: string }) => void;
-  onViewHistory?: (applicant: { id: string; name: string }) => void;
+  onViewHistory?: (applicant: { id: string; name: string; email: string }) => void;
   expandedApplicant: string | null;
   loadingPreview: boolean;
   downloadingCv?: string | null;
@@ -396,7 +396,8 @@ export default function ApplicantSearchResults({
                     size="sm"
                     onClick={() => onViewHistory({
                       id: applicant.id,
-                      name: applicant.full_name
+                      name: applicant.full_name,
+                      email: applicant.email
                     })}
                     title="Communication History"
                   >
