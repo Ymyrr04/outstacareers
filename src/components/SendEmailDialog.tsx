@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { useState, useEffect } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -7,13 +7,13 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useEmailTemplates, statusToTrigger, triggerToStatus, EmailTemplate } from '@/hooks/useEmailTemplates';
+import { useEmailTemplates, triggerToStatus } from '@/hooks/useEmailTemplates';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format, addHours } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { 
-  Mail, Send, Loader2, Clock, Eye, CalendarIcon, AlertTriangle 
+  Send, Loader2, Clock, CalendarIcon, AlertTriangle, User 
 } from 'lucide-react';
 
 interface SendEmailDialogProps {
@@ -26,7 +26,7 @@ interface SendEmailDialogProps {
     job_title: string;
     status: string;
   } | null;
-  preselectedTemplate?: string; // status_trigger value
+  preselectedTemplate?: string;
   onEmailSent?: () => void;
 }
 
@@ -37,9 +37,37 @@ const timeSlots = [
   "06:00 PM", "06:30 PM", "07:00 PM", "07:30 PM", "08:00 PM"
 ];
 
-const timezones = [
-  "PST", "MST", "CST", "EST", "UTC", "GMT", "CET", "IST", "JST", "AEST"
-];
+const timezones = ["PST", "MST", "CST", "EST", "UTC", "GMT", "CET", "IST", "JST", "AEST"];
+
+// Convert HTML to plain text
+const htmlToPlainText = (html: string): string => {
+  let text = html.replace(/<br\s*\/?>/gi, '\n');
+  text = text.replace(/<\/p>/gi, '\n\n');
+  text = text.replace(/<\/div>/gi, '\n');
+  text = text.replace(/<a[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>/gi, '$2 ($1)');
+  text = text.replace(/<[^>]+>/g, '');
+  text = text.replace(/&nbsp;/g, ' ');
+  text = text.replace(/&amp;/g, '&');
+  text = text.replace(/&lt;/g, '<');
+  text = text.replace(/&gt;/g, '>');
+  text = text.replace(/&quot;/g, '"');
+  text = text.replace(/\n{3,}/g, '\n\n').trim();
+  return text;
+};
+
+// Convert plain text to simple HTML
+const plainTextToHtml = (text: string): string => {
+  let html = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  html = html.replace(
+    /\b(https?:\/\/[^\s<>]+)/gi,
+    '<a href="$1" style="color: #0066cc;">$1</a>'
+  );
+  html = html.replace(/\n/g, '<br>');
+  return html;
+};
 
 export function SendEmailDialog({ 
   open, 
@@ -51,41 +79,52 @@ export function SendEmailDialog({
   const { templates, getTemplateByTrigger } = useEmailTemplates();
   const { toast } = useToast();
   
-  const [selectedTrigger, setSelectedTrigger] = useState(preselectedTemplate || '');
+  const [selectedTrigger, setSelectedTrigger] = useState('');
   const [subject, setSubject] = useState('');
-  const [bodyHtml, setBodyHtml] = useState('');
+  const [bodyText, setBodyText] = useState('');
   const [sending, setSending] = useState(false);
-  const [previewMode, setPreviewMode] = useState(false);
   
-  // Interview-specific fields
+  // Interview fields
   const [interviewDate, setInterviewDate] = useState<Date>();
   const [interviewTime, setInterviewTime] = useState('');
   const [timezone, setTimezone] = useState('PST');
   const [meetingLink, setMeetingLink] = useState('');
-  
-  // Schedule options
-  const [scheduleFor, setScheduleFor] = useState<Date>();
-  const [scheduleTime, setScheduleTime] = useState('');
+
+  // Reset form when dialog opens
+  useEffect(() => {
+    if (open) {
+      setSelectedTrigger(preselectedTemplate || '');
+      setSubject('');
+      setBodyText('');
+      setInterviewDate(undefined);
+      setInterviewTime('');
+      setMeetingLink('');
+      
+      if (preselectedTemplate) {
+        handleSelectTemplate(preselectedTemplate);
+      }
+    }
+  }, [open, preselectedTemplate]);
 
   const handleSelectTemplate = (trigger: string) => {
     setSelectedTrigger(trigger);
     const template = getTemplateByTrigger(trigger);
     if (template && applicant) {
-      let processedSubject = template.subject
+      const processedSubject = template.subject
         .replace(/\{\{applicant_name\}\}/g, applicant.full_name)
         .replace(/\{\{job_title\}\}/g, applicant.job_title);
       
-      let processedBody = template.body_html
+      let processedBody = htmlToPlainText(template.body_html)
         .replace(/\{\{applicant_name\}\}/g, applicant.full_name)
         .replace(/\{\{job_title\}\}/g, applicant.job_title);
       
       setSubject(processedSubject);
-      setBodyHtml(processedBody);
+      setBodyText(processedBody);
     }
   };
 
   const getProcessedBody = () => {
-    let processed = bodyHtml;
+    let processed = bodyText;
     if (interviewDate) {
       processed = processed.replace(/\{\{interview_date\}\}/g, format(interviewDate, 'EEEE, MMMM d, yyyy'));
     }
@@ -102,17 +141,15 @@ export function SendEmailDialog({
   const handleSend = async () => {
     if (!applicant) return;
 
-    // Validate required fields
-    if (!subject.trim() || !bodyHtml.trim()) {
+    if (!subject.trim() || !bodyText.trim()) {
       toast({
         title: 'Missing information',
-        description: 'Please fill in subject and body',
+        description: 'Please fill in subject and message',
         variant: 'destructive',
       });
       return;
     }
 
-    // Validate interview fields if it's an interview template
     if (selectedTrigger === 'for_interview') {
       if (!interviewDate || !interviewTime || !meetingLink) {
         toast({
@@ -130,21 +167,9 @@ export function SendEmailDialog({
       const template = getTemplateByTrigger(selectedTrigger);
       const processedBody = getProcessedBody();
       
-      // Calculate schedule time
       let scheduleDateTime: string | undefined;
-      
-      // For rejection emails, use template delay
       if (selectedTrigger === 'reject' && template && template.delay_hours > 0) {
         scheduleDateTime = addHours(new Date(), template.delay_hours).toISOString();
-      }
-      // For manual scheduling
-      else if (scheduleFor && scheduleTime) {
-        const [hours, minutes] = scheduleTime.split(':');
-        const scheduled = new Date(scheduleFor);
-        scheduled.setHours(parseInt(hours), parseInt(minutes), 0, 0);
-        if (scheduled > new Date()) {
-          scheduleDateTime = scheduled.toISOString();
-        }
       }
 
       const { data, error } = await supabase.functions.invoke('send-applicant-email', {
@@ -152,7 +177,7 @@ export function SendEmailDialog({
           applicantId: applicant.id,
           templateId: template?.id,
           subject,
-          bodyHtml: processedBody,
+          bodyHtml: plainTextToHtml(processedBody),
           recipientEmail: applicant.email,
           applicantStatusAtSend: applicant.status,
           isAutomated: false,
@@ -163,28 +188,18 @@ export function SendEmailDialog({
       if (error) throw error;
 
       toast({
-        title: data.scheduled ? 'Email scheduled!' : 'Email sent!',
+        title: data.scheduled ? 'Email scheduled' : 'Email sent',
         description: data.scheduled 
-          ? `Email scheduled for ${format(new Date(data.scheduledFor), 'PPP p')}`
-          : `Email sent to ${applicant.email}`,
+          ? `Will be sent on ${format(new Date(data.scheduledFor), 'PPP p')}`
+          : `Sent to ${applicant.email}`,
       });
 
-      // Reset form
-      setSelectedTrigger('');
-      setSubject('');
-      setBodyHtml('');
-      setInterviewDate(undefined);
-      setInterviewTime('');
-      setMeetingLink('');
-      setScheduleFor(undefined);
-      setScheduleTime('');
-      
       onOpenChange(false);
       onEmailSent?.();
     } catch (error: any) {
       console.error('Error sending email:', error);
       toast({
-        title: 'Failed to send email',
+        title: 'Failed to send',
         description: error.message || 'Please try again',
         variant: 'destructive',
       });
@@ -199,30 +214,33 @@ export function SendEmailDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[90vh] flex flex-col">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Mail className="h-5 w-5" />
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+        <DialogHeader className="pb-2">
+          <DialogTitle className="flex items-center gap-2 text-lg">
+            <Send className="h-4 w-4" />
             Send Email
           </DialogTitle>
-          <DialogDescription>
-            {applicant ? `Sending to: ${applicant.full_name} (${applicant.email})` : 'Select an applicant'}
-          </DialogDescription>
+          {applicant && (
+            <div className="flex items-center gap-2 text-sm text-muted-foreground pt-1">
+              <User className="h-3.5 w-3.5" />
+              {applicant.full_name} • {applicant.email}
+            </div>
+          )}
         </DialogHeader>
 
-        <div className="flex-1 overflow-auto space-y-4 py-4">
-          {/* Template Selection */}
-          <div className="space-y-2">
-            <Label>Email Template</Label>
+        <div className="flex-1 overflow-auto space-y-4 py-2">
+          {/* Template */}
+          <div className="space-y-1.5">
+            <Label className="text-sm">Template</Label>
             <Select value={selectedTrigger} onValueChange={handleSelectTemplate}>
-              <SelectTrigger>
+              <SelectTrigger className="h-9">
                 <SelectValue placeholder="Select a template..." />
               </SelectTrigger>
               <SelectContent>
                 {templates.map((t) => (
                   <SelectItem key={t.id} value={t.status_trigger}>
                     {triggerToStatus[t.status_trigger] || t.status_trigger}
-                    {!t.is_enabled && ' (Disabled)'}
+                    {!t.is_enabled && ' (disabled)'}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -230,31 +248,33 @@ export function SendEmailDialog({
           </div>
 
           {/* Subject */}
-          <div className="space-y-2">
-            <Label>Subject</Label>
+          <div className="space-y-1.5">
+            <Label className="text-sm">Subject</Label>
             <Input
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
               placeholder="Email subject..."
+              className="h-9"
             />
           </div>
 
-          {/* Interview-specific fields */}
+          {/* Interview fields */}
           {isInterviewTemplate && (
-            <div className="grid grid-cols-2 gap-4 p-4 border rounded-lg bg-muted/30">
-              <div className="space-y-2">
-                <Label>Interview Date *</Label>
+            <div className="grid grid-cols-2 gap-3 p-3 border rounded-md bg-muted/20">
+              <div className="space-y-1.5">
+                <Label className="text-sm">Date *</Label>
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button
                       variant="outline"
+                      size="sm"
                       className={cn(
-                        "w-full justify-start text-left font-normal",
+                        "w-full justify-start text-left font-normal h-9",
                         !interviewDate && "text-muted-foreground"
                       )}
                     >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {interviewDate ? format(interviewDate, "PPP") : "Select date"}
+                      <CalendarIcon className="mr-2 h-3.5 w-3.5" />
+                      {interviewDate ? format(interviewDate, "MMM d, yyyy") : "Select"}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -269,11 +289,11 @@ export function SendEmailDialog({
                 </Popover>
               </div>
 
-              <div className="space-y-2">
-                <Label>Interview Time *</Label>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Time *</Label>
                 <Select value={interviewTime} onValueChange={setInterviewTime}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select time" />
+                  <SelectTrigger className="h-9">
+                    <SelectValue placeholder="Select" />
                   </SelectTrigger>
                   <SelectContent>
                     {timeSlots.map((slot) => (
@@ -283,10 +303,10 @@ export function SendEmailDialog({
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Timezone</Label>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Timezone</Label>
                 <Select value={timezone} onValueChange={setTimezone}>
-                  <SelectTrigger>
+                  <SelectTrigger className="h-9">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -297,75 +317,56 @@ export function SendEmailDialog({
                 </Select>
               </div>
 
-              <div className="space-y-2">
-                <Label>Meeting Link *</Label>
+              <div className="space-y-1.5">
+                <Label className="text-sm">Meeting Link *</Label>
                 <Input
                   value={meetingLink}
                   onChange={(e) => setMeetingLink(e.target.value)}
-                  placeholder="https://zoom.us/j/..."
+                  placeholder="https://..."
+                  className="h-9"
                 />
               </div>
             </div>
           )}
 
-          {/* Rejection delay warning */}
+          {/* Reject delay warning */}
           {isRejectTemplate && template && template.delay_hours > 0 && (
-            <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg">
-              <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5" />
-              <div className="text-sm">
-                <p className="font-medium text-amber-800 dark:text-amber-200">Delayed Sending</p>
-                <p className="text-amber-700 dark:text-amber-300">
-                  This email will be scheduled to send in {template.delay_hours} hour(s). 
-                  You can cancel it from the applicant's communication history.
-                </p>
-              </div>
+            <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md text-sm">
+              <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
+              <p className="text-amber-800 dark:text-amber-200">
+                This email will be scheduled to send in {template.delay_hours} hours. You can cancel it from the communication history.
+              </p>
             </div>
           )}
 
-          {/* Body */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <Label>Email Body</Label>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setPreviewMode(!previewMode)}
-              >
-                <Eye className="h-4 w-4 mr-1" />
-                {previewMode ? 'Edit' : 'Preview'}
-              </Button>
-            </div>
-            {previewMode ? (
-              <div className="border rounded-lg p-4 min-h-[200px] prose prose-sm max-w-none dark:prose-invert">
-                <div dangerouslySetInnerHTML={{ __html: getProcessedBody() }} />
-              </div>
-            ) : (
-              <Textarea
-                value={bodyHtml}
-                onChange={(e) => setBodyHtml(e.target.value)}
-                placeholder="<p>Email content...</p>"
-                className="min-h-[200px] font-mono text-sm"
-              />
-            )}
+          {/* Message */}
+          <div className="space-y-1.5">
+            <Label className="text-sm">Message</Label>
+            <Textarea
+              value={bodyText}
+              onChange={(e) => setBodyText(e.target.value)}
+              placeholder="Write your message...&#10;&#10;URLs will automatically become clickable links."
+              className="min-h-[180px] text-sm resize-none"
+            />
+            <p className="text-xs text-muted-foreground">
+              Links will be clickable in the sent email.
+            </p>
           </div>
         </div>
 
-        <div className="flex justify-end gap-3 pt-4 border-t">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <div className="flex justify-end gap-2 pt-3 border-t">
+          <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSend} disabled={sending}>
+          <Button size="sm" onClick={handleSend} disabled={sending}>
             {sending ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Sending...
-              </>
+              <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+            ) : isRejectTemplate && template && template.delay_hours > 0 ? (
+              <Clock className="mr-1.5 h-4 w-4" />
             ) : (
-              <>
-                <Send className="mr-2 h-4 w-4" />
-                {isRejectTemplate && template && template.delay_hours > 0 ? 'Schedule Email' : 'Send Email'}
-              </>
+              <Send className="mr-1.5 h-4 w-4" />
             )}
+            {isRejectTemplate && template && template.delay_hours > 0 ? 'Schedule' : 'Send'}
           </Button>
         </div>
       </DialogContent>
