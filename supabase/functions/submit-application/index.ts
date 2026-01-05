@@ -1,5 +1,10 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+// Declare EdgeRuntime for background tasks
+declare const EdgeRuntime: {
+  waitUntil: (promise: Promise<unknown>) => void;
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -9,6 +14,186 @@ const corsHeaders = {
 // Rate limit: max 3 submissions per IP per hour
 const RATE_LIMIT_MAX = 3;
 const RATE_LIMIT_WINDOW_HOURS = 1;
+
+// Background task to run CV scoring
+async function runCvScoringInBackground(
+  supabase: SupabaseClient,
+  applicantId: string,
+  jobTitle: string,
+  jobDescription: string,
+  qualifications: string[],
+  responsibilities: string[],
+  cvText: string
+) {
+  console.log(`[Background] Starting CV scoring for applicant ${applicantId}`);
+  
+  try {
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    if (!LOVABLE_API_KEY) {
+      console.error('[Background] LOVABLE_API_KEY is not configured');
+      return;
+    }
+
+    const systemPrompt = `You are an expert HR recruiter and CV evaluator. Your task is to score a candidate's CV against a job posting and provide detailed analysis.
+
+SCORING RULES (total = 100):
+- Role experience match: 0-45 points (how well their experience matches the role)
+- Skills and tools match: 0-45 points (how well their skills match required qualifications)
+- Availability and setup readiness: 0-5 points (remote work readiness indicators)
+- Bonus or red flags: -5 to +5 points (exceptional achievements or concerning patterns)
+
+RANKING STATUS:
+- Strong Match: total_score >= 70
+- Partial Match: total_score >= 40 AND < 70
+- Low Match: total_score < 40
+
+EXTRACTION REQUIREMENTS:
+You MUST also extract searchable metadata from the CV:
+1. extracted_skills: List ALL skills mentioned (soft skills, hard skills, languages, certifications)
+   Examples: "Customer Service", "Sales", "Legal Intake", "Spanish", "Problem Solving", "Time Management"
+2. extracted_tools: List ALL software/tools/platforms mentioned
+   Examples: "Salesforce", "HubSpot", "Excel", "Google Workspace", "Clio", "Zendesk", "Shopify", "GoHighLevel"
+3. years_of_experience: Estimate total professional experience in years (null if unclear)
+   - Calculate from work history dates if available
+   - Use career span to estimate
+
+You MUST return ONLY valid JSON with NO additional text. The JSON must have this exact structure:
+{
+  "role_experience_score": <number 0-45>,
+  "skills_tools_score": <number 0-45>,
+  "availability_setup_score": <number 0-5>,
+  "bonus_red_flag_score": <number -5 to 5>,
+  "total_score": <sum of all scores>,
+  "ranking_status": "<Strong Match|Partial Match|Low Match>",
+  "summary": "<max 3 sentences summarizing the candidate's fit>",
+  "assessment_details": {
+    "matched_tools": [
+      {"tool": "<tool/skill name>", "found": true, "context": "<brief context from CV where this was found>"}
+    ],
+    "missing_tools": ["<required tool/skill not found in CV>"],
+    "experience_highlights": [
+      {"role": "<job title>", "company": "<company name if available>", "duration": "<time period if available>", "relevance": "<why this is relevant to the role>"}
+    ],
+    "strengths": ["<key strength 1>", "<key strength 2>"],
+    "concerns": ["<potential concern or gap if any>"]
+  },
+  "extracted_skills": ["<skill 1>", "<skill 2>", ...],
+  "extracted_tools": ["<tool 1>", "<tool 2>", ...],
+  "years_of_experience": <number or null>
+}`;
+
+    const userPrompt = `Evaluate this candidate's CV for the following job:
+
+JOB TITLE: ${jobTitle}
+
+JOB DESCRIPTION: ${jobDescription || 'Not provided'}
+
+KEY QUALIFICATIONS REQUIRED:
+${qualifications?.length ? qualifications.map((q, i) => `${i + 1}. ${q}`).join('\n') : 'Not specified'}
+
+RESPONSIBILITIES:
+${responsibilities?.length ? responsibilities.map((r, i) => `${i + 1}. ${r}`).join('\n') : 'Not specified'}
+
+CANDIDATE CV TEXT:
+${cvText}
+
+Return ONLY the JSON scoring object with detailed assessment_details and extracted metadata, no other text.`;
+
+    console.log('[Background] Calling Lovable AI for CV scoring...');
+
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { role: 'system', content: systemPrompt },
+          { role: 'user', content: userPrompt }
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('[Background] AI API error:', response.status, errorText);
+      return;
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+
+    if (!content) {
+      console.error('[Background] No content in AI response');
+      return;
+    }
+
+    console.log('[Background] AI response received, parsing...');
+
+    // Parse JSON from the response
+    let jsonContent = content.trim();
+    if (jsonContent.startsWith('```json')) {
+      jsonContent = jsonContent.slice(7);
+    } else if (jsonContent.startsWith('```')) {
+      jsonContent = jsonContent.slice(3);
+    }
+    if (jsonContent.endsWith('```')) {
+      jsonContent = jsonContent.slice(0, -3);
+    }
+    jsonContent = jsonContent.trim();
+
+    let scoreResult;
+    try {
+      scoreResult = JSON.parse(jsonContent);
+    } catch (parseError) {
+      console.error('[Background] Failed to parse AI response:', parseError);
+      return;
+    }
+
+    // Validate and sanitize the scores
+    const roleScore = Math.max(0, Math.min(45, scoreResult.role_experience_score || 0));
+    const skillsScore = Math.max(0, Math.min(45, scoreResult.skills_tools_score || 0));
+    const availabilityScore = Math.max(0, Math.min(5, scoreResult.availability_setup_score || 0));
+    const bonusScore = Math.max(-5, Math.min(5, scoreResult.bonus_red_flag_score || 0));
+    const totalScore = roleScore + skillsScore + availabilityScore + bonusScore;
+
+    let rankingStatus = 'Low Match';
+    if (totalScore >= 70) {
+      rankingStatus = 'Strong Match';
+    } else if (totalScore >= 40) {
+      rankingStatus = 'Partial Match';
+    }
+
+    // Update the applicant record with scoring results
+    const { error: updateError } = await supabase
+      .from('applicants_prescreen')
+      .update({
+        role_experience_score: roleScore,
+        skills_tools_score: skillsScore,
+        availability_setup_score: availabilityScore,
+        bonus_red_flag_score: bonusScore,
+        total_score: totalScore,
+        ranking_status: rankingStatus,
+        ai_summary: scoreResult.summary || 'Unable to generate summary.',
+        ai_assessment_details: scoreResult.assessment_details || null,
+        extracted_skills: Array.isArray(scoreResult.extracted_skills) ? scoreResult.extracted_skills : [],
+        extracted_tools: Array.isArray(scoreResult.extracted_tools) ? scoreResult.extracted_tools : [],
+        years_of_experience: typeof scoreResult.years_of_experience === 'number' ? scoreResult.years_of_experience : null,
+      })
+      .eq('id', applicantId);
+
+    if (updateError) {
+      console.error('[Background] Failed to update applicant with scores:', updateError);
+      return;
+    }
+
+    console.log(`[Background] CV scoring completed for applicant ${applicantId}. Score: ${totalScore}, Status: ${rankingStatus}`);
+  } catch (error) {
+    console.error('[Background] Error in CV scoring:', error);
+  }
+}
 
 serve(async (req) => {
   // Handle CORS preflight requests
@@ -118,7 +303,26 @@ serve(async (req) => {
       });
     }
 
-    // Insert the application with all fields including CV scoring and Vocaroo
+    // Fetch job details for CV scoring if CV is provided
+    let jobDescription = '';
+    let qualifications: string[] = [];
+    let responsibilities: string[] = [];
+    
+    if (body.job_id && body.cv_text) {
+      const { data: jobData, error: jobError } = await supabase
+        .from('jobs')
+        .select('description, qualifications, responsibilities')
+        .eq('id', body.job_id)
+        .single();
+      
+      if (!jobError && jobData) {
+        jobDescription = jobData.description || '';
+        qualifications = jobData.qualifications || [];
+        responsibilities = jobData.responsibilities || [];
+      }
+    }
+
+    // Insert the application WITHOUT scoring data - scoring will run in background
     const insertData: Record<string, unknown> = {
       full_name: body.full_name.trim(),
       email: body.email.trim().toLowerCase(),
@@ -141,36 +345,35 @@ serve(async (req) => {
       status: 'For Review',
       ip_hash: ipHash,
       honeypot_field: null,
-      // New CV scoring fields
       cv_file_url: body.cv_file_url || null,
       cv_text: body.cv_text || null,
-      role_experience_score: body.role_experience_score ?? null,
-      skills_tools_score: body.skills_tools_score ?? null,
-      availability_setup_score: body.availability_setup_score ?? null,
-      bonus_red_flag_score: body.bonus_red_flag_score ?? null,
-      total_score: body.total_score ?? null,
-      ranking_status: body.ranking_status || null,
-      ai_summary: body.ai_summary || null,
-      ai_assessment_details: body.ai_assessment_details || null,
       vocaroo_link: vocarooLink,
       voice_recording_url: voiceRecordingUrl,
-      // Extracted metadata for search/filtering
-      extracted_skills: Array.isArray(body.extracted_skills) ? body.extracted_skills : [],
-      extracted_tools: Array.isArray(body.extracted_tools) ? body.extracted_tools : [],
-      years_of_experience: typeof body.years_of_experience === 'number' ? body.years_of_experience : null,
+      // Scoring fields will be populated by background task
+      role_experience_score: null,
+      skills_tools_score: null,
+      availability_setup_score: null,
+      bonus_red_flag_score: null,
+      total_score: null,
+      ranking_status: null,
+      ai_summary: null,
+      ai_assessment_details: null,
+      extracted_skills: [],
+      extracted_tools: [],
+      years_of_experience: null,
     };
 
-    console.log('Inserting application with CV scoring data:', {
-      total_score: insertData.total_score,
-      ranking_status: insertData.ranking_status,
+    console.log('Inserting application (scoring will run in background):', {
       has_cv: !!insertData.cv_file_url,
       has_vocaroo: !!insertData.vocaroo_link,
       has_voice_recording: !!insertData.voice_recording_url,
     });
 
-    const { error: insertError } = await supabase
+    const { data: insertedData, error: insertError } = await supabase
       .from('applicants_prescreen')
-      .insert(insertData);
+      .insert(insertData)
+      .select('id')
+      .single();
 
     if (insertError) {
       console.error('Error inserting application:', insertError);
@@ -182,7 +385,25 @@ serve(async (req) => {
       });
     }
 
-    console.log('Application submitted successfully');
+    const applicantId = insertedData.id;
+    console.log(`Application submitted successfully with ID: ${applicantId}`);
+
+    // Trigger CV scoring as background task if CV was provided
+    if (body.cv_text && body.job_title) {
+      console.log('Triggering background CV scoring...');
+      EdgeRuntime.waitUntil(
+        runCvScoringInBackground(
+          supabase,
+          applicantId,
+          body.job_title,
+          jobDescription,
+          qualifications,
+          responsibilities,
+          body.cv_text
+        )
+      );
+    }
+
     return new Response(JSON.stringify({ 
       success: true,
       message: 'Application submitted successfully' 

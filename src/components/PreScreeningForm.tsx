@@ -60,42 +60,6 @@ type FormData = {
   honeypot_field: string;
 };
 
-type ToolMatch = {
-  tool: string;
-  found: boolean;
-  context?: string;
-};
-
-type ExperienceHighlight = {
-  role: string;
-  company?: string;
-  duration?: string;
-  relevance: string;
-};
-
-type AssessmentDetails = {
-  matched_tools: ToolMatch[];
-  missing_tools: string[];
-  experience_highlights: ExperienceHighlight[];
-  strengths: string[];
-  concerns: string[];
-};
-
-type ScoreResult = {
-  role_experience_score: number;
-  skills_tools_score: number;
-  availability_setup_score: number;
-  bonus_red_flag_score: number;
-  total_score: number;
-  ranking_status: string;
-  summary: string;
-  assessment_details?: AssessmentDetails;
-  // Extracted metadata for search/filtering
-  extracted_skills?: string[];
-  extracted_tools?: string[];
-  years_of_experience?: number | null;
-};
-
 type Step = 'prescreening' | 'cv-upload' | 'vocaroo';
 
 const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
@@ -110,7 +74,6 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [cvText, setCvText] = useState<string>("");
   const [cvFileUrl, setCvFileUrl] = useState<string>("");
-  const [scoreResult, setScoreResult] = useState<ScoreResult | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Vocaroo state
@@ -322,46 +285,8 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
       console.log('CV uploaded successfully:', uploadData);
       setCvFileUrl(filePath);
 
-      // Run AI scoring
-      console.log('Calling score-cv function...');
-      const { data: scoreData, error: scoreError } = await supabase.functions.invoke('score-cv', {
-        body: {
-          job_title: job.title,
-          job_description: job.description || '',
-          key_qualifications: job.qualifications || [],
-          responsibilities: job.responsibilities || [],
-          cv_text: cvText,
-        },
-      });
-
-      console.log('Score-cv response:', { scoreData, scoreError });
-
-      if (scoreError) {
-        console.error('Scoring error:', scoreError);
-        toast({
-          title: "Scoring failed",
-          description: typeof scoreError === 'object' && scoreError.message 
-            ? scoreError.message 
-            : "Failed to score your CV. Please try again.",
-          variant: "destructive",
-        });
-        setIsScoring(false);
-        return;
-      }
-
-      if (scoreData?.error) {
-        console.error('Score-cv returned error:', scoreData.error);
-        toast({
-          title: "Scoring failed",
-          description: scoreData.error,
-          variant: "destructive",
-        });
-        setIsScoring(false);
-        return;
-      }
-
-      console.log('CV scoring successful:', scoreData);
-      setScoreResult(scoreData);
+      // CV scoring will happen in the backend after submission
+      // Move to next step immediately for smoother UX
       setCurrentStep('vocaroo');
     } catch (error) {
       console.error('CV submission error:', error);
@@ -415,23 +340,11 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
           job_id: job.id,
           apply_url: job.apply_url,
           honeypot_field: formData.honeypot_field,
-          // New CV scoring fields
+          // CV fields - scoring will run in backend
           cv_file_url: cvFileUrl,
           cv_text: cvText,
-          role_experience_score: scoreResult?.role_experience_score,
-          skills_tools_score: scoreResult?.skills_tools_score,
-          availability_setup_score: scoreResult?.availability_setup_score,
-          bonus_red_flag_score: scoreResult?.bonus_red_flag_score,
-          total_score: scoreResult?.total_score,
-          ranking_status: scoreResult?.ranking_status,
-          ai_summary: scoreResult?.summary,
-          ai_assessment_details: scoreResult?.assessment_details || null,
           vocaroo_link: vocarooLink || null,
           voice_recording_url: voiceRecordingUrl || null,
-          // Extracted metadata for search/filtering
-          extracted_skills: scoreResult?.extracted_skills || [],
-          extracted_tools: scoreResult?.extracted_tools || [],
-          years_of_experience: scoreResult?.years_of_experience ?? null,
         },
       });
 
