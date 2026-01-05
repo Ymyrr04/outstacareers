@@ -136,25 +136,26 @@ export function InterviewResultsView({ sessionId, session }: InterviewResultsVie
 
   const getSectionLabel = (section: string) => {
     switch (section) {
-      case 'experience': return 'Experience & Technical';
-      case 'situational': return 'Situational';
-      case 'personality': return 'Personality';
+      case 'voice': return 'Experience & Technical';
+      case 'text': return 'Situational';
+      case 'multiple_choice': return 'Personality';
       default: return section;
     }
   };
 
   const getSectionIcon = (section: string) => {
     switch (section) {
-      case 'experience': return <Mic className="w-4 h-4" />;
-      case 'situational': return <FileText className="w-4 h-4" />;
-      case 'personality': return <ListChecks className="w-4 h-4" />;
+      case 'voice': return <Mic className="w-4 h-4" />;
+      case 'text': return <FileText className="w-4 h-4" />;
+      case 'multiple_choice': return <ListChecks className="w-4 h-4" />;
       default: return null;
     }
   };
 
-  const experienceQuestions = questions.filter(q => q.section === 'experience');
-  const situationalQuestions = questions.filter(q => q.section === 'situational');
-  const personalityQuestions = questions.filter(q => q.section === 'personality');
+  // Match actual section names from the database
+  const experienceQuestions = questions.filter(q => q.section === 'voice');
+  const situationalQuestions = questions.filter(q => q.section === 'text');
+  const personalityQuestions = questions.filter(q => q.section === 'multiple_choice');
 
   if (loading) {
     return (
