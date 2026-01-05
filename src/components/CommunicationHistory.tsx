@@ -4,11 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { useEmailLogs, useScheduledEmails, useEmailReplies, EmailLog, ScheduledEmail, EmailReply } from '@/hooks/useEmailTemplates';
+import { useEmailLogs, useScheduledEmails, useEmailReplies, EmailLog, EmailReply } from '@/hooks/useEmailTemplates';
 import { formatDistanceToNow, format } from 'date-fns';
 import { 
   Mail, Clock, CheckCircle, XCircle, AlertTriangle, 
-  Loader2, Send, Ban, Calendar, ChevronDown, ChevronUp,
+  Loader2, Send, Ban, ChevronDown, ChevronUp,
   Reply, RefreshCw, Inbox, MessageSquare
 } from 'lucide-react';
 
@@ -24,6 +24,15 @@ interface EmailThread {
   replies: EmailReply[];
 }
 
+// Helper to normalize subjects for matching
+const normalizeSubject = (subject: string): string => {
+  return subject
+    .replace(/^(Re:\s*)+/gi, '') // Remove Re: prefixes
+    .replace(/^(Fwd:\s*)+/gi, '') // Remove Fwd: prefixes
+    .trim()
+    .toLowerCase();
+};
+
 export function CommunicationHistory({ 
   open, 
   onOpenChange, 
@@ -32,32 +41,55 @@ export function CommunicationHistory({
 }: CommunicationHistoryProps) {
   const { logs, loading: logsLoading, fetchLogs } = useEmailLogs(applicantId);
   const { scheduledEmails, loading: scheduledLoading, cancelScheduledEmail, fetchScheduledEmails } = useScheduledEmails(applicantId);
-  const { replies, loading: repliesLoading, fetching, fetchReplies, fetchNewReplies } = useEmailReplies(applicantId);
-  const [expandedLog, setExpandedLog] = useState<string | null>(null);
-  const [expandedReply, setExpandedReply] = useState<string | null>(null);
+  const { replies, loading: repliesLoading, fetching, fetchNewReplies } = useEmailReplies(applicantId);
+  const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
+  const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
   const [cancelingId, setCancelingId] = useState<string | null>(null);
 
+  const toggleThread = (id: string) => {
+    setExpandedThreads(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const toggleReply = (id: string) => {
+    setExpandedReplies(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
   // Group replies under their parent sent emails as threads
-  const { threads, orphanReplies } = useMemo(() => {
+  const { threads, orphanReplies, otherLogs } = useMemo(() => {
     const threadMap = new Map<string, EmailThread>();
     const matchedReplyIds = new Set<string>();
 
-    // Initialize threads with sent emails (only successful ones)
-    logs
-      .filter(log => log.status === 'sent')
-      .forEach(log => {
-        threadMap.set(log.id, { sentEmail: log, replies: [] });
-      });
+    // Initialize threads with sent emails only
+    const sentLogs = logs.filter(log => log.status === 'sent');
+    sentLogs.forEach(log => {
+      threadMap.set(log.id, { sentEmail: log, replies: [] });
+    });
 
-    // Match replies to sent emails by subject (Re: matching)
+    // Match replies to sent emails by normalized subject
     replies.forEach(reply => {
-      // Try to match by subject - strip "Re: " prefix and compare
-      const replySubjectClean = reply.subject.replace(/^(Re:\s*)+/i, '').trim().toLowerCase();
+      const replySubjectNorm = normalizeSubject(reply.subject);
       
-      // Find the matching sent email
+      // Find the matching sent email by subject
       for (const [logId, thread] of threadMap) {
-        const sentSubjectClean = thread.sentEmail.subject.trim().toLowerCase();
-        if (replySubjectClean === sentSubjectClean) {
+        const sentSubjectNorm = normalizeSubject(thread.sentEmail.subject);
+        
+        if (replySubjectNorm === sentSubjectNorm) {
           thread.replies.push(reply);
           matchedReplyIds.add(reply.id);
           break;
@@ -65,10 +97,10 @@ export function CommunicationHistory({
       }
     });
 
-    // Orphan replies that couldn't be matched to any sent email
+    // Orphan replies that couldn't be matched
     const orphanReplies = replies.filter(r => !matchedReplyIds.has(r.id));
 
-    // Convert to array and sort threads by most recent activity
+    // Convert to array and sort by most recent activity
     const threadsArray = Array.from(threadMap.values())
       .map(thread => ({
         ...thread,
@@ -86,13 +118,11 @@ export function CommunicationHistory({
         return bLatest - aLatest;
       });
 
-    return { threads: threadsArray, orphanReplies };
-  }, [logs, replies]);
+    // Get non-sent logs
+    const otherLogs = logs.filter(log => log.status !== 'sent');
 
-  // Get non-sent logs (failed, canceled)
-  const otherLogs = useMemo(() => 
-    logs.filter(log => log.status !== 'sent'),
-  [logs]);
+    return { threads: threadsArray, orphanReplies, otherLogs };
+  }, [logs, replies]);
 
   const handleCancel = async (id: string) => {
     setCancelingId(id);
@@ -223,7 +253,7 @@ export function CommunicationHistory({
                 </div>
               )}
 
-              {/* Conversation Threads Section */}
+              {/* Conversation Threads */}
               <div className="space-y-3">
                 <h3 className="font-medium flex items-center gap-2">
                   <MessageSquare className="h-4 w-4" />
@@ -236,140 +266,139 @@ export function CommunicationHistory({
                     <p>No conversations yet</p>
                   </div>
                 ) : (
-                  <div className="space-y-4">
-                    {/* Threaded Conversations */}
-                    {threads.map((thread) => (
-                      <div 
-                        key={thread.sentEmail.id}
-                        className="border rounded-lg overflow-hidden"
-                      >
-                        {/* Sent Email (Thread Header) */}
-                        <button
-                          onClick={() => setExpandedLog(expandedLog === thread.sentEmail.id ? null : thread.sentEmail.id)}
-                          className="w-full text-left p-4 hover:bg-muted/50 transition-colors"
+                  <div className="space-y-3">
+                    {threads.map((thread) => {
+                      const isExpanded = expandedThreads.has(thread.sentEmail.id);
+                      const hasReplies = thread.replies.length > 0;
+                      
+                      return (
+                        <div 
+                          key={thread.sentEmail.id}
+                          className="border rounded-lg overflow-hidden"
                         >
-                          <div className="flex items-start justify-between gap-4">
-                            <div className="flex items-start gap-3">
-                              {getStatusIcon(thread.sentEmail.status)}
-                              <div>
-                                <p className="font-medium">{thread.sentEmail.subject}</p>
-                                <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                                  <span>To: {thread.sentEmail.recipient_email}</span>
-                                  {thread.sentEmail.is_automated && (
-                                    <Badge variant="outline" className="text-xs">Auto</Badge>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-3">
-                              {thread.replies.length > 0 && (
-                                <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                                  {thread.replies.length} {thread.replies.length === 1 ? 'reply' : 'replies'}
-                                </Badge>
-                              )}
-                              {getStatusBadge(thread.sentEmail.status)}
-                              {expandedLog === thread.sentEmail.id ? (
-                                <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                              ) : (
-                                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                              )}
-                            </div>
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-2">
-                            {thread.sentEmail.sent_at 
-                              ? format(new Date(thread.sentEmail.sent_at), 'PPP p')
-                              : format(new Date(thread.sentEmail.created_at), 'PPP p')
-                            }
-                            {thread.sentEmail.applicant_status_at_send && (
-                              <span> • Status: {thread.sentEmail.applicant_status_at_send}</span>
-                            )}
-                          </p>
-                        </button>
-
-                        {/* Expanded Thread Content */}
-                        {expandedLog === thread.sentEmail.id && (
-                          <div className="border-t">
-                            {/* Original Sent Email Content */}
-                            <div className="bg-muted/30 p-4">
-                              <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
-                                <Send className="h-3 w-3" />
-                                <span>Sent message</span>
-                              </div>
-                              <div className="prose prose-sm max-w-none dark:prose-invert break-words overflow-hidden">
-                                <div 
-                                  dangerouslySetInnerHTML={{ __html: thread.sentEmail.body_html }} 
-                                  className="break-words overflow-hidden [&>*]:max-w-full [&_a]:break-all"
-                                />
-                              </div>
-                              {thread.sentEmail.error_message && (
-                                <div className="mt-3 flex items-start gap-2 text-sm text-red-600">
-                                  <AlertTriangle className="h-4 w-4 mt-0.5" />
-                                  <span>Error: {thread.sentEmail.error_message}</span>
-                                </div>
-                              )}
-                            </div>
-
-                            {/* Thread Replies */}
-                            {thread.replies.map((reply, index) => (
-                              <div 
-                                key={reply.id}
-                                className="border-t bg-blue-50/30 dark:bg-blue-950/10"
-                              >
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setExpandedReply(expandedReply === reply.id ? null : reply.id);
-                                  }}
-                                  className="w-full text-left p-4 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-colors"
-                                >
-                                  <div className="flex items-start justify-between gap-4">
-                                    <div className="flex items-start gap-3">
-                                      <Reply className="h-4 w-4 text-blue-500 mt-0.5" />
-                                      <div>
-                                        <div className="flex items-center gap-2">
-                                          <span className="font-medium text-sm">Reply from applicant</span>
-                                          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 text-xs">
-                                            Reply
-                                          </Badge>
-                                        </div>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                          {format(new Date(reply.received_at), 'PPP p')}
-                                          <span className="ml-2">
-                                            ({formatDistanceToNow(new Date(reply.received_at), { addSuffix: true })})
-                                          </span>
-                                        </p>
-                                      </div>
-                                    </div>
-                                    {expandedReply === reply.id ? (
-                                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                                    ) : (
-                                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          {/* Thread Header - Sent Email */}
+                          <button
+                            onClick={() => toggleThread(thread.sentEmail.id)}
+                            className="w-full text-left p-4 hover:bg-muted/50 transition-colors"
+                          >
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="flex items-start gap-3 min-w-0 flex-1">
+                                <Send className="h-4 w-4 text-green-500 mt-1 shrink-0" />
+                                <div className="min-w-0 flex-1">
+                                  <p className="font-medium truncate">{thread.sentEmail.subject}</p>
+                                  <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground flex-wrap">
+                                    <span className="truncate">To: {thread.sentEmail.recipient_email}</span>
+                                    {thread.sentEmail.is_automated && (
+                                      <Badge variant="outline" className="text-xs shrink-0">Auto</Badge>
                                     )}
                                   </div>
-                                </button>
-
-                                {expandedReply === reply.id && (
-                                  <div className="border-t bg-blue-50/50 dark:bg-blue-950/20 p-4">
-                                    <div className="prose prose-sm max-w-none dark:prose-invert break-words overflow-hidden">
-                                      {reply.body_html ? (
-                                        <div 
-                                          dangerouslySetInnerHTML={{ __html: reply.body_html }} 
-                                          className="break-words overflow-hidden [&>*]:max-w-full [&_a]:break-all"
-                                        />
-                                      ) : (
-                                        <p className="whitespace-pre-wrap break-words">{reply.body_text || '(No content)'}</p>
-                                      )}
-                                    </div>
-                                  </div>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2 shrink-0">
+                                {hasReplies && (
+                                  <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                                    {thread.replies.length} {thread.replies.length === 1 ? 'reply' : 'replies'}
+                                  </Badge>
+                                )}
+                                {getStatusBadge(thread.sentEmail.status)}
+                                {isExpanded ? (
+                                  <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                ) : (
+                                  <ChevronDown className="h-4 w-4 text-muted-foreground" />
                                 )}
                               </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                            </div>
+                            <p className="text-xs text-muted-foreground mt-2">
+                              {thread.sentEmail.sent_at 
+                                ? format(new Date(thread.sentEmail.sent_at), 'PPP p')
+                                : format(new Date(thread.sentEmail.created_at), 'PPP p')
+                              }
+                            </p>
+                          </button>
 
-                    {/* Orphan Replies (replies without matching sent email) */}
+                          {/* Expanded Thread Content */}
+                          {isExpanded && (
+                            <div className="border-t">
+                              {/* Original Sent Email */}
+                              <div className="bg-muted/30 p-4">
+                                <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
+                                  <Send className="h-3 w-3" />
+                                  <span>Sent message</span>
+                                </div>
+                                <div className="prose prose-sm max-w-none dark:prose-invert break-words overflow-hidden">
+                                  <div 
+                                    dangerouslySetInnerHTML={{ __html: thread.sentEmail.body_html }} 
+                                    className="break-words overflow-hidden [&>*]:max-w-full [&_a]:break-all"
+                                  />
+                                </div>
+                              </div>
+
+                              {/* Replies in Thread */}
+                              {thread.replies.map((reply) => {
+                                const isReplyExpanded = expandedReplies.has(reply.id);
+                                
+                                return (
+                                  <div 
+                                    key={reply.id}
+                                    className="border-t bg-blue-50/30 dark:bg-blue-950/10"
+                                  >
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        toggleReply(reply.id);
+                                      }}
+                                      className="w-full text-left p-4 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-colors"
+                                    >
+                                      <div className="flex items-start justify-between gap-4">
+                                        <div className="flex items-start gap-3">
+                                          <Reply className="h-4 w-4 text-blue-500 mt-0.5" />
+                                          <div>
+                                            <div className="flex items-center gap-2">
+                                              <span className="font-medium text-sm">Reply from applicant</span>
+                                              <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 text-xs">
+                                                Reply
+                                              </Badge>
+                                            </div>
+                                            <p className="text-xs text-muted-foreground mt-1">
+                                              {format(new Date(reply.received_at), 'PPP p')}
+                                              <span className="ml-2">
+                                                ({formatDistanceToNow(new Date(reply.received_at), { addSuffix: true })})
+                                              </span>
+                                            </p>
+                                          </div>
+                                        </div>
+                                        {isReplyExpanded ? (
+                                          <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                        ) : (
+                                          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                        )}
+                                      </div>
+                                    </button>
+
+                                    {isReplyExpanded && (
+                                      <div className="border-t bg-blue-50/50 dark:bg-blue-950/20 p-4">
+                                        <div className="prose prose-sm max-w-none dark:prose-invert break-words overflow-hidden">
+                                          {reply.body_html ? (
+                                            <div 
+                                              dangerouslySetInnerHTML={{ __html: reply.body_html }} 
+                                              className="break-words overflow-hidden [&>*]:max-w-full [&_a]:break-all"
+                                            />
+                                          ) : (
+                                            <p className="whitespace-pre-wrap break-words">{reply.body_text || '(No content)'}</p>
+                                          )}
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+
+                    {/* Orphan Replies */}
                     {orphanReplies.length > 0 && (
                       <>
                         <Separator />
@@ -377,67 +406,71 @@ export function CommunicationHistory({
                           <Inbox className="h-4 w-4" />
                           Other Replies ({orphanReplies.length})
                         </h4>
-                        {orphanReplies.map((reply) => (
-                          <div 
-                            key={reply.id}
-                            className="border border-blue-200 dark:border-blue-900 rounded-lg overflow-hidden"
-                          >
-                            <button
-                              onClick={() => setExpandedReply(expandedReply === reply.id ? null : reply.id)}
-                              className="w-full text-left p-4 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-colors"
+                        {orphanReplies.map((reply) => {
+                          const isReplyExpanded = expandedReplies.has(reply.id);
+                          
+                          return (
+                            <div 
+                              key={reply.id}
+                              className="border border-blue-200 dark:border-blue-900 rounded-lg overflow-hidden"
                             >
-                              <div className="flex items-start justify-between gap-4">
-                                <div className="flex items-start gap-3">
-                                  <Reply className="h-4 w-4 text-blue-500 mt-1" />
-                                  <div>
-                                    <p className="font-medium">{reply.subject}</p>
-                                    <p className="text-sm text-muted-foreground">
-                                      From: {reply.from_email}
-                                    </p>
+                              <button
+                                onClick={() => toggleReply(reply.id)}
+                                className="w-full text-left p-4 hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-colors"
+                              >
+                                <div className="flex items-start justify-between gap-4">
+                                  <div className="flex items-start gap-3">
+                                    <Reply className="h-4 w-4 text-blue-500 mt-1" />
+                                    <div>
+                                      <p className="font-medium">{reply.subject}</p>
+                                      <p className="text-sm text-muted-foreground">
+                                        From: {reply.from_email}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-3">
+                                    <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                                      Reply
+                                    </Badge>
+                                    {isReplyExpanded ? (
+                                      <ChevronUp className="h-4 w-4 text-muted-foreground" />
+                                    ) : (
+                                      <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                                    )}
                                   </div>
                                 </div>
-                                <div className="flex items-center gap-3">
-                                  <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
-                                    Reply
-                                  </Badge>
-                                  {expandedReply === reply.id ? (
-                                    <ChevronUp className="h-4 w-4 text-muted-foreground" />
-                                  ) : (
-                                    <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                                  )}
-                                </div>
-                              </div>
-                              <p className="text-xs text-muted-foreground mt-2">
-                                {format(new Date(reply.received_at), 'PPP p')}
-                                <span className="ml-2">
-                                  ({formatDistanceToNow(new Date(reply.received_at), { addSuffix: true })})
-                                </span>
-                              </p>
-                            </button>
+                                <p className="text-xs text-muted-foreground mt-2">
+                                  {format(new Date(reply.received_at), 'PPP p')}
+                                  <span className="ml-2">
+                                    ({formatDistanceToNow(new Date(reply.received_at), { addSuffix: true })})
+                                  </span>
+                                </p>
+                              </button>
 
-                            {expandedReply === reply.id && (
-                              <div className="border-t bg-blue-50/30 dark:bg-blue-950/10 p-4">
-                                <div className="prose prose-sm max-w-none dark:prose-invert break-words overflow-hidden">
-                                  {reply.body_html ? (
-                                    <div 
-                                      dangerouslySetInnerHTML={{ __html: reply.body_html }} 
-                                      className="break-words overflow-hidden [&>*]:max-w-full [&_a]:break-all"
-                                    />
-                                  ) : (
-                                    <p className="whitespace-pre-wrap break-words">{reply.body_text || '(No content)'}</p>
-                                  )}
+                              {isReplyExpanded && (
+                                <div className="border-t bg-blue-50/30 dark:bg-blue-950/10 p-4">
+                                  <div className="prose prose-sm max-w-none dark:prose-invert break-words overflow-hidden">
+                                    {reply.body_html ? (
+                                      <div 
+                                        dangerouslySetInnerHTML={{ __html: reply.body_html }} 
+                                        className="break-words overflow-hidden [&>*]:max-w-full [&_a]:break-all"
+                                      />
+                                    ) : (
+                                      <p className="whitespace-pre-wrap break-words">{reply.body_text || '(No content)'}</p>
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                              )}
+                            </div>
+                          );
+                        })}
                       </>
                     )}
                   </div>
                 )}
               </div>
 
-              {/* Failed/Canceled Emails Section */}
+              {/* Failed/Canceled Emails */}
               {otherLogs.length > 0 && (
                 <>
                   <Separator />
@@ -450,31 +483,27 @@ export function CommunicationHistory({
                       {otherLogs.map((log) => (
                         <div 
                           key={log.id}
-                          className="border rounded-lg overflow-hidden opacity-75"
+                          className="border rounded-lg overflow-hidden opacity-75 p-4"
                         >
-                          <div className="p-4">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="flex items-start gap-3">
-                                {getStatusIcon(log.status)}
-                                <div>
-                                  <p className="font-medium">{log.subject}</p>
-                                  <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                                    <span>To: {log.recipient_email}</span>
-                                  </div>
-                                </div>
+                          <div className="flex items-start justify-between gap-4">
+                            <div className="flex items-start gap-3">
+                              {getStatusIcon(log.status)}
+                              <div>
+                                <p className="font-medium">{log.subject}</p>
+                                <p className="text-sm text-muted-foreground">To: {log.recipient_email}</p>
                               </div>
-                              {getStatusBadge(log.status)}
                             </div>
-                            <p className="text-xs text-muted-foreground mt-2">
-                              {format(new Date(log.created_at), 'PPP p')}
-                            </p>
-                            {log.error_message && (
-                              <div className="mt-2 flex items-start gap-2 text-sm text-red-600">
-                                <AlertTriangle className="h-4 w-4 mt-0.5" />
-                                <span>Error: {log.error_message}</span>
-                              </div>
-                            )}
+                            {getStatusBadge(log.status)}
                           </div>
+                          <p className="text-xs text-muted-foreground mt-2">
+                            {format(new Date(log.created_at), 'PPP p')}
+                          </p>
+                          {log.error_message && (
+                            <div className="mt-2 flex items-start gap-2 text-sm text-red-600">
+                              <AlertTriangle className="h-4 w-4 mt-0.5" />
+                              <span>Error: {log.error_message}</span>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
