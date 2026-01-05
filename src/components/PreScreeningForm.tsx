@@ -3,13 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { X, Loader2, CheckCircle, ExternalLink, Upload, FileText, Mic } from "lucide-react";
+import { X, Loader2, CheckCircle, ExternalLink, Upload, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
 import speedtestSample from "@/assets/speedtest-sample.png";
-import { VoiceRecorder } from "./VoiceRecorder";
+import { InterviewSession } from "./interview/InterviewSession";
 
 interface PreScreeningFormProps {
   job: {
@@ -60,7 +59,7 @@ type FormData = {
   honeypot_field: string;
 };
 
-type Step = 'prescreening' | 'cv-upload' | 'vocaroo';
+type Step = 'prescreening' | 'cv-upload' | 'interview' | 'submitting';
 
 const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
   const [currentStep, setCurrentStep] = useState<Step>('prescreening');
@@ -76,10 +75,9 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
   const [cvFileUrl, setCvFileUrl] = useState<string>("");
   const fileInputRef = useRef<HTMLInputElement>(null);
   
-  // Vocaroo state
-  const [vocarooLink, setVocarooLink] = useState<string>("");
-  const [voiceRecordingUrl, setVoiceRecordingUrl] = useState<string>("");
-  const [voiceInputMethod, setVoiceInputMethod] = useState<'record' | 'vocaroo'>('record');
+  // Interview state
+  const [interviewSessionId, setInterviewSessionId] = useState<string>("");
+  const [applicantId, setApplicantId] = useState<string>("");
   
   const [formData, setFormData] = useState<FormData>({
     full_name: "",
@@ -285,40 +283,9 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
       console.log('CV uploaded successfully:', uploadData);
       setCvFileUrl(filePath);
 
-      // CV scoring will happen in the backend after submission
-      // Move to next step immediately for smoother UX
-      setCurrentStep('vocaroo');
-    } catch (error) {
-      console.error('CV submission error:', error);
-      toast({
-        title: "Error",
-        description: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setIsScoring(false);
-    }
-  };
-
-  const handleFinalSubmit = async () => {
-    // Check if we have either a voice recording or a vocaroo link
-    const hasVoiceRecording = voiceRecordingUrl.trim() !== '';
-    const hasVocarooLink = vocarooLink.trim() !== '';
-    
-    if (!hasVoiceRecording && !hasVocarooLink) {
-      setErrors(prev => ({ ...prev, vocaroo: "Please record your voice or provide a Vocaroo link" }));
-      return;
-    }
-
-    // Validate vocaroo link format if provided
-    if (hasVocarooLink && !vocarooLink.includes('vocaroo.com') && !vocarooLink.includes('voca.ro')) {
-      setErrors(prev => ({ ...prev, vocaroo: "Please provide a valid Vocaroo link" }));
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
+      // Submit application first to create applicant record
+      setCurrentStep('submitting');
+      
       const response = await supabase.functions.invoke('submit-application', {
         body: {
           full_name: formData.full_name,
@@ -340,53 +307,63 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
           job_id: job.id,
           apply_url: job.apply_url,
           honeypot_field: formData.honeypot_field,
-          // CV fields - scoring will run in backend
-          cv_file_url: cvFileUrl,
+          cv_file_url: filePath,
           cv_text: cvText,
-          vocaroo_link: vocarooLink || null,
-          voice_recording_url: voiceRecordingUrl || null,
+          vocaroo_link: null,
+          voice_recording_url: null,
         },
       });
 
-      if (response.error) {
-        console.error("Error submitting application:", response.error);
-        const errorMessage = typeof response.error === 'object' 
-          ? (response.error.message || JSON.stringify(response.error))
-          : String(response.error);
-        toast({
-          title: "Submission failed",
-          description: errorMessage,
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
+      if (response.error || response.data?.error) {
+        throw new Error(response.data?.error || response.error?.message || 'Failed to submit application');
       }
 
-      if (response.data?.error) {
-        console.error("Application response error:", response.data.error);
-        toast({
-          title: "Submission failed",
-          description: response.data.error,
-          variant: "destructive",
-        });
-        setIsSubmitting(false);
-        return;
+      const newApplicantId = response.data?.applicant_id;
+      if (!newApplicantId) {
+        throw new Error('No applicant ID returned');
       }
-
-      setIsSuccess(true);
       
-      setTimeout(() => {
-        onClose();
-      }, 2000);
-    } catch (err) {
-      console.error("Unexpected error:", err);
+      setApplicantId(newApplicantId);
+
+      // Create interview session
+      const { data: sessionData, error: sessionError } = await supabase
+        .from('interview_sessions')
+        .insert({
+          applicant_id: newApplicantId,
+          job_id: job.id,
+          status: 'in_progress'
+        })
+        .select('id')
+        .single();
+
+      if (sessionError) {
+        console.error('Failed to create interview session:', sessionError);
+        // Still proceed - the application was submitted
+        setIsSuccess(true);
+        setTimeout(() => onClose(), 2000);
+        return;
+      }
+
+      setInterviewSessionId(sessionData.id);
+      setCurrentStep('interview');
+    } catch (error) {
+      console.error('CV submission error:', error);
       toast({
-        title: "Submission failed",
-        description: err instanceof Error ? err.message : "An unexpected error occurred. Please try again.",
+        title: "Error",
+        description: error instanceof Error ? error.message : "An unexpected error occurred. Please try again.",
         variant: "destructive",
       });
-      setIsSubmitting(false);
+      setCurrentStep('cv-upload');
+    } finally {
+      setIsScoring(false);
     }
+  };
+
+  const handleInterviewComplete = () => {
+    setIsSuccess(true);
+    setTimeout(() => {
+      onClose();
+    }, 2000);
   };
 
   const YesNoQuestion = ({ 
@@ -422,9 +399,9 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
     <div className="flex items-center justify-center gap-2 mb-4">
       <div className={`w-3 h-3 rounded-full ${currentStep === 'prescreening' ? 'bg-primary' : 'bg-primary/30'}`} />
       <div className="w-8 h-0.5 bg-border" />
-      <div className={`w-3 h-3 rounded-full ${currentStep === 'cv-upload' ? 'bg-primary' : currentStep === 'vocaroo' ? 'bg-primary/30' : 'bg-muted'}`} />
+      <div className={`w-3 h-3 rounded-full ${currentStep === 'cv-upload' || currentStep === 'submitting' ? 'bg-primary' : currentStep === 'interview' ? 'bg-primary/30' : 'bg-muted'}`} />
       <div className="w-8 h-0.5 bg-border" />
-      <div className={`w-3 h-3 rounded-full ${currentStep === 'vocaroo' ? 'bg-primary' : 'bg-muted'}`} />
+      <div className={`w-3 h-3 rounded-full ${currentStep === 'interview' ? 'bg-primary' : 'bg-muted'}`} />
     </div>
   );
 
@@ -460,7 +437,8 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
               <h3 className="font-bold text-lg text-foreground">
                 {currentStep === 'prescreening' && 'Pre-Screening Questions'}
                 {currentStep === 'cv-upload' && 'Upload Your CV'}
-                {currentStep === 'vocaroo' && 'Voice Introduction'}
+                {currentStep === 'submitting' && 'Processing...'}
+                {currentStep === 'interview' && 'AI Interview'}
               </h3>
               <p className="text-sm text-muted-foreground mt-1">{job.title}</p>
             </div>
@@ -768,102 +746,30 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
               </div>
             )}
 
-            {/* Step 3: Voice Introduction */}
-            {currentStep === 'vocaroo' && (
-              <div className="space-y-5">
-                <div className="text-center mb-4">
-                  <Mic className="w-12 h-12 text-primary mx-auto mb-3" />
-                  <h4 className="font-semibold text-lg">Voice Introduction</h4>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Record a brief intro about yourself and your experience
-                  </p>
-                </div>
-
-                <Tabs 
-                  value={voiceInputMethod} 
-                  onValueChange={(v) => setVoiceInputMethod(v as 'record' | 'vocaroo')}
-                  className="w-full"
-                >
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="record">Record Now</TabsTrigger>
-                    <TabsTrigger value="vocaroo">Use Vocaroo</TabsTrigger>
-                  </TabsList>
-
-                  <TabsContent value="record" className="mt-4">
-                    <VoiceRecorder
-                      onRecordingComplete={(url) => {
-                        setVoiceRecordingUrl(url);
-                        if (errors.vocaroo) {
-                          setErrors(prev => ({ ...prev, vocaroo: "" }));
-                        }
-                      }}
-                      maxDuration={120}
-                      existingUrl={voiceRecordingUrl}
-                    />
-                  </TabsContent>
-
-                  <TabsContent value="vocaroo" className="mt-4 space-y-4">
-                    <div className="bg-muted/50 rounded-lg p-4 space-y-2">
-                      <p className="text-sm">
-                        Record using{" "}
-                        <a 
-                          href="https://vocaroo.com" 
-                          target="_blank" 
-                          rel="noopener noreferrer"
-                          className="text-primary hover:underline inline-flex items-center gap-1"
-                        >
-                          Vocaroo
-                          <ExternalLink className="w-3 h-3" />
-                        </a>{" "}
-                        and paste the link below.
-                      </p>
-                    </div>
-
-                    <div className="space-y-2">
-                      <Label htmlFor="vocaroo_link">Vocaroo Link</Label>
-                      <Input
-                        id="vocaroo_link"
-                        value={vocarooLink}
-                        onChange={(e) => {
-                          setVocarooLink(e.target.value);
-                          if (errors.vocaroo) {
-                            setErrors(prev => ({ ...prev, vocaroo: "" }));
-                          }
-                        }}
-                        placeholder="e.g., https://vocaroo.com/1abc2def3ghi"
-                        className={errors.vocaroo ? "border-destructive" : ""}
-                      />
-                    </div>
-                  </TabsContent>
-                </Tabs>
-
-                {errors.vocaroo && <p className="text-sm text-destructive text-center">{errors.vocaroo}</p>}
-
-                <div className="pt-4 border-t border-border flex gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => setCurrentStep('cv-upload')}
-                    className="flex-1"
-                    disabled={isSubmitting}
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    onClick={handleFinalSubmit}
-                    disabled={(!vocarooLink.trim() && !voiceRecordingUrl.trim()) || isSubmitting}
-                    className="flex-1"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Submitting...
-                      </>
-                    ) : (
-                      "Submit Application"
-                    )}
-                  </Button>
-                </div>
+            {/* Step 3: Submitting */}
+            {currentStep === 'submitting' && (
+              <div className="text-center py-12">
+                <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary mb-4" />
+                <h4 className="font-semibold text-lg mb-2">Saving Your Application</h4>
+                <p className="text-sm text-muted-foreground">
+                  Please wait while we process your information...
+                </p>
               </div>
+            )}
+
+            {/* Step 4: AI Interview */}
+            {currentStep === 'interview' && interviewSessionId && (
+              <InterviewSession
+                sessionId={interviewSessionId}
+                jobTitle={job.title}
+                jobDescription={job.description || null}
+                qualifications={job.qualifications || null}
+                responsibilities={job.responsibilities || null}
+                cvText={cvText}
+                applicantName={formData.full_name}
+                onComplete={handleInterviewComplete}
+                onBack={() => setCurrentStep('cv-upload')}
+              />
             )}
           </div>
         </div>

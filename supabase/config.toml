@@ -26,3 +26,9 @@ verify_jwt = false
 
 [functions.fetch-email-replies]
 verify_jwt = true
+
+[functions.generate-interview-questions]
+verify_jwt = false
+
+[functions.assess-interview]
+verify_jwt = false
