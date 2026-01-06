@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Mic, FileText, CheckSquare, Clock, ArrowRight, CheckCircle } from "lucide-react";
+import { Loader2, Mic, FileText, CheckSquare, Clock, ArrowRight, CheckCircle, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { VoiceQuestionStep } from "./VoiceQuestionStep";
@@ -58,7 +58,7 @@ interface Answer {
   options?: MultipleChoiceOption[];
 }
 
-type InterviewStep = 'loading' | 'voice' | 'text' | 'multiple_choice' | 'submitting' | 'complete';
+type InterviewStep = 'loading' | 'voice' | 'text' | 'multiple_choice' | 'submitting' | 'complete' | 'no_questions' | 'error';
 
 export function InterviewSession({
   sessionId,
@@ -80,6 +80,8 @@ export function InterviewSession({
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [isGenerating, setIsGenerating] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [noAiMode, setNoAiMode] = useState(false);
+  const [noAiReason, setNoAiReason] = useState<string | null>(null);
 
   // Calculate progress
   const totalQuestions = voiceQuestions.length + textQuestions.length + mcQuestions.length;
@@ -119,7 +121,25 @@ export function InterviewSession({
       });
 
       if (fnError) throw fnError;
+      
+      // Handle case where no questions are available
+      if (data?.no_questions) {
+        setError(data.message || 'No interview questions available.');
+        setCurrentStep('no_questions');
+        return;
+      }
+      
       if (data?.error) throw new Error(data.error);
+
+      // Check if we're in no-AI mode
+      if (data?.no_ai_mode) {
+        setNoAiMode(true);
+        setNoAiReason(data.no_ai_reason || 'AI not available');
+        toast({
+          title: "Manual Interview Mode",
+          description: "AI scoring is unavailable. Your responses will be reviewed manually by our team.",
+        });
+      }
 
       // Add IDs to questions
       const voiceQs = (data.voice_questions || []).map((q: any, i: number) => ({
@@ -138,6 +158,13 @@ export function InterviewSession({
       setVoiceQuestions(voiceQs);
       setTextQuestions(textQs);
       setMcQuestions(mcQs);
+
+      // Check if we have any questions at all
+      if (voiceQs.length === 0 && textQs.length === 0 && mcQs.length === 0) {
+        setError('No interview questions available for this position.');
+        setCurrentStep('no_questions');
+        return;
+      }
 
       // Save questions to database and get actual IDs
       const allQuestionsToInsert = [
@@ -198,16 +225,34 @@ export function InterviewSession({
         }
       }
 
-      setCurrentStep('voice');
+      // Determine first step based on available questions
+      if (voiceQs.length > 0) {
+        setCurrentStep('voice');
+      } else if (textQs.length > 0) {
+        setCurrentStep('text');
+      } else if (mcQs.length > 0) {
+        setCurrentStep('multiple_choice');
+      }
       setCurrentQuestionIndex(0);
     } catch (err) {
       console.error('Error generating questions:', err);
-      setError(err instanceof Error ? err.message : 'Failed to generate questions');
-      toast({
-        title: "Error",
-        description: "Failed to generate interview questions. Please try again.",
-        variant: "destructive"
-      });
+      const errorMessage = err instanceof Error ? err.message : 'Failed to generate questions';
+      setError(errorMessage);
+      
+      // Check if it's a credit-related error
+      if (errorMessage.includes('credit') || errorMessage.includes('rate limit')) {
+        toast({
+          title: "Interview Unavailable",
+          description: "Please contact support or try again later.",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to start interview. Please try again.",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsGenerating(false);
     }
@@ -302,7 +347,7 @@ export function InterviewSession({
         }
       }
 
-      // Trigger AI assessment
+      // Trigger AI assessment (or skip if in no-AI mode)
       const { data, error: assessError } = await supabase.functions.invoke('assess-interview', {
         body: {
           session_id: sessionId,
@@ -312,12 +357,19 @@ export function InterviewSession({
           responsibilities: responsibilities,
           cv_text: cvText,
           applicant_name: applicantName,
-          answers: answers
+          answers: answers,
+          skip_ai_assessment: noAiMode
         }
       });
 
       if (assessError) throw assessError;
-      if (data?.error) throw new Error(data.error);
+      
+      // Handle manual review mode
+      if (data?.manual_review) {
+        console.log('Interview completed in manual review mode');
+      }
+      
+      if (data?.error && !data?.manual_review) throw new Error(data.error);
 
       setCurrentStep('complete');
       
@@ -326,12 +378,17 @@ export function InterviewSession({
       }, 2000);
     } catch (err) {
       console.error('Error submitting interview:', err);
+      
+      // Even if AI assessment fails, the answers are saved, so complete the interview
       toast({
-        title: "Submission Error",
-        description: "Failed to submit interview. Please try again.",
-        variant: "destructive"
+        title: "Interview Submitted",
+        description: "Your responses have been saved. Our team will review them manually.",
       });
-      setCurrentStep('multiple_choice');
+      
+      setCurrentStep('complete');
+      setTimeout(() => {
+        onComplete();
+      }, 2000);
     }
   };
 
@@ -355,8 +412,24 @@ export function InterviewSession({
         <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary mb-4" />
         <h4 className="font-semibold text-lg mb-2">Preparing Your Interview</h4>
         <p className="text-sm text-muted-foreground">
-          Generating personalized questions based on your CV and the job requirements...
+          Loading interview questions...
         </p>
+      </div>
+    );
+  }
+
+  if (currentStep === 'no_questions') {
+    return (
+      <div className="text-center py-12">
+        <AlertTriangle className="w-12 h-12 mx-auto text-amber-500 mb-4" />
+        <h4 className="font-semibold text-lg mb-2">Interview Unavailable</h4>
+        <p className="text-muted-foreground mb-4">
+          {error || 'No interview questions are currently available for this position.'}
+        </p>
+        <p className="text-sm text-muted-foreground mb-6">
+          Your application has been submitted. Our recruitment team will contact you directly.
+        </p>
+        <Button onClick={onComplete}>Continue</Button>
       </div>
     );
   }
@@ -376,7 +449,7 @@ export function InterviewSession({
         <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary mb-4" />
         <h4 className="font-semibold text-lg mb-2">Submitting Your Interview</h4>
         <p className="text-sm text-muted-foreground">
-          Please wait while we process your responses...
+          Please wait while we save your responses...
         </p>
       </div>
     );
@@ -388,7 +461,10 @@ export function InterviewSession({
         <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
         <h4 className="font-semibold text-xl mb-2">Interview Complete!</h4>
         <p className="text-muted-foreground">
-          Thank you for completing your interview. We'll review your responses shortly.
+          {noAiMode 
+            ? "Thank you for completing your interview. Our team will review your responses and get back to you soon."
+            : "Thank you for completing your interview. We'll review your responses shortly."
+          }
         </p>
       </div>
     );
@@ -396,6 +472,14 @@ export function InterviewSession({
 
   return (
     <div className="space-y-6">
+      {/* No AI Mode Banner */}
+      {noAiMode && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2 text-amber-800 text-sm">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          <span>Manual review mode - your responses will be reviewed by our recruitment team.</span>
+        </div>
+      )}
+
       {/* Progress Header */}
       <div className="space-y-3">
         <div className="flex items-center justify-between text-sm">
@@ -416,17 +500,27 @@ export function InterviewSession({
 
       {/* Section Navigation */}
       <div className="flex items-center justify-center gap-2 text-xs">
-        <span className={`px-2 py-1 rounded ${currentStep === 'voice' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-          1. Voice
-        </span>
-        <ArrowRight className="w-3 h-3 text-muted-foreground" />
-        <span className={`px-2 py-1 rounded ${currentStep === 'text' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-          2. Text
-        </span>
-        <ArrowRight className="w-3 h-3 text-muted-foreground" />
-        <span className={`px-2 py-1 rounded ${currentStep === 'multiple_choice' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-          3. Personality
-        </span>
+        {voiceQuestions.length > 0 && (
+          <>
+            <span className={`px-2 py-1 rounded ${currentStep === 'voice' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+              1. Voice
+            </span>
+            {(textQuestions.length > 0 || mcQuestions.length > 0) && <ArrowRight className="w-3 h-3 text-muted-foreground" />}
+          </>
+        )}
+        {textQuestions.length > 0 && (
+          <>
+            <span className={`px-2 py-1 rounded ${currentStep === 'text' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+              {voiceQuestions.length > 0 ? '2' : '1'}. Text
+            </span>
+            {mcQuestions.length > 0 && <ArrowRight className="w-3 h-3 text-muted-foreground" />}
+          </>
+        )}
+        {mcQuestions.length > 0 && (
+          <span className={`px-2 py-1 rounded ${currentStep === 'multiple_choice' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+            {voiceQuestions.length > 0 && textQuestions.length > 0 ? '3' : voiceQuestions.length > 0 || textQuestions.length > 0 ? '2' : '1'}. Personality
+          </span>
+        )}
       </div>
 
       {/* Current Question */}
