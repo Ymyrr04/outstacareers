@@ -43,6 +43,8 @@ interface QuestionsResponse {
   text_questions: TextQuestion[];
   multiple_choice_questions: MultipleChoiceQuestion[];
   has_custom_questions?: boolean;
+  no_ai_mode?: boolean;
+  no_ai_reason?: string;
 }
 
 serve(async (req) => {
@@ -68,12 +70,17 @@ serve(async (req) => {
       );
     }
 
-    // Check for custom questions first
-    if (job_id) {
-      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Check for custom questions first
+    let customVoiceQuestions: VoiceQuestion[] = [];
+    let customTextQuestions: TextQuestion[] = [];
+    let hasCustomQuestions = false;
+
+    if (job_id) {
       const { data: customQuestions, error: customError } = await supabase
         .from('job_interview_questions')
         .select('*')
@@ -82,47 +89,78 @@ serve(async (req) => {
 
       if (!customError && customQuestions && customQuestions.length > 0) {
         console.log(`Found ${customQuestions.length} custom questions for job ${job_id}`);
+        hasCustomQuestions = true;
         
-        const voiceQuestions = customQuestions
+        customVoiceQuestions = customQuestions
           .filter(q => q.question_type === 'voice')
           .map(q => ({
             question_text: q.question_text,
             question_context: q.question_context || ''
           }));
 
-        const textQuestions = customQuestions
+        customTextQuestions = customQuestions
           .filter(q => q.question_type === 'text')
           .map(q => ({
             question_text: q.question_text,
             question_context: q.question_context || ''
           }));
+      }
+    }
 
-        // For custom questions, we still generate AI personality questions
-        // since those are multiple choice and provide additional data points
-        const personalityQuestions = await generatePersonalityQuestions(job_title, applicant_name);
+    // Check if AI is available
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    let aiAvailable = !!LOVABLE_API_KEY;
+    let noAiReason = '';
 
+    // If we have custom questions, try to generate AI personality questions
+    // If we don't have custom questions, try to generate all questions with AI
+    if (hasCustomQuestions && aiAvailable) {
+      // We have custom voice/text questions, just try to generate personality questions
+      const personalityResult = await generatePersonalityQuestionsWithFallback(job_title, applicant_name);
+      
+      return new Response(
+        JSON.stringify({
+          voice_questions: customVoiceQuestions,
+          text_questions: customTextQuestions,
+          multiple_choice_questions: personalityResult.questions,
+          has_custom_questions: true,
+          no_ai_mode: personalityResult.no_ai_mode,
+          no_ai_reason: personalityResult.no_ai_reason
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // No custom questions - need to check if we have AI available
+    if (!aiAvailable) {
+      // No AI, check if we have custom questions to fall back to
+      if (hasCustomQuestions && (customVoiceQuestions.length > 0 || customTextQuestions.length > 0)) {
+        console.log('No AI available, using custom questions only');
         return new Response(
           JSON.stringify({
-            voice_questions: voiceQuestions,
-            text_questions: textQuestions,
-            multiple_choice_questions: personalityQuestions,
-            has_custom_questions: true
+            voice_questions: customVoiceQuestions,
+            text_questions: customTextQuestions,
+            multiple_choice_questions: getDefaultPersonalityQuestions(),
+            has_custom_questions: true,
+            no_ai_mode: true,
+            no_ai_reason: 'AI service not configured'
           }),
           { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
-    }
 
-    // No custom questions found, generate with AI
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      console.error('LOVABLE_API_KEY is not configured');
+      // No AI and no custom questions - return error with guidance
       return new Response(
-        JSON.stringify({ error: 'AI service not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          error: 'No interview questions available',
+          no_questions: true,
+          message: 'Please add manual interview questions for this job to proceed without AI.'
+        }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
+    // Try to generate questions with AI
     const systemPrompt = `You are an expert HR interviewer. Your task is to generate interview questions for a job candidate based on the job requirements and their CV.
 
 Generate THREE types of questions:
@@ -195,7 +233,7 @@ ${cv_text}
 
 Generate personalized interview questions based on this information. Return ONLY the JSON object.`;
 
-    console.log('Generating interview questions...');
+    console.log('Generating interview questions with AI...');
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -212,20 +250,39 @@ Generate personalized interview questions based on this information. Return ONLY
       }),
     });
 
+    // Handle AI credit/rate limit errors with fallback
     if (!response.ok) {
       const errorText = await response.text();
       console.error('AI API error:', response.status, errorText);
       
-      if (response.status === 429) {
+      if (response.status === 429 || response.status === 402) {
+        noAiReason = response.status === 402 ? 'AI credits exhausted' : 'Rate limit exceeded';
+        console.log(`${noAiReason}, checking for fallback options...`);
+        
+        // Check if we have custom questions to fall back to
+        if (hasCustomQuestions && (customVoiceQuestions.length > 0 || customTextQuestions.length > 0)) {
+          console.log('Falling back to custom questions only');
+          return new Response(
+            JSON.stringify({
+              voice_questions: customVoiceQuestions,
+              text_questions: customTextQuestions,
+              multiple_choice_questions: getDefaultPersonalityQuestions(),
+              has_custom_questions: true,
+              no_ai_mode: true,
+              no_ai_reason: noAiReason
+            }),
+            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          );
+        }
+
+        // No custom questions - return error with guidance to add manual questions
         return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'AI credits exhausted. Please contact support.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ 
+            error: noAiReason,
+            no_questions: true,
+            message: 'Please add manual interview questions for this job to proceed without AI credits.'
+          }),
+          { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
@@ -246,7 +303,7 @@ Generate personalized interview questions based on this information. Return ONLY
       );
     }
 
-    console.log('AI response for questions:', content);
+    console.log('AI response for questions received');
 
     // Parse JSON from the response
     let jsonContent = content.trim();
@@ -284,10 +341,11 @@ Generate personalized interview questions based on this information. Return ONLY
             ...q,
             options: Array.isArray(q.options) ? q.options.slice(0, 4) : []
           }))
-        : []
+        : [],
+      no_ai_mode: false
     };
 
-    console.log('Generated questions:', validatedResult);
+    console.log('Generated questions successfully');
 
     return new Response(
       JSON.stringify(validatedResult),
@@ -303,12 +361,19 @@ Generate personalized interview questions based on this information. Return ONLY
   }
 });
 
-// Helper function to generate personality questions with AI
-async function generatePersonalityQuestions(jobTitle: string, applicantName: string): Promise<MultipleChoiceQuestion[]> {
+// Helper function to generate personality questions with AI, with fallback
+async function generatePersonalityQuestionsWithFallback(
+  jobTitle: string, 
+  applicantName: string
+): Promise<{ questions: MultipleChoiceQuestion[], no_ai_mode: boolean, no_ai_reason?: string }> {
   const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
   if (!LOVABLE_API_KEY) {
-    console.error('LOVABLE_API_KEY not available for personality questions');
-    return getDefaultPersonalityQuestions();
+    console.log('No AI key, using default personality questions');
+    return { 
+      questions: getDefaultPersonalityQuestions(), 
+      no_ai_mode: true, 
+      no_ai_reason: 'AI service not configured' 
+    };
   }
 
   try {
@@ -334,14 +399,30 @@ Return ONLY valid JSON array with this structure:
     });
 
     if (!response.ok) {
-      console.error('Failed to generate personality questions:', response.status);
-      return getDefaultPersonalityQuestions();
+      const status = response.status;
+      console.log(`AI API error for personality questions: ${status}`);
+      
+      if (status === 402 || status === 429) {
+        return { 
+          questions: getDefaultPersonalityQuestions(), 
+          no_ai_mode: true, 
+          no_ai_reason: status === 402 ? 'AI credits exhausted' : 'Rate limit exceeded'
+        };
+      }
+      
+      return { 
+        questions: getDefaultPersonalityQuestions(), 
+        no_ai_mode: true, 
+        no_ai_reason: 'AI service unavailable'
+      };
     }
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
     
-    if (!content) return getDefaultPersonalityQuestions();
+    if (!content) {
+      return { questions: getDefaultPersonalityQuestions(), no_ai_mode: false };
+    }
 
     let jsonContent = content.trim();
     if (jsonContent.startsWith('```json')) jsonContent = jsonContent.slice(7);
@@ -350,10 +431,13 @@ Return ONLY valid JSON array with this structure:
     jsonContent = jsonContent.trim();
 
     const parsed = JSON.parse(jsonContent);
-    return Array.isArray(parsed) ? parsed.slice(0, 6) : getDefaultPersonalityQuestions();
+    return { 
+      questions: Array.isArray(parsed) ? parsed.slice(0, 6) : getDefaultPersonalityQuestions(), 
+      no_ai_mode: false 
+    };
   } catch (error) {
     console.error('Error generating personality questions:', error);
-    return getDefaultPersonalityQuestions();
+    return { questions: getDefaultPersonalityQuestions(), no_ai_mode: false };
   }
 }
 
