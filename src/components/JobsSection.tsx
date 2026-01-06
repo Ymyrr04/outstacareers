@@ -326,14 +326,34 @@ const JobsSection = () => {
 
     const handleCopyLink = async (e: React.MouseEvent) => {
       e.stopPropagation();
-      const jobUrl = `${window.location.origin}${generateJobUrl(job.title, job.id)}`;
-      try {
-        await navigator.clipboard.writeText(jobUrl);
-        setCopied(true);
-        toast.success("Link copied to clipboard!");
-        setTimeout(() => setCopied(false), 2000);
-      } catch (err) {
-        toast.error("Failed to copy link");
+      const currentOrigin = window.location.origin;
+      
+      // Check if we're on a preview URL (Lovable preview URLs contain "preview--")
+      const isPreviewUrl = currentOrigin.includes('preview--');
+      
+      if (isPreviewUrl) {
+        // Extract the published URL from the preview URL
+        // Preview: https://preview--abc123.lovable.app -> Published: https://abc123.lovable.app
+        const publishedOrigin = currentOrigin.replace('preview--', '');
+        const jobUrl = `${publishedOrigin}${generateJobUrl(job.title, job.id)}`;
+        try {
+          await navigator.clipboard.writeText(jobUrl);
+          setCopied(true);
+          toast.success("Link copied! (Using published URL)");
+          setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+          toast.error("Failed to copy link");
+        }
+      } else {
+        const jobUrl = `${currentOrigin}${generateJobUrl(job.title, job.id)}`;
+        try {
+          await navigator.clipboard.writeText(jobUrl);
+          setCopied(true);
+          toast.success("Link copied to clipboard!");
+          setTimeout(() => setCopied(false), 2000);
+        } catch (err) {
+          toast.error("Failed to copy link");
+        }
       }
     };
 
