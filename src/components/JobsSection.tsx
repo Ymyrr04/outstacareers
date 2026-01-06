@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, X, Eye } from "lucide-react";
+import { MapPin, X, Eye, Link2, Check } from "lucide-react";
+import { generateJobUrl } from "@/lib/slugify";
+import { toast } from "sonner";
 import { useJobs, Job } from "@/hooks/useJobs";
 import { useAnalytics } from "@/hooks/useAnalytics";
 import PreScreeningForm from "@/components/PreScreeningForm";
@@ -302,6 +304,7 @@ const JobsSection = () => {
   const JobCard = ({ job, index }: { job: Job; index: number }) => {
     const displayRate = getDisplayRate(job);
     const hasDetails = job.description || (job.qualifications && job.qualifications.length > 0);
+    const [copied, setCopied] = useState(false);
     
     // Track job view when card is rendered/visible
     useEffect(() => {
@@ -319,6 +322,19 @@ const JobsSection = () => {
     const handleViewDetails = (e: React.MouseEvent) => {
       e.stopPropagation();
       setOpenJobId(job.id);
+    };
+
+    const handleCopyLink = async (e: React.MouseEvent) => {
+      e.stopPropagation();
+      const jobUrl = `${window.location.origin}${generateJobUrl(job.title, job.id)}`;
+      try {
+        await navigator.clipboard.writeText(jobUrl);
+        setCopied(true);
+        toast.success("Link copied to clipboard!");
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        toast.error("Failed to copy link");
+      }
     };
 
     const isActive = openJobId === job.id;
@@ -385,17 +401,28 @@ const JobsSection = () => {
               </Button>
             </div>
             
-            <Button 
-              onClick={(e) => {
-                e.stopPropagation();
-                handleApplyClick(job);
-              }}
-              className={`w-full transition-all duration-300 ${
-                isHovered || isActive ? 'shadow-button' : ''
-              }`}
-            >
-              Apply Now
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleApplyClick(job);
+                }}
+                className={`flex-1 transition-all duration-300 ${
+                  isHovered || isActive ? 'shadow-button' : ''
+                }`}
+              >
+                Apply Now
+              </Button>
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleCopyLink}
+                className="flex-shrink-0 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary"
+                title="Copy application link"
+              >
+                {copied ? <Check className="w-4 h-4" /> : <Link2 className="w-4 h-4" />}
+              </Button>
+            </div>
           </CardContent>
         </Card>
       </div>
