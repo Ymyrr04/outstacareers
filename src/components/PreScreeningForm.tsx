@@ -323,24 +323,53 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
         throw new Error('No applicant ID returned');
       }
       
+      console.log('Application submitted, applicant ID:', newApplicantId);
       setApplicantId(newApplicantId);
 
-      // Create interview session
-      const { data: sessionData, error: sessionError } = await supabase
-        .from('interview_sessions')
-        .insert({
-          applicant_id: newApplicantId,
-          job_id: job.id,
-          status: 'in_progress'
-        })
-        .select('id')
-        .single();
+      // Create interview session with retry logic
+      let sessionData = null;
+      let sessionError = null;
+      const maxRetries = 3;
+      
+      for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        console.log(`Creating interview session (attempt ${attempt}/${maxRetries})...`);
+        
+        const result = await supabase
+          .from('interview_sessions')
+          .insert({
+            applicant_id: newApplicantId,
+            job_id: job.id,
+            status: 'in_progress'
+          })
+          .select('id')
+          .single();
+        
+        if (!result.error) {
+          sessionData = result.data;
+          sessionError = null;
+          console.log('Interview session created successfully:', sessionData.id);
+          break;
+        }
+        
+        sessionError = result.error;
+        console.error(`Failed to create interview session (attempt ${attempt}):`, result.error);
+        
+        if (attempt < maxRetries) {
+          // Wait before retry with exponential backoff
+          await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
+        }
+      }
 
-      if (sessionError) {
-        console.error('Failed to create interview session:', sessionError);
-        // Still proceed - the application was submitted
+      if (sessionError || !sessionData) {
+        console.error('Failed to create interview session after all retries:', sessionError);
+        toast({
+          title: "Interview Setup Error",
+          description: "Your application was submitted but we couldn't start the interview. Please contact support.",
+          variant: "destructive",
+        });
+        // Still close the form since application was submitted
         setIsSuccess(true);
-        setTimeout(() => onClose(), 2000);
+        setTimeout(() => onClose(), 3000);
         return;
       }
 
