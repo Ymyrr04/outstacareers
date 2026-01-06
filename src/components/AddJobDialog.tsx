@@ -16,6 +16,15 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, X } from 'lucide-react';
+import JobInterviewQuestionsManager from '@/components/JobInterviewQuestionsManager';
+
+interface CustomQuestion {
+  id?: string;
+  question_text: string;
+  question_context: string;
+  question_type: 'voice' | 'text';
+  question_order: number;
+}
 
 const jobSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
@@ -88,6 +97,7 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
     responsibilities: ['', '', '', '', ''] as string[],
   });
   const [convertedRate, setConvertedRate] = useState<string | null>(null);
+  const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
   const { toast } = useToast();
 
   const updateQualification = (index: number, value: string) => {
@@ -181,7 +191,7 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
     const filteredQualifications = formData.qualifications.filter(q => q.trim() !== '');
     const filteredResponsibilities = formData.responsibilities.filter(r => r.trim() !== '');
 
-    const { error } = await supabase.from('jobs').insert({
+    const { data: newJob, error } = await supabase.from('jobs').insert({
       title: formData.title,
       rate: finalRate,
       apply_url: formData.apply_url,
@@ -189,7 +199,7 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
       region: formData.region,
       qualifications: filteredQualifications.length > 0 ? filteredQualifications : null,
       responsibilities: filteredResponsibilities.length > 0 ? filteredResponsibilities : null,
-    });
+    }).select().single();
 
     if (error) {
       toast({
@@ -197,24 +207,55 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
         description: error.message,
         variant: 'destructive',
       });
-    } else {
-      toast({
-        title: 'Success',
-        description: 'Job added successfully!',
-      });
-      setFormData({
-        title: '',
-        rate: '',
-        apply_url: '',
-        description: '',
-        region: 'all',
-        qualifications: ['', '', '', '', ''],
-        responsibilities: ['', '', '', '', ''],
-      });
-      setConvertedRate(null);
-      setOpen(false);
-      onJobAdded();
+      setIsLoading(false);
+      return;
     }
+
+    // Save custom questions if any
+    if (customQuestions.length > 0 && newJob) {
+      const questionsToInsert = customQuestions
+        .filter(q => q.question_text.trim())
+        .map((q, index) => ({
+          job_id: newJob.id,
+          question_text: q.question_text,
+          question_context: q.question_context || null,
+          question_type: q.question_type,
+          question_order: index
+        }));
+
+      if (questionsToInsert.length > 0) {
+        const { error: questionsError } = await supabase
+          .from('job_interview_questions')
+          .insert(questionsToInsert);
+
+        if (questionsError) {
+          console.error('Error saving questions:', questionsError);
+          toast({
+            title: 'Warning',
+            description: 'Job created but failed to save interview questions.',
+            variant: 'destructive',
+          });
+        }
+      }
+    }
+
+    toast({
+      title: 'Success',
+      description: 'Job added successfully!',
+    });
+    setFormData({
+      title: '',
+      rate: '',
+      apply_url: '',
+      description: '',
+      region: 'all',
+      qualifications: ['', '', '', '', ''],
+      responsibilities: ['', '', '', '', ''],
+    });
+    setConvertedRate(null);
+    setCustomQuestions([]);
+    setOpen(false);
+    onJobAdded();
 
     setIsLoading(false);
   };
@@ -404,6 +445,15 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
               ))}
             </div>
           </div>
+
+          {/* Custom Interview Questions */}
+          <JobInterviewQuestionsManager
+            jobTitle={formData.title}
+            jobDescription={formData.description}
+            qualifications={formData.qualifications.filter(q => q.trim())}
+            responsibilities={formData.responsibilities.filter(r => r.trim())}
+            onQuestionsChange={setCustomQuestions}
+          />
 
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>

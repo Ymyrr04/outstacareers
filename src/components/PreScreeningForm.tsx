@@ -761,6 +761,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
             {currentStep === 'interview' && interviewSessionId && (
               <InterviewSession
                 sessionId={interviewSessionId}
+                jobId={job.id}
                 jobTitle={job.title}
                 jobDescription={job.description || null}
                 qualifications={job.qualifications || null}

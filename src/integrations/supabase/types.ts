@@ -514,6 +514,47 @@ export type Database = {
           },
         ]
       }
+      job_interview_questions: {
+        Row: {
+          created_at: string
+          id: string
+          job_id: string
+          question_context: string | null
+          question_order: number
+          question_text: string
+          question_type: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          job_id: string
+          question_context?: string | null
+          question_order?: number
+          question_text: string
+          question_type: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          job_id?: string
+          question_context?: string | null
+          question_order?: number
+          question_text?: string
+          question_type?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "job_interview_questions_job_id_fkey"
+            columns: ["job_id"]
+            isOneToOne: false
+            referencedRelation: "jobs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       jobs: {
         Row: {
           apply_url: string

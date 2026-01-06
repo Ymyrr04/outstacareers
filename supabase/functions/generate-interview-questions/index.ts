@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -6,6 +7,7 @@ const corsHeaders = {
 };
 
 interface QuestionRequest {
+  job_id?: string;
   job_title: string;
   job_description: string | null;
   qualifications: string[] | null;
@@ -40,6 +42,7 @@ interface QuestionsResponse {
   voice_questions: VoiceQuestion[];
   text_questions: TextQuestion[];
   multiple_choice_questions: MultipleChoiceQuestion[];
+  has_custom_questions?: boolean;
 }
 
 serve(async (req) => {
@@ -49,6 +52,7 @@ serve(async (req) => {
 
   try {
     const { 
+      job_id,
       job_title, 
       job_description, 
       qualifications, 
@@ -64,6 +68,52 @@ serve(async (req) => {
       );
     }
 
+    // Check for custom questions first
+    if (job_id) {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+      const { data: customQuestions, error: customError } = await supabase
+        .from('job_interview_questions')
+        .select('*')
+        .eq('job_id', job_id)
+        .order('question_order');
+
+      if (!customError && customQuestions && customQuestions.length > 0) {
+        console.log(`Found ${customQuestions.length} custom questions for job ${job_id}`);
+        
+        const voiceQuestions = customQuestions
+          .filter(q => q.question_type === 'voice')
+          .map(q => ({
+            question_text: q.question_text,
+            question_context: q.question_context || ''
+          }));
+
+        const textQuestions = customQuestions
+          .filter(q => q.question_type === 'text')
+          .map(q => ({
+            question_text: q.question_text,
+            question_context: q.question_context || ''
+          }));
+
+        // For custom questions, we still generate AI personality questions
+        // since those are multiple choice and provide additional data points
+        const personalityQuestions = await generatePersonalityQuestions(job_title, applicant_name);
+
+        return new Response(
+          JSON.stringify({
+            voice_questions: voiceQuestions,
+            text_questions: textQuestions,
+            multiple_choice_questions: personalityQuestions,
+            has_custom_questions: true
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+    // No custom questions found, generate with AI
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
       console.error('LOVABLE_API_KEY is not configured');
@@ -252,3 +302,113 @@ Generate personalized interview questions based on this information. Return ONLY
     );
   }
 });
+
+// Helper function to generate personality questions with AI
+async function generatePersonalityQuestions(jobTitle: string, applicantName: string): Promise<MultipleChoiceQuestion[]> {
+  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+  if (!LOVABLE_API_KEY) {
+    console.error('LOVABLE_API_KEY not available for personality questions');
+    return getDefaultPersonalityQuestions();
+  }
+
+  try {
+    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          { 
+            role: 'system', 
+            content: `Generate 5 personality assessment multiple choice questions for a job interview.
+Each question should have exactly 4 options testing communication style, teamwork, reliability, or professionalism.
+Return ONLY valid JSON array with this structure:
+[{"question_text": "<question>", "question_context": "<trait being assessed>", "options": [{"id": "a", "label": "...", "value": "a"}, {"id": "b", "label": "...", "value": "b"}, {"id": "c", "label": "...", "value": "c"}, {"id": "d", "label": "...", "value": "d"}]}]` 
+          },
+          { role: 'user', content: `Generate personality questions for a ${jobTitle} role. Candidate name: ${applicantName}` }
+        ],
+      }),
+    });
+
+    if (!response.ok) {
+      console.error('Failed to generate personality questions:', response.status);
+      return getDefaultPersonalityQuestions();
+    }
+
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+    
+    if (!content) return getDefaultPersonalityQuestions();
+
+    let jsonContent = content.trim();
+    if (jsonContent.startsWith('```json')) jsonContent = jsonContent.slice(7);
+    else if (jsonContent.startsWith('```')) jsonContent = jsonContent.slice(3);
+    if (jsonContent.endsWith('```')) jsonContent = jsonContent.slice(0, -3);
+    jsonContent = jsonContent.trim();
+
+    const parsed = JSON.parse(jsonContent);
+    return Array.isArray(parsed) ? parsed.slice(0, 6) : getDefaultPersonalityQuestions();
+  } catch (error) {
+    console.error('Error generating personality questions:', error);
+    return getDefaultPersonalityQuestions();
+  }
+}
+
+// Fallback personality questions
+function getDefaultPersonalityQuestions(): MultipleChoiceQuestion[] {
+  return [
+    {
+      question_text: "How do you typically handle a situation where you disagree with a team member's approach?",
+      question_context: "Conflict resolution and teamwork",
+      options: [
+        { id: "a", label: "I immediately voice my disagreement to ensure my perspective is heard", value: "a" },
+        { id: "b", label: "I try to understand their perspective first, then share my thoughts constructively", value: "b" },
+        { id: "c", label: "I usually go along with their approach to avoid conflict", value: "c" },
+        { id: "d", label: "I escalate to a manager to get a third-party opinion", value: "d" }
+      ]
+    },
+    {
+      question_text: "When given a task with an unclear deadline, what do you typically do?",
+      question_context: "Communication and initiative",
+      options: [
+        { id: "a", label: "Ask for clarification on the expected timeline immediately", value: "a" },
+        { id: "b", label: "Set my own reasonable deadline and communicate it to the team", value: "b" },
+        { id: "c", label: "Start working and complete it when I can", value: "c" },
+        { id: "d", label: "Wait until someone follows up about it", value: "d" }
+      ]
+    },
+    {
+      question_text: "How do you prefer to receive feedback on your work?",
+      question_context: "Growth mindset and adaptability",
+      options: [
+        { id: "a", label: "Direct and immediate, even if critical", value: "a" },
+        { id: "b", label: "Regular scheduled check-ins with constructive suggestions", value: "b" },
+        { id: "c", label: "Written feedback I can review on my own time", value: "c" },
+        { id: "d", label: "Only when there's a significant issue to address", value: "d" }
+      ]
+    },
+    {
+      question_text: "When you're overloaded with tasks, how do you prioritize?",
+      question_context: "Time management and prioritization",
+      options: [
+        { id: "a", label: "Focus on the most urgent deadlines first", value: "a" },
+        { id: "b", label: "Communicate with stakeholders to reset expectations", value: "b" },
+        { id: "c", label: "Work longer hours to complete everything", value: "c" },
+        { id: "d", label: "Delegate or ask for help from teammates", value: "d" }
+      ]
+    },
+    {
+      question_text: "What motivates you most in your work?",
+      question_context: "Motivation and career values",
+      options: [
+        { id: "a", label: "Learning new skills and professional growth", value: "a" },
+        { id: "b", label: "Recognition and appreciation from the team", value: "b" },
+        { id: "c", label: "Achieving goals and seeing measurable results", value: "c" },
+        { id: "d", label: "Having a good work-life balance", value: "d" }
+      ]
+    }
+  ];
+}

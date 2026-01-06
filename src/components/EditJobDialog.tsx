@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Pencil, Plus, X } from 'lucide-react';
+import JobInterviewQuestionsManager from '@/components/JobInterviewQuestionsManager';
 
 const jobSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
@@ -440,6 +441,15 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
               ))}
             </div>
           </div>
+
+          {/* Custom Interview Questions */}
+          <JobInterviewQuestionsManager
+            jobId={job.id}
+            jobTitle={formData.title}
+            jobDescription={formData.description}
+            qualifications={formData.qualifications.filter(q => q.trim())}
+            responsibilities={formData.responsibilities.filter(r => r.trim())}
+          />
 
           <div className="flex justify-end gap-3 pt-4">
             <Button type="button" variant="outline" onClick={() => setOpen(false)}>
