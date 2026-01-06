@@ -12,7 +12,8 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2 } from 'lucide-react';
+import { generateJobUrl } from '@/lib/slugify';
 import { InterviewResultsView } from '@/components/InterviewResultsView';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -752,6 +753,21 @@ const Admin = () => {
                           )}
                         </div>
                         <div className="flex items-center gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const url = `${window.location.origin}${generateJobUrl(job.title, job.id)}`;
+                              navigator.clipboard.writeText(url);
+                              toast({
+                                title: "Link copied!",
+                                description: `Application link for "${job.title}" copied to clipboard.`,
+                              });
+                            }}
+                          >
+                            <Link2 className="w-4 h-4 mr-1" />
+                            Copy Link
+                          </Button>
                           <EditJobDialog job={job} onJobUpdated={fetchJobs} />
                           <Button
                             variant="outline"

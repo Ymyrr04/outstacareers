@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { generateJobUrl } from '@/lib/slugify';
 
 export interface Job {
   id: string;
@@ -14,6 +15,9 @@ export interface Job {
   is_active: boolean;
   created_at: string;
 }
+
+// Re-export for convenience
+export { generateJobUrl };
 
 export const useJobs = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
