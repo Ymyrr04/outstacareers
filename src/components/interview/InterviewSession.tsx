@@ -10,6 +10,7 @@ import { MultipleChoiceStep } from "./MultipleChoiceStep";
 
 interface InterviewSessionProps {
   sessionId: string;
+  jobId?: string;
   jobTitle: string;
   jobDescription: string | null;
   qualifications: string[] | null;
@@ -61,6 +62,7 @@ type InterviewStep = 'loading' | 'voice' | 'text' | 'multiple_choice' | 'submitt
 
 export function InterviewSession({
   sessionId,
+  jobId,
   jobTitle,
   jobDescription,
   qualifications,
@@ -106,6 +108,7 @@ export function InterviewSession({
     try {
       const { data, error: fnError } = await supabase.functions.invoke('generate-interview-questions', {
         body: {
+          job_id: jobId,
           job_title: jobTitle,
           job_description: jobDescription,
           qualifications: qualifications,
