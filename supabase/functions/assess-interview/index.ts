@@ -27,6 +27,7 @@ interface AssessmentRequest {
   cv_text: string;
   applicant_name: string;
   answers: InterviewAnswer[];
+  skip_ai_assessment?: boolean;
 }
 
 interface AssessmentResponse {
@@ -56,7 +57,8 @@ serve(async (req) => {
       responsibilities,
       cv_text,
       applicant_name,
-      answers
+      answers,
+      skip_ai_assessment
     }: AssessmentRequest = await req.json();
 
     if (!session_id || !answers || answers.length === 0) {
@@ -66,12 +68,62 @@ serve(async (req) => {
       );
     }
 
+    // Initialize Supabase client for updating session
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // If skip_ai_assessment is true, mark interview as completed with manual review required
+    if (skip_ai_assessment) {
+      console.log('Skipping AI assessment - marking for manual review');
+      
+      const { error: updateError } = await supabase
+        .from('interview_sessions')
+        .update({
+          status: 'completed_manual_review',
+          completed_at: new Date().toISOString(),
+          ai_summary: 'Manual review required - AI assessment was not available.',
+        })
+        .eq('id', session_id);
+
+      if (updateError) {
+        console.error('Error updating session for manual review:', updateError);
+        return new Response(
+          JSON.stringify({ error: 'Failed to update interview session' }),
+          { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          manual_review: true,
+          message: 'Interview completed. Responses will be reviewed manually by our team.'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
-      console.error('LOVABLE_API_KEY is not configured');
+      console.log('No API key - marking for manual review');
+      
+      const { error: updateError } = await supabase
+        .from('interview_sessions')
+        .update({
+          status: 'completed_manual_review',
+          completed_at: new Date().toISOString(),
+          ai_summary: 'Manual review required - AI service not configured.',
+        })
+        .eq('id', session_id);
+
       return new Response(
-        JSON.stringify({ error: 'AI service not configured' }),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        JSON.stringify({ 
+          success: true,
+          manual_review: true,
+          message: 'Interview completed. Responses will be reviewed manually.'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -194,16 +246,31 @@ Provide your assessment. Return ONLY the JSON object.`;
       const errorText = await response.text();
       console.error('AI API error:', response.status, errorText);
       
-      if (response.status === 429) {
+      // For credit exhaustion or rate limits, fall back to manual review instead of failing
+      if (response.status === 429 || response.status === 402) {
+        const reason = response.status === 402 ? 'AI credits exhausted' : 'Rate limit exceeded';
+        console.log(`${reason} - falling back to manual review`);
+        
+        const { error: updateError } = await supabase
+          .from('interview_sessions')
+          .update({
+            status: 'completed_manual_review',
+            completed_at: new Date().toISOString(),
+            ai_summary: `Manual review required - ${reason}.`,
+          })
+          .eq('id', session_id);
+
+        if (updateError) {
+          console.error('Error updating session for manual review:', updateError);
+        }
+
         return new Response(
-          JSON.stringify({ error: 'Rate limit exceeded. Please try again later.' }),
-          { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
-      if (response.status === 402) {
-        return new Response(
-          JSON.stringify({ error: 'AI credits exhausted. Please contact support.' }),
-          { status: 402, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          JSON.stringify({ 
+            success: true,
+            manual_review: true,
+            message: `Interview completed. ${reason} - responses will be reviewed manually.`
+          }),
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
@@ -263,10 +330,7 @@ Provide your assessment. Return ONLY the JSON object.`;
       ai_assessment_details: assessmentResult.ai_assessment_details || {}
     };
 
-    // Update the interview session in database
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    // Update the interview session in database (supabase client already initialized above)
 
     const { error: updateError } = await supabase
       .from('interview_sessions')

@@ -275,14 +275,16 @@ Generate personalized interview questions based on this information. Return ONLY
           );
         }
 
-        // No custom questions - return error with guidance to add manual questions
+        // No custom questions - return 200 with no_questions flag so frontend can handle gracefully
+        // (returning 402/429 would cause supabase.functions.invoke to throw before we can read data)
         return new Response(
           JSON.stringify({ 
-            error: noAiReason,
             no_questions: true,
+            no_ai_mode: true,
+            no_ai_reason: noAiReason,
             message: 'Please add manual interview questions for this job to proceed without AI credits.'
           }),
-          { status: response.status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
         );
       }
       
