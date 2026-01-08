@@ -919,6 +919,24 @@ const Admin = () => {
                       onSendInvite={(applicant) => setInterviewInviteApplicant(applicant)}
                       onSendEmail={(applicant) => setSendEmailApplicant(applicant)}
                       onViewHistory={(applicant) => setCommunicationHistoryApplicant(applicant)}
+                      onCheckAvailability={async (applicant) => {
+                        try {
+                          const { error } = await supabase.functions.invoke('send-availability-check', {
+                            body: { applicantId: applicant.id },
+                          });
+                          if (error) throw error;
+                          toast({
+                            title: 'Availability check sent',
+                            description: `Email sent to ${applicant.email}`,
+                          });
+                        } catch (error: any) {
+                          toast({
+                            title: 'Failed to send',
+                            description: error.message || 'Please try again',
+                            variant: 'destructive',
+                          });
+                        }
+                      }}
                       expandedApplicant={expandedApplicant}
                       loadingPreview={loadingPreview}
                       downloadingCv={downloadingCv}

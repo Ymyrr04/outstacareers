@@ -111,6 +111,9 @@ interface Applicant {
   bonus_red_flag_score?: number | null;
   ai_summary?: string | null;
   ai_assessment_details?: AssessmentDetails | null;
+  // Bench availability fields
+  is_available?: boolean | null;
+  availability_checked_at?: string | null;
 }
 
 interface ApplicantSearchResultsProps {
@@ -126,6 +129,7 @@ interface ApplicantSearchResultsProps {
   onSendInvite?: (applicant: { full_name: string; email: string; job_title: string }) => void;
   onSendEmail?: (applicant: { id: string; full_name: string; email: string; job_title: string; status: string }) => void;
   onViewHistory?: (applicant: { id: string; name: string; email: string }) => void;
+  onCheckAvailability?: (applicant: { id: string; email: string; full_name: string; is_available: boolean | null; availability_checked_at: string | null }) => void;
   expandedApplicant: string | null;
   loadingPreview: boolean;
   downloadingCv?: string | null;
@@ -144,6 +148,7 @@ export default function ApplicantSearchResults({
   onSendInvite,
   onSendEmail,
   onViewHistory,
+  onCheckAvailability,
   expandedApplicant,
   loadingPreview,
   downloadingCv,
@@ -370,6 +375,53 @@ export default function ApplicantSearchResults({
                     <StickyNote className="w-3.5 h-3.5" />
                     Notes
                   </button>
+
+                  {/* CV Assessment quick link */}
+                  {applicant.total_score !== null && (
+                    <button
+                      onClick={() => onViewDetails(applicant.id)}
+                      className="flex items-center gap-1 text-green-600 hover:underline cursor-pointer"
+                    >
+                      <Star className="w-3.5 h-3.5" />
+                      CV Assessment
+                    </button>
+                  )}
+
+                  {/* Interview Results quick link */}
+                  {applicant.interview_session?.status === 'completed' && (
+                    <button
+                      onClick={() => onViewDetails(applicant.id)}
+                      className="flex items-center gap-1 text-purple-600 hover:underline cursor-pointer"
+                    >
+                      <ClipboardList className="w-3.5 h-3.5" />
+                      Interview Results
+                    </button>
+                  )}
+
+                  {/* Check Availability button for Bench candidates */}
+                  {applicant.status === 'Bench' && onCheckAvailability && (
+                    <button
+                      onClick={() => onCheckAvailability({
+                        id: applicant.id,
+                        email: applicant.email,
+                        full_name: applicant.full_name,
+                        is_available: applicant.is_available ?? null,
+                        availability_checked_at: applicant.availability_checked_at ?? null
+                      })}
+                      className="flex items-center gap-1 text-blue-600 hover:underline cursor-pointer"
+                    >
+                      <CalendarPlus className="w-3.5 h-3.5" />
+                      Check Availability
+                      {applicant.is_available !== null && applicant.is_available !== undefined && (
+                        <Badge 
+                          variant="secondary" 
+                          className={`ml-1 text-xs ${applicant.is_available ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}
+                        >
+                          {applicant.is_available ? 'Available' : 'Not Available'}
+                        </Badge>
+                      )}
+                    </button>
+                  )}
                 </div>
               </div>
 
