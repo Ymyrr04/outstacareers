@@ -97,7 +97,7 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
   const [previewMode, setPreviewMode] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [newTemplateTrigger, setNewTemplateTrigger] = useState('');
+  const [newTemplateName, setNewTemplateName] = useState('');
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -155,17 +155,19 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
   };
 
   const handleAddTemplate = async () => {
-    if (!newTemplateTrigger) return;
+    if (!newTemplateName.trim()) return;
     
     setCreating(true);
+    // Use the custom name as the status_trigger (custom templates)
+    const templateKey = `custom_${newTemplateName.toLowerCase().replace(/\s+/g, '_')}`;
     const success = await createTemplate({
-      status_trigger: newTemplateTrigger,
-      subject: `Email for ${triggerToStatus[newTemplateTrigger] || newTemplateTrigger}`,
+      status_trigger: templateKey,
+      subject: `${newTemplateName}`,
       body_html: 'Hi {{first_name}},<br><br>Your message here.<br><br>Best regards,<br>The Recruitment Team',
     });
     if (success) {
       setShowAddDialog(false);
-      setNewTemplateTrigger('');
+      setNewTemplateName('');
     }
     setCreating(false);
   };
@@ -205,9 +207,13 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
     { key: '{{meeting_link}}', desc: 'Meeting URL' },
   ];
 
-  // Get existing triggers to filter out from available options
-  const existingTriggers = templates.map(t => t.status_trigger);
-  const availableTriggersFiltered = availableTriggers.filter(t => !existingTriggers.includes(t.value));
+  // Get display name for template (use subject for custom templates, or mapped name for pipeline triggers)
+  const getTemplateName = (template: EmailTemplate) => {
+    if (template.status_trigger.startsWith('custom_')) {
+      return template.subject;
+    }
+    return triggerToStatus[template.status_trigger] || template.status_trigger;
+  };
 
   const getDelayDisplay = (template: EmailTemplate) => {
     if (template.delay_hours === 0) return null;
@@ -256,7 +262,7 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
                         >
                           <div className="flex items-center justify-between gap-2">
                             <span className="font-medium truncate">
-                              {triggerToStatus[template.status_trigger] || template.status_trigger}
+                              {getTemplateName(template)}
                             </span>
                             {!template.is_enabled && (
                               <Badge variant="outline" className="text-[10px] px-1.5 opacity-60">OFF</Badge>
@@ -282,7 +288,6 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
                   size="sm"
                   className="w-full"
                   onClick={() => setShowAddDialog(true)}
-                  disabled={availableTriggersFiltered.length === 0}
                 >
                   <Plus className="h-4 w-4 mr-1.5" />
                   Add Template
@@ -464,27 +469,24 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
           <AlertDialogHeader>
             <AlertDialogTitle>Add New Template</AlertDialogTitle>
             <AlertDialogDescription>
-              Select a pipeline stage to create a new email template for.
+              Create a custom email template that can be used by any recruiter for any pipeline stage.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="py-4">
-            <Label className="text-sm font-medium mb-2 block">Pipeline Stage</Label>
-            <Select value={newTemplateTrigger} onValueChange={setNewTemplateTrigger}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select a stage..." />
-              </SelectTrigger>
-              <SelectContent>
-                {availableTriggersFiltered.map(trigger => (
-                  <SelectItem key={trigger.value} value={trigger.value}>
-                    {trigger.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <Label className="text-sm font-medium mb-2 block">Template Name</Label>
+            <Input
+              value={newTemplateName}
+              onChange={(e) => setNewTemplateName(e.target.value)}
+              placeholder="e.g., Follow-up - John's Template"
+              className="w-full"
+            />
+            <p className="text-xs text-muted-foreground mt-2">
+              Give your template a descriptive name so you can easily find it when sending emails.
+            </p>
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleAddTemplate} disabled={!newTemplateTrigger || creating}>
+            <AlertDialogCancel onClick={() => setNewTemplateName('')}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleAddTemplate} disabled={!newTemplateName.trim() || creating}>
               {creating ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Plus className="h-4 w-4 mr-1.5" />}
               Add Template
             </AlertDialogAction>
@@ -498,7 +500,7 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Template</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete the "{triggerToStatus[selectedTemplate?.status_trigger || ''] || selectedTemplate?.status_trigger}" template? This action cannot be undone.
+              Are you sure you want to delete the "{selectedTemplate ? getTemplateName(selectedTemplate) : ''}" template? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
