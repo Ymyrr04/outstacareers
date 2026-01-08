@@ -461,10 +461,7 @@ export function InterviewSession({
         <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
         <h4 className="font-semibold text-xl mb-2">Interview Complete!</h4>
         <p className="text-muted-foreground">
-          {noAiMode 
-            ? "Thank you for completing your interview. Our team will review your responses and get back to you soon."
-            : "Thank you for completing your interview. We'll review your responses shortly."
-          }
+          Thank you for completing your interview. We'll review your responses and get back to you soon.
         </p>
       </div>
     );
@@ -472,13 +469,6 @@ export function InterviewSession({
 
   return (
     <div className="space-y-6">
-      {/* No AI Mode Banner */}
-      {noAiMode && (
-        <div className="bg-amber-50 border border-amber-200 rounded-lg p-3 flex items-center gap-2 text-amber-800 text-sm">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-          <span>Manual review mode - your responses will be reviewed by our recruitment team.</span>
-        </div>
-      )}
 
       {/* Progress Header */}
       <div className="space-y-3">
