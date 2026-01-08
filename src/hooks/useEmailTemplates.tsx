@@ -116,6 +116,57 @@ export function useEmailTemplates() {
     return true;
   };
 
+  const createTemplate = async (template: { status_trigger: string; subject: string; body_html: string }) => {
+    const { error } = await supabase
+      .from('email_templates')
+      .insert({
+        status_trigger: template.status_trigger,
+        subject: template.subject,
+        body_html: template.body_html,
+        is_enabled: true,
+        delay_hours: 0,
+      });
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to create template: ' + error.message,
+        variant: 'destructive',
+      });
+      return false;
+    }
+
+    await fetchTemplates();
+    toast({
+      title: 'Success',
+      description: 'Template created successfully',
+    });
+    return true;
+  };
+
+  const deleteTemplate = async (id: string) => {
+    const { error } = await supabase
+      .from('email_templates')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete template: ' + error.message,
+        variant: 'destructive',
+      });
+      return false;
+    }
+
+    await fetchTemplates();
+    toast({
+      title: 'Success',
+      description: 'Template deleted successfully',
+    });
+    return true;
+  };
+
   const getTemplateByTrigger = (trigger: string) => {
     return templates.find(t => t.status_trigger === trigger);
   };
@@ -125,6 +176,8 @@ export function useEmailTemplates() {
     loading,
     fetchTemplates,
     updateTemplate,
+    createTemplate,
+    deleteTemplate,
     getTemplateByTrigger,
   };
 }
