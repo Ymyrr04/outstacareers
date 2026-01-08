@@ -1139,6 +1139,71 @@ const Admin = () => {
                               <StickyNote className="w-3.5 h-3.5" />
                               Notes
                             </button>
+                            
+                            {/* CV Assessment quick link */}
+                            {applicant.total_score !== null && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedApplicant(applicant.id);
+                                }}
+                                className="flex items-center gap-1 text-green-600 hover:underline cursor-pointer"
+                              >
+                                <Star className="w-3.5 h-3.5" />
+                                CV Assessment
+                              </button>
+                            )}
+
+                            {/* Interview Results quick link */}
+                            {applicant.interview_session?.status === 'completed' && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedApplicant(applicant.id);
+                                }}
+                                className="flex items-center gap-1 text-purple-600 hover:underline cursor-pointer"
+                              >
+                                <ClipboardList className="w-3.5 h-3.5" />
+                                Interview Results
+                              </button>
+                            )}
+
+                            {/* Check Availability button for Bench candidates */}
+                            {applicant.status === 'Bench' && (
+                              <button
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  try {
+                                    const { error } = await supabase.functions.invoke('send-availability-check', {
+                                      body: { applicantId: applicant.id },
+                                    });
+                                    if (error) throw error;
+                                    toast({
+                                      title: 'Availability check sent',
+                                      description: `Email sent to ${applicant.email}`,
+                                    });
+                                  } catch (error: any) {
+                                    toast({
+                                      title: 'Failed to send',
+                                      description: error.message || 'Please try again',
+                                      variant: 'destructive',
+                                    });
+                                  }
+                                }}
+                                className="flex items-center gap-1 text-blue-600 hover:underline cursor-pointer"
+                              >
+                                <CalendarPlus className="w-3.5 h-3.5" />
+                                Check Availability
+                                {applicant.is_available !== null && applicant.is_available !== undefined && (
+                                  <Badge 
+                                    variant="secondary" 
+                                    className={`ml-1 text-xs ${applicant.is_available ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}
+                                  >
+                                    {applicant.is_available ? 'Available' : 'Not Available'}
+                                  </Badge>
+                                )}
+                              </button>
+                            )}
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
