@@ -178,11 +178,9 @@ export function SendEmailDialog({
       const processedBody = getProcessedBody();
       
       let scheduleDateTime: string | undefined;
-      // Apply delay for templates that have delay configured (uses minutes for short delays like SIV)
+      // delay_hours now stores minutes for all templates
       if (template && template.delay_hours > 0) {
-        // For SIV (5 mins), delay_hours stores minutes; for reject it stores hours
-        const delayMinutes = selectedTrigger === 'siv' ? template.delay_hours : template.delay_hours * 60;
-        scheduleDateTime = addMinutes(new Date(), delayMinutes).toISOString();
+        scheduleDateTime = addMinutes(new Date(), template.delay_hours).toISOString();
       }
 
       const { data, error } = await supabase.functions.invoke('send-applicant-email', {
@@ -344,14 +342,14 @@ export function SendEmailDialog({
             </div>
           )}
 
-          {/* Delay warning for scheduled emails (SIV or Reject) */}
-          {hasDelay && (
+          {/* Delay warning for scheduled emails */}
+          {hasDelay && template && (
             <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md text-sm">
               <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
               <p className="text-amber-800 dark:text-amber-200">
-                {isSivTemplate 
-                  ? `This email will be scheduled to send in ${template.delay_hours} minutes. You can cancel it from the communication history if moved by mistake.`
-                  : `This email will be scheduled to send in ${template.delay_hours} hours. You can cancel it from the communication history.`
+                {template.delay_hours >= 60 && template.delay_hours % 60 === 0
+                  ? `This email will be scheduled to send in ${template.delay_hours / 60} hour${template.delay_hours / 60 !== 1 ? 's' : ''}. You can cancel it from the communication history.`
+                  : `This email will be scheduled to send in ${template.delay_hours} minute${template.delay_hours !== 1 ? 's' : ''}. You can cancel it from the communication history if moved by mistake.`
                 }
               </p>
             </div>
