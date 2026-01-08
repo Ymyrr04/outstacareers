@@ -12,7 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2 } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog } from 'lucide-react';
 import { generateJobUrl } from '@/lib/slugify';
 import { InterviewResultsView } from '@/components/InterviewResultsView';
 import { Input } from '@/components/ui/input';
@@ -25,6 +25,11 @@ import { InterviewInviteDialog } from '@/components/InterviewInviteDialog';
 import { EmailTemplateEditor } from '@/components/EmailTemplateEditor';
 import { CommunicationHistory } from '@/components/CommunicationHistory';
 import { SendEmailDialog } from '@/components/SendEmailDialog';
+import { CheckAvailabilityButton } from '@/components/CheckAvailabilityButton';
+import { ReprofilingDialog } from '@/components/ReprofilingDialog';
+import { CandidateProfileSection } from '@/components/CandidateProfileSection';
+import { RoleHistorySection } from '@/components/RoleHistorySection';
+import { ApplicantSourceBadge } from '@/components/ApplicantSourceBadge';
 import { useEmailTemplates, statusToTrigger } from '@/hooks/useEmailTemplates';
 import { addHours } from 'date-fns';
 
@@ -196,6 +201,9 @@ const Admin = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeApplicantTab, setActiveApplicantTab] = useState<'folders' | 'search'>('folders');
   const [searchFilteredApplicants, setSearchFilteredApplicants] = useState<Applicant[]>([]);
+  
+  // Reprofiling state
+  const [reprofilingApplicant, setReprofilingApplicant] = useState<Applicant | null>(null);
 
   // Compute unique skills and tools from all applicants
   const { allSkills, allTools } = useMemo(() => {
@@ -1047,6 +1055,12 @@ const Admin = () => {
                               <Briefcase className="w-3.5 h-3.5" />
                               {applicant.job_title}
                             </span>
+                            {applicant.original_job_title && applicant.original_job_title !== applicant.job_title && (
+                              <Badge variant="outline" className="text-xs bg-purple-50 text-purple-700 dark:bg-purple-950 dark:text-purple-300">
+                                Originally: {applicant.original_job_title}
+                              </Badge>
+                            )}
+                            <ApplicantSourceBadge source={applicant.job_source} />
                             <span className="flex items-center gap-1">
                               <MapPin className="w-3.5 h-3.5" />
                               {applicant.location}
@@ -1157,6 +1171,14 @@ const Admin = () => {
                             title="Send Email"
                           >
                             <Send className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setReprofilingApplicant(applicant)}
+                            title="Reprofile Applicant"
+                          >
+                            <UserCog className="w-4 h-4" />
                           </Button>
                           <Button
                             variant="outline"
@@ -1505,6 +1527,50 @@ const Admin = () => {
                             )}
                           </div>
 
+                          {/* Candidate Profile Section */}
+                          <CandidateProfileSection
+                            applicantId={applicant.id}
+                            candidateProfile={applicant.candidate_profile}
+                            onUpdate={(newProfile) => {
+                              setApplicants(prev => prev.map(a => 
+                                a.id === applicant.id ? { ...a, candidate_profile: newProfile } : a
+                              ));
+                            }}
+                          />
+
+                          {/* Role History Section */}
+                          <div className="my-4">
+                            <RoleHistorySection
+                              currentJobTitle={applicant.job_title}
+                              originalJobTitle={applicant.original_job_title}
+                              reprofiledAt={applicant.reprofiled_at}
+                            />
+                          </div>
+
+                          {/* Check Availability for Bench applicants */}
+                          {applicant.status === 'Bench' && (
+                            <div className="mb-6 p-4 bg-cyan-50/50 dark:bg-cyan-950/20 rounded-lg border border-cyan-200/50 dark:border-cyan-800/30">
+                              <h4 className="font-semibold flex items-center gap-2 mb-3">
+                                <CalendarPlus className="w-4 h-4 text-cyan-600" />
+                                Availability Check
+                              </h4>
+                              <CheckAvailabilityButton
+                                applicantId={applicant.id}
+                                applicantEmail={applicant.email}
+                                applicantName={applicant.full_name}
+                                isAvailable={applicant.is_available}
+                                availabilityCheckedAt={applicant.availability_checked_at}
+                                onUpdate={(isAvailable, checkedAt) => {
+                                  setApplicants(prev => prev.map(a => 
+                                    a.id === applicant.id 
+                                      ? { ...a, is_available: isAvailable, availability_checked_at: checkedAt } 
+                                      : a
+                                  ));
+                                }}
+                              />
+                            </div>
+                          )}
+
                           {/* CV and Vocaroo Links */}
                           <div className="flex flex-wrap gap-3 mb-4">
                             {applicant.cv_file_url && (
@@ -1727,6 +1793,26 @@ const Admin = () => {
         applicant={sendEmailApplicant}
         onEmailSent={() => {
           // Optionally refresh data
+        }}
+      />
+
+      {/* Reprofiling Dialog */}
+      <ReprofilingDialog
+        open={!!reprofilingApplicant}
+        onOpenChange={(open) => !open && setReprofilingApplicant(null)}
+        applicant={reprofilingApplicant ? {
+          id: reprofilingApplicant.id,
+          full_name: reprofilingApplicant.full_name,
+          email: reprofilingApplicant.email,
+          job_title: reprofilingApplicant.job_title,
+          job_id: reprofilingApplicant.job_id,
+          original_job_id: reprofilingApplicant.original_job_id,
+          original_job_title: reprofilingApplicant.original_job_title,
+          status: reprofilingApplicant.status,
+        } : null}
+        onReprofiled={() => {
+          fetchApplicants();
+          setReprofilingApplicant(null);
         }}
       />
     </div>
