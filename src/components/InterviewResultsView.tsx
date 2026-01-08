@@ -95,7 +95,10 @@ export function InterviewResultsView({ sessionId, session }: InterviewResultsVie
     fetchData();
   }, [sessionId]);
 
-  if (session.status !== 'completed') {
+  const isCompleted = session.status === 'completed' || session.status === 'completed_manual_review';
+  const isManualReview = session.status === 'completed_manual_review';
+  
+  if (!isCompleted) {
     return (
       <div className="bg-muted/30 rounded-lg p-6 text-center">
         <Loader2 className="w-8 h-8 animate-spin mx-auto mb-2 text-muted-foreground" />
@@ -167,6 +170,14 @@ export function InterviewResultsView({ sessionId, session }: InterviewResultsVie
 
   return (
     <div className="space-y-4">
+      {/* Manual Review Banner */}
+      {isManualReview && (
+        <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3 flex items-center gap-2 text-amber-800 dark:text-amber-200 text-sm">
+          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+          <span>Manual review required - AI scoring was not available for this interview.</span>
+        </div>
+      )}
+      
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
@@ -186,41 +197,49 @@ export function InterviewResultsView({ sessionId, session }: InterviewResultsVie
 
         {/* Overview Tab */}
         <TabsContent value="overview" className="space-y-4 mt-4">
-          {/* Overall Score */}
-          <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
-            <div>
-              <p className="text-sm text-muted-foreground">Overall Interview Score</p>
-              <p className={`text-3xl font-bold ${getScoreColor(session.overall_score)}`}>
-                {session.overall_score ?? '—'}/100
-              </p>
+          {/* Overall Score - show different UI for manual review */}
+          {isManualReview && !session.overall_score ? (
+            <div className="p-4 bg-muted/30 rounded-lg border text-center">
+              <Users className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+              <p className="text-sm font-medium">Pending Manual Review</p>
+              <p className="text-xs text-muted-foreground">Please review the answers in each tab to assess this candidate.</p>
             </div>
-            <div className="w-20 h-20 relative">
-              <svg className="w-20 h-20 transform -rotate-90">
-                <circle
-                  cx="40"
-                  cy="40"
-                  r="36"
-                  stroke="currentColor"
-                  strokeWidth="8"
-                  fill="none"
-                  className="text-muted"
-                />
-                <circle
-                  cx="40"
-                  cy="40"
-                  r="36"
-                  stroke="currentColor"
-                  strokeWidth="8"
-                  fill="none"
-                  strokeDasharray={`${(session.overall_score ?? 0) * 2.26} 226`}
-                  className={getScoreColor(session.overall_score)}
-                />
-              </svg>
-              <span className={`absolute inset-0 flex items-center justify-center text-lg font-bold ${getScoreColor(session.overall_score)}`}>
-                {session.overall_score ?? '—'}
-              </span>
+          ) : (
+            <div className="flex items-center justify-between p-4 bg-purple-50 dark:bg-purple-950/30 rounded-lg border border-purple-200 dark:border-purple-800">
+              <div>
+                <p className="text-sm text-muted-foreground">Overall Interview Score</p>
+                <p className={`text-3xl font-bold ${getScoreColor(session.overall_score)}`}>
+                  {session.overall_score ?? '—'}/100
+                </p>
+              </div>
+              <div className="w-20 h-20 relative">
+                <svg className="w-20 h-20 transform -rotate-90">
+                  <circle
+                    cx="40"
+                    cy="40"
+                    r="36"
+                    stroke="currentColor"
+                    strokeWidth="8"
+                    fill="none"
+                    className="text-muted"
+                  />
+                  <circle
+                    cx="40"
+                    cy="40"
+                    r="36"
+                    stroke="currentColor"
+                    strokeWidth="8"
+                    fill="none"
+                    strokeDasharray={`${(session.overall_score ?? 0) * 2.26} 226`}
+                    className={getScoreColor(session.overall_score)}
+                  />
+                </svg>
+                <span className={`absolute inset-0 flex items-center justify-center text-lg font-bold ${getScoreColor(session.overall_score)}`}>
+                  {session.overall_score ?? '—'}
+                </span>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Individual Scores */}
           <div className="grid grid-cols-1 gap-3">
