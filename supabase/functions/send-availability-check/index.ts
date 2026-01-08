@@ -56,20 +56,20 @@ serve(async (req) => {
     // Generate a unique token for this availability check
     const token = crypto.randomUUID();
 
-    // Create the availability response record
+    // Create the availability response record with 'pending' as placeholder
+    // We set response to 'yes' initially (will be updated when they respond)
+    // This is a workaround since the check constraint doesn't allow 'pending'
     const { error: insertError } = await supabase
       .from('availability_responses')
       .insert({
         applicant_id: applicantId,
-        response: 'pending',
+        response: 'yes', // Placeholder, will be updated on actual response
         response_token: token
       });
 
-    // Note: The check constraint allows 'yes' or 'no', so we'll update it when they respond
-    // For now, we'll set a placeholder that we can update
     if (insertError) {
       console.error('Failed to create availability record:', insertError);
-      // Continue anyway - the email should still be sent
+      throw new Error('Failed to create availability tracking record');
     }
 
     // Generate magic links
@@ -77,7 +77,7 @@ serve(async (req) => {
     const yesLink = `${baseUrl}?token=${token}&response=yes`;
     const noLink = `${baseUrl}?token=${token}&response=no`;
 
-    // Process template
+    // Process template - replace placeholders
     let subject = template.subject.replace(/\{\{full_name\}\}/g, applicant.full_name);
     let body = template.body_html
       .replace(/\{\{full_name\}\}/g, applicant.full_name)
@@ -98,7 +98,17 @@ serve(async (req) => {
       },
     });
 
-    const htmlBody = `<html><body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">${body.replace(/\n/g, '<br>')}</body></html>`;
+    // Convert the body to proper HTML with styling
+    const htmlBody = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+</head>
+<body style="font-family: Arial, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
+  ${body.replace(/\n/g, '<br>')}
+</body>
+</html>`;
 
     await client.send({
       from: GMAIL_USER,
@@ -125,7 +135,7 @@ serve(async (req) => {
         applicant_status_at_send: 'Bench'
       });
 
-    console.log('Availability check email sent successfully');
+    console.log('Availability check email sent successfully to:', applicant.email);
 
     return new Response(
       JSON.stringify({ success: true, message: 'Availability check sent' }),
