@@ -101,16 +101,31 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
+  // Convert stored minutes to display value and unit
+  const minutesToDisplayValue = (totalMinutes: number): { value: number; unit: 'minutes' | 'hours' } => {
+    if (totalMinutes === 0) return { value: 0, unit: 'minutes' };
+    if (totalMinutes >= 60 && totalMinutes % 60 === 0) {
+      return { value: totalMinutes / 60, unit: 'hours' };
+    }
+    return { value: totalMinutes, unit: 'minutes' };
+  };
+
+  // Convert display value and unit to minutes for storage
+  const displayValueToMinutes = (value: number, unit: 'minutes' | 'hours'): number => {
+    if (unit === 'hours') return value * 60;
+    return value;
+  };
+
   const handleSelectTemplate = (template: EmailTemplate) => {
     setSelectedTemplate(template);
-    // Detect if delay is in minutes (< 1 hour stored as minutes in the field)
-    const isSivTemplate = template.status_trigger === 'siv';
+    // delay_hours now stores minutes
+    const { value, unit } = minutesToDisplayValue(template.delay_hours);
     setEditForm({
       subject: template.subject,
       body_text: htmlToPlainText(template.body_html),
       is_enabled: template.is_enabled,
-      delay_hours: template.delay_hours,
-      delay_unit: isSivTemplate && template.delay_hours > 0 && template.delay_hours < 60 ? 'minutes' : 'hours',
+      delay_hours: value,
+      delay_unit: unit,
     });
     setPreviewMode(false);
   };
@@ -119,19 +134,21 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
     if (!selectedTemplate) return;
     
     setSaving(true);
+    // Convert to minutes for storage
+    const delayInMinutes = displayValueToMinutes(editForm.delay_hours, editForm.delay_unit);
     const success = await updateTemplate(selectedTemplate.id, {
       subject: editForm.subject,
       body_html: plainTextToHtml(editForm.body_text),
       is_enabled: editForm.is_enabled,
-      delay_hours: editForm.delay_hours,
+      delay_hours: delayInMinutes,
     });
     if (success) {
       setSelectedTemplate({ 
-        ...selectedTemplate, 
+        ...selectedTemplate,
         subject: editForm.subject,
         body_html: plainTextToHtml(editForm.body_text),
         is_enabled: editForm.is_enabled,
-        delay_hours: editForm.delay_hours,
+        delay_hours: delayInMinutes,
       });
     }
     setSaving(false);
@@ -194,11 +211,11 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
 
   const getDelayDisplay = (template: EmailTemplate) => {
     if (template.delay_hours === 0) return null;
-    // SIV uses minutes, others use hours
-    if (template.status_trigger === 'siv' && template.delay_hours < 60) {
-      return `${template.delay_hours}m delay`;
+    // delay_hours now stores minutes, convert for display
+    if (template.delay_hours >= 60 && template.delay_hours % 60 === 0) {
+      return `${template.delay_hours / 60}h delay`;
     }
-    return `${template.delay_hours}h delay`;
+    return `${template.delay_hours}m delay`;
   };
 
   return (
