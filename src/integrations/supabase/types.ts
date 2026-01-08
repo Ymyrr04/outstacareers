@@ -63,9 +63,11 @@ export type Database = {
           ai_assessment_details: Json | null
           ai_summary: string | null
           apply_url: string
+          availability_checked_at: string | null
           availability_setup_score: number | null
           bonus_red_flag_score: number | null
           can_work_40_50: boolean
+          candidate_profile: string | null
           created_at: string
           currently_working: boolean
           cv_file_url: string | null
@@ -82,15 +84,20 @@ export type Database = {
           id: string
           internet_speed: string
           ip_hash: string | null
+          is_available: boolean | null
           job_id: string | null
+          job_source: string | null
           job_title: string
           laptop_or_pc: boolean
           location: string
           noise_canceling_headset: boolean
           notes: string | null
+          original_job_id: string | null
+          original_job_title: string | null
           phone: string | null
           power_backup: boolean
           ranking_status: string | null
+          reprofiled_at: string | null
           role_experience_score: number | null
           skills_tools_score: number | null
           start_availability: string
@@ -106,9 +113,11 @@ export type Database = {
           ai_assessment_details?: Json | null
           ai_summary?: string | null
           apply_url: string
+          availability_checked_at?: string | null
           availability_setup_score?: number | null
           bonus_red_flag_score?: number | null
           can_work_40_50: boolean
+          candidate_profile?: string | null
           created_at?: string
           currently_working: boolean
           cv_file_url?: string | null
@@ -125,15 +134,20 @@ export type Database = {
           id?: string
           internet_speed: string
           ip_hash?: string | null
+          is_available?: boolean | null
           job_id?: string | null
+          job_source?: string | null
           job_title: string
           laptop_or_pc: boolean
           location: string
           noise_canceling_headset: boolean
           notes?: string | null
+          original_job_id?: string | null
+          original_job_title?: string | null
           phone?: string | null
           power_backup: boolean
           ranking_status?: string | null
+          reprofiled_at?: string | null
           role_experience_score?: number | null
           skills_tools_score?: number | null
           start_availability: string
@@ -149,9 +163,11 @@ export type Database = {
           ai_assessment_details?: Json | null
           ai_summary?: string | null
           apply_url?: string
+          availability_checked_at?: string | null
           availability_setup_score?: number | null
           bonus_red_flag_score?: number | null
           can_work_40_50?: boolean
+          candidate_profile?: string | null
           created_at?: string
           currently_working?: boolean
           cv_file_url?: string | null
@@ -168,15 +184,20 @@ export type Database = {
           id?: string
           internet_speed?: string
           ip_hash?: string | null
+          is_available?: boolean | null
           job_id?: string | null
+          job_source?: string | null
           job_title?: string
           laptop_or_pc?: boolean
           location?: string
           noise_canceling_headset?: boolean
           notes?: string | null
+          original_job_id?: string | null
+          original_job_title?: string | null
           phone?: string | null
           power_backup?: boolean
           ranking_status?: string | null
+          reprofiled_at?: string | null
           role_experience_score?: number | null
           skills_tools_score?: number | null
           start_availability?: string
@@ -197,6 +218,33 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      availability_responses: {
+        Row: {
+          applicant_id: string
+          created_at: string
+          id: string
+          responded_at: string | null
+          response: string
+          response_token: string
+        }
+        Insert: {
+          applicant_id: string
+          created_at?: string
+          id?: string
+          responded_at?: string | null
+          response: string
+          response_token: string
+        }
+        Update: {
+          applicant_id?: string
+          created_at?: string
+          id?: string
+          responded_at?: string | null
+          response?: string
+          response_token?: string
+        }
+        Relationships: []
       }
       email_logs: {
         Row: {
@@ -314,6 +362,7 @@ export type Database = {
           is_enabled: boolean
           status_trigger: string
           subject: string
+          template_order: number | null
           updated_at: string
         }
         Insert: {
@@ -324,6 +373,7 @@ export type Database = {
           is_enabled?: boolean
           status_trigger: string
           subject: string
+          template_order?: number | null
           updated_at?: string
         }
         Update: {
@@ -334,6 +384,7 @@ export type Database = {
           is_enabled?: boolean
           status_trigger?: string
           subject?: string
+          template_order?: number | null
           updated_at?: string
         }
         Relationships: []

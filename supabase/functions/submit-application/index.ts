@@ -328,6 +328,7 @@ serve(async (req) => {
       cv_text: body.cv_text || null,
       vocaroo_link: vocarooLink,
       voice_recording_url: voiceRecordingUrl,
+      job_source: body.job_source?.trim() || null,
       // Scoring fields will be populated by background task
       role_experience_score: null,
       skills_tools_score: null,

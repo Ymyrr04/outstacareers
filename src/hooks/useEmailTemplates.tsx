@@ -42,29 +42,27 @@ export interface ScheduledEmail {
   created_at: string;
 }
 
-// Map status to template trigger
+// Map status to template trigger - updated for new pipeline
 export const statusToTrigger: Record<string, string> = {
   'For Review': 'application_received',
-  'Reviewed': 'reviewed',
-  'Pass Screening': 'pass_screening',
-  'Reject': 'reject',
-  '50/50': '50/50',
   'For Interview': 'for_interview',
-  'Candidate Successful': 'candidate_successful',
+  'SIV': 'siv',
+  'Client Interview': 'client_interview',
+  'Hired': 'hired',
   'Bench': 'bench',
-  'Hire': 'hire',
+  'Reject': 'reject',
 };
 
 export const triggerToStatus: Record<string, string> = {
   'application_received': 'Application Received',
-  'reviewed': 'Reviewed',
-  'pass_screening': 'Pass Screening',
-  'reject': 'Rejection',
-  '50/50': '50/50',
-  'for_interview': 'Interview Invitation',
-  'candidate_successful': 'Candidate Successful',
+  'for_interview': 'For Interview',
+  'siv': 'SIV',
+  'client_interview': 'Client Interview',
+  'hired': 'Hired',
   'bench': 'Bench',
-  'hire': 'Hire',
+  'reject': 'Reject',
+  'check_availability': 'Check Availability',
+  'reprofiling': 'Reprofiling',
 };
 
 export function useEmailTemplates() {
