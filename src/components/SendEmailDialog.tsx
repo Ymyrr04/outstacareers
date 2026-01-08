@@ -10,7 +10,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useEmailTemplates, triggerToStatus } from '@/hooks/useEmailTemplates';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format, addHours } from 'date-fns';
+import { format, addMinutes } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { 
   Send, Loader2, Clock, CalendarIcon, AlertTriangle, User 
@@ -106,16 +106,26 @@ export function SendEmailDialog({
     }
   }, [open, preselectedTemplate]);
 
+  const getFirstName = (fullName: string) => {
+    return fullName.split(' ')[0];
+  };
+
   const handleSelectTemplate = (trigger: string) => {
     setSelectedTrigger(trigger);
     const template = getTemplateByTrigger(trigger);
     if (template && applicant) {
+      const firstName = getFirstName(applicant.full_name);
+      
       const processedSubject = template.subject
         .replace(/\{\{applicant_name\}\}/g, applicant.full_name)
+        .replace(/\{\{first_name\}\}/g, firstName)
+        .replace(/\{\{full_name\}\}/g, applicant.full_name)
         .replace(/\{\{job_title\}\}/g, applicant.job_title);
       
       let processedBody = htmlToPlainText(template.body_html)
         .replace(/\{\{applicant_name\}\}/g, applicant.full_name)
+        .replace(/\{\{first_name\}\}/g, firstName)
+        .replace(/\{\{full_name\}\}/g, applicant.full_name)
         .replace(/\{\{job_title\}\}/g, applicant.job_title);
       
       setSubject(processedSubject);
@@ -168,8 +178,11 @@ export function SendEmailDialog({
       const processedBody = getProcessedBody();
       
       let scheduleDateTime: string | undefined;
-      if (selectedTrigger === 'reject' && template && template.delay_hours > 0) {
-        scheduleDateTime = addHours(new Date(), template.delay_hours).toISOString();
+      // Apply delay for templates that have delay configured (uses minutes for short delays like SIV)
+      if (template && template.delay_hours > 0) {
+        // For SIV (5 mins), delay_hours stores minutes; for reject it stores hours
+        const delayMinutes = selectedTrigger === 'siv' ? template.delay_hours : template.delay_hours * 60;
+        scheduleDateTime = addMinutes(new Date(), delayMinutes).toISOString();
       }
 
       const { data, error } = await supabase.functions.invoke('send-applicant-email', {
@@ -209,8 +222,10 @@ export function SendEmailDialog({
   };
 
   const isInterviewTemplate = selectedTrigger === 'for_interview';
+  const isSivTemplate = selectedTrigger === 'siv';
   const isRejectTemplate = selectedTrigger === 'reject';
   const template = getTemplateByTrigger(selectedTrigger);
+  const hasDelay = template && template.delay_hours > 0;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -329,12 +344,15 @@ export function SendEmailDialog({
             </div>
           )}
 
-          {/* Reject delay warning */}
-          {isRejectTemplate && template && template.delay_hours > 0 && (
+          {/* Delay warning for scheduled emails (SIV or Reject) */}
+          {hasDelay && (
             <div className="flex items-start gap-2 p-3 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-md text-sm">
               <AlertTriangle className="h-4 w-4 text-amber-600 mt-0.5 shrink-0" />
               <p className="text-amber-800 dark:text-amber-200">
-                This email will be scheduled to send in {template.delay_hours} hours. You can cancel it from the communication history.
+                {isSivTemplate 
+                  ? `This email will be scheduled to send in ${template.delay_hours} minutes. You can cancel it from the communication history if moved by mistake.`
+                  : `This email will be scheduled to send in ${template.delay_hours} hours. You can cancel it from the communication history.`
+                }
               </p>
             </div>
           )}
@@ -361,12 +379,12 @@ export function SendEmailDialog({
           <Button size="sm" onClick={handleSend} disabled={sending}>
             {sending ? (
               <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-            ) : isRejectTemplate && template && template.delay_hours > 0 ? (
+            ) : hasDelay ? (
               <Clock className="mr-1.5 h-4 w-4" />
             ) : (
               <Send className="mr-1.5 h-4 w-4" />
             )}
-            {isRejectTemplate && template && template.delay_hours > 0 ? 'Schedule' : 'Send'}
+            {hasDelay ? 'Schedule' : 'Send'}
           </Button>
         </div>
       </DialogContent>
