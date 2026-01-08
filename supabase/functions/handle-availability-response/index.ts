@@ -37,28 +37,32 @@ serve(async (req) => {
       );
     }
 
-    // Find the availability response record
+    // Find the availability response record - simple query without join
     const { data: responseRecord, error: findError } = await supabase
       .from('availability_responses')
-      .select('*, applicants_prescreen!inner(full_name, email)')
+      .select('*')
       .eq('response_token', token)
       .single();
 
     if (findError || !responseRecord) {
       console.error('Token not found:', findError);
       return new Response(
-        generateHtmlPage('Invalid Link', 'This link is invalid or has expired. Please contact support.', 'error'),
+        generateHtmlPage(
+          'Link Invalid or Expired', 
+          'This link has already been used or expired. Please contact the recruitment team if you need assistance.',
+          'error'
+        ),
         { status: 404, headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
       );
     }
 
-    // Check if already responded
-    if (responseRecord.responded_at) {
+    // Check if already responded (responded_at is set and response is not 'pending')
+    if (responseRecord.responded_at && responseRecord.response !== 'pending') {
       const previousResponse = responseRecord.response === 'yes' ? 'available' : 'not available';
       return new Response(
         generateHtmlPage(
           'Already Responded', 
-          `You have already responded to this availability check. Your previous response was: "${previousResponse}". If you need to update your availability, please wait for a new check or contact us.`,
+          `You have already responded to this availability check. Your previous response was: "${previousResponse}". If you need to update your availability, please contact the recruitment team.`,
           'info'
         ),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
@@ -96,10 +100,12 @@ serve(async (req) => {
       // Don't fail the request, the response was already recorded
     }
 
+    console.log('Availability updated successfully for applicant:', responseRecord.applicant_id);
+
     const title = response === 'yes' ? 'Thank You!' : 'Response Recorded';
     const message = response === 'yes' 
-      ? 'We have recorded that you are available. Our team will be in touch soon with opportunities!'
-      : 'We have recorded that you are not available at this time. We will keep your profile on file for future opportunities.';
+      ? 'Thank you. Your availability has been confirmed. Our team will be in touch soon with opportunities!'
+      : 'Thank you. We\'ve noted that you\'re not available at this time. We will keep your profile on file for future opportunities.';
 
     return new Response(
       generateHtmlPage(title, message, 'success'),
@@ -109,14 +115,13 @@ serve(async (req) => {
   } catch (error) {
     console.error('Error in handle-availability-response:', error);
     return new Response(
-      generateHtmlPage('Error', 'An unexpected error occurred. Please try again.', 'error'),
+      generateHtmlPage('Error', 'An unexpected error occurred. Please try again later.', 'error'),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
     );
   }
 });
 
 function generateHtmlPage(title: string, message: string, type: 'success' | 'error' | 'info'): string {
-  const bgColor = type === 'success' ? '#10B981' : type === 'error' ? '#EF4444' : '#3B82F6';
   const iconSvg = type === 'success' 
     ? '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" style="width:64px;height:64px;color:#10B981"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'
     : type === 'error'
