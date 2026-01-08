@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { X, Loader2, CheckCircle, ExternalLink, Upload, FileText } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
@@ -57,7 +58,19 @@ type FormData = {
   currently_working: boolean | null;
   location: string;
   honeypot_field: string;
+  job_source: string;
 };
+
+const JOB_SOURCE_OPTIONS = [
+  'LinkedIn',
+  'Facebook',
+  'Referral',
+  'Job Board (Indeed, Glassdoor, etc.)',
+  'Google Search',
+  'Company Website',
+  'OnlineJobs.ph',
+  'Other'
+];
 
 type Step = 'prescreening' | 'cv-upload' | 'interview' | 'submitting';
 
@@ -96,6 +109,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
     currently_working: null,
     location: "",
     honeypot_field: "",
+    job_source: "",
   });
 
   const handleTextChange = (field: keyof FormData, value: string) => {
@@ -311,6 +325,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
           cv_text: cvText,
           vocaroo_link: null,
           voice_recording_url: null,
+          job_source: formData.job_source,
         },
       });
 
@@ -663,7 +678,26 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
                   {errors.location && <p className="text-sm text-destructive">{errors.location}</p>}
                 </div>
 
-                {/* Hidden honeypot field */}
+                <div className="space-y-2">
+                  <Label htmlFor="job_source">Where did you learn about this job opportunity? *</Label>
+                  <Select
+                    value={formData.job_source}
+                    onValueChange={(value) => handleTextChange("job_source", value)}
+                  >
+                    <SelectTrigger className={errors.job_source ? "border-destructive" : ""}>
+                      <SelectValue placeholder="Select an option" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {JOB_SOURCE_OPTIONS.map((source) => (
+                        <SelectItem key={source} value={source}>
+                          {source}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {errors.job_source && <p className="text-sm text-destructive">{errors.job_source}</p>}
+                </div>
+
                 <div 
                   aria-hidden="true" 
                   style={{ 

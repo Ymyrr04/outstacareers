@@ -29,27 +29,26 @@ import { useEmailTemplates, statusToTrigger } from '@/hooks/useEmailTemplates';
 import { addHours } from 'date-fns';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
+// Status options for applicant tracking - new pipeline order
 const APPLICANT_STATUS_FOLDERS = [
   'For Review',
-  'Reviewed',
-  'Pass Screening',
-  'Reject',
-  '50/50',
   'For Interview',
-  'Candidate Successful',
-  'Bench'
+  'SIV',
+  'Client Interview',
+  'Hired',
+  'Bench',
+  'Reject'
 ] as const;
 
 // Dropdown options include all statuses (For Review can be selected to move back)
 const APPLICANT_STATUS_OPTIONS = [
   'For Review',
-  'Reviewed',
-  'Pass Screening',
-  'Reject',
-  '50/50',
   'For Interview',
-  'Candidate Successful',
-  'Bench'
+  'SIV',
+  'Client Interview',
+  'Hired',
+  'Bench',
+  'Reject'
 ] as const;
 
 type ApplicantStatusFolder = typeof APPLICANT_STATUS_FOLDERS[number];
@@ -147,6 +146,14 @@ interface Applicant {
   years_of_experience: number | null;
   // Interview session
   interview_session: InterviewSession | null;
+  // New fields for enhanced features
+  job_source: string | null;
+  is_available: boolean | null;
+  availability_checked_at: string | null;
+  original_job_id: string | null;
+  original_job_title: string | null;
+  reprofiled_at: string | null;
+  candidate_profile: string | null;
 }
 
 const Admin = () => {
