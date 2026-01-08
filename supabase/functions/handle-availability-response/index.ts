@@ -58,11 +58,10 @@ serve(async (req) => {
 
     // Check if already responded (responded_at is set and response is not 'pending')
     if (responseRecord.responded_at && responseRecord.response !== 'pending') {
-      const previousResponse = responseRecord.response === 'yes' ? 'available' : 'not available';
       return new Response(
         generateHtmlPage(
-          'Already Responded', 
-          `You have already responded to this availability check. Your previous response was: "${previousResponse}". If you need to update your availability, please contact the recruitment team.`,
+          'Thank You for Your Response!', 
+          'You have already submitted your response. If you need to update your availability, please contact the recruitment team.',
           'info'
         ),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
@@ -102,10 +101,10 @@ serve(async (req) => {
 
     console.log('Availability updated successfully for applicant:', responseRecord.applicant_id);
 
-    const title = response === 'yes' ? 'Thank You!' : 'Response Recorded';
+    const title = 'Thank You for Your Response!';
     const message = response === 'yes' 
-      ? 'Thank you. Your availability has been confirmed. Our team will be in touch soon with opportunities!'
-      : 'Thank you. We\'ve noted that you\'re not available at this time. We will keep your profile on file for future opportunities.';
+      ? 'We appreciate you confirming your availability. Our team will be in touch soon with exciting opportunities that match your profile!'
+      : 'We understand you\'re not available at this time. Feel free to apply again in the future once you are available. We\'d love to hear from you!';
 
     return new Response(
       generateHtmlPage(title, message, 'success'),

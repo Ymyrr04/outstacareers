@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo, useCallback } from 'react';
+import { format } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -1195,12 +1196,19 @@ const Admin = () => {
                                 <CalendarPlus className="w-3.5 h-3.5" />
                                 Check Availability
                                 {applicant.is_available !== null && applicant.is_available !== undefined && (
-                                  <Badge 
-                                    variant="secondary" 
-                                    className={`ml-1 text-xs ${applicant.is_available ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}
-                                  >
-                                    {applicant.is_available ? 'Available' : 'Not Available'}
-                                  </Badge>
+                                  <>
+                                    <Badge 
+                                      variant="secondary" 
+                                      className={`ml-1 text-xs ${applicant.is_available ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}`}
+                                    >
+                                      {applicant.is_available ? 'Available' : 'Not Available'}
+                                    </Badge>
+                                    {applicant.availability_checked_at && (
+                                      <span className="text-xs text-muted-foreground ml-1">
+                                        {format(new Date(applicant.availability_checked_at), 'MM/dd/yy')}
+                                      </span>
+                                    )}
+                                  </>
                                 )}
                               </button>
                             )}
