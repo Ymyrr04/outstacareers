@@ -32,12 +32,13 @@ interface EmailTemplateEditorProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// Convert HTML to plain text
+// Convert HTML to plain text (preserving markdown-style links)
 const htmlToPlainText = (html: string): string => {
   let text = html.replace(/<br\s*\/?>/gi, '\n');
   text = text.replace(/<\/p>/gi, '\n\n');
   text = text.replace(/<\/div>/gi, '\n');
-  text = text.replace(/<a[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>/gi, '$2 ($1)');
+  // Convert HTML links to markdown-style links
+  text = text.replace(/<a[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>/gi, '[$2]($1)');
   text = text.replace(/<[^>]+>/g, '');
   text = text.replace(/&nbsp;/g, ' ');
   text = text.replace(/&amp;/g, '&');
@@ -55,8 +56,15 @@ const plainTextToHtml = (text: string): string => {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
   
+  // Convert markdown-style links [text](url) to HTML links
   html = html.replace(
-    /\b(https?:\/\/[^\s<>]+)/gi,
+    /\[([^\]]+)\]\(([^)]+)\)/g,
+    '<a href="$2" style="color: #0066cc;">$1</a>'
+  );
+  
+  // Convert bare URLs to links (but not ones already in markdown format)
+  html = html.replace(
+    /(?<!\()\b(https?:\/\/[^\s<>\[\]()]+)(?!\))/gi,
     '<a href="$1" style="color: #0066cc;">$1</a>'
   );
   
@@ -98,8 +106,13 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [newTemplateName, setNewTemplateName] = useState('');
+  const [newTemplateTrigger, setNewTemplateTrigger] = useState('');
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showHyperlinkDialog, setShowHyperlinkDialog] = useState(false);
+  const [hyperlinkText, setHyperlinkText] = useState('');
+  const [hyperlinkUrl, setHyperlinkUrl] = useState('');
+  const [cursorPosition, setCursorPosition] = useState(0);
 
   // Convert stored minutes to display value and unit
   const minutesToDisplayValue = (totalMinutes: number): { value: number; unit: 'minutes' | 'hours' } => {
@@ -155,11 +168,11 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
   };
 
   const handleAddTemplate = async () => {
-    if (!newTemplateName.trim()) return;
+    if (!newTemplateName.trim() || !newTemplateTrigger) return;
     
     setCreating(true);
-    // Use the custom name as the status_trigger (custom templates)
-    const templateKey = `custom_${newTemplateName.toLowerCase().replace(/\s+/g, '_')}`;
+    // Use the selected trigger as the status_trigger
+    const templateKey = `custom_${newTemplateTrigger}_${Date.now()}`;
     const success = await createTemplate({
       status_trigger: templateKey,
       subject: `${newTemplateName}`,
@@ -168,8 +181,22 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
     if (success) {
       setShowAddDialog(false);
       setNewTemplateName('');
+      setNewTemplateTrigger('');
     }
     setCreating(false);
+  };
+
+  const handleInsertHyperlink = () => {
+    if (!hyperlinkText.trim() || !hyperlinkUrl.trim()) return;
+    
+    // Create the hyperlink in a format that will be converted properly
+    const linkMarkup = `[${hyperlinkText}](${hyperlinkUrl})`;
+    const newText = editForm.body_text.substring(0, cursorPosition) + linkMarkup + editForm.body_text.substring(cursorPosition);
+    setEditForm(prev => ({ ...prev, body_text: newText }));
+    
+    setShowHyperlinkDialog(false);
+    setHyperlinkText('');
+    setHyperlinkUrl('');
   };
 
   const handleDeleteTemplate = async () => {
@@ -394,12 +421,31 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
                           {getPreviewText()}
                         </div>
                       ) : (
-                        <Textarea
-                          value={editForm.body_text}
-                          onChange={(e) => setEditForm(prev => ({ ...prev, body_text: e.target.value }))}
-                          placeholder="Write your email message here...&#10;&#10;URLs will automatically become clickable links."
-                          className="min-h-[250px] text-sm resize-none"
-                        />
+                        <div className="space-y-2">
+                          <Textarea
+                            value={editForm.body_text}
+                            onChange={(e) => setEditForm(prev => ({ ...prev, body_text: e.target.value }))}
+                            onSelect={(e) => setCursorPosition((e.target as HTMLTextAreaElement).selectionStart)}
+                            placeholder="Write your email message here...&#10;&#10;URLs will automatically become clickable links."
+                            className="min-h-[220px] text-sm resize-none"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const textarea = document.querySelector('textarea');
+                              if (textarea) {
+                                setCursorPosition(textarea.selectionStart);
+                              }
+                              setShowHyperlinkDialog(true);
+                            }}
+                            className="text-xs"
+                          >
+                            <Link2 className="h-3 w-3 mr-1.5" />
+                            Insert Hyperlink
+                          </Button>
+                        </div>
                       )}
                     </div>
 
@@ -472,21 +518,41 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
               Create a custom email template that can be used by any recruiter for any pipeline stage.
             </AlertDialogDescription>
           </AlertDialogHeader>
-          <div className="py-4">
-            <Label className="text-sm font-medium mb-2 block">Template Name</Label>
-            <Input
-              value={newTemplateName}
-              onChange={(e) => setNewTemplateName(e.target.value)}
-              placeholder="e.g., Follow-up - John's Template"
-              className="w-full"
-            />
-            <p className="text-xs text-muted-foreground mt-2">
-              Give your template a descriptive name so you can easily find it when sending emails.
-            </p>
+          <div className="py-4 space-y-4">
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Template Name</Label>
+              <Input
+                value={newTemplateName}
+                onChange={(e) => setNewTemplateName(e.target.value)}
+                placeholder="e.g., Follow-up Interview Invite"
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                A descriptive name to identify this template.
+              </p>
+            </div>
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Pipeline Stage</Label>
+              <Select value={newTemplateTrigger} onValueChange={setNewTemplateTrigger}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Select a pipeline stage..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {availableTriggers.map((trigger) => (
+                    <SelectItem key={trigger.value} value={trigger.value}>
+                      {trigger.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1.5">
+                Choose which pipeline stage this template is associated with.
+              </p>
+            </div>
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setNewTemplateName('')}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleAddTemplate} disabled={!newTemplateName.trim() || creating}>
+            <AlertDialogCancel onClick={() => { setNewTemplateName(''); setNewTemplateTrigger(''); }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleAddTemplate} disabled={!newTemplateName.trim() || !newTemplateTrigger || creating}>
               {creating ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Plus className="h-4 w-4 mr-1.5" />}
               Add Template
             </AlertDialogAction>
@@ -512,6 +578,54 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
             >
               {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Trash2 className="h-4 w-4 mr-1.5" />}
               Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Insert Hyperlink Dialog */}
+      <AlertDialog open={showHyperlinkDialog} onOpenChange={setShowHyperlinkDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Link2 className="h-5 w-5" />
+              Insert Hyperlink
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Add a clickable link to your email. The display text will be shown to the recipient.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="py-4 space-y-4">
+            <div>
+              <Label className="text-sm font-medium mb-2 block">Display Text</Label>
+              <Input
+                value={hyperlinkText}
+                onChange={(e) => setHyperlinkText(e.target.value)}
+                placeholder="e.g., Click here for your interview"
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                The text that will be visible and clickable.
+              </p>
+            </div>
+            <div>
+              <Label className="text-sm font-medium mb-2 block">URL</Label>
+              <Input
+                value={hyperlinkUrl}
+                onChange={(e) => setHyperlinkUrl(e.target.value)}
+                placeholder="https://example.com/meeting"
+                className="w-full"
+              />
+              <p className="text-xs text-muted-foreground mt-1.5">
+                The web address the link will go to.
+              </p>
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => { setHyperlinkText(''); setHyperlinkUrl(''); }}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleInsertHyperlink} disabled={!hyperlinkText.trim() || !hyperlinkUrl.trim()}>
+              <Link2 className="h-4 w-4 mr-1.5" />
+              Insert Link
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
