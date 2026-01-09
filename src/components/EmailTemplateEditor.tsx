@@ -216,8 +216,8 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
     setDeleting(false);
   };
 
-  const getPreviewText = () => {
-    return editForm.body_text
+  const getPreviewHtml = () => {
+    let text = editForm.body_text
       .replace(/\{\{first_name\}\}/g, 'John')
       .replace(/\{\{full_name\}\}/g, 'John Doe')
       .replace(/\{\{applicant_name\}\}/g, 'John Doe')
@@ -226,6 +226,9 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
       .replace(/\{\{interview_time\}\}/g, '10:00 AM')
       .replace(/\{\{timezone\}\}/g, 'PST')
       .replace(/\{\{meeting_link\}\}/g, 'https://zoom.us/j/123456789');
+    
+    // Convert to HTML with proper hyperlinks
+    return plainTextToHtml(text);
   };
 
   const placeholders = [
@@ -272,44 +275,99 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
           </DialogHeader>
 
           <div className="flex flex-1 overflow-hidden">
-            {/* Template List */}
+            {/* Template List - Grouped by Pipeline Stage */}
             <div className="w-56 border-r bg-muted/20 flex flex-col">
               <ScrollArea className="flex-1">
-                <div className="p-3 space-y-1">
+                <div className="p-3 space-y-3">
                   {loading ? (
                     <div className="flex items-center justify-center py-8">
                       <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
                     </div>
                   ) : (
-                    templates.map((template) => {
-                      const delayDisplay = getDelayDisplay(template);
-                      return (
-                        <button
-                          key={template.id}
-                          onClick={() => handleSelectTemplate(template)}
-                          className={`w-full text-left px-3 py-2.5 rounded-md transition-colors text-sm ${
-                            selectedTemplate?.id === template.id
-                              ? 'bg-primary text-primary-foreground'
-                              : 'hover:bg-muted'
-                          }`}
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="font-medium truncate">
-                              {getTemplateName(template)}
-                            </span>
-                            {!template.is_enabled && (
-                              <Badge variant="outline" className="text-[10px] px-1.5 opacity-60">OFF</Badge>
-                            )}
-                          </div>
-                          {delayDisplay && (
-                            <div className="flex items-center gap-1 mt-0.5 text-xs opacity-70">
-                              <Clock className="h-3 w-3" />
-                              {delayDisplay}
+                    (() => {
+                      // Group templates by pipeline stage
+                      const pipelineOrder = [
+                        { key: 'application_received', label: 'Application Received' },
+                        { key: 'for_interview', label: 'For Interview' },
+                        { key: 'siv', label: 'SIV' },
+                        { key: 'client_interview', label: 'Client Interview' },
+                        { key: 'hired', label: 'Hired' },
+                        { key: 'bench', label: 'Bench' },
+                        { key: 'reject', label: 'Reject' },
+                        { key: 'check_availability', label: 'Check Availability' },
+                        { key: 'reprofiling', label: 'Reprofiling' },
+                        { key: 'other', label: 'Other' },
+                      ];
+
+                      const getTemplateStage = (template: EmailTemplate) => {
+                        const trigger = template.status_trigger;
+                        // Check if it's a custom template with stage info
+                        if (trigger.startsWith('custom_')) {
+                          const parts = trigger.split('_');
+                          if (parts.length >= 2) {
+                            // Extract the stage from custom_stagename_timestamp
+                            const stageKey = parts.slice(1, -1).join('_');
+                            if (pipelineOrder.some(p => p.key === stageKey)) {
+                              return stageKey;
+                            }
+                          }
+                        }
+                        // Check if trigger directly matches a stage
+                        if (pipelineOrder.some(p => p.key === trigger)) {
+                          return trigger;
+                        }
+                        return 'other';
+                      };
+
+                      const groupedTemplates = pipelineOrder.reduce((acc, stage) => {
+                        acc[stage.key] = templates.filter(t => getTemplateStage(t) === stage.key);
+                        return acc;
+                      }, {} as Record<string, EmailTemplate[]>);
+
+                      return pipelineOrder.map(stage => {
+                        const stageTemplates = groupedTemplates[stage.key];
+                        if (!stageTemplates || stageTemplates.length === 0) return null;
+
+                        return (
+                          <div key={stage.key}>
+                            <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground px-2 mb-1.5">
+                              {stage.label}
                             </div>
-                          )}
-                        </button>
-                      );
-                    })
+                            <div className="space-y-0.5">
+                              {stageTemplates.map((template) => {
+                                const delayDisplay = getDelayDisplay(template);
+                                return (
+                                  <button
+                                    key={template.id}
+                                    onClick={() => handleSelectTemplate(template)}
+                                    className={`w-full text-left px-3 py-2 rounded-md transition-colors text-sm ${
+                                      selectedTemplate?.id === template.id
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'hover:bg-muted'
+                                    }`}
+                                  >
+                                    <div className="flex items-center justify-between gap-2">
+                                      <span className="font-medium truncate text-xs">
+                                        {getTemplateName(template)}
+                                      </span>
+                                      {!template.is_enabled && (
+                                        <Badge variant="outline" className="text-[10px] px-1.5 opacity-60">OFF</Badge>
+                                      )}
+                                    </div>
+                                    {delayDisplay && (
+                                      <div className="flex items-center gap-1 mt-0.5 text-[10px] opacity-70">
+                                        <Clock className="h-2.5 w-2.5" />
+                                        {delayDisplay}
+                                      </div>
+                                    )}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()
                   )}
                 </div>
               </ScrollArea>
@@ -438,9 +496,10 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
                     <div className="space-y-1.5 flex-1">
                       <Label className="text-sm font-medium">Message</Label>
                       {previewMode ? (
-                        <div className="border rounded-md p-4 bg-muted/30 min-h-[250px] whitespace-pre-wrap text-sm font-mono">
-                          {getPreviewText()}
-                        </div>
+                        <div 
+                          className="border rounded-md p-4 bg-muted/30 min-h-[250px] text-sm"
+                          dangerouslySetInnerHTML={{ __html: getPreviewHtml() }}
+                        />
                       ) : (
                         <div className="space-y-2">
                           <Textarea
