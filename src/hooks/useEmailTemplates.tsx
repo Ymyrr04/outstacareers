@@ -94,6 +94,38 @@ export function useEmailTemplates() {
     fetchTemplates();
   }, [fetchTemplates]);
 
+  // Real-time subscription for email_templates
+  useEffect(() => {
+    const channel = supabase
+      .channel('email-templates-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'email_templates',
+        },
+        (payload) => {
+          console.log('Email template change:', payload);
+          
+          if (payload.eventType === 'INSERT') {
+            setTemplates((prev) => [...prev, payload.new as EmailTemplate]);
+          } else if (payload.eventType === 'UPDATE') {
+            setTemplates((prev) =>
+              prev.map((t) => (t.id === payload.new.id ? (payload.new as EmailTemplate) : t))
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setTemplates((prev) => prev.filter((t) => t.id !== payload.old.id));
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   const updateTemplate = async (id: string, updates: Partial<EmailTemplate>) => {
     const { error } = await supabase
       .from('email_templates')
