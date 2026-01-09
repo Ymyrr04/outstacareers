@@ -250,12 +250,20 @@ export function SendEmailDialog({
                 <SelectValue placeholder="Select a template..." />
               </SelectTrigger>
               <SelectContent>
-                {templates.map((t) => (
-                  <SelectItem key={t.id} value={t.status_trigger}>
-                    {triggerToStatus[t.status_trigger] || t.status_trigger}
-                    {!t.is_enabled && ' (disabled)'}
-                  </SelectItem>
-                ))}
+                {templates.map((t) => {
+                  // For custom templates, show the subject as the display name
+                  const isCustom = t.status_trigger.startsWith('custom_');
+                  const displayName = isCustom 
+                    ? t.subject 
+                    : (triggerToStatus[t.status_trigger] || t.status_trigger);
+                  
+                  return (
+                    <SelectItem key={t.id} value={t.status_trigger}>
+                      {displayName}
+                      {!t.is_enabled && ' (disabled)'}
+                    </SelectItem>
+                  );
+                })}
               </SelectContent>
             </Select>
           </div>
