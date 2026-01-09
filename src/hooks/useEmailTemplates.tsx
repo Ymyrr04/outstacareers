@@ -66,13 +66,61 @@ export const triggerToStatus: Record<string, string> = {
   'reprofiling': 'Reprofiling',
 };
 
+// Shared state for templates across all hook instances
+let sharedTemplates: EmailTemplate[] = [];
+let sharedLoading = true;
+let subscribers: Set<(templates: EmailTemplate[]) => void> = new Set();
+let loadingSubscribers: Set<(loading: boolean) => void> = new Set();
+let channelInitialized = false;
+
+const notifySubscribers = (templates: EmailTemplate[]) => {
+  sharedTemplates = templates;
+  subscribers.forEach(cb => cb(templates));
+};
+
+const notifyLoadingSubscribers = (loading: boolean) => {
+  sharedLoading = loading;
+  loadingSubscribers.forEach(cb => cb(loading));
+};
+
+// Initialize real-time channel once
+const initializeChannel = () => {
+  if (channelInitialized) return;
+  channelInitialized = true;
+
+  supabase
+    .channel('email-templates-global')
+    .on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'email_templates',
+      },
+      (payload) => {
+        console.log('Email template change (global):', payload);
+        
+        if (payload.eventType === 'INSERT') {
+          notifySubscribers([...sharedTemplates, payload.new as EmailTemplate]);
+        } else if (payload.eventType === 'UPDATE') {
+          notifySubscribers(
+            sharedTemplates.map((t) => (t.id === payload.new.id ? (payload.new as EmailTemplate) : t))
+          );
+        } else if (payload.eventType === 'DELETE') {
+          notifySubscribers(sharedTemplates.filter((t) => t.id !== payload.old.id));
+        }
+      }
+    )
+    .subscribe();
+};
+
 export function useEmailTemplates() {
-  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [templates, setTemplates] = useState<EmailTemplate[]>(sharedTemplates);
+  const [loading, setLoading] = useState(sharedLoading);
   const { toast } = useToast();
 
   const fetchTemplates = useCallback(async () => {
-    setLoading(true);
+    notifyLoadingSubscribers(true);
     const { data, error } = await supabase
       .from('email_templates')
       .select('*')
@@ -84,47 +132,36 @@ export function useEmailTemplates() {
         description: 'Failed to fetch email templates',
         variant: 'destructive',
       });
+      notifyLoadingSubscribers(false);
+      throw error;
     } else {
-      setTemplates(data || []);
+      notifySubscribers(data || []);
+      notifyLoadingSubscribers(false);
     }
-    setLoading(false);
   }, [toast]);
 
   useEffect(() => {
-    fetchTemplates();
-  }, [fetchTemplates]);
-
-  // Real-time subscription for email_templates
-  useEffect(() => {
-    const channel = supabase
-      .channel('email-templates-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'email_templates',
-        },
-        (payload) => {
-          console.log('Email template change:', payload);
-          
-          if (payload.eventType === 'INSERT') {
-            setTemplates((prev) => [...prev, payload.new as EmailTemplate]);
-          } else if (payload.eventType === 'UPDATE') {
-            setTemplates((prev) =>
-              prev.map((t) => (t.id === payload.new.id ? (payload.new as EmailTemplate) : t))
-            );
-          } else if (payload.eventType === 'DELETE') {
-            setTemplates((prev) => prev.filter((t) => t.id !== payload.old.id));
-          }
-        }
-      )
-      .subscribe();
+    // Subscribe to shared state updates
+    subscribers.add(setTemplates);
+    loadingSubscribers.add(setLoading);
+    
+    // Initialize channel
+    initializeChannel();
+    
+    // Fetch on first mount if not loaded yet
+    if (sharedTemplates.length === 0 && sharedLoading) {
+      fetchTemplates();
+    } else {
+      // Sync with current shared state
+      setTemplates(sharedTemplates);
+      setLoading(sharedLoading);
+    }
 
     return () => {
-      supabase.removeChannel(channel);
+      subscribers.delete(setTemplates);
+      loadingSubscribers.delete(setLoading);
     };
-  }, []);
+  }, [fetchTemplates]);
 
   const updateTemplate = async (id: string, updates: Partial<EmailTemplate>) => {
     const { error } = await supabase
