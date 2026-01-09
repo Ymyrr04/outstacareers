@@ -360,6 +360,7 @@ export type Database = {
           delay_hours: number | null
           id: string
           is_enabled: boolean
+          name: string | null
           status_trigger: string
           subject: string
           template_order: number | null
@@ -371,6 +372,7 @@ export type Database = {
           delay_hours?: number | null
           id?: string
           is_enabled?: boolean
+          name?: string | null
           status_trigger: string
           subject: string
           template_order?: number | null
@@ -382,6 +384,7 @@ export type Database = {
           delay_hours?: number | null
           id?: string
           is_enabled?: boolean
+          name?: string | null
           status_trigger?: string
           subject?: string
           template_order?: number | null

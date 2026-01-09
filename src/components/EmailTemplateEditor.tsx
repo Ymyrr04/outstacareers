@@ -95,6 +95,7 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
   const { templates, loading, updateTemplate, createTemplate, deleteTemplate } = useEmailTemplates();
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [editForm, setEditForm] = useState({
+    name: '',
     subject: '',
     body_text: '',
     is_enabled: true,
@@ -134,6 +135,7 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
     // delay_hours now stores minutes
     const { value, unit } = minutesToDisplayValue(template.delay_hours);
     setEditForm({
+      name: template.name || '',
       subject: template.subject,
       body_text: htmlToPlainText(template.body_html),
       is_enabled: template.is_enabled,
@@ -150,6 +152,7 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
     // Convert to minutes for storage
     const delayInMinutes = displayValueToMinutes(editForm.delay_hours, editForm.delay_unit);
     const success = await updateTemplate(selectedTemplate.id, {
+      name: editForm.name,
       subject: editForm.subject,
       body_html: plainTextToHtml(editForm.body_text),
       is_enabled: editForm.is_enabled,
@@ -158,6 +161,7 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
     if (success) {
       setSelectedTemplate({ 
         ...selectedTemplate,
+        name: editForm.name,
         subject: editForm.subject,
         body_html: plainTextToHtml(editForm.body_text),
         is_enabled: editForm.is_enabled,
@@ -175,7 +179,8 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
     const templateKey = `custom_${newTemplateTrigger}_${Date.now()}`;
     const success = await createTemplate({
       status_trigger: templateKey,
-      subject: `${newTemplateName}`,
+      name: newTemplateName,
+      subject: newTemplateName, // Default subject to the name, can be changed later
       body_html: 'Hi {{first_name}},<br><br>Your message here.<br><br>Best regards,<br>The Recruitment Team',
     });
     if (success) {
@@ -234,11 +239,12 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
     { key: '{{meeting_link}}', desc: 'Meeting URL' },
   ];
 
-  // Get display name for template (use subject for custom templates, or mapped name for pipeline triggers)
+  // Get display name for template - now uses the name column
   const getTemplateName = (template: EmailTemplate) => {
-    if (template.status_trigger.startsWith('custom_')) {
-      return template.subject;
+    if (template.name) {
+      return template.name;
     }
+    // Fallback for templates without a name
     return triggerToStatus[template.status_trigger] || template.status_trigger;
   };
 
@@ -401,27 +407,31 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
                       </div>
                     )}
 
-                    {/* Subject / Template Name */}
+                    {/* Template Name */}
                     <div className="space-y-1.5">
-                      <Label className="text-sm font-medium">
-                        {selectedTemplate?.status_trigger.startsWith('custom_') 
-                          ? 'Template Name / Email Subject' 
-                          : 'Subject'}
-                      </Label>
+                      <Label className="text-sm font-medium">Template Name</Label>
                       <Input
-                        value={editForm.subject}
-                        onChange={(e) => setEditForm(prev => ({ ...prev, subject: e.target.value }))}
-                        placeholder={selectedTemplate?.status_trigger.startsWith('custom_') 
-                          ? "Template name (also used as email subject)..."
-                          : "Email subject..."}
+                        value={editForm.name}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, name: e.target.value }))}
+                        placeholder="Template name..."
                         disabled={previewMode}
                         className="h-9"
                       />
-                      {selectedTemplate?.status_trigger.startsWith('custom_') && (
-                        <p className="text-xs text-muted-foreground">
-                          This is displayed in the template list and used as the email subject line.
-                        </p>
-                      )}
+                      <p className="text-xs text-muted-foreground">
+                        This name is displayed in the template list.
+                      </p>
+                    </div>
+
+                    {/* Email Subject */}
+                    <div className="space-y-1.5">
+                      <Label className="text-sm font-medium">Email Subject</Label>
+                      <Input
+                        value={editForm.subject}
+                        onChange={(e) => setEditForm(prev => ({ ...prev, subject: e.target.value }))}
+                        placeholder="Email subject line..."
+                        disabled={previewMode}
+                        className="h-9"
+                      />
                     </div>
 
                     {/* Body */}
