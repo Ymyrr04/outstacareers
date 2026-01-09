@@ -18,14 +18,19 @@ import { useToast } from '@/hooks/use-toast';
 import { Pencil, Plus, X } from 'lucide-react';
 import JobInterviewQuestionsManager from '@/components/JobInterviewQuestionsManager';
 
+interface AdminUser {
+  user_id: string;
+  email: string;
+}
+
 const jobSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   rate: z.string().max(100).optional(),
-  apply_url: z.string().url('Must be a valid URL'),
   description: z.string().max(2000).optional(),
   region: z.enum(['all', 'philippines', 'latin-america']),
   qualifications: z.array(z.string().max(200)).max(10).optional(),
   responsibilities: z.array(z.string().max(200)).max(10).optional(),
+  assigned_admin_id: z.string().uuid().optional().nullable(),
 });
 
 interface Job {
@@ -39,6 +44,7 @@ interface Job {
   is_active: boolean;
   qualifications?: string[] | null;
   responsibilities?: string[] | null;
+  assigned_admin_id?: string | null;
 }
 
 interface EditJobDialogProps {
@@ -93,10 +99,10 @@ const formatPhpMonthlyRange = (min: number, max: number): string => {
 const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
   const [open, setOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [formData, setFormData] = useState({
     title: job.title,
     rate: job.rate || '',
-    apply_url: job.apply_url,
     description: job.description || '',
     region: (job.region || 'all') as 'all' | 'philippines' | 'latin-america',
     qualifications: (job.qualifications && job.qualifications.length > 0) 
@@ -105,9 +111,36 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
     responsibilities: (job.responsibilities && job.responsibilities.length > 0)
       ? job.responsibilities
       : ['', '', '', '', ''] as string[],
+    assigned_admin_id: job.assigned_admin_id || '',
   });
   const [convertedRate, setConvertedRate] = useState<string | null>(null);
   const { toast } = useToast();
+
+  // Fetch admin users
+  useEffect(() => {
+    const fetchAdminUsers = async () => {
+      try {
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token;
+        
+        if (!token) return;
+        
+        const response = await supabase.functions.invoke('get-admin-users', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        if (response.data?.adminUsers) {
+          setAdminUsers(response.data.adminUsers);
+        }
+      } catch (err) {
+        console.error('Error fetching admin users:', err);
+      }
+    };
+    
+    if (open) {
+      fetchAdminUsers();
+    }
+  }, [open]);
 
   const updateQualification = (index: number, value: string) => {
     const newQualifications = [...formData.qualifications];
@@ -167,7 +200,6 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
       setFormData({
         title: job.title,
         rate: job.rate || '',
-        apply_url: job.apply_url,
         description: job.description || '',
         region: (job.region || 'all') as 'all' | 'philippines' | 'latin-america',
         qualifications: (job.qualifications && job.qualifications.length > 0) 
@@ -176,6 +208,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
         responsibilities: (job.responsibilities && job.responsibilities.length > 0)
           ? job.responsibilities
           : ['', '', '', '', ''],
+        assigned_admin_id: job.assigned_admin_id || '',
       });
       setConvertedRate(null);
     }
@@ -230,11 +263,11 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
       .update({
         title: formData.title,
         rate: finalRate,
-        apply_url: formData.apply_url,
         description: formData.description || null,
         region: formData.region,
         qualifications: filteredQualifications.length > 0 ? filteredQualifications : null,
         responsibilities: filteredResponsibilities.length > 0 ? filteredResponsibilities : null,
+        assigned_admin_id: formData.assigned_admin_id || null,
       })
       .eq('id', job.id);
 
@@ -307,18 +340,6 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="edit-apply_url">Apply URL *</Label>
-            <Input
-              id="edit-apply_url"
-              type="url"
-              value={formData.apply_url}
-              onChange={(e) => setFormData({ ...formData, apply_url: e.target.value })}
-              placeholder="https://..."
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
             <Label htmlFor="edit-region">Region</Label>
             <Select
               value={formData.region}
@@ -335,6 +356,31 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
                 <SelectItem value="latin-america">Latin America</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="edit-assigned_admin">Assigned Admin</Label>
+            <Select
+              value={formData.assigned_admin_id}
+              onValueChange={(value) => 
+                setFormData({ ...formData, assigned_admin_id: value })
+              }
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select admin responsible" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="">No assignment</SelectItem>
+                {adminUsers.map((admin) => (
+                  <SelectItem key={admin.user_id} value={admin.user_id}>
+                    {admin.email}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Admin responsible for managing this role
+            </p>
           </div>
 
           <div className="space-y-2">

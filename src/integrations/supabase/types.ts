@@ -608,7 +608,8 @@ export type Database = {
       }
       jobs: {
         Row: {
-          apply_url: string
+          apply_url: string | null
+          assigned_admin_id: string | null
           created_at: string
           department: string | null
           description: string | null
@@ -622,7 +623,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
-          apply_url: string
+          apply_url?: string | null
+          assigned_admin_id?: string | null
           created_at?: string
           department?: string | null
           description?: string | null
@@ -636,7 +638,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
-          apply_url?: string
+          apply_url?: string | null
+          assigned_admin_id?: string | null
           created_at?: string
           department?: string | null
           description?: string | null
