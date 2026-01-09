@@ -534,13 +534,19 @@ const Admin = () => {
       if (trigger) {
         const template = getTemplateByTrigger(trigger);
         if (template && template.is_enabled) {
-          // Process template variables
+          // Process template variables - extract first name from full name
+          const firstName = applicant.full_name.split(' ')[0];
+          
           let processedSubject = template.subject
             .replace(/\{\{applicant_name\}\}/g, applicant.full_name)
+            .replace(/\{\{first_name\}\}/g, firstName)
+            .replace(/\{\{full_name\}\}/g, applicant.full_name)
             .replace(/\{\{job_title\}\}/g, applicant.job_title);
           
           let processedBody = template.body_html
             .replace(/\{\{applicant_name\}\}/g, applicant.full_name)
+            .replace(/\{\{first_name\}\}/g, firstName)
+            .replace(/\{\{full_name\}\}/g, applicant.full_name)
             .replace(/\{\{job_title\}\}/g, applicant.job_title);
 
           // Calculate schedule time for delayed emails (like rejection)
