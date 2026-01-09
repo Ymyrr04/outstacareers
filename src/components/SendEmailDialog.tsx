@@ -86,13 +86,14 @@ export function SendEmailDialog({
   preselectedTemplate,
   onEmailSent
 }: SendEmailDialogProps) {
-  const { templates, getTemplateByTrigger } = useEmailTemplates();
+  const { templates, loading: templatesLoading, fetchTemplates, getTemplateByTrigger } = useEmailTemplates();
   const { toast } = useToast();
   
   const [selectedTrigger, setSelectedTrigger] = useState('');
   const [subject, setSubject] = useState('');
   const [bodyText, setBodyText] = useState('');
   const [sending, setSending] = useState(false);
+  const [templateError, setTemplateError] = useState(false);
   
   // Interview fields
   const [interviewDate, setInterviewDate] = useState<Date>();
@@ -100,9 +101,19 @@ export function SendEmailDialog({
   const [timezone, setTimezone] = useState('PST');
   const [meetingLink, setMeetingLink] = useState('');
 
-  // Reset form when dialog opens
+  // Fetch fresh templates when dialog opens
   useEffect(() => {
     if (open) {
+      setTemplateError(false);
+      fetchTemplates().catch(() => {
+        setTemplateError(true);
+      });
+    }
+  }, [open, fetchTemplates]);
+
+  // Reset form when dialog opens or templates update
+  useEffect(() => {
+    if (open && !templatesLoading) {
       setSelectedTrigger(preselectedTemplate || '');
       setSubject('');
       setBodyText('');
@@ -110,11 +121,12 @@ export function SendEmailDialog({
       setInterviewTime('');
       setMeetingLink('');
       
-      if (preselectedTemplate) {
-        handleSelectTemplate(preselectedTemplate);
+      if (preselectedTemplate && templates.length > 0) {
+        // Use setTimeout to ensure templates are loaded
+        setTimeout(() => handleSelectTemplate(preselectedTemplate), 0);
       }
     }
-  }, [open, preselectedTemplate]);
+  }, [open, preselectedTemplate, templatesLoading]);
 
   const getFirstName = (fullName: string) => {
     return fullName.split(' ')[0];
@@ -255,26 +267,36 @@ export function SendEmailDialog({
           {/* Template */}
           <div className="space-y-1.5">
             <Label className="text-sm">Template</Label>
-            <Select value={selectedTrigger} onValueChange={handleSelectTemplate}>
-              <SelectTrigger className="h-9">
-                <SelectValue placeholder="Select a template..." />
-              </SelectTrigger>
-              <SelectContent>
-                {templates.map((t) => {
-                  // Use the name column if available, otherwise fallback
-                  const displayName = t.name 
-                    || triggerToStatus[t.status_trigger] 
-                    || t.status_trigger;
-                  
-                  return (
-                    <SelectItem key={t.id} value={t.status_trigger}>
-                      {displayName}
-                      {!t.is_enabled && ' (disabled)'}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
+            {templateError ? (
+              <div className="flex items-center gap-2 p-2 text-sm text-amber-700 bg-amber-50 dark:bg-amber-950/30 dark:text-amber-300 rounded-md border border-amber-200 dark:border-amber-800">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span>Unable to load templates. You can still compose manually.</span>
+              </div>
+            ) : (
+              <Select value={selectedTrigger} onValueChange={handleSelectTemplate} disabled={templatesLoading}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder={templatesLoading ? "Loading templates..." : "Select a template..."} />
+                </SelectTrigger>
+                <SelectContent>
+                  {templates.length === 0 && !templatesLoading ? (
+                    <div className="px-2 py-1.5 text-sm text-muted-foreground">No templates available</div>
+                  ) : (
+                    templates.map((t) => {
+                      const displayName = t.name 
+                        || triggerToStatus[t.status_trigger] 
+                        || t.status_trigger;
+                      
+                      return (
+                        <SelectItem key={t.id} value={t.status_trigger}>
+                          {displayName}
+                          {!t.is_enabled && ' (disabled)'}
+                        </SelectItem>
+                      );
+                    })
+                  )}
+                </SelectContent>
+              </Select>
+            )}
           </div>
 
           {/* Subject */}
