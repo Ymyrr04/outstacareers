@@ -39,12 +39,13 @@ const timeSlots = [
 
 const timezones = ["PST", "MST", "CST", "EST", "UTC", "GMT", "CET", "IST", "JST", "AEST"];
 
-// Convert HTML to plain text
+// Convert HTML to plain text (preserving markdown-style links)
 const htmlToPlainText = (html: string): string => {
   let text = html.replace(/<br\s*\/?>/gi, '\n');
   text = text.replace(/<\/p>/gi, '\n\n');
   text = text.replace(/<\/div>/gi, '\n');
-  text = text.replace(/<a[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>/gi, '$2 ($1)');
+  // Convert HTML links to markdown-style links [text](url)
+  text = text.replace(/<a[^>]*href="([^"]*)"[^>]*>([^<]*)<\/a>/gi, '[$2]($1)');
   text = text.replace(/<[^>]+>/g, '');
   text = text.replace(/&nbsp;/g, ' ');
   text = text.replace(/&amp;/g, '&');
@@ -61,10 +62,19 @@ const plainTextToHtml = (text: string): string => {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+  
+  // Convert markdown-style links [text](url) to HTML links
   html = html.replace(
-    /\b(https?:\/\/[^\s<>]+)/gi,
+    /\[([^\]]+)\]\(([^)]+)\)/g,
+    '<a href="$2" style="color: #0066cc;">$1</a>'
+  );
+  
+  // Convert bare URLs to links (but not ones already in markdown format or already converted)
+  html = html.replace(
+    /(?<!href="|>)\b(https?:\/\/[^\s<>]+)(?![^<]*<\/a>)/gi,
     '<a href="$1" style="color: #0066cc;">$1</a>'
   );
+  
   html = html.replace(/\n/g, '<br>');
   return html;
 };
