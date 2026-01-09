@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 export interface EmailTemplate {
   id: string;
   status_trigger: string;
+  name: string | null;
   subject: string;
   body_html: string;
   is_enabled: boolean;
@@ -116,11 +117,12 @@ export function useEmailTemplates() {
     return true;
   };
 
-  const createTemplate = async (template: { status_trigger: string; subject: string; body_html: string }) => {
+  const createTemplate = async (template: { status_trigger: string; name: string; subject: string; body_html: string }) => {
     const { error } = await supabase
       .from('email_templates')
       .insert({
         status_trigger: template.status_trigger,
+        name: template.name,
         subject: template.subject,
         body_html: template.body_html,
         is_enabled: true,

@@ -251,11 +251,10 @@ export function SendEmailDialog({
               </SelectTrigger>
               <SelectContent>
                 {templates.map((t) => {
-                  // For custom templates, show the subject as the display name
-                  const isCustom = t.status_trigger.startsWith('custom_');
-                  const displayName = isCustom 
-                    ? t.subject 
-                    : (triggerToStatus[t.status_trigger] || t.status_trigger);
+                  // Use the name column if available, otherwise fallback
+                  const displayName = t.name 
+                    || triggerToStatus[t.status_trigger] 
+                    || t.status_trigger;
                   
                   return (
                     <SelectItem key={t.id} value={t.status_trigger}>
