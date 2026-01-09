@@ -365,16 +365,16 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
           <div className="space-y-2">
             <Label htmlFor="assigned_admin">Assigned Admin (optional)</Label>
             <Select
-              value={formData.assigned_admin_id}
+              value={formData.assigned_admin_id || "__none__"}
               onValueChange={(value) => 
-                setFormData({ ...formData, assigned_admin_id: value })
+                setFormData({ ...formData, assigned_admin_id: value === "__none__" ? "" : value })
               }
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select admin responsible" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">No assignment</SelectItem>
+                <SelectItem value="__none__">No assignment</SelectItem>
                 {adminUsers.map((admin) => (
                   <SelectItem key={admin.user_id} value={admin.user_id}>
                     {admin.email}
