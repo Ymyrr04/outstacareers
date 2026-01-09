@@ -72,6 +72,7 @@ interface Job {
   created_at: string;
   qualifications: string[] | null;
   responsibilities: string[] | null;
+  assigned_admin_id: string | null;
 }
 
 interface ToolMatch {
@@ -168,6 +169,7 @@ const Admin = () => {
   const { toast } = useToast();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [jobsLoading, setJobsLoading] = useState(true);
+  const [adminUsersMap, setAdminUsersMap] = useState<Record<string, string>>({});
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [applicantsLoading, setApplicantsLoading] = useState(true);
   const [expandedApplicant, setExpandedApplicant] = useState<string | null>(null);
@@ -329,6 +331,29 @@ const Admin = () => {
     }
   };
 
+  const fetchAdminUsers = async () => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      
+      if (!token) return;
+      
+      const response = await supabase.functions.invoke('get-admin-users', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data?.adminUsers) {
+        const map: Record<string, string> = {};
+        response.data.adminUsers.forEach((admin: { user_id: string; email: string }) => {
+          map[admin.user_id] = admin.email;
+        });
+        setAdminUsersMap(map);
+      }
+    } catch (err) {
+      console.error('Error fetching admin users:', err);
+    }
+  };
+
   const fetchJobs = async () => {
     setJobsLoading(true);
     const { data, error } = await supabase
@@ -418,6 +443,7 @@ const Admin = () => {
     if (user && isAdmin) {
       fetchJobs();
       fetchApplicants();
+      fetchAdminUsers();
     }
   }, [user, isAdmin]);
 
@@ -756,6 +782,12 @@ const Admin = () => {
                             <h3 className="font-semibold">{job.title}</h3>
                             {!job.is_active && (
                               <Badge variant="secondary">Inactive</Badge>
+                            )}
+                            {job.assigned_admin_id && adminUsersMap[job.assigned_admin_id] && (
+                              <Badge variant="outline" className="text-xs">
+                                <UserCog className="w-3 h-3 mr-1" />
+                                {adminUsersMap[job.assigned_admin_id]}
+                              </Badge>
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground">
