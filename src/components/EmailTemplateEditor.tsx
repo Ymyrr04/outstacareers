@@ -401,16 +401,27 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
                       </div>
                     )}
 
-                    {/* Subject */}
+                    {/* Subject / Template Name */}
                     <div className="space-y-1.5">
-                      <Label className="text-sm font-medium">Subject</Label>
+                      <Label className="text-sm font-medium">
+                        {selectedTemplate?.status_trigger.startsWith('custom_') 
+                          ? 'Template Name / Email Subject' 
+                          : 'Subject'}
+                      </Label>
                       <Input
                         value={editForm.subject}
                         onChange={(e) => setEditForm(prev => ({ ...prev, subject: e.target.value }))}
-                        placeholder="Email subject..."
+                        placeholder={selectedTemplate?.status_trigger.startsWith('custom_') 
+                          ? "Template name (also used as email subject)..."
+                          : "Email subject..."}
                         disabled={previewMode}
                         className="h-9"
                       />
+                      {selectedTemplate?.status_trigger.startsWith('custom_') && (
+                        <p className="text-xs text-muted-foreground">
+                          This is displayed in the template list and used as the email subject line.
+                        </p>
+                      )}
                     </div>
 
                     {/* Body */}
