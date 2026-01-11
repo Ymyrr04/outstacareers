@@ -28,8 +28,18 @@ const sourceLabels: Record<string, string> = {
 export function ApplicantSourceBadge({ source }: ApplicantSourceBadgeProps) {
   if (!source) return null;
 
-  const colorClass = sourceColors[source] || sourceColors.other;
-  const label = sourceLabels[source] || source;
+  // Check if source is a custom "Other" value (format: "Other: custom text")
+  const isCustomOther = source.startsWith('Other:');
+  const normalizedSource = source.toLowerCase().replace(/[.\s]/g, '_');
+  
+  const colorClass = isCustomOther 
+    ? sourceColors.other 
+    : (sourceColors[normalizedSource] || sourceColors.other);
+  
+  // For custom other sources, show the custom text; otherwise use label mapping
+  const label = isCustomOther 
+    ? source.replace('Other: ', '')
+    : (sourceLabels[normalizedSource] || source);
 
   return (
     <Badge variant="outline" className={`${colorClass} border-0`}>
