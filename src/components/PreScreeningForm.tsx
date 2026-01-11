@@ -59,6 +59,7 @@ type FormData = {
   location: string;
   honeypot_field: string;
   job_source: string;
+  job_source_other: string;
 };
 
 const JOB_SOURCE_OPTIONS = [
@@ -110,6 +111,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
     location: "",
     honeypot_field: "",
     job_source: "",
+    job_source_other: "",
   });
 
   const handleTextChange = (field: keyof FormData, value: string) => {
@@ -325,7 +327,9 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
           cv_text: cvText,
           vocaroo_link: null,
           voice_recording_url: null,
-          job_source: formData.job_source,
+          job_source: formData.job_source === "Other" && formData.job_source_other.trim() 
+            ? `Other: ${formData.job_source_other.trim()}` 
+            : formData.job_source,
         },
       });
 
@@ -682,7 +686,12 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
                   <Label htmlFor="job_source">Where did you learn about this job opportunity? *</Label>
                   <Select
                     value={formData.job_source}
-                    onValueChange={(value) => handleTextChange("job_source", value)}
+                    onValueChange={(value) => {
+                      handleTextChange("job_source", value);
+                      if (value !== "Other") {
+                        handleTextChange("job_source_other", "");
+                      }
+                    }}
                   >
                     <SelectTrigger className={errors.job_source ? "border-destructive" : ""}>
                       <SelectValue placeholder="Select an option" />
@@ -696,6 +705,19 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
                     </SelectContent>
                   </Select>
                   {errors.job_source && <p className="text-sm text-destructive">{errors.job_source}</p>}
+                  
+                  {formData.job_source === "Other" && (
+                    <div className="mt-2">
+                      <Input
+                        id="job_source_other"
+                        value={formData.job_source_other}
+                        onChange={(e) => handleTextChange("job_source_other", e.target.value)}
+                        placeholder="Please specify where you found this job"
+                        className={errors.job_source_other ? "border-destructive" : ""}
+                      />
+                      {errors.job_source_other && <p className="text-sm text-destructive">{errors.job_source_other}</p>}
+                    </div>
+                  )}
                 </div>
 
                 <div 
