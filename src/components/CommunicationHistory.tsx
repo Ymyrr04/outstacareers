@@ -11,6 +11,7 @@ import { useEmailLogs, useScheduledEmails, useEmailReplies, EmailLog, EmailReply
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow, format } from 'date-fns';
+import { sanitizeHtml } from '@/lib/sanitize';
 import { 
   Mail, Clock, CheckCircle, XCircle, AlertTriangle, 
   Loader2, Send, Ban, ChevronDown, ChevronUp,
@@ -429,7 +430,7 @@ export function CommunicationHistory({
                                   <div className="prose prose-sm max-w-none dark:prose-invert break-words overflow-hidden">
                                     {reply.body_html ? (
                                       <div 
-                                        dangerouslySetInnerHTML={{ __html: reply.body_html }} 
+                                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(reply.body_html) }} 
                                         className="break-words overflow-hidden [&>*]:max-w-full [&_a]:break-all"
                                       />
                                     ) : (
@@ -518,7 +519,7 @@ export function CommunicationHistory({
                                 </div>
                                 <div className="prose prose-sm max-w-none dark:prose-invert break-words overflow-hidden">
                                   <div 
-                                    dangerouslySetInnerHTML={{ __html: thread.sentEmail.body_html }} 
+                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(thread.sentEmail.body_html) }} 
                                     className="break-words overflow-hidden [&>*]:max-w-full [&_a]:break-all"
                                   />
                                 </div>
@@ -571,7 +572,7 @@ export function CommunicationHistory({
                                         <div className="prose prose-sm max-w-none dark:prose-invert break-words overflow-hidden">
                                           {reply.body_html ? (
                                             <div 
-                                              dangerouslySetInnerHTML={{ __html: reply.body_html }} 
+                                              dangerouslySetInnerHTML={{ __html: sanitizeHtml(reply.body_html) }} 
                                               className="break-words overflow-hidden [&>*]:max-w-full [&_a]:break-all"
                                             />
                                           ) : (
