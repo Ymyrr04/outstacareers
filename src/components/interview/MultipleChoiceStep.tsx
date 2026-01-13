@@ -47,11 +47,11 @@ export function MultipleChoiceStep({
           <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
             {questionNumber}
           </div>
-          <div className="flex-1">
-            <p className="text-foreground font-medium text-lg leading-relaxed">
+          <div className="flex-1 select-none" onCopy={(e) => e.preventDefault()}>
+            <p className="text-foreground font-medium text-lg leading-relaxed pointer-events-none">
               {question.question_text}
             </p>
-            <p className="text-xs text-muted-foreground mt-2 italic">
+            <p className="text-xs text-muted-foreground mt-2 italic pointer-events-none">
               Assessing: {question.question_context}
             </p>
           </div>
