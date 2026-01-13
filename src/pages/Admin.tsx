@@ -208,6 +208,10 @@ const Admin = () => {
   
   // Reprofiling state
   const [reprofilingApplicant, setReprofilingApplicant] = useState<Applicant | null>(null);
+  
+  // Drag and drop state
+  const [draggedApplicant, setDraggedApplicant] = useState<Applicant | null>(null);
+  const [dragOverFolder, setDragOverFolder] = useState<ApplicantStatusFolder | null>(null);
 
   // Compute unique skills and tools from all applicants
   const { allSkills, allTools } = useMemo(() => {
@@ -1000,9 +1004,36 @@ const Admin = () => {
                     <TabsList className="flex-wrap h-auto gap-1">
                       {APPLICANT_STATUS_FOLDERS.map((status) => {
                         const count = applicants.filter(a => a.status === status).length;
+                        const isDragOver = dragOverFolder === status;
                         return (
-                          <TabsTrigger key={status} value={status} className="flex items-center gap-2">
-                            <FolderOpen className="w-4 h-4" />
+                          <TabsTrigger 
+                            key={status} 
+                            value={status} 
+                            className={`flex items-center gap-2 transition-all ${
+                              isDragOver ? 'ring-2 ring-primary ring-offset-2 bg-primary/10 scale-105' : ''
+                            }`}
+                            onDragOver={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              if (draggedApplicant && draggedApplicant.status !== status) {
+                                setDragOverFolder(status);
+                              }
+                            }}
+                            onDragLeave={(e) => {
+                              e.preventDefault();
+                              setDragOverFolder(null);
+                            }}
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setDragOverFolder(null);
+                              if (draggedApplicant && draggedApplicant.status !== status) {
+                                handleUpdateApplicantStatus(draggedApplicant.id, status);
+                                setDraggedApplicant(null);
+                              }
+                            }}
+                          >
+                            <FolderOpen className={`w-4 h-4 ${isDragOver ? 'text-primary' : ''}`} />
                             {status}
                             {/* Only show count badge on "For Review" folder */}
                             {status === 'For Review' && count > 0 && (
@@ -1063,10 +1094,23 @@ const Admin = () => {
                                 <div className="grid gap-4">
                 {jobApplicants.map((applicant) => {
                   const isUnreviewed = applicant.status === 'For Review';
+                  const isDragging = draggedApplicant?.id === applicant.id;
                   return (
                   <Card 
                     key={applicant.id}
-                    className={isUnreviewed ? 'border-l-4 border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20' : ''}
+                    draggable
+                    onDragStart={(e) => {
+                      setDraggedApplicant(applicant);
+                      e.dataTransfer.effectAllowed = 'move';
+                      e.dataTransfer.setData('text/plain', applicant.id);
+                    }}
+                    onDragEnd={() => {
+                      setDraggedApplicant(null);
+                      setDragOverFolder(null);
+                    }}
+                    className={`cursor-grab active:cursor-grabbing transition-all ${
+                      isUnreviewed ? 'border-l-4 border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20' : ''
+                    } ${isDragging ? 'opacity-50 scale-95 ring-2 ring-primary' : 'hover:shadow-md'}`}
                   >
                     <CardContent className="py-4">
                       <div className="flex items-start justify-between gap-4">
