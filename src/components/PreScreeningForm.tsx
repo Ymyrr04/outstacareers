@@ -384,6 +384,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
         toast({
           title: "Application Submitted",
           description: "Your application has been received and will be manually reviewed by our recruitment team.",
+          className: "bg-primary text-primary-foreground border-primary",
         });
         // Still close the form since application was submitted
         setIsSuccess(true);
