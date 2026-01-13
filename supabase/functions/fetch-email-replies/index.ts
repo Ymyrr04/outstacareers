@@ -118,6 +118,35 @@ class SimpleIMAPClient {
     return uids;
   }
 
+  // Decode MIME encoded words (RFC 2047)
+  decodeMimeWord(text: string): string {
+    if (!text) return text;
+    
+    // Match =?charset?encoding?encoded_text?= patterns
+    const mimePattern = /=\?([^?]+)\?([BQbq])\?([^?]*)\?=/g;
+    
+    return text.replace(mimePattern, (match, charset, encoding, encodedText) => {
+      try {
+        if (encoding.toUpperCase() === 'Q') {
+          // Quoted-Printable decoding
+          let decoded = encodedText
+            .replace(/_/g, ' ') // Underscores are spaces in Q encoding
+            .replace(/=([0-9A-Fa-f]{2})/g, (_: string, hex: string) => 
+              String.fromCharCode(parseInt(hex, 16))
+            );
+          return decoded;
+        } else if (encoding.toUpperCase() === 'B') {
+          // Base64 decoding
+          const decoded = atob(encodedText);
+          return decoded;
+        }
+      } catch (e) {
+        console.log('MIME decode error:', e);
+      }
+      return match; // Return original if decode fails
+    });
+  }
+
   async fetchMessage(msgNum: number): Promise<{ subject: string; date: string; messageId: string; inReplyTo: string; body: string } | null> {
     const response = await this.sendCommand(`FETCH ${msgNum} (BODY[HEADER.FIELDS (SUBJECT DATE MESSAGE-ID IN-REPLY-TO REFERENCES)] BODY[TEXT])`);
     
@@ -130,7 +159,8 @@ class SimpleIMAPClient {
     
     for (const line of response) {
       if (line.includes("Subject:")) {
-        subject = line.replace(/Subject:\s*/i, "").trim();
+        const rawSubject = line.replace(/Subject:\s*/i, "").trim();
+        subject = this.decodeMimeWord(rawSubject);
       }
       if (line.includes("Date:")) {
         date = line.replace(/Date:\s*/i, "").trim();
