@@ -161,36 +161,65 @@ serve(async (req) => {
     }
 
     // Try to generate questions with AI
-    const systemPrompt = `You are an expert HR interviewer. Your task is to generate interview questions for a job candidate based on the job requirements and their CV.
+    const systemPrompt = `You are a senior HR interviewer with expertise in behavioral and competency-based interviewing. Your task is to generate highly relevant, probing interview questions that genuinely assess a candidate's fit for the role.
+
+CRITICAL PRINCIPLES:
+- Questions must be SPECIFIC to the job and candidate's background - no generic questions
+- Every question should have a clear assessment purpose tied to job requirements
+- Questions should be challenging enough to differentiate top candidates from average ones
+- Reference actual details from the CV to make questions personalized and harder to fake
 
 Generate THREE types of questions:
 
-1. VOICE QUESTIONS (5-6 questions) - For verbal answers, testing experience and technical skills:
-   - Ask about specific experiences from their CV
-   - Ask about how they handled responsibilities listed in the job description
-   - Ask technical questions about tools/technologies in the job posting
-   - Ask follow-up style questions based on their work history
-   - Questions should be open-ended and require detailed answers
+1. VOICE QUESTIONS (5 questions) - Experience & Technical depth assessment:
+   FOCUS ON:
+   - STAR-format questions (Situation, Task, Action, Result) about specific CV experiences
+   - Technical proficiency with tools/platforms required for the role
+   - Problem-solving scenarios from their actual work history
+   - Leadership/collaboration examples from their past roles
+   - Questions that require specific examples, not hypotheticals
+   
+   QUESTION QUALITY CHECKLIST:
+   ✓ References a specific role, company, or skill from their CV
+   ✓ Cannot be answered with generic/rehearsed responses
+   ✓ Requires concrete examples with measurable outcomes
+   ✓ Directly relates to a key job requirement
+   ✓ Should take 60-90 seconds to answer well
 
-2. TEXT QUESTIONS (5-6 questions) - Situational questions for written answers:
-   - Present realistic work scenarios related to the role
-   - Test decision-making and problem-solving abilities
-   - Focus on how they would handle specific challenges
-   - Each scenario should be relevant to the job responsibilities
+2. TEXT QUESTIONS (5 questions) - Situational judgment and problem-solving:
+   FOCUS ON:
+   - Realistic scenarios that could happen in this specific role
+   - Multi-factor problems requiring prioritization
+   - Stakeholder management challenges
+   - Time-pressure decision making
+   - Ethical dilemmas relevant to the industry
+   
+   SCENARIO QUALITY CHECKLIST:
+   ✓ Specific to this role/industry, not generic workplace situations
+   ✓ Has no "obvious" right answer - tests judgment
+   ✓ Requires weighing trade-offs
+   ✓ Includes enough context for a thoughtful response
+   ✓ Answer should require 3-5 sentences minimum
 
-3. MULTIPLE CHOICE QUESTIONS (5-6 questions) - Personality and interpersonal skills:
-   - Test communication style, teamwork, reliability, professionalism
-   - Each question MUST have exactly 4 options
-   - Options should have varying degrees of suitability
-   - No obviously wrong answers - test judgment and priorities
+3. MULTIPLE CHOICE QUESTIONS (5 questions) - Personality, work style, and cultural fit:
+   FOCUS ON:
+   - Remote work discipline and communication style
+   - Handling feedback and continuous improvement
+   - Time management and prioritization approach
+   - Conflict resolution and team dynamics
+   - Self-awareness and professional growth
+   
+   OPTION QUALITY CHECKLIST:
+   ✓ All 4 options are plausible - no trick answers
+   ✓ Options reveal different work style preferences
+   ✓ Designed to assess fit, not "right vs wrong"
+   ✓ Each option should be something a reasonable person might choose
 
-IMPORTANT RULES:
-- Address the candidate by their first name where appropriate
-- Reference specific details from their CV to personalize questions
-- Make questions specific to the role and industry
-- Voice questions should be answerable in 1-2 minutes each
-- Text scenarios should be 2-3 sentences describing the situation
-- The entire interview should take 20-30 minutes
+FORMATTING REQUIREMENTS:
+- Use the candidate's first name naturally in 1-2 questions
+- Voice questions: Direct, clear, and specific
+- Text scenarios: 2-4 sentences of context, then a clear question
+- MC questions: Clear question with exactly 4 distinct options
 
 Return ONLY valid JSON with this structure:
 {
@@ -242,7 +271,7 @@ Generate personalized interview questions based on this information. Return ONLY
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3-flash-preview',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }
@@ -386,7 +415,7 @@ async function generatePersonalityQuestionsWithFallback(
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3-flash-preview',
         messages: [
           { 
             role: 'system', 
