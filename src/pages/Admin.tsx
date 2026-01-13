@@ -206,6 +206,11 @@ const Admin = () => {
   const [activeApplicantTab, setActiveApplicantTab] = useState<'folders' | 'search'>('folders');
   const [searchFilteredApplicants, setSearchFilteredApplicants] = useState<Applicant[]>([]);
   
+  // Jobs filter state
+  const [jobSearchTerm, setJobSearchTerm] = useState('');
+  const [jobRegionFilter, setJobRegionFilter] = useState<string>('all');
+  const [jobAdminFilter, setJobAdminFilter] = useState<string>('all');
+  
   // Reprofiling state
   const [reprofilingApplicant, setReprofilingApplicant] = useState<Applicant | null>(null);
   
@@ -774,6 +779,55 @@ const Admin = () => {
               <AddJobDialog onJobAdded={fetchJobs} />
             </div>
 
+            {/* Jobs Search and Filters */}
+            <div className="flex flex-wrap items-center gap-3">
+              <div className="relative flex-1 min-w-[200px] max-w-sm">
+                <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search jobs..."
+                  value={jobSearchTerm}
+                  onChange={(e) => setJobSearchTerm(e.target.value)}
+                  className="pl-9"
+                />
+              </div>
+              <Select value={jobRegionFilter} onValueChange={setJobRegionFilter}>
+                <SelectTrigger className="w-[150px]">
+                  <SelectValue placeholder="Region" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Regions</SelectItem>
+                  <SelectItem value="philippines">Philippines</SelectItem>
+                  <SelectItem value="latam">LATAM</SelectItem>
+                  <SelectItem value="global">Global</SelectItem>
+                </SelectContent>
+              </Select>
+              <Select value={jobAdminFilter} onValueChange={setJobAdminFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Assigned Admin" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Admins</SelectItem>
+                  <SelectItem value="unassigned">Unassigned</SelectItem>
+                  {Object.entries(adminUsersMap).map(([id, email]) => (
+                    <SelectItem key={id} value={id}>{email}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {(jobSearchTerm || jobRegionFilter !== 'all' || jobAdminFilter !== 'all') && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={() => {
+                    setJobSearchTerm('');
+                    setJobRegionFilter('all');
+                    setJobAdminFilter('all');
+                  }}
+                >
+                  Clear filters
+                </Button>
+              )}
+            </div>
+
             {jobsLoading ? (
               <p className="text-center py-12">Loading jobs...</p>
             ) : jobs.length === 0 ? (
@@ -784,7 +838,28 @@ const Admin = () => {
               </Card>
             ) : (
               <div className="grid gap-4">
-                {jobs.map((job) => (
+                {jobs
+                  .filter((job) => {
+                    // Search filter
+                    const searchLower = jobSearchTerm.toLowerCase();
+                    const matchesSearch = !jobSearchTerm || 
+                      job.title.toLowerCase().includes(searchLower) ||
+                      job.department?.toLowerCase().includes(searchLower) ||
+                      job.description?.toLowerCase().includes(searchLower);
+                    
+                    // Region filter
+                    const matchesRegion = jobRegionFilter === 'all' || 
+                      job.region === jobRegionFilter ||
+                      (jobRegionFilter === 'global' && job.region === 'all');
+                    
+                    // Admin filter
+                    const matchesAdmin = jobAdminFilter === 'all' ||
+                      (jobAdminFilter === 'unassigned' && !job.assigned_admin_id) ||
+                      job.assigned_admin_id === jobAdminFilter;
+                    
+                    return matchesSearch && matchesRegion && matchesAdmin;
+                  })
+                  .map((job) => (
                   <Card key={job.id} className={!job.is_active ? 'opacity-60' : ''}>
                     <CardContent className="py-4">
                       <div className="flex items-start justify-between gap-4">
@@ -859,6 +934,26 @@ const Admin = () => {
                     </CardContent>
                   </Card>
                 ))}
+                {jobs.filter((job) => {
+                  const searchLower = jobSearchTerm.toLowerCase();
+                  const matchesSearch = !jobSearchTerm || 
+                    job.title.toLowerCase().includes(searchLower) ||
+                    job.department?.toLowerCase().includes(searchLower) ||
+                    job.description?.toLowerCase().includes(searchLower);
+                  const matchesRegion = jobRegionFilter === 'all' || 
+                    job.region === jobRegionFilter ||
+                    (jobRegionFilter === 'global' && job.region === 'all');
+                  const matchesAdmin = jobAdminFilter === 'all' ||
+                    (jobAdminFilter === 'unassigned' && !job.assigned_admin_id) ||
+                    job.assigned_admin_id === jobAdminFilter;
+                  return matchesSearch && matchesRegion && matchesAdmin;
+                }).length === 0 && jobs.length > 0 && (
+                  <Card>
+                    <CardContent className="py-8 text-center">
+                      <p className="text-muted-foreground">No jobs match your filters.</p>
+                    </CardContent>
+                  </Card>
+                )}
               </div>
             )}
           </TabsContent>
