@@ -107,6 +107,7 @@ export type Database = {
           us_timezone_ok: boolean
           vocaroo_link: string | null
           voice_recording_url: string | null
+          whatsapp: string | null
           years_of_experience: number | null
         }
         Insert: {
@@ -157,6 +158,7 @@ export type Database = {
           us_timezone_ok: boolean
           vocaroo_link?: string | null
           voice_recording_url?: string | null
+          whatsapp?: string | null
           years_of_experience?: number | null
         }
         Update: {
@@ -207,6 +209,7 @@ export type Database = {
           us_timezone_ok?: boolean
           vocaroo_link?: string | null
           voice_recording_url?: string | null
+          whatsapp?: string | null
           years_of_experience?: number | null
         }
         Relationships: [
