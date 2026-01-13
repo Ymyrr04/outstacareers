@@ -791,13 +791,13 @@ const Admin = () => {
                 />
               </div>
               <Select value={jobRegionFilter} onValueChange={setJobRegionFilter}>
-                <SelectTrigger className="w-[150px]">
+                <SelectTrigger className="w-[160px]">
                   <SelectValue placeholder="Region" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">All Regions</SelectItem>
                   <SelectItem value="philippines">Philippines</SelectItem>
-                  <SelectItem value="latam">LATAM</SelectItem>
+                  <SelectItem value="latin america">Latin America</SelectItem>
                   <SelectItem value="global">Global</SelectItem>
                 </SelectContent>
               </Select>
@@ -850,7 +850,8 @@ const Admin = () => {
                     // Region filter
                     const matchesRegion = jobRegionFilter === 'all' || 
                       job.region === jobRegionFilter ||
-                      (jobRegionFilter === 'global' && job.region === 'all');
+                      (jobRegionFilter === 'global' && job.region === 'all') ||
+                      (jobRegionFilter === 'latin america' && job.region === 'latin america');
                     
                     // Admin filter
                     const matchesAdmin = jobAdminFilter === 'all' ||
@@ -942,7 +943,8 @@ const Admin = () => {
                     job.description?.toLowerCase().includes(searchLower);
                   const matchesRegion = jobRegionFilter === 'all' || 
                     job.region === jobRegionFilter ||
-                    (jobRegionFilter === 'global' && job.region === 'all');
+                    (jobRegionFilter === 'global' && job.region === 'all') ||
+                    (jobRegionFilter === 'latin america' && job.region === 'latin america');
                   const matchesAdmin = jobAdminFilter === 'all' ||
                     (jobAdminFilter === 'unassigned' && !job.assigned_admin_id) ||
                     job.assigned_admin_id === jobAdminFilter;
