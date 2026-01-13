@@ -740,6 +740,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      applicant_exists: { Args: { _applicant_id: string }; Returns: boolean }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
