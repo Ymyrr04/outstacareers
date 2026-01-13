@@ -51,9 +51,6 @@ export function MultipleChoiceStep({
             <p className="text-foreground font-medium text-lg leading-relaxed pointer-events-none">
               {question.question_text}
             </p>
-            <p className="text-xs text-muted-foreground mt-2 italic pointer-events-none">
-              Assessing: {question.question_context}
-            </p>
           </div>
         </div>
       </div>
