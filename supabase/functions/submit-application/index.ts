@@ -241,6 +241,7 @@ async function notifyAssignedAdmin(
       },
     });
 
+    const applicantProfileUrl = `https://outstacareers.lovable.app/admin?applicant=${applicantId}`;
     const subject = `New Application: ${applicantName} applied for ${jobTitle}`;
     const bodyHtml = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
@@ -260,7 +261,9 @@ async function notifyAssignedAdmin(
             <td style="padding: 8px 0;">${applicantEmail}</td>
           </tr>
         </table>
-        <p>Please log in to the admin dashboard to review this application.</p>
+        <p style="margin: 20px 0;">
+          <a href="${applicantProfileUrl}" style="display: inline-block; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600;">View Applicant Profile</a>
+        </p>
         <p style="color: #888; font-size: 12px; margin-top: 30px;">This is an automated notification from Outsta Recruitment.</p>
       </div>
     `;
