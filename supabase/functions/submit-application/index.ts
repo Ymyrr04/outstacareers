@@ -401,6 +401,7 @@ serve(async (req) => {
       full_name: body.full_name.trim(),
       email: body.email.trim().toLowerCase(),
       phone: body.phone?.trim() || null,
+      whatsapp: body.whatsapp?.trim() || null,
       home_office: body.home_office,
       noise_canceling_headset: body.noise_canceling_headset,
       laptop_or_pc: body.laptop_or_pc,

@@ -44,7 +44,10 @@ const prescreenSchema = z.object({
 type FormData = {
   full_name: string;
   email: string;
+  phone_country_code: string;
   phone: string;
+  whatsapp_country_code: string;
+  whatsapp: string;
   home_office: boolean | null;
   noise_canceling_headset: boolean | null;
   laptop_or_pc: boolean | null;
@@ -73,6 +76,59 @@ const JOB_SOURCE_OPTIONS = [
   'Other'
 ];
 
+// Country codes with flags and names
+const COUNTRY_CODES = [
+  { code: '+63', country: 'Philippines', flag: '🇵🇭' },
+  { code: '+1', country: 'United States', flag: '🇺🇸' },
+  { code: '+1', country: 'Canada', flag: '🇨🇦' },
+  { code: '+44', country: 'United Kingdom', flag: '🇬🇧' },
+  { code: '+61', country: 'Australia', flag: '🇦🇺' },
+  { code: '+91', country: 'India', flag: '🇮🇳' },
+  { code: '+92', country: 'Pakistan', flag: '🇵🇰' },
+  { code: '+880', country: 'Bangladesh', flag: '🇧🇩' },
+  { code: '+971', country: 'UAE', flag: '🇦🇪' },
+  { code: '+966', country: 'Saudi Arabia', flag: '🇸🇦' },
+  { code: '+65', country: 'Singapore', flag: '🇸🇬' },
+  { code: '+60', country: 'Malaysia', flag: '🇲🇾' },
+  { code: '+62', country: 'Indonesia', flag: '🇮🇩' },
+  { code: '+66', country: 'Thailand', flag: '🇹🇭' },
+  { code: '+84', country: 'Vietnam', flag: '🇻🇳' },
+  { code: '+81', country: 'Japan', flag: '🇯🇵' },
+  { code: '+82', country: 'South Korea', flag: '🇰🇷' },
+  { code: '+86', country: 'China', flag: '🇨🇳' },
+  { code: '+852', country: 'Hong Kong', flag: '🇭🇰' },
+  { code: '+886', country: 'Taiwan', flag: '🇹🇼' },
+  { code: '+49', country: 'Germany', flag: '🇩🇪' },
+  { code: '+33', country: 'France', flag: '🇫🇷' },
+  { code: '+39', country: 'Italy', flag: '🇮🇹' },
+  { code: '+34', country: 'Spain', flag: '🇪🇸' },
+  { code: '+31', country: 'Netherlands', flag: '🇳🇱' },
+  { code: '+32', country: 'Belgium', flag: '🇧🇪' },
+  { code: '+41', country: 'Switzerland', flag: '🇨🇭' },
+  { code: '+43', country: 'Austria', flag: '🇦🇹' },
+  { code: '+46', country: 'Sweden', flag: '🇸🇪' },
+  { code: '+47', country: 'Norway', flag: '🇳🇴' },
+  { code: '+45', country: 'Denmark', flag: '🇩🇰' },
+  { code: '+358', country: 'Finland', flag: '🇫🇮' },
+  { code: '+48', country: 'Poland', flag: '🇵🇱' },
+  { code: '+351', country: 'Portugal', flag: '🇵🇹' },
+  { code: '+353', country: 'Ireland', flag: '🇮🇪' },
+  { code: '+7', country: 'Russia', flag: '🇷🇺' },
+  { code: '+380', country: 'Ukraine', flag: '🇺🇦' },
+  { code: '+90', country: 'Turkey', flag: '🇹🇷' },
+  { code: '+972', country: 'Israel', flag: '🇮🇱' },
+  { code: '+20', country: 'Egypt', flag: '🇪🇬' },
+  { code: '+27', country: 'South Africa', flag: '🇿🇦' },
+  { code: '+234', country: 'Nigeria', flag: '🇳🇬' },
+  { code: '+254', country: 'Kenya', flag: '🇰🇪' },
+  { code: '+55', country: 'Brazil', flag: '🇧🇷' },
+  { code: '+52', country: 'Mexico', flag: '🇲🇽' },
+  { code: '+54', country: 'Argentina', flag: '🇦🇷' },
+  { code: '+57', country: 'Colombia', flag: '🇨🇴' },
+  { code: '+56', country: 'Chile', flag: '🇨🇱' },
+  { code: '+51', country: 'Peru', flag: '🇵🇪' },
+  { code: '+64', country: 'New Zealand', flag: '🇳🇿' },
+];
 type Step = 'prescreening' | 'cv-upload' | 'interview' | 'submitting';
 
 const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
@@ -96,7 +152,10 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
   const [formData, setFormData] = useState<FormData>({
     full_name: "",
     email: "",
+    phone_country_code: "+63|Philippines",
     phone: "",
+    whatsapp_country_code: "+63|Philippines",
+    whatsapp: "",
     home_office: null,
     noise_canceling_headset: null,
     laptop_or_pc: null,
@@ -307,11 +366,23 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
       // Submit application first to create applicant record
       setCurrentStep('submitting');
       
+      // Format phone with country code
+      const phoneCountryCode = formData.phone_country_code.split('|')[0] || '+63';
+      const formattedPhone = `${phoneCountryCode} ${formData.phone.trim()}`;
+      
+      // Format WhatsApp if provided
+      let formattedWhatsapp = null;
+      if (formData.whatsapp.trim()) {
+        const whatsappCountryCode = formData.whatsapp_country_code.split('|')[0] || '+63';
+        formattedWhatsapp = `${whatsappCountryCode} ${formData.whatsapp.trim()}`;
+      }
+      
       const response = await supabase.functions.invoke('submit-application', {
         body: {
           full_name: formData.full_name,
           email: formData.email,
-          phone: formData.phone,
+          phone: formattedPhone,
+          whatsapp: formattedWhatsapp,
           home_office: formData.home_office,
           noise_canceling_headset: formData.noise_canceling_headset,
           laptop_or_pc: formData.laptop_or_pc,
@@ -548,15 +619,76 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
 
                 <div className="space-y-2">
                   <Label htmlFor="phone">Phone Number *</Label>
-                  <Input
-                    id="phone"
-                    type="tel"
-                    value={formData.phone}
-                    onChange={(e) => handleTextChange("phone", e.target.value)}
-                    placeholder="Enter your phone number"
-                    className={errors.phone ? "border-destructive" : ""}
-                  />
+                  <div className="flex gap-2">
+                    <Select
+                      value={formData.phone_country_code}
+                      onValueChange={(value) => handleTextChange("phone_country_code", value)}
+                    >
+                      <SelectTrigger className="w-[140px] flex-shrink-0">
+                        <SelectValue placeholder="Code" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[300px]">
+                        {COUNTRY_CODES.map((country, idx) => (
+                          <SelectItem 
+                            key={`${country.code}-${country.country}-${idx}`} 
+                            value={`${country.code}|${country.country}`}
+                          >
+                            <span className="flex items-center gap-2">
+                              <span>{country.flag}</span>
+                              <span>{country.code}</span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      id="phone"
+                      type="tel"
+                      value={formData.phone}
+                      onChange={(e) => handleTextChange("phone", e.target.value)}
+                      placeholder="Enter phone number"
+                      className={`flex-1 ${errors.phone ? "border-destructive" : ""}`}
+                    />
+                  </div>
                   {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="whatsapp">
+                    WhatsApp Number <span className="text-muted-foreground text-xs">(Optional)</span>
+                  </Label>
+                  <div className="flex gap-2">
+                    <Select
+                      value={formData.whatsapp_country_code}
+                      onValueChange={(value) => handleTextChange("whatsapp_country_code", value)}
+                    >
+                      <SelectTrigger className="w-[140px] flex-shrink-0">
+                        <SelectValue placeholder="Code" />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[300px]">
+                        {COUNTRY_CODES.map((country, idx) => (
+                          <SelectItem 
+                            key={`whatsapp-${country.code}-${country.country}-${idx}`} 
+                            value={`${country.code}|${country.country}`}
+                          >
+                            <span className="flex items-center gap-2">
+                              <span>{country.flag}</span>
+                              <span>{country.code}</span>
+                            </span>
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Input
+                      id="whatsapp"
+                      type="tel"
+                      value={formData.whatsapp}
+                      onChange={(e) => handleTextChange("whatsapp", e.target.value)}
+                      placeholder="Enter WhatsApp number"
+                      className="flex-1"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground">Leave blank if same as phone number</p>
                 </div>
 
                 <YesNoQuestion 
