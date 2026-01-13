@@ -171,30 +171,43 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
     const arrayBuffer = await file.arrayBuffer();
     
     if (file.type === 'application/pdf') {
-      // Use PDF.js via dynamic import for proper PDF text extraction
+      // Use PDF.js for proper PDF text extraction
       try {
-        const pdfjsLib = await import('pdfjs-dist');
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
+        // Import pdfjs-dist correctly for v3.x
+        const pdfjs = await import('pdfjs-dist');
         
-        const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        // Set up worker using the legacy build for better compatibility
+        pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        
+        console.log('Loading PDF document...');
+        const loadingTask = pdfjs.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+        
+        console.log(`PDF loaded with ${pdf.numPages} pages`);
         let fullText = '';
         
         for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
           const page = await pdf.getPage(pageNum);
           const textContent = await page.getTextContent();
           const pageText = textContent.items
-            .map((item: any) => item.str)
+            .map((item: any) => item.str || '')
             .join(' ');
           fullText += pageText + '\n';
         }
         
-        const cleanText = fullText.replace(/\s+/g, ' ').trim();
+        // Clean up the extracted text
+        const cleanText = fullText
+          .replace(/\0/g, '') // Remove null bytes
+          .replace(/\s+/g, ' ')
+          .trim();
+        
+        console.log(`Extracted ${cleanText.length} characters from PDF`);
         
         if (cleanText.length > 50) {
           return cleanText;
         } else {
           console.warn('PDF extraction returned minimal text, PDF may be image-based');
-          return 'PDF appears to be image-based. Please ensure your CV contains selectable text.';
+          return 'PDF appears to be image-based. Please ensure your CV contains selectable text for AI processing.';
         }
       } catch (pdfError) {
         console.error('PDF.js extraction failed:', pdfError);
