@@ -17,6 +17,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { Plus, X } from 'lucide-react';
 import JobInterviewQuestionsManager from '@/components/JobInterviewQuestionsManager';
+import { JobDescriptionParser } from '@/components/JobDescriptionParser';
 
 interface CustomQuestion {
   id?: string;
@@ -385,6 +386,26 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
             <p className="text-xs text-muted-foreground">
               Admin responsible for managing this role
             </p>
+          </div>
+
+          {/* Job Description Parser Helper */}
+          <div className="flex items-center justify-between p-3 border border-dashed rounded-lg bg-muted/30">
+            <div className="text-sm text-muted-foreground">
+              Have a full job description? Let AI parse it for you.
+            </div>
+            <JobDescriptionParser
+              currentDescription={formData.description}
+              currentQualifications={formData.qualifications}
+              currentResponsibilities={formData.responsibilities}
+              onApply={(parsed) => {
+                setFormData({
+                  ...formData,
+                  description: parsed.description,
+                  qualifications: parsed.qualifications.length > 0 ? parsed.qualifications : [''],
+                  responsibilities: parsed.responsibilities.length > 0 ? parsed.responsibilities : [''],
+                });
+              }}
+            />
           </div>
 
           <div className="space-y-2">
