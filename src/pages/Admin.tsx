@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle } from 'lucide-react';
 import { generateJobUrl } from '@/lib/slugify';
 import { InterviewResultsView } from '@/components/InterviewResultsView';
 import { Input } from '@/components/ui/input';
@@ -116,6 +116,7 @@ interface Applicant {
   full_name: string;
   email: string;
   phone: string | null;
+  whatsapp: string | null;
   home_office: boolean;
   noise_canceling_headset: boolean;
   laptop_or_pc: boolean;
@@ -1597,7 +1598,7 @@ const Admin = () => {
                                 </div>
                               </div>
                             ) : (
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="flex items-center gap-2">
                                   <User className="w-4 h-4 text-muted-foreground" />
                                   <span className="text-sm">{applicant.full_name}</span>
@@ -1613,6 +1614,31 @@ const Admin = () => {
                                   {applicant.phone ? (
                                     <a href={`tel:${applicant.phone}`} className="text-sm text-primary hover:underline">
                                       {applicant.phone}
+                                    </a>
+                                  ) : (
+                                    <span className="text-sm text-muted-foreground">Not provided</span>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <MessageCircle className="w-4 h-4 text-green-600" />
+                                  {applicant.whatsapp ? (
+                                    <a 
+                                      href={`https://wa.me/${applicant.whatsapp.replace(/[^0-9]/g, '')}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-sm text-green-600 hover:underline flex items-center gap-1"
+                                    >
+                                      {applicant.whatsapp}
+                                    </a>
+                                  ) : applicant.phone ? (
+                                    <a 
+                                      href={`https://wa.me/${applicant.phone.replace(/[^0-9]/g, '')}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-sm text-green-600 hover:underline flex items-center gap-1"
+                                    >
+                                      {applicant.phone}
+                                      <span className="text-xs text-muted-foreground">(phone)</span>
                                     </a>
                                   ) : (
                                     <span className="text-sm text-muted-foreground">Not provided</span>
