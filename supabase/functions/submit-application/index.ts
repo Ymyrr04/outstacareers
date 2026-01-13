@@ -440,7 +440,9 @@ serve(async (req) => {
     };
 
     console.log('Inserting application (scoring will run in background):', {
-      has_cv: !!insertData.cv_file_url,
+      has_cv_file: !!insertData.cv_file_url,
+      has_cv_text: !!body.cv_text,
+      cv_text_length: body.cv_text?.length || 0,
       has_vocaroo: !!insertData.vocaroo_link,
       has_voice_recording: !!insertData.voice_recording_url,
     });

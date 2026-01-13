@@ -91,6 +91,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
   const [cvFile, setCvFile] = useState<File | null>(null);
   const [cvText, setCvText] = useState<string>("");
   const [cvFileUrl, setCvFileUrl] = useState<string>("");
+  const [isExtractingText, setIsExtractingText] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Interview state
@@ -267,13 +268,18 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
 
     setCvFile(file);
     setErrors(prev => ({ ...prev, cv: "" }));
+    setCvText(""); // Reset text while extracting
+    setIsExtractingText(true);
 
     try {
       const text = await extractTextFromFile(file);
       setCvText(text);
+      console.log('CV text extraction complete, length:', text.length);
     } catch (error) {
       console.error('Error extracting text:', error);
       setCvText('Unable to extract text automatically');
+    } finally {
+      setIsExtractingText(false);
     }
   };
 
@@ -282,6 +288,20 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
       setErrors(prev => ({ ...prev, cv: "Please upload your CV" }));
       return;
     }
+
+    if (isExtractingText) {
+      toast({
+        title: "Please wait",
+        description: "Still extracting text from your CV...",
+      });
+      return;
+    }
+
+    if (!cvText || cvText.length < 50) {
+      console.warn('CV text extraction may have failed, proceeding anyway with what we have');
+    }
+
+    console.log('Submitting with CV text length:', cvText.length);
 
     setIsScoring(true);
 
@@ -877,13 +897,18 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
                   </Button>
                   <Button
                     onClick={handleCvSubmit}
-                    disabled={!cvFile || isScoring}
+                    disabled={!cvFile || isScoring || isExtractingText}
                     className="flex-1"
                   >
                     {isScoring ? (
                       <>
                         <Loader2 className="w-4 h-4 mr-2 animate-spin" />
                         Analyzing CV...
+                      </>
+                    ) : isExtractingText ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Extracting text...
                       </>
                     ) : (
                       "Continue"
