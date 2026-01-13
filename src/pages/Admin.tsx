@@ -797,7 +797,7 @@ const Admin = () => {
                 <SelectContent>
                   <SelectItem value="all">All Regions</SelectItem>
                   <SelectItem value="philippines">Philippines</SelectItem>
-                  <SelectItem value="latin america">Latin America</SelectItem>
+                  <SelectItem value="latin-america">Latin America</SelectItem>
                   <SelectItem value="global">Global</SelectItem>
                 </SelectContent>
               </Select>
@@ -850,8 +850,7 @@ const Admin = () => {
                     // Region filter
                     const matchesRegion = jobRegionFilter === 'all' || 
                       job.region === jobRegionFilter ||
-                      (jobRegionFilter === 'global' && job.region === 'all') ||
-                      (jobRegionFilter === 'latin america' && job.region === 'latin america');
+                      (jobRegionFilter === 'global' && job.region === 'all');
                     
                     // Admin filter
                     const matchesAdmin = jobAdminFilter === 'all' ||
@@ -943,8 +942,7 @@ const Admin = () => {
                     job.description?.toLowerCase().includes(searchLower);
                   const matchesRegion = jobRegionFilter === 'all' || 
                     job.region === jobRegionFilter ||
-                    (jobRegionFilter === 'global' && job.region === 'all') ||
-                    (jobRegionFilter === 'latin america' && job.region === 'latin america');
+                    (jobRegionFilter === 'global' && job.region === 'all');
                   const matchesAdmin = jobAdminFilter === 'all' ||
                     (jobAdminFilter === 'unassigned' && !job.assigned_admin_id) ||
                     job.assigned_admin_id === jobAdminFilter;
