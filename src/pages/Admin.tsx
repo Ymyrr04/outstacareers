@@ -1102,12 +1102,26 @@ const Admin = () => {
                             )}
                           </div>
                           <p className="text-sm text-muted-foreground">{applicant.email}</p>
-                          {applicant.phone && (
-                            <p className="text-sm text-muted-foreground flex items-center gap-1">
-                              <Phone className="w-3 h-3" />
-                              {applicant.phone}
-                            </p>
-                          )}
+                          <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                            {applicant.phone && (
+                              <span className="flex items-center gap-1">
+                                <Phone className="w-3 h-3" />
+                                {applicant.phone}
+                              </span>
+                            )}
+                            {(applicant.whatsapp || applicant.phone) && (
+                              <a 
+                                href={`https://wa.me/${(applicant.whatsapp || applicant.phone || '').replace(/[^0-9]/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-green-600 hover:text-green-700 hover:underline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MessageCircle className="w-3 h-3" />
+                                {applicant.whatsapp || applicant.phone}
+                              </a>
+                            )}
+                          </div>
                           <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground flex-wrap">
                             <span className="flex items-center gap-1">
                               <Briefcase className="w-3.5 h-3.5" />
