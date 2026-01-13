@@ -38,9 +38,40 @@ interface ReplyContext {
   receivedAt: string;
 }
 
+// Decode MIME encoded words (RFC 2047) for display
+const decodeMimeWord = (text: string): string => {
+  if (!text) return text;
+  
+  // Match =?charset?encoding?encoded_text?= patterns
+  const mimePattern = /=\?([^?]+)\?([BQbq])\?([^?]*)\?=/g;
+  
+  return text.replace(mimePattern, (match, _charset, encoding, encodedText) => {
+    try {
+      if (encoding.toUpperCase() === 'Q') {
+        // Quoted-Printable decoding
+        let decoded = encodedText
+          .replace(/_/g, ' ') // Underscores are spaces in Q encoding
+          .replace(/=([0-9A-Fa-f]{2})/g, (_: string, hex: string) => 
+            String.fromCharCode(parseInt(hex, 16))
+          );
+        return decoded;
+      } else if (encoding.toUpperCase() === 'B') {
+        // Base64 decoding
+        const decoded = atob(encodedText);
+        return decoded;
+      }
+    } catch (e) {
+      console.log('MIME decode error:', e);
+    }
+    return match; // Return original if decode fails
+  });
+};
+
 // Helper to normalize subjects for matching
 const normalizeSubject = (subject: string): string => {
-  return subject
+  // First decode any MIME encoding
+  const decoded = decodeMimeWord(subject);
+  return decoded
     .replace(/^(Re:\s*)+/gi, '') // Remove Re: prefixes
     .replace(/^(Fwd:\s*)+/gi, '') // Remove Fwd: prefixes
     .trim()
@@ -400,7 +431,7 @@ export function CommunicationHistory({
                                   <div className="flex items-start gap-3">
                                     <Reply className="h-4 w-4 text-blue-500 mt-1" />
                                     <div>
-                                      <p className="font-medium">{reply.subject}</p>
+                                      <p className="font-medium">{decodeMimeWord(reply.subject)}</p>
                                       <p className="text-sm text-muted-foreground">
                                         From: {reply.from_email}
                                       </p>
