@@ -503,7 +503,6 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
             {/* Disclaimer for interview step */}
             {currentStep === 'interview' && (
               <div className="mb-6 p-4 bg-muted/50 rounded-lg border border-border">
-                <h4 className="font-semibold text-sm text-foreground mb-2">Disclaimer</h4>
                 <p className="text-sm text-muted-foreground leading-relaxed">
                   This interview is supported by AI to improve consistency and evaluation, helping us deliver a faster and more efficient application process. Your responses will still be reviewed by a real recruiter.
                 </p>
