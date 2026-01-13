@@ -195,6 +195,94 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
   }
 }
 
+// Background task to notify the assigned admin about a new application
+async function notifyAssignedAdmin(
+  supabase: SupabaseClient,
+  adminUserId: string,
+  applicantId: string,
+  applicantName: string,
+  applicantEmail: string,
+  jobTitle: string
+) {
+  console.log(`[Background] Notifying admin ${adminUserId} about new application`);
+  
+  try {
+    // Get admin email using Supabase admin API
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(adminUserId);
+    
+    if (userError || !userData?.user?.email) {
+      console.error('[Background] Failed to get admin email:', userError);
+      return;
+    }
+
+    const adminEmail = userData.user.email;
+    console.log(`[Background] Sending notification to admin: ${adminEmail}`);
+
+    const gmailUser = Deno.env.get("GMAIL_USER");
+    const gmailPassword = Deno.env.get("GMAIL_APP_PASSWORD");
+
+    if (!gmailUser || !gmailPassword) {
+      console.error('[Background] Gmail credentials not configured');
+      return;
+    }
+
+    // Import SMTP client dynamically
+    const { SMTPClient } = await import("https://deno.land/x/denomailer@1.6.0/mod.ts");
+
+    const client = new SMTPClient({
+      connection: {
+        hostname: "smtp.gmail.com",
+        port: 465,
+        tls: true,
+        auth: {
+          username: gmailUser,
+          password: gmailPassword,
+        },
+      },
+    });
+
+    const subject = `New Application: ${applicantName} applied for ${jobTitle}`;
+    const bodyHtml = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <h2 style="color: #1a1a2e;">New Job Application</h2>
+        <p>A new candidate has applied for a role assigned to you:</p>
+        <table style="border-collapse: collapse; margin: 20px 0;">
+          <tr>
+            <td style="padding: 8px 16px 8px 0; font-weight: bold; color: #666;">Position:</td>
+            <td style="padding: 8px 0;">${jobTitle}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 16px 8px 0; font-weight: bold; color: #666;">Candidate Name:</td>
+            <td style="padding: 8px 0;">${applicantName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 16px 8px 0; font-weight: bold; color: #666;">Candidate Email:</td>
+            <td style="padding: 8px 0;">${applicantEmail}</td>
+          </tr>
+        </table>
+        <p>Please log in to the admin dashboard to review this application.</p>
+        <p style="color: #888; font-size: 12px; margin-top: 30px;">This is an automated notification from Outsta Recruitment.</p>
+      </div>
+    `;
+
+    const emailHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${subject}</title></head><body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;"><table role="presentation" style="width: 100%; border-collapse: collapse;"><tr><td align="center" style="padding: 40px 0;"><table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"><tr><td style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 12px 12px 0 0; text-align: center;"><h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">Outsta Recruitment</h1></td></tr><tr><td style="padding: 40px;">${bodyHtml}</td></tr><tr><td style="background-color: #f8f9fa; padding: 25px 40px; border-radius: 0 0 12px 12px; text-align: center;"><p style="color: #999999; font-size: 12px; margin: 0;">This is an automated notification.<br>Please do not reply to this email.</p></td></tr></table></td></tr></table></body></html>`;
+
+    await client.send({
+      from: gmailUser,
+      to: adminEmail,
+      subject: subject,
+      content: "auto",
+      html: emailHtml,
+    });
+
+    await client.close();
+
+    console.log(`[Background] Admin notification sent successfully to ${adminEmail}`);
+  } catch (error) {
+    console.error('[Background] Error notifying admin:', error);
+  }
+}
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -282,15 +370,17 @@ serve(async (req) => {
       });
     }
 
-    // Fetch job details for CV scoring if CV is provided
+// Fetch job details for CV scoring and admin notification
     let jobDescription = '';
     let qualifications: string[] = [];
     let responsibilities: string[] = [];
+    let assignedAdminId: string | null = null;
+    let jobTitle = body.job_title || '';
     
-    if (body.job_id && body.cv_text) {
+    if (body.job_id) {
       const { data: jobData, error: jobError } = await supabase
         .from('jobs')
-        .select('description, qualifications, responsibilities')
+        .select('description, qualifications, responsibilities, assigned_admin_id, title')
         .eq('id', body.job_id)
         .single();
       
@@ -298,6 +388,8 @@ serve(async (req) => {
         jobDescription = jobData.description || '';
         qualifications = jobData.qualifications || [];
         responsibilities = jobData.responsibilities || [];
+        assignedAdminId = jobData.assigned_admin_id;
+        jobTitle = jobData.title || jobTitle;
       }
     }
 
@@ -368,7 +460,7 @@ serve(async (req) => {
     const applicantId = insertedData.id;
     console.log(`Application submitted successfully with ID: ${applicantId}`);
 
-    // Trigger CV scoring as background task if CV was provided
+// Trigger CV scoring as background task if CV was provided
     if (body.cv_text && body.job_title) {
       console.log('Triggering background CV scoring...');
       EdgeRuntime.waitUntil(
@@ -380,6 +472,21 @@ serve(async (req) => {
           qualifications,
           responsibilities,
           body.cv_text
+        )
+      );
+    }
+
+    // Send notification email to assigned admin if one exists
+    if (assignedAdminId) {
+      console.log(`Notifying assigned admin ${assignedAdminId} about new application...`);
+      EdgeRuntime.waitUntil(
+        notifyAssignedAdmin(
+          supabase,
+          assignedAdminId,
+          applicantId,
+          body.full_name.trim(),
+          body.email.trim().toLowerCase(),
+          jobTitle
         )
       );
     }
