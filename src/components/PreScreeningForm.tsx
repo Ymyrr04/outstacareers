@@ -10,6 +10,10 @@ import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
 import speedtestSample from "@/assets/speedtest-sample.png";
 import { InterviewSession } from "./interview/InterviewSession";
+import * as pdfjsLib from 'pdfjs-dist';
+
+// Set up PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
 
 interface PreScreeningFormProps {
   job: {
@@ -176,23 +180,38 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
           const arrayBuffer = e.target?.result as ArrayBuffer;
           
           if (file.type === 'application/pdf') {
-            // For PDF files, we'll extract text using a simple approach
-            // Convert to text by reading as text (basic extraction)
-            const textReader = new FileReader();
-            textReader.onload = (textEvent) => {
-              const text = textEvent.target?.result as string;
-              // Extract readable text from PDF (basic approach)
-              const cleanText = text
-                .replace(/[^\x20-\x7E\n\r\t]/g, ' ')
+            // Use PDF.js for proper PDF text extraction
+            try {
+              const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+              let fullText = '';
+              
+              for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+                const page = await pdf.getPage(pageNum);
+                const textContent = await page.getTextContent();
+                const pageText = textContent.items
+                  .map((item: any) => item.str)
+                  .join(' ');
+                fullText += pageText + '\n';
+              }
+              
+              const cleanText = fullText
                 .replace(/\s+/g, ' ')
                 .trim();
-              resolve(cleanText || 'PDF content extracted - please verify manually');
-            };
-            textReader.onerror = () => reject(new Error('Failed to read PDF'));
-            textReader.readAsText(file);
+              
+              if (cleanText.length > 50) {
+                resolve(cleanText);
+              } else {
+                // Fallback if extraction yields little text
+                console.warn('PDF extraction returned minimal text, PDF may be image-based');
+                resolve('PDF appears to be image-based. Please ensure your CV contains selectable text.');
+              }
+            } catch (pdfError) {
+              console.error('PDF.js extraction failed:', pdfError);
+              resolve('Unable to extract text from PDF. Please upload a text-based PDF or DOCX file.');
+            }
           } else if (file.type === 'application/msword' || 
                      file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
-            // For DOC/DOCX files
+            // For DOC/DOCX files - basic extraction
             const textReader = new FileReader();
             textReader.onload = (textEvent) => {
               const text = textEvent.target?.result as string;
