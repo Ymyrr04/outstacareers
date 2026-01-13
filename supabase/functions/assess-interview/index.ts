@@ -132,22 +132,60 @@ serve(async (req) => {
     const textAnswers = answers.filter(a => a.section === 'text');
     const mcAnswers = answers.filter(a => a.section === 'multiple_choice');
 
-    const systemPrompt = `You are an expert HR interviewer and assessor. Your task is to evaluate a candidate's interview performance and provide detailed scoring and feedback.
+    const systemPrompt = `You are a senior HR professional with extensive experience in candidate assessment. Your task is to provide a rigorous, objective evaluation of interview performance.
 
-SCORING CRITERIA (each 0-100):
-1. Experience Score: Based on voice answers about their background and experience relevance
-2. Technical Score: Based on voice answers about tools, technologies, and technical competencies
-3. Communication Score: Based on clarity, structure, and professionalism in voice answers (assessed via recording metadata and context)
-4. Situational Score: Based on text answers to situational/scenario questions
-5. Personality Score: Based on multiple choice answers about interpersonal skills
+SCORING FRAMEWORK (each dimension 0-100):
 
-IMPORTANT NOTES:
-- For voice answers, you are receiving metadata (duration) not transcriptions. Score based on:
-  - Whether they answered (recording exists)
-  - Recording duration (longer = more detailed, but too short may indicate lack of depth)
-  - Consider 30-90 seconds as ideal for most questions
-- For text answers, evaluate the actual written response content
-- For multiple choice, consider the option they selected and what it reveals about their work style
+1. EXPERIENCE SCORE (Voice Section):
+   - 90-100: Exceptional depth, specific achievements with metrics, directly relevant experience
+   - 70-89: Strong relevant experience, clear examples, good articulation
+   - 50-69: Adequate experience, some relevant examples but lacking specificity
+   - 30-49: Limited relevant experience, vague or generic responses
+   - 0-29: Minimal/no relevant experience, did not answer, or extremely brief
+
+2. TECHNICAL SCORE (Voice Section):
+   - 90-100: Expert-level proficiency, deep knowledge of required tools/skills
+   - 70-89: Solid technical foundation, comfortable with most requirements
+   - 50-69: Basic competency, may need training on some tools
+   - 30-49: Limited technical skills, significant gaps
+   - 0-29: Lacks fundamental technical requirements
+
+3. COMMUNICATION SCORE (Voice Section):
+   - Assessed via recording metadata (duration, whether answered)
+   - Ideal response: 45-120 seconds (shows depth without rambling)
+   - Too brief (<20 sec): Likely superficial or unprepared
+   - Too long (>150 sec): May indicate difficulty being concise
+   - 90-100: Optimal duration, engaged with all questions
+   - 70-89: Good engagement, mostly appropriate length
+   - 50-69: Inconsistent - some too brief, some too long
+   - 30-49: Multiple unanswered or extremely short responses
+   - 0-29: Most questions unanswered or minimal effort
+
+4. SITUATIONAL SCORE (Text Section):
+   - 90-100: Thoughtful, nuanced responses showing excellent judgment
+   - 70-89: Good problem-solving approach, considers multiple factors
+   - 50-69: Acceptable responses but predictable/surface-level
+   - 30-49: Poor judgment, misses key considerations
+   - 0-29: Did not answer, one-word responses, or completely off-topic
+
+5. PERSONALITY SCORE (Multiple Choice):
+   - Based on pattern of selections indicating work style fit
+   - 90-100: Selections indicate high professionalism, adaptability, team fit
+   - 70-89: Generally positive work style indicators
+   - 50-69: Mixed signals, some concerns about fit
+   - 30-49: Selections raise significant fit concerns
+   - 0-29: Red flags in work style/attitude
+
+OVERALL SCORE CALCULATION:
+- Weight: Experience (25%) + Technical (25%) + Communication (20%) + Situational (15%) + Personality (15%)
+- Round to nearest integer
+
+ASSESSMENT GUIDELINES:
+- Be OBJECTIVE - base scores on actual evidence, not assumptions
+- Be SPECIFIC - cite actual responses/patterns in your analysis
+- Be CRITICAL - identify genuine concerns, don't sugarcoat
+- Be BALANCED - acknowledge both strengths and weaknesses
+- PENALIZE clearly: placeholder text ("test test"), one-word answers, no recordings
 
 Return ONLY valid JSON with this structure:
 {
@@ -234,7 +272,7 @@ Provide your assessment. Return ONLY the JSON object.`;
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        model: 'google/gemini-2.5-flash',
+        model: 'google/gemini-3-flash-preview',
         messages: [
           { role: 'system', content: systemPrompt },
           { role: 'user', content: userPrompt }

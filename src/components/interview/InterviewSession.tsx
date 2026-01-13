@@ -393,9 +393,16 @@ export function InterviewSession({
   };
 
   const getSectionLabel = () => {
-    if (currentStep === 'voice') return 'Experience & Technical Interview';
-    if (currentStep === 'text') return 'Situational Questions';
-    if (currentStep === 'multiple_choice') return 'Personality Assessment';
+    if (currentStep === 'voice') return 'Experience & Technical';
+    if (currentStep === 'text') return 'Situational Scenarios';
+    if (currentStep === 'multiple_choice') return 'Work Style Assessment';
+    return '';
+  };
+
+  const getSectionDescription = () => {
+    if (currentStep === 'voice') return 'Answer verbally about your experience. Aim for 60-90 seconds per question.';
+    if (currentStep === 'text') return 'Describe how you would handle these workplace scenarios.';
+    if (currentStep === 'multiple_choice') return 'Select the option that best describes your approach.';
     return '';
   };
 
@@ -406,14 +413,43 @@ export function InterviewSession({
     return null;
   };
 
+  const getEstimatedTime = () => {
+    const remainingVoice = currentStep === 'voice' ? voiceQuestions.length - currentQuestionIndex : 0;
+    const remainingText = currentStep === 'text' ? textQuestions.length - currentQuestionIndex : (currentStep === 'voice' ? textQuestions.length : 0);
+    const remainingMc = currentStep === 'multiple_choice' ? mcQuestions.length - currentQuestionIndex : (currentStep !== 'complete' ? mcQuestions.length : 0);
+    
+    // Voice: ~1.5 min, Text: ~2 min, MC: ~0.5 min
+    const minutes = Math.ceil(remainingVoice * 1.5 + remainingText * 2 + remainingMc * 0.5);
+    return minutes;
+  };
+
   if (currentStep === 'loading' || isGenerating) {
     return (
-      <div className="text-center py-12">
-        <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary mb-4" />
-        <h4 className="font-semibold text-lg mb-2">Preparing Your Interview</h4>
-        <p className="text-sm text-muted-foreground">
-          Loading interview questions...
-        </p>
+      <div className="text-center py-12 space-y-4">
+        <div className="relative mx-auto w-16 h-16">
+          <Loader2 className="w-16 h-16 animate-spin text-primary" />
+        </div>
+        <div>
+          <h4 className="font-semibold text-lg mb-2">Preparing Your Interview</h4>
+          <p className="text-sm text-muted-foreground">
+            Generating personalized questions based on your profile...
+          </p>
+        </div>
+        <div className="flex items-center justify-center gap-6 pt-4 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1.5">
+            <Mic className="w-4 h-4" />
+            <span>5 Voice</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <FileText className="w-4 h-4" />
+            <span>5 Written</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <CheckSquare className="w-4 h-4" />
+            <span>5 Choice</span>
+          </div>
+        </div>
+        <p className="text-xs text-muted-foreground">Estimated time: 15-20 minutes</p>
       </div>
     );
   }
@@ -479,11 +515,17 @@ export function InterviewSession({
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <Clock className="w-4 h-4" />
-            <span>~{Math.ceil((totalQuestions - answeredQuestions) * 1.5)} min left</span>
+            <span>~{getEstimatedTime()} min left</span>
           </div>
         </div>
+        
+        {/* Section description */}
+        <p className="text-xs text-center text-muted-foreground italic">
+          {getSectionDescription()}
+        </p>
+        
         <Progress value={progress} className="h-2" />
-        <p className="text-xs text-muted-foreground text-center">
+        <p className="text-xs text-muted-foreground text-center font-medium">
           Question {answeredQuestions + 1} of {totalQuestions}
         </p>
       </div>
