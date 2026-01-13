@@ -382,9 +382,8 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
       if (sessionError || !sessionData) {
         console.error('Failed to create interview session after all retries:', sessionError);
         toast({
-          title: "Interview Setup Error",
-          description: "Your application was submitted but we couldn't start the interview. Please contact support.",
-          variant: "destructive",
+          title: "Application Submitted",
+          description: "Your application has been received and will be manually reviewed by our recruitment team.",
         });
         // Still close the form since application was submitted
         setIsSuccess(true);
