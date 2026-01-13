@@ -313,12 +313,12 @@ export default function ApplicantSearchResults({
                 {((applicant.extracted_skills?.length ?? 0) > 0 || (applicant.extracted_tools?.length ?? 0) > 0) && (
                   <div className="flex flex-wrap gap-1.5 mt-2">
                     {applicant.extracted_skills?.slice(0, 3).map(skill => (
-                      <Badge key={skill} variant="secondary" className="text-xs bg-blue-50 dark:bg-blue-900/20">
+                      <Badge key={skill} variant="secondary" className="text-xs bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-200 border border-blue-200 dark:border-blue-800">
                         {skill}
                       </Badge>
                     ))}
                     {applicant.extracted_tools?.slice(0, 3).map(tool => (
-                      <Badge key={tool} variant="secondary" className="text-xs bg-green-50 dark:bg-green-900/20">
+                      <Badge key={tool} variant="secondary" className="text-xs bg-teal-100 text-teal-800 dark:bg-teal-900/40 dark:text-teal-200 border border-teal-200 dark:border-teal-800">
                         {tool}
                       </Badge>
                     ))}
