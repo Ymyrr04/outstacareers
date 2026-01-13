@@ -167,20 +167,27 @@ CRITICAL PRINCIPLES:
 - Questions must be SPECIFIC to the job and candidate's background - no generic questions
 - Every question should have a clear assessment purpose tied to job requirements
 - Questions should be challenging enough to differentiate top candidates from average ones
-- Reference actual details from the CV to make questions personalized and harder to fake
+
+⚠️ EXTREMELY IMPORTANT - CV ACCURACY RULES ⚠️
+- ONLY reference skills, tools, roles, and experiences that are EXPLICITLY stated in the CV
+- DO NOT assume or infer experience the candidate doesn't have
+- DO NOT mention specific tools, platforms, or techniques unless they appear verbatim in the CV
+- If the CV lacks detail in an area, ask OPEN-ENDED questions to explore (e.g., "Tell me about..." rather than "Describe your experience with X")
+- When referencing CV content, use phrases like "You mentioned..." or "Your CV shows..." to ground questions in actual content
+- If the job requires skills not in the CV, ask if they have that experience rather than assuming they do
 
 Generate THREE types of questions:
 
 1. VOICE QUESTIONS (5 questions) - Experience & Technical depth assessment:
    FOCUS ON:
-   - STAR-format questions (Situation, Task, Action, Result) about specific CV experiences
-   - Technical proficiency with tools/platforms required for the role
-   - Problem-solving scenarios from their actual work history
-   - Leadership/collaboration examples from their past roles
+   - STAR-format questions (Situation, Task, Action, Result) about ACTUAL experiences mentioned in CV
+   - Technical proficiency with tools/platforms ONLY if mentioned in CV
+   - Problem-solving scenarios from roles ACTUALLY listed in their work history
+   - Leadership/collaboration examples ONLY from roles they've held
    - Questions that require specific examples, not hypotheticals
    
    QUESTION QUALITY CHECKLIST:
-   ✓ References a specific role, company, or skill from their CV
+   ✓ References a VERIFIED role, company, or skill from their CV (not assumed)
    ✓ Cannot be answered with generic/rehearsed responses
    ✓ Requires concrete examples with measurable outcomes
    ✓ Directly relates to a key job requirement
@@ -217,7 +224,7 @@ Generate THREE types of questions:
 
 FORMATTING REQUIREMENTS:
 - Use the candidate's first name naturally in 1-2 questions
-- Voice questions: Direct, clear, and specific
+- Voice questions: Direct, clear, and specific - grounded in actual CV content
 - Text scenarios: 2-4 sentences of context, then a clear question
 - MC questions: Clear question with exactly 4 distinct options
 
@@ -242,7 +249,6 @@ Return ONLY valid JSON with this structure:
     }
   ]
 }`;
-
     const userPrompt = `Generate interview questions for this candidate:
 
 CANDIDATE NAME: ${applicant_name}
