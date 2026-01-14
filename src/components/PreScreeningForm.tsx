@@ -519,7 +519,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
     <>
       <div 
         className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" 
-        onClick={onClose}
+        onClick={currentStep === 'interview' ? undefined : onClose}
       />
       
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
@@ -534,13 +534,15 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
               </h3>
               <p className="text-sm text-muted-foreground mt-1">{job.title}</p>
             </div>
-            <button 
-              onClick={onClose}
-              className="flex-shrink-0 p-1 rounded-full hover:bg-muted transition-colors duration-200"
-              aria-label="Close form"
-            >
-              <X className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
-            </button>
+            {currentStep !== 'interview' && (
+              <button 
+                onClick={onClose}
+                className="flex-shrink-0 p-1 rounded-full hover:bg-muted transition-colors duration-200"
+                aria-label="Close form"
+              >
+                <X className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
+              </button>
+            )}
           </div>
 
           <div className="p-6">
