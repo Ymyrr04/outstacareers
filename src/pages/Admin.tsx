@@ -164,6 +164,7 @@ interface Applicant {
   candidate_profile: string | null;
   details_viewed_at: string | null;
   is_starred: boolean;
+  device_type: string | null;
 }
 
 type SortOption = 'newest' | 'score-desc' | 'score-asc' | 'starred';

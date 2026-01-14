@@ -34,7 +34,9 @@ import {
   CalendarPlus,
   Send,
   History,
-  ClipboardList
+  ClipboardList,
+  Smartphone,
+  Monitor
 } from 'lucide-react';
 
 interface ToolMatch {
@@ -118,6 +120,8 @@ interface Applicant {
   details_viewed_at?: string | null;
   // Star/favorite
   is_starred?: boolean;
+  // Device type tracking
+  device_type?: string | null;
 }
 
 interface ApplicantSearchResultsProps {
@@ -251,6 +255,20 @@ export default function ApplicantSearchResults({
                     </button>
                   )}
                   <h3 className="font-semibold truncate">{applicant.full_name}</h3>
+                  
+                  {/* Device type icon */}
+                  {applicant.device_type && (
+                    <span 
+                      className={`flex-shrink-0 ${applicant.device_type === 'mobile' ? 'text-blue-500' : 'text-gray-500'}`}
+                      title={`Applied from ${applicant.device_type}`}
+                    >
+                      {applicant.device_type === 'mobile' ? (
+                        <Smartphone className="w-4 h-4" />
+                      ) : (
+                        <Monitor className="w-4 h-4" />
+                      )}
+                    </span>
+                  )}
                   
                   {applicant.status === 'For Review' && !applicant.details_viewed_at && (
                     <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-xs">

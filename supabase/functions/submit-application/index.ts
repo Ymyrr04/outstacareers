@@ -307,6 +307,12 @@ serve(async (req) => {
                      req.headers.get('x-real-ip') || 
                      'unknown';
     
+    // Detect device type from user agent
+    const userAgent = req.headers.get('user-agent') || '';
+    const isMobile = /Mobile|Android|iPhone|iPad|iPod|webOS|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
+    const deviceType = isMobile ? 'mobile' : 'desktop';
+    console.log(`Device type detected: ${deviceType} (UA: ${userAgent.substring(0, 50)}...)`);
+    
     // Hash the IP for privacy
     const encoder = new TextEncoder();
     const data = encoder.encode(clientIP + 'salt_for_hashing');
@@ -425,6 +431,7 @@ serve(async (req) => {
       vocaroo_link: vocarooLink,
       voice_recording_url: voiceRecordingUrl,
       job_source: body.job_source?.trim() || null,
+      device_type: deviceType,
       // Scoring fields will be populated by background task
       role_experience_score: null,
       skills_tools_score: null,
