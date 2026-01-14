@@ -11,6 +11,7 @@ import ResetPassword from "./pages/ResetPassword";
 import Admin from "./pages/Admin";
 import JobApplication from "./pages/JobApplication";
 import ResumeInterview from "./pages/ResumeInterview";
+import ImageEditor from "./pages/ImageEditor";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -30,6 +31,7 @@ const App = () => (
               <Route path="/admin" element={<Admin />} />
               <Route path="/jobs/:company/:titleSlug/:jobId" element={<JobApplication />} />
               <Route path="/interview/:sessionId" element={<ResumeInterview />} />
+              <Route path="/image-editor" element={<ImageEditor />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
