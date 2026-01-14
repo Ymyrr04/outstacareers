@@ -35,3 +35,21 @@ verify_jwt = false
 
 [functions.process-pending-notifications]
 verify_jwt = false
+
+[functions.process-interview-reminders]
+verify_jwt = false
+
+[functions.rescore-cv]
+verify_jwt = true
+
+[functions.parse-job-description]
+verify_jwt = true
+
+[functions.send-availability-check]
+verify_jwt = true
+
+[functions.handle-availability-response]
+verify_jwt = false
+
+[functions.get-admin-users]
+verify_jwt = true

@@ -509,6 +509,7 @@ export type Database = {
           job_id: string | null
           overall_score: number | null
           personality_score: number | null
+          reminder_sent_at: string | null
           situational_score: number | null
           started_at: string
           status: string
@@ -530,6 +531,7 @@ export type Database = {
           job_id?: string | null
           overall_score?: number | null
           personality_score?: number | null
+          reminder_sent_at?: string | null
           situational_score?: number | null
           started_at?: string
           status?: string
@@ -551,6 +553,7 @@ export type Database = {
           job_id?: string | null
           overall_score?: number | null
           personality_score?: number | null
+          reminder_sent_at?: string | null
           situational_score?: number | null
           started_at?: string
           status?: string
