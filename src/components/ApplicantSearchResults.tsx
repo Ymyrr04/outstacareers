@@ -884,7 +884,7 @@ export default function ApplicantSearchResults({
                   <BooleanBadge value={applicant.can_work_40_50} label="40-50 hrs/week" />
                   <BooleanBadge value={applicant.us_timezone_ok} label="US Timezone OK" />
                   <BooleanBadge value={applicant.has_experience} label="Has Experience" />
-                  <BooleanBadge value={applicant.currently_working} label="Currently Working" />
+                  <BooleanBadge value={!applicant.currently_working} label="Currently Working" />
                 </div>
                 <div className="grid grid-cols-2 gap-4 mt-4">
                   <div>
