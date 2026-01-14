@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor } from 'lucide-react';
 import { generateJobUrl } from '@/lib/slugify';
 import { InterviewResultsView } from '@/components/InterviewResultsView';
 import { Input } from '@/components/ui/input';
@@ -1370,6 +1370,19 @@ const Admin = () => {
                               <Star className={`w-4 h-4 ${applicant.is_starred ? 'fill-current' : ''}`} />
                             </button>
                             <h3 className="font-semibold">{applicant.full_name}</h3>
+                            {/* Device type icon */}
+                            {applicant.device_type && (
+                              <span 
+                                className={`flex-shrink-0 ${applicant.device_type === 'mobile' ? 'text-blue-500' : 'text-gray-500'}`}
+                                title={`Applied from ${applicant.device_type}`}
+                              >
+                                {applicant.device_type === 'mobile' ? (
+                                  <Smartphone className="w-4 h-4" />
+                                ) : (
+                                  <Monitor className="w-4 h-4" />
+                                )}
+                              </span>
+                            )}
                             {isNew && (
                               <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-xs">
                                 NEW
