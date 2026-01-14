@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -166,6 +166,34 @@ export default function ApplicantSearchResults({
   const [editingApplicant, setEditingApplicant] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ full_name: '', email: '', phone: '', notes: '' });
   const [savingEdit, setSavingEdit] = useState(false);
+  
+  // Ref for expanded applicant card (click-outside detection)
+  const expandedCardRef = useRef<HTMLDivElement>(null);
+  
+  // Close expanded details on Escape key or click outside
+  useEffect(() => {
+    if (!expandedApplicant) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onViewDetails(expandedApplicant); // Toggle to close
+      }
+    };
+    
+    const handleClickOutside = (e: MouseEvent) => {
+      if (expandedCardRef.current && !expandedCardRef.current.contains(e.target as Node)) {
+        onViewDetails(expandedApplicant); // Toggle to close
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [expandedApplicant, onViewDetails]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -231,7 +259,11 @@ export default function ApplicantSearchResults({
   return (
     <div className="space-y-3">
       {applicants.map((applicant) => (
-        <Card key={applicant.id} className="hover:shadow-md transition-shadow">
+        <Card 
+          key={applicant.id} 
+          ref={expandedApplicant === applicant.id ? expandedCardRef : undefined}
+          className="hover:shadow-md transition-shadow"
+        >
           <CardContent className="py-4">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1 min-w-0">

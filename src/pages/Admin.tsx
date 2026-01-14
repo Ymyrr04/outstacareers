@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { format } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -225,6 +225,34 @@ const Admin = () => {
   
   // Sort state
   const [sortOption, setSortOption] = useState<SortOption>('newest');
+  
+  // Ref for expanded applicant card (click-outside detection)
+  const expandedCardRef = useRef<HTMLDivElement>(null);
+  
+  // Close expanded details on Escape key or click outside
+  useEffect(() => {
+    if (!expandedApplicant) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setExpandedApplicant(null);
+      }
+    };
+    
+    const handleClickOutside = (e: MouseEvent) => {
+      if (expandedCardRef.current && !expandedCardRef.current.contains(e.target as Node)) {
+        setExpandedApplicant(null);
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [expandedApplicant]);
   
   // Helper to calculate overall score (prioritizes candidates with both CV + Interview)
   const getOverallScore = (applicant: Applicant): { score: number; hasInterview: boolean } => {
@@ -1336,6 +1364,7 @@ const Admin = () => {
                   return (
                   <Card 
                     key={applicant.id}
+                    ref={expandedApplicant === applicant.id ? expandedCardRef : undefined}
                     draggable
                     onDragStart={(e) => {
                       setDraggedApplicant(applicant);
