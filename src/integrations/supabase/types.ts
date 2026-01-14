@@ -86,6 +86,7 @@ export type Database = {
           internet_speed: string
           ip_hash: string | null
           is_available: boolean | null
+          is_starred: boolean | null
           job_id: string | null
           job_source: string | null
           job_title: string
@@ -138,6 +139,7 @@ export type Database = {
           internet_speed: string
           ip_hash?: string | null
           is_available?: boolean | null
+          is_starred?: boolean | null
           job_id?: string | null
           job_source?: string | null
           job_title: string
@@ -190,6 +192,7 @@ export type Database = {
           internet_speed?: string
           ip_hash?: string | null
           is_available?: boolean | null
+          is_starred?: boolean | null
           job_id?: string | null
           job_source?: string | null
           job_title?: string

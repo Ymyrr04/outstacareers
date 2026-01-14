@@ -116,6 +116,8 @@ interface Applicant {
   availability_checked_at?: string | null;
   // Details viewed tracking
   details_viewed_at?: string | null;
+  // Star/favorite
+  is_starred?: boolean;
 }
 
 interface ApplicantSearchResultsProps {
@@ -132,6 +134,7 @@ interface ApplicantSearchResultsProps {
   onSendEmail?: (applicant: { id: string; full_name: string; email: string; job_title: string; status: string }) => void;
   onViewHistory?: (applicant: { id: string; name: string; email: string }) => void;
   onCheckAvailability?: (applicant: { id: string; email: string; full_name: string; is_available: boolean | null; availability_checked_at: string | null }) => void;
+  onToggleStar?: (applicantId: string) => void;
   expandedApplicant: string | null;
   loadingPreview: boolean;
   downloadingCv?: string | null;
@@ -151,6 +154,7 @@ export default function ApplicantSearchResults({
   onSendEmail,
   onViewHistory,
   onCheckAvailability,
+  onToggleStar,
   expandedApplicant,
   loadingPreview,
   downloadingCv,
@@ -229,6 +233,23 @@ export default function ApplicantSearchResults({
               <div className="flex-1 min-w-0">
                 {/* Header row with name and badges */}
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
+                  {/* Star button */}
+                  {onToggleStar && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onToggleStar(applicant.id);
+                      }}
+                      className={`flex-shrink-0 p-0.5 rounded transition-colors ${
+                        applicant.is_starred 
+                          ? 'text-yellow-500 hover:text-yellow-600' 
+                          : 'text-gray-300 hover:text-yellow-400'
+                      }`}
+                      title={applicant.is_starred ? 'Remove star' : 'Add star'}
+                    >
+                      <Star className={`w-4 h-4 ${applicant.is_starred ? 'fill-current' : ''}`} />
+                    </button>
+                  )}
                   <h3 className="font-semibold truncate">{applicant.full_name}</h3>
                   
                   {applicant.status === 'For Review' && !applicant.details_viewed_at && (

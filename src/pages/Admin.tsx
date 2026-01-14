@@ -163,7 +163,10 @@ interface Applicant {
   reprofiled_at: string | null;
   candidate_profile: string | null;
   details_viewed_at: string | null;
+  is_starred: boolean;
 }
+
+type SortOption = 'newest' | 'score-desc' | 'score-asc' | 'starred';
 
 const Admin = () => {
   const { user, isAdmin, loading, signOut } = useAuth();
@@ -218,6 +221,86 @@ const Admin = () => {
   // Drag and drop state
   const [draggedApplicant, setDraggedApplicant] = useState<Applicant | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<ApplicantStatusFolder | null>(null);
+  
+  // Sort state
+  const [sortOption, setSortOption] = useState<SortOption>('newest');
+  
+  // Helper to calculate overall score (prioritizes candidates with both CV + Interview)
+  const getOverallScore = (applicant: Applicant): { score: number; hasInterview: boolean } => {
+    const cvScore = applicant.total_score ?? 0;
+    const interviewScore = applicant.interview_session?.overall_score ?? null;
+    
+    if (interviewScore !== null) {
+      // Average of both scores
+      return { score: (cvScore + interviewScore) / 2, hasInterview: true };
+    }
+    return { score: cvScore, hasInterview: false };
+  };
+  
+  // Sort applicants helper
+  const sortApplicants = (applicantsToSort: Applicant[]): Applicant[] => {
+    return [...applicantsToSort].sort((a, b) => {
+      // Starred always comes first regardless of sort option
+      if (sortOption === 'starred') {
+        if (a.is_starred && !b.is_starred) return -1;
+        if (!a.is_starred && b.is_starred) return 1;
+        // Secondary sort by score for starred items
+        const aScore = getOverallScore(a);
+        const bScore = getOverallScore(b);
+        if (aScore.hasInterview && !bScore.hasInterview) return -1;
+        if (!aScore.hasInterview && bScore.hasInterview) return 1;
+        return bScore.score - aScore.score;
+      }
+      
+      if (sortOption === 'score-desc' || sortOption === 'score-asc') {
+        const aScore = getOverallScore(a);
+        const bScore = getOverallScore(b);
+        
+        // Prioritize candidates with complete assessments (CV + Interview)
+        if (aScore.hasInterview && !bScore.hasInterview) return -1;
+        if (!aScore.hasInterview && bScore.hasInterview) return 1;
+        
+        // Then sort by score
+        const scoreDiff = sortOption === 'score-desc' 
+          ? bScore.score - aScore.score 
+          : aScore.score - bScore.score;
+        return scoreDiff;
+      }
+      
+      // Default: newest first
+      return new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime();
+    });
+  };
+  
+  // Toggle star handler
+  const handleToggleStar = async (applicantId: string) => {
+    const applicant = applicants.find(a => a.id === applicantId);
+    if (!applicant) return;
+    
+    const newStarred = !applicant.is_starred;
+    
+    // Optimistic update
+    setApplicants(prev => prev.map(a => 
+      a.id === applicantId ? { ...a, is_starred: newStarred } : a
+    ));
+    
+    const { error } = await supabase
+      .from('applicants_prescreen')
+      .update({ is_starred: newStarred })
+      .eq('id', applicantId);
+    
+    if (error) {
+      // Revert on error
+      setApplicants(prev => prev.map(a => 
+        a.id === applicantId ? { ...a, is_starred: !newStarred } : a
+      ));
+      toast({
+        title: 'Error',
+        description: 'Failed to update star status',
+        variant: 'destructive',
+      });
+    }
+  };
 
   // Compute unique skills and tools from all applicants
   const { allSkills, allTools } = useMemo(() => {
@@ -1092,6 +1175,7 @@ const Admin = () => {
                           });
                         }
                       }}
+                      onToggleStar={handleToggleStar}
                       expandedApplicant={expandedApplicant}
                       loadingPreview={loadingPreview}
                       downloadingCv={downloadingCv}
@@ -1100,15 +1184,28 @@ const Admin = () => {
 
                   {/* Folder View Tab */}
                   <TabsContent value="folders" className="space-y-4">
-                    {/* Quick search for folder view */}
-                    <div className="relative">
-                      <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                      <Input
-                        placeholder="Quick search by name, email, or score..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10"
-                      />
+                    {/* Quick search and sort for folder view */}
+                    <div className="flex gap-3">
+                      <div className="relative flex-1">
+                        <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Quick search by name, email, or score..."
+                          value={searchTerm}
+                          onChange={(e) => setSearchTerm(e.target.value)}
+                          className="pl-10"
+                        />
+                      </div>
+                      <Select value={sortOption} onValueChange={(v) => setSortOption(v as SortOption)}>
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Sort by..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="newest">Newest First</SelectItem>
+                          <SelectItem value="score-desc">Score: High to Low</SelectItem>
+                          <SelectItem value="score-asc">Score: Low to High</SelectItem>
+                          <SelectItem value="starred">Starred First</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                 
                     <Tabs value={activeStatusFolder} onValueChange={(v) => setActiveStatusFolder(v as ApplicantStatusFolder)} className="space-y-4">
@@ -1170,7 +1267,9 @@ const Admin = () => {
                     
                     return matchesName || matchesEmail || matchesScore;
                   });
-                  const groupedByRole = statusApplicants.reduce((groups, applicant) => {
+                  // Sort applicants first, then group by role
+                  const sortedApplicants = sortApplicants(statusApplicants);
+                  const groupedByRole = sortedApplicants.reduce((groups, applicant) => {
                     const jobTitle = applicant.job_title;
                     if (!groups[jobTitle]) {
                       groups[jobTitle] = [];
@@ -1228,6 +1327,21 @@ const Admin = () => {
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
+                            {/* Star button */}
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleToggleStar(applicant.id);
+                              }}
+                              className={`flex-shrink-0 p-0.5 rounded transition-colors ${
+                                applicant.is_starred 
+                                  ? 'text-yellow-500 hover:text-yellow-600' 
+                                  : 'text-gray-300 hover:text-yellow-400'
+                              }`}
+                              title={applicant.is_starred ? 'Remove star' : 'Add star'}
+                            >
+                              <Star className={`w-4 h-4 ${applicant.is_starred ? 'fill-current' : ''}`} />
+                            </button>
                             <h3 className="font-semibold">{applicant.full_name}</h3>
                             {isNew && (
                               <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-xs">
