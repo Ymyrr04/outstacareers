@@ -336,13 +336,23 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
       
       // Format phone with country code
       const phoneCountryCode = formData.phone_country_code.split('|')[0] || '+63';
-      const formattedPhone = `${phoneCountryCode} ${formData.phone.trim()}`;
+      // Remove leading 0 for Philippine numbers (+63)
+      let phoneNumber = formData.phone.trim();
+      if (phoneCountryCode === '+63' && phoneNumber.startsWith('0')) {
+        phoneNumber = phoneNumber.substring(1);
+      }
+      const formattedPhone = `${phoneCountryCode} ${phoneNumber}`;
       
       // Format WhatsApp if provided
       let formattedWhatsapp = null;
       if (formData.whatsapp.trim()) {
         const whatsappCountryCode = formData.whatsapp_country_code.split('|')[0] || '+63';
-        formattedWhatsapp = `${whatsappCountryCode} ${formData.whatsapp.trim()}`;
+        // Remove leading 0 for Philippine numbers (+63)
+        let whatsappNumber = formData.whatsapp.trim();
+        if (whatsappCountryCode === '+63' && whatsappNumber.startsWith('0')) {
+          whatsappNumber = whatsappNumber.substring(1);
+        }
+        formattedWhatsapp = `${whatsappCountryCode} ${whatsappNumber}`;
       }
       
       const response = await supabase.functions.invoke('submit-application', {
