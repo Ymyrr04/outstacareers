@@ -495,6 +495,7 @@ export type Database = {
       }
       interview_sessions: {
         Row: {
+          admin_notified_at: string | null
           ai_assessment_details: Json | null
           ai_concerns: string[] | null
           ai_strengths: string[] | null
@@ -515,6 +516,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admin_notified_at?: string | null
           ai_assessment_details?: Json | null
           ai_concerns?: string[] | null
           ai_strengths?: string[] | null
@@ -535,6 +537,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          admin_notified_at?: string | null
           ai_assessment_details?: Json | null
           ai_concerns?: string[] | null
           ai_strengths?: string[] | null

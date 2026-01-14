@@ -1,10 +1,184 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+// Declare EdgeRuntime for background tasks
+declare const EdgeRuntime: {
+  waitUntil: (promise: Promise<unknown>) => void;
+};
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
+
+// Background task to notify the assigned admin about interview completion
+async function notifyAssignedAdmin(
+  supabase: SupabaseClient,
+  adminUserId: string,
+  applicantId: string,
+  applicantName: string,
+  applicantEmail: string,
+  jobTitle: string,
+  interviewStatus: string
+) {
+  console.log(`[Background] Notifying admin ${adminUserId} about completed interview`);
+  
+  try {
+    // Get admin email using Supabase admin API
+    const { data: userData, error: userError } = await supabase.auth.admin.getUserById(adminUserId);
+    
+    if (userError || !userData?.user?.email) {
+      console.error('[Background] Failed to get admin email:', userError);
+      return;
+    }
+
+    const adminEmail = userData.user.email;
+    console.log(`[Background] Sending notification to admin: ${adminEmail}`);
+
+    const gmailUser = Deno.env.get("GMAIL_USER");
+    const gmailPassword = Deno.env.get("GMAIL_APP_PASSWORD");
+
+    if (!gmailUser || !gmailPassword) {
+      console.error('[Background] Gmail credentials not configured');
+      return;
+    }
+
+    // Import SMTP client dynamically
+    const { SMTPClient } = await import("https://deno.land/x/denomailer@1.6.0/mod.ts");
+
+    const client = new SMTPClient({
+      connection: {
+        hostname: "smtp.gmail.com",
+        port: 465,
+        tls: true,
+        auth: {
+          username: gmailUser,
+          password: gmailPassword,
+        },
+      },
+    });
+
+    const applicantProfileUrl = `https://outstacareers.lovable.app/admin?applicant=${applicantId}`;
+    const statusLabel = interviewStatus === 'completed' ? 'Completed Assessment' : 'Completed (Manual Review)';
+    const subject = `New Application: ${applicantName} - ${jobTitle} (${statusLabel})`;
+    const bodyHtml = `
+      <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
+        <h2 style="color: #1a1a2e;">New Completed Application</h2>
+        <p>A candidate has completed their application and assessment for a role assigned to you:</p>
+        <table style="border-collapse: collapse; margin: 20px 0;">
+          <tr>
+            <td style="padding: 8px 16px 8px 0; font-weight: bold; color: #666;">Position:</td>
+            <td style="padding: 8px 0;">${jobTitle}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 16px 8px 0; font-weight: bold; color: #666;">Candidate Name:</td>
+            <td style="padding: 8px 0;">${applicantName}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 16px 8px 0; font-weight: bold; color: #666;">Candidate Email:</td>
+            <td style="padding: 8px 0;">${applicantEmail}</td>
+          </tr>
+          <tr>
+            <td style="padding: 8px 16px 8px 0; font-weight: bold; color: #666;">Assessment Status:</td>
+            <td style="padding: 8px 0;">${statusLabel}</td>
+          </tr>
+        </table>
+        <p style="margin: 20px 0;">
+          <a href="${applicantProfileUrl}" style="display: inline-block; background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #ffffff; text-decoration: none; padding: 12px 24px; border-radius: 6px; font-weight: 600;">View Applicant Profile</a>
+        </p>
+        <p style="color: #888; font-size: 12px; margin-top: 30px;">This is an automated notification from Outsta Recruitment.</p>
+      </div>
+    `;
+
+    const emailHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${subject}</title></head><body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;"><table role="presentation" style="width: 100%; border-collapse: collapse;"><tr><td align="center" style="padding: 40px 0;"><table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"><tr><td style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 12px 12px 0 0; text-align: center;"><h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">Outsta Recruitment</h1></td></tr><tr><td style="padding: 40px;">${bodyHtml}</td></tr><tr><td style="background-color: #f8f9fa; padding: 25px 40px; border-radius: 0 0 12px 12px; text-align: center;"><p style="color: #999999; font-size: 12px; margin: 0;">This is an automated notification.<br>Please do not reply to this email.</p></td></tr></table></td></tr></table></body></html>`;
+
+    await client.send({
+      from: gmailUser,
+      to: adminEmail,
+      subject: subject,
+      content: "auto",
+      html: emailHtml,
+    });
+
+    await client.close();
+
+    // Mark notification as sent in interview_sessions
+    await supabase
+      .from('interview_sessions')
+      .update({ admin_notified_at: new Date().toISOString() })
+      .eq('applicant_id', applicantId);
+
+    console.log(`[Background] Admin notification sent successfully to ${adminEmail}`);
+  } catch (error) {
+    console.error('[Background] Error notifying admin:', error);
+  }
+}
+
+// Helper to fetch applicant/job info and trigger admin notification
+async function triggerAdminNotification(
+  supabase: SupabaseClient,
+  sessionId: string,
+  interviewStatus: string
+) {
+  try {
+    // Get session with applicant and job info
+    const { data: session, error: sessionError } = await supabase
+      .from('interview_sessions')
+      .select('applicant_id, job_id')
+      .eq('id', sessionId)
+      .single();
+
+    if (sessionError || !session) {
+      console.error('[Notify] Failed to get session:', sessionError);
+      return;
+    }
+
+    // Get applicant details
+    const { data: applicant, error: applicantError } = await supabase
+      .from('applicants_prescreen')
+      .select('full_name, email, job_title')
+      .eq('id', session.applicant_id)
+      .single();
+
+    if (applicantError || !applicant) {
+      console.error('[Notify] Failed to get applicant:', applicantError);
+      return;
+    }
+
+    // Get job and assigned admin
+    if (!session.job_id) {
+      console.log('[Notify] No job_id on session, skipping admin notification');
+      return;
+    }
+
+    const { data: job, error: jobError } = await supabase
+      .from('jobs')
+      .select('assigned_admin_id, title')
+      .eq('id', session.job_id)
+      .single();
+
+    if (jobError || !job || !job.assigned_admin_id) {
+      console.log('[Notify] No assigned admin for job, skipping notification');
+      return;
+    }
+
+    // Trigger the notification in background
+    console.log(`[Notify] Triggering admin notification for session ${sessionId}`);
+    EdgeRuntime.waitUntil(
+      notifyAssignedAdmin(
+        supabase,
+        job.assigned_admin_id,
+        session.applicant_id,
+        applicant.full_name,
+        applicant.email,
+        job.title || applicant.job_title,
+        interviewStatus
+      )
+    );
+  } catch (error) {
+    console.error('[Notify] Error triggering admin notification:', error);
+  }
+}
 
 interface InterviewAnswer {
   question_text: string;
@@ -94,6 +268,9 @@ serve(async (req) => {
         );
       }
 
+      // Trigger admin notification for completed manual review
+      await triggerAdminNotification(supabase, session_id, 'completed_manual_review');
+
       return new Response(
         JSON.stringify({ 
           success: true,
@@ -116,6 +293,9 @@ serve(async (req) => {
           ai_summary: 'Manual review required - AI service not configured.',
         })
         .eq('id', session_id);
+
+      // Trigger admin notification
+      await triggerAdminNotification(supabase, session_id, 'completed_manual_review');
 
       return new Response(
         JSON.stringify({ 
@@ -302,6 +482,9 @@ Provide your assessment. Return ONLY the JSON object.`;
           console.error('Error updating session for manual review:', updateError);
         }
 
+        // Trigger admin notification for rate-limited/credit-exhausted case
+        await triggerAdminNotification(supabase, session_id, 'completed_manual_review');
+
         return new Response(
           JSON.stringify({ 
             success: true,
@@ -392,6 +575,9 @@ Provide your assessment. Return ONLY the JSON object.`;
       console.error('Failed to update interview session:', updateError);
       // Continue anyway - the assessment was successful
     }
+
+    // Trigger admin notification for completed interview
+    await triggerAdminNotification(supabase, session_id, 'completed');
 
     console.log('Interview assessment completed:', validatedResult);
 

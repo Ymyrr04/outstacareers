@@ -32,3 +32,6 @@ verify_jwt = false
 
 [functions.assess-interview]
 verify_jwt = false
+
+[functions.process-pending-notifications]
+verify_jwt = false
