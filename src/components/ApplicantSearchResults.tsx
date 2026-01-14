@@ -128,7 +128,7 @@ interface ApplicantSearchResultsProps {
   onDelete: (applicantId: string) => void;
   onPreviewCv: (applicantId: string, cvPath: string, name: string, cvText: string | null) => void;
   onShowNotes: (id: string, name: string, notes: string) => void;
-  onDownloadCv?: (applicantId: string, cvPath: string) => void;
+  onDownloadCv?: (applicantId: string, cvPath: string, applicantName: string) => void;
   onUpdateApplicant?: (applicantId: string, data: { full_name: string; email: string; phone: string | null; notes: string | null }) => Promise<void>;
   onSendInvite?: (applicant: { full_name: string; email: string; job_title: string }) => void;
   onSendEmail?: (applicant: { id: string; full_name: string; email: string; job_title: string; status: string }) => void;
@@ -869,7 +869,7 @@ export default function ApplicantSearchResults({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => onDownloadCv(applicant.id, applicant.cv_file_url!)}
+                      onClick={() => onDownloadCv(applicant.id, applicant.cv_file_url!, applicant.full_name)}
                       disabled={downloadingCv === applicant.id}
                       className="inline-flex items-center gap-2 bg-primary/10 text-primary hover:bg-primary/20"
                     >

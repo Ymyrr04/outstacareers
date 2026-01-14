@@ -369,11 +369,22 @@ const Admin = () => {
     setPreviewCv(null);
   };
 
+  // Helper to generate filename from applicant name
+  const generateCvFilename = (name: string, originalPath: string): string => {
+    const extension = originalPath.split('.').pop()?.toLowerCase() || 'pdf';
+    const sanitizedName = name
+      .trim()
+      .replace(/[^a-zA-Z0-9\s-]/g, '') // Remove special characters
+      .replace(/\s+/g, '-') // Replace spaces with hyphens
+      .toLowerCase();
+    return `${sanitizedName}-cv.${extension}`;
+  };
+
   const handleDownloadFromPreview = () => {
     if (!previewCv) return;
     const a = document.createElement('a');
     a.href = previewCv.url;
-    a.download = previewCv.path.split('/').pop() || 'cv.pdf';
+    a.download = generateCvFilename(previewCv.name, previewCv.path);
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -383,7 +394,7 @@ const Admin = () => {
     });
   };
 
-  const handleDownloadCv = async (applicantId: string, cvPath: string) => {
+  const handleDownloadCv = async (applicantId: string, cvPath: string, applicantName: string) => {
     setDownloadingCv(applicantId);
     try {
       // Download the file directly using Supabase storage
@@ -404,7 +415,7 @@ const Admin = () => {
       const url = URL.createObjectURL(data);
       const a = document.createElement('a');
       a.href = url;
-      a.download = cvPath.split('/').pop() || 'cv.pdf';
+      a.download = generateCvFilename(applicantName, cvPath);
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -2045,7 +2056,7 @@ const Admin = () => {
                               <Button
                                 variant="outline"
                                 size="sm"
-                                onClick={() => handleDownloadCv(applicant.id, applicant.cv_file_url!)}
+                                onClick={() => handleDownloadCv(applicant.id, applicant.cv_file_url!, applicant.full_name)}
                                 disabled={downloadingCv === applicant.id}
                                 className="inline-flex items-center gap-2 bg-primary/10 text-primary hover:bg-primary/20"
                               >
