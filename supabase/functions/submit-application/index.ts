@@ -482,20 +482,8 @@ serve(async (req) => {
       );
     }
 
-    // Send notification email to assigned admin if one exists
-    if (assignedAdminId) {
-      console.log(`Notifying assigned admin ${assignedAdminId} about new application...`);
-      EdgeRuntime.waitUntil(
-        notifyAssignedAdmin(
-          supabase,
-          assignedAdminId,
-          applicantId,
-          body.full_name.trim(),
-          body.email.trim().toLowerCase(),
-          jobTitle
-        )
-      );
-    }
+    // Admin notification is now sent after interview completion or 20-minute timeout
+    // See: assess-interview (on completion) and process-pending-notifications (for timeout)
 
     return new Response(JSON.stringify({ 
       success: true,
