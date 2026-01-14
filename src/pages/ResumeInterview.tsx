@@ -143,12 +143,15 @@ export default function ResumeInterview() {
           <CardContent className="text-center space-y-4">
             <p className="text-muted-foreground">{error}</p>
             <p className="text-sm text-muted-foreground">
+              You may re-submit your application to receive a new assessment link and complete the interview.
+            </p>
+            <p className="text-xs text-muted-foreground">
               If you believe this is an error, please contact our recruitment team.
             </p>
             <Button asChild>
               <Link to="/">
                 <ArrowLeft className="w-4 h-4 mr-2" />
-                Return to Home
+                View Open Positions
               </Link>
             </Button>
           </CardContent>
