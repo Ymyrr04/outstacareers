@@ -72,6 +72,7 @@ export type Database = {
           currently_working: boolean
           cv_file_url: string | null
           cv_text: string | null
+          details_viewed_at: string | null
           email: string
           extracted_skills: string[] | null
           extracted_tools: string[] | null
@@ -123,6 +124,7 @@ export type Database = {
           currently_working: boolean
           cv_file_url?: string | null
           cv_text?: string | null
+          details_viewed_at?: string | null
           email: string
           extracted_skills?: string[] | null
           extracted_tools?: string[] | null
@@ -174,6 +176,7 @@ export type Database = {
           currently_working?: boolean
           cv_file_url?: string | null
           cv_text?: string | null
+          details_viewed_at?: string | null
           email?: string
           extracted_skills?: string[] | null
           extracted_tools?: string[] | null

@@ -162,6 +162,7 @@ interface Applicant {
   original_job_title: string | null;
   reprofiled_at: string | null;
   candidate_profile: string | null;
+  details_viewed_at: string | null;
 }
 
 const Admin = () => {
@@ -1021,7 +1022,22 @@ const Admin = () => {
                       applicants={searchFilteredApplicants}
                       statusOptions={APPLICANT_STATUS_OPTIONS}
                       onUpdateStatus={handleUpdateApplicantStatus}
-                      onViewDetails={(id) => setExpandedApplicant(expandedApplicant === id ? null : id)}
+                      onViewDetails={async (id) => {
+                        const newExpanded = expandedApplicant === id ? null : id;
+                        setExpandedApplicant(newExpanded);
+                        // Mark as viewed when expanding details
+                        const applicant = applicants.find(a => a.id === id);
+                        if (newExpanded && applicant && !applicant.details_viewed_at) {
+                          await supabase
+                            .from('applicants_prescreen')
+                            .update({ details_viewed_at: new Date().toISOString() })
+                            .eq('id', id);
+                          // Update local state
+                          setApplicants(prev => prev.map(a => 
+                            a.id === id ? { ...a, details_viewed_at: new Date().toISOString() } : a
+                          ));
+                        }
+                      }}
                       onDelete={handleDeleteApplicant}
                       onPreviewCv={handlePreviewCv}
                       onShowNotes={(id, name, notes) => setNotesPopup({ id, name, notes })}
@@ -1188,6 +1204,7 @@ const Admin = () => {
                               <AccordionContent className="px-4 pb-4">
                                 <div className="grid gap-4">
                 {jobApplicants.map((applicant) => {
+                  const isNew = applicant.status === 'For Review' && !applicant.details_viewed_at;
                   const isUnreviewed = applicant.status === 'For Review';
                   const isDragging = draggedApplicant?.id === applicant.id;
                   return (
@@ -1212,7 +1229,7 @@ const Admin = () => {
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             <h3 className="font-semibold">{applicant.full_name}</h3>
-                            {isUnreviewed && (
+                            {isNew && (
                               <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-xs">
                                 NEW
                               </Badge>
@@ -1425,7 +1442,21 @@ const Admin = () => {
                           <Button
                             variant="outline"
                             size="sm"
-                            onClick={() => setExpandedApplicant(expandedApplicant === applicant.id ? null : applicant.id)}
+                            onClick={async () => {
+                              const newExpanded = expandedApplicant === applicant.id ? null : applicant.id;
+                              setExpandedApplicant(newExpanded);
+                              // Mark as viewed when expanding details
+                              if (newExpanded && !applicant.details_viewed_at) {
+                                await supabase
+                                  .from('applicants_prescreen')
+                                  .update({ details_viewed_at: new Date().toISOString() })
+                                  .eq('id', applicant.id);
+                                // Update local state
+                                setApplicants(prev => prev.map(a => 
+                                  a.id === applicant.id ? { ...a, details_viewed_at: new Date().toISOString() } : a
+                                ));
+                              }
+                            }}
                           >
                             {expandedApplicant === applicant.id ? 'Hide Details' : 'View Details'}
                           </Button>

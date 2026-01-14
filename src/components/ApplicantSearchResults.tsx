@@ -114,6 +114,8 @@ interface Applicant {
   // Bench availability fields
   is_available?: boolean | null;
   availability_checked_at?: string | null;
+  // Details viewed tracking
+  details_viewed_at?: string | null;
 }
 
 interface ApplicantSearchResultsProps {
@@ -228,6 +230,12 @@ export default function ApplicantSearchResults({
                 {/* Header row with name and badges */}
                 <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <h3 className="font-semibold truncate">{applicant.full_name}</h3>
+                  
+                  {applicant.status === 'For Review' && !applicant.details_viewed_at && (
+                    <Badge className="bg-amber-500 hover:bg-amber-600 text-white text-xs">
+                      NEW
+                    </Badge>
+                  )}
                   
                   {applicant.ranking_status && (
                     <Badge 
