@@ -1,7 +1,11 @@
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-
+import { useAuth } from "@/hooks/useAuth";
+import { Settings } from "lucide-react";
 
 const Navigation = () => {
+  const { isAdmin } = useAuth();
+
   return (
     <nav className="w-full bg-card border-b shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -33,14 +37,28 @@ const Navigation = () => {
               </a>
             </div>
           </div>
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
-            onClick={() => document.getElementById('positions')?.scrollIntoView({ behavior: 'smooth' })}
-          >
-            Apply Now
-          </Button>
+          <div className="flex items-center gap-3">
+            {isAdmin && (
+              <Link to="/admin">
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  className="text-muted-foreground hover:text-primary"
+                >
+                  <Settings className="w-4 h-4 mr-2" />
+                  Admin
+                </Button>
+              </Link>
+            )}
+            <Button 
+              variant="outline" 
+              size="sm" 
+              className="border-primary text-primary hover:bg-primary hover:text-primary-foreground"
+              onClick={() => document.getElementById('positions')?.scrollIntoView({ behavior: 'smooth' })}
+            >
+              Apply Now
+            </Button>
+          </div>
         </div>
       </div>
     </nav>
