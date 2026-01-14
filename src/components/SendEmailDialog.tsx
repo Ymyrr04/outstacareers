@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { 
   Send, Loader2, Clock, CalendarIcon, AlertTriangle, User 
 } from 'lucide-react';
+import { RichTextToolbar } from './RichTextToolbar';
 
 interface SendEmailDialogProps {
   open: boolean;
@@ -39,9 +40,29 @@ const timeSlots = [
 
 const timezones = ["PST", "MST", "CST", "EST", "UTC", "GMT", "CET", "IST", "JST", "AEST"];
 
-// Convert HTML to plain text (preserving markdown-style links)
+// Convert HTML to plain text (preserving markdown-style formatting)
 const htmlToPlainText = (html: string): string => {
-  let text = html.replace(/<br\s*\/?>/gi, '\n');
+  let text = html;
+  
+  // Convert bold tags to markdown
+  text = text.replace(/<strong>([^<]*)<\/strong>/gi, '**$1**');
+  text = text.replace(/<b>([^<]*)<\/b>/gi, '**$1**');
+  
+  // Convert italic tags to markdown
+  text = text.replace(/<em>([^<]*)<\/em>/gi, '*$1*');
+  text = text.replace(/<i>([^<]*)<\/i>/gi, '*$1*');
+  
+  // Convert underline tags to markdown
+  text = text.replace(/<u>([^<]*)<\/u>/gi, '__$1__');
+  
+  // Convert list items
+  text = text.replace(/<li>([^<]*)<\/li>/gi, '• $1\n');
+  text = text.replace(/<\/ul>/gi, '');
+  text = text.replace(/<ul>/gi, '');
+  text = text.replace(/<\/ol>/gi, '');
+  text = text.replace(/<ol>/gi, '');
+  
+  text = text.replace(/<br\s*\/?>/gi, '\n');
   text = text.replace(/<\/p>/gi, '\n\n');
   text = text.replace(/<\/div>/gi, '\n');
   // Convert HTML links to markdown-style links [text](url)
@@ -63,6 +84,15 @@ const plainTextToHtml = (text: string): string => {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+  
+  // Convert markdown-style bold **text** to HTML
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  
+  // Convert markdown-style italic *text* to HTML (but not ** which is bold)
+  html = html.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+  
+  // Convert markdown-style underline __text__ to HTML
+  html = html.replace(/__([^_]+)__/g, '<u>$1</u>');
   
   // Convert markdown-style links [text](url) to HTML links
   html = html.replace(
@@ -101,6 +131,7 @@ export function SendEmailDialog({
   const [interviewTime, setInterviewTime] = useState('');
   const [timezone, setTimezone] = useState('PST');
   const [meetingLink, setMeetingLink] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Fetch fresh templates when dialog opens
   useEffect(() => {
@@ -398,15 +429,20 @@ export function SendEmailDialog({
           {/* Message */}
           <div className="space-y-1.5">
             <Label className="text-sm">Message</Label>
-            <Textarea
-              value={bodyText}
-              onChange={(e) => setBodyText(e.target.value)}
-              placeholder="Write your message...&#10;&#10;URLs will automatically become clickable links."
-              className="min-h-[180px] text-sm resize-none"
-            />
-            <p className="text-xs text-muted-foreground">
-              Links will be clickable in the sent email.
-            </p>
+            <div className="border rounded-md overflow-hidden">
+              <RichTextToolbar
+                value={bodyText}
+                onChange={setBodyText}
+                textareaRef={textareaRef}
+              />
+              <Textarea
+                ref={textareaRef}
+                value={bodyText}
+                onChange={(e) => setBodyText(e.target.value)}
+                placeholder="Write your message...&#10;&#10;Use Ctrl+K for quick hyperlink insertion."
+                className="min-h-[180px] text-sm resize-none border-0 rounded-none focus-visible:ring-0"
+              />
+            </div>
           </div>
         </div>
 

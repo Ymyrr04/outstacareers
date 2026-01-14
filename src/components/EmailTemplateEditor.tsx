@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,8 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { useEmailTemplates, triggerToStatus, EmailTemplate } from '@/hooks/useEmailTemplates';
-import { Mail, Save, Loader2, Clock, Eye, AlertTriangle, Link2, Plus, Trash2 } from 'lucide-react';
+import { Mail, Save, Loader2, Clock, Eye, AlertTriangle, Plus, Trash2 } from 'lucide-react';
+import { RichTextToolbar } from './RichTextToolbar';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -32,9 +33,29 @@ interface EmailTemplateEditorProps {
   onOpenChange: (open: boolean) => void;
 }
 
-// Convert HTML to plain text (preserving markdown-style links)
+// Convert HTML to plain text (preserving markdown-style formatting)
 const htmlToPlainText = (html: string): string => {
-  let text = html.replace(/<br\s*\/?>/gi, '\n');
+  let text = html;
+  
+  // Convert bold tags to markdown
+  text = text.replace(/<strong>([^<]*)<\/strong>/gi, '**$1**');
+  text = text.replace(/<b>([^<]*)<\/b>/gi, '**$1**');
+  
+  // Convert italic tags to markdown
+  text = text.replace(/<em>([^<]*)<\/em>/gi, '*$1*');
+  text = text.replace(/<i>([^<]*)<\/i>/gi, '*$1*');
+  
+  // Convert underline tags to markdown
+  text = text.replace(/<u>([^<]*)<\/u>/gi, '__$1__');
+  
+  // Convert list items
+  text = text.replace(/<li>([^<]*)<\/li>/gi, '• $1\n');
+  text = text.replace(/<\/ul>/gi, '');
+  text = text.replace(/<ul>/gi, '');
+  text = text.replace(/<\/ol>/gi, '');
+  text = text.replace(/<ol>/gi, '');
+  
+  text = text.replace(/<br\s*\/?>/gi, '\n');
   text = text.replace(/<\/p>/gi, '\n\n');
   text = text.replace(/<\/div>/gi, '\n');
   // Convert HTML links to markdown-style links
@@ -55,6 +76,15 @@ const plainTextToHtml = (text: string): string => {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
+  
+  // Convert markdown-style bold **text** to HTML
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  
+  // Convert markdown-style italic *text* to HTML (but not ** which is bold)
+  html = html.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>');
+  
+  // Convert markdown-style underline __text__ to HTML
+  html = html.replace(/__([^_]+)__/g, '<u>$1</u>');
   
   // Convert markdown-style links [text](url) to HTML links
   html = html.replace(
@@ -110,10 +140,7 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
   const [newTemplateTrigger, setNewTemplateTrigger] = useState('');
   const [creating, setCreating] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [showHyperlinkDialog, setShowHyperlinkDialog] = useState(false);
-  const [hyperlinkText, setHyperlinkText] = useState('');
-  const [hyperlinkUrl, setHyperlinkUrl] = useState('');
-  const [cursorPosition, setCursorPosition] = useState(0);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Convert stored minutes to display value and unit
   const minutesToDisplayValue = (totalMinutes: number): { value: number; unit: 'minutes' | 'hours' } => {
@@ -191,18 +218,6 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
     setCreating(false);
   };
 
-  const handleInsertHyperlink = () => {
-    if (!hyperlinkText.trim() || !hyperlinkUrl.trim()) return;
-    
-    // Create the hyperlink in a format that will be converted properly
-    const linkMarkup = `[${hyperlinkText}](${hyperlinkUrl})`;
-    const newText = editForm.body_text.substring(0, cursorPosition) + linkMarkup + editForm.body_text.substring(cursorPosition);
-    setEditForm(prev => ({ ...prev, body_text: newText }));
-    
-    setShowHyperlinkDialog(false);
-    setHyperlinkText('');
-    setHyperlinkUrl('');
-  };
 
   const handleDeleteTemplate = async () => {
     if (!selectedTemplate) return;
@@ -501,30 +516,19 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
                           dangerouslySetInnerHTML={{ __html: getPreviewHtml() }}
                         />
                       ) : (
-                        <div className="space-y-2">
+                        <div className="border rounded-md overflow-hidden">
+                          <RichTextToolbar
+                            value={editForm.body_text}
+                            onChange={(value) => setEditForm(prev => ({ ...prev, body_text: value }))}
+                            textareaRef={textareaRef}
+                          />
                           <Textarea
+                            ref={textareaRef}
                             value={editForm.body_text}
                             onChange={(e) => setEditForm(prev => ({ ...prev, body_text: e.target.value }))}
-                            onSelect={(e) => setCursorPosition((e.target as HTMLTextAreaElement).selectionStart)}
-                            placeholder="Write your email message here...&#10;&#10;URLs will automatically become clickable links."
-                            className="min-h-[220px] text-sm resize-none"
+                            placeholder="Write your email message here...&#10;&#10;Use Ctrl+K for quick hyperlink insertion."
+                            className="min-h-[220px] text-sm resize-none border-0 rounded-none focus-visible:ring-0"
                           />
-                          <Button
-                            type="button"
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              const textarea = document.querySelector('textarea');
-                              if (textarea) {
-                                setCursorPosition(textarea.selectionStart);
-                              }
-                              setShowHyperlinkDialog(true);
-                            }}
-                            className="text-xs"
-                          >
-                            <Link2 className="h-3 w-3 mr-1.5" />
-                            Insert Hyperlink
-                          </Button>
                         </div>
                       )}
                     </div>
@@ -532,8 +536,7 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
                     {/* Placeholders help */}
                     {!previewMode && (
                       <div className="bg-muted/40 rounded-md p-3">
-                        <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1">
-                          <Link2 className="h-3 w-3" />
+                        <p className="text-xs font-medium text-muted-foreground mb-2">
                           Available placeholders (will be replaced with actual values):
                         </p>
                         <div className="flex flex-wrap gap-2">
@@ -542,12 +545,13 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
                               key={p.key}
                               type="button"
                               onClick={() => {
-                                const textarea = document.querySelector('textarea');
+                                const textarea = textareaRef.current;
                                 if (textarea) {
                                   const start = textarea.selectionStart;
                                   const end = textarea.selectionEnd;
                                   const newText = editForm.body_text.substring(0, start) + p.key + editForm.body_text.substring(end);
                                   setEditForm(prev => ({ ...prev, body_text: newText }));
+                                  textarea.focus();
                                 }
                               }}
                               className="text-xs px-2 py-1 rounded bg-background border hover:bg-muted transition-colors"
@@ -658,54 +662,6 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
             >
               {deleting ? <Loader2 className="h-4 w-4 animate-spin mr-1.5" /> : <Trash2 className="h-4 w-4 mr-1.5" />}
               Delete
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      {/* Insert Hyperlink Dialog */}
-      <AlertDialog open={showHyperlinkDialog} onOpenChange={setShowHyperlinkDialog}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle className="flex items-center gap-2">
-              <Link2 className="h-5 w-5" />
-              Insert Hyperlink
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              Add a clickable link to your email. The display text will be shown to the recipient.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <div className="py-4 space-y-4">
-            <div>
-              <Label className="text-sm font-medium mb-2 block">Display Text</Label>
-              <Input
-                value={hyperlinkText}
-                onChange={(e) => setHyperlinkText(e.target.value)}
-                placeholder="e.g., Click here for your interview"
-                className="w-full"
-              />
-              <p className="text-xs text-muted-foreground mt-1.5">
-                The text that will be visible and clickable.
-              </p>
-            </div>
-            <div>
-              <Label className="text-sm font-medium mb-2 block">URL</Label>
-              <Input
-                value={hyperlinkUrl}
-                onChange={(e) => setHyperlinkUrl(e.target.value)}
-                placeholder="https://example.com/meeting"
-                className="w-full"
-              />
-              <p className="text-xs text-muted-foreground mt-1.5">
-                The web address the link will go to.
-              </p>
-            </div>
-          </div>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => { setHyperlinkText(''); setHyperlinkUrl(''); }}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={handleInsertHyperlink} disabled={!hyperlinkText.trim() || !hyperlinkUrl.trim()}>
-              <Link2 className="h-4 w-4 mr-1.5" />
-              Insert Link
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
