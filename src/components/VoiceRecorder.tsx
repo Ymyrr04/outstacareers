@@ -37,8 +37,39 @@ export function VoiceRecorder({
     };
   }, [audioUrl, existingUrl]);
 
+  // Determine best supported MIME type for the browser
+  const getSupportedMimeType = (): string => {
+    const types = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/mp4',
+      'audio/aac',
+      'audio/ogg;codecs=opus',
+      'audio/wav',
+      ''  // Empty string = browser default
+    ];
+    
+    for (const type of types) {
+      if (type === '' || MediaRecorder.isTypeSupported(type)) {
+        console.log('VoiceRecorder using MIME type:', type || 'browser default');
+        return type;
+      }
+    }
+    return '';
+  };
+
   const startRecording = async () => {
     try {
+      // Check if MediaRecorder is supported
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        toast({
+          title: 'Not Supported',
+          description: 'Voice recording is not supported on this browser. Please use Chrome, Firefox, or Safari.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           echoCancellation: true,
@@ -47,9 +78,17 @@ export function VoiceRecorder({
         }
       });
 
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm' : 'audio/mp4'
-      });
+      const mimeType = getSupportedMimeType();
+      const options: MediaRecorderOptions = mimeType ? { mimeType } : {};
+      
+      let mediaRecorder: MediaRecorder;
+      try {
+        mediaRecorder = new MediaRecorder(stream, options);
+      } catch (e) {
+        // Fallback without options
+        console.warn('MediaRecorder with options failed, trying without:', e);
+        mediaRecorder = new MediaRecorder(stream);
+      }
       
       mediaRecorderRef.current = mediaRecorder;
       audioChunksRef.current = [];
@@ -61,8 +100,9 @@ export function VoiceRecorder({
       };
 
       mediaRecorder.onstop = () => {
+        const actualMimeType = mediaRecorder.mimeType || 'audio/webm';
         const blob = new Blob(audioChunksRef.current, { 
-          type: mediaRecorder.mimeType 
+          type: actualMimeType 
         });
         setAudioBlob(blob);
         const url = URL.createObjectURL(blob);
@@ -70,6 +110,21 @@ export function VoiceRecorder({
         
         // Stop all tracks
         stream.getTracks().forEach(track => track.stop());
+      };
+
+      mediaRecorder.onerror = (event) => {
+        console.error('MediaRecorder error:', event);
+        toast({
+          title: 'Recording Error',
+          description: 'An error occurred while recording. Please try again.',
+          variant: 'destructive',
+        });
+        stream.getTracks().forEach(track => track.stop());
+        setIsRecording(false);
+        if (timerRef.current) {
+          clearInterval(timerRef.current);
+          timerRef.current = null;
+        }
       };
 
       mediaRecorder.start(1000);
@@ -88,11 +143,21 @@ export function VoiceRecorder({
         });
       }, 1000);
 
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error accessing microphone:', error);
+      
+      let errorMessage = 'Please allow microphone access to record your voice introduction.';
+      if (error.name === 'NotAllowedError') {
+        errorMessage = 'Microphone access denied. Please allow microphone access in your browser settings and refresh the page.';
+      } else if (error.name === 'NotFoundError') {
+        errorMessage = 'No microphone found. Please connect a microphone and try again.';
+      } else if (error.name === 'NotSupportedError') {
+        errorMessage = 'Voice recording is not supported on this device/browser.';
+      }
+      
       toast({
         title: 'Microphone access denied',
-        description: 'Please allow microphone access to record your voice introduction.',
+        description: errorMessage,
         variant: 'destructive',
       });
     }
@@ -140,12 +205,25 @@ export function VoiceRecorder({
 
     setIsUploading(true);
     try {
-      const fileName = `voice-intro-${Date.now()}.webm`;
+      // Determine file extension based on MIME type
+      const mimeType = audioBlob.type || 'audio/webm';
+      let extension = 'webm';
+      if (mimeType.includes('mp4') || mimeType.includes('m4a')) {
+        extension = 'mp4';
+      } else if (mimeType.includes('aac')) {
+        extension = 'aac';
+      } else if (mimeType.includes('ogg')) {
+        extension = 'ogg';
+      } else if (mimeType.includes('wav')) {
+        extension = 'wav';
+      }
+      
+      const fileName = `voice-intro-${Date.now()}.${extension}`;
       
       const { data, error } = await supabase.storage
         .from('voice-recordings')
         .upload(fileName, audioBlob, {
-          contentType: audioBlob.type,
+          contentType: mimeType,
           upsert: false,
         });
 
