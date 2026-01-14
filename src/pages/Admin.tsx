@@ -1297,15 +1297,22 @@ const Admin = () => {
                         </Card>
                       ) : (
                         <Accordion type="multiple" className="space-y-4">
-                          {Object.entries(groupedByRole).map(([jobTitle, jobApplicants]) => (
+                          {Object.entries(groupedByRole).map(([jobTitle, jobApplicants]) => {
+                            const newCount = jobApplicants.filter(a => !a.details_viewed_at).length;
+                            return (
                             <AccordionItem key={jobTitle} value={jobTitle} className="border rounded-lg bg-card">
                               <AccordionTrigger className="px-4 py-3 hover:no-underline">
                                 <div className="flex items-center gap-3">
                                   <Briefcase className="w-5 h-5 text-primary" />
                                   <span className="font-semibold text-lg">{jobTitle}</span>
-                                  <Badge variant="secondary" className="ml-2">
+                                  <Badge variant="secondary" className="ml-2 bg-primary/90 text-primary-foreground">
                                     {jobApplicants.length} applicant{jobApplicants.length !== 1 ? 's' : ''}
                                   </Badge>
+                                  {newCount > 0 && (
+                                    <Badge className="bg-amber-500 text-white hover:bg-amber-600">
+                                      {newCount} new
+                                    </Badge>
+                                  )}
                                 </div>
                               </AccordionTrigger>
                               <AccordionContent className="px-4 pb-4">
@@ -2104,7 +2111,8 @@ const Admin = () => {
                       </div>
                     </AccordionContent>
                   </AccordionItem>
-                ))}
+                            );
+                          })}
               </Accordion>
                       )}
                     </TabsContent>
