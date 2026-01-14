@@ -1365,8 +1365,12 @@ const Admin = () => {
                   <Card 
                     key={applicant.id}
                     ref={expandedApplicant === applicant.id ? expandedCardRef : undefined}
-                    draggable
+                    draggable={!expandedApplicant}
                     onDragStart={(e) => {
+                      if (expandedApplicant) {
+                        e.preventDefault();
+                        return;
+                      }
                       setDraggedApplicant(applicant);
                       e.dataTransfer.effectAllowed = 'move';
                       e.dataTransfer.setData('text/plain', applicant.id);
