@@ -1438,11 +1438,35 @@ const Admin = () => {
                                 {applicant.ranking_status}
                               </Badge>
                             )}
-                            {applicant.total_score !== null && (
-                              <Badge variant="outline" className="font-mono">
-                                Score: {applicant.total_score}/100
-                              </Badge>
-                            )}
+                            {/* Combined Overall Score */}
+                            {(() => {
+                              const cvScore = applicant.total_score;
+                              const interviewScore = applicant.interview_session?.status === 'completed' 
+                                ? applicant.interview_session.overall_score 
+                                : null;
+                              
+                              if (cvScore !== null && interviewScore !== null) {
+                                const avgScore = Math.round((cvScore + interviewScore) / 2);
+                                return (
+                                  <Badge variant="outline" className="font-mono bg-gradient-to-r from-blue-50 to-purple-50 border-blue-300">
+                                    Overall: {avgScore}/100
+                                  </Badge>
+                                );
+                              } else if (cvScore !== null) {
+                                return (
+                                  <Badge variant="outline" className="font-mono">
+                                    CV: {cvScore}/100
+                                  </Badge>
+                                );
+                              } else if (interviewScore !== null) {
+                                return (
+                                  <Badge variant="outline" className="font-mono bg-purple-50 border-purple-300 text-purple-700">
+                                    Interview: {interviewScore}/100
+                                  </Badge>
+                                );
+                              }
+                              return null;
+                            })()}
                           </div>
                           <p className="text-sm text-muted-foreground">{applicant.email}</p>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
