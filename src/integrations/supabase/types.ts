@@ -73,6 +73,7 @@ export type Database = {
           cv_file_url: string | null
           cv_text: string | null
           details_viewed_at: string | null
+          device_type: string | null
           email: string
           extracted_skills: string[] | null
           extracted_tools: string[] | null
@@ -126,6 +127,7 @@ export type Database = {
           cv_file_url?: string | null
           cv_text?: string | null
           details_viewed_at?: string | null
+          device_type?: string | null
           email: string
           extracted_skills?: string[] | null
           extracted_tools?: string[] | null
@@ -179,6 +181,7 @@ export type Database = {
           cv_file_url?: string | null
           cv_text?: string | null
           details_viewed_at?: string | null
+          device_type?: string | null
           email?: string
           extracted_skills?: string[] | null
           extracted_tools?: string[] | null
