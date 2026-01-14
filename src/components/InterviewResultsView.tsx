@@ -59,6 +59,7 @@ interface InterviewResultsViewProps {
 export function InterviewResultsView({ sessionId, session }: InterviewResultsViewProps) {
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
   const [answers, setAnswers] = useState<InterviewAnswer[]>([]);
+  const [signedUrls, setSignedUrls] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
 
@@ -85,8 +86,31 @@ export function InterviewResultsView({ sessionId, session }: InterviewResultsVie
           options: q.options as { id: string; text: string }[] | null
         })));
       }
+      
       if (answersRes.data) {
         setAnswers(answersRes.data);
+        
+        // Generate signed URLs for voice recordings (bucket is private)
+        const voiceAnswers = answersRes.data.filter(a => a.voice_recording_url);
+        const urlMap: Record<string, string> = {};
+        
+        for (const answer of voiceAnswers) {
+          if (answer.voice_recording_url) {
+            // Extract the file path from the full URL
+            const urlParts = answer.voice_recording_url.split('/voice-recordings/');
+            if (urlParts[1]) {
+              const filePath = urlParts[1];
+              const { data } = await supabase.storage
+                .from('voice-recordings')
+                .createSignedUrl(filePath, 3600); // 1 hour expiry
+              
+              if (data?.signedUrl) {
+                urlMap[answer.id] = data.signedUrl;
+              }
+            }
+          }
+        }
+        setSignedUrls(urlMap);
       }
       
       setLoading(false);
@@ -335,7 +359,7 @@ export function InterviewResultsView({ sessionId, session }: InterviewResultsVie
                         {answer?.voice_recording_url ? (
                           <div className="flex items-center gap-3 p-3 bg-background rounded-lg">
                             <PlayCircle className="w-5 h-5 text-purple-600" />
-                            <audio controls className="flex-1 h-10" src={answer.voice_recording_url}>
+                            <audio controls className="flex-1 h-10" src={signedUrls[answer.id] || answer.voice_recording_url}>
                               Your browser does not support audio.
                             </audio>
                             {answer.voice_duration_seconds && (
