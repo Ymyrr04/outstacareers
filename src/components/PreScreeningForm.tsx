@@ -529,7 +529,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
     <>
       <div 
         className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" 
-        onClick={currentStep === 'interview' || currentStep === 'submitting' ? undefined : onClose}
+        onClick={currentStep === 'prescreening' ? onClose : undefined}
       />
       
       <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
