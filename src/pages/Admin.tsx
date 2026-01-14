@@ -15,7 +15,7 @@ import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor } from 'lucide-react';
 import { generateJobUrl } from '@/lib/slugify';
-import { InterviewResultsView } from '@/components/InterviewResultsView';
+import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
@@ -1836,19 +1836,10 @@ const Admin = () => {
 
                             {/* Interview Results Tab */}
                             <TabsContent value="interview" className="mt-4">
-                              {applicant.interview_session ? (
-                                <div className="p-4 bg-purple-50/50 dark:bg-purple-950/20 rounded-lg border border-purple-200/50 dark:border-purple-800/30">
-                                  <InterviewResultsView 
-                                    sessionId={applicant.interview_session.id}
-                                    session={applicant.interview_session}
-                                  />
-                                </div>
-                              ) : (
-                                <div className="p-6 bg-muted/30 rounded-lg text-center">
-                                  <ClipboardList className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                                  <p className="text-muted-foreground">No interview completed yet</p>
-                                </div>
-                              )}
+                              <InterviewResultsFetcher 
+                                applicantId={applicant.id}
+                                cachedSession={applicant.interview_session}
+                              />
                             </TabsContent>
                           </Tabs>
 

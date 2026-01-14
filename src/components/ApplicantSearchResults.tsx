@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { InterviewResultsView } from '@/components/InterviewResultsView';
+import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
 import { 
   Mail, 
   Phone, 
@@ -722,19 +722,10 @@ export default function ApplicantSearchResults({
 
                   {/* Interview Results Tab */}
                   <TabsContent value="interview" className="mt-4">
-                    {applicant.interview_session ? (
-                      <div className="p-4 bg-purple-50/50 dark:bg-purple-950/20 rounded-lg border border-purple-200/50 dark:border-purple-800/30">
-                        <InterviewResultsView 
-                          sessionId={applicant.interview_session.id}
-                          session={applicant.interview_session}
-                        />
-                      </div>
-                    ) : (
-                      <div className="p-6 bg-muted/30 rounded-lg text-center">
-                        <ClipboardList className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                        <p className="text-muted-foreground">No interview completed yet</p>
-                      </div>
-                    )}
+                    <InterviewResultsFetcher 
+                      applicantId={applicant.id}
+                      cachedSession={applicant.interview_session}
+                    />
                   </TabsContent>
                 </Tabs>
 
