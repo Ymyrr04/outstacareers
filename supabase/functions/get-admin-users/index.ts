@@ -38,26 +38,25 @@ serve(async (req) => {
       });
     }
 
-    // Check if user is admin
+    // Check if user is admin or super_admin
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
       .eq("user_id", user.id)
-      .eq("role", "admin")
-      .single();
+      .in("role", ["admin", "super_admin"]);
 
-    if (!roleData) {
+    if (!roleData || roleData.length === 0) {
       return new Response(JSON.stringify({ error: "Not authorized" }), {
         status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Get all admin user IDs
+    // Get all admin and super_admin user IDs
     const { data: adminRoles, error: rolesError } = await supabase
       .from("user_roles")
-      .select("user_id")
-      .eq("role", "admin");
+      .select("user_id, role")
+      .in("role", ["admin", "super_admin"]);
 
     if (rolesError) {
       throw rolesError;
