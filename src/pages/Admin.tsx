@@ -851,6 +851,14 @@ const Admin = () => {
               {applicants.length > 0 && (
                 <Badge variant="secondary" className="ml-1">{applicants.length}</Badge>
               )}
+              {(() => {
+                const newCount = applicants.filter(a => a.status === 'For Review' && !a.details_viewed_at).length;
+                return newCount > 0 ? (
+                  <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-xs ml-1">
+                    {newCount} new
+                  </Badge>
+                ) : null;
+              })()}
             </TabsTrigger>
           </TabsList>
 
