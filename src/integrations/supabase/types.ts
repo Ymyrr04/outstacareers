@@ -747,6 +747,10 @@ export type Database = {
     }
     Functions: {
       applicant_exists: { Args: { _applicant_id: string }; Returns: boolean }
+      has_active_interview_session: {
+        Args: { _applicant_id: string }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

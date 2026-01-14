@@ -100,8 +100,146 @@ export function InterviewSession({
   const currentQuestion = currentQuestions[currentQuestionIndex];
 
   useEffect(() => {
-    generateQuestions();
+    loadOrGenerateQuestions();
   }, []);
+
+  const loadOrGenerateQuestions = async () => {
+    setIsGenerating(true);
+    setError(null);
+
+    try {
+      // First, check if questions already exist for this session (resume case)
+      const { data: existingQuestions, error: fetchError } = await supabase
+        .from('interview_questions')
+        .select('*')
+        .eq('session_id', sessionId)
+        .order('question_order', { ascending: true });
+
+      if (fetchError) {
+        console.error('Error fetching existing questions:', fetchError);
+      }
+
+      if (existingQuestions && existingQuestions.length > 0) {
+        // Questions already exist - load them instead of regenerating
+        const voiceQs = existingQuestions
+          .filter(q => q.section === 'voice')
+          .map(q => ({
+            id: q.id,
+            question_text: q.question_text,
+            question_context: q.question_context || ''
+          }));
+        const textQs = existingQuestions
+          .filter(q => q.section === 'text')
+          .map(q => ({
+            id: q.id,
+            question_text: q.question_text,
+            question_context: q.question_context || ''
+          }));
+        const mcQs = existingQuestions
+          .filter(q => q.section === 'multiple_choice')
+          .map(q => ({
+            id: q.id,
+            question_text: q.question_text,
+            question_context: q.question_context || '',
+            options: (q.options as unknown as MultipleChoiceOption[]) || []
+          }));
+
+        setVoiceQuestions(voiceQs);
+        setTextQuestions(textQs);
+        setMcQuestions(mcQs);
+
+        // Check for existing answers to resume from correct position
+        const { data: existingAnswers } = await supabase
+          .from('interview_answers')
+          .select('question_id')
+          .eq('session_id', sessionId);
+
+        const answeredQuestionIds = new Set((existingAnswers || []).map(a => a.question_id));
+
+        // Find first unanswered question
+        let startStep: InterviewStep = 'voice';
+        let startIndex = 0;
+
+        // Check voice questions
+        const unansweredVoice = voiceQs.findIndex(q => !answeredQuestionIds.has(q.id));
+        if (unansweredVoice !== -1) {
+          startStep = 'voice';
+          startIndex = unansweredVoice;
+        } else if (voiceQs.length > 0) {
+          // All voice answered, check text
+          const unansweredText = textQs.findIndex(q => !answeredQuestionIds.has(q.id));
+          if (unansweredText !== -1) {
+            startStep = 'text';
+            startIndex = unansweredText;
+          } else if (textQs.length > 0) {
+            // All text answered, check MC
+            const unansweredMc = mcQs.findIndex(q => !answeredQuestionIds.has(q.id));
+            if (unansweredMc !== -1) {
+              startStep = 'multiple_choice';
+              startIndex = unansweredMc;
+            } else {
+              // All questions answered - should be complete
+              setCurrentStep('complete');
+              setIsGenerating(false);
+              return;
+            }
+          } else {
+            // No text questions, check MC
+            const unansweredMc = mcQs.findIndex(q => !answeredQuestionIds.has(q.id));
+            if (unansweredMc !== -1) {
+              startStep = 'multiple_choice';
+              startIndex = unansweredMc;
+            } else {
+              setCurrentStep('complete');
+              setIsGenerating(false);
+              return;
+            }
+          }
+        } else {
+          // No voice questions, start with text or MC
+          if (textQs.length > 0) {
+            const unansweredText = textQs.findIndex(q => !answeredQuestionIds.has(q.id));
+            if (unansweredText !== -1) {
+              startStep = 'text';
+              startIndex = unansweredText;
+            } else {
+              const unansweredMc = mcQs.findIndex(q => !answeredQuestionIds.has(q.id));
+              if (unansweredMc !== -1) {
+                startStep = 'multiple_choice';
+                startIndex = unansweredMc;
+              } else {
+                setCurrentStep('complete');
+                setIsGenerating(false);
+                return;
+              }
+            }
+          } else if (mcQs.length > 0) {
+            const unansweredMc = mcQs.findIndex(q => !answeredQuestionIds.has(q.id));
+            if (unansweredMc !== -1) {
+              startStep = 'multiple_choice';
+              startIndex = unansweredMc;
+            } else {
+              setCurrentStep('complete');
+              setIsGenerating(false);
+              return;
+            }
+          }
+        }
+
+        setCurrentStep(startStep);
+        setCurrentQuestionIndex(startIndex);
+        setIsGenerating(false);
+        return;
+      }
+
+      // No existing questions - generate new ones
+      await generateQuestions();
+    } catch (err) {
+      console.error('Error in loadOrGenerateQuestions:', err);
+      // Fall back to generating new questions
+      await generateQuestions();
+    }
+  };
 
   const generateQuestions = async () => {
     setIsGenerating(true);
