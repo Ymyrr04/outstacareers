@@ -24,7 +24,7 @@ interface InterviewQuestion {
   question_context: string | null;
   section: string;
   question_order: number;
-  options: { id: string; text: string }[] | null;
+  options: { id: string; text?: string; label?: string }[] | null;
 }
 
 interface InterviewAnswer {
@@ -473,7 +473,7 @@ export function InterviewResultsView({ sessionId, session }: InterviewResultsVie
                                 {option.id === answer?.selected_option_id && (
                                   <CheckCircle2 className="w-4 h-4 text-green-600" />
                                 )}
-                                <span>{option.text}</span>
+                                <span>{option.label || option.text}</span>
                               </div>
                             </div>
                           ))}
