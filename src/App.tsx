@@ -12,6 +12,7 @@ import Admin from "./pages/Admin";
 import JobApplication from "./pages/JobApplication";
 import ResumeInterview from "./pages/ResumeInterview";
 import ImageEditor from "./pages/ImageEditor";
+import CalendlyCallback from "./pages/CalendlyCallback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App = () => (
               <Route path="/jobs/:company/:titleSlug/:jobId" element={<JobApplication />} />
               <Route path="/interview/:sessionId" element={<ResumeInterview />} />
               <Route path="/image-editor" element={<ImageEditor />} />
+              <Route path="/auth/calendly/callback" element={<CalendlyCallback />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
