@@ -639,7 +639,7 @@ export default function ApplicantSearchResults({
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                           <div className="text-center p-2 bg-background rounded">
                             <p className="text-xs text-muted-foreground">Role Experience</p>
-                            <p className="text-lg font-bold">{applicant.role_experience_score ?? '-'}/45</p>
+                            <p className="text-lg font-bold">{applicant.role_experience_score ?? '-'}/50</p>
                           </div>
                           <div className="text-center p-2 bg-background rounded">
                             <p className="text-xs text-muted-foreground">Skills & Tools</p>
@@ -651,7 +651,7 @@ export default function ApplicantSearchResults({
                           </div>
                           <div className="text-center p-2 bg-primary/10 rounded border border-primary/20">
                             <p className="text-xs text-muted-foreground">Total Score</p>
-                            <p className="text-xl font-bold text-primary">{applicant.total_score}/95</p>
+                            <p className="text-xl font-bold text-primary">{applicant.total_score}/100</p>
                           </div>
                         </div>
                         {applicant.ai_summary && (
