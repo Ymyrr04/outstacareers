@@ -31,6 +31,7 @@ import { ReprofilingDialog } from '@/components/ReprofilingDialog';
 import { CandidateProfileSection } from '@/components/CandidateProfileSection';
 import { RoleHistorySection } from '@/components/RoleHistorySection';
 import { ApplicantSourceBadge } from '@/components/ApplicantSourceBadge';
+import { CopyableText } from '@/components/CopyableText';
 import { useEmailTemplates, statusToTrigger } from '@/hooks/useEmailTemplates';
 import { addHours } from 'date-fns';
 
@@ -1402,7 +1403,7 @@ const Admin = () => {
                             >
                               <Star className={`w-4 h-4 ${applicant.is_starred ? 'fill-current' : ''}`} />
                             </button>
-                            <h3 className="font-semibold">{applicant.full_name}</h3>
+                            <CopyableText text={applicant.full_name} className="font-semibold hover:underline" />
                             {/* Device type icon */}
                             {applicant.device_type && (
                               <span 
@@ -1468,13 +1469,13 @@ const Admin = () => {
                               return null;
                             })()}
                           </div>
-                          <p className="text-sm text-muted-foreground">{applicant.email}</p>
+                          <CopyableText text={applicant.email} className="text-sm text-muted-foreground hover:underline" />
                           <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
                             {applicant.phone && (
-                              <span className="flex items-center gap-1">
+                              <CopyableText text={applicant.phone} className="flex items-center gap-1 hover:underline">
                                 <Phone className="w-3 h-3" />
                                 {applicant.phone}
-                              </span>
+                              </CopyableText>
                             )}
                             {(applicant.whatsapp || applicant.phone) && (
                               <a 

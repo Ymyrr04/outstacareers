@@ -38,6 +38,7 @@ import {
   Smartphone,
   Monitor
 } from 'lucide-react';
+import { CopyableText } from '@/components/CopyableText';
 
 interface ToolMatch {
   tool: string;
@@ -286,7 +287,7 @@ export default function ApplicantSearchResults({
                       <Star className={`w-4 h-4 ${applicant.is_starred ? 'fill-current' : ''}`} />
                     </button>
                   )}
-                  <h3 className="font-semibold truncate">{applicant.full_name}</h3>
+                  <CopyableText text={applicant.full_name} className="font-semibold truncate hover:underline" />
                   
                   {/* Device type icon */}
                   {applicant.device_type && (
@@ -375,16 +376,16 @@ export default function ApplicantSearchResults({
 
                 {/* Contact info row */}
                 <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
-                  <span className="flex items-center gap-1">
+                  <CopyableText text={applicant.email} className="flex items-center gap-1 hover:underline">
                     <Mail className="w-3.5 h-3.5" />
                     {applicant.email}
-                  </span>
+                  </CopyableText>
                   
                   {applicant.phone && (
-                    <span className="flex items-center gap-1">
+                    <CopyableText text={applicant.phone} className="flex items-center gap-1 hover:underline">
                       <Phone className="w-3.5 h-3.5" />
                       {applicant.phone}
-                    </span>
+                    </CopyableText>
                   )}
                 </div>
 
