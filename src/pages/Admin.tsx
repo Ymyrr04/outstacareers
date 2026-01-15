@@ -203,7 +203,7 @@ const Admin = () => {
   // Email system state
   const [emailTemplateEditorOpen, setEmailTemplateEditorOpen] = useState(false);
   const [communicationHistoryApplicant, setCommunicationHistoryApplicant] = useState<{ id: string; name: string; email: string } | null>(null);
-  const [sendEmailApplicant, setSendEmailApplicant] = useState<{ id: string; full_name: string; email: string; job_title: string; status: string } | null>(null);
+  const [sendEmailApplicant, setSendEmailApplicant] = useState<{ id: string; full_name: string; email: string; job_title: string; status: string; preselectedTemplate?: string } | null>(null);
   const { templates, getTemplateByTrigger } = useEmailTemplates();
   
   // Search state
@@ -696,6 +696,7 @@ const Admin = () => {
               email: applicant.email,
               job_title: applicant.job_title,
               status: newStatus,
+              preselectedTemplate: trigger,
             });
             return;
           }
@@ -2332,6 +2333,7 @@ const Admin = () => {
         open={!!sendEmailApplicant}
         onOpenChange={(open) => !open && setSendEmailApplicant(null)}
         applicant={sendEmailApplicant}
+        preselectedTemplate={sendEmailApplicant?.preselectedTemplate}
         onEmailSent={() => {
           // Optionally refresh data
         }}
