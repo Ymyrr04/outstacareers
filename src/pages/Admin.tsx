@@ -701,6 +701,69 @@ const Admin = () => {
             return;
           }
 
+          // For SIV status, generate contractor image first
+          if (trigger === 'siv') {
+            try {
+              toast({
+                title: 'Generating Image',
+                description: 'Creating personalized contractor card...',
+              });
+
+              // Fetch the original image and convert to base64
+              const imageResponse = await fetch('/images/contractor-bg-original.jpg');
+              const imageBlob = await imageResponse.blob();
+              const imageBase64 = await new Promise<string>((resolve) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(imageBlob);
+              });
+
+              // Call the image editing function
+              const { data: imageData, error: imageError } = await supabase.functions.invoke('edit-contractor-image', {
+                body: {
+                  imageBase64: imageBase64.split(',')[1], // Remove data URL prefix
+                  name: applicant.full_name,
+                  role: applicant.job_title,
+                },
+              });
+
+              if (imageError) {
+                console.error('Image generation error:', imageError);
+                toast({
+                  title: 'Image Generation Failed',
+                  description: 'Could not generate contractor card, sending email without image.',
+                  variant: 'destructive',
+                });
+              } else if (imageData?.editedImageUrl) {
+                // Add the image download link to the email body
+                const imageDownloadHtml = `
+                  <div style="margin: 20px 0; text-align: center;">
+                    <p><strong>Your Personalized Contractor Card:</strong></p>
+                    <img src="${imageData.editedImageUrl}" alt="Your Contractor Card" style="max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0;" />
+                    <p><a href="${imageData.editedImageUrl}" download="contractor-card.png" style="display: inline-block; padding: 12px 24px; background-color: #6366f1; color: white; text-decoration: none; border-radius: 6px; margin-top: 10px;">Download Your Card</a></p>
+                  </div>
+                `;
+                processedBody = processedBody.replace(/\{\{contractor_card\}\}/g, imageDownloadHtml);
+                // If placeholder not found, append to the end
+                if (!template.body_html.includes('{{contractor_card}}')) {
+                  processedBody += imageDownloadHtml;
+                }
+                
+                toast({
+                  title: 'Image Generated',
+                  description: 'Contractor card created successfully!',
+                });
+              }
+            } catch (imgErr: any) {
+              console.error('Failed to generate contractor image:', imgErr);
+              toast({
+                title: 'Image Generation Failed',
+                description: 'Could not generate contractor card, sending email without image.',
+                variant: 'destructive',
+              });
+            }
+          }
+
           // Send email
           try {
             const { data, error: emailError } = await supabase.functions.invoke('send-applicant-email', {
