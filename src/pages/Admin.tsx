@@ -702,6 +702,7 @@ const Admin = () => {
           }
 
           // For SIV status, generate contractor image first
+          let sivAttachments: { filename: string; content: string; contentType: string }[] = [];
           if (trigger === 'siv') {
             try {
               toast({
@@ -735,24 +736,43 @@ const Admin = () => {
                   variant: 'destructive',
                 });
               } else if (imageData?.editedImageUrl) {
-                // Add the image download link to the email body
-                const imageDownloadHtml = `
-                  <div style="margin: 20px 0; text-align: center;">
-                    <p><strong>Your Personalized Contractor Card:</strong></p>
-                    <img src="${imageData.editedImageUrl}" alt="Your Contractor Card" style="max-width: 100%; height: auto; border-radius: 8px; margin: 10px 0;" />
-                    <p><a href="${imageData.editedImageUrl}" download="contractor-card.png" style="display: inline-block; padding: 12px 24px; background-color: #6366f1; color: white; text-decoration: none; border-radius: 6px; margin-top: 10px;">Download Your Card</a></p>
-                  </div>
-                `;
-                processedBody = processedBody.replace(/\{\{contractor_card\}\}/g, imageDownloadHtml);
-                // If placeholder not found, append to the end
-                if (!template.body_html.includes('{{contractor_card}}')) {
-                  processedBody += imageDownloadHtml;
+                // Extract base64 content from data URL
+                const base64Match = imageData.editedImageUrl.match(/^data:([^;]+);base64,(.+)$/);
+                if (base64Match) {
+                  const contentType = base64Match[1];
+                  const base64Content = base64Match[2];
+                  const extension = contentType.split('/')[1] || 'png';
+                  
+                  // Sanitize filename from applicant name
+                  const sanitizedName = applicant.full_name
+                    .replace(/[^a-zA-Z0-9\s]/g, '')
+                    .replace(/\s+/g, '-')
+                    .toLowerCase();
+                  
+                  sivAttachments = [{
+                    filename: `${sanitizedName}-contractor-card.${extension}`,
+                    content: base64Content,
+                    contentType: contentType,
+                  }];
+                  
+                  // Add a note in the email body about the attachment
+                  const attachmentNote = `
+                    <div style="margin: 20px 0; padding: 15px; background-color: #f0f9ff; border-radius: 8px; border-left: 4px solid #6366f1;">
+                      <p style="margin: 0; color: #1e40af;"><strong>📎 Your Personalized Contractor Card is attached to this email!</strong></p>
+                      <p style="margin: 5px 0 0 0; color: #3b82f6; font-size: 14px;">Please download and save it for your records.</p>
+                    </div>
+                  `;
+                  processedBody = processedBody.replace(/\{\{contractor_card\}\}/g, attachmentNote);
+                  // If placeholder not found, append to the end
+                  if (!template.body_html.includes('{{contractor_card}}')) {
+                    processedBody += attachmentNote;
+                  }
+                  
+                  toast({
+                    title: 'Image Generated',
+                    description: 'Contractor card will be attached to the email!',
+                  });
                 }
-                
-                toast({
-                  title: 'Image Generated',
-                  description: 'Contractor card created successfully!',
-                });
               }
             } catch (imgErr: any) {
               console.error('Failed to generate contractor image:', imgErr);
@@ -776,6 +796,7 @@ const Admin = () => {
                 applicantStatusAtSend: newStatus,
                 isAutomated: true,
                 scheduleFor,
+                attachments: sivAttachments.length > 0 ? sivAttachments : undefined,
               },
             });
 
