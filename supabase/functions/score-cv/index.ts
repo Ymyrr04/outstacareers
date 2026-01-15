@@ -74,15 +74,15 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert HR recruiter and CV evaluator. Your task is to score a candidate's CV against a job posting and provide detailed analysis.
 
-SCORING RULES (total = 95):
-- Role experience match: 0-45 points (how well their experience matches the role)
+SCORING RULES (total = 100):
+- Role experience match: 0-50 points (how well their experience matches the role)
 - Skills and tools match: 0-45 points (how well their skills match required qualifications)
 - Availability and setup readiness: 0-5 points (remote work readiness indicators)
 
 RANKING STATUS:
-- Strong Match: total_score >= 65
-- Partial Match: total_score >= 38 AND < 65
-- Low Match: total_score < 38
+- Strong Match: total_score >= 70
+- Partial Match: total_score >= 40 AND < 70
+- Low Match: total_score < 40
 
 EXTRACTION REQUIREMENTS:
 You MUST also extract searchable metadata from the CV:
@@ -96,7 +96,7 @@ You MUST also extract searchable metadata from the CV:
 
 You MUST return ONLY valid JSON with NO additional text. The JSON must have this exact structure:
 {
-  "role_experience_score": <number 0-45>,
+  "role_experience_score": <number 0-50>,
   "skills_tools_score": <number 0-45>,
   "availability_setup_score": <number 0-5>,
   "total_score": <sum of all scores>,
@@ -225,7 +225,7 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
 
     // Validate the score result
     const validatedResult: ScoreResponse = {
-      role_experience_score: Math.max(0, Math.min(45, scoreResult.role_experience_score || 0)),
+      role_experience_score: Math.max(0, Math.min(50, scoreResult.role_experience_score || 0)),
       skills_tools_score: Math.max(0, Math.min(45, scoreResult.skills_tools_score || 0)),
       availability_setup_score: Math.max(0, Math.min(5, scoreResult.availability_setup_score || 0)),
       total_score: 0,
@@ -244,16 +244,16 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
       years_of_experience: typeof scoreResult.years_of_experience === 'number' ? scoreResult.years_of_experience : null
     };
 
-    // Recalculate total to ensure accuracy (max 95)
+    // Recalculate total to ensure accuracy (max 100)
     validatedResult.total_score = 
       validatedResult.role_experience_score + 
       validatedResult.skills_tools_score + 
       validatedResult.availability_setup_score;
 
-    // Validate ranking status based on score (adjusted for 95-point scale)
-    if (validatedResult.total_score >= 65) {
+    // Validate ranking status based on score
+    if (validatedResult.total_score >= 70) {
       validatedResult.ranking_status = 'Strong Match';
-    } else if (validatedResult.total_score >= 38) {
+    } else if (validatedResult.total_score >= 40) {
       validatedResult.ranking_status = 'Partial Match';
     } else {
       validatedResult.ranking_status = 'Low Match';
