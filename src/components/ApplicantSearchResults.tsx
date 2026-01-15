@@ -640,7 +640,7 @@ export default function ApplicantSearchResults({
                   </TabsList>
 
                   {/* CV Assessment Tab */}
-                  <TabsContent value="cv" className="mt-4">
+                  <TabsContent value="cv" className="mt-4 animate-fade-in">
                     {applicant.total_score !== null ? (
                       <div className="p-4 bg-muted/50 rounded-lg">
                         <h4 className="font-semibold mb-3 flex items-center gap-2">
@@ -779,7 +779,7 @@ export default function ApplicantSearchResults({
                   </TabsContent>
 
                   {/* Interview Results Tab */}
-                  <TabsContent value="interview" className="mt-4">
+                  <TabsContent value="interview" className="mt-4 animate-fade-in">
                     <InterviewResultsFetcher 
                       applicantId={applicant.id}
                       cachedSession={applicant.interview_session}
