@@ -115,16 +115,15 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert HR recruiter and CV evaluator. Your task is to score a candidate's CV against a job posting and provide detailed analysis.
 
-SCORING RULES (total = 100):
+SCORING RULES (total = 95):
 - Role experience match: 0-45 points (how well their experience matches the role)
 - Skills and tools match: 0-45 points (how well their skills match required qualifications)
 - Availability and setup readiness: 0-5 points (remote work readiness indicators)
-- Bonus or red flags: -5 to +5 points (exceptional achievements or concerning patterns)
 
 RANKING STATUS:
-- Strong Match: total_score >= 70
-- Partial Match: total_score >= 40 AND < 70
-- Low Match: total_score < 40
+- Strong Match: total_score >= 65
+- Partial Match: total_score >= 38 AND < 65
+- Low Match: total_score < 38
 
 EXTRACTION REQUIREMENTS:
 You MUST also extract searchable metadata from the CV:
@@ -206,6 +205,20 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
       });
     }
 
+    // Calculate total score (max 95)
+    const totalScore = 
+      (scores.role_experience_score || 0) + 
+      (scores.skills_tools_score || 0) + 
+      (scores.availability_setup_score || 0);
+
+    // Determine ranking status
+    let rankingStatus = 'Low Match';
+    if (totalScore >= 65) {
+      rankingStatus = 'Strong Match';
+    } else if (totalScore >= 38) {
+      rankingStatus = 'Partial Match';
+    }
+
     // Update the applicant record
     const { error: updateError } = await supabase
       .from('applicants_prescreen')
@@ -213,9 +226,8 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
         role_experience_score: scores.role_experience_score,
         skills_tools_score: scores.skills_tools_score,
         availability_setup_score: scores.availability_setup_score,
-        bonus_red_flag_score: scores.bonus_red_flag_score,
-        total_score: scores.total_score,
-        ranking_status: scores.ranking_status,
+        total_score: totalScore,
+        ranking_status: rankingStatus,
         ai_summary: scores.summary,
         ai_assessment_details: scores.assessment_details,
         extracted_skills: scores.extracted_skills || [],
