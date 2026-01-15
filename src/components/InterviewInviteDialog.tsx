@@ -7,11 +7,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CalendarIcon, Send, Loader2 } from "lucide-react";
+import { CalendarIcon, Send, Loader2, Link2, ExternalLink, Check } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useCalendly } from "@/hooks/useCalendly";
 
 interface InterviewInviteDialogProps {
   open: boolean;
@@ -37,12 +38,70 @@ export function InterviewInviteDialog({ open, onOpenChange, applicant }: Intervi
   const [interviewerName, setInterviewerName] = useState("");
   const [additionalNotes, setAdditionalNotes] = useState("");
   const [sending, setSending] = useState(false);
+  const [useCalendlyScheduling, setUseCalendlyScheduling] = useState(false);
+  const [selectedEventType, setSelectedEventType] = useState<string>("");
+  const [generatingLink, setGeneratingLink] = useState(false);
+
+  const { isConnected, user, eventTypes, connect, createSchedulingLink, loading: calendlyLoading } = useCalendly();
+
+  const handleConnectCalendly = async () => {
+    try {
+      await connect();
+    } catch (error) {
+      toast({
+        title: "Failed to connect",
+        description: "Could not connect to Calendly. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleGenerateCalendlyLink = async () => {
+    if (!selectedEventType) {
+      toast({
+        title: "Select event type",
+        description: "Please select a Calendly event type first.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setGeneratingLink(true);
+    try {
+      const bookingUrl = await createSchedulingLink(selectedEventType);
+      if (bookingUrl) {
+        setZoomLink(bookingUrl);
+        toast({
+          title: "Scheduling link created",
+          description: "The Calendly scheduling link has been added.",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Failed to create link",
+        description: "Could not generate Calendly scheduling link.",
+        variant: "destructive",
+      });
+    } finally {
+      setGeneratingLink(false);
+    }
+  };
 
   const handleSend = async () => {
-    if (!applicant || !date || !time || !zoomLink) {
+    if (!applicant || !zoomLink) {
       toast({
         title: "Missing information",
-        description: "Please fill in all required fields",
+        description: "Please provide a meeting or scheduling link",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // For Calendly scheduling links, date/time are optional since the candidate picks
+    if (!useCalendlyScheduling && (!date || !time)) {
+      toast({
+        title: "Missing information",
+        description: "Please fill in date and time for manual scheduling",
         variant: "destructive",
       });
       return;
@@ -56,11 +115,12 @@ export function InterviewInviteDialog({ open, onOpenChange, applicant }: Intervi
           to: applicant.email,
           candidateName: applicant.full_name,
           jobTitle: applicant.job_title,
-          interviewDate: format(date, "EEEE, MMMM d, yyyy"),
-          interviewTime: time,
+          interviewDate: date ? format(date, "EEEE, MMMM d, yyyy") : "To be scheduled",
+          interviewTime: time || "Pick your preferred time",
           zoomLink: zoomLink,
           interviewerName: interviewerName || "Our Team",
           additionalNotes: additionalNotes,
+          isCalendlyLink: useCalendlyScheduling,
         },
       });
 
@@ -77,6 +137,8 @@ export function InterviewInviteDialog({ open, onOpenChange, applicant }: Intervi
       setZoomLink("");
       setInterviewerName("");
       setAdditionalNotes("");
+      setUseCalendlyScheduling(false);
+      setSelectedEventType("");
       onOpenChange(false);
     } catch (error: any) {
       console.error("Error sending invite:", error);
@@ -92,7 +154,7 @@ export function InterviewInviteDialog({ open, onOpenChange, applicant }: Intervi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <CalendarIcon className="h-5 w-5 text-primary" />
@@ -109,56 +171,133 @@ export function InterviewInviteDialog({ open, onOpenChange, applicant }: Intervi
             <p className="text-xs text-primary mt-1">{applicant?.job_title}</p>
           </div>
 
-          {/* Date Picker */}
-          <div className="space-y-2">
-            <Label>Interview Date *</Label>
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button
-                  variant="outline"
-                  className={cn(
-                    "w-full justify-start text-left font-normal",
-                    !date && "text-muted-foreground"
-                  )}
+          {/* Calendly Integration Section */}
+          <div className="border rounded-lg p-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm font-medium">Calendly Integration</Label>
+              {isConnected ? (
+                <span className="text-xs text-green-600 flex items-center gap-1">
+                  <Check className="h-3 w-3" />
+                  Connected as {user?.name}
+                </span>
+              ) : (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={handleConnectCalendly}
+                  disabled={calendlyLoading}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {date ? format(date, "PPP") : "Select date"}
+                  <Link2 className="h-4 w-4 mr-1" />
+                  Connect Calendly
                 </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={date}
-                  onSelect={setDate}
-                  disabled={(date) => date < new Date()}
-                  initialFocus
-                />
-              </PopoverContent>
-            </Popover>
+              )}
+            </div>
+
+            {isConnected && (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="useCalendly"
+                    checked={useCalendlyScheduling}
+                    onChange={(e) => setUseCalendlyScheduling(e.target.checked)}
+                    className="rounded border-gray-300"
+                  />
+                  <Label htmlFor="useCalendly" className="text-sm cursor-pointer">
+                    Let candidate pick their time via Calendly
+                  </Label>
+                </div>
+
+                {useCalendlyScheduling && (
+                  <div className="space-y-2">
+                    <Label className="text-sm">Event Type</Label>
+                    <div className="flex gap-2">
+                      <Select value={selectedEventType} onValueChange={setSelectedEventType}>
+                        <SelectTrigger className="flex-1">
+                          <SelectValue placeholder="Select event type" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {eventTypes.map((et) => (
+                            <SelectItem key={et.uri} value={et.uri}>
+                              {et.name} ({et.duration} min)
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <Button 
+                        variant="secondary" 
+                        size="sm"
+                        onClick={handleGenerateCalendlyLink}
+                        disabled={generatingLink || !selectedEventType}
+                      >
+                        {generatingLink ? (
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                        ) : (
+                          <ExternalLink className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
-          {/* Time Picker */}
-          <div className="space-y-2">
-            <Label>Interview Time *</Label>
-            <Select value={time} onValueChange={setTime}>
-              <SelectTrigger>
-                <SelectValue placeholder="Select time" />
-              </SelectTrigger>
-              <SelectContent>
-                {timeSlots.map((slot) => (
-                  <SelectItem key={slot} value={slot}>
-                    {slot}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {/* Manual Scheduling - only show if not using Calendly */}
+          {!useCalendlyScheduling && (
+            <>
+              {/* Date Picker */}
+              <div className="space-y-2">
+                <Label>Interview Date *</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {date ? format(date, "PPP") : "Select date"}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={date}
+                      onSelect={setDate}
+                      disabled={(date) => date < new Date()}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
+              </div>
 
-          {/* Zoom Link */}
+              {/* Time Picker */}
+              <div className="space-y-2">
+                <Label>Interview Time *</Label>
+                <Select value={time} onValueChange={setTime}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select time" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {timeSlots.map((slot) => (
+                      <SelectItem key={slot} value={slot}>
+                        {slot}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </>
+          )}
+
+          {/* Meeting Link */}
           <div className="space-y-2">
-            <Label>Zoom Meeting Link *</Label>
+            <Label>{useCalendlyScheduling ? "Calendly Scheduling Link *" : "Zoom Meeting Link *"}</Label>
             <Input
-              placeholder="https://zoom.us/j/..."
+              placeholder={useCalendlyScheduling ? "https://calendly.com/..." : "https://zoom.us/j/..."}
               value={zoomLink}
               onChange={(e) => setZoomLink(e.target.value)}
             />
