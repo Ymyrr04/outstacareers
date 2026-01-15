@@ -167,6 +167,7 @@ export default function ApplicantSearchResults({
   const [editingApplicant, setEditingApplicant] = useState<string | null>(null);
   const [editForm, setEditForm] = useState({ full_name: '', email: '', phone: '', notes: '' });
   const [savingEdit, setSavingEdit] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>('cv');
   
   // Ref for expanded applicant card (click-outside detection)
   const expandedCardRef = useRef<HTMLDivElement>(null);
@@ -477,7 +478,12 @@ export default function ApplicantSearchResults({
                   {/* CV Assessment quick link */}
                   {applicant.total_score !== null && (
                     <button
-                      onClick={() => onViewDetails(applicant.id)}
+                      onClick={() => {
+                        setActiveTab('cv');
+                        if (expandedApplicant !== applicant.id) {
+                          onViewDetails(applicant.id);
+                        }
+                      }}
                       className="flex items-center gap-1 text-green-600 hover:underline cursor-pointer"
                     >
                       <Star className="w-3.5 h-3.5" />
@@ -488,7 +494,12 @@ export default function ApplicantSearchResults({
                   {/* Interview Results quick link */}
                   {applicant.interview_session?.status === 'completed' && (
                     <button
-                      onClick={() => onViewDetails(applicant.id)}
+                      onClick={() => {
+                        setActiveTab('interview');
+                        if (expandedApplicant !== applicant.id) {
+                          onViewDetails(applicant.id);
+                        }
+                      }}
                       className="flex items-center gap-1 text-purple-600 hover:underline cursor-pointer"
                     >
                       <ClipboardList className="w-3.5 h-3.5" />
@@ -610,7 +621,7 @@ export default function ApplicantSearchResults({
             {expandedApplicant === applicant.id && (
               <div className="mt-4 pt-4 border-t border-border">
                 {/* Assessment Tabs - CV vs Interview */}
-                <Tabs defaultValue="cv" className="mb-6">
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
                   <TabsList className="grid w-full grid-cols-2">
                     <TabsTrigger value="cv" className="flex items-center gap-2">
                       <Star className="w-4 h-4" />
