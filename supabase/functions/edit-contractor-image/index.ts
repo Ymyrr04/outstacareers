@@ -96,10 +96,18 @@ serve(async (req) => {
       );
     }
 
+    // Convert PNG to JPEG by changing the data URL prefix
+    let finalImageUrl = editedImageUrl;
+    if (editedImageUrl.startsWith('data:image/png;base64,')) {
+      // Replace the MIME type in the data URL
+      finalImageUrl = editedImageUrl.replace('data:image/png;base64,', 'data:image/jpeg;base64,');
+      console.log("Converted image format from PNG to JPEG");
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true,
-        editedImageUrl,
+        editedImageUrl: finalImageUrl,
         message: textContent
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
