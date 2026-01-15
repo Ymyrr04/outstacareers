@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical } from 'lucide-react';
 import { generateJobUrl } from '@/lib/slugify';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
 import { Input } from '@/components/ui/input';
@@ -1267,7 +1267,7 @@ const Admin = () => {
                             key={status} 
                             value={status} 
                             className={`flex items-center gap-2 transition-all ${
-                              isDragOver ? 'ring-2 ring-primary ring-offset-2 bg-primary/10 scale-105' : ''
+                              isDragOver ? 'ring-1 ring-primary/50 bg-primary/5' : ''
                             }`}
                             onDragOver={(e) => {
                               e.preventDefault();
@@ -1380,13 +1380,17 @@ const Admin = () => {
                       setDraggedApplicant(null);
                       setDragOverFolder(null);
                     }}
-                    className={`cursor-grab active:cursor-grabbing transition-all ${
-                      isUnreviewed ? 'border-l-4 border-l-amber-500 bg-amber-50/50 dark:bg-amber-950/20' : ''
-                    } ${isDragging ? 'opacity-50 scale-95 ring-2 ring-primary' : 'hover:shadow-md'}`}
+                    className={`group transition-all ${
+                      isDragging ? 'opacity-60 scale-[0.98] shadow-lg' : 'hover:shadow-md'
+                    }`}
                   >
                     <CardContent className="py-4">
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
+                        {/* Drag handle */}
+                        <div className="flex-shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors self-center">
+                          <GripVertical className="w-4 h-4" />
+                        </div>
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
                             {/* Star button */}
                             <button
