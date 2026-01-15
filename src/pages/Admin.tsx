@@ -1761,26 +1761,22 @@ const Admin = () => {
                                     <Star className="w-4 h-4" />
                                     AI CV Assessment
                                   </h4>
-                                  <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4">
+                                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                                     <div className="text-center p-2 bg-background rounded">
                                       <p className="text-xs text-muted-foreground">Role Experience</p>
-                                      <p className="text-lg font-bold">{applicant.role_experience_score ?? '-'}/40</p>
+                                      <p className="text-lg font-bold">{applicant.role_experience_score ?? '-'}/45</p>
                                     </div>
                                     <div className="text-center p-2 bg-background rounded">
                                       <p className="text-xs text-muted-foreground">Skills & Tools</p>
-                                      <p className="text-lg font-bold">{applicant.skills_tools_score ?? '-'}/40</p>
+                                      <p className="text-lg font-bold">{applicant.skills_tools_score ?? '-'}/45</p>
                                     </div>
                                     <div className="text-center p-2 bg-background rounded">
                                       <p className="text-xs text-muted-foreground">Availability</p>
-                                      <p className="text-lg font-bold">{applicant.availability_setup_score ?? '-'}/10</p>
-                                    </div>
-                                    <div className="text-center p-2 bg-background rounded">
-                                      <p className="text-xs text-muted-foreground">Bonus/Red Flags</p>
-                                      <p className="text-lg font-bold">{applicant.bonus_red_flag_score ?? '-'}/10</p>
+                                      <p className="text-lg font-bold">{applicant.availability_setup_score ?? '-'}/5</p>
                                     </div>
                                     <div className="text-center p-2 bg-primary/10 rounded border border-primary/20">
                                       <p className="text-xs text-muted-foreground">Total Score</p>
-                                      <p className="text-xl font-bold text-primary">{applicant.total_score}/100</p>
+                                      <p className="text-xl font-bold text-primary">{applicant.total_score}/95</p>
                                     </div>
                                   </div>
                                   {applicant.ai_summary && (

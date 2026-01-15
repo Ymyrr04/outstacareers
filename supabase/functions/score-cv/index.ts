@@ -38,7 +38,6 @@ interface ScoreResponse {
   role_experience_score: number;
   skills_tools_score: number;
   availability_setup_score: number;
-  bonus_red_flag_score: number;
   total_score: number;
   ranking_status: string;
   summary: string;
@@ -75,16 +74,15 @@ serve(async (req) => {
 
     const systemPrompt = `You are an expert HR recruiter and CV evaluator. Your task is to score a candidate's CV against a job posting and provide detailed analysis.
 
-SCORING RULES (total = 100):
+SCORING RULES (total = 95):
 - Role experience match: 0-45 points (how well their experience matches the role)
 - Skills and tools match: 0-45 points (how well their skills match required qualifications)
 - Availability and setup readiness: 0-5 points (remote work readiness indicators)
-- Bonus or red flags: -5 to +5 points (exceptional achievements or concerning patterns)
 
 RANKING STATUS:
-- Strong Match: total_score >= 70
-- Partial Match: total_score >= 40 AND < 70
-- Low Match: total_score < 40
+- Strong Match: total_score >= 65
+- Partial Match: total_score >= 38 AND < 65
+- Low Match: total_score < 38
 
 EXTRACTION REQUIREMENTS:
 You MUST also extract searchable metadata from the CV:
@@ -101,7 +99,6 @@ You MUST return ONLY valid JSON with NO additional text. The JSON must have this
   "role_experience_score": <number 0-45>,
   "skills_tools_score": <number 0-45>,
   "availability_setup_score": <number 0-5>,
-  "bonus_red_flag_score": <number -5 to 5>,
   "total_score": <sum of all scores>,
   "ranking_status": "<Strong Match|Partial Match|Low Match>",
   "summary": "<max 3 sentences summarizing the candidate's fit>",
@@ -231,7 +228,6 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
       role_experience_score: Math.max(0, Math.min(45, scoreResult.role_experience_score || 0)),
       skills_tools_score: Math.max(0, Math.min(45, scoreResult.skills_tools_score || 0)),
       availability_setup_score: Math.max(0, Math.min(5, scoreResult.availability_setup_score || 0)),
-      bonus_red_flag_score: Math.max(-5, Math.min(5, scoreResult.bonus_red_flag_score || 0)),
       total_score: 0,
       ranking_status: scoreResult.ranking_status || 'Low Match',
       summary: scoreResult.summary || 'Unable to generate summary.',
@@ -248,17 +244,16 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
       years_of_experience: typeof scoreResult.years_of_experience === 'number' ? scoreResult.years_of_experience : null
     };
 
-    // Recalculate total to ensure accuracy
+    // Recalculate total to ensure accuracy (max 95)
     validatedResult.total_score = 
       validatedResult.role_experience_score + 
       validatedResult.skills_tools_score + 
-      validatedResult.availability_setup_score + 
-      validatedResult.bonus_red_flag_score;
+      validatedResult.availability_setup_score;
 
-    // Validate ranking status based on score
-    if (validatedResult.total_score >= 70) {
+    // Validate ranking status based on score (adjusted for 95-point scale)
+    if (validatedResult.total_score >= 65) {
       validatedResult.ranking_status = 'Strong Match';
-    } else if (validatedResult.total_score >= 40) {
+    } else if (validatedResult.total_score >= 38) {
       validatedResult.ranking_status = 'Partial Match';
     } else {
       validatedResult.ranking_status = 'Low Match';
