@@ -127,19 +127,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Add attachments if provided
     if (attachments && attachments.length > 0) {
-      emailOptions.attachments = attachments.map((att) => {
-        // Decode base64 to Uint8Array properly
-        const binaryString = atob(att.content);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        return {
-          filename: att.filename,
-          content: bytes,
-          contentType: att.contentType,
-        };
-      });
+      emailOptions.attachments = attachments.map((att) => ({
+        filename: att.filename,
+        content: att.content, // Pass base64 string directly
+        contentType: att.contentType,
+        encoding: "base64", // Tell denomailer the content is base64 encoded
+      }));
     }
 
     await client.send(emailOptions);
