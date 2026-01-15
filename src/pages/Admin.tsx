@@ -33,7 +33,6 @@ import { RoleHistorySection } from '@/components/RoleHistorySection';
 import { ApplicantSourceBadge } from '@/components/ApplicantSourceBadge';
 import { useEmailTemplates, statusToTrigger } from '@/hooks/useEmailTemplates';
 import { addHours } from 'date-fns';
-import { ContractorCardPreviewDialog } from '@/components/ContractorCardPreviewDialog';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 // Status options for applicant tracking - new pipeline order
@@ -226,18 +225,6 @@ const Admin = () => {
   
   // Sort state
   const [sortOption, setSortOption] = useState<SortOption>('newest');
-  
-  // SIV Contractor Card Preview state
-  const [sivPreviewOpen, setSivPreviewOpen] = useState(false);
-  const [sivPreviewData, setSivPreviewData] = useState<{
-    applicant: Applicant;
-    newStatus: ApplicantStatusOption;
-    imageUrl: string | null;
-    isGenerating: boolean;
-    template: any;
-    processedSubject: string;
-    processedBody: string;
-  } | null>(null);
   
   // Ref for expanded applicant card (click-outside detection)
   const expandedCardRef = useRef<HTMLDivElement>(null);
@@ -650,139 +637,6 @@ const Admin = () => {
       fetchApplicants();
     }
   };
-
-  // Generate contractor card image helper
-  const generateContractorCard = async (applicant: Applicant): Promise<string | null> => {
-    try {
-      // Fetch the original image and convert to base64
-      const imageResponse = await fetch('/images/contractor-bg-original.jpg');
-      const imageBlob = await imageResponse.blob();
-      const imageBase64 = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(imageBlob);
-      });
-
-      // Call the image editing function
-      const { data: imageData, error: imageError } = await supabase.functions.invoke('edit-contractor-image', {
-        body: {
-          imageBase64: imageBase64.split(',')[1], // Remove data URL prefix
-          name: applicant.full_name,
-          role: applicant.job_title,
-        },
-      });
-
-      if (imageError) {
-        console.error('Image generation error:', imageError);
-        toast({
-          title: 'Image Generation Failed',
-          description: 'Could not generate contractor card.',
-          variant: 'destructive',
-        });
-        return null;
-      }
-
-      if (imageData?.editedImageUrl) {
-        return imageData.editedImageUrl;
-      }
-      
-      return null;
-    } catch (imgErr: any) {
-      console.error('Failed to generate contractor image:', imgErr);
-      toast({
-        title: 'Image Generation Failed',
-        description: 'Could not generate contractor card.',
-        variant: 'destructive',
-      });
-      return null;
-    }
-  };
-
-  // Handle SIV email send with attachment
-  const handleSendSivEmail = async () => {
-    if (!sivPreviewData || !sivPreviewData.imageUrl) return;
-
-    const { applicant, template, processedSubject, imageUrl } = sivPreviewData;
-    let processedBody = sivPreviewData.processedBody;
-
-    try {
-      // Extract base64 content from data URL
-      const base64Match = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
-      let sivAttachments: { filename: string; content: string; contentType: string }[] = [];
-      
-      if (base64Match) {
-        const contentType = base64Match[1];
-        const base64Content = base64Match[2];
-        const extension = contentType.split('/')[1] || 'png';
-        
-        // Sanitize filename from applicant name
-        const sanitizedName = applicant.full_name
-          .replace(/[^a-zA-Z0-9\s]/g, '')
-          .replace(/\s+/g, '-')
-          .toLowerCase();
-        
-        sivAttachments = [{
-          filename: `${sanitizedName}-contractor-card.${extension}`,
-          content: base64Content,
-          contentType: contentType,
-        }];
-        
-        // Add a note in the email body about the attachment
-        const attachmentNote = `
-          <div style="margin: 20px 0; padding: 15px; background-color: #f0f9ff; border-radius: 8px; border-left: 4px solid #6366f1;">
-            <p style="margin: 0; color: #1e40af;"><strong>📎 Your Personalized Contractor Card is attached to this email!</strong></p>
-            <p style="margin: 5px 0 0 0; color: #3b82f6; font-size: 14px;">Please download and save it for your records.</p>
-          </div>
-        `;
-        processedBody = processedBody.replace(/\{\{contractor_card\}\}/g, attachmentNote);
-        // If placeholder not found, append to the end
-        if (!template.body_html.includes('{{contractor_card}}')) {
-          processedBody += attachmentNote;
-        }
-      }
-
-      const { data, error: emailError } = await supabase.functions.invoke('send-applicant-email', {
-        body: {
-          applicantId: applicant.id,
-          templateId: template.id,
-          subject: processedSubject,
-          bodyHtml: processedBody,
-          recipientEmail: applicant.email,
-          applicantStatusAtSend: sivPreviewData.newStatus,
-          isAutomated: true,
-          attachments: sivAttachments.length > 0 ? sivAttachments : undefined,
-        },
-      });
-
-      if (emailError) throw emailError;
-
-      toast({
-        title: 'Email Sent',
-        description: `SIV email with contractor card sent to ${applicant.email}`,
-      });
-
-      setSivPreviewOpen(false);
-      setSivPreviewData(null);
-    } catch (emailErr: any) {
-      console.error('Failed to send SIV email:', emailErr);
-      toast({
-        title: 'Email Failed',
-        description: 'Failed to send SIV email with contractor card',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  // Regenerate contractor card
-  const handleRegenerateContractorCard = async () => {
-    if (!sivPreviewData) return;
-    
-    setSivPreviewData((prev) => prev ? { ...prev, isGenerating: true, imageUrl: null } : null);
-    
-    const imageUrl = await generateContractorCard(sivPreviewData.applicant);
-    setSivPreviewData((prev) => prev ? { ...prev, imageUrl, isGenerating: false } : null);
-  };
-
   const handleUpdateApplicantStatus = async (applicantId: string, newStatus: ApplicantStatusOption) => {
     const applicant = applicants.find(a => a.id === applicantId);
     if (!applicant) return;
@@ -842,28 +696,6 @@ const Admin = () => {
               email: applicant.email,
               job_title: applicant.job_title,
               status: newStatus,
-            });
-            return;
-          }
-
-          // For SIV status, show preview dialog instead of auto-sending
-          if (trigger === 'siv') {
-            setSivPreviewData({
-              applicant,
-              newStatus,
-              imageUrl: null,
-              isGenerating: true,
-              template,
-              processedSubject,
-              processedBody,
-            });
-            setSivPreviewOpen(true);
-            
-            // Generate the contractor card in background
-            generateContractorCard(applicant).then((imageUrl) => {
-              setSivPreviewData((prev) => prev ? { ...prev, imageUrl, isGenerating: false } : null);
-            }).catch(() => {
-              setSivPreviewData((prev) => prev ? { ...prev, imageUrl: null, isGenerating: false } : null);
             });
             return;
           }
@@ -2525,21 +2357,6 @@ const Admin = () => {
         }}
       />
 
-      {/* SIV Contractor Card Preview Dialog */}
-      <ContractorCardPreviewDialog
-        open={sivPreviewOpen}
-        onOpenChange={setSivPreviewOpen}
-        imageUrl={sivPreviewData?.imageUrl ?? null}
-        isGenerating={sivPreviewData?.isGenerating ?? false}
-        applicantName={sivPreviewData?.applicant.full_name ?? ''}
-        jobTitle={sivPreviewData?.applicant.job_title ?? ''}
-        onConfirm={handleSendSivEmail}
-        onRegenerate={handleRegenerateContractorCard}
-        onCancel={() => {
-          setSivPreviewOpen(false);
-          setSivPreviewData(null);
-        }}
-      />
     </div>
   );
 };
