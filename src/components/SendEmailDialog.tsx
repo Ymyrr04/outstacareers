@@ -13,9 +13,16 @@ import { useToast } from '@/hooks/use-toast';
 import { format, addMinutes } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { 
-  Send, Loader2, Clock, CalendarIcon, AlertTriangle, User 
+  Send, Loader2, Clock, CalendarIcon, AlertTriangle, User, Paperclip, X, FileImage, File
 } from 'lucide-react';
 import { RichTextToolbar } from './RichTextToolbar';
+
+interface EmailAttachment {
+  filename: string;
+  content: string; // base64
+  contentType: string;
+  size: number;
+}
 
 interface SendEmailDialogProps {
   open: boolean;
@@ -132,6 +139,10 @@ export function SendEmailDialog({
   const [timezone, setTimezone] = useState('PST');
   const [meetingLink, setMeetingLink] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Attachments state
+  const [attachments, setAttachments] = useState<EmailAttachment[]>([]);
 
   // Fetch fresh templates when dialog opens
   useEffect(() => {
@@ -152,6 +163,7 @@ export function SendEmailDialog({
       setInterviewDate(undefined);
       setInterviewTime('');
       setMeetingLink('');
+      setAttachments([]);
       
       if (preselectedTemplate && templates.length > 0) {
         // Use setTimeout to ensure templates are loaded
@@ -202,6 +214,59 @@ export function SendEmailDialog({
     return processed;
   };
 
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const maxSize = 5 * 1024 * 1024; // 5MB limit per file
+    const newAttachments: EmailAttachment[] = [];
+
+    for (const file of Array.from(files)) {
+      if (file.size > maxSize) {
+        toast({
+          title: 'File too large',
+          description: `${file.name} exceeds 5MB limit`,
+          variant: 'destructive',
+        });
+        continue;
+      }
+
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const result = reader.result as string;
+          // Remove data URL prefix
+          const base64Content = result.split(',')[1];
+          resolve(base64Content);
+        };
+        reader.readAsDataURL(file);
+      });
+
+      newAttachments.push({
+        filename: file.name,
+        content: base64,
+        contentType: file.type || 'application/octet-stream',
+        size: file.size,
+      });
+    }
+
+    setAttachments((prev) => [...prev, ...newAttachments]);
+    // Reset input so same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeAttachment = (index: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes < 1024) return `${bytes} B`;
+    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+  };
+
   const handleSend = async () => {
     if (!applicant) return;
 
@@ -247,6 +312,11 @@ export function SendEmailDialog({
           applicantStatusAtSend: applicant.status,
           isAutomated: false,
           scheduleFor: scheduleDateTime,
+          attachments: attachments.length > 0 ? attachments.map(({ filename, content, contentType }) => ({
+            filename,
+            content,
+            contentType,
+          })) : undefined,
         },
       });
 
@@ -443,6 +513,61 @@ export function SendEmailDialog({
                 className="min-h-[180px] text-sm resize-none border-0 rounded-none focus-visible:ring-0"
               />
             </div>
+          </div>
+
+          {/* Attachments */}
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">Attachments</Label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs gap-1"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Paperclip className="h-3.5 w-3.5" />
+                Add File
+              </Button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                multiple
+                className="hidden"
+                onChange={handleFileSelect}
+                accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.txt"
+              />
+            </div>
+            
+            {attachments.length > 0 && (
+              <div className="space-y-1">
+                {attachments.map((att, idx) => (
+                  <div
+                    key={idx}
+                    className="flex items-center gap-2 p-2 bg-muted/50 rounded-md text-sm"
+                  >
+                    {att.contentType.startsWith('image/') ? (
+                      <FileImage className="h-4 w-4 text-blue-500 shrink-0" />
+                    ) : (
+                      <File className="h-4 w-4 text-muted-foreground shrink-0" />
+                    )}
+                    <span className="flex-1 truncate">{att.filename}</span>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {formatFileSize(att.size)}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="h-6 w-6 p-0"
+                      onClick={() => removeAttachment(idx)}
+                    >
+                      <X className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
