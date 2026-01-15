@@ -688,8 +688,8 @@ const Admin = () => {
             scheduleFor = addHours(new Date(), template.delay_hours).toISOString();
           }
 
-          // For interview status, open the email dialog instead of auto-sending
-          if (trigger === 'for_interview') {
+          // For interview or SIV status, open the email dialog instead of auto-sending
+          if (trigger === 'for_interview' || trigger === 'siv') {
             setSendEmailApplicant({
               id: applicant.id,
               full_name: applicant.full_name,
