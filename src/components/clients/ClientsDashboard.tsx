@@ -21,6 +21,7 @@ export interface Client {
   company_links: string | null;
   yearly_increase: boolean;
   contractor_count: number;
+  is_hiring: boolean;
   created_at: string;
   updated_at: string;
   contact_count?: number;
@@ -78,7 +79,7 @@ export const ClientsDashboard = () => {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'lost'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'lost' | 'hiring'>('all');
 
   const fetchClients = async () => {
     setLoading(true);
@@ -150,7 +151,8 @@ export const ClientsDashboard = () => {
     const matchesStatusFilter = 
       statusFilter === 'all' ||
       (statusFilter === 'active' && hasActiveContractors) ||
-      (statusFilter === 'lost' && !hasActiveContractors);
+      (statusFilter === 'lost' && !hasActiveContractors) ||
+      (statusFilter === 'hiring' && client.is_hiring);
     
     return matchesSearch && matchesStatusFilter;
   });
@@ -159,7 +161,7 @@ export const ClientsDashboard = () => {
   const totalActiveContractors = clients.reduce((sum, c) => sum + (c.contractor_count || 0), 0);
   const totalActiveClients = clients.filter(c => (c.contractor_count || 0) > 0).length;
   const clientsLost = clients.filter(c => (c.contractor_count || 0) === 0).length;
-  const clientsHiring = clients.filter(c => c.notes?.toLowerCase().includes('hiring')).length;
+  const clientsHiring = clients.filter(c => c.is_hiring).length;
 
   // Export clients to CSV
   const handleExport = async () => {
@@ -293,7 +295,10 @@ export const ClientsDashboard = () => {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'hiring' ? 'ring-2 ring-amber-500' : ''}`}
+          onClick={() => setStatusFilter(statusFilter === 'hiring' ? 'all' : 'hiring')}
+        >
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-amber-500/10 rounded-lg">

@@ -43,6 +43,7 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
     leads_from: client.leads_from || '',
     company_links: client.company_links || '',
     yearly_increase: client.yearly_increase || false,
+    is_hiring: client.is_hiring || false,
     contractor_count: client.contractor_count || 0,
     notes: client.notes || '',
   });
@@ -118,6 +119,7 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
           leads_from: editForm.leads_from.trim() || null,
           company_links: editForm.company_links.trim() || null,
           yearly_increase: editForm.yearly_increase,
+          is_hiring: editForm.is_hiring,
           contractor_count: editForm.contractor_count,
           notes: editForm.notes.trim() || null,
         })
@@ -223,6 +225,11 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
               ) : (
                 <div className="flex items-center gap-2">
                   <SheetTitle className="text-xl">{client.company_name}</SheetTitle>
+                  {client.is_hiring && (
+                    <Badge variant="outline" className="text-xs text-green-600 border-green-300">
+                      Hiring
+                    </Badge>
+                  )}
                   {client.yearly_increase && (
                     <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
                       <TrendingUp className="w-3 h-3 mr-1" />
@@ -296,6 +303,16 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                   onChange={(e) => setEditForm({ ...editForm, company_links: e.target.value })}
                   rows={2}
                 />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="is_hiring_edit"
+                  checked={editForm.is_hiring}
+                  onCheckedChange={(checked) => setEditForm({ ...editForm, is_hiring: !!checked })}
+                />
+                <Label htmlFor="is_hiring_edit" className="text-sm font-normal">
+                  Currently Hiring
+                </Label>
               </div>
               <div className="flex items-center space-x-2">
                 <Checkbox
