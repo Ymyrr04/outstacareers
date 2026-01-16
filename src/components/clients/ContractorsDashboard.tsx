@@ -87,7 +87,6 @@ interface ContractorWithDetails {
 
 const STATUS_COLORS: Record<string, string> = {
   active: 'bg-green-500/10 text-green-700 border-green-300',
-  completed: 'bg-blue-500/10 text-blue-700 border-blue-300',
   terminated: 'bg-red-500/10 text-red-700 border-red-300',
   resigned: 'bg-purple-500/10 text-purple-700 border-purple-300',
   rendering: 'bg-cyan-500/10 text-cyan-700 border-cyan-300',
@@ -95,7 +94,6 @@ const STATUS_COLORS: Record<string, string> = {
 
 const STATUS_ICONS: Record<string, React.ReactNode> = {
   active: <CheckCircle className="w-3 h-3" />,
-  completed: <Clock className="w-3 h-3" />,
   terminated: <XCircle className="w-3 h-3" />,
   resigned: <XCircle className="w-3 h-3" />,
   rendering: <Clock className="w-3 h-3" />,
@@ -628,12 +626,6 @@ export const ContractorsDashboard = () => {
                               <span className="flex items-center gap-2">
                                 <CheckCircle className="w-3 h-3 text-green-600" />
                                 Active
-                              </span>
-                            </SelectItem>
-                            <SelectItem value="completed">
-                              <span className="flex items-center gap-2">
-                                <Clock className="w-3 h-3 text-blue-600" />
-                                Completed
                               </span>
                             </SelectItem>
                             <SelectItem value="terminated">
