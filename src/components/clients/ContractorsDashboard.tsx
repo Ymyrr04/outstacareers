@@ -764,8 +764,11 @@ export const ContractorsDashboard = () => {
                     {activeContractors.map(contractor => (
                       <TableRow 
                         key={contractor.id} 
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => setEditingContractor(contractor)}
+                        className="hover:bg-muted/50"
+                        onContextMenu={(e) => {
+                          e.preventDefault();
+                          setEditingContractor(contractor);
+                        }}
                       >
                         {visibleColumns.status && (
                           <TableCell onClick={(e) => e.stopPropagation()}>
@@ -1017,11 +1020,14 @@ export const ContractorsDashboard = () => {
                       {separatedContractors.map(contractor => (
                         <TableRow 
                           key={contractor.id} 
-                          className="cursor-pointer hover:bg-muted/50"
-                          onClick={() => setEditingContractor(contractor)}
+                          className="hover:bg-muted/50"
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            setEditingContractor(contractor);
+                          }}
                         >
                           {visibleColumns.status && (
-                            <TableCell onClick={(e) => e.stopPropagation()}>
+                            <TableCell>
                               <Select
                                 value={contractor.status}
                                 onValueChange={(value) => handleStatusChange(contractor.id, value)}
