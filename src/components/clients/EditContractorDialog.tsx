@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Building2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -56,12 +56,15 @@ interface EditContractorDialogProps {
 export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated }: EditContractorDialogProps) => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [clients, setClients] = useState<{ id: string; company_name: string }[]>([]);
+  const [loadingClients, setLoadingClients] = useState(false);
   
   const [formData, setFormData] = useState({
     // Applicant fields
     full_name: '',
     email: '',
     // Contractor assignment fields
+    client_id: '',
     status: 'active',
     job_title: '',
     hourly_rate: '',
@@ -77,11 +80,36 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
     notes: '',
   });
 
+  // Fetch clients list
+  useEffect(() => {
+    const fetchClients = async () => {
+      setLoadingClients(true);
+      try {
+        const { data, error } = await supabase
+          .from('clients')
+          .select('id, company_name')
+          .order('company_name');
+        
+        if (error) throw error;
+        setClients(data || []);
+      } catch (err) {
+        console.error('Failed to fetch clients:', err);
+      } finally {
+        setLoadingClients(false);
+      }
+    };
+
+    if (open) {
+      fetchClients();
+    }
+  }, [open]);
+
   useEffect(() => {
     if (contractor) {
       setFormData({
         full_name: contractor.applicant?.full_name || '',
         email: contractor.applicant?.email || '',
+        client_id: contractor.client_id || '',
         status: contractor.status || 'active',
         job_title: contractor.job_title || '',
         hourly_rate: contractor.hourly_rate?.toString() || '',
@@ -121,6 +149,7 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
       const { error } = await supabase
         .from('contractor_assignments')
         .update({
+          client_id: formData.client_id,
           status: formData.status,
           job_title: formData.job_title || null,
           hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
@@ -189,6 +218,42 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
               onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
               className="col-span-3"
             />
+          </div>
+
+          {/* Client */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="client" className="text-right">Client</Label>
+            <Select 
+              value={formData.client_id} 
+              onValueChange={(value) => setFormData(prev => ({ ...prev, client_id: value }))}
+              disabled={loadingClients}
+            >
+              <SelectTrigger className="col-span-3">
+                <SelectValue placeholder={loadingClients ? "Loading clients..." : "Select client"}>
+                  {loadingClients ? (
+                    <span className="flex items-center gap-2">
+                      <Loader2 className="w-3 h-3 animate-spin" />
+                      Loading...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <Building2 className="w-3 h-3" />
+                      {clients.find(c => c.id === formData.client_id)?.company_name || "Select client"}
+                    </span>
+                  )}
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                {clients.map(client => (
+                  <SelectItem key={client.id} value={client.id}>
+                    <span className="flex items-center gap-2">
+                      <Building2 className="w-3 h-3" />
+                      {client.company_name}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           {/* Status */}
