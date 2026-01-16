@@ -40,6 +40,7 @@ interface ClientData {
   leads_from: string | null;
   website: string | null;
   notes: string | null;
+  is_hiring: boolean | null;
 }
 
 interface SelectedClient extends ClientData {
@@ -67,7 +68,7 @@ export const ClientAnalyticsDashboard = () => {
             .select(`*, client:clients(id, company_name, industry)`),
           supabase
             .from('clients')
-            .select('id, company_name, industry, leads_from, website, notes'),
+            .select('id, company_name, industry, leads_from, website, notes, is_hiring'),
         ]);
 
         if (contractorsRes.error) throw contractorsRes.error;
@@ -115,21 +116,25 @@ export const ClientAnalyticsDashboard = () => {
       .sort((a, b) => a.year.localeCompare(b.year));
   }, [contractors]);
 
-  // 3. Terminated per Year
-  const terminatedPerYear = useMemo(() => {
-    const yearMap: Record<string, number> = {};
-    contractors.filter(c => c.status === 'terminated').forEach(c => {
-      if (c.end_date) {
-        const year = new Date(c.end_date).getFullYear().toString();
-        yearMap[year] = (yearMap[year] || 0) + 1;
-      } else if (c.start_date) {
-        // Use start_date year as fallback
-        const year = new Date(c.start_date).getFullYear().toString();
-        yearMap[year] = (yearMap[year] || 0) + 1;
+  // 3. Separated per Year (Terminated + Resigned)
+  const separatedPerYear = useMemo(() => {
+    const yearMap: Record<string, { terminated: number; resigned: number }> = {};
+    contractors.filter(c => c.status === 'terminated' || c.status === 'resigned').forEach(c => {
+      const dateToUse = c.end_date || c.start_date;
+      if (dateToUse) {
+        const year = new Date(dateToUse).getFullYear().toString();
+        if (!yearMap[year]) {
+          yearMap[year] = { terminated: 0, resigned: 0 };
+        }
+        if (c.status === 'terminated') {
+          yearMap[year].terminated += 1;
+        } else {
+          yearMap[year].resigned += 1;
+        }
       }
     });
     return Object.entries(yearMap)
-      .map(([year, terminated]) => ({ year, terminated }))
+      .map(([year, counts]) => ({ year, ...counts, total: counts.terminated + counts.resigned }))
       .sort((a, b) => a.year.localeCompare(b.year));
   }, [contractors]);
 
@@ -209,22 +214,25 @@ export const ClientAnalyticsDashboard = () => {
   }, [contractors]);
 
   // Summary stats
-  const activeContractors = contractors.filter(c => c.status === 'active' || c.status === 'Active').length;
+  const activeContractors = contractors.filter(c => c.status === 'active').length;
+  const scheduledContractors = contractors.filter(c => c.status === 'scheduled').length;
+  const renderingContractors = contractors.filter(c => c.status === 'rendering').length;
+  const separatedContractors = contractors.filter(c => c.status === 'terminated' || c.status === 'resigned').length;
   
   // Get unique client IDs with active contractors
   const clientsWithActiveContractors = new Set(
     contractors
-      .filter(c => c.status === 'active' || c.status === 'Active')
+      .filter(c => c.status === 'active')
       .map(c => c.client_id)
   );
   const totalActiveClients = clientsWithActiveContractors.size;
   
-  // Clients with no contractors (lost clients)
+  // Clients with no contractors AND not marked as hiring (truly lost clients)
   const clientsWithContractors = new Set(contractors.map(c => c.client_id));
-  const clientsLost = clients.filter(c => !clientsWithContractors.has(c.id)).length;
+  const clientsLost = clients.filter(c => !clientsWithContractors.has(c.id) && !c.is_hiring).length;
   
-  // Clients currently hiring (status = 'Hiring')
-  const newClientsHiring = contractors.filter(c => c.status === 'Hiring' || c.status === 'hiring').length;
+  // Clients currently hiring (from clients.is_hiring flag)
+  const newClientsHiring = clients.filter(c => c.is_hiring === true).length;
 
   if (loading) {
     return (
@@ -237,8 +245,8 @@ export const ClientAnalyticsDashboard = () => {
 
   return (
     <div className="space-y-6">
-      {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      {/* Summary Cards - Row 1 */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
@@ -247,7 +255,7 @@ export const ClientAnalyticsDashboard = () => {
               </div>
               <div>
                 <p className="text-2xl font-bold">{totalActiveClients || 0}</p>
-                <p className="text-sm text-muted-foreground">Total Active Clients</p>
+                <p className="text-sm text-muted-foreground">Active Clients</p>
               </div>
             </div>
           </CardContent>
@@ -268,8 +276,64 @@ export const ClientAnalyticsDashboard = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-500/10 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{scheduledContractors || 0}</p>
+                <p className="text-sm text-muted-foreground">Scheduled</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-cyan-500/10 rounded-lg">
+                <Users className="w-5 h-5 text-cyan-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{renderingContractors || 0}</p>
+                <p className="text-sm text-muted-foreground">Rendering</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Summary Cards - Row 2 */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
               <div className="p-2 bg-red-500/10 rounded-lg">
                 <TrendingDown className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{separatedContractors || 0}</p>
+                <p className="text-sm text-muted-foreground">Separated</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-500/10 rounded-lg">
+                <Building2 className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{newClientsHiring || 0}</p>
+                <p className="text-sm text-muted-foreground">Clients Hiring</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-gray-500/10 rounded-lg">
+                <TrendingDown className="w-5 h-5 text-gray-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{clientsLost || 0}</p>
@@ -281,12 +345,12 @@ export const ClientAnalyticsDashboard = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-500/10 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-amber-600" />
+              <div className="p-2 bg-indigo-500/10 rounded-lg">
+                <BarChart3 className="w-5 h-5 text-indigo-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{newClientsHiring || 0}</p>
-                <p className="text-sm text-muted-foreground">New Client (Hiring)</p>
+                <p className="text-2xl font-bold">{clientRetention.average || 0}%</p>
+                <p className="text-sm text-muted-foreground">Avg Retention</p>
               </div>
             </div>
           </CardContent>
@@ -361,18 +425,19 @@ export const ClientAnalyticsDashboard = () => {
 
       {/* Charts Row 2 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Terminated per Year */}
+        {/* Separations per Year (Terminated + Resigned) */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <TrendingDown className="w-4 h-4" />
-              Terminations per Year
+              Separations per Year
+              <span className="text-xs text-muted-foreground font-normal">(Terminated + Resigned)</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={terminatedPerYear}>
+                <BarChart data={separatedPerYear}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                   <XAxis dataKey="year" className="text-xs" />
                   <YAxis className="text-xs" />
@@ -382,14 +447,10 @@ export const ClientAnalyticsDashboard = () => {
                       border: '1px solid hsl(var(--border))' 
                     }} 
                   />
-                  <Line 
-                    type="monotone" 
-                    dataKey="terminated" 
-                    stroke="#ef4444" 
-                    strokeWidth={2}
-                    dot={{ fill: '#ef4444', strokeWidth: 2 }}
-                  />
-                </LineChart>
+                  <Legend />
+                  <Bar dataKey="terminated" stackId="a" fill="#ef4444" name="Terminated" />
+                  <Bar dataKey="resigned" stackId="a" fill="#8b5cf6" name="Resigned" radius={[4, 4, 0, 0]} />
+                </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
