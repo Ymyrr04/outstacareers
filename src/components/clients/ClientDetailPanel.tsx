@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { 
@@ -20,6 +21,52 @@ import type { Client, ClientContact, ContractorAssignment, ClientCommunication }
 import { AddContactDialog } from './AddContactDialog';
 import { AddContractorDialog } from './AddContractorDialog';
 import { AddCommunicationDialog } from './AddCommunicationDialog';
+
+// Hiring Toggle Component
+const HiringToggle = ({ clientId, isHiring, onUpdate }: { clientId: string; isHiring: boolean; onUpdate: () => void }) => {
+  const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
+
+  const handleToggle = async (checked: boolean) => {
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({ is_hiring: checked })
+        .eq('id', clientId);
+
+      if (error) throw error;
+
+      toast({
+        title: checked ? 'Hiring enabled' : 'Hiring disabled',
+        description: `Client is ${checked ? 'now' : 'no longer'} marked as hiring`,
+      });
+      onUpdate();
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="flex items-center gap-2">
+      <Switch
+        checked={isHiring}
+        onCheckedChange={handleToggle}
+        disabled={loading}
+        className="data-[state=checked]:bg-green-500"
+      />
+      <Label className={`text-sm ${isHiring ? 'text-green-600 font-medium' : 'text-muted-foreground'}`}>
+        {loading ? 'Updating...' : isHiring ? 'Hiring' : 'Not Hiring'}
+      </Label>
+    </div>
+  );
+};
 
 interface ClientDetailPanelProps {
   client: Client;
@@ -244,26 +291,37 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
 
         <div className="mt-6 space-y-6">
           {/* Actions */}
-          <div className="flex gap-2">
-            {editing ? (
-              <>
-                <Button onClick={handleSave} disabled={saving}>
-                  {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
-                  Save
-                </Button>
-                <Button variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
-              </>
-            ) : (
-              <>
-                <Button variant="outline" onClick={() => setEditing(true)}>
-                  <Edit2 className="w-4 h-4 mr-2" />
-                  Edit
-                </Button>
-                <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
-                  {deleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
-                  Delete
-                </Button>
-              </>
+          <div className="flex items-center justify-between">
+            <div className="flex gap-2">
+              {editing ? (
+                <>
+                  <Button onClick={handleSave} disabled={saving}>
+                    {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
+                    Save
+                  </Button>
+                  <Button variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" onClick={() => setEditing(true)}>
+                    <Edit2 className="w-4 h-4 mr-2" />
+                    Edit
+                  </Button>
+                  <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+                    {deleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                    Delete
+                  </Button>
+                </>
+              )}
+            </div>
+            
+            {/* Hiring Toggle */}
+            {!editing && (
+              <HiringToggle 
+                clientId={client.id} 
+                isHiring={client.is_hiring || false} 
+                onUpdate={onUpdate} 
+              />
             )}
           </div>
 
