@@ -1,10 +1,13 @@
 import { useState, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Upload, Download, Loader2, AlertCircle } from 'lucide-react';
+import { Upload, Download, Loader2, AlertCircle, AlertTriangle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Label } from '@/components/ui/label';
+import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface ImportResult {
   successCount: number;
@@ -37,12 +40,32 @@ interface ParsedContractor {
   source: string;
 }
 
+interface DuplicateInfo {
+  contractor: ParsedContractor;
+  existingAssignment: {
+    id: string;
+    job_title: string | null;
+    client_name: string;
+    start_date: string | null;
+  };
+}
+
+type DuplicateAction = 'skip' | 'add';
+
 export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImported, onImportComplete }: ContractorImportDialogProps) => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
   const [parsedData, setParsedData] = useState<ParsedContractor[]>([]);
   const [errors, setErrors] = useState<string[]>([]);
+  const [duplicates, setDuplicates] = useState<DuplicateInfo[]>([]);
+  const [duplicateActions, setDuplicateActions] = useState<Record<string, DuplicateAction>>({});
+  const [showDuplicateDialog, setShowDuplicateDialog] = useState(false);
+  const [pendingImportData, setPendingImportData] = useState<{
+    parsedData: ParsedContractor[];
+    clientMap: Record<string, string>;
+    applicantMap: Record<string, { id: string; name: string }>;
+  } | null>(null);
 
   const downloadTemplate = () => {
     const headers = [
@@ -207,8 +230,7 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
 
     setImporting(true);
     setErrors([]);
-    const importErrors: string[] = [];
-    let successCount = 0;
+    setDuplicates([]);
 
     try {
       // Fetch all clients to match by company name
@@ -217,8 +239,10 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
         .select('id, company_name');
 
       const clientMap: Record<string, string> = {};
+      const clientNameMap: Record<string, string> = {};
       clients?.forEach(c => {
         clientMap[c.company_name.toLowerCase()] = c.id;
+        clientNameMap[c.id] = c.company_name;
       });
 
       // Fetch all applicants to match by email
@@ -231,7 +255,94 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
         applicantMap[a.email.toLowerCase()] = { id: a.id, name: a.full_name };
       });
 
+      // Fetch existing contractor assignments to detect duplicates
+      const { data: existingAssignments } = await supabase
+        .from('contractor_assignments')
+        .select('id, applicant_id, client_id, job_title, start_date');
+
+      // Create a map of existing assignments by applicant+client combo
+      const assignmentMap: Record<string, { id: string; job_title: string | null; client_id: string; start_date: string | null }> = {};
+      existingAssignments?.forEach(a => {
+        const key = `${a.applicant_id}-${a.client_id}`;
+        assignmentMap[key] = { id: a.id, job_title: a.job_title, client_id: a.client_id, start_date: a.start_date };
+      });
+
+      // Check for duplicates
+      const foundDuplicates: DuplicateInfo[] = [];
+      
       for (const row of parsedData) {
+        const clientId = clientMap[row.company.toLowerCase()];
+        if (!clientId) continue; // Will be handled as error later
+
+        const applicantInfo = applicantMap[row.email.toLowerCase()];
+        if (!applicantInfo) continue; // Will be created during import
+
+        const key = `${applicantInfo.id}-${clientId}`;
+        const existingAssignment = assignmentMap[key];
+        
+        if (existingAssignment) {
+          foundDuplicates.push({
+            contractor: row,
+            existingAssignment: {
+              id: existingAssignment.id,
+              job_title: existingAssignment.job_title,
+              client_name: clientNameMap[clientId] || row.company,
+              start_date: existingAssignment.start_date,
+            },
+          });
+        }
+      }
+
+      if (foundDuplicates.length > 0) {
+        // Show duplicate dialog
+        setDuplicates(foundDuplicates);
+        // Initialize all actions to 'skip' by default
+        const actions: Record<string, DuplicateAction> = {};
+        foundDuplicates.forEach(d => {
+          actions[d.contractor.email] = 'skip';
+        });
+        setDuplicateActions(actions);
+        setPendingImportData({ parsedData, clientMap, applicantMap });
+        setShowDuplicateDialog(true);
+        setImporting(false);
+        return;
+      }
+
+      // No duplicates, proceed with import
+      await executeImport(parsedData, clientMap, applicantMap, {});
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to check for duplicates: ' + err.message,
+        variant: 'destructive',
+      });
+      setImporting(false);
+    }
+  };
+
+  const executeImport = async (
+    data: ParsedContractor[],
+    clientMap: Record<string, string>,
+    applicantMap: Record<string, { id: string; name: string }>,
+    actions: Record<string, DuplicateAction>
+  ) => {
+    setImporting(true);
+    const importErrors: string[] = [];
+    let successCount = 0;
+    let skippedCount = 0;
+
+    try {
+      // Fetch existing assignments to check duplicates
+      const { data: existingAssignments } = await supabase
+        .from('contractor_assignments')
+        .select('id, applicant_id, client_id');
+
+      const assignmentSet = new Set<string>();
+      existingAssignments?.forEach(a => {
+        assignmentSet.add(`${a.applicant_id}-${a.client_id}`);
+      });
+
+      for (const row of data) {
         // Find client by company name
         const clientId = clientMap[row.company.toLowerCase()];
         if (!clientId) {
@@ -278,6 +389,17 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
           // Add to map for potential duplicates in same import
           applicantInfo = { id: newApplicant.id, name: newApplicant.full_name };
           applicantMap[row.email.toLowerCase()] = applicantInfo;
+        }
+
+        // Check if this is a duplicate
+        const key = `${applicantInfo.id}-${clientId}`;
+        if (assignmentSet.has(key)) {
+          const action = actions[row.email] || 'skip';
+          if (action === 'skip') {
+            skippedCount++;
+            continue;
+          }
+          // action === 'add' - proceed to add new assignment
         }
 
         // Validate status
@@ -332,10 +454,11 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
         timestamp: new Date(),
       });
 
-      if (successCount > 0) {
+      if (successCount > 0 || skippedCount > 0) {
+        const skippedMsg = skippedCount > 0 ? `, ${skippedCount} skipped` : '';
         toast({
           title: 'Import Complete',
-          description: `Successfully imported ${successCount} contractor(s)${importErrors.length > 0 ? ` with ${importErrors.length} error(s)` : ''}`,
+          description: `Successfully imported ${successCount} contractor(s)${skippedMsg}${importErrors.length > 0 ? `, ${importErrors.length} error(s)` : ''}`,
         });
         onContractorsImported();
         
@@ -361,106 +484,238 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
     }
   };
 
+  const handleDuplicateDialogConfirm = async () => {
+    if (!pendingImportData) return;
+    setShowDuplicateDialog(false);
+    await executeImport(
+      pendingImportData.parsedData,
+      pendingImportData.clientMap,
+      pendingImportData.applicantMap,
+      duplicateActions
+    );
+    setPendingImportData(null);
+  };
+
+  const handleDuplicateDialogCancel = () => {
+    setShowDuplicateDialog(false);
+    setPendingImportData(null);
+    setDuplicates([]);
+    setDuplicateActions({});
+    setImporting(false);
+  };
+
+  const setAllDuplicateActions = (action: DuplicateAction) => {
+    const actions: Record<string, DuplicateAction> = {};
+    duplicates.forEach(d => {
+      actions[d.contractor.email] = action;
+    });
+    setDuplicateActions(actions);
+  };
+
   const handleClose = () => {
     onOpenChange(false);
     setParsedData([]);
     setErrors([]);
+    setDuplicates([]);
+    setDuplicateActions({});
+    setShowDuplicateDialog(false);
+    setPendingImportData(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Import Contractors</DialogTitle>
-          <DialogDescription>
-            Upload a CSV file to bulk import contractors. Contractors must be linked to existing clients and applicants.
-          </DialogDescription>
-        </DialogHeader>
+    <>
+      {/* Duplicate Detection Dialog */}
+      <Dialog open={showDuplicateDialog} onOpenChange={setShowDuplicateDialog}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+              Duplicate Contractors Detected
+            </DialogTitle>
+            <DialogDescription>
+              {duplicates.length} contractor(s) already have assignments with the same client. Choose what to do with each:
+            </DialogDescription>
+          </DialogHeader>
 
-        <div className="space-y-4">
-          <Alert>
-            <AlertCircle className="h-4 w-4" />
-            <AlertDescription>
-              <strong>Important:</strong> The company name must match an existing client, and the email must match an existing applicant in the system.
-            </AlertDescription>
-          </Alert>
-
-          <Button variant="outline" onClick={downloadTemplate} className="w-full">
-            <Download className="w-4 h-4 mr-2" />
-            Download Template
-          </Button>
-
-          <div className="border-2 border-dashed rounded-lg p-6 text-center">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".csv"
-              onChange={handleFileSelect}
-              className="hidden"
-              id="contractor-csv-upload"
-            />
-            <label htmlFor="contractor-csv-upload" className="cursor-pointer">
-              <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-              <p className="text-sm text-muted-foreground">
-                Click to upload or drag and drop
-              </p>
-              <p className="text-xs text-muted-foreground mt-1">CSV files only</p>
-            </label>
-          </div>
-
-          {parsedData.length > 0 && (
-            <div className="p-3 bg-muted rounded-lg">
-              <p className="text-sm font-medium">
-                {parsedData.length} contractor(s) ready to import
-              </p>
-              <ul className="text-xs text-muted-foreground mt-1 max-h-32 overflow-y-auto">
-                {parsedData.slice(0, 5).map((c, i) => (
-                  <li key={i}>• {c.name} - {c.company}</li>
-                ))}
-                {parsedData.length > 5 && (
-                  <li>...and {parsedData.length - 5} more</li>
-                )}
-              </ul>
-            </div>
-          )}
-
-          {errors.length > 0 && (
-            <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg max-h-40 overflow-y-auto">
-              <p className="text-sm font-medium text-destructive mb-1">Import Errors:</p>
-              <ul className="text-xs text-destructive space-y-1">
-                {errors.map((error, i) => (
-                  <li key={i}>• {error}</li>
-                ))}
-              </ul>
-            </div>
-          )}
-
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleImport} 
-              disabled={parsedData.length === 0 || importing}
+          <div className="flex gap-2 mb-4">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAllDuplicateActions('skip')}
             >
-              {importing ? (
-                <>
-                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  Importing...
-                </>
-              ) : (
-                <>
-                  <Upload className="w-4 h-4 mr-2" />
-                  Import {parsedData.length} Contractor(s)
-                </>
-              )}
+              Skip All Duplicates
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setAllDuplicateActions('add')}
+            >
+              Add All as New
             </Button>
           </div>
-        </div>
-      </DialogContent>
-    </Dialog>
+
+          <ScrollArea className="max-h-[400px] pr-4">
+            <div className="space-y-4">
+              {duplicates.map((dup, index) => (
+                <div
+                  key={dup.contractor.email}
+                  className="p-4 border rounded-lg bg-muted/50"
+                >
+                  <div className="flex justify-between items-start mb-3">
+                    <div>
+                      <p className="font-medium">{dup.contractor.name}</p>
+                      <p className="text-sm text-muted-foreground">{dup.contractor.email}</p>
+                      <p className="text-sm text-muted-foreground">
+                        Company: {dup.contractor.company}
+                      </p>
+                    </div>
+                    <div className="text-right text-sm">
+                      <p className="text-amber-600 font-medium">Existing Assignment</p>
+                      <p className="text-muted-foreground">
+                        {dup.existingAssignment.job_title || 'No title'}
+                      </p>
+                      {dup.existingAssignment.start_date && (
+                        <p className="text-muted-foreground">
+                          Started: {new Date(dup.existingAssignment.start_date).toLocaleDateString()}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <RadioGroup
+                    value={duplicateActions[dup.contractor.email] || 'skip'}
+                    onValueChange={(value) =>
+                      setDuplicateActions((prev) => ({
+                        ...prev,
+                        [dup.contractor.email]: value as DuplicateAction,
+                      }))
+                    }
+                    className="flex gap-4"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="skip" id={`skip-${index}`} />
+                      <Label htmlFor={`skip-${index}`} className="cursor-pointer">
+                        Skip (don't import)
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="add" id={`add-${index}`} />
+                      <Label htmlFor={`add-${index}`} className="cursor-pointer">
+                        Add as new assignment
+                      </Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={handleDuplicateDialogCancel}>
+              Cancel Import
+            </Button>
+            <Button onClick={handleDuplicateDialogConfirm}>
+              Continue Import
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Main Import Dialog */}
+      <Dialog open={open} onOpenChange={handleClose}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Import Contractors</DialogTitle>
+            <DialogDescription>
+              Upload a CSV file to bulk import contractors. Contractors must be linked to existing clients and applicants.
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Important:</strong> The company name must match an existing client, and the email must match an existing applicant in the system.
+              </AlertDescription>
+            </Alert>
+
+            <Button variant="outline" onClick={downloadTemplate} className="w-full">
+              <Download className="w-4 h-4 mr-2" />
+              Download Template
+            </Button>
+
+            <div className="border-2 border-dashed rounded-lg p-6 text-center">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv"
+                onChange={handleFileSelect}
+                className="hidden"
+                id="contractor-csv-upload"
+              />
+              <label htmlFor="contractor-csv-upload" className="cursor-pointer">
+                <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                <p className="text-sm text-muted-foreground">
+                  Click to upload or drag and drop
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">CSV files only</p>
+              </label>
+            </div>
+
+            {parsedData.length > 0 && (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm font-medium">
+                  {parsedData.length} contractor(s) ready to import
+                </p>
+                <ul className="text-xs text-muted-foreground mt-1 max-h-32 overflow-y-auto">
+                  {parsedData.slice(0, 5).map((c, i) => (
+                    <li key={i}>• {c.name} - {c.company}</li>
+                  ))}
+                  {parsedData.length > 5 && (
+                    <li>...and {parsedData.length - 5} more</li>
+                  )}
+                </ul>
+              </div>
+            )}
+
+            {errors.length > 0 && (
+              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg max-h-40 overflow-y-auto">
+                <p className="text-sm font-medium text-destructive mb-1">Import Errors:</p>
+                <ul className="text-xs text-destructive space-y-1">
+                  {errors.map((error, i) => (
+                    <li key={i}>• {error}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <div className="flex gap-2 justify-end">
+              <Button variant="outline" onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleImport} 
+                disabled={parsedData.length === 0 || importing}
+              >
+                {importing ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Importing...
+                  </>
+                ) : (
+                  <>
+                    <Upload className="w-4 h-4 mr-2" />
+                    Import {parsedData.length} Contractor(s)
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
