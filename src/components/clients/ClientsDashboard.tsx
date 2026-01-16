@@ -6,9 +6,10 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Building2, Users, Search, Plus, Loader2, DollarSign, Phone, Mail, Globe } from 'lucide-react';
+import { Building2, Users, Search, Plus, Loader2, DollarSign, Globe, Download, Upload } from 'lucide-react';
 import { AddClientDialog } from './AddClientDialog';
 import { ClientDetailPanel } from './ClientDetailPanel';
+import { ClientImportDialog } from './ClientImportDialog';
 
 export interface Client {
   id: string;
@@ -82,6 +83,7 @@ export const ClientsDashboard = () => {
   const [billingFilter, setBillingFilter] = useState<string>('all');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   const fetchClients = async () => {
     setLoading(true);
@@ -155,6 +157,82 @@ export const ClientsDashboard = () => {
   const activeClients = clients.filter(c => c.billing_status === 'active').length;
   const totalContractors = clients.reduce((sum, c) => sum + (c.contractor_count || 0), 0);
   const overdueClients = clients.filter(c => c.billing_status === 'overdue').length;
+
+  // Export clients to CSV
+  const handleExport = async () => {
+    try {
+      // Fetch all clients with contacts for export
+      const { data: clientsData } = await supabase
+        .from('clients')
+        .select('*')
+        .order('company_name');
+
+      const { data: contactsData } = await supabase
+        .from('client_contacts')
+        .select('*')
+        .eq('is_primary', true);
+
+      // Build contacts map
+      const contactsMap: Record<string, typeof contactsData[0]> = {};
+      contactsData?.forEach(c => {
+        if (!contactsMap[c.client_id]) {
+          contactsMap[c.client_id] = c;
+        }
+      });
+
+      // Build CSV
+      const headers = [
+        'company_name',
+        'industry',
+        'website',
+        'address',
+        'billing_status',
+        'notes',
+        'contact_name',
+        'contact_email',
+        'contact_phone',
+        'contact_role',
+        'created_at'
+      ];
+
+      const rows = (clientsData || []).map(client => {
+        const contact = contactsMap[client.id];
+        return [
+          `"${(client.company_name || '').replace(/"/g, '""')}"`,
+          `"${(client.industry || '').replace(/"/g, '""')}"`,
+          `"${(client.website || '').replace(/"/g, '""')}"`,
+          `"${(client.address || '').replace(/"/g, '""')}"`,
+          client.billing_status || '',
+          `"${(client.notes || '').replace(/"/g, '""')}"`,
+          `"${(contact?.full_name || '').replace(/"/g, '""')}"`,
+          `"${(contact?.email || '').replace(/"/g, '""')}"`,
+          `"${(contact?.phone || '').replace(/"/g, '""')}"`,
+          `"${(contact?.role || '').replace(/"/g, '""')}"`,
+          client.created_at
+        ].join(',');
+      });
+
+      const csvContent = [headers.join(','), ...rows].join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `clients_export_${new Date().toISOString().split('T')[0]}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Success',
+        description: `Exported ${clientsData?.length || 0} clients`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to export clients: ' + err.message,
+        variant: 'destructive',
+      });
+    }
+  };
 
   if (loading) {
     return (
@@ -244,10 +322,20 @@ export const ClientsDashboard = () => {
             </TabsList>
           </Tabs>
         </div>
-        <Button onClick={() => setAddDialogOpen(true)}>
-          <Plus className="w-4 h-4 mr-2" />
-          Add Client
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+            <Upload className="w-4 h-4 mr-2" />
+            Import
+          </Button>
+          <Button variant="outline" onClick={handleExport} disabled={clients.length === 0}>
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
+          <Button onClick={() => setAddDialogOpen(true)}>
+            <Plus className="w-4 h-4 mr-2" />
+            Add Client
+          </Button>
+        </div>
       </div>
 
       {/* Client List */}
@@ -328,6 +416,13 @@ export const ClientsDashboard = () => {
           onUpdate={fetchClients}
         />
       )}
+
+      {/* Import Dialog */}
+      <ClientImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onClientsImported={fetchClients}
+      />
     </div>
   );
 };

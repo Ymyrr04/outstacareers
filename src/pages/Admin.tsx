@@ -2227,6 +2227,11 @@ const Admin = () => {
               </>
             )}
           </TabsContent>
+
+          {/* Clients Tab */}
+          <TabsContent value="clients" className="space-y-6" keepMounted>
+            <ClientsDashboard />
+          </TabsContent>
         </Tabs>
       </main>
 
