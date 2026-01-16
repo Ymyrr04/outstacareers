@@ -226,8 +226,11 @@ const Admin = () => {
   const [draggedApplicant, setDraggedApplicant] = useState<Applicant | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<ApplicantStatusFolder | null>(null);
   
-  // Sort state
+// Sort state
   const [sortOption, setSortOption] = useState<SortOption>('newest');
+  
+  // Main tab state for layout control
+  const [activeMainTab, setActiveMainTab] = useState('jobs');
   
   // Ref for expanded applicant card (click-outside detection)
   const expandedCardRef = useRef<HTMLDivElement>(null);
@@ -885,8 +888,8 @@ const Admin = () => {
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8">
-        <Tabs defaultValue="jobs" className="space-y-6">
+      <main className={activeMainTab === 'contractors' ? 'px-4 py-8' : 'max-w-7xl mx-auto px-4 py-8'}>
+        <Tabs defaultValue="jobs" className="space-y-6" value={activeMainTab} onValueChange={setActiveMainTab}>
           <TabsList>
             <TabsTrigger value="jobs" className="flex items-center gap-2">
               <Briefcase className="w-4 h-4" />
