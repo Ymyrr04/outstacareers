@@ -200,9 +200,10 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="terminated">Terminated</SelectItem>
-                <SelectItem value="resigned">Resigned</SelectItem>
+                <SelectItem value="scheduled">Scheduled to Start</SelectItem>
                 <SelectItem value="rendering">Rendering</SelectItem>
+                <SelectItem value="resigned">Resigned</SelectItem>
+                <SelectItem value="terminated">Terminated</SelectItem>
               </SelectContent>
             </Select>
           </div>
