@@ -23,12 +23,13 @@ import {
 interface ContractorStatusDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  status: 'rendering' | 'resigned' | 'terminated';
+  status: 'rendering' | 'resigned' | 'terminated' | 'scheduled';
   contractorName: string;
   onConfirm: (data: { 
     status: string; 
     renderingReason?: 'resign' | 'termination'; 
     effectiveDate?: string;
+    startDate?: string;
   }) => void;
   saving: boolean;
 }
@@ -51,6 +52,11 @@ export const ContractorStatusDialog = ({
         renderingReason,
         effectiveDate: effectiveDate ? format(effectiveDate, 'yyyy-MM-dd') : undefined,
       });
+    } else if (status === 'scheduled') {
+      onConfirm({
+        status,
+        startDate: effectiveDate ? format(effectiveDate, 'yyyy-MM-dd') : undefined,
+      });
     } else {
       onConfirm({
         status,
@@ -61,6 +67,8 @@ export const ContractorStatusDialog = ({
 
   const getDialogTitle = () => {
     switch (status) {
+      case 'scheduled':
+        return 'Scheduled to Start';
       case 'rendering':
         return 'Rendering Period';
       case 'resigned':
@@ -74,6 +82,8 @@ export const ContractorStatusDialog = ({
 
   const getDialogDescription = () => {
     switch (status) {
+      case 'scheduled':
+        return `Set start date for ${contractorName}`;
       case 'rendering':
         return `Set rendering details for ${contractorName}`;
       case 'resigned':
@@ -82,6 +92,17 @@ export const ContractorStatusDialog = ({
         return `Confirm termination for ${contractorName}`;
       default:
         return '';
+    }
+  };
+
+  const getDateLabel = () => {
+    switch (status) {
+      case 'scheduled':
+        return 'Start Date';
+      case 'rendering':
+        return 'Effective Date';
+      default:
+        return 'Last Day';
     }
   };
 
@@ -119,9 +140,7 @@ export const ContractorStatusDialog = ({
           )}
 
           <div className="space-y-3">
-            <Label>
-              {status === 'rendering' ? 'Effective Date' : 'Last Day'}
-            </Label>
+            <Label>{getDateLabel()}</Label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
