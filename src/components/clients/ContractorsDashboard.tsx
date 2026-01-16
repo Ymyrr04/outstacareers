@@ -29,7 +29,8 @@ import {
   Trash2,
   AlertTriangle,
   X,
-  Columns3
+  Columns3,
+  RotateCcw
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -822,7 +823,15 @@ export const ContractorsDashboard = () => {
                         )}
                         {visibleColumns.name && (
                           <TableCell className="font-medium whitespace-nowrap">
-                            {contractor.applicant?.full_name || 'Unknown'}
+                            <span className="flex items-center gap-2">
+                              {contractor.applicant?.full_name || 'Unknown'}
+                              {contractor.notes?.includes('Reactivated from') && (
+                                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] px-1.5 py-0 h-4">
+                                  <RotateCcw className="w-2.5 h-2.5 mr-0.5" />
+                                  Rehire
+                                </Badge>
+                              )}
+                            </span>
                           </TableCell>
                         )}
                         {visibleColumns.email && (
@@ -1067,7 +1076,15 @@ export const ContractorsDashboard = () => {
                           )}
                           {visibleColumns.name && (
                             <TableCell className="font-medium whitespace-nowrap">
-                              {contractor.applicant?.full_name || 'Unknown'}
+                              <span className="flex items-center gap-2">
+                                {contractor.applicant?.full_name || 'Unknown'}
+                                {contractor.notes?.includes('Reactivated from') && (
+                                  <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 text-[10px] px-1.5 py-0 h-4">
+                                    <RotateCcw className="w-2.5 h-2.5 mr-0.5" />
+                                    Rehire
+                                  </Badge>
+                                )}
+                              </span>
                             </TableCell>
                           )}
                           {visibleColumns.email && (
