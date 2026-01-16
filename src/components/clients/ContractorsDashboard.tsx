@@ -36,6 +36,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { ContractorImportDialog } from './ContractorImportDialog';
+import { EditContractorDialog } from './EditContractorDialog';
 
 interface ContractorWithDetails {
   id: string;
@@ -88,6 +89,7 @@ export const ContractorsDashboard = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [editingContractor, setEditingContractor] = useState<ContractorWithDetails | null>(null);
 
   const fetchContractors = async () => {
     setLoading(true);
@@ -339,7 +341,11 @@ export const ContractorsDashboard = () => {
               </TableHeader>
               <TableBody>
                 {filteredContractors.map(contractor => (
-                  <TableRow key={contractor.id}>
+                  <TableRow 
+                    key={contractor.id} 
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => setEditingContractor(contractor)}
+                  >
                     <TableCell>
                       <Badge variant="outline" className={STATUS_COLORS[contractor.status] || ''}>
                         {STATUS_ICONS[contractor.status]}
@@ -473,6 +479,14 @@ export const ContractorsDashboard = () => {
         open={importDialogOpen}
         onOpenChange={setImportDialogOpen}
         onContractorsImported={fetchContractors}
+      />
+
+      {/* Edit Dialog */}
+      <EditContractorDialog
+        contractor={editingContractor}
+        open={!!editingContractor}
+        onOpenChange={(open) => !open && setEditingContractor(null)}
+        onUpdated={fetchContractors}
       />
     </div>
   );
