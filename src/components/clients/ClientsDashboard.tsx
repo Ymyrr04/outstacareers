@@ -148,9 +148,10 @@ export const ClientsDashboard = () => {
   });
 
   // Summary stats
-  const totalContractors = clients.reduce((sum, c) => sum + (c.contractor_count || 0), 0);
-  const totalContacts = clients.reduce((sum, c) => sum + (c.contact_count || 0), 0);
-  const clientsWithIncrease = clients.filter(c => c.yearly_increase).length;
+  const totalActiveContractors = clients.reduce((sum, c) => sum + (c.contractor_count || 0), 0);
+  const totalActiveClients = clients.filter(c => (c.contractor_count || 0) > 0).length;
+  const clientsLost = clients.filter(c => (c.contractor_count || 0) === 0).length;
+  const clientsHiring = clients.filter(c => c.notes?.toLowerCase().includes('hiring')).length;
 
   // Export clients to CSV
   const handleExport = async () => {
@@ -246,21 +247,8 @@ export const ClientsDashboard = () => {
                 <Building2 className="w-5 h-5 text-primary" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{clients.length}</p>
-                <p className="text-sm text-muted-foreground">Total Clients</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <Users className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{totalContractors}</p>
-                <p className="text-sm text-muted-foreground">Active Contractors</p>
+                <p className="text-2xl font-bold">{totalActiveClients}</p>
+                <p className="text-sm text-muted-foreground">Total Active Clients</p>
               </div>
             </div>
           </CardContent>
@@ -272,8 +260,21 @@ export const ClientsDashboard = () => {
                 <Users className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{totalContacts}</p>
-                <p className="text-sm text-muted-foreground">Total Contacts</p>
+                <p className="text-2xl font-bold">{totalActiveContractors}</p>
+                <p className="text-sm text-muted-foreground">Active Contractors</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-500/10 rounded-lg">
+                <Building2 className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{clientsLost}</p>
+                <p className="text-sm text-muted-foreground">Clients Lost</p>
               </div>
             </div>
           </CardContent>
@@ -285,8 +286,8 @@ export const ClientsDashboard = () => {
                 <TrendingUp className="w-5 h-5 text-amber-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{clientsWithIncrease}</p>
-                <p className="text-sm text-muted-foreground">4% Yearly Increase</p>
+                <p className="text-2xl font-bold">{clientsHiring}</p>
+                <p className="text-sm text-muted-foreground">New Client (Hiring)</p>
               </div>
             </div>
           </CardContent>
