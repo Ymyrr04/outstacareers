@@ -88,6 +88,7 @@ export const ContractorsDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sortBy, setSortBy] = useState<string>('start_date_desc');
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editingContractor, setEditingContractor] = useState<ContractorWithDetails | null>(null);
 
@@ -121,18 +122,43 @@ export const ContractorsDashboard = () => {
     fetchContractors();
   }, []);
 
-  const filteredContractors = contractors.filter(contractor => {
-    const matchesSearch = !searchTerm || 
-      contractor.applicant?.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contractor.applicant?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contractor.client?.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contractor.job_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contractor.country?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || contractor.status === statusFilter;
-    
-    return matchesSearch && matchesStatus;
-  });
+  const filteredContractors = contractors
+    .filter(contractor => {
+      const matchesSearch = !searchTerm || 
+        contractor.applicant?.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contractor.applicant?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contractor.client?.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contractor.job_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        contractor.country?.toLowerCase().includes(searchTerm.toLowerCase());
+      
+      const matchesStatus = statusFilter === 'all' || contractor.status === statusFilter;
+      
+      return matchesSearch && matchesStatus;
+    })
+    .sort((a, b) => {
+      switch (sortBy) {
+        case 'name_asc':
+          return (a.applicant?.full_name || '').localeCompare(b.applicant?.full_name || '');
+        case 'name_desc':
+          return (b.applicant?.full_name || '').localeCompare(a.applicant?.full_name || '');
+        case 'company_asc':
+          return (a.client?.company_name || '').localeCompare(b.client?.company_name || '');
+        case 'company_desc':
+          return (b.client?.company_name || '').localeCompare(a.client?.company_name || '');
+        case 'start_date_asc':
+          return (a.start_date || '').localeCompare(b.start_date || '');
+        case 'start_date_desc':
+          return (b.start_date || '').localeCompare(a.start_date || '');
+        case 'rate_asc':
+          return (a.hourly_rate || 0) - (b.hourly_rate || 0);
+        case 'rate_desc':
+          return (b.hourly_rate || 0) - (a.hourly_rate || 0);
+        case 'status':
+          return a.status.localeCompare(b.status);
+        default:
+          return 0;
+      }
+    });
 
   // Summary stats
   const activeCount = contractors.filter(c => c.status === 'active').length;
@@ -290,6 +316,22 @@ export const ContractorsDashboard = () => {
               <SelectItem value="paused">Paused</SelectItem>
               <SelectItem value="completed">Completed</SelectItem>
               <SelectItem value="terminated">Terminated</SelectItem>
+            </SelectContent>
+          </Select>
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="start_date_desc">Start Date (Newest)</SelectItem>
+              <SelectItem value="start_date_asc">Start Date (Oldest)</SelectItem>
+              <SelectItem value="name_asc">Name (A-Z)</SelectItem>
+              <SelectItem value="name_desc">Name (Z-A)</SelectItem>
+              <SelectItem value="company_asc">Company (A-Z)</SelectItem>
+              <SelectItem value="company_desc">Company (Z-A)</SelectItem>
+              <SelectItem value="rate_desc">Rate (High-Low)</SelectItem>
+              <SelectItem value="rate_asc">Rate (Low-High)</SelectItem>
+              <SelectItem value="status">Status</SelectItem>
             </SelectContent>
           </Select>
         </div>
