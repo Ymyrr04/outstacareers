@@ -84,48 +84,98 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
     URL.revokeObjectURL(url);
   };
 
+  const parseCSVLine = (line: string): string[] => {
+    const values: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (const char of line) {
+      if (char === '"') {
+        inQuotes = !inQuotes;
+      } else if (char === ',' && !inQuotes) {
+        values.push(current.trim());
+        current = '';
+      } else {
+        current += char;
+      }
+    }
+    values.push(current.trim());
+    return values;
+  };
+
   const parseCSV = (text: string): ParsedContractor[] => {
     const lines = text.split('\n').filter(line => line.trim());
     if (lines.length < 2) return [];
 
+    // Parse header row to find column indices
+    const headers = parseCSVLine(lines[0]).map(h => h.toLowerCase().trim());
+    
+    // Map expected column names to their indices
+    const columnMap: Record<string, number> = {};
+    const headerMappings: Record<string, string[]> = {
+      status: ['status'],
+      name: ['name', 'full name', 'contractor name'],
+      email: ['email', 'email address', 'e-mail'],
+      company: ['company', 'company name', 'client', 'business name'],
+      industry: ['industry'],
+      start_date: ['start date', 'start_date', 'startdate', 'date started'],
+      position: ['position', 'job title', 'role', 'title'],
+      rate: ['rate', 'hourly rate', 'pay rate'],
+      hours: ['hours', 'hours per week', 'weekly hours'],
+      contact_number: ['contact number', 'contact', 'phone', 'phone number'],
+      emergency_number: ['emergency number', 'emergency contact', 'emergency'],
+      timesheet_link: ['contractor time sheet', 'timesheet', 'time sheet', 'timesheet link'],
+      type: ['new / replacement', 'new/replacement', 'type', 'contractor type'],
+      country: ['country', 'location'],
+      source: ['source', 'lead source', 'referral source'],
+    };
+
+    // Find index for each column
+    for (const [key, possibleNames] of Object.entries(headerMappings)) {
+      for (const name of possibleNames) {
+        const idx = headers.findIndex(h => h === name || h.includes(name));
+        if (idx !== -1) {
+          columnMap[key] = idx;
+          break;
+        }
+      }
+    }
+
+    console.log('Detected column mapping:', columnMap);
+
     const results: ParsedContractor[] = [];
     
     for (let i = 1; i < lines.length; i++) {
-      const values: string[] = [];
-      let current = '';
-      let inQuotes = false;
+      const values = parseCSVLine(lines[i]);
       
-      for (const char of lines[i]) {
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-          values.push(current.trim());
-          current = '';
-        } else {
-          current += char;
-        }
-      }
-      values.push(current.trim());
+      const getValue = (key: string): string => {
+        const idx = columnMap[key];
+        return idx !== undefined ? (values[idx] || '') : '';
+      };
 
-      if (values.length >= 3 && values[1]) {
-        results.push({
-          status: (values[0] || 'active').toLowerCase(),
-          name: values[1] || '',
-          email: values[2] || '',
-          company: values[3] || '',
-          industry: values[4] || '',
-          start_date: values[5] || '',
-          position: values[6] || '',
-          rate: values[7] || '',
-          hours: values[8] || '',
-          contact_number: values[9] || '',
-          emergency_number: values[10] || '',
-          timesheet_link: values[11] || '',
-          type: values[12] || 'New',
-          country: values[13] || '',
-          source: values[14] || '',
-        });
-      }
+      const name = getValue('name');
+      const email = getValue('email');
+      
+      // Skip rows without name or email
+      if (!name || !email) continue;
+
+      results.push({
+        status: (getValue('status') || 'active').toLowerCase(),
+        name,
+        email,
+        company: getValue('company'),
+        industry: getValue('industry'),
+        start_date: getValue('start_date'),
+        position: getValue('position'),
+        rate: getValue('rate'),
+        hours: getValue('hours'),
+        contact_number: getValue('contact_number'),
+        emergency_number: getValue('emergency_number'),
+        timesheet_link: getValue('timesheet_link'),
+        type: getValue('type') || 'New',
+        country: getValue('country'),
+        source: getValue('source'),
+      });
     }
 
     return results;
