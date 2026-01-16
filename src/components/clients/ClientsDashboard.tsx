@@ -78,6 +78,7 @@ export const ClientsDashboard = () => {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'lost'>('all');
 
   const fetchClients = async () => {
     setLoading(true);
@@ -144,7 +145,14 @@ export const ClientsDashboard = () => {
       client.industry?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.leads_from?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    return matchesSearch;
+    // Apply status filter
+    const hasActiveContractors = (client.contractor_count || 0) > 0;
+    const matchesStatusFilter = 
+      statusFilter === 'all' ||
+      (statusFilter === 'active' && hasActiveContractors) ||
+      (statusFilter === 'lost' && !hasActiveContractors);
+    
+    return matchesSearch && matchesStatusFilter;
   });
 
   // Summary stats
@@ -240,7 +248,10 @@ export const ClientsDashboard = () => {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'active' ? 'ring-2 ring-primary' : ''}`}
+          onClick={() => setStatusFilter(statusFilter === 'active' ? 'all' : 'active')}
+        >
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-primary/10 rounded-lg">
@@ -266,7 +277,10 @@ export const ClientsDashboard = () => {
             </div>
           </CardContent>
         </Card>
-        <Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'lost' ? 'ring-2 ring-red-500' : ''}`}
+          onClick={() => setStatusFilter(statusFilter === 'lost' ? 'all' : 'lost')}
+        >
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-red-500/10 rounded-lg">
