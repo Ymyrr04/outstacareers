@@ -7,7 +7,18 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Building2 } from 'lucide-react';
+import { Loader2, Building2, Trash2 } from 'lucide-react';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import {
   Dialog,
   DialogContent,
@@ -56,6 +67,7 @@ interface EditContractorDialogProps {
 export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated }: EditContractorDialogProps) => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [clients, setClients] = useState<{ id: string; company_name: string }[]>([]);
   const [loadingClients, setLoadingClients] = useState(false);
   
@@ -183,6 +195,36 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!contractor) return;
+    
+    setDeleting(true);
+    try {
+      const { error } = await supabase
+        .from('contractor_assignments')
+        .delete()
+        .eq('id', contractor.id);
+
+      if (error) throw error;
+
+      toast({
+        title: 'Contractor Deleted',
+        description: `${contractor.applicant?.full_name || 'Contractor'} assignment has been deleted`,
+      });
+      
+      onUpdated();
+      onOpenChange(false);
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete contractor: ' + err.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -407,14 +449,40 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
           </div>
         </div>
 
-        <DialogFooter>
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={saving}>
-            {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
-            Save Changes
-          </Button>
+        <DialogFooter className="flex justify-between sm:justify-between">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="destructive" disabled={saving || deleting}>
+                {deleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
+                Delete
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete Contractor Assignment?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete the contractor assignment for {contractor?.applicant?.full_name}. 
+                  This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+          
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving || deleting}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={saving || deleting}>
+              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Save Changes
+            </Button>
+          </div>
         </DialogFooter>
       </DialogContent>
     </Dialog>
