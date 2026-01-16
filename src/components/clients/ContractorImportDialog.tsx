@@ -243,7 +243,7 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
               email: row.email,
               phone: row.contact_number || null,
               status: 'Hired',
-              source: row.source || 'Contractor Import',
+              job_source: row.source || 'Contractor Import',
               // Required fields with defaults for imported contractors
               home_office: true,
               noise_canceling_headset: true,
