@@ -904,7 +904,7 @@ const Admin = () => {
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="jobs" className="space-y-6">
+          <TabsContent value="jobs" className="space-y-6" keepMounted>
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold">All Jobs</h2>
@@ -963,7 +963,10 @@ const Admin = () => {
             </div>
 
             {jobsLoading ? (
-              <p className="text-center py-12">Loading jobs...</p>
+              <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Loading jobs...</span>
+              </div>
             ) : jobs.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
@@ -1092,7 +1095,7 @@ const Admin = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="applicants" className="space-y-6">
+          <TabsContent value="applicants" className="space-y-6" keepMounted>
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold">Pre-Screening Submissions</h2>
@@ -1120,7 +1123,10 @@ const Admin = () => {
             </div>
 
             {applicantsLoading ? (
-              <p className="text-center py-12">Loading applicants...</p>
+              <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Loading applicants...</span>
+              </div>
             ) : applicants.length === 0 ? (
               <Card>
                 <CardContent className="py-12 text-center">
@@ -1143,7 +1149,7 @@ const Admin = () => {
                   </TabsList>
 
                   {/* Advanced Search Tab */}
-                  <TabsContent value="search" className="space-y-4">
+                  <TabsContent value="search" className="space-y-4" keepMounted>
                     <ApplicantSearchFilters
                       applicants={applicants}
                       onFilteredApplicants={handleSearchFilteredApplicants}
@@ -1234,7 +1240,7 @@ const Admin = () => {
                   </TabsContent>
 
                   {/* Folder View Tab */}
-                  <TabsContent value="folders" className="space-y-4">
+                  <TabsContent value="folders" className="space-y-4" keepMounted>
                     {/* Quick search and sort for folder view */}
                     <div className="flex gap-3">
                       <div className="relative flex-1">
