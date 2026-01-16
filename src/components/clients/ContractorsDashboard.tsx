@@ -188,7 +188,13 @@ export const ContractorsDashboard = () => {
     setUpdatingStatusId(contractorId);
     try {
       if (isReactivating && contractor) {
-        // Create a new active record (duplicate without end_date)
+        // Preserve original notes and append reactivation info
+        const reactivationNote = `Reactivated from ${currentStatus}`;
+        const preservedNotes = contractor.notes 
+          ? `${contractor.notes}\n---\n${reactivationNote}`
+          : reactivationNote;
+
+        // Create a new active record (duplicate without end_date) - preserve all original data
         const { error: insertError } = await supabase
           .from('contractor_assignments')
           .insert({
@@ -200,7 +206,7 @@ export const ContractorsDashboard = () => {
             start_date: new Date().toISOString().split('T')[0], // Today as new start
             end_date: null,
             status: 'active',
-            notes: `Reactivated from ${currentStatus}`,
+            notes: preservedNotes,
             contact_number: contractor.contact_number,
             emergency_number: contractor.emergency_number,
             timesheet_link: contractor.timesheet_link,
