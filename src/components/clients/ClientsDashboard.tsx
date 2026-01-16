@@ -95,17 +95,31 @@ export const ClientsDashboard = () => {
         .from('client_contacts')
         .select('client_id');
 
-      // Build counts map
+      // Fetch actual contractor counts from contractor_assignments
+      const { data: contractorCounts } = await supabase
+        .from('contractor_assignments')
+        .select('client_id, status');
+
+      // Build counts maps
       const contactMap: Record<string, number> = {};
+      const contractorMap: Record<string, number> = {};
 
       contactCounts?.forEach(c => {
         contactMap[c.client_id] = (contactMap[c.client_id] || 0) + 1;
       });
 
-      // Enrich clients
+      // Count only active contractors
+      contractorCounts?.forEach(c => {
+        if (c.status === 'Active' || c.status === 'active') {
+          contractorMap[c.client_id] = (contractorMap[c.client_id] || 0) + 1;
+        }
+      });
+
+      // Enrich clients with actual contractor counts
       const enrichedClients = (clientsData || []).map(client => ({
         ...client,
         contact_count: contactMap[client.id] || 0,
+        contractor_count: contractorMap[client.id] || 0,
       }));
 
       setClients(enrichedClients);
