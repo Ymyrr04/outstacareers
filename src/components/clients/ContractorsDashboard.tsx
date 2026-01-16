@@ -108,7 +108,7 @@ export const ContractorsDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<string>('start_date_desc');
+  const [sortBy, setSortBy] = useState<string>('company_asc');
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editingContractor, setEditingContractor] = useState<ContractorWithDetails | null>(null);
   const [lastImportResult, setLastImportResult] = useState<{
