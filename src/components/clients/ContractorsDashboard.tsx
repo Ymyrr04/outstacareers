@@ -901,10 +901,16 @@ export const ContractorsDashboard = () => {
                         {visibleColumns.contact && (
                           <TableCell>
                             {(contractor.contact_number || contractor.applicant?.phone) ? (
-                              <span className="flex items-center gap-1 whitespace-nowrap text-sm">
-                                <Phone className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                              <a 
+                                href={`https://wa.me/${String(contractor.contact_number || contractor.applicant?.phone).replace(/\D/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 whitespace-nowrap text-sm text-green-600 hover:text-green-700 hover:underline"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <Phone className="w-3 h-3 flex-shrink-0" />
                                 {String(contractor.contact_number || contractor.applicant?.phone)}
-                              </span>
+                              </a>
                             ) : (
                               <span className="text-muted-foreground">—</span>
                             )}
@@ -1167,10 +1173,16 @@ export const ContractorsDashboard = () => {
                           {visibleColumns.contact && (
                             <TableCell>
                               {(contractor.contact_number || contractor.applicant?.phone) ? (
-                                <span className="flex items-center gap-1 whitespace-nowrap text-sm">
-                                  <Phone className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                                <a 
+                                  href={`https://wa.me/${String(contractor.contact_number || contractor.applicant?.phone).replace(/\D/g, '')}`}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 whitespace-nowrap text-sm text-green-600 hover:text-green-700 hover:underline"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <Phone className="w-3 h-3 flex-shrink-0" />
                                   {String(contractor.contact_number || contractor.applicant?.phone)}
-                                </span>
+                                </a>
                               ) : (
                                 <span className="text-muted-foreground">—</span>
                               )}
