@@ -8,7 +8,6 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { 
-  Users, 
   Search, 
   Loader2, 
   Building2, 
@@ -21,7 +20,12 @@ import {
   CheckCircle,
   PauseCircle,
   XCircle,
-  Clock
+  Clock,
+  Phone,
+  Link2,
+  Globe,
+  RefreshCw,
+  UserPlus
 } from 'lucide-react';
 import {
   Table,
@@ -38,18 +42,27 @@ interface ContractorWithDetails {
   applicant_id: string;
   job_title: string | null;
   hourly_rate: number | null;
+  hours_per_week: number | null;
   start_date: string | null;
   end_date: string | null;
   status: string;
   notes: string | null;
+  contact_number: string | null;
+  emergency_number: string | null;
+  timesheet_link: string | null;
+  is_replacement: boolean | null;
+  country: string | null;
+  source: string | null;
   created_at: string;
   applicant: {
     full_name: string;
     email: string;
     location: string;
+    phone: string | null;
   } | null;
   client: {
     company_name: string;
+    industry: string | null;
   } | null;
 }
 
@@ -81,8 +94,8 @@ export const ContractorsDashboard = () => {
         .from('contractor_assignments')
         .select(`
           *,
-          applicant:applicants_prescreen(full_name, email, location),
-          client:clients(company_name)
+          applicant:applicants_prescreen(full_name, email, location, phone),
+          client:clients(company_name, industry)
         `)
         .order('status')
         .order('start_date', { ascending: false });
@@ -109,7 +122,8 @@ export const ContractorsDashboard = () => {
       contractor.applicant?.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       contractor.applicant?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       contractor.client?.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      contractor.job_title?.toLowerCase().includes(searchTerm.toLowerCase());
+      contractor.job_title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      contractor.country?.toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesStatus = statusFilter === 'all' || contractor.status === statusFilter;
     
@@ -126,29 +140,39 @@ export const ContractorsDashboard = () => {
   const handleExport = () => {
     try {
       const headers = [
-        'Contractor Name',
-        'Email',
-        'Location',
-        'Client',
-        'Job Title',
-        'Hourly Rate',
-        'Start Date',
-        'End Date',
         'Status',
-        'Notes'
+        'Name',
+        'Email Address',
+        'Company',
+        'Industry',
+        'Start Date',
+        'Position',
+        'Rate',
+        'Hours',
+        'Contact Number',
+        'Emergency Number',
+        'Contractor Time Sheet',
+        'New / Replacement',
+        'Country',
+        'Source'
       ];
 
       const rows = contractors.map(c => [
+        c.status,
         `"${(c.applicant?.full_name || '').replace(/"/g, '""')}"`,
         `"${(c.applicant?.email || '').replace(/"/g, '""')}"`,
-        `"${(c.applicant?.location || '').replace(/"/g, '""')}"`,
         `"${(c.client?.company_name || '').replace(/"/g, '""')}"`,
+        `"${(c.client?.industry || '').replace(/"/g, '""')}"`,
+        c.start_date || '',
         `"${(c.job_title || '').replace(/"/g, '""')}"`,
         c.hourly_rate || '',
-        c.start_date || '',
-        c.end_date || '',
-        c.status,
-        `"${(c.notes || '').replace(/"/g, '""')}"`
+        c.hours_per_week || '',
+        `"${(c.contact_number || c.applicant?.phone || '').replace(/"/g, '""')}"`,
+        `"${(c.emergency_number || '').replace(/"/g, '""')}"`,
+        `"${(c.timesheet_link || '').replace(/"/g, '""')}"`,
+        c.is_replacement ? 'Replacement' : 'New',
+        `"${(c.country || c.applicant?.location || '').replace(/"/g, '""')}"`,
+        `"${(c.source || '').replace(/"/g, '""')}"`
       ].join(','));
 
       const csvContent = [headers.join(','), ...rows].join('\n');
@@ -283,80 +307,156 @@ export const ContractorsDashboard = () => {
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Contractor</TableHead>
-                <TableHead>Client</TableHead>
-                <TableHead>Job Title</TableHead>
-                <TableHead>Rate</TableHead>
-                <TableHead>Start Date</TableHead>
-                <TableHead>Status</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredContractors.map(contractor => (
-                <TableRow key={contractor.id}>
-                  <TableCell>
-                    <div>
-                      <p className="font-medium">{contractor.applicant?.full_name || 'Unknown'}</p>
-                      <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                        <span className="flex items-center gap-1">
-                          <Mail className="w-3 h-3" />
-                          {contractor.applicant?.email}
-                        </span>
-                        {contractor.applicant?.location && (
-                          <span className="flex items-center gap-1">
-                            <MapPin className="w-3 h-3" />
-                            {contractor.applicant.location}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Building2 className="w-4 h-4 text-muted-foreground" />
-                      {contractor.client?.company_name || 'Unknown'}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      <Briefcase className="w-4 h-4 text-muted-foreground" />
-                      {contractor.job_title || 'Not specified'}
-                    </div>
-                  </TableCell>
-                  <TableCell>
-                    {contractor.hourly_rate ? (
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="w-4 h-4 text-muted-foreground" />
-                        ${contractor.hourly_rate}/hr
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {contractor.start_date ? (
-                      <div className="flex items-center gap-1">
-                        <Calendar className="w-4 h-4 text-muted-foreground" />
-                        {format(new Date(contractor.start_date), 'MMM d, yyyy')}
-                      </div>
-                    ) : (
-                      <span className="text-muted-foreground">—</span>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="outline" className={STATUS_COLORS[contractor.status]}>
-                      {STATUS_ICONS[contractor.status]}
-                      <span className="ml-1 capitalize">{contractor.status}</span>
-                    </Badge>
-                  </TableCell>
+        <Card className="overflow-hidden">
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Industry</TableHead>
+                  <TableHead>Start Date</TableHead>
+                  <TableHead>Position</TableHead>
+                  <TableHead>Rate</TableHead>
+                  <TableHead>Hours</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Emergency</TableHead>
+                  <TableHead>Timesheet</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Country</TableHead>
+                  <TableHead>Source</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {filteredContractors.map(contractor => (
+                  <TableRow key={contractor.id}>
+                    <TableCell>
+                      <Badge variant="outline" className={STATUS_COLORS[contractor.status] || ''}>
+                        {STATUS_ICONS[contractor.status]}
+                        <span className="ml-1 capitalize">{contractor.status}</span>
+                      </Badge>
+                    </TableCell>
+                    <TableCell className="font-medium whitespace-nowrap">
+                      {contractor.applicant?.full_name || 'Unknown'}
+                    </TableCell>
+                    <TableCell>
+                      <span className="flex items-center gap-1 text-sm">
+                        <Mail className="w-3 h-3 text-muted-foreground" />
+                        {contractor.applicant?.email || '—'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      <span className="flex items-center gap-1 whitespace-nowrap">
+                        <Building2 className="w-3 h-3 text-muted-foreground" />
+                        {contractor.client?.company_name || '—'}
+                      </span>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {contractor.client?.industry || '—'}
+                    </TableCell>
+                    <TableCell>
+                      {contractor.start_date ? (
+                        <span className="flex items-center gap-1 whitespace-nowrap">
+                          <Calendar className="w-3 h-3 text-muted-foreground" />
+                          {format(new Date(contractor.start_date), 'MMM d, yyyy')}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <span className="flex items-center gap-1 whitespace-nowrap">
+                        <Briefcase className="w-3 h-3 text-muted-foreground" />
+                        {contractor.job_title || '—'}
+                      </span>
+                    </TableCell>
+                    <TableCell>
+                      {contractor.hourly_rate ? (
+                        <span className="flex items-center gap-1 whitespace-nowrap">
+                          <DollarSign className="w-3 h-3 text-muted-foreground" />
+                          ${contractor.hourly_rate}/hr
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {contractor.hours_per_week ? (
+                        <span className="whitespace-nowrap">{contractor.hours_per_week}h/wk</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {(contractor.contact_number || contractor.applicant?.phone) ? (
+                        <span className="flex items-center gap-1 whitespace-nowrap">
+                          <Phone className="w-3 h-3 text-muted-foreground" />
+                          {contractor.contact_number || contractor.applicant?.phone}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {contractor.emergency_number ? (
+                        <span className="flex items-center gap-1 whitespace-nowrap">
+                          <Phone className="w-3 h-3 text-muted-foreground" />
+                          {contractor.emergency_number}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {contractor.timesheet_link ? (
+                        <a 
+                          href={contractor.timesheet_link} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="flex items-center gap-1 text-primary hover:underline"
+                        >
+                          <Link2 className="w-3 h-3" />
+                          View
+                        </a>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={contractor.is_replacement ? 'border-amber-300 text-amber-700' : 'border-green-300 text-green-700'}>
+                        {contractor.is_replacement ? (
+                          <>
+                            <RefreshCw className="w-3 h-3 mr-1" />
+                            Replacement
+                          </>
+                        ) : (
+                          <>
+                            <UserPlus className="w-3 h-3 mr-1" />
+                            New
+                          </>
+                        )}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {(contractor.country || contractor.applicant?.location) ? (
+                        <span className="flex items-center gap-1 whitespace-nowrap">
+                          <Globe className="w-3 h-3 text-muted-foreground" />
+                          {contractor.country || contractor.applicant?.location}
+                        </span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-muted-foreground">
+                      {contractor.source || '—'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </Card>
       )}
     </div>
