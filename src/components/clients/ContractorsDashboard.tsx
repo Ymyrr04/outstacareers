@@ -954,6 +954,7 @@ export const ContractorsDashboard = () => {
                         {visibleColumns.company && <TableHead className="min-w-[180px]">Company</TableHead>}
                         {visibleColumns.industry && <TableHead className="min-w-[120px]">Industry</TableHead>}
                         {visibleColumns.startDate && <TableHead className="w-[120px]">Start Date</TableHead>}
+                        <TableHead className="w-[120px]">End Date</TableHead>
                         {visibleColumns.position && <TableHead className="min-w-[150px]">Position</TableHead>}
                         {visibleColumns.rate && <TableHead className="w-[80px]">Rate</TableHead>}
                         {visibleColumns.hours && <TableHead className="w-[80px]">Hours</TableHead>}
@@ -1063,6 +1064,16 @@ export const ContractorsDashboard = () => {
                               )}
                             </TableCell>
                           )}
+                          <TableCell>
+                            {contractor.end_date ? (
+                              <span className="flex items-center gap-1 whitespace-nowrap text-red-600">
+                                <Calendar className="w-3 h-3" />
+                                {format(new Date(contractor.end_date), 'MMM d, yyyy')}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
                           {visibleColumns.position && (
                             <TableCell>
                               <span className="flex items-center gap-1 whitespace-nowrap">
