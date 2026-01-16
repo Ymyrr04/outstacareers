@@ -54,6 +54,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ContractorImportDialog } from './ContractorImportDialog';
 import { EditContractorDialog } from './EditContractorDialog';
+import { ContractorStatusDialog } from './ContractorStatusDialog';
 
 interface ContractorWithDetails {
   id: string;
@@ -115,6 +116,12 @@ export const ContractorsDashboard = () => {
   } | null>(null);
   const [showImportErrors, setShowImportErrors] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [pendingStatusChange, setPendingStatusChange] = useState<{
+    contractorId: string;
+    contractorName: string;
+    status: 'rendering' | 'resigned' | 'terminated';
+  } | null>(null);
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
     status: true,
     name: true,
@@ -156,6 +163,19 @@ export const ContractorsDashboard = () => {
   };
 
   const handleStatusChange = async (contractorId: string, newStatus: string) => {
+    // For rendering, resigned, terminated - open dialog
+    if (newStatus === 'rendering' || newStatus === 'resigned' || newStatus === 'terminated') {
+      const contractor = contractors.find(c => c.id === contractorId);
+      setPendingStatusChange({
+        contractorId,
+        contractorName: contractor?.applicant?.full_name || 'Unknown',
+        status: newStatus as 'rendering' | 'resigned' | 'terminated',
+      });
+      setStatusDialogOpen(true);
+      return;
+    }
+
+    // For active status, update directly
     setUpdatingStatusId(contractorId);
     try {
       const { error } = await supabase
@@ -165,7 +185,6 @@ export const ContractorsDashboard = () => {
 
       if (error) throw error;
 
-      // Update local state
       setContractors(prev => 
         prev.map(c => c.id === contractorId ? { ...c, status: newStatus } : c)
       );
@@ -184,6 +203,60 @@ export const ContractorsDashboard = () => {
       setUpdatingStatusId(null);
     }
   };
+
+  const handleStatusDialogConfirm = async (data: { 
+    status: string; 
+    renderingReason?: 'resign' | 'termination'; 
+    effectiveDate?: string;
+  }) => {
+    if (!pendingStatusChange) return;
+
+    setUpdatingStatusId(pendingStatusChange.contractorId);
+    try {
+      const updateData: Record<string, any> = { 
+        status: data.status,
+        notes: data.renderingReason 
+          ? `Rendering for ${data.renderingReason}${data.effectiveDate ? ` - Effective: ${data.effectiveDate}` : ''}`
+          : undefined,
+      };
+      
+      // Set end_date for resigned/terminated
+      if ((data.status === 'resigned' || data.status === 'terminated') && data.effectiveDate) {
+        updateData.end_date = data.effectiveDate;
+      }
+
+      const { error } = await supabase
+        .from('contractor_assignments')
+        .update(updateData)
+        .eq('id', pendingStatusChange.contractorId);
+
+      if (error) throw error;
+
+      setContractors(prev => 
+        prev.map(c => c.id === pendingStatusChange.contractorId 
+          ? { ...c, status: data.status, end_date: updateData.end_date || c.end_date } 
+          : c
+        )
+      );
+
+      toast({
+        title: 'Status Updated',
+        description: `Contractor status changed to ${data.status}`,
+      });
+
+      setStatusDialogOpen(false);
+      setPendingStatusChange(null);
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update status: ' + err.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  };
+
   const fetchContractors = async () => {
     setLoading(true);
     try {
@@ -819,6 +892,21 @@ export const ContractorsDashboard = () => {
         onOpenChange={(open) => !open && setEditingContractor(null)}
         onUpdated={fetchContractors}
       />
+
+      {/* Status Change Dialog */}
+      {pendingStatusChange && (
+        <ContractorStatusDialog
+          open={statusDialogOpen}
+          onOpenChange={(open) => {
+            setStatusDialogOpen(open);
+            if (!open) setPendingStatusChange(null);
+          }}
+          status={pendingStatusChange.status}
+          contractorName={pendingStatusChange.contractorName}
+          onConfirm={handleStatusDialogConfirm}
+          saving={!!updatingStatusId}
+        />
+      )}
     </div>
   );
 };
