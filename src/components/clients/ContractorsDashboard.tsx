@@ -353,6 +353,14 @@ export const ContractorsDashboard = () => {
       }
     });
 
+  // Split contractors: active section vs separated section
+  const activeContractors = filteredContractors.filter(c => 
+    !['terminated', 'resigned'].includes(c.status?.toLowerCase())
+  );
+  const separatedContractors = filteredContractors.filter(c => 
+    ['terminated', 'resigned'].includes(c.status?.toLowerCase())
+  );
+
   // Summary stats
   const activeCount = contractors.filter(c => c.status === 'active').length;
   const terminatedCount = contractors.filter(c => c.status === 'terminated').length;
@@ -676,8 +684,8 @@ export const ContractorsDashboard = () => {
         </div>
       </div>
 
-      {/* Contractors Table */}
-      {filteredContractors.length === 0 ? (
+      {/* Contractors Table - Active Section */}
+      {activeContractors.length === 0 && separatedContractors.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">
@@ -688,236 +696,486 @@ export const ContractorsDashboard = () => {
           </CardContent>
         </Card>
       ) : (
-        <Card className="overflow-hidden">
-          <div className="overflow-x-auto">
-            <Table className="w-full table-auto">
-              <TableHeader>
-                <TableRow>
-                  {visibleColumns.status && <TableHead className="w-[140px]">Status</TableHead>}
-                  {visibleColumns.name && <TableHead className="min-w-[180px]">Name</TableHead>}
-                  {visibleColumns.email && <TableHead className="min-w-[200px]">Email</TableHead>}
-                  {visibleColumns.company && <TableHead className="min-w-[180px]">Company</TableHead>}
-                  {visibleColumns.industry && <TableHead className="min-w-[120px]">Industry</TableHead>}
-                  {visibleColumns.startDate && <TableHead className="w-[120px]">Start Date</TableHead>}
-                  {visibleColumns.position && <TableHead className="min-w-[150px]">Position</TableHead>}
-                  {visibleColumns.rate && <TableHead className="w-[80px]">Rate</TableHead>}
-                  {visibleColumns.hours && <TableHead className="w-[80px]">Hours</TableHead>}
-                  {visibleColumns.contact && <TableHead className="min-w-[140px]">Contact</TableHead>}
-                  {visibleColumns.emergency && <TableHead className="min-w-[140px]">Emergency</TableHead>}
-                  {visibleColumns.timesheet && <TableHead className="min-w-[100px]">Timesheet</TableHead>}
-                  {visibleColumns.type && <TableHead className="w-[100px]">Type</TableHead>}
-                  {visibleColumns.country && <TableHead className="min-w-[120px]">Country</TableHead>}
-                  {visibleColumns.source && <TableHead className="min-w-[100px]">Source</TableHead>}
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {filteredContractors.map(contractor => (
-                  <TableRow 
-                    key={contractor.id} 
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => setEditingContractor(contractor)}
-                  >
-                    {visibleColumns.status && (
-                      <TableCell onClick={(e) => e.stopPropagation()}>
-                        <Select
-                          value={contractor.status}
-                          onValueChange={(value) => handleStatusChange(contractor.id, value)}
-                          disabled={updatingStatusId === contractor.id}
+        <>
+          {/* Active Contractors Table */}
+          {activeContractors.length > 0 && (
+            <Card className="overflow-hidden">
+              <div className="overflow-x-auto">
+                <Table className="w-full table-auto">
+                  <TableHeader>
+                    <TableRow>
+                      {visibleColumns.status && <TableHead className="w-[140px]">Status</TableHead>}
+                      {visibleColumns.name && <TableHead className="min-w-[180px]">Name</TableHead>}
+                      {visibleColumns.email && <TableHead className="min-w-[200px]">Email</TableHead>}
+                      {visibleColumns.company && <TableHead className="min-w-[180px]">Company</TableHead>}
+                      {visibleColumns.industry && <TableHead className="min-w-[120px]">Industry</TableHead>}
+                      {visibleColumns.startDate && <TableHead className="w-[120px]">Start Date</TableHead>}
+                      {visibleColumns.position && <TableHead className="min-w-[150px]">Position</TableHead>}
+                      {visibleColumns.rate && <TableHead className="w-[80px]">Rate</TableHead>}
+                      {visibleColumns.hours && <TableHead className="w-[80px]">Hours</TableHead>}
+                      {visibleColumns.contact && <TableHead className="min-w-[140px]">Contact</TableHead>}
+                      {visibleColumns.emergency && <TableHead className="min-w-[140px]">Emergency</TableHead>}
+                      {visibleColumns.timesheet && <TableHead className="min-w-[100px]">Timesheet</TableHead>}
+                      {visibleColumns.type && <TableHead className="w-[100px]">Type</TableHead>}
+                      {visibleColumns.country && <TableHead className="min-w-[120px]">Country</TableHead>}
+                      {visibleColumns.source && <TableHead className="min-w-[100px]">Source</TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {activeContractors.map(contractor => (
+                      <TableRow 
+                        key={contractor.id} 
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => setEditingContractor(contractor)}
+                      >
+                        {visibleColumns.status && (
+                          <TableCell onClick={(e) => e.stopPropagation()}>
+                            <Select
+                              value={contractor.status}
+                              onValueChange={(value) => handleStatusChange(contractor.id, value)}
+                              disabled={updatingStatusId === contractor.id}
+                            >
+                              <SelectTrigger className={`w-24 h-6 text-xs px-2 ${STATUS_COLORS[contractor.status] || ''} border`}>
+                                <SelectValue>
+                                  <span className="flex items-center gap-1.5">
+                                    {updatingStatusId === contractor.id ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      STATUS_ICONS[contractor.status]
+                                    )}
+                                    <span className="capitalize">{contractor.status}</span>
+                                  </span>
+                                </SelectValue>
+                              </SelectTrigger>
+                              <SelectContent className="bg-background">
+                                <SelectItem value="active">
+                                  <span className="flex items-center gap-2">
+                                    <CheckCircle className="w-3 h-3 text-green-600" />
+                                    Active
+                                  </span>
+                                </SelectItem>
+                                <SelectItem value="scheduled">
+                                  <span className="flex items-center gap-2">
+                                    <Calendar className="w-3 h-3 text-amber-600" />
+                                    Scheduled to Start
+                                  </span>
+                                </SelectItem>
+                                <SelectItem value="rendering">
+                                  <span className="flex items-center gap-2">
+                                    <Clock className="w-3 h-3 text-cyan-600" />
+                                    Rendering
+                                  </span>
+                                </SelectItem>
+                                <SelectItem value="resigned">
+                                  <span className="flex items-center gap-2">
+                                    <XCircle className="w-3 h-3 text-purple-600" />
+                                    Resigned
+                                  </span>
+                                </SelectItem>
+                                <SelectItem value="terminated">
+                                  <span className="flex items-center gap-2">
+                                    <XCircle className="w-3 h-3 text-red-600" />
+                                    Terminated
+                                  </span>
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
+                        )}
+                        {visibleColumns.name && (
+                          <TableCell className="font-medium whitespace-nowrap">
+                            {contractor.applicant?.full_name || 'Unknown'}
+                          </TableCell>
+                        )}
+                        {visibleColumns.email && (
+                          <TableCell>
+                            <span className="text-sm" title={contractor.applicant?.email}>
+                              {contractor.applicant?.email || '—'}
+                            </span>
+                          </TableCell>
+                        )}
+                        {visibleColumns.company && (
+                          <TableCell>
+                            <span className="flex items-center gap-1 whitespace-nowrap">
+                              <Building2 className="w-3 h-3 text-muted-foreground" />
+                              {contractor.client?.company_name || '—'}
+                            </span>
+                          </TableCell>
+                        )}
+                        {visibleColumns.industry && (
+                          <TableCell className="text-muted-foreground">
+                            {contractor.client?.industry || '—'}
+                          </TableCell>
+                        )}
+                        {visibleColumns.startDate && (
+                          <TableCell>
+                            {contractor.start_date ? (
+                              <span className="flex items-center gap-1 whitespace-nowrap">
+                                <Calendar className="w-3 h-3 text-muted-foreground" />
+                                {format(new Date(contractor.start_date), 'MMM d, yyyy')}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        )}
+                        {visibleColumns.position && (
+                          <TableCell>
+                            <span className="flex items-center gap-1 whitespace-nowrap">
+                              <Briefcase className="w-3 h-3 text-muted-foreground" />
+                              {contractor.job_title || '—'}
+                            </span>
+                          </TableCell>
+                        )}
+                        {visibleColumns.rate && (
+                          <TableCell>
+                            {contractor.hourly_rate ? (
+                              <span className="flex items-center gap-1 whitespace-nowrap">
+                                <DollarSign className="w-3 h-3 text-muted-foreground" />
+                                ${contractor.hourly_rate}/hr
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        )}
+                        {visibleColumns.hours && (
+                          <TableCell>
+                            {contractor.hours_per_week ? (
+                              <span className="whitespace-nowrap">{contractor.hours_per_week}h/wk</span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        )}
+                        {visibleColumns.contact && (
+                          <TableCell>
+                            {(contractor.contact_number || contractor.applicant?.phone) ? (
+                              <span className="flex items-center gap-1 whitespace-nowrap text-sm">
+                                <Phone className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                                {String(contractor.contact_number || contractor.applicant?.phone)}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        )}
+                        {visibleColumns.emergency && (
+                          <TableCell>
+                            {contractor.emergency_number ? (
+                              <span className="flex items-center gap-1 whitespace-nowrap text-sm">
+                                <Phone className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                                {String(contractor.emergency_number)}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        )}
+                        {visibleColumns.timesheet && (
+                          <TableCell>
+                            {contractor.timesheet_link ? (
+                              <a 
+                                href={contractor.timesheet_link} 
+                                target="_blank" 
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1 text-primary hover:underline"
+                              >
+                                <Link2 className="w-3 h-3" />
+                                View
+                              </a>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        )}
+                        {visibleColumns.type && (
+                          <TableCell>
+                            <Badge variant="outline" className={contractor.is_replacement ? 'border-amber-300 text-amber-700' : 'border-green-300 text-green-700'}>
+                              {contractor.is_replacement ? (
+                                <>
+                                  <RefreshCw className="w-3 h-3 mr-1" />
+                                  Replacement
+                                </>
+                              ) : (
+                                <>
+                                  <UserPlus className="w-3 h-3 mr-1" />
+                                  New
+                                </>
+                              )}
+                            </Badge>
+                          </TableCell>
+                        )}
+                        {visibleColumns.country && (
+                          <TableCell>
+                            {(contractor.country || contractor.applicant?.location) ? (
+                              <span className="flex items-center gap-1 whitespace-nowrap">
+                                <Globe className="w-3 h-3 text-muted-foreground" />
+                                {contractor.country || contractor.applicant?.location}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        )}
+                        {visibleColumns.source && (
+                          <TableCell className="text-muted-foreground">
+                            {contractor.source || '—'}
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            </Card>
+          )}
+
+          {/* Separated Contractors Section (Terminated/Resigned) */}
+          {separatedContractors.length > 0 && (
+            <div className="mt-8 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <XCircle className="w-4 h-4" />
+                  Separated Contractors ({separatedContractors.length})
+                </h3>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              
+              <Card className="overflow-hidden bg-muted/30">
+                <div className="overflow-x-auto">
+                  <Table className="w-full table-auto">
+                    <TableHeader>
+                      <TableRow>
+                        {visibleColumns.status && <TableHead className="w-[140px]">Status</TableHead>}
+                        {visibleColumns.name && <TableHead className="min-w-[180px]">Name</TableHead>}
+                        {visibleColumns.email && <TableHead className="min-w-[200px]">Email</TableHead>}
+                        {visibleColumns.company && <TableHead className="min-w-[180px]">Company</TableHead>}
+                        {visibleColumns.industry && <TableHead className="min-w-[120px]">Industry</TableHead>}
+                        {visibleColumns.startDate && <TableHead className="w-[120px]">Start Date</TableHead>}
+                        {visibleColumns.position && <TableHead className="min-w-[150px]">Position</TableHead>}
+                        {visibleColumns.rate && <TableHead className="w-[80px]">Rate</TableHead>}
+                        {visibleColumns.hours && <TableHead className="w-[80px]">Hours</TableHead>}
+                        {visibleColumns.contact && <TableHead className="min-w-[140px]">Contact</TableHead>}
+                        {visibleColumns.emergency && <TableHead className="min-w-[140px]">Emergency</TableHead>}
+                        {visibleColumns.timesheet && <TableHead className="min-w-[100px]">Timesheet</TableHead>}
+                        {visibleColumns.type && <TableHead className="w-[100px]">Type</TableHead>}
+                        {visibleColumns.country && <TableHead className="min-w-[120px]">Country</TableHead>}
+                        {visibleColumns.source && <TableHead className="min-w-[100px]">Source</TableHead>}
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {separatedContractors.map(contractor => (
+                        <TableRow 
+                          key={contractor.id} 
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => setEditingContractor(contractor)}
                         >
-                          <SelectTrigger className={`w-24 h-6 text-xs px-2 ${STATUS_COLORS[contractor.status] || ''} border`}>
-                            <SelectValue>
-                              <span className="flex items-center gap-1.5">
-                                {updatingStatusId === contractor.id ? (
-                                  <Loader2 className="w-3 h-3 animate-spin" />
-                                ) : (
-                                  STATUS_ICONS[contractor.status]
-                                )}
-                                <span className="capitalize">{contractor.status}</span>
-                              </span>
-                            </SelectValue>
-                          </SelectTrigger>
-                          <SelectContent className="bg-background">
-                            <SelectItem value="active">
-                              <span className="flex items-center gap-2">
-                                <CheckCircle className="w-3 h-3 text-green-600" />
-                                Active
-                              </span>
-                            </SelectItem>
-                            <SelectItem value="scheduled">
-                              <span className="flex items-center gap-2">
-                                <Calendar className="w-3 h-3 text-amber-600" />
-                                Scheduled to Start
-                              </span>
-                            </SelectItem>
-                            <SelectItem value="rendering">
-                              <span className="flex items-center gap-2">
-                                <Clock className="w-3 h-3 text-cyan-600" />
-                                Rendering
-                              </span>
-                            </SelectItem>
-                            <SelectItem value="resigned">
-                              <span className="flex items-center gap-2">
-                                <XCircle className="w-3 h-3 text-purple-600" />
-                                Resigned
-                              </span>
-                            </SelectItem>
-                            <SelectItem value="terminated">
-                              <span className="flex items-center gap-2">
-                                <XCircle className="w-3 h-3 text-red-600" />
-                                Terminated
-                              </span>
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
-                    )}
-                    {visibleColumns.name && (
-                      <TableCell className="font-medium whitespace-nowrap">
-                        {contractor.applicant?.full_name || 'Unknown'}
-                      </TableCell>
-                    )}
-                    {visibleColumns.email && (
-                      <TableCell>
-                        <span className="text-sm" title={contractor.applicant?.email}>
-                          {contractor.applicant?.email || '—'}
-                        </span>
-                      </TableCell>
-                    )}
-                    {visibleColumns.company && (
-                      <TableCell>
-                        <span className="flex items-center gap-1 whitespace-nowrap">
-                          <Building2 className="w-3 h-3 text-muted-foreground" />
-                          {contractor.client?.company_name || '—'}
-                        </span>
-                      </TableCell>
-                    )}
-                    {visibleColumns.industry && (
-                      <TableCell className="text-muted-foreground">
-                        {contractor.client?.industry || '—'}
-                      </TableCell>
-                    )}
-                    {visibleColumns.startDate && (
-                      <TableCell>
-                        {contractor.start_date ? (
-                          <span className="flex items-center gap-1 whitespace-nowrap">
-                            <Calendar className="w-3 h-3 text-muted-foreground" />
-                            {format(new Date(contractor.start_date), 'MMM d, yyyy')}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                    )}
-                    {visibleColumns.position && (
-                      <TableCell>
-                        <span className="flex items-center gap-1 whitespace-nowrap">
-                          <Briefcase className="w-3 h-3 text-muted-foreground" />
-                          {contractor.job_title || '—'}
-                        </span>
-                      </TableCell>
-                    )}
-                    {visibleColumns.rate && (
-                      <TableCell>
-                        {contractor.hourly_rate ? (
-                          <span className="flex items-center gap-1 whitespace-nowrap">
-                            <DollarSign className="w-3 h-3 text-muted-foreground" />
-                            ${contractor.hourly_rate}/hr
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                    )}
-                    {visibleColumns.hours && (
-                      <TableCell>
-                        {contractor.hours_per_week ? (
-                          <span className="whitespace-nowrap">{contractor.hours_per_week}h/wk</span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                    )}
-                    {visibleColumns.contact && (
-                      <TableCell>
-                        {(contractor.contact_number || contractor.applicant?.phone) ? (
-                          <span className="flex items-center gap-1 whitespace-nowrap text-sm">
-                            <Phone className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                            {String(contractor.contact_number || contractor.applicant?.phone)}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                    )}
-                    {visibleColumns.emergency && (
-                      <TableCell>
-                        {contractor.emergency_number ? (
-                          <span className="flex items-center gap-1 whitespace-nowrap text-sm">
-                            <Phone className="w-3 h-3 text-muted-foreground flex-shrink-0" />
-                            {String(contractor.emergency_number)}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                    )}
-                    {visibleColumns.timesheet && (
-                      <TableCell>
-                        {contractor.timesheet_link ? (
-                          <a 
-                            href={contractor.timesheet_link} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="flex items-center gap-1 text-primary hover:underline"
-                          >
-                            <Link2 className="w-3 h-3" />
-                            View
-                          </a>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                    )}
-                    {visibleColumns.type && (
-                      <TableCell>
-                        <Badge variant="outline" className={contractor.is_replacement ? 'border-amber-300 text-amber-700' : 'border-green-300 text-green-700'}>
-                          {contractor.is_replacement ? (
-                            <>
-                              <RefreshCw className="w-3 h-3 mr-1" />
-                              Replacement
-                            </>
-                          ) : (
-                            <>
-                              <UserPlus className="w-3 h-3 mr-1" />
-                              New
-                            </>
+                          {visibleColumns.status && (
+                            <TableCell onClick={(e) => e.stopPropagation()}>
+                              <Select
+                                value={contractor.status}
+                                onValueChange={(value) => handleStatusChange(contractor.id, value)}
+                                disabled={updatingStatusId === contractor.id}
+                              >
+                                <SelectTrigger className={`w-24 h-6 text-xs px-2 ${STATUS_COLORS[contractor.status] || ''} border`}>
+                                  <SelectValue>
+                                    <span className="flex items-center gap-1.5">
+                                      {updatingStatusId === contractor.id ? (
+                                        <Loader2 className="w-3 h-3 animate-spin" />
+                                      ) : (
+                                        STATUS_ICONS[contractor.status]
+                                      )}
+                                      <span className="capitalize">{contractor.status}</span>
+                                    </span>
+                                  </SelectValue>
+                                </SelectTrigger>
+                                <SelectContent className="bg-background">
+                                  <SelectItem value="active">
+                                    <span className="flex items-center gap-2">
+                                      <CheckCircle className="w-3 h-3 text-green-600" />
+                                      Active
+                                    </span>
+                                  </SelectItem>
+                                  <SelectItem value="scheduled">
+                                    <span className="flex items-center gap-2">
+                                      <Calendar className="w-3 h-3 text-amber-600" />
+                                      Scheduled to Start
+                                    </span>
+                                  </SelectItem>
+                                  <SelectItem value="rendering">
+                                    <span className="flex items-center gap-2">
+                                      <Clock className="w-3 h-3 text-cyan-600" />
+                                      Rendering
+                                    </span>
+                                  </SelectItem>
+                                  <SelectItem value="resigned">
+                                    <span className="flex items-center gap-2">
+                                      <XCircle className="w-3 h-3 text-purple-600" />
+                                      Resigned
+                                    </span>
+                                  </SelectItem>
+                                  <SelectItem value="terminated">
+                                    <span className="flex items-center gap-2">
+                                      <XCircle className="w-3 h-3 text-red-600" />
+                                      Terminated
+                                    </span>
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </TableCell>
                           )}
-                        </Badge>
-                      </TableCell>
-                    )}
-                    {visibleColumns.country && (
-                      <TableCell>
-                        {(contractor.country || contractor.applicant?.location) ? (
-                          <span className="flex items-center gap-1 whitespace-nowrap">
-                            <Globe className="w-3 h-3 text-muted-foreground" />
-                            {contractor.country || contractor.applicant?.location}
-                          </span>
-                        ) : (
-                          <span className="text-muted-foreground">—</span>
-                        )}
-                      </TableCell>
-                    )}
-                    {visibleColumns.source && (
-                      <TableCell className="text-muted-foreground">
-                        {contractor.source || '—'}
-                      </TableCell>
-                    )}
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </Card>
+                          {visibleColumns.name && (
+                            <TableCell className="font-medium whitespace-nowrap">
+                              {contractor.applicant?.full_name || 'Unknown'}
+                            </TableCell>
+                          )}
+                          {visibleColumns.email && (
+                            <TableCell>
+                              <span className="text-sm" title={contractor.applicant?.email}>
+                                {contractor.applicant?.email || '—'}
+                              </span>
+                            </TableCell>
+                          )}
+                          {visibleColumns.company && (
+                            <TableCell>
+                              <span className="flex items-center gap-1 whitespace-nowrap">
+                                <Building2 className="w-3 h-3 text-muted-foreground" />
+                                {contractor.client?.company_name || '—'}
+                              </span>
+                            </TableCell>
+                          )}
+                          {visibleColumns.industry && (
+                            <TableCell className="text-muted-foreground">
+                              {contractor.client?.industry || '—'}
+                            </TableCell>
+                          )}
+                          {visibleColumns.startDate && (
+                            <TableCell>
+                              {contractor.start_date ? (
+                                <span className="flex items-center gap-1 whitespace-nowrap">
+                                  <Calendar className="w-3 h-3 text-muted-foreground" />
+                                  {format(new Date(contractor.start_date), 'MMM d, yyyy')}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          )}
+                          {visibleColumns.position && (
+                            <TableCell>
+                              <span className="flex items-center gap-1 whitespace-nowrap">
+                                <Briefcase className="w-3 h-3 text-muted-foreground" />
+                                {contractor.job_title || '—'}
+                              </span>
+                            </TableCell>
+                          )}
+                          {visibleColumns.rate && (
+                            <TableCell>
+                              {contractor.hourly_rate ? (
+                                <span className="flex items-center gap-1 whitespace-nowrap">
+                                  <DollarSign className="w-3 h-3 text-muted-foreground" />
+                                  ${contractor.hourly_rate}/hr
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          )}
+                          {visibleColumns.hours && (
+                            <TableCell>
+                              {contractor.hours_per_week ? (
+                                <span className="whitespace-nowrap">{contractor.hours_per_week}h/wk</span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          )}
+                          {visibleColumns.contact && (
+                            <TableCell>
+                              {(contractor.contact_number || contractor.applicant?.phone) ? (
+                                <span className="flex items-center gap-1 whitespace-nowrap text-sm">
+                                  <Phone className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                                  {String(contractor.contact_number || contractor.applicant?.phone)}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          )}
+                          {visibleColumns.emergency && (
+                            <TableCell>
+                              {contractor.emergency_number ? (
+                                <span className="flex items-center gap-1 whitespace-nowrap text-sm">
+                                  <Phone className="w-3 h-3 text-muted-foreground flex-shrink-0" />
+                                  {String(contractor.emergency_number)}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          )}
+                          {visibleColumns.timesheet && (
+                            <TableCell>
+                              {contractor.timesheet_link ? (
+                                <a 
+                                  href={contractor.timesheet_link} 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="flex items-center gap-1 text-primary hover:underline"
+                                >
+                                  <Link2 className="w-3 h-3" />
+                                  View
+                                </a>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          )}
+                          {visibleColumns.type && (
+                            <TableCell>
+                              <Badge variant="outline" className={contractor.is_replacement ? 'border-amber-300 text-amber-700' : 'border-green-300 text-green-700'}>
+                                {contractor.is_replacement ? (
+                                  <>
+                                    <RefreshCw className="w-3 h-3 mr-1" />
+                                    Replacement
+                                  </>
+                                ) : (
+                                  <>
+                                    <UserPlus className="w-3 h-3 mr-1" />
+                                    New
+                                  </>
+                                )}
+                              </Badge>
+                            </TableCell>
+                          )}
+                          {visibleColumns.country && (
+                            <TableCell>
+                              {(contractor.country || contractor.applicant?.location) ? (
+                                <span className="flex items-center gap-1 whitespace-nowrap">
+                                  <Globe className="w-3 h-3 text-muted-foreground" />
+                                  {contractor.country || contractor.applicant?.location}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          )}
+                          {visibleColumns.source && (
+                            <TableCell className="text-muted-foreground">
+                              {contractor.source || '—'}
+                            </TableCell>
+                          )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </Card>
+            </div>
+          )}
+        </>
       )}
 
       {/* Import Dialog */}
