@@ -1,5 +1,6 @@
 export { ClientsDashboard } from './ClientsDashboard';
 export { ContractorsDashboard } from './ContractorsDashboard';
+export { ClientAnalyticsDashboard } from './ClientAnalyticsDashboard';
 export { AddClientDialog } from './AddClientDialog';
 export { ClientDetailPanel } from './ClientDetailPanel';
 export { AddContactDialog } from './AddContactDialog';
