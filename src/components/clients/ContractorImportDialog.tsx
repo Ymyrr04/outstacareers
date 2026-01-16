@@ -232,11 +232,45 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
           continue;
         }
 
-        // Find applicant by email
-        const applicantInfo = applicantMap[row.email.toLowerCase()];
+        // Find or create applicant by email
+        let applicantInfo = applicantMap[row.email.toLowerCase()];
         if (!applicantInfo) {
-          importErrors.push(`Applicant with email "${row.email}" not found for contractor ${row.name}`);
-          continue;
+          // Auto-create applicant record for this contractor (existing contractor import)
+          const { data: newApplicant, error: createError } = await supabase
+            .from('applicants_prescreen')
+            .insert({
+              full_name: row.name,
+              email: row.email,
+              phone: row.contact_number || null,
+              status: 'Hired',
+              source: row.source || 'Contractor Import',
+              // Required fields with defaults for imported contractors
+              home_office: true,
+              noise_canceling_headset: true,
+              laptop_or_pc: true,
+              good_internet: true,
+              internet_speed: 'Unknown',
+              power_backup: true,
+              can_work_40_50: true,
+              us_timezone_ok: true,
+              start_availability: 'Immediately',
+              has_experience: true,
+              currently_working: true,
+              location: row.country || 'Unknown',
+              job_title: row.position || 'Contractor',
+              apply_url: 'contractor-import',
+            })
+            .select('id, email, full_name')
+            .single();
+
+          if (createError || !newApplicant) {
+            importErrors.push(`Failed to create applicant for ${row.name}: ${createError?.message || 'Unknown error'}`);
+            continue;
+          }
+
+          // Add to map for potential duplicates in same import
+          applicantInfo = { id: newApplicant.id, name: newApplicant.full_name };
+          applicantMap[row.email.toLowerCase()] = applicantInfo;
         }
 
         // Validate status
