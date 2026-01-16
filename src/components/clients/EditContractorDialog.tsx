@@ -200,7 +200,6 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="paused">Paused</SelectItem>
                 <SelectItem value="completed">Completed</SelectItem>
                 <SelectItem value="terminated">Terminated</SelectItem>
                 <SelectItem value="resigned">Resigned</SelectItem>
