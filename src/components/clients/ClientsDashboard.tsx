@@ -110,9 +110,10 @@ export const ClientsDashboard = () => {
         contactMap[c.client_id] = (contactMap[c.client_id] || 0) + 1;
       });
 
-      // Count only active contractors
+      // Count active and scheduled contractors (exclude terminated/resigned/rendering)
       contractorCounts?.forEach(c => {
-        if (c.status === 'Active' || c.status === 'active') {
+        const status = c.status?.toLowerCase();
+        if (status === 'active' || status === 'scheduled') {
           contractorMap[c.client_id] = (contractorMap[c.client_id] || 0) + 1;
         }
       });
