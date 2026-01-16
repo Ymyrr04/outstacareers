@@ -36,7 +36,8 @@ import {
   History,
   ClipboardList,
   Smartphone,
-  Monitor
+  Monitor,
+  MessageCircle
 } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
 
@@ -140,6 +141,7 @@ interface ApplicantSearchResultsProps {
   onViewHistory?: (applicant: { id: string; name: string; email: string }) => void;
   onCheckAvailability?: (applicant: { id: string; email: string; full_name: string; is_available: boolean | null; availability_checked_at: string | null }) => void;
   onToggleStar?: (applicantId: string) => void;
+  unreadCounts?: Record<string, number>;
   expandedApplicant: string | null;
   loadingPreview: boolean;
   downloadingCv?: string | null;
@@ -160,6 +162,7 @@ export default function ApplicantSearchResults({
   onViewHistory,
   onCheckAvailability,
   onToggleStar,
+  unreadCounts = {},
   expandedApplicant,
   loadingPreview,
   downloadingCv,
@@ -488,6 +491,12 @@ export default function ApplicantSearchResults({
                     >
                       <Star className="w-3.5 h-3.5" />
                       CV Assessment
+                      {unreadCounts[applicant.id] && unreadCounts[applicant.id] > 0 && (
+                        <span className="relative flex h-2 w-2 ml-1">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                        </span>
+                      )}
                     </button>
                   )}
 
@@ -504,6 +513,12 @@ export default function ApplicantSearchResults({
                     >
                       <ClipboardList className="w-3.5 h-3.5" />
                       Interview Results
+                      {unreadCounts[applicant.id] && unreadCounts[applicant.id] > 0 && (
+                        <span className="relative flex h-2 w-2 ml-1">
+                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                        </span>
+                      )}
                     </button>
                   )}
 

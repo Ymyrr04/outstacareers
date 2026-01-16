@@ -32,7 +32,7 @@ import { CandidateProfileSection } from '@/components/CandidateProfileSection';
 import { RoleHistorySection } from '@/components/RoleHistorySection';
 import { ApplicantSourceBadge } from '@/components/ApplicantSourceBadge';
 import { CopyableText } from '@/components/CopyableText';
-import { useEmailTemplates, statusToTrigger } from '@/hooks/useEmailTemplates';
+import { useEmailTemplates, statusToTrigger, useUnreadMessageCounts } from '@/hooks/useEmailTemplates';
 import { addHours } from 'date-fns';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
@@ -206,6 +206,7 @@ const Admin = () => {
   const [communicationHistoryApplicant, setCommunicationHistoryApplicant] = useState<{ id: string; name: string; email: string } | null>(null);
   const [sendEmailApplicant, setSendEmailApplicant] = useState<{ id: string; full_name: string; email: string; job_title: string; status: string; preselectedTemplate?: string } | null>(null);
   const { templates, getTemplateByTrigger } = useEmailTemplates();
+  const { unreadCounts, markAsRead: markMessagesAsRead } = useUnreadMessageCounts();
   
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
@@ -1225,6 +1226,7 @@ const Admin = () => {
                         }
                       }}
                       onToggleStar={handleToggleStar}
+                      unreadCounts={unreadCounts}
                       expandedApplicant={expandedApplicant}
                       loadingPreview={loadingPreview}
                       downloadingCv={downloadingCv}
@@ -1577,6 +1579,12 @@ const Admin = () => {
                               >
                                 <Star className="w-3.5 h-3.5" />
                                 CV Assessment
+                                {unreadCounts[applicant.id] && unreadCounts[applicant.id] > 0 && (
+                                  <span className="relative flex h-2 w-2 ml-1">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                  </span>
+                                )}
                               </button>
                             )}
 
@@ -1591,6 +1599,12 @@ const Admin = () => {
                               >
                                 <ClipboardList className="w-3.5 h-3.5" />
                                 Interview Results
+                                {unreadCounts[applicant.id] && unreadCounts[applicant.id] > 0 && (
+                                  <span className="relative flex h-2 w-2 ml-1">
+                                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                    <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                  </span>
+                                )}
                               </button>
                             )}
 
@@ -2323,10 +2337,15 @@ const Admin = () => {
       {/* Communication History */}
       <CommunicationHistory
         open={!!communicationHistoryApplicant}
-        onOpenChange={(open) => !open && setCommunicationHistoryApplicant(null)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCommunicationHistoryApplicant(null);
+          }
+        }}
         applicantId={communicationHistoryApplicant?.id || ''}
         applicantName={communicationHistoryApplicant?.name || ''}
         applicantEmail={communicationHistoryApplicant?.email || ''}
+        onMarkAsRead={markMessagesAsRead}
       />
 
       {/* Send Email Dialog */}

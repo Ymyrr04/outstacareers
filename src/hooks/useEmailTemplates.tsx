@@ -388,6 +388,8 @@ export interface EmailReply {
   received_at: string;
   gmail_message_id: string;
   created_at: string;
+  is_read: boolean;
+  in_reply_to?: string | null;
 }
 
 export function useEmailReplies(applicantId?: string) {
@@ -454,4 +456,53 @@ export function useEmailReplies(applicantId?: string) {
   };
 
   return { replies, loading, fetching, fetchReplies, fetchNewReplies };
+}
+
+// Hook to get unread message counts per applicant
+export function useUnreadMessageCounts() {
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+
+  const fetchUnreadCounts = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('email_replies')
+      .select('applicant_id')
+      .eq('is_read', false);
+
+    if (error) {
+      console.error('Failed to fetch unread counts:', error);
+    } else {
+      // Count unread messages per applicant
+      const counts: Record<string, number> = {};
+      (data || []).forEach(reply => {
+        counts[reply.applicant_id] = (counts[reply.applicant_id] || 0) + 1;
+      });
+      setUnreadCounts(counts);
+    }
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    fetchUnreadCounts();
+  }, [fetchUnreadCounts]);
+
+  // Mark replies as read for an applicant
+  const markAsRead = async (applicantId: string) => {
+    const { error } = await supabase
+      .from('email_replies')
+      .update({ is_read: true })
+      .eq('applicant_id', applicantId)
+      .eq('is_read', false);
+
+    if (!error) {
+      setUnreadCounts(prev => {
+        const next = { ...prev };
+        delete next[applicantId];
+        return next;
+      });
+    }
+  };
+
+  return { unreadCounts, loading, fetchUnreadCounts, markAsRead };
 }

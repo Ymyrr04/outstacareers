@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +24,7 @@ interface CommunicationHistoryProps {
   applicantId: string;
   applicantName: string;
   applicantEmail: string;
+  onMarkAsRead?: (applicantId: string) => void;
 }
 
 interface EmailThread {
@@ -97,12 +98,20 @@ export function CommunicationHistory({
   onOpenChange, 
   applicantId,
   applicantName,
-  applicantEmail
+  applicantEmail,
+  onMarkAsRead
 }: CommunicationHistoryProps) {
   const { logs, loading: logsLoading, fetchLogs } = useEmailLogs(applicantId);
   const { scheduledEmails, loading: scheduledLoading, cancelScheduledEmail, fetchScheduledEmails } = useScheduledEmails(applicantId);
   const { replies, loading: repliesLoading, fetching, fetchNewReplies } = useEmailReplies(applicantId);
   const { toast } = useToast();
+  
+  // Mark messages as read when dialog opens
+  useEffect(() => {
+    if (open && applicantId && onMarkAsRead) {
+      onMarkAsRead(applicantId);
+    }
+  }, [open, applicantId, onMarkAsRead]);
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
   const [cancelingId, setCancelingId] = useState<string | null>(null);

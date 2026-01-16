@@ -328,6 +328,7 @@ export type Database = {
           gmail_message_id: string
           id: string
           in_reply_to: string | null
+          is_read: boolean
           received_at: string
           subject: string
         }
@@ -340,6 +341,7 @@ export type Database = {
           gmail_message_id: string
           id?: string
           in_reply_to?: string | null
+          is_read?: boolean
           received_at: string
           subject: string
         }
@@ -352,6 +354,7 @@ export type Database = {
           gmail_message_id?: string
           id?: string
           in_reply_to?: string | null
+          is_read?: boolean
           received_at?: string
           subject?: string
         }
