@@ -209,10 +209,22 @@ export const ClientAnalyticsDashboard = () => {
   }, [contractors]);
 
   // Summary stats
-  const totalClients = clients.length;
-  const totalContractors = contractors.length;
-  const activeContractors = contractors.filter(c => c.status === 'active').length;
-  const terminatedTotal = contractors.filter(c => c.status === 'terminated').length;
+  const activeContractors = contractors.filter(c => c.status === 'active' || c.status === 'Active').length;
+  
+  // Get unique client IDs with active contractors
+  const clientsWithActiveContractors = new Set(
+    contractors
+      .filter(c => c.status === 'active' || c.status === 'Active')
+      .map(c => c.client_id)
+  );
+  const totalActiveClients = clientsWithActiveContractors.size;
+  
+  // Clients with no contractors (lost clients)
+  const clientsWithContractors = new Set(contractors.map(c => c.client_id));
+  const clientsLost = clients.filter(c => !clientsWithContractors.has(c.id)).length;
+  
+  // Clients currently hiring (status = 'Hiring')
+  const newClientsHiring = contractors.filter(c => c.status === 'Hiring' || c.status === 'hiring').length;
 
   if (loading) {
     return (
@@ -234,8 +246,8 @@ export const ClientAnalyticsDashboard = () => {
                 <Building2 className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{totalClients || 0}</p>
-                <p className="text-sm text-muted-foreground">Total Clients</p>
+                <p className="text-2xl font-bold">{totalActiveClients || 0}</p>
+                <p className="text-sm text-muted-foreground">Total Active Clients</p>
               </div>
             </div>
           </CardContent>
@@ -256,12 +268,12 @@ export const ClientAnalyticsDashboard = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-500/10 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-amber-600" />
+              <div className="p-2 bg-red-500/10 rounded-lg">
+                <TrendingDown className="w-5 h-5 text-red-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{clientRetention.average || 0}%</p>
-                <p className="text-sm text-muted-foreground">Avg Retention Rate</p>
+                <p className="text-2xl font-bold">{clientsLost || 0}</p>
+                <p className="text-sm text-muted-foreground">Clients Lost</p>
               </div>
             </div>
           </CardContent>
@@ -269,12 +281,12 @@ export const ClientAnalyticsDashboard = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-500/10 rounded-lg">
-                <TrendingDown className="w-5 h-5 text-red-600" />
+              <div className="p-2 bg-amber-500/10 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-amber-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{terminatedTotal || 0}</p>
-                <p className="text-sm text-muted-foreground">Total Terminated</p>
+                <p className="text-2xl font-bold">{newClientsHiring || 0}</p>
+                <p className="text-sm text-muted-foreground">New Client (Hiring)</p>
               </div>
             </div>
           </CardContent>
