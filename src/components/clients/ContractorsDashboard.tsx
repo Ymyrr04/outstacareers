@@ -26,7 +26,9 @@ import {
   Globe,
   RefreshCw,
   UserPlus,
-  Trash2
+  Trash2,
+  AlertTriangle,
+  X
 } from 'lucide-react';
 import {
   Table,
@@ -103,6 +105,12 @@ export const ContractorsDashboard = () => {
   const [sortBy, setSortBy] = useState<string>('start_date_desc');
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [editingContractor, setEditingContractor] = useState<ContractorWithDetails | null>(null);
+  const [lastImportResult, setLastImportResult] = useState<{
+    successCount: number;
+    errors: string[];
+    timestamp: Date;
+  } | null>(null);
+  const [showImportErrors, setShowImportErrors] = useState(false);
 
   const fetchContractors = async () => {
     setLoading(true);
@@ -273,6 +281,62 @@ export const ContractorsDashboard = () => {
 
   return (
     <div className="space-y-6">
+      {/* Import Errors Banner */}
+      {lastImportResult && lastImportResult.errors.length > 0 && (
+        <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
+          <div className="flex items-start justify-between">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="w-5 h-5 text-amber-600 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-amber-800">
+                  Last Import: {lastImportResult.successCount} succeeded, {lastImportResult.errors.length} failed
+                </p>
+                <p className="text-sm text-amber-700 mt-1">
+                  {new Date(lastImportResult.timestamp).toLocaleString()}
+                </p>
+                {!showImportErrors ? (
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="p-0 h-auto text-amber-700 hover:text-amber-900"
+                    onClick={() => setShowImportErrors(true)}
+                  >
+                    View {lastImportResult.errors.length} error(s)
+                  </Button>
+                ) : (
+                  <div className="mt-2">
+                    <ul className="text-sm text-amber-700 space-y-1 max-h-40 overflow-y-auto">
+                      {lastImportResult.errors.map((err, i) => (
+                        <li key={i} className="flex items-start gap-1">
+                          <span className="text-amber-500">•</span>
+                          <span>{err}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <Button
+                      variant="link"
+                      size="sm"
+                      className="p-0 h-auto text-amber-700 hover:text-amber-900 mt-2"
+                      onClick={() => setShowImportErrors(false)}
+                    >
+                      Hide errors
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="text-amber-600 hover:text-amber-800 hover:bg-amber-100 h-6 w-6"
+              onClick={() => setLastImportResult(null)}
+            >
+              <X className="w-4 h-4" />
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
@@ -577,6 +641,12 @@ export const ContractorsDashboard = () => {
         open={importDialogOpen}
         onOpenChange={setImportDialogOpen}
         onContractorsImported={fetchContractors}
+        onImportComplete={(result) => {
+          setLastImportResult(result);
+          if (result.errors.length > 0) {
+            setShowImportErrors(true);
+          }
+        }}
       />
 
       {/* Edit Dialog */}

@@ -6,10 +6,17 @@ import { useToast } from '@/hooks/use-toast';
 import { Upload, Download, Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
+interface ImportResult {
+  successCount: number;
+  errors: string[];
+  timestamp: Date;
+}
+
 interface ContractorImportDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onContractorsImported: () => void;
+  onImportComplete?: (result: ImportResult) => void;
 }
 
 interface ParsedContractor {
@@ -30,7 +37,7 @@ interface ParsedContractor {
   source: string;
 }
 
-export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImported }: ContractorImportDialogProps) => {
+export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImported, onImportComplete }: ContractorImportDialogProps) => {
   const { toast } = useToast();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [importing, setImporting] = useState(false);
@@ -317,6 +324,13 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
       }
 
       setErrors(importErrors);
+
+      // Report import results
+      onImportComplete?.({
+        successCount,
+        errors: importErrors,
+        timestamp: new Date(),
+      });
 
       if (successCount > 0) {
         toast({
