@@ -267,7 +267,7 @@ export function SendEmailDialog({
     return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
   };
 
-  const handleSend = async () => {
+  const handleSend = async (forceSendNow: boolean = false) => {
     if (!applicant) return;
 
     if (!subject.trim() || !bodyText.trim()) {
@@ -298,7 +298,8 @@ export function SendEmailDialog({
       
       let scheduleDateTime: string | undefined;
       // delay_hours now stores minutes for all templates
-      if (template && template.delay_hours > 0) {
+      // Only schedule if template has delay AND user didn't force send now
+      if (template && template.delay_hours > 0 && !forceSendNow) {
         scheduleDateTime = addMinutes(new Date(), template.delay_hours).toISOString();
       }
 
@@ -575,7 +576,22 @@ export function SendEmailDialog({
           <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button size="sm" onClick={handleSend} disabled={sending}>
+          {hasDelay && (
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={() => handleSend(true)} 
+              disabled={sending}
+            >
+              {sending ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="mr-1.5 h-4 w-4" />
+              )}
+              Send Now
+            </Button>
+          )}
+          <Button size="sm" onClick={() => handleSend(false)} disabled={sending}>
             {sending ? (
               <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
             ) : hasDelay ? (
