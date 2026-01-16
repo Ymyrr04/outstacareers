@@ -411,40 +411,61 @@ export type Database = {
         Row: {
           applicant_id: string
           client_id: string
+          contact_number: string | null
+          country: string | null
           created_at: string
+          emergency_number: string | null
           end_date: string | null
           hourly_rate: number | null
+          hours_per_week: number | null
           id: string
+          is_replacement: boolean | null
           job_title: string | null
           notes: string | null
+          source: string | null
           start_date: string | null
           status: string | null
+          timesheet_link: string | null
           updated_at: string
         }
         Insert: {
           applicant_id: string
           client_id: string
+          contact_number?: string | null
+          country?: string | null
           created_at?: string
+          emergency_number?: string | null
           end_date?: string | null
           hourly_rate?: number | null
+          hours_per_week?: number | null
           id?: string
+          is_replacement?: boolean | null
           job_title?: string | null
           notes?: string | null
+          source?: string | null
           start_date?: string | null
           status?: string | null
+          timesheet_link?: string | null
           updated_at?: string
         }
         Update: {
           applicant_id?: string
           client_id?: string
+          contact_number?: string | null
+          country?: string | null
           created_at?: string
+          emergency_number?: string | null
           end_date?: string | null
           hourly_rate?: number | null
+          hours_per_week?: number | null
           id?: string
+          is_replacement?: boolean | null
           job_title?: string | null
           notes?: string | null
+          source?: string | null
           start_date?: string | null
           status?: string | null
+          timesheet_link?: string | null
           updated_at?: string
         }
         Relationships: [
