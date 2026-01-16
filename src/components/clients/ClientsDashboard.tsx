@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Building2, Users, Search, Plus, Loader2, Globe, Download, Upload } from 'lucide-react';
+import { Building2, Users, Search, Plus, Loader2, Globe, Download, Upload, TrendingUp } from 'lucide-react';
 import { AddClientDialog } from './AddClientDialog';
 import { ClientDetailPanel } from './ClientDetailPanel';
 import { ClientImportDialog } from './ClientImportDialog';
@@ -18,15 +17,20 @@ export interface Client {
   website: string | null;
   address: string | null;
   notes: string | null;
+  leads_from: string | null;
+  company_links: string | null;
+  yearly_increase: boolean;
+  contractor_count: number;
   created_at: string;
   updated_at: string;
   contact_count?: number;
-  contractor_count?: number;
 }
 
 export interface ClientContact {
   id: string;
   client_id: string;
+  first_name: string | null;
+  last_name: string | null;
   full_name: string;
   email: string | null;
   phone: string | null;
@@ -91,29 +95,17 @@ export const ClientsDashboard = () => {
         .from('client_contacts')
         .select('client_id');
 
-      // Fetch contractor counts
-      const { data: contractorCounts } = await supabase
-        .from('contractor_assignments')
-        .select('client_id')
-        .eq('status', 'active');
-
       // Build counts map
       const contactMap: Record<string, number> = {};
-      const contractorMap: Record<string, number> = {};
 
       contactCounts?.forEach(c => {
         contactMap[c.client_id] = (contactMap[c.client_id] || 0) + 1;
-      });
-
-      contractorCounts?.forEach(c => {
-        contractorMap[c.client_id] = (contractorMap[c.client_id] || 0) + 1;
       });
 
       // Enrich clients
       const enrichedClients = (clientsData || []).map(client => ({
         ...client,
         contact_count: contactMap[client.id] || 0,
-        contractor_count: contractorMap[client.id] || 0,
       }));
 
       setClients(enrichedClients);
@@ -135,7 +127,8 @@ export const ClientsDashboard = () => {
   const filteredClients = clients.filter(client => {
     const matchesSearch = !searchTerm || 
       client.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      client.industry?.toLowerCase().includes(searchTerm.toLowerCase());
+      client.industry?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      client.leads_from?.toLowerCase().includes(searchTerm.toLowerCase());
     
     return matchesSearch;
   });
@@ -143,6 +136,7 @@ export const ClientsDashboard = () => {
   // Summary stats
   const totalContractors = clients.reduce((sum, c) => sum + (c.contractor_count || 0), 0);
   const totalContacts = clients.reduce((sum, c) => sum + (c.contact_count || 0), 0);
+  const clientsWithIncrease = clients.filter(c => c.yearly_increase).length;
 
   // Export clients to CSV
   const handleExport = async () => {
@@ -166,35 +160,33 @@ export const ClientsDashboard = () => {
         }
       });
 
-      // Build CSV
+      // Build CSV - matching the required fields
       const headers = [
-        'company_name',
-        'industry',
-        'website',
-        'address',
-        'billing_status',
-        'notes',
-        'contact_name',
-        'contact_email',
-        'contact_phone',
-        'contact_role',
-        'created_at'
+        'Business Name',
+        'First Name',
+        'Last Name',
+        'Email Address',
+        'Contact Information',
+        'No. of Contractors',
+        'Leads from',
+        'Add links about the company to be shared with candidate(s)',
+        '4% Yearly increase',
+        'Industry'
       ];
 
       const rows = (clientsData || []).map(client => {
         const contact = contactsMap[client.id];
         return [
           `"${(client.company_name || '').replace(/"/g, '""')}"`,
-          `"${(client.industry || '').replace(/"/g, '""')}"`,
-          `"${(client.website || '').replace(/"/g, '""')}"`,
-          `"${(client.address || '').replace(/"/g, '""')}"`,
-          client.billing_status || '',
-          `"${(client.notes || '').replace(/"/g, '""')}"`,
-          `"${(contact?.full_name || '').replace(/"/g, '""')}"`,
+          `"${(contact?.first_name || '').replace(/"/g, '""')}"`,
+          `"${(contact?.last_name || '').replace(/"/g, '""')}"`,
           `"${(contact?.email || '').replace(/"/g, '""')}"`,
           `"${(contact?.phone || '').replace(/"/g, '""')}"`,
-          `"${(contact?.role || '').replace(/"/g, '""')}"`,
-          client.created_at
+          client.contractor_count || 0,
+          `"${(client.leads_from || '').replace(/"/g, '""')}"`,
+          `"${(client.company_links || '').replace(/"/g, '""')}"`,
+          client.yearly_increase ? 'Yes' : 'No',
+          `"${(client.industry || '').replace(/"/g, '""')}"`
         ].join(',');
       });
 
@@ -232,7 +224,7 @@ export const ClientsDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
@@ -268,6 +260,19 @@ export const ClientsDashboard = () => {
               <div>
                 <p className="text-2xl font-bold">{totalContacts}</p>
                 <p className="text-sm text-muted-foreground">Total Contacts</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-500/10 rounded-lg">
+                <TrendingUp className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{clientsWithIncrease}</p>
+                <p className="text-sm text-muted-foreground">4% Yearly Increase</p>
               </div>
             </div>
           </CardContent>
@@ -327,9 +332,18 @@ export const ClientsDashboard = () => {
                       <Building2 className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <h3 className="font-semibold">{client.company_name}</h3>
+                      <div className="flex items-center gap-2">
+                        <h3 className="font-semibold">{client.company_name}</h3>
+                        {client.yearly_increase && (
+                          <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
+                            <TrendingUp className="w-3 h-3 mr-1" />
+                            4% Increase
+                          </Badge>
+                        )}
+                      </div>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                         {client.industry && <span>{client.industry}</span>}
+                        {client.leads_from && <span>From: {client.leads_from}</span>}
                         {client.website && (
                           <span className="flex items-center gap-1">
                             <Globe className="w-3 h-3" />
