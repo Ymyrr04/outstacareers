@@ -4,6 +4,7 @@ export { ClientDetailPanel } from './ClientDetailPanel';
 export { AddContactDialog } from './AddContactDialog';
 export { AddContractorDialog } from './AddContractorDialog';
 export { AddCommunicationDialog } from './AddCommunicationDialog';
+export { ClientImportDialog } from './ClientImportDialog';
 export type { 
   Client, 
   ClientContact, 
