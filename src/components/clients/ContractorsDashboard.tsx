@@ -314,6 +314,13 @@ export const ContractorsDashboard = () => {
       return matchesSearch && matchesStatus;
     })
     .sort((a, b) => {
+      // Always put scheduled contractors at the top
+      const aScheduled = a.status?.toLowerCase() === 'scheduled';
+      const bScheduled = b.status?.toLowerCase() === 'scheduled';
+      if (aScheduled && !bScheduled) return -1;
+      if (!aScheduled && bScheduled) return 1;
+      
+      // Then apply regular sorting
       switch (sortBy) {
         case 'name_asc':
           return (a.applicant?.full_name || '').localeCompare(b.applicant?.full_name || '');
