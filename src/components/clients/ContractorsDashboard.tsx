@@ -211,6 +211,7 @@ export const ContractorsDashboard = () => {
     renderingReason?: 'resign' | 'termination'; 
     effectiveDate?: string;
     startDate?: string;
+    reason?: string;
   }) => {
     if (!pendingStatusChange) return;
 
@@ -218,10 +219,17 @@ export const ContractorsDashboard = () => {
     try {
       const updateData: Record<string, any> = { 
         status: data.status,
-        notes: data.renderingReason 
-          ? `Rendering for ${data.renderingReason}${data.effectiveDate ? ` - Effective: ${data.effectiveDate}` : ''}`
-          : undefined,
       };
+
+      // Set notes for rendering
+      if (data.renderingReason) {
+        updateData.notes = `Rendering for ${data.renderingReason}${data.effectiveDate ? ` - Effective: ${data.effectiveDate}` : ''}`;
+      }
+      
+      // Set notes for resigned/terminated with reason
+      if ((data.status === 'resigned' || data.status === 'terminated') && data.reason) {
+        updateData.notes = `${data.status === 'resigned' ? 'Resignation' : 'Termination'} reason: ${data.reason}`;
+      }
       
       // Set start_date for scheduled
       if (data.status === 'scheduled' && data.startDate) {

@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Textarea } from '@/components/ui/textarea';
 import {
   Dialog,
   DialogContent,
@@ -30,6 +31,7 @@ interface ContractorStatusDialogProps {
     renderingReason?: 'resign' | 'termination'; 
     effectiveDate?: string;
     startDate?: string;
+    reason?: string;
   }) => void;
   saving: boolean;
 }
@@ -44,6 +46,7 @@ export const ContractorStatusDialog = ({
 }: ContractorStatusDialogProps) => {
   const [renderingReason, setRenderingReason] = useState<'resign' | 'termination'>('resign');
   const [effectiveDate, setEffectiveDate] = useState<Date | undefined>(undefined);
+  const [reason, setReason] = useState('');
 
   const handleConfirm = () => {
     if (status === 'rendering') {
@@ -61,9 +64,12 @@ export const ContractorStatusDialog = ({
       onConfirm({
         status,
         effectiveDate: effectiveDate ? format(effectiveDate, 'yyyy-MM-dd') : undefined,
+        reason: reason.trim() || undefined,
       });
     }
   };
+
+  const showReasonField = status === 'resigned' || status === 'terminated';
 
   const getDialogTitle = () => {
     switch (status) {
@@ -165,6 +171,19 @@ export const ContractorStatusDialog = ({
               </PopoverContent>
             </Popover>
           </div>
+
+          {showReasonField && (
+            <div className="space-y-3">
+              <Label>Reason (optional)</Label>
+              <Textarea
+                placeholder="Brief reason for the status change..."
+                value={reason}
+                onChange={(e) => setReason(e.target.value)}
+                rows={3}
+                className="resize-none"
+              />
+            </div>
+          )}
         </div>
 
         <DialogFooter>
