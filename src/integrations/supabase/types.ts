@@ -371,6 +371,7 @@ export type Database = {
           created_at: string
           id: string
           industry: string | null
+          is_hiring: boolean | null
           leads_from: string | null
           notes: string | null
           updated_at: string
@@ -385,6 +386,7 @@ export type Database = {
           created_at?: string
           id?: string
           industry?: string | null
+          is_hiring?: boolean | null
           leads_from?: string | null
           notes?: string | null
           updated_at?: string
@@ -399,6 +401,7 @@ export type Database = {
           created_at?: string
           id?: string
           industry?: string | null
+          is_hiring?: boolean | null
           leads_from?: string | null
           notes?: string | null
           updated_at?: string
