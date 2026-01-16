@@ -254,9 +254,9 @@ export const ContractorsDashboard = () => {
 
   // Summary stats
   const activeCount = contractors.filter(c => c.status === 'active').length;
-  const pausedCount = contractors.filter(c => c.status === 'paused').length;
-  const completedCount = contractors.filter(c => c.status === 'completed').length;
   const terminatedCount = contractors.filter(c => c.status === 'terminated').length;
+  const resignedCount = contractors.filter(c => c.status === 'resigned').length;
+  const renderingCount = contractors.filter(c => c.status === 'rendering').length;
 
   // Export contractors to CSV
   const handleExport = () => {
@@ -427,38 +427,38 @@ export const ContractorsDashboard = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-500/10 rounded-lg">
-                <PauseCircle className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{pausedCount}</p>
-                <p className="text-sm text-muted-foreground">Paused</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <Clock className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{completedCount}</p>
-                <p className="text-sm text-muted-foreground">Completed</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
               <div className="p-2 bg-red-500/10 rounded-lg">
                 <XCircle className="w-5 h-5 text-red-600" />
               </div>
               <div>
                 <p className="text-2xl font-bold">{terminatedCount}</p>
                 <p className="text-sm text-muted-foreground">Terminated</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-500/10 rounded-lg">
+                <XCircle className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{resignedCount}</p>
+                <p className="text-sm text-muted-foreground">Resigned</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-cyan-500/10 rounded-lg">
+                <Clock className="w-5 h-5 text-cyan-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{renderingCount}</p>
+                <p className="text-sm text-muted-foreground">Rendering</p>
               </div>
             </div>
           </CardContent>
