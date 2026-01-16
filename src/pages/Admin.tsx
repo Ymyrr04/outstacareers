@@ -575,8 +575,12 @@ const Admin = () => {
     }
   }, [user, loading, navigate]);
 
+  // Track if initial data has been loaded to prevent refetching on browser tab switches
+  const hasLoadedInitialData = useRef(false);
+
   useEffect(() => {
-    if (user && isAdmin) {
+    if (user && isAdmin && !hasLoadedInitialData.current) {
+      hasLoadedInitialData.current = true;
       fetchJobs();
       fetchApplicants();
       fetchAdminUsers();
