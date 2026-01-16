@@ -609,7 +609,7 @@ export const ContractorsDashboard = () => {
                           onValueChange={(value) => handleStatusChange(contractor.id, value)}
                           disabled={updatingStatusId === contractor.id}
                         >
-                          <SelectTrigger className={`w-[100px] h-6 text-xs px-2 ${STATUS_COLORS[contractor.status] || ''} border`}>
+                          <SelectTrigger className={`w-24 h-6 text-xs px-2 ${STATUS_COLORS[contractor.status] || ''} border`}>
                             <SelectValue>
                               <span className="flex items-center gap-1.5">
                                 {updatingStatusId === contractor.id ? (
