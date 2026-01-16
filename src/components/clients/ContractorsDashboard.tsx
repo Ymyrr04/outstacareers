@@ -868,12 +868,18 @@ export const ContractorsDashboard = () => {
                         )}
                         {visibleColumns.startDate && (
                           <TableCell>
-                            {contractor.start_date ? (
-                              <span className="flex items-center gap-1 whitespace-nowrap">
-                                <Calendar className="w-3 h-3 text-muted-foreground" />
-                                {format(new Date(contractor.start_date), 'MMM d, yyyy')}
-                              </span>
-                            ) : (
+                            {contractor.start_date ? (() => {
+                              const startDate = new Date(contractor.start_date);
+                              const today = new Date();
+                              today.setHours(0, 0, 0, 0);
+                              const isFuture = startDate > today;
+                              return (
+                                <span className={`flex items-center gap-1 whitespace-nowrap ${isFuture ? 'text-amber-600 font-medium' : ''}`}>
+                                  <Calendar className={`w-3 h-3 ${isFuture ? 'text-amber-600' : 'text-muted-foreground'}`} />
+                                  {format(startDate, 'MMM d, yyyy')}
+                                </span>
+                              );
+                            })() : (
                               <span className="text-muted-foreground">—</span>
                             )}
                           </TableCell>
@@ -1142,12 +1148,18 @@ export const ContractorsDashboard = () => {
                           )}
                           {visibleColumns.startDate && (
                             <TableCell>
-                              {contractor.start_date ? (
-                                <span className="flex items-center gap-1 whitespace-nowrap">
-                                  <Calendar className="w-3 h-3 text-muted-foreground" />
-                                  {format(new Date(contractor.start_date), 'MMM d, yyyy')}
-                                </span>
-                              ) : (
+                              {contractor.start_date ? (() => {
+                                const startDate = new Date(contractor.start_date);
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                const isFuture = startDate > today;
+                                return (
+                                  <span className={`flex items-center gap-1 whitespace-nowrap ${isFuture ? 'text-amber-600 font-medium' : ''}`}>
+                                    <Calendar className={`w-3 h-3 ${isFuture ? 'text-amber-600' : 'text-muted-foreground'}`} />
+                                    {format(startDate, 'MMM d, yyyy')}
+                                  </span>
+                                );
+                              })() : (
                                 <span className="text-muted-foreground">—</span>
                               )}
                             </TableCell>
