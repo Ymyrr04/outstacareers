@@ -141,6 +141,7 @@ export const ContractorsDashboard = () => {
     type: false,
     country: false,
     source: false,
+    notes: true,
   });
 
   const columnLabels: Record<string, string> = {
@@ -159,6 +160,7 @@ export const ContractorsDashboard = () => {
     type: 'Type',
     country: 'Country',
     source: 'Source',
+    notes: 'Notes',
   };
 
   const toggleColumn = (column: string) => {
@@ -758,6 +760,7 @@ export const ContractorsDashboard = () => {
                       {visibleColumns.type && <TableHead className="w-[100px]">Type</TableHead>}
                       {visibleColumns.country && <TableHead className="min-w-[120px]">Country</TableHead>}
                       {visibleColumns.source && <TableHead className="min-w-[100px]">Source</TableHead>}
+                      {visibleColumns.notes && <TableHead className="min-w-[200px]">Notes</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -979,6 +982,17 @@ export const ContractorsDashboard = () => {
                             {contractor.source || '—'}
                           </TableCell>
                         )}
+                        {visibleColumns.notes && (
+                          <TableCell>
+                            {contractor.notes ? (
+                              <span className="text-sm text-muted-foreground line-clamp-2 max-w-[200px]" title={contractor.notes}>
+                                {contractor.notes}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -1020,6 +1034,7 @@ export const ContractorsDashboard = () => {
                         {visibleColumns.type && <TableHead className="w-[100px]">Type</TableHead>}
                         {visibleColumns.country && <TableHead className="min-w-[120px]">Country</TableHead>}
                         {visibleColumns.source && <TableHead className="min-w-[100px]">Source</TableHead>}
+                        {visibleColumns.notes && <TableHead className="min-w-[200px]">Notes</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1249,6 +1264,17 @@ export const ContractorsDashboard = () => {
                           {visibleColumns.source && (
                             <TableCell className="text-muted-foreground">
                               {contractor.source || '—'}
+                            </TableCell>
+                          )}
+                          {visibleColumns.notes && (
+                            <TableCell>
+                              {contractor.notes ? (
+                                <span className="text-sm text-muted-foreground line-clamp-2 max-w-[200px]" title={contractor.notes}>
+                                  {contractor.notes}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
                             </TableCell>
                           )}
                         </TableRow>
