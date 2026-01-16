@@ -14,20 +14,12 @@ import { format } from 'date-fns';
 import { 
   Building2, Users, Briefcase, MessageSquare, Globe, MapPin, 
   Edit2, Save, Trash2, Plus, Loader2, Phone, Mail, Star, User,
-  Calendar, DollarSign, FileText, X
+  Calendar, DollarSign, FileText
 } from 'lucide-react';
 import type { Client, ClientContact, ContractorAssignment, ClientCommunication } from './ClientsDashboard';
 import { AddContactDialog } from './AddContactDialog';
 import { AddContractorDialog } from './AddContractorDialog';
 import { AddCommunicationDialog } from './AddCommunicationDialog';
-
-const BILLING_STATUS_COLORS: Record<string, string> = {
-  active: 'bg-green-500/10 text-green-600 border-green-500/20',
-  pending: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
-  overdue: 'bg-red-500/10 text-red-600 border-red-500/20',
-  paused: 'bg-gray-500/10 text-gray-600 border-gray-500/20',
-  inactive: 'bg-gray-500/10 text-gray-500 border-gray-500/20',
-};
 
 interface ClientDetailPanelProps {
   client: Client;
@@ -51,7 +43,6 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
     website: client.website || '',
     address: client.address || '',
     notes: client.notes || '',
-    billing_status: client.billing_status,
   });
 
   const [addContactOpen, setAddContactOpen] = useState(false);
@@ -125,7 +116,6 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
           website: editForm.website.trim() || null,
           address: editForm.address.trim() || null,
           notes: editForm.notes.trim() || null,
-          billing_status: editForm.billing_status,
         })
         .eq('id', client.id);
 
@@ -222,9 +212,6 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
               ) : (
                 <SheetTitle className="text-xl">{client.company_name}</SheetTitle>
               )}
-              <Badge variant="outline" className={BILLING_STATUS_COLORS[client.billing_status]}>
-                {client.billing_status}
-              </Badge>
             </div>
           </div>
         </SheetHeader>
@@ -264,22 +251,6 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                     value={editForm.industry}
                     onChange={(e) => setEditForm({ ...editForm, industry: e.target.value })}
                   />
-                </div>
-                <div className="space-y-2">
-                  <Label>Billing Status</Label>
-                  <Select
-                    value={editForm.billing_status}
-                    onValueChange={(v) => setEditForm({ ...editForm, billing_status: v as any })}
-                  >
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="active">Active</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="overdue">Overdue</SelectItem>
-                      <SelectItem value="paused">Paused</SelectItem>
-                      <SelectItem value="inactive">Inactive</SelectItem>
-                    </SelectContent>
-                  </Select>
                 </div>
               </div>
               <div className="space-y-2">

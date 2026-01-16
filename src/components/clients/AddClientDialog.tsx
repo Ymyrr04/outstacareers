@@ -5,7 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
@@ -24,7 +23,6 @@ export const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClient
     website: '',
     address: '',
     notes: '',
-    billing_status: 'active',
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -47,7 +45,6 @@ export const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClient
         website: form.website.trim() || null,
         address: form.address.trim() || null,
         notes: form.notes.trim() || null,
-        billing_status: form.billing_status,
       });
 
       if (error) throw error;
@@ -64,7 +61,6 @@ export const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClient
         website: '',
         address: '',
         notes: '',
-        billing_status: 'active',
       });
 
       onOpenChange(false);
@@ -127,23 +123,6 @@ export const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClient
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="billing_status">Billing Status</Label>
-            <Select
-              value={form.billing_status}
-              onValueChange={(value) => setForm({ ...form, billing_status: value })}
-            >
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="active">Active</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="paused">Paused</SelectItem>
-                <SelectItem value="inactive">Inactive</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
 
           <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>

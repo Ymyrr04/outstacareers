@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
-import { Building2, Users, Search, Plus, Loader2, DollarSign, Globe, Download, Upload } from 'lucide-react';
+import { Building2, Users, Search, Plus, Loader2, Globe, Download, Upload } from 'lucide-react';
 import { AddClientDialog } from './AddClientDialog';
 import { ClientDetailPanel } from './ClientDetailPanel';
 import { ClientImportDialog } from './ClientImportDialog';
@@ -18,7 +18,6 @@ export interface Client {
   website: string | null;
   address: string | null;
   notes: string | null;
-  billing_status: 'active' | 'pending' | 'overdue' | 'paused' | 'inactive';
   created_at: string;
   updated_at: string;
   contact_count?: number;
@@ -67,20 +66,11 @@ export interface ClientCommunication {
   contact?: { full_name: string } | null;
 }
 
-const BILLING_STATUS_COLORS: Record<string, string> = {
-  active: 'bg-green-500/10 text-green-600 border-green-500/20',
-  pending: 'bg-amber-500/10 text-amber-600 border-amber-500/20',
-  overdue: 'bg-red-500/10 text-red-600 border-red-500/20',
-  paused: 'bg-gray-500/10 text-gray-600 border-gray-500/20',
-  inactive: 'bg-gray-500/10 text-gray-500 border-gray-500/20',
-};
-
 export const ClientsDashboard = () => {
   const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [billingFilter, setBillingFilter] = useState<string>('all');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -122,7 +112,6 @@ export const ClientsDashboard = () => {
       // Enrich clients
       const enrichedClients = (clientsData || []).map(client => ({
         ...client,
-        billing_status: client.billing_status as Client['billing_status'],
         contact_count: contactMap[client.id] || 0,
         contractor_count: contractorMap[client.id] || 0,
       }));
@@ -148,15 +137,12 @@ export const ClientsDashboard = () => {
       client.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.industry?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    const matchesBilling = billingFilter === 'all' || client.billing_status === billingFilter;
-
-    return matchesSearch && matchesBilling;
+    return matchesSearch;
   });
 
   // Summary stats
-  const activeClients = clients.filter(c => c.billing_status === 'active').length;
   const totalContractors = clients.reduce((sum, c) => sum + (c.contractor_count || 0), 0);
-  const overdueClients = clients.filter(c => c.billing_status === 'overdue').length;
+  const totalContacts = clients.reduce((sum, c) => sum + (c.contact_count || 0), 0);
 
   // Export clients to CSV
   const handleExport = async () => {
@@ -246,7 +232,7 @@ export const ClientsDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
@@ -256,19 +242,6 @@ export const ClientsDashboard = () => {
               <div>
                 <p className="text-2xl font-bold">{clients.length}</p>
                 <p className="text-sm text-muted-foreground">Total Clients</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-500/10 rounded-lg">
-                <DollarSign className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{activeClients}</p>
-                <p className="text-sm text-muted-foreground">Active Clients</p>
               </div>
             </div>
           </CardContent>
@@ -289,12 +262,12 @@ export const ClientsDashboard = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-500/10 rounded-lg">
-                <DollarSign className="w-5 h-5 text-red-600" />
+              <div className="p-2 bg-green-500/10 rounded-lg">
+                <Users className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{overdueClients}</p>
-                <p className="text-sm text-muted-foreground">Overdue</p>
+                <p className="text-2xl font-bold">{totalContacts}</p>
+                <p className="text-sm text-muted-foreground">Total Contacts</p>
               </div>
             </div>
           </CardContent>
@@ -303,24 +276,14 @@ export const ClientsDashboard = () => {
 
       {/* Header with Search and Add */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="flex flex-wrap items-center gap-3 flex-1">
-          <div className="relative flex-1 min-w-[200px] max-w-sm">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search clients..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-9"
-            />
-          </div>
-          <Tabs value={billingFilter} onValueChange={setBillingFilter} className="w-auto">
-            <TabsList className="h-9">
-              <TabsTrigger value="all" className="text-xs">All</TabsTrigger>
-              <TabsTrigger value="active" className="text-xs">Active</TabsTrigger>
-              <TabsTrigger value="pending" className="text-xs">Pending</TabsTrigger>
-              <TabsTrigger value="overdue" className="text-xs">Overdue</TabsTrigger>
-            </TabsList>
-          </Tabs>
+        <div className="relative flex-1 min-w-[200px] max-w-sm">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search clients..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-9"
+          />
         </div>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
@@ -364,15 +327,7 @@ export const ClientsDashboard = () => {
                       <Building2 className="w-5 h-5 text-primary" />
                     </div>
                     <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{client.company_name}</h3>
-                        <Badge 
-                          variant="outline" 
-                          className={BILLING_STATUS_COLORS[client.billing_status]}
-                        >
-                          {client.billing_status}
-                        </Badge>
-                      </div>
+                      <h3 className="font-semibold">{client.company_name}</h3>
                       <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
                         {client.industry && <span>{client.industry}</span>}
                         {client.website && (
