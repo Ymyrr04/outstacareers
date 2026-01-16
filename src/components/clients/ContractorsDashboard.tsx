@@ -122,7 +122,7 @@ export const ContractorsDashboard = () => {
   const [pendingStatusChange, setPendingStatusChange] = useState<{
     contractorId: string;
     contractorName: string;
-    status: 'rendering' | 'resigned' | 'terminated';
+    status: 'rendering' | 'resigned' | 'terminated' | 'scheduled';
   } | null>(null);
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
     status: true,
@@ -165,13 +165,13 @@ export const ContractorsDashboard = () => {
   };
 
   const handleStatusChange = async (contractorId: string, newStatus: string) => {
-    // For rendering, resigned, terminated - open dialog
-    if (newStatus === 'rendering' || newStatus === 'resigned' || newStatus === 'terminated') {
+    // For scheduled, rendering, resigned, terminated - open dialog
+    if (newStatus === 'scheduled' || newStatus === 'rendering' || newStatus === 'resigned' || newStatus === 'terminated') {
       const contractor = contractors.find(c => c.id === contractorId);
       setPendingStatusChange({
         contractorId,
         contractorName: contractor?.applicant?.full_name || 'Unknown',
-        status: newStatus as 'rendering' | 'resigned' | 'terminated',
+        status: newStatus as 'scheduled' | 'rendering' | 'resigned' | 'terminated',
       });
       setStatusDialogOpen(true);
       return;
@@ -210,6 +210,7 @@ export const ContractorsDashboard = () => {
     status: string; 
     renderingReason?: 'resign' | 'termination'; 
     effectiveDate?: string;
+    startDate?: string;
   }) => {
     if (!pendingStatusChange) return;
 
@@ -221,6 +222,11 @@ export const ContractorsDashboard = () => {
           ? `Rendering for ${data.renderingReason}${data.effectiveDate ? ` - Effective: ${data.effectiveDate}` : ''}`
           : undefined,
       };
+      
+      // Set start_date for scheduled
+      if (data.status === 'scheduled' && data.startDate) {
+        updateData.start_date = data.startDate;
+      }
       
       // Set end_date for resigned/terminated
       if ((data.status === 'resigned' || data.status === 'terminated') && data.effectiveDate) {
@@ -236,7 +242,12 @@ export const ContractorsDashboard = () => {
 
       setContractors(prev => 
         prev.map(c => c.id === pendingStatusChange.contractorId 
-          ? { ...c, status: data.status, end_date: updateData.end_date || c.end_date } 
+          ? { 
+              ...c, 
+              status: data.status, 
+              start_date: updateData.start_date || c.start_date,
+              end_date: updateData.end_date || c.end_date 
+            } 
           : c
         )
       );
