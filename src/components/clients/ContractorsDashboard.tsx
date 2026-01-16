@@ -575,24 +575,24 @@ export const ContractorsDashboard = () => {
       ) : (
         <Card className="overflow-hidden">
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="w-full table-auto">
               <TableHeader>
                 <TableRow>
-                  {visibleColumns.status && <TableHead>Status</TableHead>}
-                  {visibleColumns.name && <TableHead>Name</TableHead>}
-                  {visibleColumns.email && <TableHead>Email</TableHead>}
-                  {visibleColumns.company && <TableHead>Company</TableHead>}
-                  {visibleColumns.industry && <TableHead>Industry</TableHead>}
-                  {visibleColumns.startDate && <TableHead>Start Date</TableHead>}
-                  {visibleColumns.position && <TableHead>Position</TableHead>}
-                  {visibleColumns.rate && <TableHead>Rate</TableHead>}
-                  {visibleColumns.hours && <TableHead>Hours</TableHead>}
-                  {visibleColumns.contact && <TableHead>Contact</TableHead>}
-                  {visibleColumns.emergency && <TableHead>Emergency</TableHead>}
-                  {visibleColumns.timesheet && <TableHead>Timesheet</TableHead>}
-                  {visibleColumns.type && <TableHead>Type</TableHead>}
-                  {visibleColumns.country && <TableHead>Country</TableHead>}
-                  {visibleColumns.source && <TableHead>Source</TableHead>}
+                  {visibleColumns.status && <TableHead className="w-[140px]">Status</TableHead>}
+                  {visibleColumns.name && <TableHead className="min-w-[180px]">Name</TableHead>}
+                  {visibleColumns.email && <TableHead className="min-w-[200px]">Email</TableHead>}
+                  {visibleColumns.company && <TableHead className="min-w-[180px]">Company</TableHead>}
+                  {visibleColumns.industry && <TableHead className="min-w-[120px]">Industry</TableHead>}
+                  {visibleColumns.startDate && <TableHead className="w-[120px]">Start Date</TableHead>}
+                  {visibleColumns.position && <TableHead className="min-w-[150px]">Position</TableHead>}
+                  {visibleColumns.rate && <TableHead className="w-[80px]">Rate</TableHead>}
+                  {visibleColumns.hours && <TableHead className="w-[80px]">Hours</TableHead>}
+                  {visibleColumns.contact && <TableHead className="min-w-[140px]">Contact</TableHead>}
+                  {visibleColumns.emergency && <TableHead className="min-w-[140px]">Emergency</TableHead>}
+                  {visibleColumns.timesheet && <TableHead className="min-w-[100px]">Timesheet</TableHead>}
+                  {visibleColumns.type && <TableHead className="w-[100px]">Type</TableHead>}
+                  {visibleColumns.country && <TableHead className="min-w-[120px]">Country</TableHead>}
+                  {visibleColumns.source && <TableHead className="min-w-[100px]">Source</TableHead>}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -656,8 +656,8 @@ export const ContractorsDashboard = () => {
                       </TableCell>
                     )}
                     {visibleColumns.email && (
-                      <TableCell className="max-w-[200px]">
-                        <span className="text-sm truncate block" title={contractor.applicant?.email}>
+                      <TableCell>
+                        <span className="text-sm" title={contractor.applicant?.email}>
                           {contractor.applicant?.email || '—'}
                         </span>
                       </TableCell>
