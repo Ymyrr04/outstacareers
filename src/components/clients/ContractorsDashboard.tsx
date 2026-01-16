@@ -25,7 +25,8 @@ import {
   Link2,
   Globe,
   RefreshCw,
-  UserPlus
+  UserPlus,
+  Trash2
 } from 'lucide-react';
 import {
   Table,
@@ -35,6 +36,17 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { ContractorImportDialog } from './ContractorImportDialog';
 import { EditContractorDialog } from './EditContractorDialog';
 
@@ -227,6 +239,29 @@ export const ContractorsDashboard = () => {
     }
   };
 
+  const handleClearAll = async () => {
+    try {
+      const { error } = await supabase
+        .from('contractor_assignments')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+
+      if (error) throw error;
+
+      toast({
+        title: 'Success',
+        description: 'All contractors have been deleted',
+      });
+      fetchContractors();
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete contractors: ' + err.message,
+        variant: 'destructive',
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
@@ -336,6 +371,28 @@ export const ContractorsDashboard = () => {
           </Select>
         </div>
         <div className="flex gap-2">
+          <AlertDialog>
+            <AlertDialogTrigger asChild>
+              <Button variant="outline" className="text-destructive hover:text-destructive" disabled={contractors.length === 0}>
+                <Trash2 className="w-4 h-4 mr-2" />
+                Clear All
+              </Button>
+            </AlertDialogTrigger>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete all contractors?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This will permanently delete all {contractors.length} contractor records. This action cannot be undone.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction onClick={handleClearAll} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                  Delete All
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
             <Upload className="w-4 h-4 mr-2" />
             Import
