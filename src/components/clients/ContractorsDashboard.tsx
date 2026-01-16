@@ -13,9 +13,9 @@ import {
   Building2, 
   DollarSign, 
   Calendar, 
-  MapPin,
   Mail,
   Download,
+  Upload,
   Briefcase,
   CheckCircle,
   PauseCircle,
@@ -35,6 +35,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { ContractorImportDialog } from './ContractorImportDialog';
 
 interface ContractorWithDetails {
   id: string;
@@ -86,6 +87,7 @@ export const ContractorsDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
 
   const fetchContractors = async () => {
     setLoading(true);
@@ -289,10 +291,16 @@ export const ContractorsDashboard = () => {
             </SelectContent>
           </Select>
         </div>
-        <Button variant="outline" onClick={handleExport} disabled={contractors.length === 0}>
-          <Download className="w-4 h-4 mr-2" />
-          Export
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
+            <Upload className="w-4 h-4 mr-2" />
+            Import
+          </Button>
+          <Button variant="outline" onClick={handleExport} disabled={contractors.length === 0}>
+            <Download className="w-4 h-4 mr-2" />
+            Export
+          </Button>
+        </div>
       </div>
 
       {/* Contractors Table */}
@@ -459,6 +467,13 @@ export const ContractorsDashboard = () => {
           </div>
         </Card>
       )}
+
+      {/* Import Dialog */}
+      <ContractorImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onContractorsImported={fetchContractors}
+      />
     </div>
   );
 };
