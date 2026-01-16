@@ -314,9 +314,11 @@ export type Database = {
           client_id: string
           created_at: string
           email: string | null
+          first_name: string | null
           full_name: string
           id: string
           is_primary: boolean | null
+          last_name: string | null
           notes: string | null
           phone: string | null
           role: string | null
@@ -326,9 +328,11 @@ export type Database = {
           client_id: string
           created_at?: string
           email?: string | null
+          first_name?: string | null
           full_name: string
           id?: string
           is_primary?: boolean | null
+          last_name?: string | null
           notes?: string | null
           phone?: string | null
           role?: string | null
@@ -338,9 +342,11 @@ export type Database = {
           client_id?: string
           created_at?: string
           email?: string | null
+          first_name?: string | null
           full_name?: string
           id?: string
           is_primary?: boolean | null
+          last_name?: string | null
           notes?: string | null
           phone?: string | null
           role?: string | null
@@ -359,36 +365,45 @@ export type Database = {
       clients: {
         Row: {
           address: string | null
-          billing_status: string | null
+          company_links: string | null
           company_name: string
+          contractor_count: number | null
           created_at: string
           id: string
           industry: string | null
+          leads_from: string | null
           notes: string | null
           updated_at: string
           website: string | null
+          yearly_increase: boolean | null
         }
         Insert: {
           address?: string | null
-          billing_status?: string | null
+          company_links?: string | null
           company_name: string
+          contractor_count?: number | null
           created_at?: string
           id?: string
           industry?: string | null
+          leads_from?: string | null
           notes?: string | null
           updated_at?: string
           website?: string | null
+          yearly_increase?: boolean | null
         }
         Update: {
           address?: string | null
-          billing_status?: string | null
+          company_links?: string | null
           company_name?: string
+          contractor_count?: number | null
           created_at?: string
           id?: string
           industry?: string | null
+          leads_from?: string | null
           notes?: string | null
           updated_at?: string
           website?: string | null
+          yearly_increase?: boolean | null
         }
         Relationships: []
       }

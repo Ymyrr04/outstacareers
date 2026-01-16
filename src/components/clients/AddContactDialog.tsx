@@ -20,7 +20,8 @@ export const AddContactDialog = ({ open, onOpenChange, clientId, onContactAdded 
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState({
-    full_name: '',
+    first_name: '',
+    last_name: '',
     email: '',
     phone: '',
     role: '',
@@ -31,10 +32,10 @@ export const AddContactDialog = ({ open, onOpenChange, clientId, onContactAdded 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!form.full_name.trim()) {
+    if (!form.first_name.trim() && !form.last_name.trim()) {
       toast({
         title: 'Error',
-        description: 'Name is required',
+        description: 'First name or last name is required',
         variant: 'destructive',
       });
       return;
@@ -50,9 +51,13 @@ export const AddContactDialog = ({ open, onOpenChange, clientId, onContactAdded 
           .eq('client_id', clientId);
       }
 
+      const fullName = [form.first_name.trim(), form.last_name.trim()].filter(Boolean).join(' ');
+
       const { error } = await supabase.from('client_contacts').insert({
         client_id: clientId,
-        full_name: form.full_name.trim(),
+        first_name: form.first_name.trim() || null,
+        last_name: form.last_name.trim() || null,
+        full_name: fullName,
         email: form.email.trim() || null,
         phone: form.phone.trim() || null,
         role: form.role.trim() || null,
@@ -65,7 +70,8 @@ export const AddContactDialog = ({ open, onOpenChange, clientId, onContactAdded 
       toast({ title: 'Success', description: 'Contact added successfully' });
 
       setForm({
-        full_name: '',
+        first_name: '',
+        last_name: '',
         email: '',
         phone: '',
         role: '',
@@ -93,19 +99,30 @@ export const AddContactDialog = ({ open, onOpenChange, clientId, onContactAdded 
           <DialogTitle>Add Contact</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="full_name">Full Name *</Label>
-            <Input
-              id="full_name"
-              value={form.full_name}
-              onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-              placeholder="John Smith"
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="first_name">First Name *</Label>
+              <Input
+                id="first_name"
+                value={form.first_name}
+                onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+                placeholder="John"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="last_name">Last Name</Label>
+              <Input
+                id="last_name"
+                value={form.last_name}
+                onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                placeholder="Smith"
+              />
+            </div>
           </div>
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">Email Address</Label>
               <Input
                 id="email"
                 type="email"
@@ -115,7 +132,7 @@ export const AddContactDialog = ({ open, onOpenChange, clientId, onContactAdded 
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
+              <Label htmlFor="phone">Contact Information</Label>
               <Input
                 id="phone"
                 value={form.phone}

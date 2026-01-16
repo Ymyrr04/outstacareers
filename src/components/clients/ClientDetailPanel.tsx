@@ -8,13 +8,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { 
   Building2, Users, Briefcase, MessageSquare, Globe, MapPin, 
   Edit2, Save, Trash2, Plus, Loader2, Phone, Mail, Star, User,
-  Calendar, DollarSign, FileText
+  Calendar, DollarSign, FileText, TrendingUp, Link, Hash
 } from 'lucide-react';
 import type { Client, ClientContact, ContractorAssignment, ClientCommunication } from './ClientsDashboard';
 import { AddContactDialog } from './AddContactDialog';
@@ -40,8 +40,10 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
   const [editForm, setEditForm] = useState({
     company_name: client.company_name,
     industry: client.industry || '',
-    website: client.website || '',
-    address: client.address || '',
+    leads_from: client.leads_from || '',
+    company_links: client.company_links || '',
+    yearly_increase: client.yearly_increase || false,
+    contractor_count: client.contractor_count || 0,
     notes: client.notes || '',
   });
 
@@ -58,7 +60,7 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
         .select('*')
         .eq('client_id', client.id)
         .order('is_primary', { ascending: false })
-        .order('full_name');
+        .order('created_at');
 
       // Fetch contractors with applicant info
       const { data: contractorsData } = await supabase
@@ -100,7 +102,7 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
     if (!editForm.company_name.trim()) {
       toast({
         title: 'Error',
-        description: 'Company name is required',
+        description: 'Business name is required',
         variant: 'destructive',
       });
       return;
@@ -113,8 +115,10 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
         .update({
           company_name: editForm.company_name.trim(),
           industry: editForm.industry.trim() || null,
-          website: editForm.website.trim() || null,
-          address: editForm.address.trim() || null,
+          leads_from: editForm.leads_from.trim() || null,
+          company_links: editForm.company_links.trim() || null,
+          yearly_increase: editForm.yearly_increase,
+          contractor_count: editForm.contractor_count,
           notes: editForm.notes.trim() || null,
         })
         .eq('id', client.id);
@@ -180,6 +184,13 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
     toast({ title: 'Primary contact updated' });
   };
 
+  const getContactDisplayName = (contact: ClientContact) => {
+    if (contact.first_name || contact.last_name) {
+      return [contact.first_name, contact.last_name].filter(Boolean).join(' ');
+    }
+    return contact.full_name;
+  };
+
   const CONTRACTOR_STATUS_COLORS: Record<string, string> = {
     active: 'bg-green-500/10 text-green-600',
     completed: 'bg-blue-500/10 text-blue-600',
@@ -210,7 +221,15 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                   className="text-xl font-bold"
                 />
               ) : (
-                <SheetTitle className="text-xl">{client.company_name}</SheetTitle>
+                <div className="flex items-center gap-2">
+                  <SheetTitle className="text-xl">{client.company_name}</SheetTitle>
+                  {client.yearly_increase && (
+                    <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
+                      <TrendingUp className="w-3 h-3 mr-1" />
+                      4% Increase
+                    </Badge>
+                  )}
+                </div>
               )}
             </div>
           </div>
@@ -252,20 +271,41 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                     onChange={(e) => setEditForm({ ...editForm, industry: e.target.value })}
                   />
                 </div>
+                <div className="space-y-2">
+                  <Label>No. of Contractors</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={editForm.contractor_count}
+                    onChange={(e) => setEditForm({ ...editForm, contractor_count: parseInt(e.target.value) || 0 })}
+                  />
+                </div>
               </div>
               <div className="space-y-2">
-                <Label>Website</Label>
+                <Label>Leads from</Label>
                 <Input
-                  value={editForm.website}
-                  onChange={(e) => setEditForm({ ...editForm, website: e.target.value })}
+                  value={editForm.leads_from}
+                  onChange={(e) => setEditForm({ ...editForm, leads_from: e.target.value })}
+                  placeholder="e.g. Referral, LinkedIn"
                 />
               </div>
               <div className="space-y-2">
-                <Label>Address</Label>
-                <Input
-                  value={editForm.address}
-                  onChange={(e) => setEditForm({ ...editForm, address: e.target.value })}
+                <Label>Company Links (to share with candidates)</Label>
+                <Textarea
+                  value={editForm.company_links}
+                  onChange={(e) => setEditForm({ ...editForm, company_links: e.target.value })}
+                  rows={2}
                 />
+              </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="yearly_increase_edit"
+                  checked={editForm.yearly_increase}
+                  onCheckedChange={(checked) => setEditForm({ ...editForm, yearly_increase: !!checked })}
+                />
+                <Label htmlFor="yearly_increase_edit" className="text-sm font-normal">
+                  4% Yearly Increase
+                </Label>
               </div>
               <div className="space-y-2">
                 <Label>Notes</Label>
@@ -281,24 +321,26 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
           {/* Info Cards */}
           {!editing && (
             <div className="grid grid-cols-2 gap-4 text-sm">
-              {client.website && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Globe className="w-4 h-4" />
-                  <a href={client.website} target="_blank" rel="noopener noreferrer" className="hover:underline">
-                    {client.website.replace(/^https?:\/\//, '')}
-                  </a>
-                </div>
-              )}
-              {client.address && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <MapPin className="w-4 h-4" />
-                  <span>{client.address}</span>
-                </div>
-              )}
               {client.industry && (
                 <div className="flex items-center gap-2 text-muted-foreground">
                   <Briefcase className="w-4 h-4" />
                   <span>{client.industry}</span>
+                </div>
+              )}
+              {client.leads_from && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Globe className="w-4 h-4" />
+                  <span>From: {client.leads_from}</span>
+                </div>
+              )}
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Hash className="w-4 h-4" />
+                <span>{client.contractor_count} Contractor{client.contractor_count !== 1 ? 's' : ''}</span>
+              </div>
+              {client.company_links && (
+                <div className="flex items-start gap-2 text-muted-foreground col-span-2">
+                  <Link className="w-4 h-4 mt-0.5" />
+                  <span className="break-all">{client.company_links}</span>
                 </div>
               )}
             </div>
@@ -345,7 +387,7 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                           </div>
                           <div>
                             <div className="flex items-center gap-2">
-                              <span className="font-medium">{contact.full_name}</span>
+                              <span className="font-medium">{getContactDisplayName(contact)}</span>
                               {contact.is_primary && (
                                 <Badge variant="outline" className="text-xs">
                                   <Star className="w-3 h-3 mr-1 fill-amber-400 text-amber-400" />
