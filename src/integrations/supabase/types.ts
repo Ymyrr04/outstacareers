@@ -258,6 +258,197 @@ export type Database = {
         }
         Relationships: []
       }
+      client_communications: {
+        Row: {
+          client_id: string
+          communication_date: string
+          communication_type: string
+          contact_id: string | null
+          content: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          subject: string | null
+        }
+        Insert: {
+          client_id: string
+          communication_date?: string
+          communication_type: string
+          contact_id?: string | null
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          subject?: string | null
+        }
+        Update: {
+          client_id?: string
+          communication_date?: string
+          communication_type?: string
+          contact_id?: string | null
+          content?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_communications_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_communications_contact_id_fkey"
+            columns: ["contact_id"]
+            isOneToOne: false
+            referencedRelation: "client_contacts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_contacts: {
+        Row: {
+          client_id: string
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          is_primary: boolean | null
+          notes: string | null
+          phone: string | null
+          role: string | null
+          updated_at: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          is_primary?: boolean | null
+          notes?: string | null
+          phone?: string | null
+          role?: string | null
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_primary?: boolean | null
+          notes?: string | null
+          phone?: string | null
+          role?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_contacts_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clients: {
+        Row: {
+          address: string | null
+          billing_status: string | null
+          company_name: string
+          created_at: string
+          id: string
+          industry: string | null
+          notes: string | null
+          updated_at: string
+          website: string | null
+        }
+        Insert: {
+          address?: string | null
+          billing_status?: string | null
+          company_name: string
+          created_at?: string
+          id?: string
+          industry?: string | null
+          notes?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Update: {
+          address?: string | null
+          billing_status?: string | null
+          company_name?: string
+          created_at?: string
+          id?: string
+          industry?: string | null
+          notes?: string | null
+          updated_at?: string
+          website?: string | null
+        }
+        Relationships: []
+      }
+      contractor_assignments: {
+        Row: {
+          applicant_id: string
+          client_id: string
+          created_at: string
+          end_date: string | null
+          hourly_rate: number | null
+          id: string
+          job_title: string | null
+          notes: string | null
+          start_date: string | null
+          status: string | null
+          updated_at: string
+        }
+        Insert: {
+          applicant_id: string
+          client_id: string
+          created_at?: string
+          end_date?: string | null
+          hourly_rate?: number | null
+          id?: string
+          job_title?: string | null
+          notes?: string | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Update: {
+          applicant_id?: string
+          client_id?: string
+          created_at?: string
+          end_date?: string | null
+          hourly_rate?: number | null
+          id?: string
+          job_title?: string | null
+          notes?: string | null
+          start_date?: string | null
+          status?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contractor_assignments_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "applicants_prescreen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contractor_assignments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       email_logs: {
         Row: {
           applicant_id: string
