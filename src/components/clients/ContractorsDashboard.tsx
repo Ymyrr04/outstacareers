@@ -111,7 +111,37 @@ export const ContractorsDashboard = () => {
     timestamp: Date;
   } | null>(null);
   const [showImportErrors, setShowImportErrors] = useState(false);
+  const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
 
+  const handleStatusChange = async (contractorId: string, newStatus: string) => {
+    setUpdatingStatusId(contractorId);
+    try {
+      const { error } = await supabase
+        .from('contractor_assignments')
+        .update({ status: newStatus })
+        .eq('id', contractorId);
+
+      if (error) throw error;
+
+      // Update local state
+      setContractors(prev => 
+        prev.map(c => c.id === contractorId ? { ...c, status: newStatus } : c)
+      );
+
+      toast({
+        title: 'Status Updated',
+        description: `Contractor status changed to ${newStatus}`,
+      });
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to update status: ' + err.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setUpdatingStatusId(null);
+    }
+  };
   const fetchContractors = async () => {
     setLoading(true);
     try {
@@ -509,11 +539,51 @@ export const ContractorsDashboard = () => {
                     className="cursor-pointer hover:bg-muted/50"
                     onClick={() => setEditingContractor(contractor)}
                   >
-                    <TableCell>
-                      <Badge variant="outline" className={STATUS_COLORS[contractor.status] || ''}>
-                        {STATUS_ICONS[contractor.status]}
-                        <span className="ml-1 capitalize">{contractor.status}</span>
-                      </Badge>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Select
+                        value={contractor.status}
+                        onValueChange={(value) => handleStatusChange(contractor.id, value)}
+                        disabled={updatingStatusId === contractor.id}
+                      >
+                        <SelectTrigger className={`w-[130px] h-8 ${STATUS_COLORS[contractor.status] || ''} border`}>
+                          <SelectValue>
+                            <span className="flex items-center gap-1.5">
+                              {updatingStatusId === contractor.id ? (
+                                <Loader2 className="w-3 h-3 animate-spin" />
+                              ) : (
+                                STATUS_ICONS[contractor.status]
+                              )}
+                              <span className="capitalize">{contractor.status}</span>
+                            </span>
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent className="bg-background">
+                          <SelectItem value="active">
+                            <span className="flex items-center gap-2">
+                              <CheckCircle className="w-3 h-3 text-green-600" />
+                              Active
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="paused">
+                            <span className="flex items-center gap-2">
+                              <PauseCircle className="w-3 h-3 text-amber-600" />
+                              Paused
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="completed">
+                            <span className="flex items-center gap-2">
+                              <Clock className="w-3 h-3 text-blue-600" />
+                              Completed
+                            </span>
+                          </SelectItem>
+                          <SelectItem value="terminated">
+                            <span className="flex items-center gap-2">
+                              <XCircle className="w-3 h-3 text-red-600" />
+                              Terminated
+                            </span>
+                          </SelectItem>
+                        </SelectContent>
+                      </Select>
                     </TableCell>
                     <TableCell className="font-medium whitespace-nowrap">
                       {contractor.applicant?.full_name || 'Unknown'}
