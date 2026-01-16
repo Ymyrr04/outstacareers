@@ -397,9 +397,8 @@ export const ContractorsDashboard = () => {
                     <TableCell className="font-medium whitespace-nowrap">
                       {contractor.applicant?.full_name || 'Unknown'}
                     </TableCell>
-                    <TableCell>
-                      <span className="flex items-center gap-1 text-sm">
-                        <Mail className="w-3 h-3 text-muted-foreground" />
+                    <TableCell className="max-w-[200px]">
+                      <span className="text-sm truncate block" title={contractor.applicant?.email}>
                         {contractor.applicant?.email || '—'}
                       </span>
                     </TableCell>

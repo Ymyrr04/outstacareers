@@ -58,6 +58,10 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
   const [saving, setSaving] = useState(false);
   
   const [formData, setFormData] = useState({
+    // Applicant fields
+    full_name: '',
+    email: '',
+    // Contractor assignment fields
     status: 'active',
     job_title: '',
     hourly_rate: '',
@@ -76,6 +80,8 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
   useEffect(() => {
     if (contractor) {
       setFormData({
+        full_name: contractor.applicant?.full_name || '',
+        email: contractor.applicant?.email || '',
         status: contractor.status || 'active',
         job_title: contractor.job_title || '',
         hourly_rate: contractor.hourly_rate?.toString() || '',
@@ -98,6 +104,20 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
     
     setSaving(true);
     try {
+      // Update applicant info (name/email)
+      if (contractor.applicant_id) {
+        const { error: applicantError } = await supabase
+          .from('applicants_prescreen')
+          .update({
+            full_name: formData.full_name,
+            email: formData.email,
+          })
+          .eq('id', contractor.applicant_id);
+
+        if (applicantError) throw applicantError;
+      }
+
+      // Update contractor assignment
       const { error } = await supabase
         .from('contractor_assignments')
         .update({
@@ -148,6 +168,29 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
+          {/* Name */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="full_name" className="text-right">Name</Label>
+            <Input
+              id="full_name"
+              value={formData.full_name}
+              onChange={(e) => setFormData(prev => ({ ...prev, full_name: e.target.value }))}
+              className="col-span-3"
+            />
+          </div>
+
+          {/* Email */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="email" className="text-right">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+              className="col-span-3"
+            />
+          </div>
+
           {/* Status */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="status" className="text-right">Status</Label>
