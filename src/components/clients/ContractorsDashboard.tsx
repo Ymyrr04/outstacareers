@@ -899,7 +899,7 @@ export const ContractorsDashboard = () => {
                           </TableCell>
                         )}
                         {visibleColumns.contact && (
-                          <TableCell>
+                          <TableCell onContextMenu={(e) => e.stopPropagation()}>
                             {(contractor.contact_number || contractor.applicant?.phone) ? (
                               <a 
                                 href={`https://wa.me/${String(contractor.contact_number || contractor.applicant?.phone).replace(/\D/g, '')}`}
@@ -1171,7 +1171,7 @@ export const ContractorsDashboard = () => {
                             </TableCell>
                           )}
                           {visibleColumns.contact && (
-                            <TableCell>
+                            <TableCell onContextMenu={(e) => e.stopPropagation()}>
                               {(contractor.contact_number || contractor.applicant?.phone) ? (
                                 <a 
                                   href={`https://wa.me/${String(contractor.contact_number || contractor.applicant?.phone).replace(/\D/g, '')}`}
