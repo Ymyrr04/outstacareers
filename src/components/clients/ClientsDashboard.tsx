@@ -148,10 +148,11 @@ export const ClientsDashboard = () => {
     
     // Apply status filter
     const hasActiveContractors = (client.contractor_count || 0) > 0;
+    const isLost = !hasActiveContractors && !client.is_hiring;
     const matchesStatusFilter = 
       statusFilter === 'all' ||
       (statusFilter === 'active' && hasActiveContractors) ||
-      (statusFilter === 'lost' && !hasActiveContractors) ||
+      (statusFilter === 'lost' && isLost) ||
       (statusFilter === 'hiring' && client.is_hiring);
     
     return matchesSearch && matchesStatusFilter;
@@ -160,7 +161,7 @@ export const ClientsDashboard = () => {
   // Summary stats
   const totalActiveContractors = clients.reduce((sum, c) => sum + (c.contractor_count || 0), 0);
   const totalActiveClients = clients.filter(c => (c.contractor_count || 0) > 0).length;
-  const clientsLost = clients.filter(c => (c.contractor_count || 0) === 0).length;
+  const clientsLost = clients.filter(c => (c.contractor_count || 0) === 0 && !c.is_hiring).length;
   const clientsHiring = clients.filter(c => c.is_hiring).length;
 
   // Export clients to CSV
