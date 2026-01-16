@@ -206,7 +206,7 @@ export const ClientAnalyticsDashboard = () => {
                 <Building2 className="w-5 h-5 text-blue-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{totalClients}</p>
+                <p className="text-2xl font-bold">{totalClients || 0}</p>
                 <p className="text-sm text-muted-foreground">Total Clients</p>
               </div>
             </div>
@@ -219,7 +219,7 @@ export const ClientAnalyticsDashboard = () => {
                 <Users className="w-5 h-5 text-green-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{activeContractors}</p>
+                <p className="text-2xl font-bold">{activeContractors || 0}</p>
                 <p className="text-sm text-muted-foreground">Active Contractors</p>
               </div>
             </div>
@@ -232,7 +232,7 @@ export const ClientAnalyticsDashboard = () => {
                 <TrendingUp className="w-5 h-5 text-amber-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{clientRetention.average}%</p>
+                <p className="text-2xl font-bold">{clientRetention.average || 0}%</p>
                 <p className="text-sm text-muted-foreground">Avg Retention Rate</p>
               </div>
             </div>
@@ -245,7 +245,7 @@ export const ClientAnalyticsDashboard = () => {
                 <TrendingDown className="w-5 h-5 text-red-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{terminatedTotal}</p>
+                <p className="text-2xl font-bold">{terminatedTotal || 0}</p>
                 <p className="text-sm text-muted-foreground">Total Terminated</p>
               </div>
             </div>
