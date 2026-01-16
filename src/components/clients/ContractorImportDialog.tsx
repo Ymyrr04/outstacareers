@@ -222,7 +222,8 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
       setParsedData(parsed);
       setErrors([]);
     };
-    reader.readAsText(file);
+    // Use UTF-8 encoding to properly handle special characters (á, é, í, ñ, etc.)
+    reader.readAsText(file, 'UTF-8');
   };
 
   const handleImport = async () => {
