@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Building2, TrendingUp, TrendingDown, Users, DollarSign, BarChart3 } from 'lucide-react';
+import { Loader2, Building2, TrendingUp, TrendingDown, Users, DollarSign, BarChart3, X } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -37,6 +37,15 @@ interface ClientData {
   id: string;
   company_name: string;
   industry: string | null;
+  leads_from: string | null;
+  website: string | null;
+  notes: string | null;
+}
+
+interface SelectedClient extends ClientData {
+  activeContractors: number;
+  totalContractors: number;
+  retention: number;
 }
 
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16'];
@@ -46,6 +55,7 @@ export const ClientAnalyticsDashboard = () => {
   const [contractors, setContractors] = useState<ContractorData[]>([]);
   const [clients, setClients] = useState<ClientData[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedClient, setSelectedClient] = useState<SelectedClient | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -57,7 +67,7 @@ export const ClientAnalyticsDashboard = () => {
             .select(`*, client:clients(id, company_name, industry)`),
           supabase
             .from('clients')
-            .select('id, company_name, industry'),
+            .select('id, company_name, industry, leads_from, website, notes'),
         ]);
 
         if (contractorsRes.error) throw contractorsRes.error;
@@ -125,12 +135,12 @@ export const ClientAnalyticsDashboard = () => {
 
   // 4. Client Retention Rate (active / total per client)
   const clientRetention = useMemo(() => {
-    const clientStats: Record<string, { total: number; active: number; name: string }> = {};
+    const clientStats: Record<string, { total: number; active: number; name: string; clientId: string }> = {};
     
     contractors.forEach(c => {
       if (c.client) {
         if (!clientStats[c.client.id]) {
-          clientStats[c.client.id] = { total: 0, active: 0, name: c.client.company_name };
+          clientStats[c.client.id] = { total: 0, active: 0, name: c.client.company_name, clientId: c.client.id };
         }
         clientStats[c.client.id].total += 1;
         if (c.status === 'active') {
@@ -141,6 +151,7 @@ export const ClientAnalyticsDashboard = () => {
 
     const retentionData = Object.entries(clientStats)
       .map(([id, stats]) => ({
+        id,
         name: stats.name.length > 20 ? stats.name.substring(0, 20) + '...' : stats.name,
         fullName: stats.name,
         retention: stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0,
@@ -157,6 +168,23 @@ export const ClientAnalyticsDashboard = () => {
 
     return { data: retentionData, average: avgRetention };
   }, [contractors]);
+
+  // Handle client bar click
+  const handleClientClick = (data: any) => {
+    if (!data?.activePayload?.[0]?.payload) return;
+    
+    const payload = data.activePayload[0].payload;
+    const client = clients.find(c => c.id === payload.id);
+    
+    if (client) {
+      setSelectedClient({
+        ...client,
+        activeContractors: payload.active,
+        totalContractors: payload.total,
+        retention: payload.retention,
+      });
+    }
+  };
 
   // 5. Hires per Rate Band
   const hiresPerRate = useMemo(() => {
@@ -390,12 +418,18 @@ export const ClientAnalyticsDashboard = () => {
           <CardTitle className="text-base flex items-center gap-2">
             <BarChart3 className="w-4 h-4" />
             Client Retention Rate (Active / Total Contractors)
+            <span className="text-xs text-muted-foreground font-normal ml-2">Click bar for details</span>
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="h-[350px]">
+        <CardContent className="flex gap-4">
+          <div className="h-[350px] flex-1">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={clientRetention.data} layout="vertical">
+              <BarChart 
+                data={clientRetention.data} 
+                layout="vertical"
+                onClick={handleClientClick}
+                style={{ cursor: 'pointer' }}
+              >
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                 <XAxis type="number" domain={[0, 100]} className="text-xs" unit="%" />
                 <YAxis type="category" dataKey="name" className="text-xs" width={150} />
@@ -419,6 +453,56 @@ export const ClientAnalyticsDashboard = () => {
               </BarChart>
             </ResponsiveContainer>
           </div>
+          
+          {/* Client Details Panel */}
+          {selectedClient && (
+            <div className="w-72 border rounded-lg bg-cyan-100/80 dark:bg-cyan-900/30 p-4 relative">
+              <button 
+                onClick={() => setSelectedClient(null)}
+                className="absolute top-2 right-2 p-1 hover:bg-background/50 rounded"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="flex items-start gap-3">
+                <div className="p-2 bg-background/50 rounded">
+                  <Building2 className="w-5 h-5 text-muted-foreground" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h3 className="font-semibold text-sm leading-tight">{selectedClient.company_name}</h3>
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-1 text-xs text-cyan-700 dark:text-cyan-300">
+                    {selectedClient.industry && <span>{selectedClient.industry}</span>}
+                    {selectedClient.leads_from && <span>From: {selectedClient.leads_from}</span>}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-4 space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Active:</span>
+                  <span className="font-medium">{selectedClient.activeContractors}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Total:</span>
+                  <span className="font-medium">{selectedClient.totalContractors}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Retention:</span>
+                  <span className="font-medium">{selectedClient.retention}%</span>
+                </div>
+                {selectedClient.website && (
+                  <div className="pt-2 border-t">
+                    <a 
+                      href={selectedClient.website} 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-xs text-primary hover:underline truncate block"
+                    >
+                      {selectedClient.website}
+                    </a>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
