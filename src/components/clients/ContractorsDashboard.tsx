@@ -91,6 +91,7 @@ const STATUS_COLORS: Record<string, string> = {
   terminated: 'bg-red-500/10 text-red-700 border-red-300',
   resigned: 'bg-purple-500/10 text-purple-700 border-purple-300',
   rendering: 'bg-cyan-500/10 text-cyan-700 border-cyan-300',
+  scheduled: 'bg-amber-500/10 text-amber-700 border-amber-300',
 };
 
 const STATUS_ICONS: Record<string, React.ReactNode> = {
@@ -98,6 +99,7 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
   terminated: <XCircle className="w-3 h-3" />,
   resigned: <XCircle className="w-3 h-3" />,
   rendering: <Clock className="w-3 h-3" />,
+  scheduled: <Calendar className="w-3 h-3" />,
 };
 
 export const ContractorsDashboard = () => {
@@ -330,6 +332,7 @@ export const ContractorsDashboard = () => {
   const terminatedCount = contractors.filter(c => c.status === 'terminated').length;
   const resignedCount = contractors.filter(c => c.status === 'resigned').length;
   const renderingCount = contractors.filter(c => c.status === 'rendering').length;
+  const scheduledCount = contractors.filter(c => c.status === 'scheduled').length;
 
   // Export contractors to CSV
   const handleExport = () => {
@@ -483,7 +486,7 @@ export const ContractorsDashboard = () => {
       )}
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
@@ -500,12 +503,25 @@ export const ContractorsDashboard = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-500/10 rounded-lg">
-                <XCircle className="w-5 h-5 text-red-600" />
+              <div className="p-2 bg-amber-500/10 rounded-lg">
+                <Calendar className="w-5 h-5 text-amber-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{terminatedCount}</p>
-                <p className="text-sm text-muted-foreground">Terminated</p>
+                <p className="text-2xl font-bold">{scheduledCount}</p>
+                <p className="text-sm text-muted-foreground">Scheduled</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-cyan-500/10 rounded-lg">
+                <Clock className="w-5 h-5 text-cyan-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{renderingCount}</p>
+                <p className="text-sm text-muted-foreground">Rendering</p>
               </div>
             </div>
           </CardContent>
@@ -526,12 +542,12 @@ export const ContractorsDashboard = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-cyan-500/10 rounded-lg">
-                <Clock className="w-5 h-5 text-cyan-600" />
+              <div className="p-2 bg-red-500/10 rounded-lg">
+                <XCircle className="w-5 h-5 text-red-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{renderingCount}</p>
-                <p className="text-sm text-muted-foreground">Rendering</p>
+                <p className="text-2xl font-bold">{terminatedCount}</p>
+                <p className="text-sm text-muted-foreground">Terminated</p>
               </div>
             </div>
           </CardContent>
@@ -701,10 +717,16 @@ export const ContractorsDashboard = () => {
                                 Active
                               </span>
                             </SelectItem>
-                            <SelectItem value="terminated">
+                            <SelectItem value="scheduled">
                               <span className="flex items-center gap-2">
-                                <XCircle className="w-3 h-3 text-red-600" />
-                                Terminated
+                                <Calendar className="w-3 h-3 text-amber-600" />
+                                Scheduled to Start
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="rendering">
+                              <span className="flex items-center gap-2">
+                                <Clock className="w-3 h-3 text-cyan-600" />
+                                Rendering
                               </span>
                             </SelectItem>
                             <SelectItem value="resigned">
@@ -713,10 +735,10 @@ export const ContractorsDashboard = () => {
                                 Resigned
                               </span>
                             </SelectItem>
-                            <SelectItem value="rendering">
+                            <SelectItem value="terminated">
                               <span className="flex items-center gap-2">
-                                <Clock className="w-3 h-3 text-cyan-600" />
-                                Rendering
+                                <XCircle className="w-3 h-3 text-red-600" />
+                                Terminated
                               </span>
                             </SelectItem>
                           </SelectContent>
