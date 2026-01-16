@@ -90,6 +90,8 @@ const STATUS_COLORS: Record<string, string> = {
   completed: 'bg-blue-500/10 text-blue-700 border-blue-300',
   paused: 'bg-amber-500/10 text-amber-700 border-amber-300',
   terminated: 'bg-red-500/10 text-red-700 border-red-300',
+  resigned: 'bg-purple-500/10 text-purple-700 border-purple-300',
+  rendering: 'bg-cyan-500/10 text-cyan-700 border-cyan-300',
 };
 
 const STATUS_ICONS: Record<string, React.ReactNode> = {
@@ -97,6 +99,8 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
   completed: <Clock className="w-3 h-3" />,
   paused: <PauseCircle className="w-3 h-3" />,
   terminated: <XCircle className="w-3 h-3" />,
+  resigned: <XCircle className="w-3 h-3" />,
+  rendering: <Clock className="w-3 h-3" />,
 };
 
 export const ContractorsDashboard = () => {
@@ -644,6 +648,18 @@ export const ContractorsDashboard = () => {
                               <span className="flex items-center gap-2">
                                 <XCircle className="w-3 h-3 text-red-600" />
                                 Terminated
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="resigned">
+                              <span className="flex items-center gap-2">
+                                <XCircle className="w-3 h-3 text-purple-600" />
+                                Resigned
+                              </span>
+                            </SelectItem>
+                            <SelectItem value="rendering">
+                              <span className="flex items-center gap-2">
+                                <Clock className="w-3 h-3 text-cyan-600" />
+                                Rendering
                               </span>
                             </SelectItem>
                           </SelectContent>
