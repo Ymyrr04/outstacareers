@@ -177,24 +177,62 @@ export const ContractorsDashboard = () => {
       return;
     }
 
-    // For active status, update directly
+    // Check if reactivating from terminated/resigned - create duplicate instead
+    const contractor = contractors.find(c => c.id === contractorId);
+    const currentStatus = contractor?.status?.toLowerCase();
+    const isReactivating = (currentStatus === 'terminated' || currentStatus === 'resigned') && newStatus === 'active';
+
     setUpdatingStatusId(contractorId);
     try {
-      const { error } = await supabase
-        .from('contractor_assignments')
-        .update({ status: newStatus })
-        .eq('id', contractorId);
+      if (isReactivating && contractor) {
+        // Create a new active record (duplicate without end_date)
+        const { error: insertError } = await supabase
+          .from('contractor_assignments')
+          .insert({
+            client_id: contractor.client_id,
+            applicant_id: contractor.applicant_id,
+            job_title: contractor.job_title,
+            hourly_rate: contractor.hourly_rate,
+            hours_per_week: contractor.hours_per_week,
+            start_date: new Date().toISOString().split('T')[0], // Today as new start
+            end_date: null,
+            status: 'active',
+            notes: `Reactivated from ${currentStatus}`,
+            contact_number: contractor.contact_number,
+            emergency_number: contractor.emergency_number,
+            timesheet_link: contractor.timesheet_link,
+            is_replacement: false,
+            country: contractor.country,
+            source: contractor.source,
+          });
 
-      if (error) throw error;
+        if (insertError) throw insertError;
 
-      setContractors(prev => 
-        prev.map(c => c.id === contractorId ? { ...c, status: newStatus } : c)
-      );
+        // Refetch to get the new record
+        await fetchContractors();
 
-      toast({
-        title: 'Status Updated',
-        description: `Contractor status changed to ${newStatus}`,
-      });
+        toast({
+          title: 'Contractor Reactivated',
+          description: `${contractor.applicant?.full_name} has been reactivated. Previous record kept for tracking.`,
+        });
+      } else {
+        // Normal status update
+        const { error } = await supabase
+          .from('contractor_assignments')
+          .update({ status: newStatus })
+          .eq('id', contractorId);
+
+        if (error) throw error;
+
+        setContractors(prev => 
+          prev.map(c => c.id === contractorId ? { ...c, status: newStatus } : c)
+        );
+
+        toast({
+          title: 'Status Updated',
+          description: `Contractor status changed to ${newStatus}`,
+        });
+      }
     } catch (err: any) {
       toast({
         title: 'Error',
