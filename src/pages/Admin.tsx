@@ -14,7 +14,7 @@ import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2 } from 'lucide-react';
-import { ClientsDashboard } from '@/components/clients';
+import { ClientsDashboard, ContractorsDashboard } from '@/components/clients';
 import { generateJobUrl } from '@/lib/slugify';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
 import { Input } from '@/components/ui/input';
@@ -910,6 +910,10 @@ const Admin = () => {
             <TabsTrigger value="clients" className="flex items-center gap-2">
               <Building2 className="w-4 h-4" />
               Clients
+            </TabsTrigger>
+            <TabsTrigger value="contractors" className="flex items-center gap-2">
+              <UserCog className="w-4 h-4" />
+              Contractors
             </TabsTrigger>
           </TabsList>
 
@@ -2231,6 +2235,11 @@ const Admin = () => {
           {/* Clients Tab */}
           <TabsContent value="clients" className="space-y-6" keepMounted>
             <ClientsDashboard />
+          </TabsContent>
+
+          {/* Contractors Tab */}
+          <TabsContent value="contractors" className="space-y-6" keepMounted>
+            <ContractorsDashboard />
           </TabsContent>
         </Tabs>
       </main>
