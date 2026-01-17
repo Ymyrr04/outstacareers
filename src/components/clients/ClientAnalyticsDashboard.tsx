@@ -96,46 +96,58 @@ export const ClientAnalyticsDashboard = () => {
       .sort((a, b) => b.value - a.value);
   }, [clients]);
 
-  // 2. Monthly stats (Hires, Resignations, Terminations)
+  // 2. Monthly stats (Hires, Resignations, Terminations) - Starting from 2026
   const monthlyStats = useMemo(() => {
     const monthMap: Record<string, { hires: number; resigned: number; terminated: number }> = {};
     
-    // Get last 12 months
+    // Get months from Jan 2026 to current month
     const now = new Date();
-    for (let i = 11; i >= 0; i--) {
-      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-      monthMap[key] = { hires: 0, resigned: 0, terminated: 0 };
+    const startYear = 2026;
+    const startMonth = 0; // January
+    
+    for (let year = startYear; year <= now.getFullYear(); year++) {
+      const endMonth = year === now.getFullYear() ? now.getMonth() : 11;
+      const beginMonth = year === startYear ? startMonth : 0;
+      
+      for (let month = beginMonth; month <= endMonth; month++) {
+        const key = `${year}-${String(month + 1).padStart(2, '0')}`;
+        monthMap[key] = { hires: 0, resigned: 0, terminated: 0 };
+      }
     }
     
-    // Count hires by start_date
+    // Count hires by start_date (only 2026+)
     contractors.forEach(c => {
       if (c.start_date) {
         const date = new Date(c.start_date);
-        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        if (monthMap[key]) {
-          monthMap[key].hires += 1;
+        if (date.getFullYear() >= 2026) {
+          const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          if (monthMap[key]) {
+            monthMap[key].hires += 1;
+          }
         }
       }
     });
     
-    // Count separations by end_date
+    // Count separations by end_date (only 2026+)
     contractors.filter(c => c.status === 'terminated' || c.status === 'resigned').forEach(c => {
       const dateToUse = c.end_date || c.start_date;
       if (dateToUse) {
         const date = new Date(dateToUse);
-        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-        if (monthMap[key]) {
-          if (c.status === 'terminated') {
-            monthMap[key].terminated += 1;
-          } else {
-            monthMap[key].resigned += 1;
+        if (date.getFullYear() >= 2026) {
+          const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+          if (monthMap[key]) {
+            if (c.status === 'terminated') {
+              monthMap[key].terminated += 1;
+            } else {
+              monthMap[key].resigned += 1;
+            }
           }
         }
       }
     });
     
     return Object.entries(monthMap)
+      .sort(([a], [b]) => a.localeCompare(b))
       .map(([month, counts]) => {
         const [year, m] = month.split('-');
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
