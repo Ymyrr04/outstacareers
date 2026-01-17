@@ -11,12 +11,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  Legend,
-  LineChart,
-  Line,
 } from 'recharts';
 
 interface ContractorData {
@@ -90,52 +84,71 @@ export const ClientAnalyticsDashboard = () => {
     fetchData();
   }, []);
 
-  // 1. Clients per Industry
+  // 1. Clients per Industry (with percentages)
   const clientsByIndustry = useMemo(() => {
     const industryMap: Record<string, number> = {};
     clients.forEach(c => {
       const industry = c.industry || 'Unknown';
       industryMap[industry] = (industryMap[industry] || 0) + 1;
     });
+    const total = clients.length;
     return Object.entries(industryMap)
-      .map(([name, value]) => ({ name, value }))
+      .map(([name, value]) => ({ 
+        name, 
+        value, 
+        percentage: total > 0 ? Math.round((value / total) * 100) : 0 
+      }))
       .sort((a, b) => b.value - a.value);
   }, [clients]);
 
-  // 2. Hires per Year (based on start_date)
-  const hiresPerYear = useMemo(() => {
-    const yearMap: Record<string, number> = {};
+  // 2. Monthly stats (Hires, Resignations, Terminations)
+  const monthlyStats = useMemo(() => {
+    const monthMap: Record<string, { hires: number; resigned: number; terminated: number }> = {};
+    
+    // Get last 12 months
+    const now = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      monthMap[key] = { hires: 0, resigned: 0, terminated: 0 };
+    }
+    
+    // Count hires by start_date
     contractors.forEach(c => {
       if (c.start_date) {
-        const year = new Date(c.start_date).getFullYear().toString();
-        yearMap[year] = (yearMap[year] || 0) + 1;
+        const date = new Date(c.start_date);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        if (monthMap[key]) {
+          monthMap[key].hires += 1;
+        }
       }
     });
-    return Object.entries(yearMap)
-      .map(([year, hires]) => ({ year, hires }))
-      .sort((a, b) => a.year.localeCompare(b.year));
-  }, [contractors]);
-
-  // 3. Separated per Year (Terminated + Resigned)
-  const separatedPerYear = useMemo(() => {
-    const yearMap: Record<string, { terminated: number; resigned: number }> = {};
+    
+    // Count separations by end_date
     contractors.filter(c => c.status === 'terminated' || c.status === 'resigned').forEach(c => {
       const dateToUse = c.end_date || c.start_date;
       if (dateToUse) {
-        const year = new Date(dateToUse).getFullYear().toString();
-        if (!yearMap[year]) {
-          yearMap[year] = { terminated: 0, resigned: 0 };
-        }
-        if (c.status === 'terminated') {
-          yearMap[year].terminated += 1;
-        } else {
-          yearMap[year].resigned += 1;
+        const date = new Date(dateToUse);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        if (monthMap[key]) {
+          if (c.status === 'terminated') {
+            monthMap[key].terminated += 1;
+          } else {
+            monthMap[key].resigned += 1;
+          }
         }
       }
     });
-    return Object.entries(yearMap)
-      .map(([year, counts]) => ({ year, ...counts, total: counts.terminated + counts.resigned }))
-      .sort((a, b) => a.year.localeCompare(b.year));
+    
+    return Object.entries(monthMap)
+      .map(([month, counts]) => {
+        const [year, m] = month.split('-');
+        const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        return {
+          month: `${monthNames[parseInt(m) - 1]} ${year.slice(2)}`,
+          ...counts,
+        };
+      });
   }, [contractors]);
 
   // 4. Client Retention Rate (active / total per client)
@@ -357,9 +370,9 @@ export const ClientAnalyticsDashboard = () => {
         </Card>
       </div>
 
-      {/* Charts Row 1 */}
+      {/* Charts Row 1: Industry + Monthly Hires */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Clients by Industry */}
+        {/* Clients by Industry - Percentage List */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
@@ -368,46 +381,44 @@ export const ClientAnalyticsDashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={clientsByIndustry}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={2}
-                    dataKey="value"
-                    label={({ name, value }) => `${name}: ${value}`}
-                    labelLine={false}
-                  >
-                    {clientsByIndustry.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+            <div className="space-y-3 max-h-[300px] overflow-y-auto">
+              {clientsByIndustry.map((industry, index) => (
+                <div key={industry.name} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-3 h-3 rounded-full flex-shrink-0" 
+                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                    />
+                    <span className="text-sm">{industry.name}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium">{industry.value}</span>
+                    <span className="text-sm text-muted-foreground w-12 text-right">{industry.percentage}%</span>
+                  </div>
+                </div>
+              ))}
+              {clientsByIndustry.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">No data available</p>
+              )}
             </div>
           </CardContent>
         </Card>
 
-        {/* Hires per Year */}
+        {/* Monthly Hires */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
-              Hires per Year
+              Hires per Month
+              <span className="text-xs text-muted-foreground font-normal">(Last 12 months)</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={hiresPerYear}>
+                <BarChart data={monthlyStats}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="year" className="text-xs" />
+                  <XAxis dataKey="month" className="text-xs" angle={-45} textAnchor="end" height={60} />
                   <YAxis className="text-xs" />
                   <Tooltip 
                     contentStyle={{ 
@@ -415,7 +426,7 @@ export const ClientAnalyticsDashboard = () => {
                       border: '1px solid hsl(var(--border))' 
                     }} 
                   />
-                  <Bar dataKey="hires" fill="#22c55e" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="hires" fill="#22c55e" name="Hires" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
@@ -423,23 +434,23 @@ export const ClientAnalyticsDashboard = () => {
         </Card>
       </div>
 
-      {/* Charts Row 2 */}
+      {/* Charts Row 2: Monthly Resignations + Monthly Terminations */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Separations per Year (Terminated + Resigned) */}
+        {/* Monthly Resignations */}
         <Card>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <TrendingDown className="w-4 h-4" />
-              Separations per Year
-              <span className="text-xs text-muted-foreground font-normal">(Terminated + Resigned)</span>
+              Resignations per Month
+              <span className="text-xs text-muted-foreground font-normal">(Last 12 months)</span>
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="h-[300px]">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={separatedPerYear}>
+                <BarChart data={monthlyStats}>
                   <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="year" className="text-xs" />
+                  <XAxis dataKey="month" className="text-xs" angle={-45} textAnchor="end" height={60} />
                   <YAxis className="text-xs" />
                   <Tooltip 
                     contentStyle={{ 
@@ -447,15 +458,45 @@ export const ClientAnalyticsDashboard = () => {
                       border: '1px solid hsl(var(--border))' 
                     }} 
                   />
-                  <Legend />
-                  <Bar dataKey="terminated" stackId="a" fill="#ef4444" name="Terminated" />
-                  <Bar dataKey="resigned" stackId="a" fill="#8b5cf6" name="Resigned" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="resigned" fill="#8b5cf6" name="Resigned" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             </div>
           </CardContent>
         </Card>
 
+        {/* Monthly Terminations */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <TrendingDown className="w-4 h-4" />
+              Terminations per Month
+              <span className="text-xs text-muted-foreground font-normal">(Last 12 months)</span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-[300px]">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyStats}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="month" className="text-xs" angle={-45} textAnchor="end" height={60} />
+                  <YAxis className="text-xs" />
+                  <Tooltip 
+                    contentStyle={{ 
+                      backgroundColor: 'hsl(var(--background))', 
+                      border: '1px solid hsl(var(--border))' 
+                    }} 
+                  />
+                  <Bar dataKey="terminated" fill="#ef4444" name="Terminated" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Row 3: Hires by Rate */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Hires per Rate */}
         <Card>
           <CardHeader>
