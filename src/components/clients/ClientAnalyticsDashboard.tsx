@@ -38,29 +38,22 @@ interface ClientData {
   is_hiring: boolean | null;
 }
 
-type SectionId = 'industryRoles' | 'monthlyHires' | 'separations' | 'retention';
+type CardId = 'industry' | 'roles' | 'monthlyHires' | 'separations' | 'retentionCompany' | 'retentionIndustry';
 
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16'];
 
-const DEFAULT_SECTION_ORDER: SectionId[] = ['industryRoles', 'monthlyHires', 'separations', 'retention'];
-
-const SECTION_LABELS: Record<SectionId, string> = {
-  industryRoles: 'Industry & Roles',
-  monthlyHires: 'Monthly Hires',
-  separations: 'Separations',
-  retention: 'Retention Rates',
-};
+const DEFAULT_CARD_ORDER: CardId[] = ['industry', 'roles', 'monthlyHires', 'separations', 'retentionCompany', 'retentionIndustry'];
 
 export const ClientAnalyticsDashboard = () => {
   const { toast } = useToast();
   const [contractors, setContractors] = useState<ContractorData[]>([]);
   const [clients, setClients] = useState<ClientData[]>([]);
   const [loading, setLoading] = useState(true);
-  const [sectionOrder, setSectionOrder] = useState<SectionId[]>(() => {
-    const saved = localStorage.getItem('analytics-section-order');
-    return saved ? JSON.parse(saved) : DEFAULT_SECTION_ORDER;
+  const [cardOrder, setCardOrder] = useState<CardId[]>(() => {
+    const saved = localStorage.getItem('analytics-card-order');
+    return saved ? JSON.parse(saved) : DEFAULT_CARD_ORDER;
   });
-  const [draggedSection, setDraggedSection] = useState<SectionId | null>(null);
+  const [draggedCard, setDraggedCard] = useState<CardId | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -94,10 +87,10 @@ export const ClientAnalyticsDashboard = () => {
     fetchData();
   }, []);
 
-  // Save section order to localStorage
+  // Save card order to localStorage
   useEffect(() => {
-    localStorage.setItem('analytics-section-order', JSON.stringify(sectionOrder));
-  }, [sectionOrder]);
+    localStorage.setItem('analytics-card-order', JSON.stringify(cardOrder));
+  }, [cardOrder]);
 
   // 1. Clients per Industry (with percentages)
   const clientsByIndustry = useMemo(() => {
@@ -265,43 +258,73 @@ export const ClientAnalyticsDashboard = () => {
   const newClientsHiring = clients.filter(c => c.is_hiring === true).length;
 
   // Drag and Drop handlers
-  const handleDragStart = useCallback((sectionId: SectionId) => {
-    setDraggedSection(sectionId);
+  const handleDragStart = useCallback((cardId: CardId) => {
+    setDraggedCard(cardId);
   }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
   }, []);
 
-  const handleDrop = useCallback((targetSectionId: SectionId) => {
-    if (!draggedSection || draggedSection === targetSectionId) {
-      setDraggedSection(null);
+  const handleDrop = useCallback((targetCardId: CardId) => {
+    if (!draggedCard || draggedCard === targetCardId) {
+      setDraggedCard(null);
       return;
     }
 
-    setSectionOrder(prev => {
+    setCardOrder(prev => {
       const newOrder = [...prev];
-      const draggedIndex = newOrder.indexOf(draggedSection);
-      const targetIndex = newOrder.indexOf(targetSectionId);
+      const draggedIndex = newOrder.indexOf(draggedCard);
+      const targetIndex = newOrder.indexOf(targetCardId);
       
       newOrder.splice(draggedIndex, 1);
-      newOrder.splice(targetIndex, 0, draggedSection);
+      newOrder.splice(targetIndex, 0, draggedCard);
       
       return newOrder;
     });
-    setDraggedSection(null);
-  }, [draggedSection]);
+    setDraggedCard(null);
+  }, [draggedCard]);
 
   const handleDragEnd = useCallback(() => {
-    setDraggedSection(null);
+    setDraggedCard(null);
   }, []);
 
-  // Section Components
-  const renderIndustryRolesSection = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  // Draggable Card Wrapper
+  const DraggableCard = ({ cardId, children }: { cardId: CardId; children: React.ReactNode }) => (
+    <div
+      draggable
+      onDragStart={() => handleDragStart(cardId)}
+      onDragOver={handleDragOver}
+      onDrop={() => handleDrop(cardId)}
+      onDragEnd={handleDragEnd}
+      className={`relative group transition-all duration-200 ${
+        draggedCard === cardId ? 'opacity-50 scale-[0.98]' : ''
+      } ${
+        draggedCard && draggedCard !== cardId ? 'ring-2 ring-primary/20 ring-offset-2 rounded-lg' : ''
+      }`}
+    >
+      {/* Drag Handle */}
+      <div className="absolute left-2 top-3 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing z-10">
+        <GripVertical className="w-4 h-4 text-muted-foreground" />
+      </div>
+      
+      {/* Drop indicator */}
+      {draggedCard && draggedCard !== cardId && (
+        <div className="absolute inset-0 flex items-center justify-center bg-primary/5 rounded-lg pointer-events-none z-10">
+          <span className="text-xs font-medium text-primary">Drop here</span>
+        </div>
+      )}
+      
+      {children}
+    </div>
+  );
+
+  // Individual Card Components
+  const renderIndustryCard = () => (
+    <DraggableCard cardId="industry">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="text-base flex items-center gap-2 pl-5">
             <Building2 className="w-4 h-4" />
             Clients by Industry
           </CardTitle>
@@ -329,10 +352,14 @@ export const ClientAnalyticsDashboard = () => {
           </div>
         </CardContent>
       </Card>
+    </DraggableCard>
+  );
 
+  const renderRolesCard = () => (
+    <DraggableCard cardId="roles">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="text-base flex items-center gap-2 pl-5">
             <Users className="w-4 h-4" />
             Contractors by Role
           </CardTitle>
@@ -360,85 +387,89 @@ export const ClientAnalyticsDashboard = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </DraggableCard>
   );
 
-  const renderMonthlyHiresSection = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <TrendingUp className="w-4 h-4" />
-          Hires per Month
-          <span className="text-xs text-muted-foreground font-normal">(2026+)</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={monthlyStats}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis dataKey="month" className="text-xs" angle={-45} textAnchor="end" height={60} />
-              <YAxis className="text-xs" />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--background))', 
-                  border: '1px solid hsl(var(--border))' 
-                }} 
-              />
-              <Bar dataKey="hires" fill="#22c55e" name="Hires" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const renderSeparationsSection = () => (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base flex items-center gap-2">
-          <TrendingDown className="w-4 h-4" />
-          Separations per Month
-          <span className="text-xs text-muted-foreground font-normal">(2026+)</span>
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="h-[300px]">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={monthlyStats}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-              <XAxis dataKey="month" className="text-xs" angle={-45} textAnchor="end" height={60} />
-              <YAxis className="text-xs" />
-              <Tooltip 
-                contentStyle={{ 
-                  backgroundColor: 'hsl(var(--background))', 
-                  border: '1px solid hsl(var(--border))' 
-                }} 
-              />
-              <Bar dataKey="terminated" fill="#ef4444" name="Terminated" radius={[4, 4, 0, 0]} />
-              <Bar dataKey="resigned" fill="#8b5cf6" name="Resigned" radius={[4, 4, 0, 0]} />
-            </BarChart>
-          </ResponsiveContainer>
-        </div>
-        <div className="flex justify-center gap-6 mt-4 text-sm">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-sm bg-[#ef4444]" />
-            <span>Terminated</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-sm bg-[#8b5cf6]" />
-            <span>Resigned</span>
-          </div>
-        </div>
-      </CardContent>
-    </Card>
-  );
-
-  const renderRetentionSection = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+  const renderMonthlyHiresCard = () => (
+    <DraggableCard cardId="monthlyHires">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="text-base flex items-center gap-2 pl-5">
+            <TrendingUp className="w-4 h-4" />
+            Hires per Month
+            <span className="text-xs text-muted-foreground font-normal">(2026+)</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlyStats}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="month" className="text-xs" angle={-45} textAnchor="end" height={60} />
+                <YAxis className="text-xs" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--background))', 
+                    border: '1px solid hsl(var(--border))' 
+                  }} 
+                />
+                <Bar dataKey="hires" fill="#22c55e" name="Hires" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+    </DraggableCard>
+  );
+
+  const renderSeparationsCard = () => (
+    <DraggableCard cardId="separations">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2 pl-5">
+            <TrendingDown className="w-4 h-4" />
+            Separations per Month
+            <span className="text-xs text-muted-foreground font-normal">(2026+)</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlyStats}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="month" className="text-xs" angle={-45} textAnchor="end" height={60} />
+                <YAxis className="text-xs" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--background))', 
+                    border: '1px solid hsl(var(--border))' 
+                  }} 
+                />
+                <Bar dataKey="terminated" fill="#ef4444" name="Terminated" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="resigned" fill="#8b5cf6" name="Resigned" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex justify-center gap-6 mt-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-sm bg-[#ef4444]" />
+              <span>Terminated</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-sm bg-[#8b5cf6]" />
+              <span>Resigned</span>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </DraggableCard>
+  );
+
+  const renderRetentionCompanyCard = () => (
+    <DraggableCard cardId="retentionCompany">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2 pl-5">
             <Building2 className="w-4 h-4" />
             Retention Rate by Company
           </CardTitle>
@@ -470,10 +501,14 @@ export const ClientAnalyticsDashboard = () => {
           </div>
         </CardContent>
       </Card>
+    </DraggableCard>
+  );
 
+  const renderRetentionIndustryCard = () => (
+    <DraggableCard cardId="retentionIndustry">
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="text-base flex items-center gap-2 pl-5">
             <Building2 className="w-4 h-4" />
             Retention Rate by Industry
           </CardTitle>
@@ -505,14 +540,16 @@ export const ClientAnalyticsDashboard = () => {
           </div>
         </CardContent>
       </Card>
-    </div>
+    </DraggableCard>
   );
 
-  const sectionRenderers: Record<SectionId, () => JSX.Element> = {
-    industryRoles: renderIndustryRolesSection,
-    monthlyHires: renderMonthlyHiresSection,
-    separations: renderSeparationsSection,
-    retention: renderRetentionSection,
+  const cardRenderers: Record<CardId, () => JSX.Element> = {
+    industry: renderIndustryCard,
+    roles: renderRolesCard,
+    monthlyHires: renderMonthlyHiresCard,
+    separations: renderSeparationsCard,
+    retentionCompany: renderRetentionCompanyCard,
+    retentionIndustry: renderRetentionIndustryCard,
   };
 
   if (loading) {
@@ -625,36 +662,14 @@ export const ClientAnalyticsDashboard = () => {
         </Card>
       </div>
 
-      {/* Draggable Sections */}
-      {sectionOrder.map((sectionId) => (
-        <div
-          key={sectionId}
-          draggable
-          onDragStart={() => handleDragStart(sectionId)}
-          onDragOver={handleDragOver}
-          onDrop={() => handleDrop(sectionId)}
-          onDragEnd={handleDragEnd}
-          className={`relative group transition-all duration-200 ${
-            draggedSection === sectionId ? 'opacity-50 scale-[0.98]' : ''
-          } ${
-            draggedSection && draggedSection !== sectionId ? 'ring-2 ring-primary/20 ring-offset-2 rounded-lg' : ''
-          }`}
-        >
-          {/* Drag Handle */}
-          <div className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
-            <GripVertical className="w-5 h-5 text-muted-foreground" />
+      {/* Draggable Cards Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {cardOrder.map((cardId) => (
+          <div key={cardId}>
+            {cardRenderers[cardId]()}
           </div>
-          
-          {/* Section Label (visible during drag) */}
-          {draggedSection && draggedSection !== sectionId && (
-            <div className="absolute inset-0 flex items-center justify-center bg-primary/5 rounded-lg pointer-events-none z-10">
-              <span className="text-sm font-medium text-primary">Drop here</span>
-            </div>
-          )}
-          
-          {sectionRenderers[sectionId]()}
-        </div>
-      ))}
+        ))}
+      </div>
     </div>
   );
 };
