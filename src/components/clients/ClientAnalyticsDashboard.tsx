@@ -395,66 +395,45 @@ export const ClientAnalyticsDashboard = () => {
         </Card>
       </div>
 
-      {/* Charts Row 2: Monthly Resignations + Monthly Terminations */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Monthly Resignations */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <TrendingDown className="w-4 h-4" />
-              Resignations per Month
-              <span className="text-xs text-muted-foreground font-normal">(Last 12 months)</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyStats}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="month" className="text-xs" angle={-45} textAnchor="end" height={60} />
-                  <YAxis className="text-xs" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--background))', 
-                      border: '1px solid hsl(var(--border))' 
-                    }} 
-                  />
-                  <Bar dataKey="resigned" fill="#8b5cf6" name="Resigned" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+      {/* Monthly Separations (Resignations + Terminations) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <TrendingDown className="w-4 h-4" />
+            Separations per Month
+            <span className="text-xs text-muted-foreground font-normal">(Last 12 months)</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[300px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlyStats}>
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="month" className="text-xs" angle={-45} textAnchor="end" height={60} />
+                <YAxis className="text-xs" />
+                <Tooltip 
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--background))', 
+                    border: '1px solid hsl(var(--border))' 
+                  }} 
+                />
+                <Bar dataKey="terminated" stackId="a" fill="#ef4444" name="Terminated" />
+                <Bar dataKey="resigned" stackId="a" fill="#8b5cf6" name="Resigned" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="flex justify-center gap-6 mt-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-sm bg-[#ef4444]" />
+              <span>Terminated</span>
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Monthly Terminations */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <TrendingDown className="w-4 h-4" />
-              Terminations per Month
-              <span className="text-xs text-muted-foreground font-normal">(Last 12 months)</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyStats}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="month" className="text-xs" angle={-45} textAnchor="end" height={60} />
-                  <YAxis className="text-xs" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--background))', 
-                      border: '1px solid hsl(var(--border))' 
-                    }} 
-                  />
-                  <Bar dataKey="terminated" fill="#ef4444" name="Terminated" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-sm bg-[#8b5cf6]" />
+              <span>Resigned</span>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Retention Rates Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
