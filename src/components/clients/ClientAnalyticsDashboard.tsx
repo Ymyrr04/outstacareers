@@ -296,8 +296,7 @@ export const ClientAnalyticsDashboard = () => {
   );
   const totalActiveClients = clientsWithActiveContractors.size;
   
-  const clientsWithContractors = new Set(contractors.map(c => c.client_id));
-  const clientsLost = clients.filter(c => !clientsWithContractors.has(c.id) && !c.is_hiring).length;
+  const clientsLost = clients.filter(c => !clientsWithActiveContractors.has(c.id) && !c.is_hiring).length;
   
   const newClientsHiring = clients.filter(c => c.is_hiring === true).length;
 
