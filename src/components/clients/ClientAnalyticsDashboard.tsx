@@ -55,37 +55,62 @@ export const ClientAnalyticsDashboard = () => {
   });
   const [draggedCard, setDraggedCard] = useState<CardId | null>(null);
 
+  const fetchData = useCallback(async () => {
+    try {
+      const [contractorsRes, clientsRes] = await Promise.all([
+        supabase
+          .from('contractor_assignments')
+          .select(`*, client:clients(id, company_name, industry)`),
+        supabase
+          .from('clients')
+          .select('id, company_name, industry, leads_from, website, notes, is_hiring'),
+      ]);
+
+      if (contractorsRes.error) throw contractorsRes.error;
+      if (clientsRes.error) throw clientsRes.error;
+
+      setContractors(contractorsRes.data || []);
+      setClients(clientsRes.data || []);
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: 'Failed to load analytics data: ' + err.message,
+        variant: 'destructive',
+      });
+    }
+  }, [toast]);
+
+  // Initial fetch
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [contractorsRes, clientsRes] = await Promise.all([
-          supabase
-            .from('contractor_assignments')
-            .select(`*, client:clients(id, company_name, industry)`),
-          supabase
-            .from('clients')
-            .select('id, company_name, industry, leads_from, website, notes, is_hiring'),
-        ]);
+    setLoading(true);
+    fetchData().finally(() => setLoading(false));
+  }, [fetchData]);
 
-        if (contractorsRes.error) throw contractorsRes.error;
-        if (clientsRes.error) throw clientsRes.error;
+  // Real-time subscriptions for auto-refresh
+  useEffect(() => {
+    const contractorsChannel = supabase
+      .channel('analytics-contractors')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'contractor_assignments' },
+        () => fetchData()
+      )
+      .subscribe();
 
-        setContractors(contractorsRes.data || []);
-        setClients(clientsRes.data || []);
-      } catch (err: any) {
-        toast({
-          title: 'Error',
-          description: 'Failed to load analytics data: ' + err.message,
-          variant: 'destructive',
-        });
-      } finally {
-        setLoading(false);
-      }
+    const clientsChannel = supabase
+      .channel('analytics-clients')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'clients' },
+        () => fetchData()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(contractorsChannel);
+      supabase.removeChannel(clientsChannel);
     };
-
-    fetchData();
-  }, []);
+  }, [fetchData]);
 
   // Save card order to localStorage
   useEffect(() => {
