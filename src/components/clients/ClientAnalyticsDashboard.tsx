@@ -293,14 +293,15 @@ export const ClientAnalyticsDashboard = () => {
       .sort((a, b) => b.value - a.value);
   }, [contractors]);
 
-  // 6. Contractors by Country
+  // 6. Contractors by Country (active only)
   const contractorsByCountry = useMemo(() => {
+    const activeContractorsList = contractors.filter(c => c.status === 'active');
     const countryMap: Record<string, number> = {};
-    contractors.forEach(c => {
+    activeContractorsList.forEach(c => {
       const country = c.country || 'Unknown';
       countryMap[country] = (countryMap[country] || 0) + 1;
     });
-    const total = contractors.length;
+    const total = activeContractorsList.length;
     return Object.entries(countryMap)
       .map(([name, value]) => ({ 
         name, 
