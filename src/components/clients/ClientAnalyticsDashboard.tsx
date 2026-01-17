@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Building2, TrendingUp, TrendingDown, Users } from 'lucide-react';
+import { Loader2, Building2, TrendingUp, TrendingDown, Users, GripVertical } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -38,15 +38,29 @@ interface ClientData {
   is_hiring: boolean | null;
 }
 
+type SectionId = 'industryRoles' | 'monthlyHires' | 'separations' | 'retention';
 
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16'];
+
+const DEFAULT_SECTION_ORDER: SectionId[] = ['industryRoles', 'monthlyHires', 'separations', 'retention'];
+
+const SECTION_LABELS: Record<SectionId, string> = {
+  industryRoles: 'Industry & Roles',
+  monthlyHires: 'Monthly Hires',
+  separations: 'Separations',
+  retention: 'Retention Rates',
+};
 
 export const ClientAnalyticsDashboard = () => {
   const { toast } = useToast();
   const [contractors, setContractors] = useState<ContractorData[]>([]);
   const [clients, setClients] = useState<ClientData[]>([]);
   const [loading, setLoading] = useState(true);
-  
+  const [sectionOrder, setSectionOrder] = useState<SectionId[]>(() => {
+    const saved = localStorage.getItem('analytics-section-order');
+    return saved ? JSON.parse(saved) : DEFAULT_SECTION_ORDER;
+  });
+  const [draggedSection, setDraggedSection] = useState<SectionId | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -80,6 +94,11 @@ export const ClientAnalyticsDashboard = () => {
     fetchData();
   }, []);
 
+  // Save section order to localStorage
+  useEffect(() => {
+    localStorage.setItem('analytics-section-order', JSON.stringify(sectionOrder));
+  }, [sectionOrder]);
+
   // 1. Clients per Industry (with percentages)
   const clientsByIndustry = useMemo(() => {
     const industryMap: Record<string, number> = {};
@@ -101,10 +120,9 @@ export const ClientAnalyticsDashboard = () => {
   const monthlyStats = useMemo(() => {
     const monthMap: Record<string, { hires: number; resigned: number; terminated: number }> = {};
     
-    // Get months from Jan 2026 to current month
     const now = new Date();
     const startYear = 2026;
-    const startMonth = 0; // January
+    const startMonth = 0;
     
     for (let year = startYear; year <= now.getFullYear(); year++) {
       const endMonth = year === now.getFullYear() ? now.getMonth() : 11;
@@ -116,7 +134,6 @@ export const ClientAnalyticsDashboard = () => {
       }
     }
     
-    // Count hires by start_date (only 2026+)
     contractors.forEach(c => {
       if (c.start_date) {
         const date = new Date(c.start_date);
@@ -129,7 +146,6 @@ export const ClientAnalyticsDashboard = () => {
       }
     });
     
-    // Count separations by end_date (only 2026+)
     contractors.filter(c => c.status === 'terminated' || c.status === 'resigned').forEach(c => {
       const dateToUse = c.end_date || c.start_date;
       if (dateToUse) {
@@ -236,7 +252,6 @@ export const ClientAnalyticsDashboard = () => {
   const renderingContractors = contractors.filter(c => c.status === 'rendering').length;
   const separatedContractors = contractors.filter(c => c.status === 'terminated' || c.status === 'resigned').length;
   
-  // Get unique client IDs with active contractors
   const clientsWithActiveContractors = new Set(
     contractors
       .filter(c => c.status === 'active')
@@ -244,12 +259,261 @@ export const ClientAnalyticsDashboard = () => {
   );
   const totalActiveClients = clientsWithActiveContractors.size;
   
-  // Clients with no contractors AND not marked as hiring (truly lost clients)
   const clientsWithContractors = new Set(contractors.map(c => c.client_id));
   const clientsLost = clients.filter(c => !clientsWithContractors.has(c.id) && !c.is_hiring).length;
   
-  // Clients currently hiring (from clients.is_hiring flag)
   const newClientsHiring = clients.filter(c => c.is_hiring === true).length;
+
+  // Drag and Drop handlers
+  const handleDragStart = useCallback((sectionId: SectionId) => {
+    setDraggedSection(sectionId);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+  }, []);
+
+  const handleDrop = useCallback((targetSectionId: SectionId) => {
+    if (!draggedSection || draggedSection === targetSectionId) {
+      setDraggedSection(null);
+      return;
+    }
+
+    setSectionOrder(prev => {
+      const newOrder = [...prev];
+      const draggedIndex = newOrder.indexOf(draggedSection);
+      const targetIndex = newOrder.indexOf(targetSectionId);
+      
+      newOrder.splice(draggedIndex, 1);
+      newOrder.splice(targetIndex, 0, draggedSection);
+      
+      return newOrder;
+    });
+    setDraggedSection(null);
+  }, [draggedSection]);
+
+  const handleDragEnd = useCallback(() => {
+    setDraggedSection(null);
+  }, []);
+
+  // Section Components
+  const renderIndustryRolesSection = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Building2 className="w-4 h-4" />
+            Clients by Industry
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3 max-h-[300px] overflow-y-auto">
+            {clientsByIndustry.map((industry, index) => (
+              <div key={industry.name} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-3 h-3 rounded-full flex-shrink-0" 
+                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                  />
+                  <span className="text-sm">{industry.name}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium">{industry.value}</span>
+                  <span className="text-sm text-muted-foreground w-12 text-right">{industry.percentage}%</span>
+                </div>
+              </div>
+            ))}
+            {clientsByIndustry.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">No data available</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Users className="w-4 h-4" />
+            Contractors by Role
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3 max-h-[300px] overflow-y-auto">
+            {contractorsByRole.map((role, index) => (
+              <div key={role.name} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-3 h-3 rounded-full flex-shrink-0" 
+                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                  />
+                  <span className="text-sm">{role.name}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium">{role.value}</span>
+                  <span className="text-sm text-muted-foreground w-12 text-right">{role.percentage}%</span>
+                </div>
+              </div>
+            ))}
+            {contractorsByRole.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">No data available</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const renderMonthlyHiresSection = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <TrendingUp className="w-4 h-4" />
+          Hires per Month
+          <span className="text-xs text-muted-foreground font-normal">(2026+)</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={monthlyStats}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis dataKey="month" className="text-xs" angle={-45} textAnchor="end" height={60} />
+              <YAxis className="text-xs" />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--background))', 
+                  border: '1px solid hsl(var(--border))' 
+                }} 
+              />
+              <Bar dataKey="hires" fill="#22c55e" name="Hires" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderSeparationsSection = () => (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base flex items-center gap-2">
+          <TrendingDown className="w-4 h-4" />
+          Separations per Month
+          <span className="text-xs text-muted-foreground font-normal">(2026+)</span>
+        </CardTitle>
+      </CardHeader>
+      <CardContent>
+        <div className="h-[300px]">
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={monthlyStats}>
+              <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+              <XAxis dataKey="month" className="text-xs" angle={-45} textAnchor="end" height={60} />
+              <YAxis className="text-xs" />
+              <Tooltip 
+                contentStyle={{ 
+                  backgroundColor: 'hsl(var(--background))', 
+                  border: '1px solid hsl(var(--border))' 
+                }} 
+              />
+              <Bar dataKey="terminated" fill="#ef4444" name="Terminated" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="resigned" fill="#8b5cf6" name="Resigned" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="flex justify-center gap-6 mt-4 text-sm">
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-sm bg-[#ef4444]" />
+            <span>Terminated</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="w-3 h-3 rounded-sm bg-[#8b5cf6]" />
+            <span>Resigned</span>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  const renderRetentionSection = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Building2 className="w-4 h-4" />
+            Retention Rate by Company
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            <div className="grid grid-cols-[1fr_60px_60px_70px] gap-2 text-xs text-muted-foreground font-medium pb-2 border-b sticky top-0 bg-background">
+              <span>Company</span>
+              <span className="text-right">Hired</span>
+              <span className="text-right">Active</span>
+              <span className="text-right">Retention</span>
+            </div>
+            {retentionByCompany.map((company) => (
+              <div key={company.name} className="grid grid-cols-[1fr_60px_60px_70px] gap-2 items-center">
+                <span className="text-sm truncate" title={company.name}>{company.name}</span>
+                <span className="text-sm text-right">{company.hired}</span>
+                <span className="text-sm text-right">{company.active}</span>
+                <span className={`text-sm font-medium text-right ${
+                  company.retention >= 80 ? 'text-green-600' : 
+                  company.retention >= 50 ? 'text-amber-600' : 'text-red-600'
+                }`}>
+                  {company.retention}%
+                </span>
+              </div>
+            ))}
+            {retentionByCompany.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">No data available</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Building2 className="w-4 h-4" />
+            Retention Rate by Industry
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            <div className="grid grid-cols-[1fr_60px_60px_70px] gap-2 text-xs text-muted-foreground font-medium pb-2 border-b sticky top-0 bg-background">
+              <span>Industry</span>
+              <span className="text-right">Hired</span>
+              <span className="text-right">Active</span>
+              <span className="text-right">Retention</span>
+            </div>
+            {retentionByIndustry.map((industry) => (
+              <div key={industry.name} className="grid grid-cols-[1fr_60px_60px_70px] gap-2 items-center">
+                <span className="text-sm truncate" title={industry.name}>{industry.name}</span>
+                <span className="text-sm text-right">{industry.hired}</span>
+                <span className="text-sm text-right">{industry.active}</span>
+                <span className={`text-sm font-medium text-right ${
+                  industry.retention >= 80 ? 'text-green-600' : 
+                  industry.retention >= 50 ? 'text-amber-600' : 'text-red-600'
+                }`}>
+                  {industry.retention}%
+                </span>
+              </div>
+            ))}
+            {retentionByIndustry.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">No data available</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+
+  const sectionRenderers: Record<SectionId, () => JSX.Element> = {
+    industryRoles: renderIndustryRolesSection,
+    monthlyHires: renderMonthlyHiresSection,
+    separations: renderSeparationsSection,
+    retention: renderRetentionSection,
+  };
 
   if (loading) {
     return (
@@ -361,219 +625,36 @@ export const ClientAnalyticsDashboard = () => {
         </Card>
       </div>
 
-      {/* Charts Row 1: Industry + Roles */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Clients by Industry - Percentage List */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Building2 className="w-4 h-4" />
-              Clients by Industry
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 max-h-[300px] overflow-y-auto">
-              {clientsByIndustry.map((industry, index) => (
-                <div key={industry.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div 
-                      className="w-3 h-3 rounded-full flex-shrink-0" 
-                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                    />
-                    <span className="text-sm">{industry.name}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium">{industry.value}</span>
-                    <span className="text-sm text-muted-foreground w-12 text-right">{industry.percentage}%</span>
-                  </div>
-                </div>
-              ))}
-              {clientsByIndustry.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">No data available</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Contractors by Role */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Contractors by Role
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3 max-h-[300px] overflow-y-auto">
-              {contractorsByRole.map((role, index) => (
-                <div key={role.name} className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div 
-                      className="w-3 h-3 rounded-full flex-shrink-0" 
-                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                    />
-                    <span className="text-sm">{role.name}</span>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm font-medium">{role.value}</span>
-                    <span className="text-sm text-muted-foreground w-12 text-right">{role.percentage}%</span>
-                  </div>
-                </div>
-              ))}
-              {contractorsByRole.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">No data available</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Charts Row 3: Monthly Hires */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Monthly Hires */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="w-4 h-4" />
-              Hires per Month
-              <span className="text-xs text-muted-foreground font-normal">(Last 12 months)</span>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={monthlyStats}>
-                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                  <XAxis dataKey="month" className="text-xs" angle={-45} textAnchor="end" height={60} />
-                  <YAxis className="text-xs" />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'hsl(var(--background))', 
-                      border: '1px solid hsl(var(--border))' 
-                    }} 
-                  />
-                  <Bar dataKey="hires" fill="#22c55e" name="Hires" radius={[4, 4, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Monthly Separations (Resignations + Terminations) */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
-            <TrendingDown className="w-4 h-4" />
-            Separations per Month
-            <span className="text-xs text-muted-foreground font-normal">(Last 12 months)</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyStats}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="month" className="text-xs" angle={-45} textAnchor="end" height={60} />
-                <YAxis className="text-xs" />
-                <Tooltip 
-                  contentStyle={{ 
-                    backgroundColor: 'hsl(var(--background))', 
-                    border: '1px solid hsl(var(--border))' 
-                  }} 
-                />
-                <Bar dataKey="terminated" fill="#ef4444" name="Terminated" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="resigned" fill="#8b5cf6" name="Resigned" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+      {/* Draggable Sections */}
+      {sectionOrder.map((sectionId) => (
+        <div
+          key={sectionId}
+          draggable
+          onDragStart={() => handleDragStart(sectionId)}
+          onDragOver={handleDragOver}
+          onDrop={() => handleDrop(sectionId)}
+          onDragEnd={handleDragEnd}
+          className={`relative group transition-all duration-200 ${
+            draggedSection === sectionId ? 'opacity-50 scale-[0.98]' : ''
+          } ${
+            draggedSection && draggedSection !== sectionId ? 'ring-2 ring-primary/20 ring-offset-2 rounded-lg' : ''
+          }`}
+        >
+          {/* Drag Handle */}
+          <div className="absolute -left-8 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity cursor-grab active:cursor-grabbing">
+            <GripVertical className="w-5 h-5 text-muted-foreground" />
           </div>
-          <div className="flex justify-center gap-6 mt-4 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-sm bg-[#ef4444]" />
-              <span>Terminated</span>
+          
+          {/* Section Label (visible during drag) */}
+          {draggedSection && draggedSection !== sectionId && (
+            <div className="absolute inset-0 flex items-center justify-center bg-primary/5 rounded-lg pointer-events-none z-10">
+              <span className="text-sm font-medium text-primary">Drop here</span>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-sm bg-[#8b5cf6]" />
-              <span>Resigned</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Retention Rates Row */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Retention by Company */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Building2 className="w-4 h-4" />
-              Retention Rate by Company
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 max-h-[400px] overflow-y-auto">
-              <div className="grid grid-cols-[1fr_60px_60px_70px] gap-2 text-xs text-muted-foreground font-medium pb-2 border-b sticky top-0 bg-background">
-                <span>Company</span>
-                <span className="text-right">Hired</span>
-                <span className="text-right">Active</span>
-                <span className="text-right">Retention</span>
-              </div>
-              {retentionByCompany.map((company) => (
-                <div key={company.name} className="grid grid-cols-[1fr_60px_60px_70px] gap-2 items-center">
-                  <span className="text-sm truncate" title={company.name}>{company.name}</span>
-                  <span className="text-sm text-right">{company.hired}</span>
-                  <span className="text-sm text-right">{company.active}</span>
-                  <span className={`text-sm font-medium text-right ${
-                    company.retention >= 80 ? 'text-green-600' : 
-                    company.retention >= 50 ? 'text-amber-600' : 'text-red-600'
-                  }`}>
-                    {company.retention}%
-                  </span>
-                </div>
-              ))}
-              {retentionByCompany.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">No data available</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Retention by Industry */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <Building2 className="w-4 h-4" />
-              Retention Rate by Industry
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2 max-h-[400px] overflow-y-auto">
-              <div className="grid grid-cols-[1fr_60px_60px_70px] gap-2 text-xs text-muted-foreground font-medium pb-2 border-b sticky top-0 bg-background">
-                <span>Industry</span>
-                <span className="text-right">Hired</span>
-                <span className="text-right">Active</span>
-                <span className="text-right">Retention</span>
-              </div>
-              {retentionByIndustry.map((industry) => (
-                <div key={industry.name} className="grid grid-cols-[1fr_60px_60px_70px] gap-2 items-center">
-                  <span className="text-sm truncate" title={industry.name}>{industry.name}</span>
-                  <span className="text-sm text-right">{industry.hired}</span>
-                  <span className="text-sm text-right">{industry.active}</span>
-                  <span className={`text-sm font-medium text-right ${
-                    industry.retention >= 80 ? 'text-green-600' : 
-                    industry.retention >= 50 ? 'text-amber-600' : 'text-red-600'
-                  }`}>
-                    {industry.retention}%
-                  </span>
-                </div>
-              ))}
-              {retentionByIndustry.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">No data available</p>
-              )}
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+          
+          {sectionRenderers[sectionId]()}
+        </div>
+      ))}
     </div>
   );
 };
