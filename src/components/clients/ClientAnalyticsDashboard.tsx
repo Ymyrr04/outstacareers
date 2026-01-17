@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Building2, TrendingUp, TrendingDown, Users, GripVertical, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Loader2, Building2, TrendingUp, TrendingDown, Users, GripVertical, ArrowUpDown, ArrowUp, ArrowDown, Globe } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -21,6 +21,7 @@ interface ContractorData {
   end_date: string | null;
   hourly_rate: number | null;
   job_title: string | null;
+  country: string | null;
   client: {
     id: string;
     company_name: string;
@@ -38,14 +39,14 @@ interface ClientData {
   is_hiring: boolean | null;
 }
 
-type CardId = 'industry' | 'roles' | 'monthlyHires' | 'separations' | 'retentionCompany' | 'retentionIndustry';
+type CardId = 'industry' | 'roles' | 'country' | 'monthlyHires' | 'separations' | 'retentionCompany' | 'retentionIndustry';
 
 type SortField = 'hired' | 'active' | 'retention';
 type SortDirection = 'asc' | 'desc';
 
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16'];
 
-const DEFAULT_CARD_ORDER: CardId[] = ['industry', 'roles', 'monthlyHires', 'separations', 'retentionCompany', 'retentionIndustry'];
+const DEFAULT_CARD_ORDER: CardId[] = ['industry', 'roles', 'country', 'monthlyHires', 'separations', 'retentionCompany', 'retentionIndustry'];
 
 export const ClientAnalyticsDashboard = () => {
   const { toast } = useToast();
@@ -67,7 +68,7 @@ export const ClientAnalyticsDashboard = () => {
       const [contractorsRes, clientsRes] = await Promise.all([
         supabase
           .from('contractor_assignments')
-          .select(`*, client:clients(id, company_name, industry)`),
+          .select(`*, country, client:clients(id, company_name, industry)`),
         supabase
           .from('clients')
           .select('id, company_name, industry, leads_from, website, notes, is_hiring'),
@@ -285,6 +286,23 @@ export const ClientAnalyticsDashboard = () => {
       .sort((a, b) => b.value - a.value);
   }, [contractors]);
 
+  // 6. Contractors by Country
+  const contractorsByCountry = useMemo(() => {
+    const countryMap: Record<string, number> = {};
+    contractors.forEach(c => {
+      const country = c.country || 'Unknown';
+      countryMap[country] = (countryMap[country] || 0) + 1;
+    });
+    const total = contractors.length;
+    return Object.entries(countryMap)
+      .map(([name, value]) => ({ 
+        name, 
+        value, 
+        percentage: total > 0 ? Math.round((value / total) * 100) : 0 
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [contractors]);
+
   // Summary stats
   const activeContractors = contractors.filter(c => c.status === 'active').length;
   const scheduledContractors = contractors.filter(c => c.status === 'scheduled').length;
@@ -451,6 +469,41 @@ export const ClientAnalyticsDashboard = () => {
               </div>
             ))}
             {contractorsByRole.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">No data available</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </DraggableCard>
+  );
+
+  const renderCountryCard = () => (
+    <DraggableCard cardId="country">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2 pl-5">
+            <Globe className="w-4 h-4" />
+            Contractors by Country
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3 max-h-[300px] overflow-y-auto">
+            {contractorsByCountry.map((country, index) => (
+              <div key={country.name} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-3 h-3 rounded-full flex-shrink-0" 
+                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                  />
+                  <span className="text-sm">{country.name}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium">{country.value}</span>
+                  <span className="text-sm text-muted-foreground w-12 text-right">{country.percentage}%</span>
+                </div>
+              </div>
+            ))}
+            {contractorsByCountry.length === 0 && (
               <p className="text-sm text-muted-foreground text-center py-4">No data available</p>
             )}
           </div>
@@ -651,6 +704,7 @@ export const ClientAnalyticsDashboard = () => {
   const cardRenderers: Record<CardId, () => JSX.Element> = {
     industry: renderIndustryCard,
     roles: renderRolesCard,
+    country: renderCountryCard,
     monthlyHires: renderMonthlyHiresCard,
     separations: renderSeparationsCard,
     retentionCompany: renderRetentionCompanyCard,
