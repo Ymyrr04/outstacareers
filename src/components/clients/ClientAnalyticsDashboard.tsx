@@ -288,8 +288,6 @@ export const ClientAnalyticsDashboard = () => {
   // Summary stats
   const activeContractors = contractors.filter(c => c.status === 'active').length;
   const scheduledContractors = contractors.filter(c => c.status === 'scheduled').length;
-  const renderingContractors = contractors.filter(c => c.status === 'rendering').length;
-  const separatedContractors = contractors.filter(c => c.status === 'terminated' || c.status === 'resigned').length;
   
   const clientsWithActiveContractors = new Set(
     contractors
@@ -708,36 +706,6 @@ export const ClientAnalyticsDashboard = () => {
               <div>
                 <p className="text-2xl font-bold">{scheduledContractors || 0}</p>
                 <p className="text-sm text-muted-foreground">Scheduled</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-cyan-500/10 rounded-lg">
-                <Users className="w-5 h-5 text-cyan-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{renderingContractors || 0}</p>
-                <p className="text-sm text-muted-foreground">Rendering</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Summary Cards - Row 2 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-500/10 rounded-lg">
-                <TrendingDown className="w-5 h-5 text-red-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{separatedContractors || 0}</p>
-                <p className="text-sm text-muted-foreground">Separated</p>
               </div>
             </div>
           </CardContent>
