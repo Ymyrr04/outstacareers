@@ -146,6 +146,59 @@ export const ClientAnalyticsDashboard = () => {
       });
   }, [contractors]);
 
+  // 3. Retention Rate per Company
+  const retentionByCompany = useMemo(() => {
+    const companyStats: Record<string, { name: string; total: number; active: number }> = {};
+    
+    contractors.forEach(c => {
+      if (c.client) {
+        if (!companyStats[c.client.id]) {
+          companyStats[c.client.id] = { name: c.client.company_name, total: 0, active: 0 };
+        }
+        companyStats[c.client.id].total += 1;
+        if (c.status === 'active') {
+          companyStats[c.client.id].active += 1;
+        }
+      }
+    });
+
+    return Object.values(companyStats)
+      .map(stats => ({
+        name: stats.name,
+        hired: stats.total,
+        active: stats.active,
+        retention: stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0,
+      }))
+      .filter(c => c.hired >= 1)
+      .sort((a, b) => b.hired - a.hired);
+  }, [contractors]);
+
+  // 4. Retention Rate per Industry
+  const retentionByIndustry = useMemo(() => {
+    const industryStats: Record<string, { total: number; active: number }> = {};
+    
+    contractors.forEach(c => {
+      if (c.client) {
+        const industry = c.client.industry || 'Unknown';
+        if (!industryStats[industry]) {
+          industryStats[industry] = { total: 0, active: 0 };
+        }
+        industryStats[industry].total += 1;
+        if (c.status === 'active') {
+          industryStats[industry].active += 1;
+        }
+      }
+    });
+
+    return Object.entries(industryStats)
+      .map(([name, stats]) => ({
+        name,
+        hired: stats.total,
+        active: stats.active,
+        retention: stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0,
+      }))
+      .sort((a, b) => b.hired - a.hired);
+  }, [contractors]);
 
   // Summary stats
   const activeContractors = contractors.filter(c => c.status === 'active').length;
@@ -398,6 +451,81 @@ export const ClientAnalyticsDashboard = () => {
                   <Bar dataKey="terminated" fill="#ef4444" name="Terminated" radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Retention Rates Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Retention by Company */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Building2 className="w-4 h-4" />
+              Retention Rate by Company
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              <div className="grid grid-cols-[1fr_60px_60px_70px] gap-2 text-xs text-muted-foreground font-medium pb-2 border-b sticky top-0 bg-background">
+                <span>Company</span>
+                <span className="text-right">Hired</span>
+                <span className="text-right">Active</span>
+                <span className="text-right">Retention</span>
+              </div>
+              {retentionByCompany.map((company) => (
+                <div key={company.name} className="grid grid-cols-[1fr_60px_60px_70px] gap-2 items-center">
+                  <span className="text-sm truncate" title={company.name}>{company.name}</span>
+                  <span className="text-sm text-right">{company.hired}</span>
+                  <span className="text-sm text-right">{company.active}</span>
+                  <span className={`text-sm font-medium text-right ${
+                    company.retention >= 80 ? 'text-green-600' : 
+                    company.retention >= 50 ? 'text-amber-600' : 'text-red-600'
+                  }`}>
+                    {company.retention}%
+                  </span>
+                </div>
+              ))}
+              {retentionByCompany.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">No data available</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Retention by Industry */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Building2 className="w-4 h-4" />
+              Retention Rate by Industry
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2 max-h-[400px] overflow-y-auto">
+              <div className="grid grid-cols-[1fr_60px_60px_70px] gap-2 text-xs text-muted-foreground font-medium pb-2 border-b sticky top-0 bg-background">
+                <span>Industry</span>
+                <span className="text-right">Hired</span>
+                <span className="text-right">Active</span>
+                <span className="text-right">Retention</span>
+              </div>
+              {retentionByIndustry.map((industry) => (
+                <div key={industry.name} className="grid grid-cols-[1fr_60px_60px_70px] gap-2 items-center">
+                  <span className="text-sm truncate" title={industry.name}>{industry.name}</span>
+                  <span className="text-sm text-right">{industry.hired}</span>
+                  <span className="text-sm text-right">{industry.active}</span>
+                  <span className={`text-sm font-medium text-right ${
+                    industry.retention >= 80 ? 'text-green-600' : 
+                    industry.retention >= 50 ? 'text-amber-600' : 'text-red-600'
+                  }`}>
+                    {industry.retention}%
+                  </span>
+                </div>
+              ))}
+              {retentionByIndustry.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">No data available</p>
+              )}
             </div>
           </CardContent>
         </Card>
