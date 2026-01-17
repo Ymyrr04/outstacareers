@@ -56,7 +56,13 @@ export const ClientAnalyticsDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [cardOrder, setCardOrder] = useState<CardId[]>(() => {
     const saved = localStorage.getItem('analytics-card-order');
-    return saved ? JSON.parse(saved) : DEFAULT_CARD_ORDER;
+    if (saved) {
+      const parsed = JSON.parse(saved) as CardId[];
+      // Add any new cards that aren't in the saved order
+      const missingCards = DEFAULT_CARD_ORDER.filter(id => !parsed.includes(id));
+      return [...parsed, ...missingCards];
+    }
+    return DEFAULT_CARD_ORDER;
   });
   const [draggedCard, setDraggedCard] = useState<CardId | null>(null);
   const [companySortField, setCompanySortField] = useState<SortField>('hired');
