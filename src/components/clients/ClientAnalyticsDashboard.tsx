@@ -40,14 +40,14 @@ interface ClientData {
   is_hiring: boolean | null;
 }
 
-type CardId = 'industry' | 'roles' | 'country' | 'monthlyHires' | 'separations' | 'retentionCompany' | 'retentionIndustry';
+type CardId = 'industry' | 'roles' | 'country' | 'monthlyHires' | 'separations' | 'retentionCompany' | 'retentionIndustry' | 'retentionRole';
 
 type SortField = 'hired' | 'active' | 'retention';
 type SortDirection = 'asc' | 'desc';
 
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16'];
 
-const DEFAULT_CARD_ORDER: CardId[] = ['industry', 'roles', 'country', 'monthlyHires', 'separations', 'retentionCompany', 'retentionIndustry'];
+const DEFAULT_CARD_ORDER: CardId[] = ['industry', 'roles', 'country', 'monthlyHires', 'separations', 'retentionCompany', 'retentionIndustry', 'retentionRole'];
 
 export const ClientAnalyticsDashboard = () => {
   const { toast } = useToast();
@@ -69,6 +69,8 @@ export const ClientAnalyticsDashboard = () => {
   const [companySortDir, setCompanySortDir] = useState<SortDirection>('desc');
   const [industrySortField, setIndustrySortField] = useState<SortField>('hired');
   const [industrySortDir, setIndustrySortDir] = useState<SortDirection>('desc');
+  const [roleSortField, setRoleSortField] = useState<SortField>('hired');
+  const [roleSortDir, setRoleSortDir] = useState<SortDirection>('desc');
 
   const fetchData = useCallback(async () => {
     try {
@@ -276,6 +278,38 @@ export const ClientAnalyticsDashboard = () => {
     });
   }, [retentionByIndustryRaw, industrySortField, industrySortDir]);
 
+  // Retention Rate per Role (raw data without sorting)
+  const retentionByRoleRaw = useMemo(() => {
+    const roleStats: Record<string, { total: number; active: number }> = {};
+    
+    contractors.forEach(c => {
+      const role = c.job_title || 'Unknown';
+      if (!roleStats[role]) {
+        roleStats[role] = { total: 0, active: 0 };
+      }
+      roleStats[role].total += 1;
+      if (c.status === 'active') {
+        roleStats[role].active += 1;
+      }
+    });
+
+    return Object.entries(roleStats)
+      .map(([name, stats]) => ({
+        name,
+        hired: stats.total,
+        active: stats.active,
+        retention: stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0,
+      }));
+  }, [contractors]);
+
+  // Apply sorting to role retention
+  const retentionByRole = useMemo(() => {
+    return [...retentionByRoleRaw].sort((a, b) => {
+      const multiplier = roleSortDir === 'asc' ? 1 : -1;
+      return (a[roleSortField] - b[roleSortField]) * multiplier;
+    });
+  }, [retentionByRoleRaw, roleSortField, roleSortDir]);
+
   // 5. Contractors by Role (Job Title)
   const contractorsByRole = useMemo(() => {
     const roleMap: Record<string, number> = {};
@@ -342,6 +376,15 @@ export const ClientAnalyticsDashboard = () => {
     } else {
       setIndustrySortField(field);
       setIndustrySortDir('desc');
+    }
+  };
+
+  const handleRoleSort = (field: SortField) => {
+    if (roleSortField === field) {
+      setRoleSortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setRoleSortField(field);
+      setRoleSortDir('desc');
     }
   };
 
@@ -709,6 +752,63 @@ export const ClientAnalyticsDashboard = () => {
     </DraggableCard>
   );
 
+  const renderRetentionRoleCard = () => (
+    <DraggableCard cardId="retentionRole">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2 pl-5">
+            <Users className="w-4 h-4" />
+            Retention Rate by Role
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-2 max-h-[400px] overflow-y-auto">
+            <div className="grid grid-cols-[1fr_60px_60px_70px] gap-2 text-xs text-muted-foreground font-medium pb-2 border-b sticky top-0 bg-background">
+              <span>Role</span>
+              <button 
+                onClick={() => handleRoleSort('hired')} 
+                className="text-right flex items-center justify-end hover:text-foreground transition-colors"
+              >
+                Hired
+                <SortIcon field="hired" currentField={roleSortField} currentDir={roleSortDir} />
+              </button>
+              <button 
+                onClick={() => handleRoleSort('active')} 
+                className="text-right flex items-center justify-end hover:text-foreground transition-colors"
+              >
+                Active
+                <SortIcon field="active" currentField={roleSortField} currentDir={roleSortDir} />
+              </button>
+              <button 
+                onClick={() => handleRoleSort('retention')} 
+                className="text-right flex items-center justify-end hover:text-foreground transition-colors"
+              >
+                Retention
+                <SortIcon field="retention" currentField={roleSortField} currentDir={roleSortDir} />
+              </button>
+            </div>
+            {retentionByRole.map((role) => (
+              <div key={role.name} className="grid grid-cols-[1fr_60px_60px_70px] gap-2 items-center">
+                <span className="text-sm truncate" title={role.name}>{role.name}</span>
+                <span className="text-sm text-right">{role.hired}</span>
+                <span className="text-sm text-right">{role.active}</span>
+                <span className={`text-sm font-medium text-right ${
+                  role.retention >= 80 ? 'text-green-600' : 
+                  role.retention >= 50 ? 'text-amber-600' : 'text-red-600'
+                }`}>
+                  {role.retention}%
+                </span>
+              </div>
+            ))}
+            {retentionByRole.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">No data available</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </DraggableCard>
+  );
+
   const cardRenderers: Record<CardId, () => JSX.Element> = {
     industry: renderIndustryCard,
     roles: renderRolesCard,
@@ -717,6 +817,7 @@ export const ClientAnalyticsDashboard = () => {
     separations: renderSeparationsCard,
     retentionCompany: renderRetentionCompanyCard,
     retentionIndustry: renderRetentionIndustryCard,
+    retentionRole: renderRetentionRoleCard,
   };
 
   if (loading) {
