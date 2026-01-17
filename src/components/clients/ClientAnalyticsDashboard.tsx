@@ -20,6 +20,7 @@ interface ContractorData {
   start_date: string | null;
   end_date: string | null;
   hourly_rate: number | null;
+  job_title: string | null;
   client: {
     id: string;
     company_name: string;
@@ -212,6 +213,23 @@ export const ClientAnalyticsDashboard = () => {
       .sort((a, b) => b.hired - a.hired);
   }, [contractors]);
 
+  // 5. Contractors by Role (Job Title)
+  const contractorsByRole = useMemo(() => {
+    const roleMap: Record<string, number> = {};
+    contractors.forEach(c => {
+      const role = c.job_title || 'Unknown';
+      roleMap[role] = (roleMap[role] || 0) + 1;
+    });
+    const total = contractors.length;
+    return Object.entries(roleMap)
+      .map(([name, value]) => ({ 
+        name, 
+        value, 
+        percentage: total > 0 ? Math.round((value / total) * 100) : 0 
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [contractors]);
+
   // Summary stats
   const activeContractors = contractors.filter(c => c.status === 'active').length;
   const scheduledContractors = contractors.filter(c => c.status === 'scheduled').length;
@@ -343,7 +361,7 @@ export const ClientAnalyticsDashboard = () => {
         </Card>
       </div>
 
-      {/* Charts Row 1: Industry + Monthly Hires */}
+      {/* Charts Row 1: Industry + Roles */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Clients by Industry - Percentage List */}
         <Card>
@@ -377,6 +395,41 @@ export const ClientAnalyticsDashboard = () => {
           </CardContent>
         </Card>
 
+        {/* Contractors by Role */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              <Users className="w-4 h-4" />
+              Contractors by Role
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3 max-h-[300px] overflow-y-auto">
+              {contractorsByRole.map((role, index) => (
+                <div key={role.name} className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div 
+                      className="w-3 h-3 rounded-full flex-shrink-0" 
+                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                    />
+                    <span className="text-sm">{role.name}</span>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <span className="text-sm font-medium">{role.value}</span>
+                    <span className="text-sm text-muted-foreground w-12 text-right">{role.percentage}%</span>
+                  </div>
+                </div>
+              ))}
+              {contractorsByRole.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-4">No data available</p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Charts Row 3: Monthly Hires */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Monthly Hires */}
         <Card>
           <CardHeader>
