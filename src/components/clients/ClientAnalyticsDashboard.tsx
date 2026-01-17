@@ -417,8 +417,8 @@ export const ClientAnalyticsDashboard = () => {
                     border: '1px solid hsl(var(--border))' 
                   }} 
                 />
-                <Bar dataKey="terminated" stackId="a" fill="#ef4444" name="Terminated" />
-                <Bar dataKey="resigned" stackId="a" fill="#8b5cf6" name="Resigned" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="terminated" fill="#ef4444" name="Terminated" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="resigned" fill="#8b5cf6" name="Resigned" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
