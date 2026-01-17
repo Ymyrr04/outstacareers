@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Building2, TrendingUp, TrendingDown, Users, GripVertical } from 'lucide-react';
+import { Loader2, Building2, TrendingUp, TrendingDown, Users, GripVertical, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -40,6 +40,9 @@ interface ClientData {
 
 type CardId = 'industry' | 'roles' | 'monthlyHires' | 'separations' | 'retentionCompany' | 'retentionIndustry';
 
+type SortField = 'hired' | 'active' | 'retention';
+type SortDirection = 'asc' | 'desc';
+
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16'];
 
 const DEFAULT_CARD_ORDER: CardId[] = ['industry', 'roles', 'monthlyHires', 'separations', 'retentionCompany', 'retentionIndustry'];
@@ -54,6 +57,10 @@ export const ClientAnalyticsDashboard = () => {
     return saved ? JSON.parse(saved) : DEFAULT_CARD_ORDER;
   });
   const [draggedCard, setDraggedCard] = useState<CardId | null>(null);
+  const [companySortField, setCompanySortField] = useState<SortField>('hired');
+  const [companySortDir, setCompanySortDir] = useState<SortDirection>('desc');
+  const [industrySortField, setIndustrySortField] = useState<SortField>('hired');
+  const [industrySortDir, setIndustrySortDir] = useState<SortDirection>('desc');
 
   const fetchData = useCallback(async () => {
     try {
@@ -193,8 +200,8 @@ export const ClientAnalyticsDashboard = () => {
       });
   }, [contractors]);
 
-  // 3. Retention Rate per Company
-  const retentionByCompany = useMemo(() => {
+  // 3. Retention Rate per Company (raw data without sorting)
+  const retentionByCompanyRaw = useMemo(() => {
     const companyStats: Record<string, { name: string; total: number; active: number }> = {};
     
     contractors.forEach(c => {
@@ -216,12 +223,19 @@ export const ClientAnalyticsDashboard = () => {
         active: stats.active,
         retention: stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0,
       }))
-      .filter(c => c.hired >= 1)
-      .sort((a, b) => b.hired - a.hired);
+      .filter(c => c.hired >= 1);
   }, [contractors]);
 
-  // 4. Retention Rate per Industry
-  const retentionByIndustry = useMemo(() => {
+  // Apply sorting to company retention
+  const retentionByCompany = useMemo(() => {
+    return [...retentionByCompanyRaw].sort((a, b) => {
+      const multiplier = companySortDir === 'asc' ? 1 : -1;
+      return (a[companySortField] - b[companySortField]) * multiplier;
+    });
+  }, [retentionByCompanyRaw, companySortField, companySortDir]);
+
+  // 4. Retention Rate per Industry (raw data without sorting)
+  const retentionByIndustryRaw = useMemo(() => {
     const industryStats: Record<string, { total: number; active: number }> = {};
     
     contractors.forEach(c => {
@@ -243,9 +257,16 @@ export const ClientAnalyticsDashboard = () => {
         hired: stats.total,
         active: stats.active,
         retention: stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0,
-      }))
-      .sort((a, b) => b.hired - a.hired);
+      }));
   }, [contractors]);
+
+  // Apply sorting to industry retention
+  const retentionByIndustry = useMemo(() => {
+    return [...retentionByIndustryRaw].sort((a, b) => {
+      const multiplier = industrySortDir === 'asc' ? 1 : -1;
+      return (a[industrySortField] - b[industrySortField]) * multiplier;
+    });
+  }, [retentionByIndustryRaw, industrySortField, industrySortDir]);
 
   // 5. Contractors by Role (Job Title)
   const contractorsByRole = useMemo(() => {
@@ -281,6 +302,32 @@ export const ClientAnalyticsDashboard = () => {
   const clientsLost = clients.filter(c => !clientsWithContractors.has(c.id) && !c.is_hiring).length;
   
   const newClientsHiring = clients.filter(c => c.is_hiring === true).length;
+
+  // Sort handlers for retention tables
+  const handleCompanySort = (field: SortField) => {
+    if (companySortField === field) {
+      setCompanySortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setCompanySortField(field);
+      setCompanySortDir('desc');
+    }
+  };
+
+  const handleIndustrySort = (field: SortField) => {
+    if (industrySortField === field) {
+      setIndustrySortDir(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setIndustrySortField(field);
+      setIndustrySortDir('desc');
+    }
+  };
+
+  const SortIcon = ({ field, currentField, currentDir }: { field: SortField; currentField: SortField; currentDir: SortDirection }) => {
+    if (field !== currentField) return <ArrowUpDown className="w-3 h-3 ml-1 opacity-50" />;
+    return currentDir === 'asc' 
+      ? <ArrowUp className="w-3 h-3 ml-1" /> 
+      : <ArrowDown className="w-3 h-3 ml-1" />;
+  };
 
   // Drag and Drop handlers
   const handleDragStart = useCallback((cardId: CardId) => {
@@ -503,9 +550,27 @@ export const ClientAnalyticsDashboard = () => {
           <div className="space-y-2 max-h-[400px] overflow-y-auto">
             <div className="grid grid-cols-[1fr_60px_60px_70px] gap-2 text-xs text-muted-foreground font-medium pb-2 border-b sticky top-0 bg-background">
               <span>Company</span>
-              <span className="text-right">Hired</span>
-              <span className="text-right">Active</span>
-              <span className="text-right">Retention</span>
+              <button 
+                onClick={() => handleCompanySort('hired')} 
+                className="text-right flex items-center justify-end hover:text-foreground transition-colors"
+              >
+                Hired
+                <SortIcon field="hired" currentField={companySortField} currentDir={companySortDir} />
+              </button>
+              <button 
+                onClick={() => handleCompanySort('active')} 
+                className="text-right flex items-center justify-end hover:text-foreground transition-colors"
+              >
+                Active
+                <SortIcon field="active" currentField={companySortField} currentDir={companySortDir} />
+              </button>
+              <button 
+                onClick={() => handleCompanySort('retention')} 
+                className="text-right flex items-center justify-end hover:text-foreground transition-colors"
+              >
+                Retention
+                <SortIcon field="retention" currentField={companySortField} currentDir={companySortDir} />
+              </button>
             </div>
             {retentionByCompany.map((company) => (
               <div key={company.name} className="grid grid-cols-[1fr_60px_60px_70px] gap-2 items-center">
@@ -542,9 +607,27 @@ export const ClientAnalyticsDashboard = () => {
           <div className="space-y-2 max-h-[400px] overflow-y-auto">
             <div className="grid grid-cols-[1fr_60px_60px_70px] gap-2 text-xs text-muted-foreground font-medium pb-2 border-b sticky top-0 bg-background">
               <span>Industry</span>
-              <span className="text-right">Hired</span>
-              <span className="text-right">Active</span>
-              <span className="text-right">Retention</span>
+              <button 
+                onClick={() => handleIndustrySort('hired')} 
+                className="text-right flex items-center justify-end hover:text-foreground transition-colors"
+              >
+                Hired
+                <SortIcon field="hired" currentField={industrySortField} currentDir={industrySortDir} />
+              </button>
+              <button 
+                onClick={() => handleIndustrySort('active')} 
+                className="text-right flex items-center justify-end hover:text-foreground transition-colors"
+              >
+                Active
+                <SortIcon field="active" currentField={industrySortField} currentDir={industrySortDir} />
+              </button>
+              <button 
+                onClick={() => handleIndustrySort('retention')} 
+                className="text-right flex items-center justify-end hover:text-foreground transition-colors"
+              >
+                Retention
+                <SortIcon field="retention" currentField={industrySortField} currentDir={industrySortDir} />
+              </button>
             </div>
             {retentionByIndustry.map((industry) => (
               <div key={industry.name} className="grid grid-cols-[1fr_60px_60px_70px] gap-2 items-center">
