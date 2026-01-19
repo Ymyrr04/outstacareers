@@ -135,7 +135,7 @@ export const ContractorsDashboard = () => {
     position: true,
     rate: true,
     hours: false,
-    contact: false,
+    contact: true,
     emergency: false,
     timesheet: false,
     type: false,
