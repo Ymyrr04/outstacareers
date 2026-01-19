@@ -20,6 +20,7 @@ const COUNTRY_CODES = [
   { code: '+57', country: 'Colombia', flag: '🇨🇴' },
   { code: '+45', country: 'Denmark', flag: '🇩🇰' },
   { code: '+20', country: 'Egypt', flag: '🇪🇬' },
+  { code: '+503', country: 'El Salvador', flag: '🇸🇻' },
   { code: '+358', country: 'Finland', flag: '🇫🇮' },
   { code: '+33', country: 'France', flag: '🇫🇷' },
   { code: '+49', country: 'Germany', flag: '🇩🇪' },
