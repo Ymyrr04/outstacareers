@@ -40,7 +40,7 @@ import {
   MessageCircle
 } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
-import { ApplicantNotesEditor } from '@/components/ApplicantNotesEditor';
+import { ApplicantNotesEditor, type ApplicantNotesEditorRef } from '@/components/ApplicantNotesEditor';
 
 interface ToolMatch {
   tool: string;
@@ -175,6 +175,8 @@ export default function ApplicantSearchResults({
   
   // Ref for expanded applicant card (click-outside detection)
   const expandedCardRef = useRef<HTMLDivElement>(null);
+  // Ref for notes editor to get value on save
+  const notesEditorRef = useRef<ApplicantNotesEditorRef>(null);
   
   // Close expanded details on Escape key or click outside
   useEffect(() => {
@@ -227,11 +229,13 @@ export default function ApplicantSearchResults({
   const handleSaveEdit = async (applicantId: string) => {
     if (!onUpdateApplicant) return;
     setSavingEdit(true);
+    // Get notes value from ref (isolated component)
+    const notesValue = notesEditorRef.current?.getValue() ?? editForm.notes;
     await onUpdateApplicant(applicantId, {
       full_name: editForm.full_name.trim(),
       email: editForm.email.trim(),
       phone: editForm.phone.trim() || null,
-      notes: editForm.notes.trim() || null,
+      notes: notesValue.trim() || null,
     });
     setSavingEdit(false);
     setEditingApplicant(null);
@@ -934,8 +938,8 @@ export default function ApplicantSearchResults({
                   
                   {editingApplicant === applicant.id ? (
                     <ApplicantNotesEditor 
+                      ref={notesEditorRef}
                       initialValue={editForm.notes}
-                      onValueChange={(value) => setEditForm(prev => ({ ...prev, notes: value }))}
                       placeholder="Add notes about this applicant..."
                     />
                   ) : (
