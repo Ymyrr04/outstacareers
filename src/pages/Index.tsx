@@ -1,3 +1,5 @@
+import { useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import Navigation from "@/components/ui/navigation";
 import HeroSection from "@/components/HeroSection";
 import BenefitsSection from "@/components/BenefitsSection";
@@ -12,6 +14,22 @@ import { usePageViewTracking } from "@/hooks/useAnalytics";
 
 const Index = () => {
   usePageViewTracking();
+  const location = useLocation();
+
+  // Handle hash navigation (e.g., /#positions)
+  useEffect(() => {
+    if (location.hash) {
+      const elementId = location.hash.replace('#', '');
+      // Small delay to ensure the page is rendered
+      setTimeout(() => {
+        const element = document.getElementById(elementId);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 100);
+    }
+  }, [location.hash]);
+
   return (
     <div className="min-h-screen">
       <Navigation />
