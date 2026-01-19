@@ -1,6 +1,4 @@
-import { useRef } from 'react';
-import { Textarea } from '@/components/ui/textarea';
-import { RichTextToolbar } from '@/components/RichTextToolbar';
+import { WysiwygEditor } from '@/components/WysiwygEditor';
 
 interface NotesEditorProps {
   value: string;
@@ -17,25 +15,13 @@ export function NotesEditor({
   disabled = false,
   minHeight = "100px"
 }: NotesEditorProps) {
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
   return (
-    <div className="space-y-2">
-      <RichTextToolbar
-        value={value}
-        onChange={onChange}
-        textareaRef={textareaRef}
-        disabled={disabled}
-      />
-      <Textarea
-        ref={textareaRef}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        disabled={disabled}
-        className="bg-background"
-        style={{ minHeight }}
-      />
-    </div>
+    <WysiwygEditor
+      value={value}
+      onChange={onChange}
+      placeholder={placeholder}
+      disabled={disabled}
+      minHeight={minHeight}
+    />
   );
 }
