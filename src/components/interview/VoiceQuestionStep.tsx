@@ -307,20 +307,20 @@ export function VoiceQuestionStep({
                   <p className="text-2xl font-mono font-semibold text-destructive">
                     {formatTime(recordingTime)}
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     Recording... (max {formatTime(MAX_DURATION)})
                   </p>
                   <div className="flex items-center justify-center gap-1 mt-2">
                     <span className="w-2 h-2 bg-destructive rounded-full animate-pulse" />
-                    <span className="text-xs text-destructive">Recording</span>
+                    <span className="text-sm text-destructive">Recording</span>
                   </div>
                 </>
               ) : (
                 <>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-base text-muted-foreground">
                     Click to start recording your answer
                   </p>
-                  <p className="text-xs text-muted-foreground mt-1">
+                  <p className="text-sm text-muted-foreground mt-1">
                     Speak clearly for 30-90 seconds
                   </p>
                 </>
@@ -371,7 +371,7 @@ export function VoiceQuestionStep({
 
       {/* Tips */}
       <div className="bg-primary/5 rounded-lg p-4">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           <strong>Tips:</strong> Take a moment to think before answering. 
           Speak clearly and provide specific examples from your experience.
           You can re-record if needed before submitting.

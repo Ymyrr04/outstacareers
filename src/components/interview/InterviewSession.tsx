@@ -664,10 +664,10 @@ export function InterviewSession({
 
       {/* Progress Header */}
       <div className="space-y-3">
-        <div className="flex items-center justify-between text-sm">
+        <div className="flex items-center justify-between text-base">
           <div className="flex items-center gap-2 text-primary font-medium">
             {getSectionIcon()}
-            <span>{getSectionLabel()}</span>
+            <span className="text-lg">{getSectionLabel()}</span>
           </div>
           <div className="flex items-center gap-2 text-muted-foreground">
             <Clock className="w-4 h-4" />
@@ -676,36 +676,36 @@ export function InterviewSession({
         </div>
         
         {/* Section description */}
-        <p className="text-xs text-center text-muted-foreground italic">
+        <p className="text-sm text-center text-muted-foreground italic">
           {getSectionDescription()}
         </p>
         
         <Progress value={progress} className="h-2" />
-        <p className="text-xs text-muted-foreground text-center font-medium">
+        <p className="text-sm text-muted-foreground text-center font-medium">
           Question {answeredQuestions + 1} of {totalQuestions}
         </p>
       </div>
 
       {/* Section Navigation */}
-      <div className="flex items-center justify-center gap-2 text-xs">
+      <div className="flex items-center justify-center gap-2 text-sm">
         {voiceQuestions.length > 0 && (
           <>
-            <span className={`px-2 py-1 rounded ${currentStep === 'voice' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+            <span className={`px-3 py-1.5 rounded ${currentStep === 'voice' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
               1. Voice
             </span>
-            {(textQuestions.length > 0 || mcQuestions.length > 0) && <ArrowRight className="w-3 h-3 text-muted-foreground" />}
+            {(textQuestions.length > 0 || mcQuestions.length > 0) && <ArrowRight className="w-4 h-4 text-muted-foreground" />}
           </>
         )}
         {textQuestions.length > 0 && (
           <>
-            <span className={`px-2 py-1 rounded ${currentStep === 'text' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+            <span className={`px-3 py-1.5 rounded ${currentStep === 'text' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
               {voiceQuestions.length > 0 ? '2' : '1'}. Text
             </span>
-            {mcQuestions.length > 0 && <ArrowRight className="w-3 h-3 text-muted-foreground" />}
+            {mcQuestions.length > 0 && <ArrowRight className="w-4 h-4 text-muted-foreground" />}
           </>
         )}
         {mcQuestions.length > 0 && (
-          <span className={`px-2 py-1 rounded ${currentStep === 'multiple_choice' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+          <span className={`px-3 py-1.5 rounded ${currentStep === 'multiple_choice' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
             {voiceQuestions.length > 0 && textQuestions.length > 0 ? '3' : voiceQuestions.length > 0 || textQuestions.length > 0 ? '2' : '1'}. Personality
           </span>
         )}
