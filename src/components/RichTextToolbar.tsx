@@ -18,16 +18,20 @@ export function RichTextToolbar({ value, onChange, textareaRef, disabled }: Rich
   const [linkUrl, setLinkUrl] = useState('');
   const [selectionRange, setSelectionRange] = useState<{ start: number; end: number } | null>(null);
 
-  // Get current selection
+  // Use ref for value to avoid recreating callbacks on every keystroke
+  const valueRef = useRef(value);
+  valueRef.current = value;
+
+  // Get current selection - no dependencies on value to prevent recreating on each keystroke
   const getSelection = useCallback(() => {
     const textarea = textareaRef.current;
     if (!textarea) return { start: 0, end: 0, text: '' };
     return {
       start: textarea.selectionStart,
       end: textarea.selectionEnd,
-      text: value.substring(textarea.selectionStart, textarea.selectionEnd)
+      text: valueRef.current.substring(textarea.selectionStart, textarea.selectionEnd)
     };
-  }, [value, textareaRef]);
+  }, [textareaRef]);
 
   // Wrap selected text with markers
   const wrapSelection = useCallback((before: string, after: string) => {
@@ -35,7 +39,8 @@ export function RichTextToolbar({ value, onChange, textareaRef, disabled }: Rich
     if (!textarea) return;
 
     const { start, end, text } = getSelection();
-    const newText = value.substring(0, start) + before + text + after + value.substring(end);
+    const currentValue = valueRef.current;
+    const newText = currentValue.substring(0, start) + before + text + after + currentValue.substring(end);
     onChange(newText);
 
     // Restore cursor position after the wrapped text
@@ -44,7 +49,7 @@ export function RichTextToolbar({ value, onChange, textareaRef, disabled }: Rich
       const newCursorPos = start + before.length + text.length + after.length;
       textarea.setSelectionRange(newCursorPos, newCursorPos);
     }, 0);
-  }, [value, onChange, getSelection, textareaRef]);
+  }, [onChange, getSelection, textareaRef]);
 
   // Insert text at cursor
   const insertAtCursor = useCallback((text: string) => {
@@ -52,7 +57,8 @@ export function RichTextToolbar({ value, onChange, textareaRef, disabled }: Rich
     if (!textarea) return;
 
     const { start, end } = getSelection();
-    const newText = value.substring(0, start) + text + value.substring(end);
+    const currentValue = valueRef.current;
+    const newText = currentValue.substring(0, start) + text + currentValue.substring(end);
     onChange(newText);
 
     setTimeout(() => {
@@ -60,7 +66,7 @@ export function RichTextToolbar({ value, onChange, textareaRef, disabled }: Rich
       const newCursorPos = start + text.length;
       textarea.setSelectionRange(newCursorPos, newCursorPos);
     }, 0);
-  }, [value, onChange, getSelection, textareaRef]);
+  }, [onChange, getSelection, textareaRef]);
 
   // Handle bold
   const handleBold = useCallback(() => {
@@ -85,12 +91,13 @@ export function RichTextToolbar({ value, onChange, textareaRef, disabled }: Rich
       const textarea = textareaRef.current;
       if (!textarea) return;
       const { start, end } = getSelection();
-      const newText = value.substring(0, start) + lines + value.substring(end);
+      const currentValue = valueRef.current;
+      const newText = currentValue.substring(0, start) + lines + currentValue.substring(end);
       onChange(newText);
     } else {
       insertAtCursor('\n• ');
     }
-  }, [getSelection, insertAtCursor, value, onChange, textareaRef]);
+  }, [getSelection, insertAtCursor, onChange, textareaRef]);
 
   // Handle numbered list
   const handleNumberedList = useCallback(() => {
@@ -100,12 +107,13 @@ export function RichTextToolbar({ value, onChange, textareaRef, disabled }: Rich
       const textarea = textareaRef.current;
       if (!textarea) return;
       const { start, end } = getSelection();
-      const newText = value.substring(0, start) + lines + value.substring(end);
+      const currentValue = valueRef.current;
+      const newText = currentValue.substring(0, start) + lines + currentValue.substring(end);
       onChange(newText);
     } else {
       insertAtCursor('\n1. ');
     }
-  }, [getSelection, insertAtCursor, value, onChange, textareaRef]);
+  }, [getSelection, insertAtCursor, onChange, textareaRef]);
 
   // Handle link insertion
   const handleOpenLinkPopover = useCallback(() => {
@@ -125,7 +133,8 @@ export function RichTextToolbar({ value, onChange, textareaRef, disabled }: Rich
     const textarea = textareaRef.current;
     if (!textarea || !selectionRange) return;
 
-    const newText = value.substring(0, selectionRange.start) + linkMarkup + value.substring(selectionRange.end);
+    const currentValue = valueRef.current;
+    const newText = currentValue.substring(0, selectionRange.start) + linkMarkup + currentValue.substring(selectionRange.end);
     onChange(newText);
 
     setLinkPopoverOpen(false);
@@ -138,7 +147,7 @@ export function RichTextToolbar({ value, onChange, textareaRef, disabled }: Rich
       const newCursorPos = selectionRange.start + linkMarkup.length;
       textarea.setSelectionRange(newCursorPos, newCursorPos);
     }, 0);
-  }, [linkText, linkUrl, value, onChange, textareaRef, selectionRange]);
+  }, [linkText, linkUrl, onChange, textareaRef, selectionRange]);
 
   // Keyboard shortcut handler (Ctrl+K for link)
   useEffect(() => {
