@@ -1,9 +1,9 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Pencil, Save, Loader2, UserCircle, X } from 'lucide-react';
+import { NotesEditor } from '@/components/NotesEditor';
 
 interface CandidateProfileSectionProps {
   applicantId: string;
@@ -105,11 +105,11 @@ export function CandidateProfileSection({
       </div>
 
       {isEditing ? (
-        <Textarea
+        <NotesEditor
           value={profile}
-          onChange={(e) => setProfile(e.target.value)}
+          onChange={setProfile}
           placeholder="Add internal profile summary...&#10;&#10;• Key strengths and positioning&#10;• Suitable clients or industries&#10;• Notable skills or experience"
-          className="min-h-[120px] bg-background"
+          minHeight="120px"
         />
       ) : (
         <p className="text-sm text-muted-foreground whitespace-pre-wrap">
