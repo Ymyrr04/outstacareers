@@ -85,7 +85,7 @@ const JobDetails = () => {
       if (error) {
         console.error('Error fetching job:', error);
         toast.error("Job not found");
-        navigate('/');
+        navigate('/#positions');
         return;
       }
 
@@ -142,7 +142,7 @@ const JobDetails = () => {
         <Navigation />
         <div className="flex flex-col items-center justify-center min-h-[60vh] gap-4">
           <p className="text-muted-foreground">Job not found</p>
-          <Button onClick={() => navigate('/')}>Back to Jobs</Button>
+          <Button onClick={() => navigate('/#positions')}>Back to Jobs</Button>
         </div>
       </div>
     );
