@@ -354,6 +354,36 @@ serve(async (req) => {
     const textAnswers = answers.filter(a => a.section === 'text');
     const mcAnswers = answers.filter(a => a.section === 'multiple_choice');
 
+    // Check which sections have actual content
+    const voiceAnsweredCount = voiceAnswers.filter(a => a.voice_recording_url).length;
+    const textAnsweredCount = textAnswers.filter(a => a.text_answer && a.text_answer.trim().length > 0).length;
+    const mcAnsweredCount = mcAnswers.filter(a => a.selected_option_id).length;
+
+    // Determine which scores should be auto-zero
+    const hasVoiceResponses = voiceAnsweredCount > 0;
+    const hasTextResponses = textAnsweredCount > 0;
+    const hasMCResponses = mcAnsweredCount > 0;
+
+    console.log(`Section content check - Voice: ${voiceAnsweredCount}/${voiceAnswers.length}, Text: ${textAnsweredCount}/${textAnswers.length}, MC: ${mcAnsweredCount}/${mcAnswers.length}`);
+
+    // Build score override instructions for AI
+    const scoreOverrides: string[] = [];
+    if (!hasVoiceResponses) {
+      scoreOverrides.push('- EXPERIENCE SCORE: Must be 0 (no voice recordings submitted)');
+      scoreOverrides.push('- TECHNICAL SCORE: Must be 0 (no voice recordings submitted)');
+      scoreOverrides.push('- COMMUNICATION SCORE: Must be 0 (no voice recordings submitted)');
+    }
+    if (!hasTextResponses) {
+      scoreOverrides.push('- SITUATIONAL SCORE: Must be 0 (no text answers submitted)');
+    }
+    if (!hasMCResponses) {
+      scoreOverrides.push('- PERSONALITY SCORE: Must be 0 (no multiple choice answers submitted)');
+    }
+
+    const scoreOverrideSection = scoreOverrides.length > 0 
+      ? `\n\nMANDATORY SCORE OVERRIDES (sections with no answers = automatic 0):\n${scoreOverrides.join('\n')}\n\nThese scores MUST be exactly 0 - do not infer from CV or other sections.`
+      : '';
+
     const systemPrompt = `You are a senior HR professional with extensive experience in candidate assessment. Your task is to provide a rigorous, objective evaluation of interview performance.
 
 SCORING FRAMEWORK (each dimension 0-100):
@@ -364,6 +394,7 @@ SCORING FRAMEWORK (each dimension 0-100):
    - 50-69: Adequate experience, some relevant examples but lacking specificity
    - 30-49: Limited relevant experience, vague or generic responses
    - 0-29: Minimal/no relevant experience, did not answer, or extremely brief
+   - **0: MANDATORY if no voice recordings were submitted**
 
 2. TECHNICAL SCORE (Voice Section):
    - 90-100: Expert-level proficiency, deep knowledge of required tools/skills
@@ -371,6 +402,7 @@ SCORING FRAMEWORK (each dimension 0-100):
    - 50-69: Basic competency, may need training on some tools
    - 30-49: Limited technical skills, significant gaps
    - 0-29: Lacks fundamental technical requirements
+   - **0: MANDATORY if no voice recordings were submitted**
 
 3. COMMUNICATION SCORE (Voice Section):
    - Assessed via recording metadata (duration, whether answered)
@@ -382,6 +414,7 @@ SCORING FRAMEWORK (each dimension 0-100):
    - 50-69: Inconsistent - some too brief, some too long
    - 30-49: Multiple unanswered or extremely short responses
    - 0-29: Most questions unanswered or minimal effort
+   - **0: MANDATORY if no voice recordings were submitted**
 
 4. SITUATIONAL SCORE (Text Section):
    - 90-100: Thoughtful, nuanced responses showing excellent judgment
@@ -389,6 +422,7 @@ SCORING FRAMEWORK (each dimension 0-100):
    - 50-69: Acceptable responses but predictable/surface-level
    - 30-49: Poor judgment, misses key considerations
    - 0-29: Did not answer, one-word responses, or completely off-topic
+   - **0: MANDATORY if no text answers were submitted**
 
 5. PERSONALITY SCORE (Multiple Choice):
    - Based on pattern of selections indicating work style fit
@@ -397,10 +431,12 @@ SCORING FRAMEWORK (each dimension 0-100):
    - 50-69: Mixed signals, some concerns about fit
    - 30-49: Selections raise significant fit concerns
    - 0-29: Red flags in work style/attitude
+   - **0: MANDATORY if no multiple choice answers were submitted**
 
 OVERALL SCORE CALCULATION:
 - Weight: Experience (25%) + Technical (25%) + Communication (20%) + Situational (15%) + Personality (15%)
 - Round to nearest integer
+${scoreOverrideSection}
 
 ASSESSMENT GUIDELINES:
 - Be OBJECTIVE - base scores on actual evidence, not assumptions
@@ -408,6 +444,7 @@ ASSESSMENT GUIDELINES:
 - Be CRITICAL - identify genuine concerns, don't sugarcoat
 - Be BALANCED - acknowledge both strengths and weaknesses
 - PENALIZE clearly: placeholder text ("test test"), one-word answers, no recordings
+- **CRITICAL: Sections with NO answers must receive a score of exactly 0 - never infer from CV**
 
 Return ONLY valid JSON with this structure:
 {
@@ -424,12 +461,12 @@ Return ONLY valid JSON with this structure:
     "voice_analysis": {
       "answered_count": <number>,
       "average_duration": <seconds>,
-      "depth_rating": "<shallow|adequate|detailed>",
+      "depth_rating": "<shallow|adequate|detailed|none>",
       "highlights": ["<notable point>"]
     },
     "text_analysis": {
       "answered_count": <number>,
-      "quality_rating": "<poor|fair|good|excellent>",
+      "quality_rating": "<poor|fair|good|excellent|none>",
       "key_insights": ["<insight from their answers>"]
     },
     "personality_profile": {
@@ -580,7 +617,7 @@ Provide your assessment. Return ONLY the JSON object.`;
     }
 
     // Validate and sanitize scores
-    const validatedResult: AssessmentResponse = {
+    let validatedResult: AssessmentResponse = {
       experience_score: Math.max(0, Math.min(100, assessmentResult.experience_score || 0)),
       technical_score: Math.max(0, Math.min(100, assessmentResult.technical_score || 0)),
       communication_score: Math.max(0, Math.min(100, assessmentResult.communication_score || 0)),
@@ -592,6 +629,47 @@ Provide your assessment. Return ONLY the JSON object.`;
       ai_concerns: Array.isArray(assessmentResult.ai_concerns) ? assessmentResult.ai_concerns : [],
       ai_assessment_details: assessmentResult.ai_assessment_details || {}
     };
+
+    // ENFORCE: Sections with no answers MUST have 0 scores (override AI if it didn't comply)
+    if (!hasVoiceResponses) {
+      console.log('Enforcing 0 scores for voice section (no recordings)');
+      validatedResult.experience_score = 0;
+      validatedResult.technical_score = 0;
+      validatedResult.communication_score = 0;
+      
+      // Add concern if not already present
+      if (!validatedResult.ai_concerns.some(c => c.toLowerCase().includes('voice') || c.toLowerCase().includes('recording'))) {
+        validatedResult.ai_concerns.push('No voice recordings submitted for experience/technical questions');
+      }
+    }
+    
+    if (!hasTextResponses) {
+      console.log('Enforcing 0 score for situational section (no text answers)');
+      validatedResult.situational_score = 0;
+      
+      if (!validatedResult.ai_concerns.some(c => c.toLowerCase().includes('text') || c.toLowerCase().includes('situational'))) {
+        validatedResult.ai_concerns.push('No text answers submitted for situational questions');
+      }
+    }
+    
+    if (!hasMCResponses) {
+      console.log('Enforcing 0 score for personality section (no MC answers)');
+      validatedResult.personality_score = 0;
+      
+      if (!validatedResult.ai_concerns.some(c => c.toLowerCase().includes('multiple choice') || c.toLowerCase().includes('personality'))) {
+        validatedResult.ai_concerns.push('No multiple choice answers submitted for personality assessment');
+      }
+    }
+
+    // Recalculate overall score with enforced zeros
+    // Weight: Experience (25%) + Technical (25%) + Communication (20%) + Situational (15%) + Personality (15%)
+    validatedResult.overall_score = Math.round(
+      (validatedResult.experience_score * 0.25) +
+      (validatedResult.technical_score * 0.25) +
+      (validatedResult.communication_score * 0.20) +
+      (validatedResult.situational_score * 0.15) +
+      (validatedResult.personality_score * 0.15)
+    );
 
     // Update the interview session in database (supabase client already initialized above)
 
