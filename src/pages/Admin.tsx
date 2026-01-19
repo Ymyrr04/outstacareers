@@ -13,7 +13,9 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2 } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useEmailReplies } from '@/hooks/useEmailTemplates';
 import { ClientsDashboard, ContractorsDashboard, ClientAnalyticsDashboard } from '@/components/clients';
 import { generateJobUrl } from '@/lib/slugify';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
@@ -207,7 +209,9 @@ const Admin = () => {
   const [communicationHistoryApplicant, setCommunicationHistoryApplicant] = useState<{ id: string; name: string; email: string } | null>(null);
   const [sendEmailApplicant, setSendEmailApplicant] = useState<{ id: string; full_name: string; email: string; job_title: string; status: string; preselectedTemplate?: string } | null>(null);
   const { templates, getTemplateByTrigger } = useEmailTemplates();
-  const { unreadCounts, markAsRead: markMessagesAsRead } = useUnreadMessageCounts();
+  const { unreadCounts, markAsRead: markMessagesAsRead, fetchUnreadCounts } = useUnreadMessageCounts();
+  const { replies: allReplies, fetching: fetchingReplies, fetchNewReplies } = useEmailReplies();
+  const [unreadPopoverOpen, setUnreadPopoverOpen] = useState(false);
   
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
@@ -1122,6 +1126,84 @@ const Admin = () => {
                 <p className="text-muted-foreground">View applicants organized by status and role</p>
               </div>
               <div className="flex items-center gap-2">
+                {/* Unread Replies Button */}
+                <Popover open={unreadPopoverOpen} onOpenChange={setUnreadPopoverOpen}>
+                  <PopoverTrigger asChild>
+                    <Button 
+                      variant="outline" 
+                      size="icon"
+                      className="relative"
+                      title="Unread email replies"
+                    >
+                      <MailOpen className="w-4 h-4" />
+                      {Object.keys(unreadCounts).length > 0 && (
+                        <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center">
+                          <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-75"></span>
+                          <span className="relative inline-flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white">
+                            {Object.values(unreadCounts).reduce((a, b) => a + b, 0)}
+                          </span>
+                        </span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-80 p-0" align="end">
+                    <div className="flex items-center justify-between border-b px-4 py-3">
+                      <h4 className="font-semibold text-sm">Unread Replies</h4>
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="h-7 px-2 text-xs"
+                        onClick={async () => {
+                          await fetchNewReplies();
+                          await fetchUnreadCounts();
+                        }}
+                        disabled={fetchingReplies}
+                      >
+                        <RefreshCw className={`w-3 h-3 mr-1 ${fetchingReplies ? 'animate-spin' : ''}`} />
+                        Refresh
+                      </Button>
+                    </div>
+                    <div className="max-h-[300px] overflow-y-auto">
+                      {Object.keys(unreadCounts).length === 0 ? (
+                        <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                          No unread replies
+                        </div>
+                      ) : (
+                        <div className="divide-y">
+                          {Object.entries(unreadCounts).map(([applicantId, count]) => {
+                            const applicant = applicants.find(a => a.id === applicantId);
+                            if (!applicant) return null;
+                            return (
+                              <button
+                                key={applicantId}
+                                className="w-full px-4 py-3 text-left hover:bg-muted/50 transition-colors"
+                                onClick={() => {
+                                  setCommunicationHistoryApplicant({
+                                    id: applicantId,
+                                    name: applicant.full_name,
+                                    email: applicant.email
+                                  });
+                                  setUnreadPopoverOpen(false);
+                                }}
+                              >
+                                <div className="flex items-center justify-between gap-2">
+                                  <div className="min-w-0">
+                                    <p className="font-medium text-sm truncate">{applicant.full_name}</p>
+                                    <p className="text-xs text-muted-foreground truncate">{applicant.email}</p>
+                                  </div>
+                                  <Badge variant="destructive" className="shrink-0">
+                                    {count} new
+                                  </Badge>
+                                </div>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+                
                 <Button 
                   variant="outline" 
                   onClick={() => setEmailTemplateEditorOpen(true)}
