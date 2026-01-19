@@ -933,10 +933,13 @@ export default function ApplicantSearchResults({
                   </div>
                   
                   {editingApplicant === applicant.id ? (
-                    <NotesEditor 
-                      value={editForm.notes}
-                      onChange={(value) => setEditForm(prev => ({ ...prev, notes: value }))}
-                    />
+                    <div className="notes-editor-wrapper">
+                      <NotesEditor 
+                        value={editForm.notes}
+                        onChange={(value) => setEditForm(prev => ({ ...prev, notes: value }))}
+                        placeholder="Add notes about this applicant..."
+                      />
+                    </div>
                   ) : (
                     <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                       {applicant.notes || 'No notes yet. Click "Add Note" to add observations about this applicant.'}
