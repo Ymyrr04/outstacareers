@@ -22,6 +22,7 @@ interface PreScreeningFormProps {
     responsibilities?: string[] | null;
   };
   onClose: () => void;
+  mode?: 'modal' | 'page';
 }
 
 const prescreenSchema = z.object({
@@ -79,7 +80,8 @@ const JOB_SOURCE_OPTIONS = [
 
 type Step = 'prescreening' | 'cv-upload' | 'interview' | 'submitting';
 
-const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
+const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProps) => {
+  const isPageMode = mode === 'page';
   const [currentStep, setCurrentStep] = useState<Step>('prescreening');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isScoring, setIsScoring] = useState(false);
@@ -508,6 +510,15 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
   );
 
   if (isSuccess) {
+    if (isPageMode) {
+      return (
+        <div className="p-8 text-center">
+          <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
+          <h3 className="text-xl font-bold text-foreground mb-2">Application Submitted!</h3>
+          <p className="text-muted-foreground">Thank you for completing your application!</p>
+        </div>
+      );
+    }
     return (
       <>
         <div 
@@ -525,6 +536,450 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
     );
   }
 
+  // Form content (shared between page and modal modes)
+  const formContent = (
+    <>
+      {/* Disclaimer for interview step */}
+      {currentStep === 'interview' && (
+        <div className="mb-6 p-4 bg-muted/50 rounded-lg border border-border">
+          <div className="flex items-center gap-2 mb-2">
+            <Clock className="w-4 h-4 text-primary" />
+            <p className="text-sm font-medium text-foreground">Interview Assessment (10-15 minutes)</p>
+          </div>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            You'll answer <strong>5 voice questions</strong>, <strong>5 written questions</strong>, and <strong>5 multiple-choice questions</strong>. This assessment helps us evaluate your experience, communication skills, and fit for the role.
+          </p>
+          <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+            Your responses are supported by AI for efficiency but will be reviewed by a human recruiter. Answers that appear AI-generated may be flagged.
+          </p>
+        </div>
+      )}
+      <StepIndicator />
+
+      {/* Step 1: Pre-screening Questions */}
+      {currentStep === 'prescreening' && (
+        <div className="space-y-5">
+          <div className="space-y-2">
+            <Label htmlFor="full_name">Full Name *</Label>
+            <Input
+              id="full_name"
+              value={formData.full_name}
+              onChange={(e) => handleTextChange("full_name", e.target.value)}
+              placeholder="Enter your full name"
+              className={errors.full_name ? "border-destructive" : ""}
+            />
+            {errors.full_name && <p className="text-sm text-destructive">{errors.full_name}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="email">Email Address *</Label>
+            <Input
+              id="email"
+              type="email"
+              value={formData.email}
+              onChange={(e) => handleTextChange("email", e.target.value)}
+              placeholder="Enter your email address"
+              className={errors.email ? "border-destructive" : ""}
+            />
+            {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="phone">Phone Number *</Label>
+            <div className="flex gap-2">
+              <CountryCodeSelect
+                value={formData.phone_country_code}
+                onChange={(value) => handleTextChange("phone_country_code", value)}
+              />
+              <Input
+                id="phone"
+                type="tel"
+                value={formData.phone}
+                onChange={(e) => handleTextChange("phone", e.target.value)}
+                placeholder="Enter phone number"
+                className={`flex-1 ${errors.phone ? "border-destructive" : ""}`}
+              />
+            </div>
+            {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="whatsapp">
+              WhatsApp Number <span className="text-muted-foreground text-xs">(Optional)</span>
+            </Label>
+            <div className="flex gap-2">
+              <CountryCodeSelect
+                value={formData.whatsapp_country_code}
+                onChange={(value) => handleTextChange("whatsapp_country_code", value)}
+              />
+              <Input
+                id="whatsapp"
+                type="tel"
+                value={formData.whatsapp}
+                onChange={(e) => handleTextChange("whatsapp", e.target.value)}
+                placeholder="Enter WhatsApp number"
+                className="flex-1"
+              />
+            </div>
+            <p className="text-xs text-muted-foreground">Leave blank if same as phone number</p>
+          </div>
+
+          <YesNoQuestion 
+            label="Do you have a home office setup?" 
+            field="home_office" 
+            value={formData.home_office} 
+          />
+
+          <YesNoQuestion 
+            label="Do you have a noise-canceling headset?" 
+            field="noise_canceling_headset" 
+            value={formData.noise_canceling_headset} 
+          />
+
+          <YesNoQuestion 
+            label="Do you have a fully functioning laptop or PC?" 
+            field="laptop_or_pc" 
+            value={formData.laptop_or_pc} 
+          />
+
+          <YesNoQuestion 
+            label="Do you have a good quality internet connection?" 
+            field="good_internet" 
+            value={formData.good_internet} 
+          />
+
+          <div className="space-y-2">
+            <Label htmlFor="internet_speed">
+              Please run a speedtest on{" "}
+              <a 
+                href="https://www.speedtest.net" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="text-primary hover:underline inline-flex items-center gap-1"
+              >
+                speedtest.net
+                <ExternalLink className="w-3 h-3" />
+              </a>
+              {" "}and share the result link *
+            </Label>
+            <Input
+              id="internet_speed"
+              value={formData.internet_speed}
+              onChange={(e) => handleTextChange("internet_speed", e.target.value)}
+              placeholder="e.g., https://www.speedtest.net/result/12345678"
+              className={errors.internet_speed ? "border-destructive" : ""}
+            />
+            {errors.internet_speed && <p className="text-sm text-destructive">{errors.internet_speed}</p>}
+            <button
+              type="button"
+              onClick={() => setShowSpeedtestSample(true)}
+              className="text-xs text-primary hover:underline mt-1"
+            >
+              View sample
+            </button>
+          </div>
+
+          {/* Speedtest Sample Modal */}
+          {showSpeedtestSample && (
+            <>
+              <div 
+                className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in"
+                onClick={() => setShowSpeedtestSample(false)}
+              />
+              <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
+                <div className="pointer-events-auto relative animate-scale-in">
+                  <button
+                    type="button"
+                    onClick={() => setShowSpeedtestSample(false)}
+                    className="absolute -top-3 -right-3 bg-background rounded-full p-1.5 shadow-lg border border-border hover:bg-muted transition-colors z-10"
+                    aria-label="Close"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                  <img 
+                    src={speedtestSample} 
+                    alt="Speedtest result sample" 
+                    className="rounded-lg shadow-2xl max-w-[90vw] max-h-[80vh] object-contain"
+                  />
+                  <p className="text-center text-sm text-muted-foreground mt-3 bg-background/80 backdrop-blur-sm rounded-md py-2 px-4">
+                    Copy the result link from speedtest.net after running your test
+                  </p>
+                </div>
+              </div>
+            </>
+          )}
+
+          <YesNoQuestion 
+            label="Do you have a power generator or backup for power cuts?" 
+            field="power_backup" 
+            value={formData.power_backup} 
+          />
+
+          <YesNoQuestion 
+            label="Are you willing to work 40–50 hours per week?" 
+            field="can_work_40_50" 
+            value={formData.can_work_40_50} 
+          />
+
+          <YesNoQuestion 
+            label="Are you comfortable working US time zones?" 
+            field="us_timezone_ok" 
+            value={formData.us_timezone_ok} 
+          />
+
+          <div className="space-y-2">
+            <Label htmlFor="start_availability">How soon can you start? *</Label>
+            <Input
+              id="start_availability"
+              value={formData.start_availability}
+              onChange={(e) => handleTextChange("start_availability", e.target.value)}
+              placeholder="e.g., Immediately, 2 weeks notice"
+              className={errors.start_availability ? "border-destructive" : ""}
+            />
+            {errors.start_availability && <p className="text-sm text-destructive">{errors.start_availability}</p>}
+          </div>
+
+          <YesNoQuestion 
+            label="Do you have experience in a similar role?" 
+            field="has_experience" 
+            value={formData.has_experience} 
+          />
+
+          <YesNoQuestion 
+            label="Are you currently working for another client or company?" 
+            field="currently_working" 
+            value={formData.currently_working} 
+          />
+
+          <div className="space-y-2">
+            <Label htmlFor="location">Your current location (city, country) *</Label>
+            <Input
+              id="location"
+              value={formData.location}
+              onChange={(e) => handleTextChange("location", e.target.value)}
+              placeholder="e.g., Manila, Philippines"
+              className={errors.location ? "border-destructive" : ""}
+            />
+            {errors.location && <p className="text-sm text-destructive">{errors.location}</p>}
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="job_source">Where did you learn about this job opportunity? *</Label>
+            <Select
+              value={formData.job_source}
+              onValueChange={(value) => {
+                handleTextChange("job_source", value);
+                if (value !== "Other") {
+                  handleTextChange("job_source_other", "");
+                }
+              }}
+            >
+              <SelectTrigger className={errors.job_source ? "border-destructive" : ""}>
+                <SelectValue placeholder="Select an option" />
+              </SelectTrigger>
+              <SelectContent>
+                {JOB_SOURCE_OPTIONS.map((source) => (
+                  <SelectItem key={source} value={source}>
+                    {source}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {errors.job_source && <p className="text-sm text-destructive">{errors.job_source}</p>}
+            
+            {formData.job_source === "Other" && (
+              <div className="mt-2">
+                <Input
+                  id="job_source_other"
+                  value={formData.job_source_other}
+                  onChange={(e) => handleTextChange("job_source_other", e.target.value)}
+                  placeholder="Please specify where you found this job"
+                  className={errors.job_source_other ? "border-destructive" : ""}
+                />
+                {errors.job_source_other && <p className="text-sm text-destructive">{errors.job_source_other}</p>}
+              </div>
+            )}
+          </div>
+
+          <div 
+            aria-hidden="true" 
+            style={{ 
+              position: 'absolute', 
+              left: '-9999px', 
+              top: '-9999px',
+              opacity: 0, 
+              height: 0, 
+              width: 0, 
+              overflow: 'hidden',
+              pointerEvents: 'none' 
+            }}
+          >
+            <label htmlFor="fax_number_do_not_fill">Leave this empty</label>
+            <input
+              type="text"
+              id="fax_number_do_not_fill"
+              name="fax_number_do_not_fill"
+              value={formData.honeypot_field}
+              onChange={(e) => handleTextChange("honeypot_field", e.target.value)}
+              autoComplete="new-password"
+              tabIndex={-1}
+            />
+          </div>
+
+          <div className="pt-4 border-t border-border">
+            <Button
+              onClick={handlePrescreeningSubmit}
+              disabled={!isPrescreeningComplete()}
+              className="w-full"
+            >
+              Continue
+            </Button>
+            <p className="text-xs text-muted-foreground text-center mt-2">
+              All fields marked with * are required
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Step 2: CV Upload */}
+      {currentStep === 'cv-upload' && (
+        <div className="space-y-5">
+          <div className="text-center mb-6">
+            <FileText className="w-12 h-12 text-primary mx-auto mb-3" />
+            <h4 className="font-semibold text-lg">Upload Your CV</h4>
+            <p className="text-sm text-muted-foreground mt-1">
+              Please upload your CV in PDF or DOC/DOCX format
+            </p>
+          </div>
+
+          {/* Interview notice */}
+          <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
+            <div className="flex items-start gap-3">
+              <Mic className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-medium text-foreground">Next Step: Candidate Assessment</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  After uploading your CV, you'll complete a short interview assessment with voice, written, and multiple-choice questions. This takes approximately <strong>10-15 minutes</strong>.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div 
+            className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
+              cvFile ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
+            } ${errors.cv ? 'border-destructive' : ''}`}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              onChange={handleFileChange}
+              className="hidden"
+            />
+            
+            {cvFile ? (
+              <div className="space-y-2">
+                <CheckCircle className="w-10 h-10 text-green-500 mx-auto" />
+                <p className="font-medium text-foreground">{cvFile.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {(cvFile.size / 1024 / 1024).toFixed(2)} MB
+                </p>
+                <p className="text-xs text-primary">Click to change file</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Upload className="w-10 h-10 text-muted-foreground mx-auto" />
+                <p className="font-medium text-foreground">Click to upload your CV</p>
+                <p className="text-sm text-muted-foreground">PDF, DOC, or DOCX (max 10MB)</p>
+              </div>
+            )}
+          </div>
+          {errors.cv && <p className="text-sm text-destructive">{errors.cv}</p>}
+
+          <div className="pt-4 border-t border-border flex gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setCurrentStep('prescreening')}
+              className="flex-1"
+              disabled={isScoring}
+            >
+              Back
+            </Button>
+            <Button
+              onClick={handleCvSubmit}
+              disabled={!cvFile || isScoring || isExtractingText}
+              className="flex-1"
+            >
+              {isScoring ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Analyzing CV...
+                </>
+              ) : isExtractingText ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Extracting text...
+                </>
+              ) : (
+                "Continue"
+              )}
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {/* Step 3: Submitting */}
+      {currentStep === 'submitting' && (
+        <div className="text-center py-12">
+          <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary mb-4" />
+          <h4 className="font-semibold text-lg mb-2">Saving Your Application</h4>
+          <p className="text-sm text-muted-foreground">
+            Please wait while we process your information...
+          </p>
+        </div>
+      )}
+
+      {/* Step 4: AI Interview */}
+      {currentStep === 'interview' && interviewSessionId && (
+        <InterviewSession
+          sessionId={interviewSessionId}
+          jobId={job.id}
+          jobTitle={job.title}
+          jobDescription={job.description || null}
+          qualifications={job.qualifications || null}
+          responsibilities={job.responsibilities || null}
+          cvText={cvText}
+          applicantName={formData.full_name}
+          onComplete={handleInterviewComplete}
+          onBack={() => setCurrentStep('cv-upload')}
+        />
+      )}
+    </>
+  );
+
+  // Page mode rendering
+  if (isPageMode) {
+    return (
+      <div className="w-full">
+        <div className="border-b border-border px-6 py-4">
+          <h3 className="font-bold text-lg text-foreground">
+            {currentStep === 'prescreening' && 'Pre-Screening Questions'}
+            {currentStep === 'cv-upload' && 'Upload Your CV'}
+            {currentStep === 'submitting' && 'Processing...'}
+            {currentStep === 'interview' && 'Candidate Assessment'}
+          </h3>
+          <p className="text-sm text-muted-foreground mt-1">{job.title}</p>
+        </div>
+        <div className="p-6">
+          {formContent}
+        </div>
+      </div>
+    );
+  }
+
+  // Modal mode rendering
   return (
     <>
       <div 
@@ -556,423 +1011,7 @@ const PreScreeningForm = ({ job, onClose }: PreScreeningFormProps) => {
           </div>
 
           <div className="p-6">
-            {/* Disclaimer for interview step */}
-            {currentStep === 'interview' && (
-              <div className="mb-6 p-4 bg-muted/50 rounded-lg border border-border">
-                <div className="flex items-center gap-2 mb-2">
-                  <Clock className="w-4 h-4 text-primary" />
-                  <p className="text-sm font-medium text-foreground">Interview Assessment (10-15 minutes)</p>
-                </div>
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  You'll answer <strong>5 voice questions</strong>, <strong>5 written questions</strong>, and <strong>5 multiple-choice questions</strong>. This assessment helps us evaluate your experience, communication skills, and fit for the role.
-                </p>
-                <p className="text-sm text-muted-foreground leading-relaxed mt-2">
-                  Your responses are supported by AI for efficiency but will be reviewed by a human recruiter. Answers that appear AI-generated may be flagged.
-                </p>
-              </div>
-            )}
-            <StepIndicator />
-
-            {/* Step 1: Pre-screening Questions */}
-            {currentStep === 'prescreening' && (
-              <div className="space-y-5">
-                <div className="space-y-2">
-                  <Label htmlFor="full_name">Full Name *</Label>
-                  <Input
-                    id="full_name"
-                    value={formData.full_name}
-                    onChange={(e) => handleTextChange("full_name", e.target.value)}
-                    placeholder="Enter your full name"
-                    className={errors.full_name ? "border-destructive" : ""}
-                  />
-                  {errors.full_name && <p className="text-sm text-destructive">{errors.full_name}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email Address *</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => handleTextChange("email", e.target.value)}
-                    placeholder="Enter your email address"
-                    className={errors.email ? "border-destructive" : ""}
-                  />
-                  {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number *</Label>
-                  <div className="flex gap-2">
-                    <CountryCodeSelect
-                      value={formData.phone_country_code}
-                      onChange={(value) => handleTextChange("phone_country_code", value)}
-                    />
-                    <Input
-                      id="phone"
-                      type="tel"
-                      value={formData.phone}
-                      onChange={(e) => handleTextChange("phone", e.target.value)}
-                      placeholder="Enter phone number"
-                      className={`flex-1 ${errors.phone ? "border-destructive" : ""}`}
-                    />
-                  </div>
-                  {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="whatsapp">
-                    WhatsApp Number <span className="text-muted-foreground text-xs">(Optional)</span>
-                  </Label>
-                  <div className="flex gap-2">
-                    <CountryCodeSelect
-                      value={formData.whatsapp_country_code}
-                      onChange={(value) => handleTextChange("whatsapp_country_code", value)}
-                    />
-                    <Input
-                      id="whatsapp"
-                      type="tel"
-                      value={formData.whatsapp}
-                      onChange={(e) => handleTextChange("whatsapp", e.target.value)}
-                      placeholder="Enter WhatsApp number"
-                      className="flex-1"
-                    />
-                  </div>
-                  <p className="text-xs text-muted-foreground">Leave blank if same as phone number</p>
-                </div>
-
-                <YesNoQuestion 
-                  label="Do you have a home office setup?" 
-                  field="home_office" 
-                  value={formData.home_office} 
-                />
-
-                <YesNoQuestion 
-                  label="Do you have a noise-canceling headset?" 
-                  field="noise_canceling_headset" 
-                  value={formData.noise_canceling_headset} 
-                />
-
-                <YesNoQuestion 
-                  label="Do you have a fully functioning laptop or PC?" 
-                  field="laptop_or_pc" 
-                  value={formData.laptop_or_pc} 
-                />
-
-                <YesNoQuestion 
-                  label="Do you have a good quality internet connection?" 
-                  field="good_internet" 
-                  value={formData.good_internet} 
-                />
-
-                <div className="space-y-2">
-                  <Label htmlFor="internet_speed">
-                    Please run a speedtest on{" "}
-                    <a 
-                      href="https://www.speedtest.net" 
-                      target="_blank" 
-                      rel="noopener noreferrer"
-                      className="text-primary hover:underline inline-flex items-center gap-1"
-                    >
-                      speedtest.net
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                    {" "}and share the result link *
-                  </Label>
-                  <Input
-                    id="internet_speed"
-                    value={formData.internet_speed}
-                    onChange={(e) => handleTextChange("internet_speed", e.target.value)}
-                    placeholder="e.g., https://www.speedtest.net/result/12345678"
-                    className={errors.internet_speed ? "border-destructive" : ""}
-                  />
-                  {errors.internet_speed && <p className="text-sm text-destructive">{errors.internet_speed}</p>}
-                  <button
-                    type="button"
-                    onClick={() => setShowSpeedtestSample(true)}
-                    className="text-xs text-primary hover:underline mt-1"
-                  >
-                    View sample
-                  </button>
-                </div>
-
-                {/* Speedtest Sample Modal */}
-                {showSpeedtestSample && (
-                  <>
-                    <div 
-                      className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm animate-fade-in"
-                      onClick={() => setShowSpeedtestSample(false)}
-                    />
-                    <div className="fixed inset-0 z-[70] flex items-center justify-center p-4 pointer-events-none">
-                      <div className="pointer-events-auto relative animate-scale-in">
-                        <button
-                          type="button"
-                          onClick={() => setShowSpeedtestSample(false)}
-                          className="absolute -top-3 -right-3 bg-background rounded-full p-1.5 shadow-lg border border-border hover:bg-muted transition-colors z-10"
-                          aria-label="Close"
-                        >
-                          <X className="w-4 h-4" />
-                        </button>
-                        <img 
-                          src={speedtestSample} 
-                          alt="Speedtest result sample" 
-                          className="rounded-lg shadow-2xl max-w-[90vw] max-h-[80vh] object-contain"
-                        />
-                        <p className="text-center text-sm text-muted-foreground mt-3 bg-background/80 backdrop-blur-sm rounded-md py-2 px-4">
-                          Copy the result link from speedtest.net after running your test
-                        </p>
-                      </div>
-                    </div>
-                  </>
-                )}
-
-                <YesNoQuestion 
-                  label="Do you have a power generator or backup for power cuts?" 
-                  field="power_backup" 
-                  value={formData.power_backup} 
-                />
-
-                <YesNoQuestion 
-                  label="Are you willing to work 40–50 hours per week?" 
-                  field="can_work_40_50" 
-                  value={formData.can_work_40_50} 
-                />
-
-                <YesNoQuestion 
-                  label="Are you comfortable working US time zones?" 
-                  field="us_timezone_ok" 
-                  value={formData.us_timezone_ok} 
-                />
-
-                <div className="space-y-2">
-                  <Label htmlFor="start_availability">How soon can you start? *</Label>
-                  <Input
-                    id="start_availability"
-                    value={formData.start_availability}
-                    onChange={(e) => handleTextChange("start_availability", e.target.value)}
-                    placeholder="e.g., Immediately, 2 weeks notice"
-                    className={errors.start_availability ? "border-destructive" : ""}
-                  />
-                  {errors.start_availability && <p className="text-sm text-destructive">{errors.start_availability}</p>}
-                </div>
-
-                <YesNoQuestion 
-                  label="Do you have experience in a similar role?" 
-                  field="has_experience" 
-                  value={formData.has_experience} 
-                />
-
-                <YesNoQuestion 
-                  label="Are you currently working for another client or company?" 
-                  field="currently_working" 
-                  value={formData.currently_working} 
-                />
-
-                <div className="space-y-2">
-                  <Label htmlFor="location">Your current location (city, country) *</Label>
-                  <Input
-                    id="location"
-                    value={formData.location}
-                    onChange={(e) => handleTextChange("location", e.target.value)}
-                    placeholder="e.g., Manila, Philippines"
-                    className={errors.location ? "border-destructive" : ""}
-                  />
-                  {errors.location && <p className="text-sm text-destructive">{errors.location}</p>}
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="job_source">Where did you learn about this job opportunity? *</Label>
-                  <Select
-                    value={formData.job_source}
-                    onValueChange={(value) => {
-                      handleTextChange("job_source", value);
-                      if (value !== "Other") {
-                        handleTextChange("job_source_other", "");
-                      }
-                    }}
-                  >
-                    <SelectTrigger className={errors.job_source ? "border-destructive" : ""}>
-                      <SelectValue placeholder="Select an option" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {JOB_SOURCE_OPTIONS.map((source) => (
-                        <SelectItem key={source} value={source}>
-                          {source}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {errors.job_source && <p className="text-sm text-destructive">{errors.job_source}</p>}
-                  
-                  {formData.job_source === "Other" && (
-                    <div className="mt-2">
-                      <Input
-                        id="job_source_other"
-                        value={formData.job_source_other}
-                        onChange={(e) => handleTextChange("job_source_other", e.target.value)}
-                        placeholder="Please specify where you found this job"
-                        className={errors.job_source_other ? "border-destructive" : ""}
-                      />
-                      {errors.job_source_other && <p className="text-sm text-destructive">{errors.job_source_other}</p>}
-                    </div>
-                  )}
-                </div>
-
-                <div 
-                  aria-hidden="true" 
-                  style={{ 
-                    position: 'absolute', 
-                    left: '-9999px', 
-                    top: '-9999px',
-                    opacity: 0, 
-                    height: 0, 
-                    width: 0, 
-                    overflow: 'hidden',
-                    pointerEvents: 'none' 
-                  }}
-                >
-                  <label htmlFor="fax_number_do_not_fill">Leave this empty</label>
-                  <input
-                    type="text"
-                    id="fax_number_do_not_fill"
-                    name="fax_number_do_not_fill"
-                    value={formData.honeypot_field}
-                    onChange={(e) => handleTextChange("honeypot_field", e.target.value)}
-                    autoComplete="new-password"
-                    tabIndex={-1}
-                  />
-                </div>
-
-                <div className="pt-4 border-t border-border">
-                  <Button
-                    onClick={handlePrescreeningSubmit}
-                    disabled={!isPrescreeningComplete()}
-                    className="w-full"
-                  >
-                    Continue
-                  </Button>
-                  <p className="text-xs text-muted-foreground text-center mt-2">
-                    All fields marked with * are required
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Step 2: CV Upload */}
-            {currentStep === 'cv-upload' && (
-              <div className="space-y-5">
-                <div className="text-center mb-6">
-                  <FileText className="w-12 h-12 text-primary mx-auto mb-3" />
-                  <h4 className="font-semibold text-lg">Upload Your CV</h4>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Please upload your CV in PDF or DOC/DOCX format
-                  </p>
-                </div>
-
-                {/* Interview notice */}
-                <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
-                  <div className="flex items-start gap-3">
-                    <Mic className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="text-sm font-medium text-foreground">Next Step: Candidate Assessment</p>
-                      <p className="text-sm text-muted-foreground mt-1">
-                        After uploading your CV, you'll complete a short interview assessment with voice, written, and multiple-choice questions. This takes approximately <strong>10-15 minutes</strong>.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                <div 
-                  className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
-                    cvFile ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
-                  } ${errors.cv ? 'border-destructive' : ''}`}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-                  
-                  {cvFile ? (
-                    <div className="space-y-2">
-                      <CheckCircle className="w-10 h-10 text-green-500 mx-auto" />
-                      <p className="font-medium text-foreground">{cvFile.name}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {(cvFile.size / 1024 / 1024).toFixed(2)} MB
-                      </p>
-                      <p className="text-xs text-primary">Click to change file</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      <Upload className="w-10 h-10 text-muted-foreground mx-auto" />
-                      <p className="font-medium text-foreground">Click to upload your CV</p>
-                      <p className="text-sm text-muted-foreground">PDF, DOC, or DOCX (max 10MB)</p>
-                    </div>
-                  )}
-                </div>
-                {errors.cv && <p className="text-sm text-destructive">{errors.cv}</p>}
-
-                <div className="pt-4 border-t border-border flex gap-3">
-                  <Button
-                    variant="outline"
-                    onClick={() => setCurrentStep('prescreening')}
-                    className="flex-1"
-                    disabled={isScoring}
-                  >
-                    Back
-                  </Button>
-                  <Button
-                    onClick={handleCvSubmit}
-                    disabled={!cvFile || isScoring || isExtractingText}
-                    className="flex-1"
-                  >
-                    {isScoring ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Analyzing CV...
-                      </>
-                    ) : isExtractingText ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Extracting text...
-                      </>
-                    ) : (
-                      "Continue"
-                    )}
-                  </Button>
-                </div>
-              </div>
-            )}
-
-            {/* Step 3: Submitting */}
-            {currentStep === 'submitting' && (
-              <div className="text-center py-12">
-                <Loader2 className="w-12 h-12 animate-spin mx-auto text-primary mb-4" />
-                <h4 className="font-semibold text-lg mb-2">Saving Your Application</h4>
-                <p className="text-sm text-muted-foreground">
-                  Please wait while we process your information...
-                </p>
-              </div>
-            )}
-
-            {/* Step 4: AI Interview */}
-            {currentStep === 'interview' && interviewSessionId && (
-              <InterviewSession
-                sessionId={interviewSessionId}
-                jobId={job.id}
-                jobTitle={job.title}
-                jobDescription={job.description || null}
-                qualifications={job.qualifications || null}
-                responsibilities={job.responsibilities || null}
-                cvText={cvText}
-                applicantName={formData.full_name}
-                onComplete={handleInterviewComplete}
-                onBack={() => setCurrentStep('cv-upload')}
-              />
-            )}
+            {formContent}
           </div>
         </div>
       </div>
