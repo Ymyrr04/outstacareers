@@ -39,12 +39,12 @@ export function TextQuestionStep({
     <div className="space-y-6">
       {/* Question Card */}
       <div className="bg-muted/50 rounded-lg p-6">
-        <div className="flex items-start gap-4">
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
+        <div className="flex items-start gap-5">
+          <div className="flex-shrink-0 w-14 h-14 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-2xl shadow-md">
             {questionNumber}
           </div>
           <div className="flex-1 select-none" onCopy={(e) => e.preventDefault()}>
-            <p className="text-foreground font-medium text-lg leading-relaxed pointer-events-none">
+            <p className="text-foreground font-medium text-2xl leading-relaxed pointer-events-none">
               {question.question_text}
             </p>
           </div>
@@ -57,10 +57,10 @@ export function TextQuestionStep({
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
           placeholder="Type your answer here... Be specific and provide examples where possible."
-          className="min-h-[180px] resize-none"
+          className="min-h-[200px] resize-none text-xl leading-relaxed p-4"
         />
         
-        <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <div className="flex items-center justify-between text-base text-muted-foreground">
           <span className={wordCount >= minWords ? 'text-green-600' : ''}>
             {wordCount} words {wordCount < minWords && `(minimum ${minWords})`}
           </span>
@@ -74,15 +74,15 @@ export function TextQuestionStep({
       <Button
         onClick={handleSubmit}
         disabled={!isValid}
-        className="w-full"
+        className="w-full text-lg py-6"
       >
-        <CheckCircle className="w-4 h-4 mr-2" />
+        <CheckCircle className="w-5 h-5 mr-2" />
         Submit Answer
       </Button>
 
       {/* Tips */}
       <div className="bg-primary/5 rounded-lg p-4">
-        <p className="text-xs text-muted-foreground">
+        <p className="text-base text-muted-foreground">
           <strong>Tips:</strong> Structure your answer with: (1) the situation, 
           (2) your actions, and (3) the outcome. Be specific about your role 
           and decisions. Aim for 50-150 words.
