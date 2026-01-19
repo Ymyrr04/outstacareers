@@ -272,11 +272,11 @@ export function VoiceQuestionStep({
       {/* Question Card */}
       <div className="bg-muted/50 rounded-lg p-6">
         <div className="flex items-start gap-5">
-          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl shadow-md">
+          <div className="flex-shrink-0 w-14 h-14 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-2xl shadow-md">
             {questionNumber}
           </div>
           <div className="flex-1 select-none" onCopy={(e) => e.preventDefault()}>
-            <p className="text-foreground font-medium text-xl leading-relaxed pointer-events-none">
+            <p className="text-foreground font-medium text-2xl leading-relaxed pointer-events-none">
               {question.question_text}
             </p>
           </div>
@@ -304,23 +304,23 @@ export function VoiceQuestionStep({
             <div className="text-center">
               {isRecording ? (
                 <>
-                  <p className="text-2xl font-mono font-semibold text-destructive">
+                  <p className="text-3xl font-mono font-semibold text-destructive">
                     {formatTime(recordingTime)}
                   </p>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-base text-muted-foreground mt-1">
                     Recording... (max {formatTime(MAX_DURATION)})
                   </p>
                   <div className="flex items-center justify-center gap-1 mt-2">
                     <span className="w-2 h-2 bg-destructive rounded-full animate-pulse" />
-                    <span className="text-sm text-destructive">Recording</span>
+                    <span className="text-base text-destructive">Recording</span>
                   </div>
                 </>
               ) : (
                 <>
-                  <p className="text-base text-muted-foreground">
+                  <p className="text-lg text-muted-foreground">
                     Click to start recording your answer
                   </p>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-base text-muted-foreground mt-1">
                     Speak clearly for 30-90 seconds
                   </p>
                 </>
@@ -371,7 +371,7 @@ export function VoiceQuestionStep({
 
       {/* Tips */}
       <div className="bg-primary/5 rounded-lg p-4">
-        <p className="text-sm text-muted-foreground">
+        <p className="text-base text-muted-foreground">
           <strong>Tips:</strong> Take a moment to think before answering. 
           Speak clearly and provide specific examples from your experience.
           You can re-record if needed before submitting.
