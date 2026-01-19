@@ -541,15 +541,15 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
     <>
       {/* Disclaimer for interview step */}
       {currentStep === 'interview' && (
-        <div className="mb-6 p-4 bg-muted/50 rounded-lg border border-border">
-          <div className="flex items-center gap-2 mb-2">
-            <Clock className="w-5 h-5 text-primary" />
-            <p className="text-base font-medium text-foreground">Interview Assessment (10-15 minutes)</p>
+        <div className="mb-4 p-3 bg-muted/50 rounded-lg border border-border">
+          <div className="flex items-center gap-2 mb-1">
+            <Clock className="w-4 h-4 text-primary" />
+            <p className="text-sm font-medium text-foreground">Interview Assessment (10-15 minutes)</p>
           </div>
-          <p className="text-base text-muted-foreground leading-relaxed">
+          <p className="text-sm text-muted-foreground leading-relaxed">
             You'll answer <strong>5 voice questions</strong>, <strong>5 written questions</strong>, and <strong>5 multiple-choice questions</strong>. This assessment helps us evaluate your experience, communication skills, and fit for the role.
           </p>
-          <p className="text-base text-muted-foreground leading-relaxed mt-2">
+          <p className="text-sm text-muted-foreground leading-relaxed mt-1">
             Your responses are supported by AI for efficiency but will be reviewed by a human recruiter. Answers that appear AI-generated may be flagged.
           </p>
         </div>
