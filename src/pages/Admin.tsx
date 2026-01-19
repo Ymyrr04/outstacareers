@@ -1177,19 +1177,11 @@ const Admin = () => {
                             const applicant = applicants.find(a => a.id === applicantId);
                             if (!applicant) return null;
                             return (
-                              <button
+                              <div
                                 key={applicantId}
-                                className="w-full px-4 py-3 text-left hover:bg-muted/50 transition-colors"
-                                onClick={() => {
-                                  setCommunicationHistoryApplicant({
-                                    id: applicantId,
-                                    name: applicant.full_name,
-                                    email: applicant.email
-                                  });
-                                  setUnreadPopoverOpen(false);
-                                }}
+                                className="w-full px-4 py-3 hover:bg-muted/50 transition-colors"
                               >
-                                <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center justify-between gap-2 mb-2">
                                   <div className="min-w-0">
                                     <p className="font-medium text-sm truncate">{applicant.full_name}</p>
                                     <p className="text-xs text-muted-foreground truncate">{applicant.email}</p>
@@ -1198,7 +1190,54 @@ const Admin = () => {
                                     {count} new
                                   </Badge>
                                 </div>
-                              </button>
+                                <div className="flex items-center gap-3 text-xs">
+                                  {/* CV Assessment link */}
+                                  {applicant.total_score !== null && (
+                                    <button
+                                      onClick={() => {
+                                        setActiveAssessmentTab('cv');
+                                        setActiveMainTab('applicants');
+                                        setExpandedApplicant(applicantId);
+                                        setUnreadPopoverOpen(false);
+                                      }}
+                                      className="flex items-center gap-1 text-green-600 hover:underline"
+                                    >
+                                      <Star className="w-3 h-3" />
+                                      CV Assessment
+                                    </button>
+                                  )}
+                                  {/* Interview Results link */}
+                                  {applicant.interview_session?.status === 'completed' && (
+                                    <button
+                                      onClick={() => {
+                                        setActiveAssessmentTab('interview');
+                                        setActiveMainTab('applicants');
+                                        setExpandedApplicant(applicantId);
+                                        setUnreadPopoverOpen(false);
+                                      }}
+                                      className="flex items-center gap-1 text-purple-600 hover:underline"
+                                    >
+                                      <ClipboardList className="w-3 h-3" />
+                                      Interview Results
+                                    </button>
+                                  )}
+                                  {/* Communication History link */}
+                                  <button
+                                    onClick={() => {
+                                      setCommunicationHistoryApplicant({
+                                        id: applicantId,
+                                        name: applicant.full_name,
+                                        email: applicant.email
+                                      });
+                                      setUnreadPopoverOpen(false);
+                                    }}
+                                    className="flex items-center gap-1 text-blue-600 hover:underline"
+                                  >
+                                    <History className="w-3 h-3" />
+                                    Messages
+                                  </button>
+                                </div>
+                              </div>
                             );
                           })}
                         </div>
