@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { MapPin, X, Eye, Link2, Check } from "lucide-react";
+import { MapPin, Eye, Link2, Check } from "lucide-react";
 import { generateJobUrl } from "@/lib/slugify";
 import { toast } from "sonner";
 import { useJobs, Job } from "@/hooks/useJobs";
@@ -246,11 +247,10 @@ const staticJobs: Job[] = [
 type Region = "philippines" | "latin-america";
 
 const JobsSection = () => {
+  const navigate = useNavigate();
   const [selectedRegion, setSelectedRegion] = useState<Region>("philippines");
-  const [openJobId, setOpenJobId] = useState<string | null>(null);
   const [hoveredJobId, setHoveredJobId] = useState<string | null>(null);
   const [preScreeningJob, setPreScreeningJob] = useState<Job | null>(null);
-  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { jobs: dbJobs, loading } = useJobs();
   const { trackJobView, trackApplyClick } = useAnalytics();
   const viewedJobs = useRef<Set<string>>(new Set());
@@ -297,10 +297,6 @@ const JobsSection = () => {
     return job.rate;
   };
 
-  // Get the selected job details for the popup
-  const selectedJob = openJobId ? jobs.find(j => j.id === openJobId) : null;
-  const selectedJobDisplayRate = selectedJob ? getDisplayRate(selectedJob) : null;
-
   const JobCard = ({ job, index }: { job: Job; index: number }) => {
     const displayRate = getDisplayRate(job);
     const hasDetails = job.description || (job.qualifications && job.qualifications.length > 0);
@@ -321,7 +317,7 @@ const JobsSection = () => {
 
     const handleViewDetails = (e: React.MouseEvent) => {
       e.stopPropagation();
-      setOpenJobId(job.id);
+      navigate(`/job/${job.id}`);
     };
 
     const handleCopyLink = async (e: React.MouseEvent) => {
@@ -341,19 +337,17 @@ const JobsSection = () => {
       }
     };
 
-    const isActive = openJobId === job.id;
     const isHovered = hoveredJobId === job.id;
-    const hasActivePopup = openJobId !== null;
     
     return (
       <div className="relative">
         <Card 
           key={job.id} 
           className={`flex flex-col h-full transition-all duration-300 ease-out will-change-transform ${
-            isHovered && !hasActivePopup 
+            isHovered 
               ? 'shadow-2xl -translate-y-3 border-primary/30 z-20' 
               : 'shadow-sm border-border z-0'
-          } ${isActive ? 'shadow-2xl ring-2 ring-primary/50 -translate-y-3 z-20' : ''}`}
+          }`}
           style={{ position: 'relative' }}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
@@ -361,7 +355,7 @@ const JobsSection = () => {
           <div className="flex-grow">
             <CardHeader className="pb-2">
               <CardTitle className={`text-lg min-h-[3.5rem] transition-colors duration-300 ${
-                isHovered || isActive ? 'text-primary' : ''
+                isHovered ? 'text-primary' : ''
               }`}>
                 {job.title}
               </CardTitle>
@@ -379,7 +373,7 @@ const JobsSection = () => {
               <div className="flex items-center justify-between text-sm text-muted-foreground">
                 <div className="flex items-center space-x-1">
                   <MapPin className={`w-4 h-4 transition-colors duration-300 ${
-                    isHovered && !hasActivePopup ? 'text-primary' : ''
+                    isHovered ? 'text-primary' : ''
                   }`} />
                   <span>Remote</span>
                 </div>
@@ -391,13 +385,13 @@ const JobsSection = () => {
           <CardContent className="pt-0 space-y-2">
             {/* View Job Details button - appears on hover with slide-up animation */}
             <div className={`overflow-hidden transition-all duration-300 ease-out ${
-              isHovered && hasDetails && !isActive ? 'max-h-12 opacity-100' : 'max-h-0 opacity-0'
+              isHovered && hasDetails ? 'max-h-12 opacity-100' : 'max-h-0 opacity-0'
             }`}>
               <Button 
                 variant="outline"
                 onClick={handleViewDetails}
                 className={`w-full flex items-center justify-center gap-2 border-primary/30 text-primary hover:bg-primary/10 hover:border-primary hover:text-primary transition-all duration-300 ${
-                  isHovered && hasDetails && !isActive ? 'translate-y-0' : 'translate-y-4'
+                  isHovered && hasDetails ? 'translate-y-0' : 'translate-y-4'
                 }`}
               >
                 <Eye className="w-4 h-4" />
@@ -412,7 +406,7 @@ const JobsSection = () => {
                   handleApplyClick(job);
                 }}
                 className={`flex-1 transition-all duration-300 ${
-                  isHovered || isActive ? 'shadow-button' : ''
+                  isHovered ? 'shadow-button' : ''
                 }`}
               >
                 Apply Now
@@ -433,117 +427,6 @@ const JobsSection = () => {
     );
   };
 
-  // Job details popup component
-  const JobDetailsPopup = () => {
-    const closePopup = () => {
-      setOpenJobId(null);
-      setHoveredJobId(null);
-      if (hoverTimeoutRef.current) {
-        clearTimeout(hoverTimeoutRef.current);
-        hoverTimeoutRef.current = null;
-      }
-    };
-
-    // Handle Escape key to close popup
-    useEffect(() => {
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape' && selectedJob) {
-          closePopup();
-        }
-      };
-      
-      document.addEventListener('keydown', handleKeyDown);
-      return () => document.removeEventListener('keydown', handleKeyDown);
-    }, [selectedJob]);
-
-    if (!selectedJob) return null;
-    
-    const hasDetails = selectedJob.description || (selectedJob.qualifications && selectedJob.qualifications.length > 0);
-    if (!hasDetails) return null;
-
-    return (
-      <>
-        {/* Backdrop overlay - clickable to close */}
-        <div 
-          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm pointer-events-auto cursor-pointer animate-in fade-in duration-200" 
-          onClick={closePopup}
-        />
-        
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 pointer-events-none">
-          {/* Popup content */}
-          <div 
-            className="pointer-events-auto w-full max-w-md max-h-[80vh] overflow-y-auto bg-background rounded-xl shadow-2xl border border-primary/20 animate-in fade-in slide-in-from-bottom-4 zoom-in-95 duration-300"
-          >
-            {/* Header with close button */}
-            <div className="sticky top-0 bg-background/95 backdrop-blur-sm border-b border-border px-6 py-4 flex items-start justify-between gap-4">
-              <h4 className="font-bold text-lg text-foreground leading-tight">{selectedJob.title}</h4>
-              <button 
-                onClick={closePopup}
-                className="flex-shrink-0 p-1 rounded-full hover:bg-muted transition-colors duration-200"
-                aria-label="Close popup"
-              >
-                <X className="w-5 h-5 text-muted-foreground hover:text-foreground transition-colors" />
-              </button>
-            </div>
-            
-            {/* Content */}
-            <div className="p-6 space-y-4">
-              {selectedJob.description && (
-                <p className="text-sm text-muted-foreground leading-relaxed">
-                  {selectedJob.description}
-                </p>
-              )}
-              
-              {selectedJob.responsibilities && selectedJob.responsibilities.length > 0 && (
-                <div>
-                  <h5 className="font-semibold text-sm text-foreground mb-2">Key Responsibilities:</h5>
-                  <ul className="space-y-1.5">
-                    {selectedJob.responsibilities.map((resp, idx) => (
-                      <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
-                        <span className="text-primary mt-1">•</span>
-                        <span>{resp}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              
-              {selectedJob.qualifications && selectedJob.qualifications.length > 0 && (
-                <div>
-                  <h5 className="font-semibold text-sm text-foreground mb-2">Key Qualifications:</h5>
-                  <ul className="space-y-1.5">
-                    {selectedJob.qualifications.map((qual, idx) => (
-                      <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
-                        <span className="text-primary mt-1">•</span>
-                        <span>{qual}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-              
-              {selectedJobDisplayRate && (
-                <div className="pt-2 border-t border-border">
-                  <p className="text-sm font-semibold text-primary">{selectedJobDisplayRate}</p>
-                </div>
-              )}
-              
-              <Button 
-                onClick={() => {
-                  closePopup();
-                  handleApplyClick(selectedJob);
-                }}
-                className="w-full mt-4"
-              >
-                Apply Now
-              </Button>
-            </div>
-          </div>
-        </div>
-      </>
-    );
-  };
-
   return (
     <>
       {/* Pre-screening form */}
@@ -553,9 +436,6 @@ const JobsSection = () => {
           onClose={handleClosePreScreening}
         />
       )}
-      
-      {/* Job details popup */}
-      <JobDetailsPopup />
       
       <section id="positions" className="py-20 bg-gradient-section relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
