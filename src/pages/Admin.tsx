@@ -236,6 +236,9 @@ const Admin = () => {
   // Main tab state for layout control
   const [activeMainTab, setActiveMainTab] = useState('jobs');
   
+  // Assessment tab state for CV/Interview navigation
+  const [activeAssessmentTab, setActiveAssessmentTab] = useState<'cv' | 'interview'>('cv');
+  
   // Ref for expanded applicant card (click-outside detection)
   const expandedCardRef = useRef<HTMLDivElement>(null);
   
@@ -1681,6 +1684,7 @@ const Admin = () => {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  setActiveAssessmentTab('cv');
                                   setExpandedApplicant(applicant.id);
                                 }}
                                 className="flex items-center gap-1 text-green-600 hover:underline cursor-pointer"
@@ -1701,6 +1705,7 @@ const Admin = () => {
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  setActiveAssessmentTab('interview');
                                   setExpandedApplicant(applicant.id);
                                 }}
                                 className="flex items-center gap-1 text-purple-600 hover:underline cursor-pointer"
@@ -1857,7 +1862,7 @@ const Admin = () => {
                       {expandedApplicant === applicant.id && (
                         <div className="mt-4 pt-4 border-t border-border">
                           {/* Assessment Tabs - CV vs Interview */}
-                          <Tabs defaultValue="cv" className="mb-6">
+                          <Tabs value={activeAssessmentTab} onValueChange={(val) => setActiveAssessmentTab(val as 'cv' | 'interview')} className="mb-6">
                             <TabsList className="grid w-full grid-cols-2">
                               <TabsTrigger value="cv" className="flex items-center gap-2">
                                 <Star className="w-4 h-4" />
