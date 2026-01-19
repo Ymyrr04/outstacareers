@@ -35,6 +35,7 @@ import { CandidateProfileSection } from '@/components/CandidateProfileSection';
 import { RoleHistorySection } from '@/components/RoleHistorySection';
 import { ApplicantSourceBadge } from '@/components/ApplicantSourceBadge';
 import { CopyableText } from '@/components/CopyableText';
+import { ApplicantNotesEditor, type ApplicantNotesEditorRef } from '@/components/ApplicantNotesEditor';
 import { useEmailTemplates, statusToTrigger, useUnreadMessageCounts } from '@/hooks/useEmailTemplates';
 import { addHours } from 'date-fns';
 
@@ -197,6 +198,8 @@ const Admin = () => {
     notes: string;
   }>({ full_name: '', email: '', phone: '', notes: '' });
   const [savingEdit, setSavingEdit] = useState(false);
+  // Ref for notes editor to get value on save (avoids re-renders on keystroke)
+  const notesEditorRef = useRef<ApplicantNotesEditorRef>(null);
   
   // Notes popup state
   const [notesPopup, setNotesPopup] = useState<{ id: string; name: string; notes: string } | null>(null);
@@ -779,6 +782,9 @@ const Admin = () => {
       return;
     }
 
+    // Get notes value from ref (isolated component) to avoid re-renders during typing
+    const notesValue = notesEditorRef.current?.getValue() ?? editForm.notes;
+
     setSavingEdit(true);
     const { error } = await supabase
       .from('applicants_prescreen')
@@ -786,7 +792,7 @@ const Admin = () => {
         full_name: editForm.full_name.trim(),
         email: editForm.email.trim(),
         phone: editForm.phone.trim() || null,
-        notes: editForm.notes.trim() || null,
+        notes: notesValue.trim() || null,
       })
       .eq('id', applicantId);
 
@@ -805,7 +811,7 @@ const Admin = () => {
               full_name: editForm.full_name.trim(),
               email: editForm.email.trim(),
               phone: editForm.phone.trim() || null,
-              notes: editForm.notes.trim() || null,
+              notes: notesValue.trim() || null,
             } 
           : a
       ));
@@ -2228,11 +2234,10 @@ const Admin = () => {
                             </div>
                             
                             {editingApplicant === applicant.id ? (
-                              <Textarea
-                                value={editForm.notes}
-                                onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
+                              <ApplicantNotesEditor
+                                ref={notesEditorRef}
+                                initialValue={editForm.notes}
                                 placeholder="Add notes about this applicant..."
-                                className="min-h-[100px] bg-background"
                               />
                             ) : (
                               <p className="text-sm text-muted-foreground whitespace-pre-wrap">
