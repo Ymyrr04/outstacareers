@@ -1908,7 +1908,7 @@ const Admin = () => {
                         <div className="mt-4 pt-4 border-t border-border">
                           {/* Assessment Tabs - CV vs Interview */}
                           <Tabs value={activeAssessmentTab} onValueChange={(val) => setActiveAssessmentTab(val as 'cv' | 'interview')} className="mb-6">
-                            <TabsList className="grid w-full grid-cols-2">
+                            <TabsList className="grid w-full grid-cols-2" onMouseDown={(e) => e.stopPropagation()}>
                               <TabsTrigger value="cv" className="flex items-center gap-2">
                                 <Star className="w-4 h-4" />
                                 CV Assessment
