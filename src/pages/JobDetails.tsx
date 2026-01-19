@@ -7,7 +7,6 @@ import { ArrowLeft, MapPin, Clock, Briefcase, Check, Link2 } from "lucide-react"
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { generateJobUrl } from "@/lib/slugify";
-import PreScreeningForm from "@/components/PreScreeningForm";
 import Navigation from "@/components/ui/navigation";
 import { useAnalytics } from "@/hooks/useAnalytics";
 
@@ -67,7 +66,6 @@ const JobDetails = () => {
   const navigate = useNavigate();
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
-  const [showPreScreening, setShowPreScreening] = useState(false);
   const [copied, setCopied] = useState(false);
   const { trackJobView, trackApplyClick } = useAnalytics();
 
@@ -102,7 +100,7 @@ const JobDetails = () => {
   const handleApplyClick = () => {
     if (job) {
       trackApplyClick(job.id);
-      setShowPreScreening(true);
+      navigate(`/apply/${job.id}`);
     }
   };
 
@@ -159,19 +157,6 @@ const JobDetails = () => {
         <meta name="description" content={job.description || `Apply for ${job.title} at OutSta`} />
       </Helmet>
 
-      {showPreScreening && (
-        <PreScreeningForm
-          job={{
-            id: job.id,
-            title: job.title,
-            apply_url: job.apply_url || '',
-            description: job.description,
-            qualifications: job.qualifications,
-            responsibilities: job.responsibilities,
-          }}
-          onClose={() => setShowPreScreening(false)}
-        />
-      )}
 
       <div className="min-h-screen bg-background">
         <Navigation />
