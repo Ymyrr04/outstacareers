@@ -176,23 +176,23 @@ const JobDetails = () => {
             <CardContent className="p-8 md:p-12">
               {/* Header */}
               <div className="mb-8">
-                <h1 className="text-3xl md:text-4xl font-bold text-foreground mb-4">
+                <h1 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
                   {job.title}
                 </h1>
                 
                 {/* Meta info */}
-                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground mb-6">
+                <div className="flex flex-wrap gap-4 text-base text-muted-foreground mb-6">
                   <div className="flex items-center gap-1">
-                    <MapPin className="w-4 h-4 text-primary" />
+                    <MapPin className="w-5 h-5 text-primary" />
                     <span>Remote</span>
                   </div>
                   <div className="flex items-center gap-1">
-                    <Clock className="w-4 h-4 text-primary" />
+                    <Clock className="w-5 h-5 text-primary" />
                     <span>Full time</span>
                   </div>
                   {job.department && (
                     <div className="flex items-center gap-1">
-                      <Briefcase className="w-4 h-4 text-primary" />
+                      <Briefcase className="w-5 h-5 text-primary" />
                       <span>{job.department}</span>
                     </div>
                   )}
@@ -200,7 +200,7 @@ const JobDetails = () => {
 
                 {/* Rate */}
                 {displayRate && (
-                  <p className="text-2xl font-bold text-primary">
+                  <p className="text-3xl font-bold text-primary">
                     {displayRate}
                   </p>
                 )}
@@ -209,7 +209,7 @@ const JobDetails = () => {
               {/* Description */}
               {job.description && (
                 <div className="mb-8">
-                  <p className="text-muted-foreground leading-relaxed">
+                  <p className="text-lg text-muted-foreground leading-relaxed">
                     {job.description}
                   </p>
                 </div>
@@ -218,12 +218,12 @@ const JobDetails = () => {
               {/* Responsibilities */}
               {job.responsibilities && job.responsibilities.length > 0 && (
                 <div className="mb-8">
-                  <h2 className="text-xl font-semibold text-foreground mb-4">
+                  <h2 className="text-2xl font-semibold text-foreground mb-4">
                     Key Responsibilities
                   </h2>
                   <ul className="space-y-3">
                     {job.responsibilities.map((resp, idx) => (
-                      <li key={idx} className="flex items-start gap-3 text-muted-foreground">
+                      <li key={idx} className="flex items-start gap-3 text-lg text-muted-foreground">
                         <span className="text-primary mt-1 flex-shrink-0">•</span>
                         <span>{resp}</span>
                       </li>
@@ -235,12 +235,12 @@ const JobDetails = () => {
               {/* Qualifications */}
               {job.qualifications && job.qualifications.length > 0 && (
                 <div className="mb-8">
-                  <h2 className="text-xl font-semibold text-foreground mb-4">
+                  <h2 className="text-2xl font-semibold text-foreground mb-4">
                     Key Qualifications
                   </h2>
                   <ul className="space-y-3">
                     {job.qualifications.map((qual, idx) => (
-                      <li key={idx} className="flex items-start gap-3 text-muted-foreground">
+                      <li key={idx} className="flex items-start gap-3 text-lg text-muted-foreground">
                         <span className="text-primary mt-1 flex-shrink-0">•</span>
                         <span>{qual}</span>
                       </li>

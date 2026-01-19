@@ -480,19 +480,19 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
     value: boolean | null;
   }) => (
     <div className="space-y-2">
-      <Label className="text-sm font-medium">{label} *</Label>
+      <Label className="text-base font-medium">{label} *</Label>
       <RadioGroup
         value={value === null ? undefined : value ? "yes" : "no"}
         onValueChange={(val) => handleBooleanChange(field, val === "yes")}
-        className="flex gap-4"
+        className="flex gap-6"
       >
         <div className="flex items-center space-x-2">
-          <RadioGroupItem value="yes" id={`${field}-yes`} />
-          <Label htmlFor={`${field}-yes`} className="font-normal cursor-pointer">Yes</Label>
+          <RadioGroupItem value="yes" id={`${field}-yes`} className="h-5 w-5" />
+          <Label htmlFor={`${field}-yes`} className="font-normal cursor-pointer text-base">Yes</Label>
         </div>
         <div className="flex items-center space-x-2">
-          <RadioGroupItem value="no" id={`${field}-no`} />
-          <Label htmlFor={`${field}-no`} className="font-normal cursor-pointer">No</Label>
+          <RadioGroupItem value="no" id={`${field}-no`} className="h-5 w-5" />
+          <Label htmlFor={`${field}-no`} className="font-normal cursor-pointer text-base">No</Label>
         </div>
       </RadioGroup>
       {errors[field] && <p className="text-sm text-destructive">{errors[field]}</p>}
@@ -514,8 +514,8 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
       return (
         <div className="p-8 text-center">
           <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-          <h3 className="text-xl font-bold text-foreground mb-2">Application Submitted!</h3>
-          <p className="text-muted-foreground">Thank you for completing your application!</p>
+          <h3 className="text-2xl font-bold text-foreground mb-2">Application Submitted!</h3>
+          <p className="text-lg text-muted-foreground">Thank you for completing your application!</p>
         </div>
       );
     }
@@ -543,13 +543,13 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
       {currentStep === 'interview' && (
         <div className="mb-6 p-4 bg-muted/50 rounded-lg border border-border">
           <div className="flex items-center gap-2 mb-2">
-            <Clock className="w-4 h-4 text-primary" />
-            <p className="text-sm font-medium text-foreground">Interview Assessment (10-15 minutes)</p>
+            <Clock className="w-5 h-5 text-primary" />
+            <p className="text-base font-medium text-foreground">Interview Assessment (10-15 minutes)</p>
           </div>
-          <p className="text-sm text-muted-foreground leading-relaxed">
+          <p className="text-base text-muted-foreground leading-relaxed">
             You'll answer <strong>5 voice questions</strong>, <strong>5 written questions</strong>, and <strong>5 multiple-choice questions</strong>. This assessment helps us evaluate your experience, communication skills, and fit for the role.
           </p>
-          <p className="text-sm text-muted-foreground leading-relaxed mt-2">
+          <p className="text-base text-muted-foreground leading-relaxed mt-2">
             Your responses are supported by AI for efficiency but will be reviewed by a human recruiter. Answers that appear AI-generated may be flagged.
           </p>
         </div>
@@ -558,34 +558,34 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
 
       {/* Step 1: Pre-screening Questions */}
       {currentStep === 'prescreening' && (
-        <div className="space-y-5">
+        <div className="space-y-6">
           <div className="space-y-2">
-            <Label htmlFor="full_name">Full Name *</Label>
+            <Label htmlFor="full_name" className="text-base">Full Name *</Label>
             <Input
               id="full_name"
               value={formData.full_name}
               onChange={(e) => handleTextChange("full_name", e.target.value)}
               placeholder="Enter your full name"
-              className={errors.full_name ? "border-destructive" : ""}
+              className={`text-base h-11 ${errors.full_name ? "border-destructive" : ""}`}
             />
             {errors.full_name && <p className="text-sm text-destructive">{errors.full_name}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="email">Email Address *</Label>
+            <Label htmlFor="email" className="text-base">Email Address *</Label>
             <Input
               id="email"
               type="email"
               value={formData.email}
               onChange={(e) => handleTextChange("email", e.target.value)}
               placeholder="Enter your email address"
-              className={errors.email ? "border-destructive" : ""}
+              className={`text-base h-11 ${errors.email ? "border-destructive" : ""}`}
             />
             {errors.email && <p className="text-sm text-destructive">{errors.email}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="phone">Phone Number *</Label>
+            <Label htmlFor="phone" className="text-base">Phone Number *</Label>
             <div className="flex gap-2">
               <CountryCodeSelect
                 value={formData.phone_country_code}
@@ -597,15 +597,15 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
                 value={formData.phone}
                 onChange={(e) => handleTextChange("phone", e.target.value)}
                 placeholder="Enter phone number"
-                className={`flex-1 ${errors.phone ? "border-destructive" : ""}`}
+                className={`flex-1 text-base h-11 ${errors.phone ? "border-destructive" : ""}`}
               />
             </div>
             {errors.phone && <p className="text-sm text-destructive">{errors.phone}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="whatsapp">
-              WhatsApp Number <span className="text-muted-foreground text-xs">(Optional)</span>
+            <Label htmlFor="whatsapp" className="text-base">
+              WhatsApp Number <span className="text-muted-foreground text-sm">(Optional)</span>
             </Label>
             <div className="flex gap-2">
               <CountryCodeSelect
@@ -618,10 +618,10 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
                 value={formData.whatsapp}
                 onChange={(e) => handleTextChange("whatsapp", e.target.value)}
                 placeholder="Enter WhatsApp number"
-                className="flex-1"
+                className="flex-1 text-base h-11"
               />
             </div>
-            <p className="text-xs text-muted-foreground">Leave blank if same as phone number</p>
+            <p className="text-sm text-muted-foreground">Leave blank if same as phone number</p>
           </div>
 
           <YesNoQuestion 
@@ -649,7 +649,7 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
           />
 
           <div className="space-y-2">
-            <Label htmlFor="internet_speed">
+            <Label htmlFor="internet_speed" className="text-base">
               Please run a speedtest on{" "}
               <a 
                 href="https://www.speedtest.net" 
@@ -667,13 +667,13 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
               value={formData.internet_speed}
               onChange={(e) => handleTextChange("internet_speed", e.target.value)}
               placeholder="e.g., https://www.speedtest.net/result/12345678"
-              className={errors.internet_speed ? "border-destructive" : ""}
+              className={`text-base h-11 ${errors.internet_speed ? "border-destructive" : ""}`}
             />
             {errors.internet_speed && <p className="text-sm text-destructive">{errors.internet_speed}</p>}
             <button
               type="button"
               onClick={() => setShowSpeedtestSample(true)}
-              className="text-xs text-primary hover:underline mt-1"
+              className="text-sm text-primary hover:underline mt-1"
             >
               View sample
             </button>
@@ -728,13 +728,13 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
           />
 
           <div className="space-y-2">
-            <Label htmlFor="start_availability">How soon can you start? *</Label>
+            <Label htmlFor="start_availability" className="text-base">How soon can you start? *</Label>
             <Input
               id="start_availability"
               value={formData.start_availability}
               onChange={(e) => handleTextChange("start_availability", e.target.value)}
               placeholder="e.g., Immediately, 2 weeks notice"
-              className={errors.start_availability ? "border-destructive" : ""}
+              className={`text-base h-11 ${errors.start_availability ? "border-destructive" : ""}`}
             />
             {errors.start_availability && <p className="text-sm text-destructive">{errors.start_availability}</p>}
           </div>
@@ -752,19 +752,19 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
           />
 
           <div className="space-y-2">
-            <Label htmlFor="location">Your current location (city, country) *</Label>
+            <Label htmlFor="location" className="text-base">Your current location (city, country) *</Label>
             <Input
               id="location"
               value={formData.location}
               onChange={(e) => handleTextChange("location", e.target.value)}
               placeholder="e.g., Manila, Philippines"
-              className={errors.location ? "border-destructive" : ""}
+              className={`text-base h-11 ${errors.location ? "border-destructive" : ""}`}
             />
             {errors.location && <p className="text-sm text-destructive">{errors.location}</p>}
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="job_source">Where did you learn about this job opportunity? *</Label>
+            <Label htmlFor="job_source" className="text-base">Where did you learn about this job opportunity? *</Label>
             <Select
               value={formData.job_source}
               onValueChange={(value) => {
@@ -774,12 +774,12 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
                 }
               }}
             >
-              <SelectTrigger className={errors.job_source ? "border-destructive" : ""}>
+              <SelectTrigger className={`text-base h-11 ${errors.job_source ? "border-destructive" : ""}`}>
                 <SelectValue placeholder="Select an option" />
               </SelectTrigger>
               <SelectContent>
                 {JOB_SOURCE_OPTIONS.map((source) => (
-                  <SelectItem key={source} value={source}>
+                  <SelectItem key={source} value={source} className="text-base">
                     {source}
                   </SelectItem>
                 ))}
@@ -794,7 +794,7 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
                   value={formData.job_source_other}
                   onChange={(e) => handleTextChange("job_source_other", e.target.value)}
                   placeholder="Please specify where you found this job"
-                  className={errors.job_source_other ? "border-destructive" : ""}
+                  className={`text-base h-11 ${errors.job_source_other ? "border-destructive" : ""}`}
                 />
                 {errors.job_source_other && <p className="text-sm text-destructive">{errors.job_source_other}</p>}
               </div>
@@ -843,11 +843,11 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
 
       {/* Step 2: CV Upload */}
       {currentStep === 'cv-upload' && (
-        <div className="space-y-5">
+        <div className="space-y-6">
           <div className="text-center mb-6">
-            <FileText className="w-12 h-12 text-primary mx-auto mb-3" />
-            <h4 className="font-semibold text-lg">Upload Your CV</h4>
-            <p className="text-sm text-muted-foreground mt-1">
+            <FileText className="w-14 h-14 text-primary mx-auto mb-3" />
+            <h4 className="font-semibold text-xl">Upload Your CV</h4>
+            <p className="text-base text-muted-foreground mt-1">
               Please upload your CV in PDF or DOC/DOCX format
             </p>
           </div>
@@ -855,10 +855,10 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
           {/* Interview notice */}
           <div className="p-4 bg-primary/10 rounded-lg border border-primary/20">
             <div className="flex items-start gap-3">
-              <Mic className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
+              <Mic className="w-6 h-6 text-primary flex-shrink-0 mt-0.5" />
               <div>
-                <p className="text-sm font-medium text-foreground">Next Step: Candidate Assessment</p>
-                <p className="text-sm text-muted-foreground mt-1">
+                <p className="text-base font-medium text-foreground">Next Step: Candidate Assessment</p>
+                <p className="text-base text-muted-foreground mt-1">
                   After uploading your CV, you'll complete a short interview assessment with voice, written, and multiple-choice questions. This takes approximately <strong>10-15 minutes</strong>.
                 </p>
               </div>
@@ -881,18 +881,18 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
             
             {cvFile ? (
               <div className="space-y-2">
-                <CheckCircle className="w-10 h-10 text-green-500 mx-auto" />
-                <p className="font-medium text-foreground">{cvFile.name}</p>
-                <p className="text-sm text-muted-foreground">
+                <CheckCircle className="w-12 h-12 text-green-500 mx-auto" />
+                <p className="font-medium text-lg text-foreground">{cvFile.name}</p>
+                <p className="text-base text-muted-foreground">
                   {(cvFile.size / 1024 / 1024).toFixed(2)} MB
                 </p>
-                <p className="text-xs text-primary">Click to change file</p>
+                <p className="text-sm text-primary">Click to change file</p>
               </div>
             ) : (
               <div className="space-y-2">
-                <Upload className="w-10 h-10 text-muted-foreground mx-auto" />
-                <p className="font-medium text-foreground">Click to upload your CV</p>
-                <p className="text-sm text-muted-foreground">PDF, DOC, or DOCX (max 10MB)</p>
+                <Upload className="w-12 h-12 text-muted-foreground mx-auto" />
+                <p className="font-medium text-lg text-foreground">Click to upload your CV</p>
+                <p className="text-base text-muted-foreground">PDF, DOC, or DOCX (max 10MB)</p>
               </div>
             )}
           </div>
