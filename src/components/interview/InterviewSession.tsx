@@ -396,7 +396,33 @@ export function InterviewSession({
     }
   };
 
-  const handleVoiceAnswer = (recordingUrl: string, durationSeconds: number) => {
+  // Helper to save answer immediately to database
+  const saveAnswerToDb = async (answer: Answer) => {
+    try {
+      const { error: answerError } = await supabase
+        .from('interview_answers')
+        .insert({
+          session_id: sessionId,
+          question_id: answer.question_id,
+          voice_recording_url: answer.voice_recording_url || null,
+          voice_duration_seconds: answer.voice_duration_seconds || null,
+          text_answer: answer.text_answer || null,
+          selected_option_id: answer.selected_option_id || null
+        });
+
+      if (answerError) {
+        console.error('Failed to save answer to database:', answerError);
+        return false;
+      }
+      console.log('Answer saved successfully:', answer.question_id);
+      return true;
+    } catch (err) {
+      console.error('Error saving answer:', err);
+      return false;
+    }
+  };
+
+  const handleVoiceAnswer = async (recordingUrl: string, durationSeconds: number) => {
     if (!currentQuestion) return;
 
     const answer: Answer = {
@@ -408,11 +434,13 @@ export function InterviewSession({
       voice_duration_seconds: durationSeconds
     };
 
+    // Save immediately to database to prevent data loss
+    await saveAnswerToDb(answer);
     setAnswers(prev => [...prev, answer]);
     moveToNextQuestion();
   };
 
-  const handleTextAnswer = (textAnswer: string) => {
+  const handleTextAnswer = async (textAnswer: string) => {
     if (!currentQuestion) return;
 
     const answer: Answer = {
@@ -423,11 +451,13 @@ export function InterviewSession({
       text_answer: textAnswer
     };
 
+    // Save immediately to database to prevent data loss
+    await saveAnswerToDb(answer);
     setAnswers(prev => [...prev, answer]);
     moveToNextQuestion();
   };
 
-  const handleMcAnswer = (selectedOptionId: string) => {
+  const handleMcAnswer = async (selectedOptionId: string) => {
     if (!currentQuestion || !('options' in currentQuestion)) return;
 
     const answer: Answer = {
@@ -439,6 +469,8 @@ export function InterviewSession({
       options: (currentQuestion as MultipleChoiceQuestion).options
     };
 
+    // Save immediately to database to prevent data loss
+    await saveAnswerToDb(answer);
     setAnswers(prev => [...prev, answer]);
     moveToNextQuestion();
   };
@@ -467,23 +499,9 @@ export function InterviewSession({
     setCurrentStep('submitting');
 
     try {
-      // Save answers to database
-      for (const answer of answers) {
-        const { error: answerError } = await supabase
-          .from('interview_answers')
-          .insert({
-            session_id: sessionId,
-            question_id: answer.question_id,
-            voice_recording_url: answer.voice_recording_url || null,
-            voice_duration_seconds: answer.voice_duration_seconds || null,
-            text_answer: answer.text_answer || null,
-            selected_option_id: answer.selected_option_id || null
-          });
-
-        if (answerError) {
-          console.error('Failed to save answer:', answerError);
-        }
-      }
+      // Answers are already saved to database incrementally after each question
+      // Just trigger the AI assessment now
+      console.log(`Submitting interview with ${answers.length} answers (already saved to DB)`);
 
       // Trigger AI assessment (or skip if in no-AI mode)
       const { data, error: assessError } = await supabase.functions.invoke('assess-interview', {
