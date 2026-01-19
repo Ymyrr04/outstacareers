@@ -271,12 +271,12 @@ export function VoiceQuestionStep({
 
       {/* Question Card */}
       <div className="bg-muted/50 rounded-lg p-6">
-        <div className="flex items-start gap-4">
-          <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-semibold text-sm">
+        <div className="flex items-start gap-5">
+          <div className="flex-shrink-0 w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground font-bold text-xl shadow-md">
             {questionNumber}
           </div>
           <div className="flex-1 select-none" onCopy={(e) => e.preventDefault()}>
-            <p className="text-foreground font-medium text-lg leading-relaxed pointer-events-none">
+            <p className="text-foreground font-medium text-xl leading-relaxed pointer-events-none">
               {question.question_text}
             </p>
           </div>
