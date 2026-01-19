@@ -41,6 +41,7 @@ import {
 } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
 import { ApplicantNotesEditor, type ApplicantNotesEditorRef } from '@/components/ApplicantNotesEditor';
+import { FormattedNotes } from '@/components/FormattedNotes';
 
 interface ToolMatch {
   tool: string;
@@ -942,9 +943,11 @@ export default function ApplicantSearchResults({
                       initialValue={editForm.notes}
                       placeholder="Add notes about this applicant..."
                     />
+                  ) : applicant.notes ? (
+                    <FormattedNotes content={applicant.notes} />
                   ) : (
-                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                      {applicant.notes || 'No notes yet. Click "Add Note" to add observations about this applicant.'}
+                    <p className="text-sm text-muted-foreground">
+                      No notes yet. Click "Add Note" to add observations about this applicant.
                     </p>
                   )}
                 </div>
