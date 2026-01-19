@@ -27,10 +27,10 @@ interface AdminUser {
 const jobSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   rate: z.string().max(100).optional(),
-  description: z.string().max(2000).optional(),
+  description: z.string().max(5000).optional(),
   region: z.enum(['all', 'philippines', 'latin-america']),
-  qualifications: z.array(z.string().max(200)).max(10).optional(),
-  responsibilities: z.array(z.string().max(200)).max(10).optional(),
+  qualifications: z.array(z.string().max(1000)).max(20).optional(),
+  responsibilities: z.array(z.string().max(1000)).max(20).optional(),
   assigned_admin_id: z.string().uuid().optional().nullable(),
 });
 
