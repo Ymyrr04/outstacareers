@@ -1724,7 +1724,9 @@ const Admin = () => {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setActiveAssessmentTab('cv');
-                                  setExpandedApplicant(applicant.id);
+                                  if (expandedApplicant !== applicant.id) {
+                                    setExpandedApplicant(applicant.id);
+                                  }
                                 }}
                                 className="flex items-center gap-1 text-green-600 hover:underline cursor-pointer"
                               >
@@ -1745,7 +1747,9 @@ const Admin = () => {
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setActiveAssessmentTab('interview');
-                                  setExpandedApplicant(applicant.id);
+                                  if (expandedApplicant !== applicant.id) {
+                                    setExpandedApplicant(applicant.id);
+                                  }
                                 }}
                                 className="flex items-center gap-1 text-purple-600 hover:underline cursor-pointer"
                               >
