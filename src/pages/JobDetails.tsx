@@ -209,7 +209,7 @@ const JobDetails = () => {
               {/* Description */}
               {job.description && (
                 <div className="mb-8">
-                  <p className="text-lg text-muted-foreground leading-relaxed">
+                  <p className="text-lg text-foreground/80 leading-relaxed">
                     {job.description}
                   </p>
                 </div>
@@ -223,7 +223,7 @@ const JobDetails = () => {
                   </h2>
                   <ul className="space-y-3">
                     {job.responsibilities.map((resp, idx) => (
-                      <li key={idx} className="flex items-start gap-3 text-lg text-muted-foreground">
+                      <li key={idx} className="flex items-start gap-3 text-lg text-foreground/80">
                         <span className="text-primary mt-1 flex-shrink-0">•</span>
                         <span>{resp}</span>
                       </li>
@@ -240,7 +240,7 @@ const JobDetails = () => {
                   </h2>
                   <ul className="space-y-3">
                     {job.qualifications.map((qual, idx) => (
-                      <li key={idx} className="flex items-start gap-3 text-lg text-muted-foreground">
+                      <li key={idx} className="flex items-start gap-3 text-lg text-foreground/80">
                         <span className="text-primary mt-1 flex-shrink-0">•</span>
                         <span>{qual}</span>
                       </li>
