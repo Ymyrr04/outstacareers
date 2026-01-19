@@ -203,7 +203,7 @@ export function InterviewResultsView({ sessionId, session }: InterviewResultsVie
       )}
       
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4">
+        <TabsList className="grid w-full grid-cols-4" onMouseDown={(e) => e.stopPropagation()}>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="experience" className="flex items-center gap-1">
             <Mic className="w-3 h-3" />
