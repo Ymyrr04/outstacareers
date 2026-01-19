@@ -40,14 +40,14 @@ interface ClientData {
   is_hiring: boolean | null;
 }
 
-type CardId = 'industry' | 'roles' | 'country' | 'monthlyHires' | 'separations' | 'retentionCompany' | 'retentionIndustry' | 'retentionRole';
+type CardId = 'industry' | 'leadsFrom' | 'roles' | 'country' | 'monthlyHires' | 'separations' | 'retentionCompany' | 'retentionIndustry' | 'retentionRole';
 
 type SortField = 'hired' | 'active' | 'retention';
 type SortDirection = 'asc' | 'desc';
 
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16'];
 
-const DEFAULT_CARD_ORDER: CardId[] = ['industry', 'roles', 'country', 'monthlyHires', 'separations', 'retentionCompany', 'retentionIndustry', 'retentionRole'];
+const DEFAULT_CARD_ORDER: CardId[] = ['industry', 'leadsFrom', 'roles', 'country', 'monthlyHires', 'separations', 'retentionCompany', 'retentionIndustry', 'retentionRole'];
 
 export const ClientAnalyticsDashboard = () => {
   const { toast } = useToast();
@@ -143,6 +143,23 @@ export const ClientAnalyticsDashboard = () => {
     });
     const total = clients.length;
     return Object.entries(industryMap)
+      .map(([name, value]) => ({ 
+        name, 
+        value, 
+        percentage: total > 0 ? Math.round((value / total) * 100) : 0 
+      }))
+      .sort((a, b) => b.value - a.value);
+  }, [clients]);
+
+  // Clients by Lead Source
+  const clientsByLeadsFrom = useMemo(() => {
+    const leadsMap: Record<string, number> = {};
+    clients.forEach(c => {
+      const source = c.leads_from || 'Unknown';
+      leadsMap[source] = (leadsMap[source] || 0) + 1;
+    });
+    const total = clients.length;
+    return Object.entries(leadsMap)
       .map(([name, value]) => ({ 
         name, 
         value, 
@@ -809,8 +826,44 @@ export const ClientAnalyticsDashboard = () => {
     </DraggableCard>
   );
 
+  const renderLeadsFromCard = () => (
+    <DraggableCard cardId="leadsFrom">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2 pl-5">
+            <TrendingUp className="w-4 h-4" />
+            Clients by Lead Source
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3 max-h-[300px] overflow-y-auto">
+            {clientsByLeadsFrom.map((source, index) => (
+              <div key={source.name} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-3 h-3 rounded-full flex-shrink-0" 
+                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                  />
+                  <span className="text-sm truncate" title={source.name}>{source.name}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium">{source.value}</span>
+                  <span className="text-sm text-muted-foreground w-12 text-right">{source.percentage}%</span>
+                </div>
+              </div>
+            ))}
+            {clientsByLeadsFrom.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">No data available</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </DraggableCard>
+  );
+
   const cardRenderers: Record<CardId, () => JSX.Element> = {
     industry: renderIndustryCard,
+    leadsFrom: renderLeadsFromCard,
     roles: renderRolesCard,
     country: renderCountryCard,
     monthlyHires: renderMonthlyHiresCard,
