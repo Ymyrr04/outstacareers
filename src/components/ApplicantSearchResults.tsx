@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -40,6 +40,7 @@ import {
   MessageCircle
 } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
+import { NotesEditor } from '@/components/NotesEditor';
 
 interface ToolMatch {
   tool: string;
@@ -932,11 +933,9 @@ export default function ApplicantSearchResults({
                   </div>
                   
                   {editingApplicant === applicant.id ? (
-                    <Textarea
+                    <NotesEditor 
                       value={editForm.notes}
-                      onChange={(e) => setEditForm(prev => ({ ...prev, notes: e.target.value }))}
-                      placeholder="Add notes about this applicant..."
-                      className="min-h-[100px] bg-background"
+                      onChange={(value) => setEditForm(prev => ({ ...prev, notes: value }))}
                     />
                   ) : (
                     <p className="text-sm text-muted-foreground whitespace-pre-wrap">
