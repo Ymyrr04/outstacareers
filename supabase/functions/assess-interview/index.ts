@@ -242,6 +242,48 @@ serve(async (req) => {
       );
     }
 
+    // Validate that answers have actual content (not just question metadata)
+    const hasVoiceContent = answers.some(a => a.section === 'voice' && a.voice_recording_url);
+    const hasTextContent = answers.some(a => a.section === 'text' && a.text_answer && a.text_answer.trim().length > 0);
+    const hasMCContent = answers.some(a => a.section === 'multiple_choice' && a.selected_option_id);
+    
+    const hasAnyContent = hasVoiceContent || hasTextContent || hasMCContent;
+    
+    if (!hasAnyContent) {
+      console.log('No actual answer content found - marking for manual review');
+      
+      // Initialize Supabase client for updating session
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      
+      const { error: updateError } = await supabase
+        .from('interview_sessions')
+        .update({
+          status: 'completed_manual_review',
+          completed_at: new Date().toISOString(),
+          ai_summary: 'Manual review required - No interview responses were recorded. Session may have timed out or answers were not submitted.',
+        })
+        .eq('id', session_id);
+
+      if (updateError) {
+        console.error('Error updating session for manual review:', updateError);
+      }
+
+      // Trigger admin notification
+      await triggerAdminNotification(supabase, session_id, 'completed_manual_review');
+
+      return new Response(
+        JSON.stringify({ 
+          success: true,
+          manual_review: true,
+          no_content: true,
+          message: 'Interview session had no recorded responses. Marked for manual review.'
+        }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
     // Initialize Supabase client for updating session
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
