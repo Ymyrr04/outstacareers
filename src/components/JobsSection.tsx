@@ -7,7 +7,6 @@ import { generateJobUrl } from "@/lib/slugify";
 import { toast } from "sonner";
 import { useJobs, Job } from "@/hooks/useJobs";
 import { useAnalytics } from "@/hooks/useAnalytics";
-import PreScreeningForm from "@/components/PreScreeningForm";
 // Fixed conversion values for Philippines
 const USD_TO_PHP_RATE = 56;
 const WEEKS_PER_MONTH = 4;
@@ -250,7 +249,6 @@ const JobsSection = () => {
   const navigate = useNavigate();
   const [selectedRegion, setSelectedRegion] = useState<Region>("philippines");
   const [hoveredJobId, setHoveredJobId] = useState<string | null>(null);
-  const [preScreeningJob, setPreScreeningJob] = useState<Job | null>(null);
   const { jobs: dbJobs, loading } = useJobs();
   const { trackJobView, trackApplyClick } = useAnalytics();
   const viewedJobs = useRef<Set<string>>(new Set());
@@ -260,11 +258,7 @@ const JobsSection = () => {
 
   const handleApplyClick = (job: Job) => {
     trackApplyClick(job.id);
-    setPreScreeningJob(job);
-  };
-
-  const handleClosePreScreening = () => {
-    setPreScreeningJob(null);
+    navigate(`/apply/${job.id}`);
   };
 
   const handleJobView = (jobId: string) => {
@@ -428,16 +422,7 @@ const JobsSection = () => {
   };
 
   return (
-    <>
-      {/* Pre-screening form */}
-      {preScreeningJob && (
-        <PreScreeningForm
-          job={preScreeningJob}
-          onClose={handleClosePreScreening}
-        />
-      )}
-      
-      <section id="positions" className="py-20 bg-gradient-section relative">
+    <section id="positions" className="py-20 bg-gradient-section relative">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="text-center mb-12">
           <h2 className="text-4xl md:text-5xl font-bold text-foreground mb-4">
@@ -501,8 +486,7 @@ const JobsSection = () => {
           </Button>
         </div>
       </div>
-      </section>
-    </>
+    </section>
   );
 };
 
