@@ -1905,7 +1905,7 @@ const Admin = () => {
                       </div>
 
                       {expandedApplicant === applicant.id && (
-                        <div className="mt-4 pt-4 border-t border-border">
+                        <div className="mt-4 pt-4 border-t border-border" onMouseDown={(e) => e.stopPropagation()}>
                           {/* Assessment Tabs - CV vs Interview */}
                           <Tabs value={activeAssessmentTab} onValueChange={(val) => setActiveAssessmentTab(val as 'cv' | 'interview')} className="mb-6">
                             <TabsList className="grid w-full grid-cols-2" onMouseDown={(e) => e.stopPropagation()}>
