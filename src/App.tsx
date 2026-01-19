@@ -11,6 +11,7 @@ import Auth from "./pages/Auth";
 import ResetPassword from "./pages/ResetPassword";
 import Admin from "./pages/Admin";
 import JobApplication from "./pages/JobApplication";
+import JobDetails from "./pages/JobDetails";
 import ResumeInterview from "./pages/ResumeInterview";
 import ImageEditor from "./pages/ImageEditor";
 import CalendlyCallback from "./pages/CalendlyCallback";
@@ -32,6 +33,7 @@ const App = () => (
               <Route path="/reset-password" element={<ResetPassword />} />
               <Route path="/admin" element={<Admin />} />
               <Route path="/jobs/:company/:titleSlug/:jobId" element={<JobApplication />} />
+              <Route path="/job/:jobId" element={<JobDetails />} />
               <Route path="/interview/:sessionId" element={<ResumeInterview />} />
               <Route path="/image-editor" element={<ImageEditor />} />
               <Route path="/auth/calendly/callback" element={<CalendlyCallback />} />
