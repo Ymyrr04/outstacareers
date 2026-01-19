@@ -1721,6 +1721,7 @@ const Admin = () => {
                             {/* CV Assessment quick link */}
                             {applicant.total_score !== null && (
                               <button
+                                onMouseDown={(e) => e.stopPropagation()}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setActiveAssessmentTab('cv');
@@ -1744,6 +1745,7 @@ const Admin = () => {
                             {/* Interview Results quick link */}
                             {applicant.interview_session?.status === 'completed' && (
                               <button
+                                onMouseDown={(e) => e.stopPropagation()}
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   setActiveAssessmentTab('interview');
