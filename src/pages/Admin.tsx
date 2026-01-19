@@ -36,6 +36,7 @@ import { RoleHistorySection } from '@/components/RoleHistorySection';
 import { ApplicantSourceBadge } from '@/components/ApplicantSourceBadge';
 import { CopyableText } from '@/components/CopyableText';
 import { ApplicantNotesEditor, type ApplicantNotesEditorRef } from '@/components/ApplicantNotesEditor';
+import { FormattedNotes } from '@/components/FormattedNotes';
 import { useEmailTemplates, statusToTrigger, useUnreadMessageCounts } from '@/hooks/useEmailTemplates';
 import { addHours } from 'date-fns';
 
@@ -2239,9 +2240,11 @@ const Admin = () => {
                                 initialValue={editForm.notes}
                                 placeholder="Add notes about this applicant..."
                               />
+                            ) : applicant.notes ? (
+                              <FormattedNotes content={applicant.notes} />
                             ) : (
-                              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                                {applicant.notes || 'No notes yet. Click "Add Note" to add observations about this applicant.'}
+                              <p className="text-sm text-muted-foreground">
+                                No notes yet. Click "Add Note" to add observations about this applicant.
                               </p>
                             )}
                           </div>

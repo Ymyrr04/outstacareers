@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Pencil, Save, Loader2, UserCircle, X } from 'lucide-react';
 import { NotesEditor } from '@/components/NotesEditor';
+import { FormattedNotes } from '@/components/FormattedNotes';
 
 interface CandidateProfileSectionProps {
   applicantId: string;
@@ -111,9 +112,11 @@ export function CandidateProfileSection({
           placeholder="Add internal profile summary...&#10;&#10;• Key strengths and positioning&#10;• Suitable clients or industries&#10;• Notable skills or experience"
           minHeight="120px"
         />
+      ) : candidateProfile ? (
+        <FormattedNotes content={candidateProfile} />
       ) : (
-        <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-          {candidateProfile || 'No candidate profile yet. Click "Add Profile" to add a summary highlighting strengths, positioning, and client suitability.'}
+        <p className="text-sm text-muted-foreground">
+          No candidate profile yet. Click "Add Profile" to add a summary highlighting strengths, positioning, and client suitability.
         </p>
       )}
     </div>
