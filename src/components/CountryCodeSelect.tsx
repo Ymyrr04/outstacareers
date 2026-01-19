@@ -21,6 +21,7 @@ const COUNTRY_CODES = [
   { code: '+57', country: 'Colombia', flag: '🇨🇴' },
   { code: '+506', country: 'Costa Rica', flag: '🇨🇷' },
   { code: '+45', country: 'Denmark', flag: '🇩🇰' },
+  { code: '+1809', country: 'Dominican Republic', flag: '🇩🇴' },
   { code: '+20', country: 'Egypt', flag: '🇪🇬' },
   { code: '+503', country: 'El Salvador', flag: '🇸🇻' },
   { code: '+358', country: 'Finland', flag: '🇫🇮' },
@@ -64,6 +65,7 @@ const COUNTRY_CODES = [
   { code: '+380', country: 'Ukraine', flag: '🇺🇦' },
   { code: '+44', country: 'United Kingdom', flag: '🇬🇧' },
   { code: '+1', country: 'United States', flag: '🇺🇸' },
+  { code: '+58', country: 'Venezuela', flag: '🇻🇪' },
   { code: '+84', country: 'Vietnam', flag: '🇻🇳' },
 ];
 
