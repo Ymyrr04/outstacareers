@@ -40,7 +40,7 @@ import {
   MessageCircle
 } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
-import { NotesEditor } from '@/components/NotesEditor';
+import { ApplicantNotesEditor } from '@/components/ApplicantNotesEditor';
 
 interface ToolMatch {
   tool: string;
@@ -933,13 +933,11 @@ export default function ApplicantSearchResults({
                   </div>
                   
                   {editingApplicant === applicant.id ? (
-                    <div className="notes-editor-wrapper">
-                      <NotesEditor 
-                        value={editForm.notes}
-                        onChange={(value) => setEditForm(prev => ({ ...prev, notes: value }))}
-                        placeholder="Add notes about this applicant..."
-                      />
-                    </div>
+                    <ApplicantNotesEditor 
+                      initialValue={editForm.notes}
+                      onValueChange={(value) => setEditForm(prev => ({ ...prev, notes: value }))}
+                      placeholder="Add notes about this applicant..."
+                    />
                   ) : (
                     <p className="text-sm text-muted-foreground whitespace-pre-wrap">
                       {applicant.notes || 'No notes yet. Click "Add Note" to add observations about this applicant.'}
