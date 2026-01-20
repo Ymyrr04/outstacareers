@@ -644,6 +644,7 @@ export type Database = {
           answered_at: string
           created_at: string
           id: string
+          paste_detected: boolean | null
           question_id: string
           selected_option_id: string | null
           session_id: string
@@ -657,6 +658,7 @@ export type Database = {
           answered_at?: string
           created_at?: string
           id?: string
+          paste_detected?: boolean | null
           question_id: string
           selected_option_id?: string | null
           session_id: string
@@ -670,6 +672,7 @@ export type Database = {
           answered_at?: string
           created_at?: string
           id?: string
+          paste_detected?: boolean | null
           question_id?: string
           selected_option_id?: string | null
           session_id?: string

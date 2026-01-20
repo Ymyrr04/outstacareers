@@ -13,7 +13,7 @@ interface TextQuestionStepProps {
   question: TextQuestion;
   questionNumber: number;
   totalQuestions: number;
-  onAnswer: (textAnswer: string) => void;
+  onAnswer: (textAnswer: string, pasteDetected: boolean) => void;
 }
 
 export function TextQuestionStep({
@@ -23,12 +23,18 @@ export function TextQuestionStep({
   onAnswer
 }: TextQuestionStepProps) {
   const [answer, setAnswer] = useState("");
+  const [pasteDetected, setPasteDetected] = useState(false);
 
   const handleSubmit = () => {
     if (answer.trim().length >= 50) {
-      onAnswer(answer.trim());
+      onAnswer(answer.trim(), pasteDetected);
       setAnswer("");
+      setPasteDetected(false);
     }
+  };
+
+  const handlePaste = () => {
+    setPasteDetected(true);
   };
 
   const wordCount = answer.trim().split(/\s+/).filter(Boolean).length;
@@ -56,6 +62,7 @@ export function TextQuestionStep({
         <Textarea
           value={answer}
           onChange={(e) => setAnswer(e.target.value)}
+          onPaste={handlePaste}
           placeholder="Type your answer here... Be specific and provide examples where possible."
           className="min-h-[200px] resize-none text-xl leading-relaxed p-4"
         />
