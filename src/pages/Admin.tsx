@@ -606,6 +606,27 @@ const Admin = () => {
     }
   }, [user, isAdmin]);
 
+  // Real-time subscription for applicants_prescreen changes to sync with Recruiter Dash
+  useEffect(() => {
+    if (!user || !isAdmin) return;
+
+    const channel = supabase
+      .channel('admin-applicants-sync')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'applicants_prescreen' },
+        (payload) => {
+          console.log('Admin: Applicant change detected:', payload.eventType);
+          fetchApplicants();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user, isAdmin]);
+
   const handleToggleActive = async (job: Job) => {
     const { error } = await supabase
       .from('jobs')

@@ -252,6 +252,26 @@ export const MyApplicantsDashboard = () => {
     fetchData();
   }, [fetchAdminUsers, fetchData]);
 
+  // Real-time subscription for applicants_prescreen changes
+  useEffect(() => {
+    const channel = supabase
+      .channel('recruiter-dash-applicants')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'applicants_prescreen' },
+        (payload) => {
+          console.log('Applicant change detected:', payload.eventType);
+          // Refetch data to sync with other views
+          fetchData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchData]);
+
   // Get jobs filtered by selected admin
   const filteredJobs = useMemo(() => {
     if (selectedAdminFilter === 'all') return allJobs;
