@@ -100,11 +100,13 @@ export const MyApplicantsDashboard = () => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [myJobs, setMyJobs] = useState<Job[]>([]);
+  const [allJobs, setAllJobs] = useState<Job[]>([]);
+  const [adminUsersMap, setAdminUsersMap] = useState<Record<string, string>>({});
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [activeStatusFolder, setActiveStatusFolder] = useState<ApplicantStatusFolder>('For Review');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedJobFilter, setSelectedJobFilter] = useState<string>('all');
+  const [selectedAdminFilter, setSelectedAdminFilter] = useState<string>('all');
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   
   // Drag and drop state
@@ -118,21 +120,37 @@ export const MyApplicantsDashboard = () => {
   
   const { unreadCounts, markAsRead: markMessagesAsRead } = useUnreadMessageCounts();
 
+  // Fetch admin users
+  const fetchAdminUsers = useCallback(async () => {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-admin-users');
+      if (error) throw error;
+      
+      const map: Record<string, string> = {};
+      (data?.admins || []).forEach((admin: { id: string; email: string }) => {
+        map[admin.id] = admin.email;
+      });
+      setAdminUsersMap(map);
+    } catch (error) {
+      console.error('Failed to fetch admin users:', error);
+    }
+  }, []);
+
   const fetchData = useCallback(async () => {
     if (!user) return;
     
     setLoading(true);
     try {
-      // 1. Fetch jobs assigned to current user
+      // 1. Fetch all jobs with assigned admins
       const { data: jobsData, error: jobsError } = await supabase
         .from('jobs')
         .select('id, title, department, region, assigned_admin_id')
-        .eq('assigned_admin_id', user.id);
+        .not('assigned_admin_id', 'is', null);
 
       if (jobsError) throw jobsError;
 
       const assignedJobs = jobsData || [];
-      setMyJobs(assignedJobs);
+      setAllJobs(assignedJobs);
 
       if (assignedJobs.length === 0) {
         setApplicants([]);
@@ -140,7 +158,7 @@ export const MyApplicantsDashboard = () => {
         return;
       }
 
-      // 2. Fetch applicants for those jobs
+      // 2. Fetch applicants for all assigned jobs
       const jobIds = assignedJobs.map(j => j.id);
       const { data: applicantsData, error: applicantsError } = await supabase
         .from('applicants_prescreen')
@@ -196,8 +214,15 @@ export const MyApplicantsDashboard = () => {
   }, [user, toast]);
 
   useEffect(() => {
+    fetchAdminUsers();
     fetchData();
-  }, [fetchData]);
+  }, [fetchAdminUsers, fetchData]);
+
+  // Get jobs filtered by selected admin
+  const filteredJobs = useMemo(() => {
+    if (selectedAdminFilter === 'all') return allJobs;
+    return allJobs.filter(j => j.assigned_admin_id === selectedAdminFilter);
+  }, [allJobs, selectedAdminFilter]);
 
   // Helper to calculate overall score
   const getOverallScore = (applicant: Applicant): { score: number; hasInterview: boolean } => {
@@ -235,14 +260,21 @@ export const MyApplicantsDashboard = () => {
     });
   };
 
-  // Filter applicants
+  // Filter applicants based on admin and job selection
   const filteredApplicants = useMemo(() => {
-    let filtered = applicants.filter(a => a.status === activeStatusFolder);
+    // First filter by admin (via jobs assigned to that admin)
+    const jobIdsForAdmin = filteredJobs.map(j => j.id);
+    let filtered = applicants.filter(a => a.job_id && jobIdsForAdmin.includes(a.job_id));
     
+    // Then filter by status folder
+    filtered = filtered.filter(a => a.status === activeStatusFolder);
+    
+    // Then filter by specific job if selected
     if (selectedJobFilter !== 'all') {
       filtered = filtered.filter(a => a.job_id === selectedJobFilter);
     }
     
+    // Then filter by search term
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(a =>
@@ -254,20 +286,23 @@ export const MyApplicantsDashboard = () => {
     }
     
     return sortApplicants(filtered);
-  }, [applicants, activeStatusFolder, selectedJobFilter, searchTerm, sortOption]);
+  }, [applicants, filteredJobs, activeStatusFolder, selectedJobFilter, searchTerm, sortOption]);
 
-  // Folder counts
+  // Folder counts - based on filtered admin jobs
   const folderCounts = useMemo(() => {
+    const jobIdsForAdmin = filteredJobs.map(j => j.id);
+    const adminApplicants = applicants.filter(a => a.job_id && jobIdsForAdmin.includes(a.job_id));
+    
     const counts: Record<ApplicantStatusFolder, number> = {} as any;
     APPLICANT_STATUS_FOLDERS.forEach(folder => {
-      let filtered = applicants.filter(a => a.status === folder);
+      let filtered = adminApplicants.filter(a => a.status === folder);
       if (selectedJobFilter !== 'all') {
         filtered = filtered.filter(a => a.job_id === selectedJobFilter);
       }
       counts[folder] = filtered.length;
     });
     return counts;
-  }, [applicants, selectedJobFilter]);
+  }, [applicants, filteredJobs, selectedJobFilter]);
 
   // Handle status change
   const handleStatusChange = async (applicantId: string, newStatus: string) => {
@@ -360,7 +395,7 @@ export const MyApplicantsDashboard = () => {
   // Get job title by ID
   const getJobTitle = (jobId: string | null) => {
     if (!jobId) return 'Unknown';
-    const job = myJobs.find(j => j.id === jobId);
+    const job = allJobs.find(j => j.id === jobId);
     return job?.title || 'Unknown';
   };
 
@@ -368,19 +403,19 @@ export const MyApplicantsDashboard = () => {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
-        <span className="ml-2 text-muted-foreground">Loading your applicants...</span>
+        <span className="ml-2 text-muted-foreground">Loading applicants...</span>
       </div>
     );
   }
 
-  if (myJobs.length === 0) {
+  if (allJobs.length === 0) {
     return (
       <Card>
         <CardContent className="py-12 text-center">
           <FolderOpen className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-          <h3 className="text-lg font-medium mb-2">No Jobs Assigned</h3>
+          <h3 className="text-lg font-medium mb-2">No Jobs With Assigned Admins</h3>
           <p className="text-muted-foreground">
-            You don't have any jobs assigned to you yet. Contact a super admin to get jobs assigned.
+            There are no jobs with assigned admins yet. Assign admins to jobs in the Jobs tab.
           </p>
         </CardContent>
       </Card>
@@ -392,9 +427,12 @@ export const MyApplicantsDashboard = () => {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">My Applicants</h2>
+          <h2 className="text-2xl font-bold">Applicants by Role Owner</h2>
           <p className="text-muted-foreground">
-            Applicants for your {myJobs.length} assigned job{myJobs.length > 1 ? 's' : ''}
+            {selectedAdminFilter === 'all' 
+              ? `Viewing applicants across ${allJobs.length} assigned jobs`
+              : `${filteredJobs.length} job${filteredJobs.length !== 1 ? 's' : ''} • ${adminUsersMap[selectedAdminFilter] || 'Unknown Admin'}`
+            }
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={fetchData}>
@@ -414,13 +452,27 @@ export const MyApplicantsDashboard = () => {
             className="pl-9"
           />
         </div>
+        <Select value={selectedAdminFilter} onValueChange={(v) => {
+          setSelectedAdminFilter(v);
+          setSelectedJobFilter('all'); // Reset job filter when admin changes
+        }}>
+          <SelectTrigger className="w-[200px]">
+            <SelectValue placeholder="Filter by admin" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Admins</SelectItem>
+            {Object.entries(adminUsersMap).map(([id, email]) => (
+              <SelectItem key={id} value={id}>{email}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
         <Select value={selectedJobFilter} onValueChange={setSelectedJobFilter}>
           <SelectTrigger className="w-[200px]">
             <SelectValue placeholder="Filter by job" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">All My Jobs</SelectItem>
-            {myJobs.map(job => (
+            <SelectItem value="all">All Jobs</SelectItem>
+            {filteredJobs.map(job => (
               <SelectItem key={job.id} value={job.id}>{job.title}</SelectItem>
             ))}
           </SelectContent>
@@ -436,6 +488,19 @@ export const MyApplicantsDashboard = () => {
             <SelectItem value="starred">Starred First</SelectItem>
           </SelectContent>
         </Select>
+        {(selectedAdminFilter !== 'all' || selectedJobFilter !== 'all' || searchTerm) && (
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => {
+              setSelectedAdminFilter('all');
+              setSelectedJobFilter('all');
+              setSearchTerm('');
+            }}
+          >
+            Clear filters
+          </Button>
+        )}
       </div>
 
       {/* Status Folder Tabs */}

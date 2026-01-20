@@ -930,7 +930,7 @@ const Admin = () => {
             </TabsTrigger>
             <TabsTrigger value="my-applicants" className="flex items-center gap-2">
               <ClipboardList className="w-4 h-4" />
-              My Applicants
+              Role Owners
             </TabsTrigger>
             <TabsTrigger value="clients" className="flex items-center gap-2">
               <Building2 className="w-4 h-4" />
