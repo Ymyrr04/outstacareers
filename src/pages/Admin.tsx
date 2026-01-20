@@ -1064,9 +1064,9 @@ const Admin = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => {
-                              // Use production URL for shareable links
+                              // Use production URL for shareable links - links to dedicated job page
                               const productionOrigin = 'https://outstacareers.lovable.app';
-                              const url = `${productionOrigin}${generateJobUrl(job.title, job.id)}`;
+                              const url = `${productionOrigin}/job/${job.id}`;
                               navigator.clipboard.writeText(url);
                               toast({
                                 title: "Link copied!",
