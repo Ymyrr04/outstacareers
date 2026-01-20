@@ -1,4 +1,4 @@
-import { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -28,6 +28,13 @@ import {
   GripVertical,
   RefreshCw,
   FolderOpen,
+  Eye,
+  ChevronDown,
+  ChevronUp,
+  User,
+  ClipboardList,
+  StickyNote,
+  ExternalLink,
 } from 'lucide-react';
 import {
   Table,
@@ -43,6 +50,12 @@ import { CheckAvailabilityButton } from '@/components/CheckAvailabilityButton';
 import { ApplicantSourceBadge } from '@/components/ApplicantSourceBadge';
 import { InterviewInviteDialog } from '@/components/InterviewInviteDialog';
 import { useUnreadMessageCounts } from '@/hooks/useEmailTemplates';
+import { CVImagePreview } from '@/components/CVImagePreview';
+import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
+import { ApplicantNotesEditor, ApplicantNotesEditorRef } from '@/components/ApplicantNotesEditor';
+import { FormattedNotes } from '@/components/FormattedNotes';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 // Status options for applicant tracking
 const APPLICANT_STATUS_FOLDERS = [
@@ -92,6 +105,11 @@ interface Applicant {
   availability_checked_at: string | null;
   details_viewed_at: string | null;
   interview_session: InterviewSession | null;
+  // Additional fields for expanded view
+  notes: string | null;
+  candidate_profile: string | null;
+  ai_summary: string | null;
+  ai_assessment_details: any;
 }
 
 type SortOption = 'newest' | 'score-desc' | 'score-asc' | 'starred';
@@ -117,6 +135,15 @@ export const MyApplicantsDashboard = () => {
   const [communicationHistoryApplicant, setCommunicationHistoryApplicant] = useState<{ id: string; name: string; email: string } | null>(null);
   const [sendEmailApplicant, setSendEmailApplicant] = useState<{ id: string; full_name: string; email: string; job_title: string; status: string } | null>(null);
   const [interviewInviteApplicant, setInterviewInviteApplicant] = useState<{ full_name: string; email: string; job_title: string } | null>(null);
+  
+  // Expanded view state
+  const [expandedApplicantId, setExpandedApplicantId] = useState<string | null>(null);
+  const [cvPreviewApplicant, setCvPreviewApplicant] = useState<{ url: string; name: string } | null>(null);
+  const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
+  const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
+  const [savingNotes, setSavingNotes] = useState(false);
+  const notesEditorRef = useRef<ApplicantNotesEditorRef>(null);
+  const profileEditorRef = useRef<ApplicantNotesEditorRef>(null);
   
   const { unreadCounts, markAsRead: markMessagesAsRead } = useUnreadMessageCounts();
 
@@ -165,7 +192,8 @@ export const MyApplicantsDashboard = () => {
         .select(`
           id, full_name, email, phone, location, job_title, job_id, status, 
           submitted_at, total_score, cv_file_url, voice_recording_url, 
-          is_starred, job_source, is_available, availability_checked_at, details_viewed_at
+          is_starred, job_source, is_available, availability_checked_at, details_viewed_at,
+          notes, candidate_profile, ai_summary, ai_assessment_details
         `)
         .in('job_id', jobIds)
         .order('submitted_at', { ascending: false });
@@ -199,6 +227,10 @@ export const MyApplicantsDashboard = () => {
         ...a,
         is_starred: a.is_starred ?? false,
         interview_session: interviewMap[a.id] || null,
+        notes: a.notes ?? null,
+        candidate_profile: a.candidate_profile ?? null,
+        ai_summary: a.ai_summary ?? null,
+        ai_assessment_details: a.ai_assessment_details ?? null,
       }));
 
       setApplicants(applicantsWithInterviews);
@@ -399,6 +431,48 @@ export const MyApplicantsDashboard = () => {
     return job?.title || 'Unknown';
   };
 
+  // Save notes
+  const handleSaveNotes = async (applicantId: string) => {
+    if (!notesEditorRef.current) return;
+    setSavingNotes(true);
+    const newNotes = notesEditorRef.current.getValue();
+    
+    const { error } = await supabase
+      .from('applicants_prescreen')
+      .update({ notes: newNotes })
+      .eq('id', applicantId);
+    
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to save notes', variant: 'destructive' });
+    } else {
+      setApplicants(prev => prev.map(a => a.id === applicantId ? { ...a, notes: newNotes } : a));
+      setEditingNotesId(null);
+      toast({ title: 'Notes saved' });
+    }
+    setSavingNotes(false);
+  };
+
+  // Save profile
+  const handleSaveProfile = async (applicantId: string) => {
+    if (!profileEditorRef.current) return;
+    setSavingNotes(true);
+    const newProfile = profileEditorRef.current.getValue();
+    
+    const { error } = await supabase
+      .from('applicants_prescreen')
+      .update({ candidate_profile: newProfile })
+      .eq('id', applicantId);
+    
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to save profile', variant: 'destructive' });
+    } else {
+      setApplicants(prev => prev.map(a => a.id === applicantId ? { ...a, candidate_profile: newProfile } : a));
+      setEditingProfileId(null);
+      toast({ title: 'Profile saved' });
+    }
+    setSavingNotes(false);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -558,172 +632,391 @@ export const MyApplicantsDashboard = () => {
               {filteredApplicants.map(applicant => {
                 const scoreData = getOverallScore(applicant);
                 const unreadCount = unreadCounts[applicant.id] || 0;
+                const isExpanded = expandedApplicantId === applicant.id;
                 
                 return (
-                  <TableRow
-                    key={applicant.id}
-                    draggable
-                    onDragStart={(e) => handleDragStart(e, applicant)}
-                    onDragEnd={handleDragEnd}
-                    className="cursor-grab active:cursor-grabbing"
-                  >
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <GripVertical className="w-4 h-4 text-muted-foreground" />
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6"
-                          onClick={() => handleToggleStar(applicant.id)}
-                        >
-                          <Star
-                            className={`w-4 h-4 ${
-                              applicant.is_starred
-                                ? 'fill-amber-400 text-amber-400'
-                                : 'text-muted-foreground'
-                            }`}
-                          />
-                        </Button>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium flex items-center gap-2">
-                          {applicant.full_name}
-                          {unreadCount > 0 && (
-                            <Badge className="bg-red-500 hover:bg-red-500 text-white text-xs">
-                              {unreadCount}
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="text-sm text-muted-foreground">{applicant.email}</div>
-                        <div className="flex items-center gap-1 mt-1">
-                          {applicant.cv_file_url && (
-                            <span title="Has CV">
-                              <FileText className="w-3 h-3 text-blue-500" />
-                            </span>
-                          )}
-                          {applicant.voice_recording_url && (
-                            <span title="Has Voice Recording">
-                              <Mic className="w-3 h-3 text-purple-500" />
-                            </span>
-                          )}
-                          {applicant.interview_session?.status === 'completed' && (
-                            <span title="Interview Completed">
-                              <CheckCircle className="w-3 h-3 text-green-500" />
-                            </span>
-                          )}
-                          <ApplicantSourceBadge source={applicant.job_source} />
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-medium">{applicant.job_title}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {getJobTitle(applicant.job_id)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-sm">
-                        <MapPin className="w-3 h-3 text-muted-foreground" />
-                        {applicant.location}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      {scoreData.score > 0 ? (
+                  <React.Fragment key={applicant.id}>
+                    <TableRow
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, applicant)}
+                      onDragEnd={handleDragEnd}
+                      className="cursor-grab active:cursor-grabbing"
+                    >
+                      <TableCell>
                         <div className="flex items-center gap-1">
-                          <Badge
-                            variant={
-                              scoreData.score >= 80
-                                ? 'default'
-                                : scoreData.score >= 60
-                                ? 'secondary'
-                                : 'outline'
-                            }
-                            className={
-                              scoreData.score >= 80
-                                ? 'bg-green-500 hover:bg-green-500'
-                                : scoreData.score >= 60
-                                ? 'bg-amber-500 hover:bg-amber-500 text-white'
-                                : ''
-                            }
+                          <GripVertical className="w-4 h-4 text-muted-foreground" />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6"
+                            onClick={() => handleToggleStar(applicant.id)}
                           >
-                            {scoreData.score.toFixed(0)}
-                          </Badge>
-                          {scoreData.hasInterview && (
-                            <span className="text-xs text-muted-foreground" title="Includes interview">
-                              +IV
-                            </span>
-                          )}
+                            <Star
+                              className={`w-4 h-4 ${
+                                applicant.is_starred
+                                  ? 'fill-amber-400 text-amber-400'
+                                  : 'text-muted-foreground'
+                              }`}
+                            />
+                          </Button>
                         </div>
-                      ) : (
-                        <span className="text-muted-foreground text-sm">-</span>
-                      )}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                        <Clock className="w-3 h-3" />
-                        {formatDate(applicant.submitted_at)}
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <Select
-                        value={applicant.status}
-                        onValueChange={(v) => handleStatusChange(applicant.id, v)}
-                      >
-                        <SelectTrigger className="h-7 text-xs w-[120px]">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {APPLICANT_STATUS_FOLDERS.map(status => (
-                            <SelectItem key={status} value={status}>
-                              {status}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          title="View History"
-                          onClick={() => setCommunicationHistoryApplicant({
-                            id: applicant.id,
-                            name: applicant.full_name,
-                            email: applicant.email,
-                          })}
+                      </TableCell>
+                      <TableCell>
+                        <div>
+                          <div className="font-medium flex items-center gap-2">
+                            {applicant.full_name}
+                            {unreadCount > 0 && (
+                              <Badge className="bg-red-500 hover:bg-red-500 text-white text-xs">
+                                {unreadCount}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-sm text-muted-foreground">{applicant.email}</div>
+                          <div className="flex items-center gap-1 mt-1">
+                            {applicant.cv_file_url && (
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-5 w-5"
+                                title="Preview CV"
+                                onClick={() => setCvPreviewApplicant({ 
+                                  url: applicant.cv_file_url!, 
+                                  name: `${applicant.full_name}-CV.pdf` 
+                                })}
+                              >
+                                <FileText className="w-3 h-3 text-blue-500" />
+                              </Button>
+                            )}
+                            {applicant.voice_recording_url && (
+                              <span title="Has Voice Recording">
+                                <Mic className="w-3 h-3 text-purple-500" />
+                              </span>
+                            )}
+                            {applicant.interview_session?.status === 'completed' && (
+                              <span title="Interview Completed">
+                                <CheckCircle className="w-3 h-3 text-green-500" />
+                              </span>
+                            )}
+                            <ApplicantSourceBadge source={applicant.job_source} />
+                          </div>
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="font-medium">{applicant.job_title}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {getJobTitle(applicant.job_id)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1 text-sm">
+                          <MapPin className="w-3 h-3 text-muted-foreground" />
+                          {applicant.location}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {scoreData.score > 0 ? (
+                          <div className="flex items-center gap-1">
+                            <Badge
+                              variant={
+                                scoreData.score >= 80
+                                  ? 'default'
+                                  : scoreData.score >= 60
+                                  ? 'secondary'
+                                  : 'outline'
+                              }
+                              className={
+                                scoreData.score >= 80
+                                  ? 'bg-green-500 hover:bg-green-500'
+                                  : scoreData.score >= 60
+                                  ? 'bg-amber-500 hover:bg-amber-500 text-white'
+                                  : ''
+                              }
+                            >
+                              {scoreData.score.toFixed(0)}
+                            </Badge>
+                            {scoreData.hasInterview && (
+                              <span className="text-xs text-muted-foreground" title="Includes interview">
+                                +IV
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground text-sm">-</span>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                          <Clock className="w-3 h-3" />
+                          {formatDate(applicant.submitted_at)}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        <Select
+                          value={applicant.status}
+                          onValueChange={(v) => handleStatusChange(applicant.id, v)}
                         >
-                          <History className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                          title="Send Email"
-                          onClick={() => setSendEmailApplicant({
-                            id: applicant.id,
-                            full_name: applicant.full_name,
-                            email: applicant.email,
-                            job_title: applicant.job_title,
-                            status: applicant.status,
-                          })}
-                        >
-                          <Send className="w-4 h-4" />
-                        </Button>
-                        <CheckAvailabilityButton
-                          applicantId={applicant.id}
-                          applicantName={applicant.full_name}
-                          applicantEmail={applicant.email}
-                          isAvailable={applicant.is_available ?? null}
-                          availabilityCheckedAt={applicant.availability_checked_at ?? null}
-                          onUpdate={() => fetchData()}
-                        />
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                          <SelectTrigger className="h-7 text-xs w-[120px]">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {APPLICANT_STATUS_FOLDERS.map(status => (
+                              <SelectItem key={status} value={status}>
+                                {status}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            title={isExpanded ? 'Collapse Details' : 'Expand Details'}
+                            onClick={() => setExpandedApplicantId(isExpanded ? null : applicant.id)}
+                          >
+                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            title="View History"
+                            onClick={() => setCommunicationHistoryApplicant({
+                              id: applicant.id,
+                              name: applicant.full_name,
+                              email: applicant.email,
+                            })}
+                          >
+                            <History className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            title="Send Email"
+                            onClick={() => setSendEmailApplicant({
+                              id: applicant.id,
+                              full_name: applicant.full_name,
+                              email: applicant.email,
+                              job_title: applicant.job_title,
+                              status: applicant.status,
+                            })}
+                          >
+                            <Send className="w-4 h-4" />
+                          </Button>
+                          <CheckAvailabilityButton
+                            applicantId={applicant.id}
+                            applicantName={applicant.full_name}
+                            applicantEmail={applicant.email}
+                            isAvailable={applicant.is_available ?? null}
+                            availabilityCheckedAt={applicant.availability_checked_at ?? null}
+                            onUpdate={() => fetchData()}
+                          />
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                    
+                    {/* Expanded Details Row */}
+                    {isExpanded && (
+                      <TableRow>
+                        <TableCell colSpan={8} className="bg-muted/30 p-0">
+                          <div className="p-4 space-y-4">
+                            <Tabs defaultValue="cv-assessment" className="w-full">
+                              <TabsList className="grid w-full grid-cols-4 max-w-lg">
+                                <TabsTrigger value="cv-assessment" className="flex items-center gap-1">
+                                  <ClipboardList className="w-3 h-3" />
+                                  CV Assessment
+                                </TabsTrigger>
+                                <TabsTrigger value="interview" className="flex items-center gap-1">
+                                  <Mic className="w-3 h-3" />
+                                  Interview
+                                </TabsTrigger>
+                                <TabsTrigger value="notes" className="flex items-center gap-1">
+                                  <StickyNote className="w-3 h-3" />
+                                  Notes
+                                </TabsTrigger>
+                                <TabsTrigger value="profile" className="flex items-center gap-1">
+                                  <User className="w-3 h-3" />
+                                  Profile
+                                </TabsTrigger>
+                              </TabsList>
+                              
+                              {/* CV Assessment Tab */}
+                              <TabsContent value="cv-assessment" className="mt-4">
+                                <div className="space-y-4">
+                                  {applicant.cv_file_url && (
+                                    <div className="flex items-center gap-2 mb-4">
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setCvPreviewApplicant({ 
+                                          url: applicant.cv_file_url!, 
+                                          name: `${applicant.full_name}-CV.pdf` 
+                                        })}
+                                      >
+                                        <Eye className="w-4 h-4 mr-2" />
+                                        Preview CV
+                                      </Button>
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => window.open(applicant.cv_file_url!, '_blank')}
+                                      >
+                                        <ExternalLink className="w-4 h-4 mr-2" />
+                                        Open Original
+                                      </Button>
+                                    </div>
+                                  )}
+                                  
+                                  {applicant.ai_summary && (
+                                    <div className="bg-background rounded-lg p-4 border">
+                                      <h4 className="font-medium mb-2 text-sm">AI Summary</h4>
+                                      <p className="text-sm text-muted-foreground">{applicant.ai_summary}</p>
+                                    </div>
+                                  )}
+                                  
+                                  {applicant.total_score !== null && (
+                                    <div className="grid grid-cols-3 gap-4">
+                                      <div className="bg-background rounded-lg p-4 border text-center">
+                                        <div className="text-2xl font-bold text-primary">{applicant.total_score}</div>
+                                        <div className="text-xs text-muted-foreground">CV Score</div>
+                                      </div>
+                                      {applicant.ai_assessment_details?.roleExperienceScore !== undefined && (
+                                        <div className="bg-background rounded-lg p-4 border text-center">
+                                          <div className="text-2xl font-bold">{applicant.ai_assessment_details.roleExperienceScore}</div>
+                                          <div className="text-xs text-muted-foreground">Experience</div>
+                                        </div>
+                                      )}
+                                      {applicant.ai_assessment_details?.skillsToolsScore !== undefined && (
+                                        <div className="bg-background rounded-lg p-4 border text-center">
+                                          <div className="text-2xl font-bold">{applicant.ai_assessment_details.skillsToolsScore}</div>
+                                          <div className="text-xs text-muted-foreground">Skills</div>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                  
+                                  {!applicant.ai_summary && applicant.total_score === null && (
+                                    <p className="text-sm text-muted-foreground">No CV assessment available yet.</p>
+                                  )}
+                                </div>
+                              </TabsContent>
+                              
+                              {/* Interview Tab */}
+                              <TabsContent value="interview" className="mt-4">
+                                <InterviewResultsFetcher 
+                                  applicantId={applicant.id}
+                                  cachedSession={null}
+                                />
+                              </TabsContent>
+                              
+                              {/* Notes Tab */}
+                              <TabsContent value="notes" className="mt-4">
+                                <div className="space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <h4 className="font-medium text-sm">Notes</h4>
+                                    {editingNotesId === applicant.id ? (
+                                      <div className="flex gap-2">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => setEditingNotesId(null)}
+                                          disabled={savingNotes}
+                                        >
+                                          Cancel
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          onClick={() => handleSaveNotes(applicant.id)}
+                                          disabled={savingNotes}
+                                        >
+                                          {savingNotes && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
+                                          Save
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setEditingNotesId(applicant.id)}
+                                      >
+                                        {applicant.notes ? 'Edit' : 'Add Notes'}
+                                      </Button>
+                                    )}
+                                  </div>
+                                  {editingNotesId === applicant.id ? (
+                                    <ApplicantNotesEditor
+                                      ref={notesEditorRef}
+                                      initialValue={applicant.notes || ''}
+                                      placeholder="Add notes about this applicant..."
+                                    />
+                                  ) : applicant.notes ? (
+                                    <div className="bg-background rounded-lg p-4 border">
+                                      <FormattedNotes content={applicant.notes} />
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground">No notes yet.</p>
+                                  )}
+                                </div>
+                              </TabsContent>
+                              
+                              {/* Profile Tab */}
+                              <TabsContent value="profile" className="mt-4">
+                                <div className="space-y-3">
+                                  <div className="flex items-center justify-between">
+                                    <h4 className="font-medium text-sm">Candidate Profile</h4>
+                                    {editingProfileId === applicant.id ? (
+                                      <div className="flex gap-2">
+                                        <Button
+                                          variant="ghost"
+                                          size="sm"
+                                          onClick={() => setEditingProfileId(null)}
+                                          disabled={savingNotes}
+                                        >
+                                          Cancel
+                                        </Button>
+                                        <Button
+                                          size="sm"
+                                          onClick={() => handleSaveProfile(applicant.id)}
+                                          disabled={savingNotes}
+                                        >
+                                          {savingNotes && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
+                                          Save
+                                        </Button>
+                                      </div>
+                                    ) : (
+                                      <Button
+                                        variant="outline"
+                                        size="sm"
+                                        onClick={() => setEditingProfileId(applicant.id)}
+                                      >
+                                        {applicant.candidate_profile ? 'Edit' : 'Add Profile'}
+                                      </Button>
+                                    )}
+                                  </div>
+                                  {editingProfileId === applicant.id ? (
+                                    <ApplicantNotesEditor
+                                      ref={profileEditorRef}
+                                      initialValue={applicant.candidate_profile || ''}
+                                      placeholder="Add candidate profile summary..."
+                                    />
+                                  ) : applicant.candidate_profile ? (
+                                    <div className="bg-background rounded-lg p-4 border">
+                                      <FormattedNotes content={applicant.candidate_profile} />
+                                    </div>
+                                  ) : (
+                                    <p className="text-sm text-muted-foreground">No profile summary yet.</p>
+                                  )}
+                                </div>
+                              </TabsContent>
+                            </Tabs>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </React.Fragment>
                 );
               })}
             </TableBody>
@@ -776,6 +1069,26 @@ export const MyApplicantsDashboard = () => {
           }}
         />
       )}
+
+      {/* CV Preview Dialog */}
+      <Dialog open={!!cvPreviewApplicant} onOpenChange={(open) => { if (!open) setCvPreviewApplicant(null); }}>
+        <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0">
+          <DialogHeader className="px-6 py-4 border-b">
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              CV Preview - {cvPreviewApplicant?.name}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="flex-1 overflow-hidden">
+            {cvPreviewApplicant && (
+              <CVImagePreview 
+                pdfUrl={cvPreviewApplicant.url} 
+                fileName={cvPreviewApplicant.name}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
