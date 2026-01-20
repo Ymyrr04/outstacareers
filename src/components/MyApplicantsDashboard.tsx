@@ -254,13 +254,15 @@ export const MyApplicantsDashboard = () => {
 
   // Real-time subscription for applicants_prescreen changes
   useEffect(() => {
+    if (!user) return;
+
     const channel = supabase
-      .channel('recruiter-dash-applicants')
+      .channel('recruiter-dash-applicants-sync')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'applicants_prescreen' },
         (payload) => {
-          console.log('Applicant change detected:', payload.eventType);
+          console.log('RecruiterDash: Applicant change detected:', payload.eventType);
           // Refetch data to sync with other views
           fetchData();
         }
@@ -270,7 +272,7 @@ export const MyApplicantsDashboard = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchData]);
+  }, [user, fetchData]);
 
   // Get jobs filtered by selected admin
   const filteredJobs = useMemo(() => {
