@@ -906,14 +906,16 @@ export const MyApplicantsDashboard = () => {
                           >
                             <Send className="w-4 h-4" />
                           </Button>
-                          <CheckAvailabilityButton
-                            applicantId={applicant.id}
-                            applicantName={applicant.full_name}
-                            applicantEmail={applicant.email}
-                            isAvailable={applicant.is_available ?? null}
-                            availabilityCheckedAt={applicant.availability_checked_at ?? null}
-                            onUpdate={() => fetchData()}
-                          />
+                          {applicant.status === 'Bench' && (
+                            <CheckAvailabilityButton
+                              applicantId={applicant.id}
+                              applicantName={applicant.full_name}
+                              applicantEmail={applicant.email}
+                              isAvailable={applicant.is_available ?? null}
+                              availabilityCheckedAt={applicant.availability_checked_at ?? null}
+                              onUpdate={() => fetchData()}
+                            />
+                          )}
                         </div>
                       </TableCell>
                     </TableRow>
