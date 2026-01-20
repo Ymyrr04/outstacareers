@@ -528,7 +528,7 @@ const Admin = () => {
     setJobsLoading(false);
   };
 
-  const fetchApplicants = async () => {
+  const fetchApplicants = useCallback(async () => {
     setApplicantsLoading(true);
     
     // Fetch applicants
@@ -586,7 +586,7 @@ const Admin = () => {
     
     setApplicants(applicantsWithInterviews);
     setApplicantsLoading(false);
-  };
+  }, [toast]);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -625,7 +625,7 @@ const Admin = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, isAdmin]);
+  }, [user, isAdmin, fetchApplicants]);
 
   const handleToggleActive = async (job: Job) => {
     const { error } = await supabase
