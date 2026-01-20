@@ -133,6 +133,11 @@ export function SendEmailDialog({
   const [sending, setSending] = useState(false);
   const [templateError, setTemplateError] = useState(false);
   
+  // CC and BCC fields
+  const [ccEmails, setCcEmails] = useState('');
+  const [bccEmails, setBccEmails] = useState('');
+  const [showCcBcc, setShowCcBcc] = useState(false);
+  
   // Interview fields
   const [interviewDate, setInterviewDate] = useState<Date>();
   const [interviewTime, setInterviewTime] = useState('');
@@ -164,6 +169,9 @@ export function SendEmailDialog({
       setInterviewTime('');
       setMeetingLink('');
       setAttachments([]);
+      setCcEmails('');
+      setBccEmails('');
+      setShowCcBcc(false);
       
       if (preselectedTemplate && templates.length > 0) {
         // Use setTimeout to ensure templates are loaded
@@ -303,6 +311,14 @@ export function SendEmailDialog({
         scheduleDateTime = addMinutes(new Date(), template.delay_hours).toISOString();
       }
 
+      // Parse CC and BCC emails
+      const parseEmails = (input: string): string[] => {
+        return input
+          .split(/[,;]/)
+          .map(e => e.trim())
+          .filter(e => e.length > 0 && e.includes('@'));
+      };
+
       const { data, error } = await supabase.functions.invoke('send-applicant-email', {
         body: {
           applicantId: applicant.id,
@@ -313,6 +329,8 @@ export function SendEmailDialog({
           applicantStatusAtSend: applicant.status,
           isAutomated: false,
           scheduleFor: scheduleDateTime,
+          cc: ccEmails.trim() ? parseEmails(ccEmails) : undefined,
+          bcc: bccEmails.trim() ? parseEmails(bccEmails) : undefined,
           attachments: attachments.length > 0 ? attachments.map(({ filename, content, contentType }) => ({
             filename,
             content,
@@ -404,7 +422,20 @@ export function SendEmailDialog({
 
           {/* Subject */}
           <div className="space-y-1.5">
-            <Label className="text-sm">Subject</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-sm">Subject</Label>
+              {!showCcBcc && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="h-6 text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => setShowCcBcc(true)}
+                >
+                  CC/BCC
+                </Button>
+              )}
+            </div>
             <Input
               value={subject}
               onChange={(e) => setSubject(e.target.value)}
@@ -412,6 +443,32 @@ export function SendEmailDialog({
               className="h-9"
             />
           </div>
+
+          {/* CC and BCC fields */}
+          {showCcBcc && (
+            <div className="space-y-3 p-3 border rounded-md bg-muted/20">
+              <div className="space-y-1.5">
+                <Label className="text-sm">CC</Label>
+                <Input
+                  value={ccEmails}
+                  onChange={(e) => setCcEmails(e.target.value)}
+                  placeholder="email1@example.com, email2@example.com"
+                  className="h-9"
+                />
+                <p className="text-xs text-muted-foreground">Separate multiple emails with commas</p>
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-sm">BCC</Label>
+                <Input
+                  value={bccEmails}
+                  onChange={(e) => setBccEmails(e.target.value)}
+                  placeholder="email1@example.com, email2@example.com"
+                  className="h-9"
+                />
+                <p className="text-xs text-muted-foreground">Hidden recipients (not visible to others)</p>
+              </div>
+            </div>
+          )}
 
           {/* Interview fields */}
           {isInterviewTemplate && (

@@ -23,6 +23,8 @@ interface SendEmailRequest {
   isAutomated: boolean;
   scheduleFor?: string; // ISO date string for scheduled emails
   attachments?: Attachment[];
+  cc?: string[]; // CC email addresses
+  bcc?: string[]; // BCC email addresses
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -56,6 +58,8 @@ const handler = async (req: Request): Promise<Response> => {
       isAutomated,
       scheduleFor,
       attachments,
+      cc,
+      bcc,
     }: SendEmailRequest = await req.json();
 
     console.log("Processing email request for:", recipientEmail);
@@ -124,6 +128,18 @@ const handler = async (req: Request): Promise<Response> => {
       content: "auto",
       html: emailHtml,
     };
+
+    // Add CC if provided
+    if (cc && cc.length > 0) {
+      emailOptions.cc = cc;
+      console.log("Adding CC recipients:", cc);
+    }
+
+    // Add BCC if provided
+    if (bcc && bcc.length > 0) {
+      emailOptions.bcc = bcc;
+      console.log("Adding BCC recipients:", bcc);
+    }
 
     // Add attachments if provided
     if (attachments && attachments.length > 0) {
