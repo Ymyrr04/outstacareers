@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
 import { Loader2, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -78,19 +78,29 @@ export const CVImagePreview = ({ pdfUrl, fileName }: CVImagePreviewProps) => {
     renderPdfAsImages();
   }, [pdfUrl, isPdf]);
 
-  const handleZoomIn = () => setScale(prev => Math.min(prev + 0.1, 3));
-  const handleZoomOut = () => setScale(prev => Math.max(prev - 0.1, 0.5));
+  const handleZoomIn = useCallback(() => setScale(prev => Math.min(prev + 0.1, 3)), []);
+  const handleZoomOut = useCallback(() => setScale(prev => Math.max(prev - 0.1, 0.5)), []);
 
-  const handleWheel = (e: React.WheelEvent) => {
-    if (e.ctrlKey || e.metaKey) {
-      e.preventDefault();
-      if (e.deltaY < 0) {
-        handleZoomIn();
-      } else {
-        handleZoomOut();
+  // Use native event listener with passive: false to properly prevent browser zoom
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    const handleWheel = (e: WheelEvent) => {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        e.stopPropagation();
+        if (e.deltaY < 0) {
+          setScale(prev => Math.min(prev + 0.1, 3));
+        } else {
+          setScale(prev => Math.max(prev - 0.1, 0.5));
+        }
       }
-    }
-  };
+    };
+
+    container.addEventListener('wheel', handleWheel, { passive: false });
+    return () => container.removeEventListener('wheel', handleWheel);
+  }, []);
 
   if (loading) {
     return (
@@ -157,7 +167,6 @@ export const CVImagePreview = ({ pdfUrl, fileName }: CVImagePreviewProps) => {
       <div 
         ref={containerRef}
         className="flex-1 overflow-auto bg-muted/20 p-4"
-        onWheel={handleWheel}
       >
         <div className="flex justify-center">
           {pageImages[currentPage - 1] && (
