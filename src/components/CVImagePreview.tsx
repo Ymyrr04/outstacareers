@@ -18,7 +18,7 @@ export const CVImagePreview = ({ pdfUrl, fileName }: CVImagePreviewProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [scale, setScale] = useState(1);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const wrapperRef = useRef<HTMLDivElement>(null);
 
   const isPdf = fileName.toLowerCase().endsWith('.pdf');
 
@@ -81,10 +81,10 @@ export const CVImagePreview = ({ pdfUrl, fileName }: CVImagePreviewProps) => {
   const handleZoomIn = useCallback(() => setScale(prev => Math.min(prev + 0.1, 3)), []);
   const handleZoomOut = useCallback(() => setScale(prev => Math.max(prev - 0.1, 0.5)), []);
 
-  // Use native event listener with passive: false to properly prevent browser zoom
+  // Use native event listener at capture phase to intercept before browser zoom
   useEffect(() => {
-    const container = containerRef.current;
-    if (!container) return;
+    const wrapper = wrapperRef.current;
+    if (!wrapper) return;
 
     const handleWheel = (e: WheelEvent) => {
       if (e.ctrlKey || e.metaKey) {
@@ -98,13 +98,14 @@ export const CVImagePreview = ({ pdfUrl, fileName }: CVImagePreviewProps) => {
       }
     };
 
-    container.addEventListener('wheel', handleWheel, { passive: false });
-    return () => container.removeEventListener('wheel', handleWheel);
-  }, []);
+    // Listen at capture phase to intercept before browser handles it
+    wrapper.addEventListener('wheel', handleWheel, { passive: false, capture: true });
+    return () => wrapper.removeEventListener('wheel', handleWheel, { capture: true });
+  }, [loading, error]); // Re-attach when loading/error state changes
 
   if (loading) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-4">
+      <div ref={wrapperRef} className="flex flex-col items-center justify-center h-full gap-4">
         <Loader2 className="w-12 h-12 animate-spin text-primary" />
         <p className="text-muted-foreground">Rendering CV preview...</p>
       </div>
@@ -113,7 +114,7 @@ export const CVImagePreview = ({ pdfUrl, fileName }: CVImagePreviewProps) => {
 
   if (error || !isPdf) {
     return (
-      <div className="flex flex-col items-center justify-center h-full gap-4 text-center p-8">
+      <div ref={wrapperRef} className="flex flex-col items-center justify-center h-full gap-4 text-center p-8">
         <FileText className="w-16 h-16 text-muted-foreground" />
         <div>
           <p className="text-lg font-medium">Image Preview Not Available</p>
@@ -126,7 +127,7 @@ export const CVImagePreview = ({ pdfUrl, fileName }: CVImagePreviewProps) => {
   }
 
   return (
-    <div className="flex flex-col h-full">
+    <div ref={wrapperRef} className="flex flex-col h-full">
       {/* Controls */}
       <div className="flex items-center justify-between p-3 border-b bg-muted/30">
         <div className="flex items-center gap-2">
@@ -164,10 +165,7 @@ export const CVImagePreview = ({ pdfUrl, fileName }: CVImagePreviewProps) => {
       </div>
 
       {/* Image Preview */}
-      <div 
-        ref={containerRef}
-        className="flex-1 overflow-auto bg-muted/20 p-4"
-      >
+      <div className="flex-1 overflow-auto bg-muted/20 p-4">
         <div className="flex justify-center">
           {pageImages[currentPage - 1] && (
             <img
