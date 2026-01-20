@@ -346,11 +346,14 @@ const handler = async (req: Request): Promise<Response> => {
     await client.logout();
     console.log(`Disconnected from IMAP. Found ${newReplies.length} new replies`);
 
-    // Insert new replies
+    // Insert new replies using upsert to handle duplicates gracefully
     if (newReplies.length > 0) {
       const { error: insertError } = await supabase
         .from("email_replies")
-        .insert(newReplies);
+        .upsert(newReplies, { 
+          onConflict: 'gmail_message_id',
+          ignoreDuplicates: true 
+        });
 
       if (insertError) {
         console.error("Failed to insert replies:", insertError);
