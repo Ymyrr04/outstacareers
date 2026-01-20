@@ -90,7 +90,7 @@ export const ClientAnalyticsDashboard = () => {
           .select('id, company_name, industry, leads_from, website, notes, is_hiring'),
         supabase
           .from('applicants_prescreen')
-          .select('job_source')
+          .select('job_source, full_name, job_title')
           .neq('job_source', 'Contractor Import'),
       ]);
 
@@ -100,11 +100,26 @@ export const ClientAnalyticsDashboard = () => {
       setContractors(contractorsRes.data || []);
       setClients(clientsRes.data || []);
 
-      // Calculate application source stats
+      // Calculate application source stats with deduplication
       if (!applicantsRes.error && applicantsRes.data) {
-        const sourceCounts = new Map<string, number>();
+        // Deduplicate by name + job_title combination
+        const seenApplicants = new Set<string>();
+        const uniqueApplicants: typeof applicantsRes.data = [];
         
         applicantsRes.data.forEach(applicant => {
+          const normalizedName = (applicant.full_name || '').toLowerCase().trim();
+          const normalizedRole = (applicant.job_title || '').toLowerCase().trim();
+          const key = `${normalizedName}|${normalizedRole}`;
+          
+          if (!seenApplicants.has(key)) {
+            seenApplicants.add(key);
+            uniqueApplicants.push(applicant);
+          }
+        });
+
+        const sourceCounts = new Map<string, number>();
+        
+        uniqueApplicants.forEach(applicant => {
           let source = applicant.job_source || 'Not specified';
           // Normalize source names
           if (source.toLowerCase().startsWith('other:')) {
@@ -113,7 +128,7 @@ export const ClientAnalyticsDashboard = () => {
           sourceCounts.set(source, (sourceCounts.get(source) || 0) + 1);
         });
 
-        const totalApplicants = applicantsRes.data.length;
+        const totalApplicants = uniqueApplicants.length;
         const sourceData: ApplicationSourceData[] = Array.from(sourceCounts.entries())
           .map(([name, value]) => ({
             name,
