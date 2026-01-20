@@ -39,7 +39,7 @@ import { ApplicantNotesEditor, type ApplicantNotesEditorRef } from '@/components
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { CVImagePreview } from '@/components/CVImagePreview';
 import { useEmailTemplates, statusToTrigger, useUnreadMessageCounts } from '@/hooks/useEmailTemplates';
-import { addHours } from 'date-fns';
+import { addMinutes } from 'date-fns';
 import { MyApplicantsDashboard } from '@/components/MyApplicantsDashboard';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
@@ -708,9 +708,10 @@ const Admin = () => {
             .replace(/\{\{job_title\}\}/g, applicant.job_title);
 
           // Calculate schedule time for delayed emails (like rejection)
+          // delay_hours stores minutes for consistency
           let scheduleFor: string | undefined;
           if (template.delay_hours > 0) {
-            scheduleFor = addHours(new Date(), template.delay_hours).toISOString();
+            scheduleFor = addMinutes(new Date(), template.delay_hours).toISOString();
           }
 
           // For interview or SIV status, open the email dialog instead of auto-sending
