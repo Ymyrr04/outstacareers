@@ -152,8 +152,39 @@ export const MyApplicantsDashboard = () => {
   const [savingNotes, setSavingNotes] = useState(false);
   const notesEditorRef = useRef<ApplicantNotesEditorRef>(null);
   const profileEditorRef = useRef<ApplicantNotesEditorRef>(null);
+  const expandedRowRef = useRef<HTMLTableRowElement>(null);
   
   const { unreadCounts, markAsRead: markMessagesAsRead } = useUnreadMessageCounts();
+
+  // Handle Escape key and click-outside to close expanded row
+  useEffect(() => {
+    if (!expandedApplicantId) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setExpandedApplicantId(null);
+      }
+    };
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (expandedRowRef.current && !expandedRowRef.current.contains(e.target as Node)) {
+        // Check if click is on a dialog/popover (don't close if interacting with overlays)
+        const target = e.target as HTMLElement;
+        if (target.closest('[role="dialog"]') || target.closest('[data-radix-popper-content-wrapper]')) {
+          return;
+        }
+        setExpandedApplicantId(null);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [expandedApplicantId]);
 
   // Fetch admin users
   const fetchAdminUsers = useCallback(async () => {
@@ -951,9 +982,9 @@ export const MyApplicantsDashboard = () => {
                     
                     {/* Expanded Details Row */}
                     {isExpanded && (
-                      <TableRow>
+                      <TableRow ref={expandedRowRef} onMouseDown={(e) => e.stopPropagation()}>
                         <TableCell colSpan={8} className="bg-muted/30 p-0">
-                          <div className="p-4 space-y-4">
+                          <div className="p-4 space-y-4" onMouseDown={(e) => e.stopPropagation()}>
                             <Tabs defaultValue="cv-assessment" className="w-full">
                               <TabsList className="grid w-full grid-cols-4 max-w-lg">
                                 <TabsTrigger value="cv-assessment" className="flex items-center gap-1">
