@@ -40,6 +40,7 @@ import { FormattedNotes } from '@/components/FormattedNotes';
 import { CVImagePreview } from '@/components/CVImagePreview';
 import { useEmailTemplates, statusToTrigger, useUnreadMessageCounts } from '@/hooks/useEmailTemplates';
 import { addHours } from 'date-fns';
+import { MyApplicantsDashboard } from '@/components/MyApplicantsDashboard';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 // Status options for applicant tracking - new pipeline order
@@ -927,6 +928,10 @@ const Admin = () => {
                 ) : null;
               })()}
             </TabsTrigger>
+            <TabsTrigger value="my-applicants" className="flex items-center gap-2">
+              <ClipboardList className="w-4 h-4" />
+              My Applicants
+            </TabsTrigger>
             <TabsTrigger value="clients" className="flex items-center gap-2">
               <Building2 className="w-4 h-4" />
               Clients
@@ -940,6 +945,10 @@ const Admin = () => {
               Analytics
             </TabsTrigger>
           </TabsList>
+
+          <TabsContent value="my-applicants" className="space-y-6" keepMounted>
+            <MyApplicantsDashboard />
+          </TabsContent>
 
           <TabsContent value="jobs" className="space-y-6" keepMounted>
             <div className="flex items-center justify-between">
