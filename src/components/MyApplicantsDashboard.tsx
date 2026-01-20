@@ -770,13 +770,14 @@ export const MyApplicantsDashboard = () => {
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
                           <Button
-                            variant="ghost"
-                            size="icon"
-                            className="h-7 w-7"
-                            title={isExpanded ? 'Collapse Details' : 'Expand Details'}
+                            variant={isExpanded ? 'default' : 'outline'}
+                            size="sm"
+                            className="h-7 px-2"
+                            title={isExpanded ? 'Collapse Details' : 'View Details'}
                             onClick={() => setExpandedApplicantId(isExpanded ? null : applicant.id)}
                           >
-                            {isExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+                            {isExpanded ? <ChevronUp className="w-4 h-4 mr-1" /> : <Eye className="w-4 h-4 mr-1" />}
+                            {isExpanded ? 'Close' : 'Details'}
                           </Button>
                           <Button
                             variant="ghost"
