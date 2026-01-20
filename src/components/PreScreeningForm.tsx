@@ -41,6 +41,7 @@ const prescreenSchema = z.object({
   has_experience: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
   currently_working: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
   location: z.string().trim().min(1, "Location is required").max(200, "Must be less than 200 characters"),
+  job_source: z.string().trim().min(1, "Please select where you learned about this job"),
 });
 
 type FormData = {
@@ -139,6 +140,9 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
   };
 
   const isPrescreeningComplete = () => {
+    const jobSourceValid = formData.job_source.trim() !== "" && 
+      (formData.job_source !== "Other" || formData.job_source_other.trim() !== "");
+    
     return (
       formData.full_name.trim() !== "" &&
       formData.email.trim() !== "" &&
@@ -154,7 +158,8 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
       formData.can_work_40_50 !== null &&
       formData.us_timezone_ok !== null &&
       formData.has_experience !== null &&
-      formData.currently_working !== null
+      formData.currently_working !== null &&
+      jobSourceValid
     );
   };
 
@@ -170,6 +175,12 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
         }
       });
       setErrors(fieldErrors);
+      return;
+    }
+
+    // Validate job_source_other if "Other" is selected
+    if (formData.job_source === "Other" && !formData.job_source_other.trim()) {
+      setErrors(prev => ({ ...prev, job_source_other: "Please specify where you found this job" }));
       return;
     }
 
