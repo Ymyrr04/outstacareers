@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { Eye, MousePointerClick, FileText, TrendingUp, Globe } from 'lucide-react';
+import { Eye, MousePointerClick, FileText, TrendingUp, Globe, Users } from 'lucide-react';
 
 interface AnalyticsSummary {
   totalPageViews: number;
@@ -27,6 +27,12 @@ interface DailyStats {
 }
 
 interface ReferrerStats {
+  source: string;
+  count: number;
+  percentage: number;
+}
+
+interface ApplicationSourceStats {
   source: string;
   count: number;
   percentage: number;
@@ -67,6 +73,7 @@ const AnalyticsDashboard = () => {
   const [jobAnalytics, setJobAnalytics] = useState<JobAnalytics[]>([]);
   const [dailyStats, setDailyStats] = useState<DailyStats[]>([]);
   const [referrerStats, setReferrerStats] = useState<ReferrerStats[]>([]);
+  const [applicationSourceStats, setApplicationSourceStats] = useState<ApplicationSourceStats[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -168,6 +175,35 @@ const AnalyticsDashboard = () => {
         .slice(0, 10);
 
       setReferrerStats(referrerData);
+
+      // Fetch application source stats from applicants_prescreen
+      const { data: applicants, error: applicantsError } = await supabase
+        .from('applicants_prescreen')
+        .select('job_source');
+
+      if (!applicantsError && applicants) {
+        const sourceCounts = new Map<string, number>();
+        
+        applicants.forEach(applicant => {
+          let source = applicant.job_source || 'Not specified';
+          // Normalize source names
+          if (source.toLowerCase().startsWith('other:')) {
+            source = source.substring(6).trim() || 'Other';
+          }
+          sourceCounts.set(source, (sourceCounts.get(source) || 0) + 1);
+        });
+
+        const totalApplicants = applicants.length;
+        const sourceData: ApplicationSourceStats[] = Array.from(sourceCounts.entries())
+          .map(([source, count]) => ({
+            source,
+            count,
+            percentage: totalApplicants > 0 ? Math.round((count / totalApplicants) * 100) : 0,
+          }))
+          .sort((a, b) => b.count - a.count);
+
+        setApplicationSourceStats(sourceData);
+      }
     } catch (error) {
       console.error('Error fetching analytics:', error);
     } finally {
@@ -370,6 +406,89 @@ const AnalyticsDashboard = () => {
                         </td>
                         <td className="text-right py-2 px-4">{referrer.count}</td>
                         <td className="text-right py-2 px-4">{referrer.percentage}%</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Application Sources */}
+      {applicationSourceStats.length > 0 && (
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Application Source Pie Chart */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="h-5 w-5" />
+                Where Applicants Applied From
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="h-[300px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={applicationSourceStats}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ source, percentage }) => percentage > 5 ? `${source}: ${percentage}%` : ''}
+                      outerRadius={100}
+                      fill="#8884d8"
+                      dataKey="count"
+                      nameKey="source"
+                    >
+                      {applicationSourceStats.map((_, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip 
+                      formatter={(value: number, name: string) => [`${value} applicants`, name]}
+                      contentStyle={{ 
+                        backgroundColor: 'hsl(var(--card))', 
+                        border: '1px solid hsl(var(--border))',
+                        borderRadius: '8px'
+                      }}
+                    />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Application Source Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Application Sources Breakdown</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2 px-4 font-medium">Source</th>
+                      <th className="text-right py-2 px-4 font-medium">Applicants</th>
+                      <th className="text-right py-2 px-4 font-medium">%</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {applicationSourceStats.map((source, index) => (
+                      <tr key={source.source} className="border-b last:border-0">
+                        <td className="py-2 px-4">
+                          <div className="flex items-center gap-2">
+                            <div 
+                              className="w-3 h-3 rounded-full" 
+                              style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                            />
+                            {source.source}
+                          </div>
+                        </td>
+                        <td className="text-right py-2 px-4">{source.count}</td>
+                        <td className="text-right py-2 px-4">{source.percentage}%</td>
                       </tr>
                     ))}
                   </tbody>
