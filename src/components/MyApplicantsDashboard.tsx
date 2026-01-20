@@ -777,21 +777,27 @@ export const MyApplicantsDashboard = () => {
                       </TableCell>
                       <TableCell>
                         <div className="flex flex-col gap-0.5 text-xs">
-                          <a 
-                            href={`mailto:${applicant.email}`}
-                            className="text-blue-600 hover:underline truncate max-w-[180px]"
-                            title={applicant.email}
+                          <button 
+                            onClick={() => {
+                              navigator.clipboard.writeText(applicant.email);
+                              toast({ title: "Copied!", description: "Email copied to clipboard" });
+                            }}
+                            className="text-blue-600 hover:underline truncate max-w-[180px] text-left cursor-pointer"
+                            title="Click to copy email"
                           >
                             {applicant.email}
-                          </a>
+                          </button>
                           {applicant.phone && (
-                            <a 
-                              href={`tel:${applicant.phone}`}
-                              className="text-muted-foreground hover:underline"
-                              title="Call"
+                            <button 
+                              onClick={() => {
+                                navigator.clipboard.writeText(applicant.phone!);
+                                toast({ title: "Copied!", description: "Phone copied to clipboard" });
+                              }}
+                              className="text-muted-foreground hover:underline text-left cursor-pointer"
+                              title="Click to copy phone"
                             >
                               {applicant.phone}
-                            </a>
+                            </button>
                           )}
                           {applicant.whatsapp && (
                             <a 
