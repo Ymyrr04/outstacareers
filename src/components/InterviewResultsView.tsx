@@ -15,7 +15,8 @@ import {
   FileText,
   ListChecks,
   Loader2,
-  PlayCircle
+  PlayCircle,
+  Clipboard
 } from 'lucide-react';
 
 interface InterviewQuestion {
@@ -37,6 +38,7 @@ interface InterviewAnswer {
   ai_score: number | null;
   ai_feedback: string | null;
   answered_at: string;
+  paste_detected: boolean | null;
 }
 
 interface InterviewResultsViewProps {
@@ -413,8 +415,16 @@ export function InterviewResultsView({ sessionId, session }: InterviewResultsVie
                         )}
                         
                         {answer?.text_answer ? (
-                          <div className="p-3 bg-background rounded-lg">
-                            <p className="text-sm whitespace-pre-wrap">{answer.text_answer}</p>
+                          <div className="space-y-2">
+                            {answer.paste_detected && (
+                              <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-400">
+                                <Clipboard className="w-4 h-4" />
+                                <span className="text-xs font-medium">Paste detected</span>
+                              </div>
+                            )}
+                            <div className="p-3 bg-background rounded-lg">
+                              <p className="text-sm whitespace-pre-wrap">{answer.text_answer}</p>
+                            </div>
                           </div>
                         ) : (
                           <p className="text-xs text-muted-foreground italic">No answer provided</p>

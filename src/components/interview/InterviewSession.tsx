@@ -56,6 +56,7 @@ interface Answer {
   text_answer?: string;
   selected_option_id?: string;
   options?: MultipleChoiceOption[];
+  paste_detected?: boolean;
 }
 
 type InterviewStep = 'loading' | 'voice' | 'text' | 'multiple_choice' | 'submitting' | 'complete' | 'no_questions' | 'error';
@@ -407,7 +408,8 @@ export function InterviewSession({
           voice_recording_url: answer.voice_recording_url || null,
           voice_duration_seconds: answer.voice_duration_seconds || null,
           text_answer: answer.text_answer || null,
-          selected_option_id: answer.selected_option_id || null
+          selected_option_id: answer.selected_option_id || null,
+          paste_detected: answer.paste_detected || false
         });
 
       if (answerError) {
@@ -440,7 +442,7 @@ export function InterviewSession({
     moveToNextQuestion();
   };
 
-  const handleTextAnswer = async (textAnswer: string) => {
+  const handleTextAnswer = async (textAnswer: string, pasteDetected: boolean = false) => {
     if (!currentQuestion) return;
 
     const answer: Answer = {
@@ -448,7 +450,8 @@ export function InterviewSession({
       question_text: currentQuestion.question_text,
       question_context: currentQuestion.question_context,
       section: 'text',
-      text_answer: textAnswer
+      text_answer: textAnswer,
+      paste_detected: pasteDetected
     };
 
     // Save immediately to database to prevent data loss
