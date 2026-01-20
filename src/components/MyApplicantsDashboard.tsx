@@ -127,8 +127,8 @@ export const MyApplicantsDashboard = () => {
       if (error) throw error;
       
       const map: Record<string, string> = {};
-      (data?.admins || []).forEach((admin: { id: string; email: string }) => {
-        map[admin.id] = admin.email;
+      (data?.adminUsers || []).forEach((admin: { user_id: string; email: string }) => {
+        map[admin.user_id] = admin.email;
       });
       setAdminUsersMap(map);
     } catch (error) {
