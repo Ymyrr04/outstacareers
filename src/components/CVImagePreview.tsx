@@ -78,8 +78,19 @@ export const CVImagePreview = ({ pdfUrl, fileName }: CVImagePreviewProps) => {
     renderPdfAsImages();
   }, [pdfUrl, isPdf]);
 
-  const handleZoomIn = () => setScale(prev => Math.min(prev + 0.25, 3));
-  const handleZoomOut = () => setScale(prev => Math.max(prev - 0.25, 0.5));
+  const handleZoomIn = () => setScale(prev => Math.min(prev + 0.1, 3));
+  const handleZoomOut = () => setScale(prev => Math.max(prev - 0.1, 0.5));
+
+  const handleWheel = (e: React.WheelEvent) => {
+    if (e.ctrlKey || e.metaKey) {
+      e.preventDefault();
+      if (e.deltaY < 0) {
+        handleZoomIn();
+      } else {
+        handleZoomOut();
+      }
+    }
+  };
 
   if (loading) {
     return (
@@ -146,6 +157,7 @@ export const CVImagePreview = ({ pdfUrl, fileName }: CVImagePreviewProps) => {
       <div 
         ref={containerRef}
         className="flex-1 overflow-auto bg-muted/20 p-4"
+        onWheel={handleWheel}
       >
         <div className="flex justify-center">
           {pageImages[currentPage - 1] && (
