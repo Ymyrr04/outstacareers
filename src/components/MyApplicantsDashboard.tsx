@@ -686,7 +686,7 @@ export const MyApplicantsDashboard = () => {
                 <TableHead className="w-8"></TableHead>
                 <TableHead>Applicant</TableHead>
                 <TableHead>Role</TableHead>
-                <TableHead>Location</TableHead>
+                <TableHead>Contact</TableHead>
                 <TableHead>Score</TableHead>
                 <TableHead>Applied</TableHead>
                 <TableHead>Status</TableHead>
@@ -775,9 +775,21 @@ export const MyApplicantsDashboard = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex items-center gap-1 text-sm">
-                          <MapPin className="w-3 h-3 text-muted-foreground" />
-                          {applicant.location}
+                        <div className="flex flex-col gap-0.5 text-sm">
+                          {applicant.phone && (
+                            <a 
+                              href={`https://wa.me/${applicant.phone.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-green-600 hover:underline flex items-center gap-1"
+                              title="Open WhatsApp"
+                            >
+                              {applicant.phone}
+                            </a>
+                          )}
+                          {!applicant.phone && (
+                            <span className="text-muted-foreground">-</span>
+                          )}
                         </div>
                       </TableCell>
                       <TableCell>
