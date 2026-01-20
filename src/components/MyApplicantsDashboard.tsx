@@ -91,6 +91,7 @@ interface Applicant {
   full_name: string;
   email: string;
   phone: string | null;
+  whatsapp: string | null;
   location: string;
   job_title: string;
   job_id: string | null;
@@ -191,7 +192,7 @@ export const MyApplicantsDashboard = () => {
       const { data: applicantsData, error: applicantsError } = await supabase
         .from('applicants_prescreen')
         .select(`
-          id, full_name, email, phone, location, job_title, job_id, status, 
+          id, full_name, email, phone, whatsapp, location, job_title, job_id, status, 
           submitted_at, total_score, cv_file_url, voice_recording_url, 
           is_starred, job_source, is_available, availability_checked_at, details_viewed_at,
           notes, candidate_profile, ai_summary, ai_assessment_details
@@ -775,20 +776,33 @@ export const MyApplicantsDashboard = () => {
                         </div>
                       </TableCell>
                       <TableCell>
-                        <div className="flex flex-col gap-0.5 text-sm">
+                        <div className="flex flex-col gap-0.5 text-xs">
+                          <a 
+                            href={`mailto:${applicant.email}`}
+                            className="text-blue-600 hover:underline truncate max-w-[180px]"
+                            title={applicant.email}
+                          >
+                            {applicant.email}
+                          </a>
                           {applicant.phone && (
                             <a 
-                              href={`https://wa.me/${applicant.phone.replace(/\D/g, '')}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-green-600 hover:underline flex items-center gap-1"
-                              title="Open WhatsApp"
+                              href={`tel:${applicant.phone}`}
+                              className="text-muted-foreground hover:underline"
+                              title="Call"
                             >
                               {applicant.phone}
                             </a>
                           )}
-                          {!applicant.phone && (
-                            <span className="text-muted-foreground">-</span>
+                          {applicant.whatsapp && (
+                            <a 
+                              href={`https://wa.me/${applicant.whatsapp.replace(/\D/g, '')}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-green-600 hover:underline"
+                              title="Open WhatsApp"
+                            >
+                              WA: {applicant.whatsapp}
+                            </a>
                           )}
                         </div>
                       </TableCell>
