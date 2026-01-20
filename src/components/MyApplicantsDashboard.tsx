@@ -571,8 +571,8 @@ export const MyApplicantsDashboard = () => {
         return;
       }
 
-      // Determine MIME type based on file extension
-      const extension = cvPath.split('.').pop()?.toLowerCase();
+      // Determine MIME type and file extension
+      const extension = cvPath.split('.').pop()?.toLowerCase() || 'pdf';
       let mimeType = 'application/pdf';
       if (extension === 'doc') {
         mimeType = 'application/msword';
@@ -583,7 +583,8 @@ export const MyApplicantsDashboard = () => {
       // Create blob with correct MIME type
       const blob = new Blob([data], { type: mimeType });
       const blobUrl = URL.createObjectURL(blob);
-      setCvPreviewApplicant({ url: blobUrl, path: cvPath, name: `${applicantName}-CV.pdf` });
+      // Use the actual file extension in the name so CVImagePreview can correctly identify the file type
+      setCvPreviewApplicant({ url: blobUrl, path: cvPath, name: `${applicantName}-CV.${extension}` });
     } catch (err) {
       toast({ title: 'Error', description: 'Failed to load CV', variant: 'destructive' });
     } finally {
