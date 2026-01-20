@@ -535,9 +535,14 @@ export const MyApplicantsDashboard = () => {
     setSavingNotes(false);
   };
 
-  // Extract file path from CV URL
+  // Extract file path from CV URL or return as-is if it's already a relative path
   const extractCvPath = (url: string): string | null => {
     try {
+      // If it's already a relative path (e.g., "applications/xxx.pdf" or "bulk/xxx.pdf"), return as-is
+      if (!url.includes('://') && !url.startsWith('/')) {
+        return url;
+      }
+      
       // URL format: https://<project>.supabase.co/storage/v1/object/public/cv-uploads/<path>
       const match = url.match(/\/storage\/v1\/object\/(?:public|sign)\/cv-uploads\/(.+?)(?:\?|$)/);
       if (match) return decodeURIComponent(match[1]);
