@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Building2, TrendingUp, TrendingDown, Users, GripVertical, ArrowUpDown, ArrowUp, ArrowDown, Globe } from 'lucide-react';
+import { Loader2, Building2, TrendingUp, TrendingDown, Users, GripVertical, ArrowUpDown, ArrowUp, ArrowDown, Globe, UserPlus } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -40,19 +40,26 @@ interface ClientData {
   is_hiring: boolean | null;
 }
 
-type CardId = 'industry' | 'leadsFrom' | 'roles' | 'country' | 'monthlyHires' | 'separations' | 'retentionCompany' | 'retentionIndustry' | 'retentionRole';
+type CardId = 'industry' | 'leadsFrom' | 'roles' | 'country' | 'monthlyHires' | 'separations' | 'retentionCompany' | 'retentionIndustry' | 'retentionRole' | 'applicationSources';
 
 type SortField = 'hired' | 'active' | 'retention';
 type SortDirection = 'asc' | 'desc';
 
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16'];
 
-const DEFAULT_CARD_ORDER: CardId[] = ['industry', 'leadsFrom', 'roles', 'country', 'monthlyHires', 'separations', 'retentionCompany', 'retentionIndustry', 'retentionRole'];
+const DEFAULT_CARD_ORDER: CardId[] = ['industry', 'leadsFrom', 'applicationSources', 'roles', 'country', 'monthlyHires', 'separations', 'retentionCompany', 'retentionIndustry', 'retentionRole'];
+
+interface ApplicationSourceData {
+  name: string;
+  value: number;
+  percentage: number;
+}
 
 export const ClientAnalyticsDashboard = () => {
   const { toast } = useToast();
   const [contractors, setContractors] = useState<ContractorData[]>([]);
   const [clients, setClients] = useState<ClientData[]>([]);
+  const [applicationSources, setApplicationSources] = useState<ApplicationSourceData[]>([]);
   const [loading, setLoading] = useState(true);
   const [cardOrder, setCardOrder] = useState<CardId[]>(() => {
     const saved = localStorage.getItem('analytics-card-order');
@@ -74,13 +81,16 @@ export const ClientAnalyticsDashboard = () => {
 
   const fetchData = useCallback(async () => {
     try {
-      const [contractorsRes, clientsRes] = await Promise.all([
+      const [contractorsRes, clientsRes, applicantsRes] = await Promise.all([
         supabase
           .from('contractor_assignments')
           .select(`*, country, client:clients(id, company_name, industry)`),
         supabase
           .from('clients')
           .select('id, company_name, industry, leads_from, website, notes, is_hiring'),
+        supabase
+          .from('applicants_prescreen')
+          .select('job_source'),
       ]);
 
       if (contractorsRes.error) throw contractorsRes.error;
@@ -88,6 +98,31 @@ export const ClientAnalyticsDashboard = () => {
 
       setContractors(contractorsRes.data || []);
       setClients(clientsRes.data || []);
+
+      // Calculate application source stats
+      if (!applicantsRes.error && applicantsRes.data) {
+        const sourceCounts = new Map<string, number>();
+        
+        applicantsRes.data.forEach(applicant => {
+          let source = applicant.job_source || 'Not specified';
+          // Normalize source names
+          if (source.toLowerCase().startsWith('other:')) {
+            source = source.substring(6).trim() || 'Other';
+          }
+          sourceCounts.set(source, (sourceCounts.get(source) || 0) + 1);
+        });
+
+        const totalApplicants = applicantsRes.data.length;
+        const sourceData: ApplicationSourceData[] = Array.from(sourceCounts.entries())
+          .map(([name, value]) => ({
+            name,
+            value,
+            percentage: totalApplicants > 0 ? Math.round((value / totalApplicants) * 100) : 0,
+          }))
+          .sort((a, b) => b.value - a.value);
+
+        setApplicationSources(sourceData);
+      }
     } catch (err: any) {
       toast({
         title: 'Error',
@@ -861,9 +896,45 @@ export const ClientAnalyticsDashboard = () => {
     </DraggableCard>
   );
 
+  const renderApplicationSourcesCard = () => (
+    <DraggableCard cardId="applicationSources">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2 pl-5">
+            <UserPlus className="w-4 h-4" />
+            Applicant Sources
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-3 max-h-[300px] overflow-y-auto">
+            {applicationSources.map((source, index) => (
+              <div key={source.name} className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div 
+                    className="w-3 h-3 rounded-full flex-shrink-0" 
+                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                  />
+                  <span className="text-sm truncate" title={source.name}>{source.name}</span>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium">{source.value}</span>
+                  <span className="text-sm text-muted-foreground w-12 text-right">{source.percentage}%</span>
+                </div>
+              </div>
+            ))}
+            {applicationSources.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">No data available</p>
+            )}
+          </div>
+        </CardContent>
+      </Card>
+    </DraggableCard>
+  );
+
   const cardRenderers: Record<CardId, () => JSX.Element> = {
     industry: renderIndustryCard,
     leadsFrom: renderLeadsFromCard,
+    applicationSources: renderApplicationSourcesCard,
     roles: renderRolesCard,
     country: renderCountryCard,
     monthlyHires: renderMonthlyHiresCard,
