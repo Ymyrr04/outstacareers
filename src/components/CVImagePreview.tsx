@@ -55,27 +55,36 @@ export const CVImagePreview = ({ pdfUrl, fileName }: CVImagePreviewProps) => {
       setPageImages([]);
 
       try {
-        // Get a signed URL for the private bucket
-        const filePath = extractFilePath(pdfUrl);
-        
-        if (!filePath) {
-          throw new Error('Could not extract file path from URL');
+        let urlToLoad = pdfUrl;
+
+        // Check if this is already a blob URL (already downloaded)
+        if (!pdfUrl.startsWith('blob:')) {
+          // Get a signed URL for the private bucket
+          const filePath = extractFilePath(pdfUrl);
+          
+          if (!filePath) {
+            throw new Error('Could not extract file path from URL');
+          }
+
+          // Create a signed URL that expires in 1 hour
+          const { data: signedData, error: signedError } = await supabase.storage
+            .from('cv-uploads')
+            .createSignedUrl(filePath, 3600);
+
+          if (signedError || !signedData?.signedUrl) {
+            console.error('Signed URL error:', signedError);
+            throw new Error('Could not generate signed URL for PDF');
+          }
+
+          setSignedUrl(signedData.signedUrl);
+          urlToLoad = signedData.signedUrl;
+        } else {
+          // Blob URL is already accessible
+          setSignedUrl(pdfUrl);
         }
 
-        // Create a signed URL that expires in 1 hour
-        const { data: signedData, error: signedError } = await supabase.storage
-          .from('cv-uploads')
-          .createSignedUrl(filePath, 3600);
-
-        if (signedError || !signedData?.signedUrl) {
-          console.error('Signed URL error:', signedError);
-          throw new Error('Could not generate signed URL for PDF');
-        }
-
-        setSignedUrl(signedData.signedUrl);
-
-        // Load the PDF using the signed URL
-        const loadingTask = pdfjsLib.getDocument(signedData.signedUrl);
+        // Load the PDF
+        const loadingTask = pdfjsLib.getDocument(urlToLoad);
         const pdf = await loadingTask.promise;
         setTotalPages(pdf.numPages);
 

@@ -138,7 +138,8 @@ export const MyApplicantsDashboard = () => {
   
   // Expanded view state
   const [expandedApplicantId, setExpandedApplicantId] = useState<string | null>(null);
-  const [cvPreviewApplicant, setCvPreviewApplicant] = useState<{ url: string; name: string } | null>(null);
+  const [cvPreviewApplicant, setCvPreviewApplicant] = useState<{ url: string; path: string; name: string } | null>(null);
+  const [loadingCvPreview, setLoadingCvPreview] = useState(false);
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
   const [editingProfileId, setEditingProfileId] = useState<string | null>(null);
   const [savingNotes, setSavingNotes] = useState(false);
@@ -473,6 +474,70 @@ export const MyApplicantsDashboard = () => {
     setSavingNotes(false);
   };
 
+  // Extract file path from CV URL
+  const extractCvPath = (url: string): string | null => {
+    try {
+      // URL format: https://<project>.supabase.co/storage/v1/object/public/cv-uploads/<path>
+      const match = url.match(/\/storage\/v1\/object\/(?:public|sign)\/cv-uploads\/(.+?)(?:\?|$)/);
+      if (match) return decodeURIComponent(match[1]);
+      
+      // Fallback: try to get everything after cv-uploads/
+      const fallbackMatch = url.match(/cv-uploads\/(.+?)(?:\?|$)/);
+      if (fallbackMatch) return decodeURIComponent(fallbackMatch[1]);
+      
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  // Handle CV preview - download and create blob URL
+  const handlePreviewCv = async (cvUrl: string, applicantName: string) => {
+    const cvPath = extractCvPath(cvUrl);
+    if (!cvPath) {
+      toast({ title: 'Error', description: 'Could not extract CV path', variant: 'destructive' });
+      return;
+    }
+
+    setLoadingCvPreview(true);
+    try {
+      const { data, error } = await supabase.storage
+        .from('cv-uploads')
+        .download(cvPath);
+
+      if (error) {
+        toast({ title: 'Error', description: 'Failed to load CV: ' + error.message, variant: 'destructive' });
+        return;
+      }
+
+      // Determine MIME type based on file extension
+      const extension = cvPath.split('.').pop()?.toLowerCase();
+      let mimeType = 'application/pdf';
+      if (extension === 'doc') {
+        mimeType = 'application/msword';
+      } else if (extension === 'docx') {
+        mimeType = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+      }
+
+      // Create blob with correct MIME type
+      const blob = new Blob([data], { type: mimeType });
+      const blobUrl = URL.createObjectURL(blob);
+      setCvPreviewApplicant({ url: blobUrl, path: cvPath, name: `${applicantName}-CV.pdf` });
+    } catch (err) {
+      toast({ title: 'Error', description: 'Failed to load CV', variant: 'destructive' });
+    } finally {
+      setLoadingCvPreview(false);
+    }
+  };
+
+  // Close CV preview and revoke blob URL
+  const handleCloseCvPreview = () => {
+    if (cvPreviewApplicant?.url) {
+      URL.revokeObjectURL(cvPreviewApplicant.url);
+    }
+    setCvPreviewApplicant(null);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -679,12 +744,14 @@ export const MyApplicantsDashboard = () => {
                                 size="icon"
                                 className="h-5 w-5"
                                 title="Preview CV"
-                                onClick={() => setCvPreviewApplicant({ 
-                                  url: applicant.cv_file_url!, 
-                                  name: `${applicant.full_name}-CV.pdf` 
-                                })}
+                                disabled={loadingCvPreview}
+                                onClick={() => handlePreviewCv(applicant.cv_file_url!, applicant.full_name)}
                               >
-                                <FileText className="w-3 h-3 text-blue-500" />
+                                {loadingCvPreview ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : (
+                                  <FileText className="w-3 h-3 text-blue-500" />
+                                )}
                               </Button>
                             )}
                             {applicant.voice_recording_url && (
@@ -852,12 +919,14 @@ export const MyApplicantsDashboard = () => {
                                       <Button
                                         variant="outline"
                                         size="sm"
-                                        onClick={() => setCvPreviewApplicant({ 
-                                          url: applicant.cv_file_url!, 
-                                          name: `${applicant.full_name}-CV.pdf` 
-                                        })}
+                                        disabled={loadingCvPreview}
+                                        onClick={() => handlePreviewCv(applicant.cv_file_url!, applicant.full_name)}
                                       >
-                                        <Eye className="w-4 h-4 mr-2" />
+                                        {loadingCvPreview ? (
+                                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                        ) : (
+                                          <Eye className="w-4 h-4 mr-2" />
+                                        )}
                                         Preview CV
                                       </Button>
                                       <Button
@@ -1072,19 +1141,32 @@ export const MyApplicantsDashboard = () => {
       )}
 
       {/* CV Preview Dialog */}
-      <Dialog open={!!cvPreviewApplicant} onOpenChange={(open) => { if (!open) setCvPreviewApplicant(null); }}>
-        <DialogContent className="max-w-4xl h-[85vh] flex flex-col p-0">
-          <DialogHeader className="px-6 py-4 border-b">
-            <DialogTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              CV Preview - {cvPreviewApplicant?.name}
+      <Dialog open={!!cvPreviewApplicant} onOpenChange={(open) => { if (!open) handleCloseCvPreview(); }}>
+        <DialogContent className="max-w-5xl h-[90vh] flex flex-col p-0">
+          <DialogHeader className="px-6 py-4 border-b flex-shrink-0">
+            <DialogTitle className="flex items-center justify-between">
+              <span className="flex items-center gap-2">
+                <FileText className="w-5 h-5" />
+                CV Preview - {cvPreviewApplicant?.name}
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => window.open(cvPreviewApplicant?.url, '_blank')}
+                  className="flex items-center gap-2"
+                >
+                  <Eye className="w-4 h-4" />
+                  Open Original
+                </Button>
+              </div>
             </DialogTitle>
           </DialogHeader>
-          <div className="flex-1 overflow-hidden">
+          <div className="flex-1 overflow-hidden rounded-lg">
             {cvPreviewApplicant && (
               <CVImagePreview 
                 pdfUrl={cvPreviewApplicant.url} 
-                fileName={cvPreviewApplicant.name}
+                fileName={cvPreviewApplicant.path}
               />
             )}
           </div>
