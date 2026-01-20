@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import * as pdfjsLib from 'pdfjs-dist';
-import { Loader2, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, FileText } from 'lucide-react';
+import { Loader2, ChevronLeft, ChevronRight, ZoomIn, ZoomOut, FileText, Download, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { supabase } from '@/integrations/supabase/client';
 
 // Set up PDF.js worker
 pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.js`;
@@ -18,9 +19,28 @@ export const CVImagePreview = ({ pdfUrl, fileName }: CVImagePreviewProps) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(0);
   const [scale, setScale] = useState(1);
+  const [signedUrl, setSignedUrl] = useState<string | null>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
 
   const isPdf = fileName.toLowerCase().endsWith('.pdf');
+
+  // Extract the file path from the storage URL
+  const extractFilePath = (url: string): string | null => {
+    try {
+      // URL format: https://<project>.supabase.co/storage/v1/object/public/cv-uploads/<path>
+      // or: https://<project>.supabase.co/storage/v1/object/sign/cv-uploads/<path>?token=...
+      const match = url.match(/\/storage\/v1\/object\/(?:public|sign)\/cv-uploads\/(.+?)(?:\?|$)/);
+      if (match) return decodeURIComponent(match[1]);
+      
+      // Fallback: try to get everything after cv-uploads/
+      const fallbackMatch = url.match(/cv-uploads\/(.+?)(?:\?|$)/);
+      if (fallbackMatch) return decodeURIComponent(fallbackMatch[1]);
+      
+      return null;
+    } catch {
+      return null;
+    }
+  };
 
   useEffect(() => {
     if (!isPdf) {
@@ -29,13 +49,33 @@ export const CVImagePreview = ({ pdfUrl, fileName }: CVImagePreviewProps) => {
       return;
     }
 
-    const renderPdfAsImages = async () => {
+    const fetchAndRenderPdf = async () => {
       setLoading(true);
       setError(null);
       setPageImages([]);
 
       try {
-        const loadingTask = pdfjsLib.getDocument(pdfUrl);
+        // Get a signed URL for the private bucket
+        const filePath = extractFilePath(pdfUrl);
+        
+        if (!filePath) {
+          throw new Error('Could not extract file path from URL');
+        }
+
+        // Create a signed URL that expires in 1 hour
+        const { data: signedData, error: signedError } = await supabase.storage
+          .from('cv-uploads')
+          .createSignedUrl(filePath, 3600);
+
+        if (signedError || !signedData?.signedUrl) {
+          console.error('Signed URL error:', signedError);
+          throw new Error('Could not generate signed URL for PDF');
+        }
+
+        setSignedUrl(signedData.signedUrl);
+
+        // Load the PDF using the signed URL
+        const loadingTask = pdfjsLib.getDocument(signedData.signedUrl);
         const pdf = await loadingTask.promise;
         setTotalPages(pdf.numPages);
 
@@ -75,7 +115,7 @@ export const CVImagePreview = ({ pdfUrl, fileName }: CVImagePreviewProps) => {
       }
     };
 
-    renderPdfAsImages();
+    fetchAndRenderPdf();
   }, [pdfUrl, isPdf]);
 
   const handleZoomIn = useCallback(() => setScale(prev => Math.min(prev + 0.1, 3)), []);
@@ -119,9 +159,15 @@ export const CVImagePreview = ({ pdfUrl, fileName }: CVImagePreviewProps) => {
         <div>
           <p className="text-lg font-medium">Image Preview Not Available</p>
           <p className="text-sm text-muted-foreground mt-1">
-            {error || 'This file format cannot be previewed as an image. Use the download option instead.'}
+            {error || 'This file format cannot be previewed as an image.'}
           </p>
         </div>
+        {signedUrl && (
+          <Button variant="outline" onClick={() => window.open(signedUrl, '_blank')}>
+            <ExternalLink className="w-4 h-4 mr-2" />
+            Open in New Tab
+          </Button>
+        )}
       </div>
     );
   }
