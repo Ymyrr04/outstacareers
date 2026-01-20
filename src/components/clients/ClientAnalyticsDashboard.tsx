@@ -90,7 +90,7 @@ export const ClientAnalyticsDashboard = () => {
           .select('id, company_name, industry, leads_from, website, notes, is_hiring'),
         supabase
           .from('applicants_prescreen')
-          .select('job_source, full_name, job_title')
+          .select('job_source, full_name, job_title, email')
           .neq('job_source', 'Contractor Import'),
       ]);
 
@@ -102,17 +102,26 @@ export const ClientAnalyticsDashboard = () => {
 
       // Calculate application source stats with deduplication
       if (!applicantsRes.error && applicantsRes.data) {
-        // Deduplicate by name + job_title combination
-        const seenApplicants = new Set<string>();
+        // Deduplicate by email + job_title OR name + job_title combination
+        const seenByEmail = new Set<string>();
+        const seenByName = new Set<string>();
         const uniqueApplicants: typeof applicantsRes.data = [];
         
         applicantsRes.data.forEach(applicant => {
+          const normalizedEmail = (applicant.email || '').toLowerCase().trim();
           const normalizedName = (applicant.full_name || '').toLowerCase().trim();
           const normalizedRole = (applicant.job_title || '').toLowerCase().trim();
-          const key = `${normalizedName}|${normalizedRole}`;
           
-          if (!seenApplicants.has(key)) {
-            seenApplicants.add(key);
+          const emailKey = normalizedEmail ? `${normalizedEmail}|${normalizedRole}` : '';
+          const nameKey = `${normalizedName}|${normalizedRole}`;
+          
+          // Check if already seen by email or name for the same role
+          const isDuplicateByEmail = emailKey && seenByEmail.has(emailKey);
+          const isDuplicateByName = seenByName.has(nameKey);
+          
+          if (!isDuplicateByEmail && !isDuplicateByName) {
+            if (emailKey) seenByEmail.add(emailKey);
+            seenByName.add(nameKey);
             uniqueApplicants.push(applicant);
           }
         });
