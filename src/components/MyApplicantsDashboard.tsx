@@ -35,6 +35,9 @@ import {
   ClipboardList,
   StickyNote,
   ExternalLink,
+  Zap,
+  Check,
+  X,
 } from 'lucide-react';
 import {
   Table,
@@ -98,6 +101,9 @@ interface Applicant {
   status: string;
   submitted_at: string;
   total_score: number | null;
+  role_experience_score: number | null;
+  skills_tools_score: number | null;
+  availability_setup_score: number | null;
   cv_file_url: string | null;
   voice_recording_url: string | null;
   is_starred: boolean;
@@ -193,7 +199,8 @@ export const MyApplicantsDashboard = () => {
         .from('applicants_prescreen')
         .select(`
           id, full_name, email, phone, whatsapp, location, job_title, job_id, status, 
-          submitted_at, total_score, cv_file_url, voice_recording_url, 
+          submitted_at, total_score, role_experience_score, skills_tools_score, availability_setup_score,
+          cv_file_url, voice_recording_url, 
           is_starred, job_source, is_available, availability_checked_at, details_viewed_at,
           notes, candidate_profile, ai_summary, ai_assessment_details
         `)
@@ -1004,28 +1011,137 @@ export const MyApplicantsDashboard = () => {
                                   )}
                                   
                                   {applicant.total_score !== null && (
-                                    <div className="grid grid-cols-3 gap-4">
-                                      <div className="bg-background rounded-lg p-4 border text-center">
-                                        <div className="text-2xl font-bold text-primary">{applicant.total_score}</div>
-                                        <div className="text-xs text-muted-foreground">CV Score</div>
-                                      </div>
-                                      {applicant.ai_assessment_details?.roleExperienceScore !== undefined && (
-                                        <div className="bg-background rounded-lg p-4 border text-center">
-                                          <div className="text-2xl font-bold">{applicant.ai_assessment_details.roleExperienceScore}</div>
-                                          <div className="text-xs text-muted-foreground">Experience</div>
+                                    <div className="p-4 bg-muted/50 rounded-lg">
+                                      <h4 className="font-semibold mb-3 flex items-center gap-2">
+                                        <Star className="w-4 h-4" />
+                                        AI CV Assessment
+                                      </h4>
+                                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                                        <div className="text-center p-2 bg-background rounded">
+                                          <p className="text-xs text-muted-foreground">Role Experience</p>
+                                          <p className="text-lg font-bold">{applicant.role_experience_score ?? applicant.ai_assessment_details?.roleExperienceScore ?? '-'}/50</p>
                                         </div>
-                                      )}
-                                      {applicant.ai_assessment_details?.skillsToolsScore !== undefined && (
-                                        <div className="bg-background rounded-lg p-4 border text-center">
-                                          <div className="text-2xl font-bold">{applicant.ai_assessment_details.skillsToolsScore}</div>
-                                          <div className="text-xs text-muted-foreground">Skills</div>
+                                        <div className="text-center p-2 bg-background rounded">
+                                          <p className="text-xs text-muted-foreground">Skills & Tools</p>
+                                          <p className="text-lg font-bold">{applicant.skills_tools_score ?? applicant.ai_assessment_details?.skillsToolsScore ?? '-'}/45</p>
+                                        </div>
+                                        <div className="text-center p-2 bg-background rounded">
+                                          <p className="text-xs text-muted-foreground">Availability</p>
+                                          <p className="text-lg font-bold">{applicant.availability_setup_score ?? applicant.ai_assessment_details?.availabilitySetupScore ?? '-'}/5</p>
+                                        </div>
+                                        <div className="text-center p-2 bg-primary/10 rounded border border-primary/20">
+                                          <p className="text-xs text-muted-foreground">Total Score</p>
+                                          <p className="text-xl font-bold text-primary">{applicant.total_score}/100</p>
+                                        </div>
+                                      </div>
+
+                                      {/* Detailed Assessment Breakdown */}
+                                      {applicant.ai_assessment_details && (
+                                        <div className="mt-4 space-y-4">
+                                          {/* Skills & Tools Match */}
+                                          {(applicant.ai_assessment_details.matched_tools?.length > 0 || 
+                                            applicant.ai_assessment_details.missing_tools?.length > 0) && (
+                                            <div>
+                                              <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                                                <Zap className="w-4 h-4" />
+                                                Skills & Tools Match
+                                              </p>
+                                              <div className="space-y-2">
+                                                {applicant.ai_assessment_details.matched_tools?.map((tool: any, idx: number) => (
+                                                  <div key={idx} className="flex items-start gap-2 p-2 bg-green-50 dark:bg-green-950/30 rounded text-sm">
+                                                    <Check className="w-4 h-4 text-green-600 flex-shrink-0 mt-0.5" />
+                                                    <div>
+                                                      <span className="font-medium text-green-700 dark:text-green-400">{tool.tool}</span>
+                                                      {tool.context && (
+                                                        <p className="text-xs text-muted-foreground mt-0.5">"{tool.context}"</p>
+                                                      )}
+                                                    </div>
+                                                  </div>
+                                                ))}
+                                                {applicant.ai_assessment_details.missing_tools?.map((tool: string, idx: number) => (
+                                                  <div key={idx} className="flex items-center gap-2 p-2 bg-red-50 dark:bg-red-950/30 rounded text-sm">
+                                                    <X className="w-4 h-4 text-red-600 flex-shrink-0" />
+                                                    <span className="text-red-700 dark:text-red-400">{tool}</span>
+                                                    <span className="text-xs text-muted-foreground ml-1">(not found)</span>
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+
+                                          {/* Relevant Experience */}
+                                          {applicant.ai_assessment_details.experience_highlights?.length > 0 && (
+                                            <div>
+                                              <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                                                <Briefcase className="w-4 h-4" />
+                                                Relevant Experience
+                                              </p>
+                                              <div className="space-y-2">
+                                                {applicant.ai_assessment_details.experience_highlights.map((exp: any, idx: number) => (
+                                                  <div key={idx} className="p-2 bg-blue-50 dark:bg-blue-950/30 rounded text-sm">
+                                                    <div className="flex items-center gap-2 flex-wrap">
+                                                      <span className="font-medium text-blue-700 dark:text-blue-400">{exp.role}</span>
+                                                      {exp.company && (
+                                                        <span className="text-muted-foreground">at {exp.company}</span>
+                                                      )}
+                                                      {exp.duration && (
+                                                        <Badge variant="outline" className="text-xs">{exp.duration}</Badge>
+                                                      )}
+                                                    </div>
+                                                    {exp.relevance && (
+                                                      <p className="text-xs text-muted-foreground mt-1">{exp.relevance}</p>
+                                                    )}
+                                                  </div>
+                                                ))}
+                                              </div>
+                                            </div>
+                                          )}
+
+                                          {/* Strengths & Concerns */}
+                                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                            {applicant.ai_assessment_details.strengths?.length > 0 && (
+                                              <div>
+                                                <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                                                  <CheckCircle className="w-4 h-4 text-green-600" />
+                                                  Strengths
+                                                </p>
+                                                <ul className="space-y-1">
+                                                  {applicant.ai_assessment_details.strengths.map((strength: string, idx: number) => (
+                                                    <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                                                      <span className="text-green-600">•</span>
+                                                      {strength}
+                                                    </li>
+                                                  ))}
+                                                </ul>
+                                              </div>
+                                            )}
+                                            {applicant.ai_assessment_details.concerns?.length > 0 && (
+                                              <div>
+                                                <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                                                  <AlertTriangle className="w-4 h-4 text-amber-600" />
+                                                  Concerns
+                                                </p>
+                                                <ul className="space-y-1">
+                                                  {applicant.ai_assessment_details.concerns.map((concern: string, idx: number) => (
+                                                    <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                                                      <span className="text-amber-600">•</span>
+                                                      {concern}
+                                                    </li>
+                                                  ))}
+                                                </ul>
+                                              </div>
+                                            )}
+                                          </div>
                                         </div>
                                       )}
                                     </div>
                                   )}
                                   
                                   {!applicant.ai_summary && applicant.total_score === null && (
-                                    <p className="text-sm text-muted-foreground">No CV assessment available yet.</p>
+                                    <div className="p-6 bg-muted/30 rounded-lg text-center">
+                                      <FileText className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                                      <p className="text-muted-foreground">No CV assessment available yet.</p>
+                                    </div>
                                   )}
                                 </div>
                               </TabsContent>
