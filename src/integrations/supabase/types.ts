@@ -758,6 +758,7 @@ export type Database = {
           overall_score: number | null
           personality_score: number | null
           reminder_sent_at: string | null
+          second_reminder_sent_at: string | null
           situational_score: number | null
           started_at: string
           status: string
@@ -780,6 +781,7 @@ export type Database = {
           overall_score?: number | null
           personality_score?: number | null
           reminder_sent_at?: string | null
+          second_reminder_sent_at?: string | null
           situational_score?: number | null
           started_at?: string
           status?: string
@@ -802,6 +804,7 @@ export type Database = {
           overall_score?: number | null
           personality_score?: number | null
           reminder_sent_at?: string | null
+          second_reminder_sent_at?: string | null
           situational_score?: number | null
           started_at?: string
           status?: string
