@@ -1,6 +1,15 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { crypto } from "https://deno.land/std@0.190.0/crypto/mod.ts";
+
+// Generate a unique Message-ID for email threading
+function generateMessageId(domain: string): string {
+  const timestamp = Date.now();
+  const randomBytes = crypto.getRandomValues(new Uint8Array(8));
+  const randomHex = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  return `<${timestamp}.${randomHex}@${domain}>`;
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -118,15 +127,23 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
 
+    // Generate a unique Message-ID for thread tracking
+    const domain = gmailUser.split('@')[1] || 'outsta.io';
+    const messageId = generateMessageId(domain);
+    console.log("Generated Message-ID:", messageId);
+
     const emailHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${subject}</title></head><body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;"><table role="presentation" style="width: 100%; border-collapse: collapse;"><tr><td align="center" style="padding: 40px 0;"><table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"><tr><td style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 12px 12px 0 0; text-align: center;"><h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">Outsta Recruitment</h1></td></tr><tr><td style="padding: 40px;">${bodyHtml}</td></tr><tr><td style="background-color: #f8f9fa; padding: 25px 40px; border-radius: 0 0 12px 12px; text-align: center;"><p style="color: #999999; font-size: 12px; margin: 0;">This email was sent by Outsta Recruitment.<br>If you have any questions, please reply to this email.</p></td></tr></table></td></tr></table></body></html>`;
 
-    // Prepare email options
+    // Prepare email options with Message-ID header
     const emailOptions: any = {
       from: gmailUser,
       to: recipientEmail,
       subject: subject,
       content: "auto",
       html: emailHtml,
+      headers: {
+        "Message-ID": messageId,
+      },
     };
 
     // Add CC if provided
@@ -155,9 +172,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     await client.close();
 
-    console.log("Email sent successfully to:", recipientEmail);
+    console.log("Email sent successfully to:", recipientEmail, "with Message-ID:", messageId);
 
-    // Log the sent email
+    // Log the sent email with Message-ID for thread tracking
     const { error: logError } = await supabase
       .from('email_logs')
       .insert({
@@ -170,6 +187,7 @@ const handler = async (req: Request): Promise<Response> => {
         sent_at: new Date().toISOString(),
         applicant_status_at_send: applicantStatusAtSend || null,
         is_automated: isAutomated,
+        message_id: messageId,
       });
 
     if (logError) {

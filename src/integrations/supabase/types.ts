@@ -497,6 +497,7 @@ export type Database = {
           error_message: string | null
           id: string
           is_automated: boolean
+          message_id: string | null
           recipient_email: string
           sent_at: string | null
           status: string
@@ -511,6 +512,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           is_automated?: boolean
+          message_id?: string | null
           recipient_email: string
           sent_at?: string | null
           status?: string
@@ -525,6 +527,7 @@ export type Database = {
           error_message?: string | null
           id?: string
           is_automated?: boolean
+          message_id?: string | null
           recipient_email?: string
           sent_at?: string | null
           status?: string

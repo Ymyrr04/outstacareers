@@ -289,6 +289,23 @@ const handler = async (req: Request): Promise<Response> => {
       existingReplies?.map((r: { gmail_message_id: string }) => r.gmail_message_id) || []
     );
 
+    // Get all email_logs with message_id for thread matching
+    const { data: emailLogs } = await supabase
+      .from("email_logs")
+      .select("message_id, applicant_id")
+      .not("message_id", "is", null);
+    
+    // Create a map of message_id -> applicant_id for fast lookups
+    const messageIdToApplicantMap = new Map<string, string>();
+    if (emailLogs) {
+      for (const log of emailLogs) {
+        if (log.message_id) {
+          messageIdToApplicantMap.set(log.message_id, log.applicant_id);
+        }
+      }
+    }
+    console.log(`Loaded ${messageIdToApplicantMap.size} message IDs for thread matching`);
+
     console.log(`Checking replies from ${applicants.length} applicants`);
 
     // Connect to Gmail via IMAP
@@ -307,39 +324,77 @@ const handler = async (req: Request): Promise<Response> => {
 
     const newReplies: any[] = [];
 
-    // Search for emails from each applicant
+    // Create a map of email -> applicant ids for fallback matching
+    const emailToApplicantsMap = new Map<string, string[]>();
     for (const applicant of applicants as ApplicantEmail[]) {
+      const email = applicant.email.toLowerCase();
+      if (!emailToApplicantsMap.has(email)) {
+        emailToApplicantsMap.set(email, []);
+      }
+      emailToApplicantsMap.get(email)!.push(applicant.id);
+    }
+
+    // Get unique emails to search
+    const uniqueEmails = [...emailToApplicantsMap.keys()];
+    console.log(`Searching for replies from ${uniqueEmails.length} unique email addresses`);
+
+    // Search for emails from each unique applicant email
+    for (const email of uniqueEmails) {
       try {
-        const msgNums = await client.searchFrom(applicant.email, 30);
+        const msgNums = await client.searchFrom(email, 30);
         
         for (const msgNum of msgNums) {
           const message = await client.fetchMessage(msgNum);
           
           if (message && message.messageId && !existingMessageIds.has(message.messageId)) {
-            console.log(`Found reply from: ${applicant.email} - ${message.subject}`);
+            // THREAD MATCHING: Try to match via in_reply_to header first
+            let matchedApplicantId: string | null = null;
             
-            let receivedAt: string;
-            try {
-              receivedAt = new Date(message.date).toISOString();
-            } catch {
-              receivedAt = new Date().toISOString();
+            if (message.inReplyTo) {
+              // Look up the original email's applicant_id using the in_reply_to header
+              matchedApplicantId = messageIdToApplicantMap.get(message.inReplyTo) || null;
+              if (matchedApplicantId) {
+                console.log(`Thread match: Reply "${message.subject}" matched to applicant ${matchedApplicantId} via in_reply_to`);
+              }
             }
             
-            newReplies.push({
-              applicant_id: applicant.id,
-              from_email: applicant.email,
-              subject: message.subject || "(No Subject)",
-              body_text: message.body.substring(0, 50000),
-              in_reply_to: message.inReplyTo || null,
-              received_at: receivedAt,
-              gmail_message_id: message.messageId,
-            });
+            // FALLBACK: If no thread match, use the first applicant with this email
+            if (!matchedApplicantId) {
+              const applicantIds = emailToApplicantsMap.get(email.toLowerCase());
+              if (applicantIds && applicantIds.length > 0) {
+                matchedApplicantId = applicantIds[0];
+                if (applicantIds.length > 1) {
+                  console.log(`Warning: ${applicantIds.length} applicants share email ${email}, using first one (no thread match available)`);
+                }
+              }
+            }
             
-            existingMessageIds.add(message.messageId);
+            if (matchedApplicantId) {
+              console.log(`Found reply from: ${email} - ${message.subject}`);
+              
+              let receivedAt: string;
+              try {
+                receivedAt = new Date(message.date).toISOString();
+              } catch {
+                receivedAt = new Date().toISOString();
+              }
+              
+              newReplies.push({
+                applicant_id: matchedApplicantId,
+                from_email: email,
+                subject: message.subject || "(No Subject)",
+                body_text: message.body.substring(0, 50000),
+                in_reply_to: message.inReplyTo || null,
+                received_at: receivedAt,
+                gmail_message_id: message.messageId,
+              });
+              
+              existingMessageIds.add(message.messageId);
+            }
           }
         }
       } catch (err) {
-        console.error(`Error searching for ${applicant.email}:`, err);
+        console.error(`Error searching for ${email}:`, err);
       }
     }
 
