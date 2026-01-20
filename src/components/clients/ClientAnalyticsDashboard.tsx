@@ -90,7 +90,8 @@ export const ClientAnalyticsDashboard = () => {
           .select('id, company_name, industry, leads_from, website, notes, is_hiring'),
         supabase
           .from('applicants_prescreen')
-          .select('job_source'),
+          .select('job_source')
+          .neq('job_source', 'Contractor Import'),
       ]);
 
       if (contractorsRes.error) throw contractorsRes.error;
