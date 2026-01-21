@@ -71,13 +71,15 @@ export function WysiwygEditor({
         const bulletPattern = /^[\s]*[•\-\*▪▸►○●]\s+/;
         const numberedPattern = /^[\s]*\d+[\.\)]\s+/;
         
-        const hasBullets = lines.some(line => bulletPattern.test(line));
-        const hasNumbers = lines.some(line => numberedPattern.test(line));
+        // Count how many lines match each pattern
+        const bulletCount = lines.filter(line => bulletPattern.test(line)).length;
+        const numberedCount = lines.filter(line => numberedPattern.test(line)).length;
         
-        // Only intercept if we detect a list pattern
+        // Only intercept if majority of lines are list items (at least 2 items)
+        const hasBullets = bulletCount >= 2 && bulletCount >= lines.length * 0.5;
+        const hasNumbers = numberedCount >= 2 && numberedCount >= lines.length * 0.5;
+        
         if (hasBullets || hasNumbers) {
-          event.preventDefault();
-          
           // Parse the content into list items
           const items = lines.map(line => {
             // Remove bullet/number prefixes
@@ -87,26 +89,25 @@ export function WysiwygEditor({
               .trim();
           }).filter(item => item);
           
-          if (items.length === 0) return false;
-          
-          // Build HTML for the list - prefer bullets if detected, otherwise numbers
-          const listTag = hasBullets ? 'ul' : 'ol';
-          const listHtml = `<${listTag}>${items.map(item => `<li>${item}</li>`).join('')}</${listTag}>`;
-          
-          // Insert the list HTML
-          view.dispatch(view.state.tr.insertText(''));
-          const { state } = view;
-          const { from } = state.selection;
-          
-          // Use editor commands to insert HTML
-          const editor = (view as any).editor;
-          if (editor) {
-            editor.chain().focus().insertContent(listHtml).run();
+          // Only handle if we have valid items
+          if (items.length >= 2) {
+            event.preventDefault();
+            
+            // Build HTML for the list - prefer bullets if detected, otherwise numbers
+            const listTag = hasBullets ? 'ul' : 'ol';
+            const listHtml = `<${listTag}>${items.map(item => `<li>${item}</li>`).join('')}</${listTag}>`;
+            
+            // Use editor commands to insert HTML
+            const editor = (view as any).editor;
+            if (editor) {
+              editor.chain().focus().insertContent(listHtml).run();
+            }
+            
+            return true;
           }
-          
-          return true;
         }
         
+        // Let TipTap handle normal paste
         return false;
       },
     },
