@@ -945,7 +945,7 @@ const Admin = () => {
         </div>
       </header>
 
-      <main className="px-4 py-8">
+      <main className="px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
         <Tabs defaultValue="jobs" className="space-y-6" value={activeMainTab} onValueChange={setActiveMainTab}>
           <TabsList>
             <TabsTrigger value="jobs" className="flex items-center gap-2">
