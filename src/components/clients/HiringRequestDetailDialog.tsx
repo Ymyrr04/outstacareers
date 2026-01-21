@@ -704,7 +704,7 @@ export const HiringRequestDetailDialog = ({
           </div>
           
           {/* Comment List */}
-          <div className="space-y-3 mb-4 max-h-[200px] overflow-y-auto">
+          <div className="space-y-3 mb-4">
             {loadingComments ? (
               <div className="flex items-center justify-center py-4">
                 <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
