@@ -55,7 +55,7 @@ export function FormattedNotes({ content, className = '' }: FormattedNotesProps)
 
   return (
     <div 
-      className={`text-sm text-muted-foreground prose prose-sm max-w-none [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5 [&_a]:text-primary [&_a]:hover:underline ${className}`}
+      className={`text-sm text-foreground prose prose-sm max-w-none [&_p]:my-1 [&_ul]:list-disc [&_ul]:pl-5 [&_ol]:list-decimal [&_ol]:pl-5 [&_li]:my-0.5 [&_a]:text-primary [&_a]:hover:underline ${className}`}
       dangerouslySetInnerHTML={{ __html: formattedHtml }}
     />
   );
