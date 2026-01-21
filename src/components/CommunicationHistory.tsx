@@ -115,6 +115,7 @@ export function CommunicationHistory({
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
   const [cancelingId, setCancelingId] = useState<string | null>(null);
+  const [sendingNowId, setSendingNowId] = useState<string | null>(null);
   
   // Reply compose state
   const [showReplyComposer, setShowReplyComposer] = useState(false);
@@ -207,6 +208,45 @@ export function CommunicationHistory({
     setCancelingId(null);
     fetchLogs();
     fetchScheduledEmails();
+  };
+
+  const handleSendNow = async (email: { id: string; subject: string; body_html: string; recipient_email: string }) => {
+    setSendingNowId(email.id);
+    try {
+      // Send the email immediately
+      const { error: sendError } = await supabase.functions.invoke('send-applicant-email', {
+        body: {
+          applicantId,
+          subject: email.subject,
+          bodyHtml: email.body_html,
+          recipientEmail: email.recipient_email,
+          applicantStatusAtSend: null,
+          isAutomated: false,
+        },
+      });
+
+      if (sendError) throw sendError;
+
+      // Cancel the scheduled email since we've sent it
+      await cancelScheduledEmail(email.id);
+
+      toast({
+        title: 'Email sent',
+        description: `Email sent to ${email.recipient_email}`,
+      });
+
+      fetchLogs();
+      fetchScheduledEmails();
+    } catch (error: any) {
+      console.error('Error sending email now:', error);
+      toast({
+        title: 'Failed to send',
+        description: error.message || 'Please try again',
+        variant: 'destructive',
+      });
+    } finally {
+      setSendingNowId(null);
+    }
   };
 
   const handleFetchReplies = async () => {
@@ -380,22 +420,40 @@ export function CommunicationHistory({
                             ({formatDistanceToNow(new Date(email.scheduled_for), { addSuffix: true })})
                           </p>
                         </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleCancel(email.id)}
-                          disabled={cancelingId === email.id}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                        >
-                          {cancelingId === email.id ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <>
-                              <Ban className="h-4 w-4 mr-1" />
-                              Cancel
-                            </>
-                          )}
-                        </Button>
+                        <div className="flex flex-col gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleSendNow(email)}
+                            disabled={sendingNowId === email.id || cancelingId === email.id}
+                            className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                          >
+                            {sendingNowId === email.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Send className="h-4 w-4 mr-1" />
+                                Send Now
+                              </>
+                            )}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleCancel(email.id)}
+                            disabled={cancelingId === email.id || sendingNowId === email.id}
+                            className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          >
+                            {cancelingId === email.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <>
+                                <Ban className="h-4 w-4 mr-1" />
+                                Cancel
+                              </>
+                            )}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   ))}
