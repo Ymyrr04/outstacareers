@@ -117,9 +117,10 @@ export function WysiwygEditor({
               }
               currentList.push(trimmed.replace(bulletPattern, '').replace(dashPattern, '').trim());
             } else if (numberedPattern.test(line)) {
-              if (listType !== 'ol') {
+              // Convert numbered lists to bullet points by default
+              if (listType !== 'ul') {
                 flushList();
-                listType = 'ol';
+                listType = 'ul';
               }
               currentList.push(trimmed.replace(numberedPattern, '').trim());
             } else {
