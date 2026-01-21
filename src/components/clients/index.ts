@@ -7,6 +7,7 @@ export { AddContactDialog } from './AddContactDialog';
 export { AddContractorDialog } from './AddContractorDialog';
 export { AddCommunicationDialog } from './AddCommunicationDialog';
 export { ClientImportDialog } from './ClientImportDialog';
+export { HiringPipelineKanban } from './HiringPipelineKanban';
 export type { 
   Client, 
   ClientContact, 
