@@ -66,13 +66,14 @@ export function WysiwygEditor({
     };
   }, [hasSelection]);
 
-  // Track mouse position for bubble menu placement (only when not holding mouse)
+  // Track mouse position ONLY during selection (before menu is shown)
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       mousePos.current = { x: e.clientX, y: e.clientY };
       
-      // Only update position if showing menu AND not hovering over menu AND not dragging
-      if (showBubbleMenu && !isHoveringMenu && !isMouseDown && editorRef.current) {
+      // Only update position while dragging (before menu appears)
+      // Once showBubbleMenu is true, stop tracking - the position is locked
+      if (isMouseDown && hasSelection && !showBubbleMenu && editorRef.current) {
         const editorRect = editorRef.current.getBoundingClientRect();
         
         // Position relative to editor, centered on mouse X
@@ -89,7 +90,7 @@ export function WysiwygEditor({
 
     document.addEventListener('mousemove', handleMouseMove);
     return () => document.removeEventListener('mousemove', handleMouseMove);
-  }, [showBubbleMenu, isHoveringMenu, isMouseDown]);
+  }, [isMouseDown, hasSelection, showBubbleMenu]);
 
   const editor = useEditor({
     extensions: [
