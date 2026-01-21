@@ -16,7 +16,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useEmailReplies } from '@/hooks/useEmailTemplates';
-import { ClientsDashboard, ContractorsDashboard, ClientAnalyticsDashboard } from '@/components/clients';
+import { ClientsDashboard, ContractorsDashboard, ClientAnalyticsDashboard, HiringPipelineKanban } from '@/components/clients';
 import { generateJobUrl } from '@/lib/slugify';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
 import { Input } from '@/components/ui/input';
@@ -968,6 +968,10 @@ const Admin = () => {
             <TabsTrigger value="my-applicants" className="flex items-center gap-2">
               <ClipboardList className="w-4 h-4" />
               Recruiter Dash
+            </TabsTrigger>
+            <TabsTrigger value="pipeline" className="flex items-center gap-2">
+              <ClipboardList className="w-4 h-4" />
+              Pipeline
             </TabsTrigger>
             <TabsTrigger value="clients" className="flex items-center gap-2">
               <Building2 className="w-4 h-4" />
@@ -2427,6 +2431,15 @@ const Admin = () => {
                 </Tabs>
               </>
             )}
+          </TabsContent>
+
+          {/* Pipeline Kanban Tab */}
+          <TabsContent value="pipeline" className="space-y-6" keepMounted>
+            <div>
+              <h2 className="text-2xl font-bold mb-2">Client Hiring Pipeline</h2>
+              <p className="text-muted-foreground mb-4">Track client hiring requests through the recruitment pipeline</p>
+            </div>
+            <HiringPipelineKanban />
           </TabsContent>
 
           {/* Clients Tab */}

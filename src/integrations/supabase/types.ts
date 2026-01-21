@@ -362,6 +362,68 @@ export type Database = {
           },
         ]
       }
+      client_hiring_requests: {
+        Row: {
+          assigned_admin_id: string | null
+          client_id: string | null
+          client_status: string
+          comment_count: number | null
+          created_at: string
+          id: string
+          industry: string | null
+          job_title: string
+          notes: string | null
+          pipeline_stage: string
+          priority: string
+          source: string | null
+          start_date: string | null
+          target_end_date: string | null
+          updated_at: string
+        }
+        Insert: {
+          assigned_admin_id?: string | null
+          client_id?: string | null
+          client_status?: string
+          comment_count?: number | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          job_title: string
+          notes?: string | null
+          pipeline_stage?: string
+          priority?: string
+          source?: string | null
+          start_date?: string | null
+          target_end_date?: string | null
+          updated_at?: string
+        }
+        Update: {
+          assigned_admin_id?: string | null
+          client_id?: string | null
+          client_status?: string
+          comment_count?: number | null
+          created_at?: string
+          id?: string
+          industry?: string | null
+          job_title?: string
+          notes?: string | null
+          pipeline_stage?: string
+          priority?: string
+          source?: string | null
+          start_date?: string | null
+          target_end_date?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_hiring_requests_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       clients: {
         Row: {
           address: string | null
