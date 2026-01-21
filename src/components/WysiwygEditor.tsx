@@ -74,8 +74,8 @@ export function WysiwygEditor({
         const nonEmptyLines = lines.filter(line => line.trim());
         if (nonEmptyLines.length === 0) return false;
         
-        // Check for bullet point patterns: •, -, *, ▪, ▸, ►, ○, ●
-        const bulletPattern = /^[\s]*[•▪▸►○●]\s+/;
+        // Check for bullet point patterns: •, -, *, ▪, ▸, ►, ○, ●, · (middle dot)
+        const bulletPattern = /^[\s]*[•▪▸►○●·∙◦]\s*/;
         const dashPattern = /^[\s]*-\s+/;
         const numberedPattern = /^[\s]*\d+[\.\)]\s+/;
         
