@@ -177,7 +177,7 @@ interface Applicant {
   device_type: string | null;
 }
 
-type SortOption = 'newest' | 'score-desc' | 'score-asc' | 'starred';
+type SortOption = 'newest' | 'score-desc' | 'score-asc' | 'starred' | 'completed-assessment';
 
 const Admin = () => {
   const { user, isAdmin, loading, signOut } = useAuth();
@@ -300,6 +300,21 @@ const Admin = () => {
         if (aScore.hasInterview && !bScore.hasInterview) return -1;
         if (!aScore.hasInterview && bScore.hasInterview) return 1;
         return bScore.score - aScore.score;
+      }
+      
+      if (sortOption === 'completed-assessment') {
+        // Prioritize applicants with completed interview sessions
+        const aHasCompleted = a.interview_session?.status === 'completed' || a.interview_session?.status === 'completed_manual_review';
+        const bHasCompleted = b.interview_session?.status === 'completed' || b.interview_session?.status === 'completed_manual_review';
+        if (aHasCompleted && !bHasCompleted) return -1;
+        if (!aHasCompleted && bHasCompleted) return 1;
+        // Secondary sort by score for those with completed assessments
+        if (aHasCompleted && bHasCompleted) {
+          const aScore = a.interview_session?.overall_score ?? 0;
+          const bScore = b.interview_session?.overall_score ?? 0;
+          return bScore - aScore;
+        }
+        return new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime();
       }
       
       if (sortOption === 'score-desc' || sortOption === 'score-asc') {
@@ -1446,6 +1461,7 @@ const Admin = () => {
                           <SelectItem value="score-desc">Score: High to Low</SelectItem>
                           <SelectItem value="score-asc">Score: Low to High</SelectItem>
                           <SelectItem value="starred">Starred First</SelectItem>
+                          <SelectItem value="completed-assessment">Completed Assessment</SelectItem>
                         </SelectContent>
                       </Select>
                     </div>
