@@ -96,7 +96,7 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(({
         if (nonEmptyLines.length === 0) return false;
         
         // Check for bullet point patterns
-        const bulletPattern = /^[\s]*[•▪▸►○●]\s+/;
+        const bulletPattern = /^[\s]*[•▪▸►○●·∙◦]\s*/;
         const dashPattern = /^[\s]*-\s+/;
         const numberedPattern = /^[\s]*\d+[\.\)]\s+/;
         
