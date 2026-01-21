@@ -327,7 +327,7 @@ export const HiringRequestDetailDialog = ({
     // Render HTML content with proper styling for @mentions and links
     return (
       <div 
-        className="text-sm prose prose-sm max-w-none [&_a]:text-primary [&_a]:hover:underline [&_.text-primary]:text-primary [&_.font-medium]:font-medium"
+        className="text-sm prose prose-sm max-w-none [&_a]:text-primary [&_a]:underline [&_a]:hover:opacity-80 [&_.text-primary]:text-primary [&_.font-medium]:font-medium"
         dangerouslySetInnerHTML={{ __html: content }}
       />
     );
