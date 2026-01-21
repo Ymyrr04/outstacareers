@@ -1,15 +1,14 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useHiringRequests, type HiringRequest, type PipelineStage, type Priority, type ClientStatus, PIPELINE_STAGES } from '@/hooks/useHiringRequests';
-import { Loader2, Trash2, Pencil, Save, X } from 'lucide-react';
+import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X } from 'lucide-react';
 
 interface HiringRequestDetailDialogProps {
   request: HiringRequest | null;
@@ -35,9 +34,9 @@ export const HiringRequestDetailDialog = ({
   onUpdated 
 }: HiringRequestDetailDialogProps) => {
   const { updateRequest, deleteRequest } = useHiringRequests();
-  const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [editingField, setEditingField] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     job_title: '',
@@ -64,29 +63,32 @@ export const HiringRequestDetailDialog = ({
         target_end_date: request.target_end_date || '',
         notes: request.notes || '',
       });
-      setEditing(false);
+      setEditingField(null);
     }
   }, [request]);
 
-  const handleSave = async () => {
+  const handleFieldUpdate = async (field: string, value: string) => {
     if (!request) return;
     
     setSaving(true);
-    const success = await updateRequest(request.id, {
-      job_title: formData.job_title.trim(),
-      priority: formData.priority,
-      industry: formData.industry || null,
-      client_status: formData.client_status,
-      pipeline_stage: formData.pipeline_stage,
-      source: formData.source.trim() || null,
-      start_date: formData.start_date || null,
-      target_end_date: formData.target_end_date || null,
-      notes: formData.notes.trim() || null,
-    });
+    const updates: Partial<HiringRequest> = {};
+    
+    if (field === 'priority') updates.priority = value as Priority;
+    else if (field === 'industry') updates.industry = value || null;
+    else if (field === 'client_status') updates.client_status = value as ClientStatus;
+    else if (field === 'pipeline_stage') updates.pipeline_stage = value as PipelineStage;
+    else if (field === 'source') updates.source = value || null;
+    else if (field === 'start_date') updates.start_date = value || null;
+    else if (field === 'target_end_date') updates.target_end_date = value || null;
+    else if (field === 'job_title') updates.job_title = value;
+    else if (field === 'notes') updates.notes = value || null;
+
+    const success = await updateRequest(request.id, updates);
     setSaving(false);
+    setEditingField(null);
 
     if (success) {
-      setEditing(false);
+      setFormData(prev => ({ ...prev, [field]: value }));
       onUpdated?.();
     }
   };
@@ -106,211 +108,257 @@ export const HiringRequestDetailDialog = ({
 
   if (!request) return null;
 
+  const stageLabel = PIPELINE_STAGES.find(s => s.id === request.pipeline_stage)?.label || request.pipeline_stage;
+
   return (
     <Dialog open={!!request} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle className="flex items-center justify-between pr-8">
-            <span className="truncate">{request.client_name}</span>
-            <div className="flex items-center gap-1">
-              {editing ? (
-                <>
-                  <Button size="icon" variant="ghost" onClick={() => setEditing(false)}>
-                    <X className="w-4 h-4" />
-                  </Button>
-                  <Button size="icon" variant="ghost" onClick={handleSave} disabled={saving}>
-                    {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-                  </Button>
-                </>
-              ) : (
-                <Button size="icon" variant="ghost" onClick={() => setEditing(true)}>
-                  <Pencil className="w-4 h-4" />
-                </Button>
-              )}
-            </div>
-          </DialogTitle>
-        </DialogHeader>
-
-        <div className="space-y-4">
-          {/* View Mode */}
-          {!editing ? (
-            <>
-              <div>
-                <p className="text-lg font-medium">{request.job_title}</p>
-                {request.source && (
-                  <p className="text-sm text-muted-foreground">from {request.source}</p>
-                )}
-              </div>
-
-              <div className="flex flex-wrap gap-2">
-                <Badge variant={request.priority === 'high' ? 'destructive' : 'secondary'}>
-                  {request.priority === 'high' ? 'High Priority' : 'Low Priority'}
-                </Badge>
-                {request.industry && (
-                  <Badge variant="outline">{request.industry}</Badge>
-                )}
-                <Badge variant={request.client_status === 'new' ? 'default' : 'secondary'}>
-                  {request.client_status === 'new' ? 'New Client' : 'Existing Client'}
-                </Badge>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span className="text-muted-foreground">Stage:</span>
-                  <p className="font-medium">{PIPELINE_STAGES.find(s => s.id === request.pipeline_stage)?.label}</p>
-                </div>
-                {(request.start_date || request.target_end_date) && (
-                  <div>
-                    <span className="text-muted-foreground">Date Range:</span>
-                    <p className="font-medium">
-                      {request.start_date && format(new Date(request.start_date), 'MMM d, yyyy')}
-                      {request.start_date && request.target_end_date && ' – '}
-                      {request.target_end_date && format(new Date(request.target_end_date), 'MMM d, yyyy')}
-                    </p>
-                  </div>
-                )}
-              </div>
-
-              {request.notes && (
-                <div>
-                  <span className="text-sm text-muted-foreground">Notes:</span>
-                  <p className="text-sm whitespace-pre-wrap mt-1 p-3 bg-muted/50 rounded-lg">
-                    {request.notes}
-                  </p>
-                </div>
-              )}
-
-              <div className="text-xs text-muted-foreground">
-                Created: {format(new Date(request.created_at), 'MMM d, yyyy h:mm a')}
-              </div>
-            </>
+      <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden">
+        {/* Header */}
+        <div className="flex items-center gap-3 p-4 border-b bg-muted/30">
+          <CheckCircle2 className="w-5 h-5 text-muted-foreground" />
+          {editingField === 'job_title' ? (
+            <Input
+              autoFocus
+              value={formData.job_title}
+              onChange={(e) => setFormData(prev => ({ ...prev, job_title: e.target.value }))}
+              onBlur={() => handleFieldUpdate('job_title', formData.job_title)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') handleFieldUpdate('job_title', formData.job_title);
+                if (e.key === 'Escape') setEditingField(null);
+              }}
+              className="text-lg font-semibold h-auto py-1"
+            />
           ) : (
-            /* Edit Mode */
-            <div className="space-y-4">
-              <div>
-                <Label>Job Title</Label>
-                <Input
-                  value={formData.job_title}
-                  onChange={(e) => setFormData(prev => ({ ...prev, job_title: e.target.value }))}
-                />
+            <h2 
+              className="text-lg font-semibold cursor-pointer hover:text-primary transition-colors flex-1"
+              onClick={() => setEditingField('job_title')}
+            >
+              {request.client_name} {'{' + request.job_title + '}'}
+              {request.source && <span className="text-muted-foreground font-normal"> - from {request.source}</span>}
+            </h2>
+          )}
+          <Button variant="ghost" size="icon" className="ml-auto" onClick={() => onOpenChange(false)}>
+            <X className="w-4 h-4" />
+          </Button>
+        </div>
+
+        <div className="flex flex-col lg:flex-row">
+          {/* Left Column - Fields */}
+          <div className="flex-1 p-4 space-y-1">
+            {/* Project/Stage Row */}
+            <div className="flex items-center py-2 hover:bg-muted/50 rounded px-2 -mx-2">
+              <div className="flex items-center gap-2 w-32 text-muted-foreground text-sm">
+                <MapPin className="w-4 h-4" />
+                Stage
               </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Priority</Label>
-                  <Select 
-                    value={formData.priority} 
-                    onValueChange={(v) => setFormData(prev => ({ ...prev, priority: v as Priority }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="high">High</SelectItem>
-                      <SelectItem value="low">Low</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                <div>
-                  <Label>Client Status</Label>
-                  <Select 
-                    value={formData.client_status} 
-                    onValueChange={(v) => setFormData(prev => ({ ...prev, client_status: v as ClientStatus }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="new">New</SelectItem>
-                      <SelectItem value="existing">Existing</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+              <div className="flex-1">
+                <Select 
+                  value={formData.pipeline_stage} 
+                  onValueChange={(v) => handleFieldUpdate('pipeline_stage', v)}
+                >
+                  <SelectTrigger className="border-0 bg-transparent h-auto p-0 hover:bg-transparent focus:ring-0">
+                    <Badge variant="outline" className="font-normal">
+                      {stageLabel}
+                    </Badge>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {PIPELINE_STAGES.map(stage => (
+                      <SelectItem key={stage.id} value={stage.id}>
+                        {stage.emoji} {stage.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+            </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Industry</Label>
-                  <Select 
-                    value={formData.industry} 
-                    onValueChange={(v) => setFormData(prev => ({ ...prev, industry: v }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {INDUSTRIES.map(industry => (
-                        <SelectItem key={industry} value={industry}>{industry}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            <div className="text-xs text-muted-foreground uppercase tracking-wide pt-4 pb-2 font-medium">Fields</div>
 
-                <div>
-                  <Label>Stage</Label>
-                  <Select 
-                    value={formData.pipeline_stage} 
-                    onValueChange={(v) => setFormData(prev => ({ ...prev, pipeline_stage: v as PipelineStage }))}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {PIPELINE_STAGES.map(stage => (
-                        <SelectItem key={stage.id} value={stage.id}>{stage.label}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
+            {/* Priority Row */}
+            <div className="flex items-center py-2 hover:bg-muted/50 rounded px-2 -mx-2">
+              <div className="flex items-center gap-2 w-32 text-muted-foreground text-sm">
+                <CheckCircle2 className="w-4 h-4" />
+                Priority
               </div>
-
-              <div>
-                <Label>Source / Referral</Label>
-                <Input
-                  value={formData.source}
-                  onChange={(e) => setFormData(prev => ({ ...prev, source: e.target.value }))}
-                  placeholder="e.g., BNI Revival, LinkedIn"
-                />
+              <div className="flex-1">
+                <Select 
+                  value={formData.priority} 
+                  onValueChange={(v) => handleFieldUpdate('priority', v)}
+                >
+                  <SelectTrigger className="border-0 bg-transparent h-auto p-0 hover:bg-transparent focus:ring-0">
+                    <Badge 
+                      variant={formData.priority === 'high' ? 'destructive' : 'secondary'}
+                      className="font-normal"
+                    >
+                      {formData.priority === 'high' ? 'High' : 'Low'}
+                    </Badge>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="low">Low</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
+            </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label>Start Date</Label>
+            {/* Industry Row */}
+            <div className="flex items-center py-2 hover:bg-muted/50 rounded px-2 -mx-2">
+              <div className="flex items-center gap-2 w-32 text-muted-foreground text-sm">
+                <Briefcase className="w-4 h-4" />
+                Industry
+              </div>
+              <div className="flex-1">
+                <Select 
+                  value={formData.industry || '__none__'} 
+                  onValueChange={(v) => handleFieldUpdate('industry', v === '__none__' ? '' : v)}
+                >
+                  <SelectTrigger className="border-0 bg-transparent h-auto p-0 hover:bg-transparent focus:ring-0">
+                    {formData.industry ? (
+                      <Badge className="bg-emerald-600 hover:bg-emerald-700 font-normal">
+                        {formData.industry}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">None</SelectItem>
+                    {INDUSTRIES.map(industry => (
+                      <SelectItem key={industry} value={industry}>{industry}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Source Row */}
+            <div className="flex items-center py-2 hover:bg-muted/50 rounded px-2 -mx-2">
+              <div className="flex items-center gap-2 w-32 text-muted-foreground text-sm">
+                <Building2 className="w-4 h-4" />
+                Source
+              </div>
+              <div className="flex-1">
+                {editingField === 'source' ? (
                   <Input
-                    type="date"
-                    value={formData.start_date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, start_date: e.target.value }))}
+                    autoFocus
+                    value={formData.source}
+                    onChange={(e) => setFormData(prev => ({ ...prev, source: e.target.value }))}
+                    onBlur={() => handleFieldUpdate('source', formData.source)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleFieldUpdate('source', formData.source);
+                      if (e.key === 'Escape') setEditingField(null);
+                    }}
+                    className="h-7 text-sm"
+                    placeholder="e.g., BNI Revival, LinkedIn"
                   />
-                </div>
-                <div>
-                  <Label>Target End Date</Label>
-                  <Input
-                    type="date"
-                    value={formData.target_end_date}
-                    onChange={(e) => setFormData(prev => ({ ...prev, target_end_date: e.target.value }))}
-                  />
-                </div>
+                ) : (
+                  <span 
+                    className="text-sm cursor-pointer hover:text-primary"
+                    onClick={() => setEditingField('source')}
+                  >
+                    {formData.source || '—'}
+                  </span>
+                )}
               </div>
+            </div>
 
-              <div>
-                <Label>Notes</Label>
-                <Textarea
-                  value={formData.notes}
-                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                  rows={3}
+            {/* Client Status Row */}
+            <div className="flex items-center py-2 hover:bg-muted/50 rounded px-2 -mx-2">
+              <div className="flex items-center gap-2 w-32 text-muted-foreground text-sm">
+                <Users className="w-4 h-4" />
+                Existing / New
+              </div>
+              <div className="flex-1">
+                <Select 
+                  value={formData.client_status} 
+                  onValueChange={(v) => handleFieldUpdate('client_status', v)}
+                >
+                  <SelectTrigger className="border-0 bg-transparent h-auto p-0 hover:bg-transparent focus:ring-0">
+                    <Badge 
+                      variant={formData.client_status === 'new' ? 'default' : 'secondary'}
+                      className="font-normal"
+                    >
+                      {formData.client_status === 'new' ? 'New' : 'Existing'}
+                    </Badge>
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="new">New</SelectItem>
+                    <SelectItem value="existing">Existing</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Date Range Row */}
+            <div className="flex items-center py-2 hover:bg-muted/50 rounded px-2 -mx-2">
+              <div className="flex items-center gap-2 w-32 text-muted-foreground text-sm">
+                <Calendar className="w-4 h-4" />
+                Date Range
+              </div>
+              <div className="flex-1 flex items-center gap-2">
+                <Input
+                  type="date"
+                  value={formData.start_date}
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, start_date: e.target.value }));
+                    handleFieldUpdate('start_date', e.target.value);
+                  }}
+                  className="h-7 text-sm w-32"
+                />
+                <span className="text-muted-foreground">–</span>
+                <Input
+                  type="date"
+                  value={formData.target_end_date}
+                  onChange={(e) => {
+                    setFormData(prev => ({ ...prev, target_end_date: e.target.value }));
+                    handleFieldUpdate('target_end_date', e.target.value);
+                  }}
+                  className="h-7 text-sm w-32"
                 />
               </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Description Section */}
+        <div className="p-4 border-t">
+          <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
+            <FileText className="w-4 h-4" />
+            Description
+          </div>
+          {editingField === 'notes' ? (
+            <Textarea
+              autoFocus
+              value={formData.notes}
+              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+              onBlur={() => handleFieldUpdate('notes', formData.notes)}
+              className="min-h-[150px]"
+              placeholder="Post Job Description here..."
+            />
+          ) : (
+            <div 
+              className="min-h-[100px] p-3 bg-muted/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors whitespace-pre-wrap text-sm"
+              onClick={() => setEditingField('notes')}
+            >
+              {formData.notes || (
+                <span className="text-muted-foreground italic">Post Job Description here...</span>
+              )}
             </div>
           )}
+        </div>
 
-          {/* Delete Button */}
-          <div className="flex justify-end pt-4 border-t">
+        {/* Footer */}
+        <div className="flex items-center justify-between p-4 border-t bg-muted/20">
+          <div className="text-xs text-muted-foreground">
+            Created: {format(new Date(request.created_at), 'MMM d, yyyy h:mm a')}
+          </div>
+          <div className="flex items-center gap-2">
+            {saving && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
             <AlertDialog>
               <AlertDialogTrigger asChild>
                 <Button variant="destructive" size="sm" disabled={deleting}>
                   {deleting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
-                  Delete Request
+                  Delete
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
