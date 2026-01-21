@@ -10,7 +10,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useHiringRequests, type HiringRequest, type PipelineStage, type Priority, type ClientStatus, PIPELINE_STAGES } from '@/hooks/useHiringRequests';
-import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X, MessageSquare, Send, Save, UserCircle, Pencil, SmilePlus } from 'lucide-react';
+import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X, MessageSquare, Send, Save, UserCircle, Pencil, SmilePlus, ChevronDown } from 'lucide-react';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { WysiwygEditor } from '@/components/WysiwygEditor';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { supabase } from '@/integrations/supabase/client';
@@ -641,64 +642,69 @@ export const HiringRequestDetailDialog = ({
           </div>
         </div>
 
-        {/* Description Section */}
-        <div className="p-4 border-t">
-          <div className="flex items-center justify-between mb-2">
+        {/* Description Section - Collapsible */}
+        <Collapsible defaultOpen className="border-t">
+          <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/30 transition-colors">
             <div className="flex items-center gap-2 text-muted-foreground text-sm">
               <FileText className="w-4 h-4" />
               Description
             </div>
-            {editingField === 'notes' && (
-              <Button 
-                size="sm" 
-                onClick={() => {
-                  handleFieldUpdate('notes', formData.notes);
-                }}
-                disabled={saving}
-              >
-                {saving ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />}
-                Save
-              </Button>
-            )}
-          </div>
-          {editingField === 'notes' ? (
-            <>
-              <WysiwygEditor
-                value={formData.notes}
-                onChange={(value) => {
-                  setFormData(prev => ({ ...prev, notes: value }));
-                  setHasUnsavedChanges(true);
-                }}
-                placeholder="Post Job Description here..."
-                minHeight="200px"
-              />
-              {/* Sticky Save Button at bottom */}
-              <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t mt-4 -mx-4 px-4 py-3">
+            <ChevronDown className="w-4 h-4 text-muted-foreground transition-transform duration-200 [[data-state=open]>svg]:rotate-180" />
+          </CollapsibleTrigger>
+          <CollapsibleContent className="px-4 pb-4">
+            <div className="flex items-center justify-end mb-2">
+              {editingField === 'notes' && (
                 <Button 
-                  className="w-full"
+                  size="sm" 
                   onClick={() => {
                     handleFieldUpdate('notes', formData.notes);
                   }}
                   disabled={saving}
                 >
-                  {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
-                  Save Description
+                  {saving ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />}
+                  Save
                 </Button>
-              </div>
-            </>
-          ) : (
-            <div 
-              className="min-h-[100px] p-3 bg-muted/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
-              onClick={() => setEditingField('notes')}
-            >
-              {formData.notes ? (
-                <FormattedNotes content={formData.notes} />
-              ) : (
-                <span className="text-muted-foreground italic text-sm">Post Job Description here...</span>
               )}
             </div>
-          )}
-        </div>
+            {editingField === 'notes' ? (
+              <>
+                <WysiwygEditor
+                  value={formData.notes}
+                  onChange={(value) => {
+                    setFormData(prev => ({ ...prev, notes: value }));
+                    setHasUnsavedChanges(true);
+                  }}
+                  placeholder="Post Job Description here..."
+                  minHeight="200px"
+                />
+                {/* Sticky Save Button at bottom */}
+                <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t mt-4 -mx-4 px-4 py-3">
+                  <Button 
+                    className="w-full"
+                    onClick={() => {
+                      handleFieldUpdate('notes', formData.notes);
+                    }}
+                    disabled={saving}
+                  >
+                    {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                    Save Description
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div 
+                className="min-h-[100px] p-3 bg-muted/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
+                onClick={() => setEditingField('notes')}
+              >
+                {formData.notes ? (
+                  <FormattedNotes content={formData.notes} />
+                ) : (
+                  <span className="text-muted-foreground italic text-sm">Post Job Description here...</span>
+                )}
+              </div>
+            )}
+          </CollapsibleContent>
+        </Collapsible>
 
         {/* Comments Section */}
         <div className="p-4 border-t">
