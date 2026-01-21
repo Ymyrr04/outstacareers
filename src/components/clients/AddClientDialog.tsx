@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -18,6 +18,7 @@ interface AddClientDialogProps {
 export const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClientDialogProps) => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
+  const [existingIndustries, setExistingIndustries] = useState<string[]>([]);
   const [form, setForm] = useState({
     company_name: '',
     industry: '',
@@ -31,6 +32,31 @@ export const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClient
     email: '',
     phone: '',
   });
+
+  // Fetch existing industries from the database
+  useEffect(() => {
+    if (open) {
+      fetchExistingIndustries();
+    }
+  }, [open]);
+
+  const fetchExistingIndustries = async () => {
+    const { data } = await supabase
+      .from('clients')
+      .select('industry')
+      .not('industry', 'is', null)
+      .order('industry');
+    
+    if (data) {
+      // Get unique industries
+      const uniqueIndustries = [...new Set(
+        data
+          .map(c => c.industry)
+          .filter((i): i is string => !!i && i.trim() !== '')
+      )];
+      setExistingIndustries(uniqueIndustries);
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,10 +156,16 @@ export const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClient
                 <Label htmlFor="industry">Industry</Label>
                 <Input
                   id="industry"
+                  list="industry-suggestions"
                   value={form.industry}
                   onChange={(e) => setForm({ ...form, industry: e.target.value })}
                   placeholder="e.g. Technology"
                 />
+                <datalist id="industry-suggestions">
+                  {existingIndustries.map((industry) => (
+                    <option key={industry} value={industry} />
+                  ))}
+                </datalist>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="contractor_count">No. of Contractors</Label>
