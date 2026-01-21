@@ -60,49 +60,80 @@ export function WysiwygEditor({
         style: `min-height: ${minHeight}`,
       },
       handlePaste: (view, event) => {
+        // Check if we have HTML content - if so, let TipTap handle it natively
+        const htmlContent = event.clipboardData?.getData('text/html');
+        if (htmlContent && htmlContent.includes('<')) {
+          return false; // Let TipTap handle HTML paste natively
+        }
+        
         const text = event.clipboardData?.getData('text/plain');
         if (!text) return false;
         
-        // Detect list patterns in pasted text
-        const lines = text.split('\n').filter(line => line.trim());
-        if (lines.length === 0) return false;
+        // Split into lines
+        const lines = text.split('\n');
+        const nonEmptyLines = lines.filter(line => line.trim());
+        if (nonEmptyLines.length === 0) return false;
         
         // Check for bullet point patterns: •, -, *, ▪, ▸, ►, ○, ●
-        const bulletPattern = /^[\s]*[•\-\*▪▸►○●]\s+/;
+        const bulletPattern = /^[\s]*[•▪▸►○●]\s+/;
+        const dashPattern = /^[\s]*-\s+/;
         const numberedPattern = /^[\s]*\d+[\.\)]\s+/;
         
         // Count how many lines match each pattern
-        const bulletCount = lines.filter(line => bulletPattern.test(line)).length;
-        const numberedCount = lines.filter(line => numberedPattern.test(line)).length;
+        const bulletCount = nonEmptyLines.filter(line => bulletPattern.test(line) || dashPattern.test(line)).length;
+        const numberedCount = nonEmptyLines.filter(line => numberedPattern.test(line)).length;
         
-        // Only intercept if majority of lines are list items (at least 2 items)
-        const hasBullets = bulletCount >= 2 && bulletCount >= lines.length * 0.5;
-        const hasNumbers = numberedCount >= 2 && numberedCount >= lines.length * 0.5;
+        // Only intercept if we have a clear list structure (at least 3 list items)
+        const hasBullets = bulletCount >= 3;
+        const hasNumbers = numberedCount >= 3;
         
         if (hasBullets || hasNumbers) {
-          // Parse the content into list items
-          const items = lines.map(line => {
-            // Remove bullet/number prefixes
-            return line
-              .replace(bulletPattern, '')
-              .replace(numberedPattern, '')
-              .trim();
-          }).filter(item => item);
+          event.preventDefault();
           
-          // Only handle if we have valid items
-          if (items.length >= 2) {
-            event.preventDefault();
-            
-            // Build HTML for the list - prefer bullets if detected, otherwise numbers
-            const listTag = hasBullets ? 'ul' : 'ol';
-            const listHtml = `<${listTag}>${items.map(item => `<li>${item}</li>`).join('')}</${listTag}>`;
-            
-            // Use editor commands to insert HTML
-            const editor = (view as any).editor;
-            if (editor) {
-              editor.chain().focus().insertContent(listHtml).run();
+          // Process lines, preserving non-list content as paragraphs
+          let html = '';
+          let currentList: string[] = [];
+          let listType: 'ul' | 'ol' | null = null;
+          
+          const flushList = () => {
+            if (currentList.length > 0 && listType) {
+              html += `<${listType}>${currentList.map(item => `<li>${item}</li>`).join('')}</${listType}>`;
+              currentList = [];
+              listType = null;
+            }
+          };
+          
+          for (const line of lines) {
+            const trimmed = line.trim();
+            if (!trimmed) {
+              flushList();
+              continue;
             }
             
+            if (bulletPattern.test(line) || dashPattern.test(line)) {
+              if (listType !== 'ul') {
+                flushList();
+                listType = 'ul';
+              }
+              currentList.push(trimmed.replace(bulletPattern, '').replace(dashPattern, '').trim());
+            } else if (numberedPattern.test(line)) {
+              if (listType !== 'ol') {
+                flushList();
+                listType = 'ol';
+              }
+              currentList.push(trimmed.replace(numberedPattern, '').trim());
+            } else {
+              flushList();
+              html += `<p>${trimmed}</p>`;
+            }
+          }
+          
+          flushList();
+          
+          // Insert the processed HTML
+          const editor = (view as any).editor;
+          if (editor && html) {
+            editor.chain().focus().insertContent(html).run();
             return true;
           }
         }
