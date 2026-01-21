@@ -33,6 +33,20 @@ interface AdminUser {
   email: string;
 }
 
+const EMAIL_TO_NAME: Record<string, string> = {
+  'czarina@outsta.io': 'Czarina',
+  'kristine@outsta.io': 'Kristine',
+  'eduardo@outsta.io': 'Eduardo',
+  'mark@outsta.io': 'Mark',
+  'liezl@outsta.io': 'Liezl',
+};
+
+const getDisplayName = (email: string | undefined): string => {
+  if (!email) return 'Unknown';
+  const normalized = email.toLowerCase();
+  return EMAIL_TO_NAME[normalized] || email.split('@')[0];
+};
+
 const INDUSTRIES = [
   'Healthcare',
   'Legal',
@@ -520,17 +534,21 @@ export const HiringRequestDetailDialog = ({
             ) : comments.length === 0 ? (
               <p className="text-sm text-muted-foreground italic py-2">No comments yet</p>
             ) : (
-              comments.map(comment => (
-                <div key={comment.id} className="bg-muted/30 rounded-lg p-3">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-xs font-medium">Team Member</span>
-                    <span className="text-xs text-muted-foreground">
-                      {format(new Date(comment.created_at), 'MMM d, h:mm a')}
-                    </span>
+              comments.map(comment => {
+                const commenterAdmin = adminUsers.find(a => a.user_id === comment.user_id);
+                const commenterName = getDisplayName(commenterAdmin?.email);
+                return (
+                  <div key={comment.id} className="bg-muted/30 rounded-lg p-3">
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-medium">{commenterName}</span>
+                      <span className="text-xs text-muted-foreground">
+                        {format(new Date(comment.created_at), 'MMM d, h:mm a')}
+                      </span>
+                    </div>
+                    <p className="text-sm">{comment.content}</p>
                   </div>
-                  <p className="text-sm">{comment.content}</p>
-                </div>
-              ))
+                );
+              })
             )}
           </div>
 
