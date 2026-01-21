@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format } from 'date-fns';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -91,6 +91,9 @@ export const HiringRequestDetailDialog = ({
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
   const [reactions, setReactions] = useState<CommentReaction[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
+  const [showMentions, setShowMentions] = useState(false);
+  const [mentionFilter, setMentionFilter] = useState('');
+  const commentInputRef = useRef<HTMLInputElement>(null);
 
   const REACTION_EMOJIS = ['👍', '❤️', '😄', '🎉', '🤔', '👀'];
 
@@ -282,6 +285,61 @@ export const HiringRequestDetailDialog = ({
     });
     
     return grouped;
+  };
+
+  const handleCommentInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    setNewComment(value);
+    
+    // Check for @ mentions
+    const cursorPos = e.target.selectionStart || 0;
+    const textBeforeCursor = value.substring(0, cursorPos);
+    const atMatch = textBeforeCursor.match(/@(\w*)$/);
+    
+    if (atMatch) {
+      setShowMentions(true);
+      setMentionFilter(atMatch[1].toLowerCase());
+    } else {
+      setShowMentions(false);
+      setMentionFilter('');
+    }
+  };
+
+  const insertMention = (email: string) => {
+    const name = getDisplayName(email);
+    const cursorPos = commentInputRef.current?.selectionStart || newComment.length;
+    const textBeforeCursor = newComment.substring(0, cursorPos);
+    const textAfterCursor = newComment.substring(cursorPos);
+    
+    // Replace the @partial with @Name
+    const newText = textBeforeCursor.replace(/@\w*$/, `@${name} `) + textAfterCursor;
+    setNewComment(newText);
+    setShowMentions(false);
+    setMentionFilter('');
+    
+    // Focus back on input
+    setTimeout(() => commentInputRef.current?.focus(), 0);
+  };
+
+  const filteredMentionUsers = adminUsers.filter(admin => {
+    const name = getDisplayName(admin.email).toLowerCase();
+    const email = admin.email.toLowerCase();
+    return name.includes(mentionFilter) || email.includes(mentionFilter);
+  });
+
+  const renderCommentWithMentions = (content: string) => {
+    // Highlight @mentions in the content
+    const parts = content.split(/(@\w+)/g);
+    return parts.map((part, i) => {
+      if (part.startsWith('@')) {
+        return (
+          <span key={i} className="text-primary font-medium">
+            {part}
+          </span>
+        );
+      }
+      return part;
+    });
   };
 
   const handleFieldUpdate = async (field: string, value: string) => {
@@ -731,7 +789,7 @@ export const HiringRequestDetailDialog = ({
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm">{comment.content}</p>
+                      <p className="text-sm">{renderCommentWithMentions(comment.content)}</p>
                     )}
                     
                     {/* Reactions */}
@@ -795,33 +853,69 @@ export const HiringRequestDetailDialog = ({
         <div className="shrink-0 border-t bg-background">
           {/* Add Comment - Always visible */}
           <div className="p-3 border-b">
-            <div className="flex gap-2 items-center">
+            <div className="flex gap-2 items-center relative">
               <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
                 <span className="text-xs font-medium text-primary">
                   {user?.email?.charAt(0).toUpperCase() || 'U'}
                 </span>
               </div>
-              <Input
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-                placeholder="Add a comment..."
-                className="flex-1 h-9"
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (e.metaKey || e.ctrlKey) {
-                      handleAddComment();
+              <div className="flex-1 relative">
+                <Input
+                  ref={commentInputRef}
+                  value={newComment}
+                  onChange={handleCommentInputChange}
+                  placeholder="Add a comment... (use @ to mention)"
+                  className="flex-1 h-9"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !showMentions) {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      if (newComment.trim()) {
+                        handleAddComment();
+                      }
                     }
-                  }
-                }}
-                onPaste={(e) => {
-                  e.stopPropagation();
-                }}
-              />
+                    if (e.key === 'Escape') {
+                      setShowMentions(false);
+                    }
+                  }}
+                  onPaste={(e) => {
+                    e.stopPropagation();
+                  }}
+                />
+                
+                {/* Mentions Dropdown */}
+                {showMentions && filteredMentionUsers.length > 0 && (
+                  <div className="absolute bottom-full left-0 mb-1 w-64 bg-popover border rounded-md shadow-lg z-50 max-h-48 overflow-y-auto">
+                    <div className="p-1">
+                      {filteredMentionUsers.map(admin => (
+                        <button
+                          key={admin.user_id}
+                          type="button"
+                          className="w-full flex items-center gap-2 px-2 py-1.5 text-sm rounded hover:bg-muted text-left"
+                          onClick={() => insertMention(admin.email)}
+                        >
+                          <div className="h-6 w-6 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            <span className="text-xs font-medium text-primary">
+                              {admin.email.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-medium">{getDisplayName(admin.email)}</span>
+                            <span className="text-xs text-muted-foreground">{admin.email}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
               <Button 
                 size="icon" 
-                onClick={handleAddComment}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleAddComment();
+                }}
                 disabled={!newComment.trim() || addingComment}
                 className="shrink-0 h-9 w-9"
               >
