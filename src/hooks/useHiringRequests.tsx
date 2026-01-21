@@ -150,6 +150,11 @@ export const useHiringRequests = () => {
     // Remove computed fields
     const { client_name, ...dbUpdates } = updates as any;
     
+    // Optimistic update for immediate UI feedback
+    setRequests(prev => prev.map(r => 
+      r.id === id ? { ...r, ...updates } : r
+    ));
+
     const { error } = await supabase
       .from('client_hiring_requests')
       .update(dbUpdates)
@@ -157,6 +162,8 @@ export const useHiringRequests = () => {
 
     if (error) {
       console.error('Error updating hiring request:', error);
+      // Revert on error
+      fetchRequests();
       toast({
         title: 'Error',
         description: 'Failed to update hiring request',
