@@ -702,6 +702,38 @@ export type Database = {
         }
         Relationships: []
       }
+      hiring_request_comment_reactions: {
+        Row: {
+          comment_id: string
+          created_at: string
+          emoji: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          comment_id: string
+          created_at?: string
+          emoji: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          comment_id?: string
+          created_at?: string
+          emoji?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "hiring_request_comment_reactions_comment_id_fkey"
+            columns: ["comment_id"]
+            isOneToOne: false
+            referencedRelation: "hiring_request_comments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       hiring_request_comments: {
         Row: {
           content: string
