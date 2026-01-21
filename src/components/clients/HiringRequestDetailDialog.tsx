@@ -113,10 +113,10 @@ export const HiringRequestDetailDialog = ({
 
   return (
     <Dialog open={!!request} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden">
+      <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden [&>button]:hidden">
         {/* Header */}
-        <div className="flex items-center gap-3 p-4 border-b bg-muted/30">
-          <CheckCircle2 className="w-5 h-5 text-muted-foreground" />
+        <div className="flex items-center gap-3 p-4 pr-12 border-b bg-muted/30">
+          <CheckCircle2 className="w-5 h-5 text-muted-foreground shrink-0" />
           {editingField === 'job_title' ? (
             <Input
               autoFocus
@@ -127,7 +127,7 @@ export const HiringRequestDetailDialog = ({
                 if (e.key === 'Enter') handleFieldUpdate('job_title', formData.job_title);
                 if (e.key === 'Escape') setEditingField(null);
               }}
-              className="text-lg font-semibold h-auto py-1"
+              className="text-lg font-semibold h-auto py-1 flex-1"
             />
           ) : (
             <h2 
@@ -138,7 +138,7 @@ export const HiringRequestDetailDialog = ({
               {request.source && <span className="text-muted-foreground font-normal"> - from {request.source}</span>}
             </h2>
           )}
-          <Button variant="ghost" size="icon" className="ml-auto" onClick={() => onOpenChange(false)}>
+          <Button variant="ghost" size="icon" className="absolute right-3 top-3" onClick={() => onOpenChange(false)}>
             <X className="w-4 h-4" />
           </Button>
         </div>
@@ -304,7 +304,7 @@ export const HiringRequestDetailDialog = ({
                     setFormData(prev => ({ ...prev, start_date: e.target.value }));
                     handleFieldUpdate('start_date', e.target.value);
                   }}
-                  className="h-7 text-sm w-32"
+                  className="h-8 text-sm w-36 px-2"
                 />
                 <span className="text-muted-foreground">–</span>
                 <Input
@@ -314,7 +314,7 @@ export const HiringRequestDetailDialog = ({
                     setFormData(prev => ({ ...prev, target_end_date: e.target.value }));
                     handleFieldUpdate('target_end_date', e.target.value);
                   }}
-                  className="h-7 text-sm w-32"
+                  className="h-8 text-sm w-36 px-2"
                 />
               </div>
             </div>
