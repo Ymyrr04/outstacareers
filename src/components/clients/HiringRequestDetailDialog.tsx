@@ -3,18 +3,29 @@ import { format } from 'date-fns';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useHiringRequests, type HiringRequest, type PipelineStage, type Priority, type ClientStatus, PIPELINE_STAGES } from '@/hooks/useHiringRequests';
-import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X } from 'lucide-react';
+import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X, MessageSquare, Send, Save } from 'lucide-react';
 import { WysiwygEditor } from '@/components/WysiwygEditor';
 import { FormattedNotes } from '@/components/FormattedNotes';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
+import { toast } from 'sonner';
 
 interface HiringRequestDetailDialogProps {
   request: HiringRequest | null;
   onOpenChange: (open: boolean) => void;
   onUpdated?: () => void;
+}
+
+interface Comment {
+  id: string;
+  user_id: string;
+  content: string;
+  created_at: string;
 }
 
 const INDUSTRIES = [
@@ -35,9 +46,17 @@ export const HiringRequestDetailDialog = ({
   onUpdated 
 }: HiringRequestDetailDialogProps) => {
   const { updateRequest, deleteRequest } = useHiringRequests();
+  const { user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [editingField, setEditingField] = useState<string | null>(null);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Comments state
+  const [comments, setComments] = useState<Comment[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [addingComment, setAddingComment] = useState(false);
 
   const [formData, setFormData] = useState({
     job_title: '',
@@ -65,8 +84,51 @@ export const HiringRequestDetailDialog = ({
         notes: request.notes || '',
       });
       setEditingField(null);
+      setHasUnsavedChanges(false);
+      fetchComments(request.id);
     }
   }, [request]);
+
+  const fetchComments = async (requestId: string) => {
+    setLoadingComments(true);
+    const { data, error } = await supabase
+      .from('hiring_request_comments')
+      .select('*')
+      .eq('request_id', requestId)
+      .order('created_at', { ascending: true });
+    
+    if (!error && data) {
+      setComments(data);
+    }
+    setLoadingComments(false);
+  };
+
+  const handleAddComment = async () => {
+    if (!request || !newComment.trim() || !user) return;
+    
+    setAddingComment(true);
+    const { error } = await supabase
+      .from('hiring_request_comments')
+      .insert({
+        request_id: request.id,
+        user_id: user.id,
+        content: newComment.trim(),
+      });
+    
+    if (error) {
+      toast.error('Failed to add comment');
+    } else {
+      setNewComment('');
+      fetchComments(request.id);
+      // Update comment count on request
+      await supabase
+        .from('client_hiring_requests')
+        .update({ comment_count: (request.comment_count || 0) + 1 })
+        .eq('id', request.id);
+      onUpdated?.();
+    }
+    setAddingComment(false);
+  };
 
   const handleFieldUpdate = async (field: string, value: string) => {
     if (!request) return;
@@ -87,10 +149,12 @@ export const HiringRequestDetailDialog = ({
     const success = await updateRequest(request.id, updates);
     setSaving(false);
     setEditingField(null);
+    setHasUnsavedChanges(false);
 
     if (success) {
       setFormData(prev => ({ ...prev, [field]: value }));
       onUpdated?.();
+      toast.success('Saved');
     }
   };
 
@@ -115,7 +179,7 @@ export const HiringRequestDetailDialog = ({
     <Dialog open={!!request} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden [&>button]:hidden max-h-[85vh] flex flex-col">
         {/* Header */}
-        <div className="flex items-center gap-3 p-4 pr-12 border-b bg-muted/30">
+        <div className="flex items-center gap-3 p-4 pr-12 border-b bg-muted/30 shrink-0">
           <CheckCircle2 className="w-5 h-5 text-muted-foreground shrink-0" />
           {editingField === 'job_title' ? (
             <Input
@@ -241,18 +305,28 @@ export const HiringRequestDetailDialog = ({
               </div>
               <div className="flex-1">
                 {editingField === 'source' ? (
-                  <Input
-                    autoFocus
-                    value={formData.source}
-                    onChange={(e) => setFormData(prev => ({ ...prev, source: e.target.value }))}
-                    onBlur={() => handleFieldUpdate('source', formData.source)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') handleFieldUpdate('source', formData.source);
-                      if (e.key === 'Escape') setEditingField(null);
-                    }}
-                    className="h-7 text-sm"
-                    placeholder="e.g., BNI Revival, LinkedIn"
-                  />
+                  <div className="flex items-center gap-2">
+                    <Input
+                      autoFocus
+                      value={formData.source}
+                      onChange={(e) => setFormData(prev => ({ ...prev, source: e.target.value }))}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleFieldUpdate('source', formData.source);
+                        if (e.key === 'Escape') setEditingField(null);
+                      }}
+                      className="h-7 text-sm"
+                      placeholder="e.g., BNI Revival, LinkedIn"
+                    />
+                    <Button 
+                      size="sm" 
+                      variant="ghost" 
+                      className="h-7 px-2"
+                      onClick={() => handleFieldUpdate('source', formData.source)}
+                      disabled={saving}
+                    >
+                      {saving ? <Loader2 className="w-3 h-3 animate-spin" /> : <Save className="w-3 h-3" />}
+                    </Button>
+                  </div>
                 ) : (
                   <span 
                     className="text-sm cursor-pointer hover:text-primary"
@@ -332,21 +406,23 @@ export const HiringRequestDetailDialog = ({
             {editingField === 'notes' && (
               <Button 
                 size="sm" 
-                variant="outline"
                 onClick={() => {
                   handleFieldUpdate('notes', formData.notes);
                 }}
                 disabled={saving}
               >
-                {saving ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
-                Done
+                {saving ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Save className="w-3 h-3 mr-1" />}
+                Save
               </Button>
             )}
           </div>
           {editingField === 'notes' ? (
             <WysiwygEditor
               value={formData.notes}
-              onChange={(value) => setFormData(prev => ({ ...prev, notes: value }))}
+              onChange={(value) => {
+                setFormData(prev => ({ ...prev, notes: value }));
+                setHasUnsavedChanges(true);
+              }}
               placeholder="Post Job Description here..."
               minHeight="200px"
             />
@@ -362,6 +438,61 @@ export const HiringRequestDetailDialog = ({
               )}
             </div>
           )}
+        </div>
+
+        {/* Comments Section */}
+        <div className="p-4 border-t">
+          <div className="flex items-center gap-2 text-muted-foreground text-sm mb-3">
+            <MessageSquare className="w-4 h-4" />
+            Comments ({comments.length})
+          </div>
+          
+          {/* Comment List */}
+          <div className="space-y-3 mb-4 max-h-[200px] overflow-y-auto">
+            {loadingComments ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+              </div>
+            ) : comments.length === 0 ? (
+              <p className="text-sm text-muted-foreground italic py-2">No comments yet</p>
+            ) : (
+              comments.map(comment => (
+                <div key={comment.id} className="bg-muted/30 rounded-lg p-3">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium">Team Member</span>
+                    <span className="text-xs text-muted-foreground">
+                      {format(new Date(comment.created_at), 'MMM d, h:mm a')}
+                    </span>
+                  </div>
+                  <p className="text-sm">{comment.content}</p>
+                </div>
+              ))
+            )}
+          </div>
+
+          {/* Add Comment */}
+          <div className="flex gap-2">
+            <Textarea
+              value={newComment}
+              onChange={(e) => setNewComment(e.target.value)}
+              placeholder="Add a comment..."
+              className="min-h-[60px] text-sm resize-none"
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                  handleAddComment();
+                }
+              }}
+            />
+            <Button 
+              size="icon" 
+              onClick={handleAddComment}
+              disabled={!newComment.trim() || addingComment}
+              className="shrink-0"
+            >
+              {addingComment ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground mt-1">Press Ctrl+Enter to send</p>
         </div>
         </div>
 
