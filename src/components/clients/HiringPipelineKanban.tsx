@@ -25,24 +25,20 @@ const CELEBRATION_GIFS = [
   'https://media.giphy.com/media/3oz8xRF0v9WMAUVLNK/giphy.gif', // Star burst
 ];
 
-// Celebration GIF component
-const CelebrationPopup = ({ show, onComplete }: { show: boolean; onComplete: () => void }) => {
-  const [gifUrl, setGifUrl] = useState('');
+const getRandomGif = () => CELEBRATION_GIFS[Math.floor(Math.random() * CELEBRATION_GIFS.length)];
 
+// Celebration GIF component
+const CelebrationPopup = ({ gifUrl, onComplete }: { gifUrl: string | null; onComplete: () => void }) => {
   useEffect(() => {
-    if (show) {
-      // Pick a random GIF when showing
-      const randomGif = CELEBRATION_GIFS[Math.floor(Math.random() * CELEBRATION_GIFS.length)];
-      setGifUrl(randomGif);
-      
+    if (gifUrl) {
       const timer = setTimeout(() => {
         onComplete();
       }, 2500);
       return () => clearTimeout(timer);
     }
-  }, [show, onComplete]);
+  }, [gifUrl, onComplete]);
 
-  if (!show) return null;
+  if (!gifUrl) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
@@ -216,7 +212,7 @@ export const HiringPipelineKanban = () => {
   const [selectedRequest, setSelectedRequest] = useState<HiringRequest | null>(null);
   const [addToStage, setAddToStage] = useState<PipelineStage>('backlog');
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
-  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationGif, setCelebrationGif] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchAdminUsers = async () => {
@@ -238,7 +234,7 @@ export const HiringPipelineKanban = () => {
 
     // Show celebration when moving to closed
     if (destStage === 'closed' && sourceStage !== 'closed') {
-      setShowCelebration(true);
+      setCelebrationGif(getRandomGif());
     }
 
     updateStage(result.draggableId, destStage);
@@ -347,8 +343,8 @@ export const HiringPipelineKanban = () => {
 
       {/* Celebration Popup */}
       <CelebrationPopup 
-        show={showCelebration} 
-        onComplete={() => setShowCelebration(false)} 
+        gifUrl={celebrationGif} 
+        onComplete={() => setCelebrationGif(null)} 
       />
     </>
   );
