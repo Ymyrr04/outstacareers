@@ -417,15 +417,30 @@ export const HiringRequestDetailDialog = ({
             )}
           </div>
           {editingField === 'notes' ? (
-            <WysiwygEditor
-              value={formData.notes}
-              onChange={(value) => {
-                setFormData(prev => ({ ...prev, notes: value }));
-                setHasUnsavedChanges(true);
-              }}
-              placeholder="Post Job Description here..."
-              minHeight="200px"
-            />
+            <>
+              <WysiwygEditor
+                value={formData.notes}
+                onChange={(value) => {
+                  setFormData(prev => ({ ...prev, notes: value }));
+                  setHasUnsavedChanges(true);
+                }}
+                placeholder="Post Job Description here..."
+                minHeight="200px"
+              />
+              {/* Sticky Save Button at bottom */}
+              <div className="sticky bottom-0 bg-background/95 backdrop-blur-sm border-t mt-4 -mx-4 px-4 py-3">
+                <Button 
+                  className="w-full"
+                  onClick={() => {
+                    handleFieldUpdate('notes', formData.notes);
+                  }}
+                  disabled={saving}
+                >
+                  {saving ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+                  Save Description
+                </Button>
+              </div>
+            </>
           ) : (
             <div 
               className="min-h-[100px] p-3 bg-muted/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
