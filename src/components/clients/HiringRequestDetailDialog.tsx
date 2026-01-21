@@ -13,6 +13,7 @@ import { useHiringRequests, type HiringRequest, type PipelineStage, type Priorit
 import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X, MessageSquare, Send, Save, UserCircle, Pencil, SmilePlus, ChevronDown } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { WysiwygEditor } from '@/components/WysiwygEditor';
+import { CommentEditor, type CommentEditorRef } from '@/components/CommentEditor';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -94,7 +95,7 @@ export const HiringRequestDetailDialog = ({
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
   const [showMentions, setShowMentions] = useState(false);
   const [mentionFilter, setMentionFilter] = useState('');
-  const commentInputRef = useRef<HTMLInputElement>(null);
+  const commentInputRef = useRef<CommentEditorRef>(null);
 
   const REACTION_EMOJIS = ['👍', '❤️', '😄', '🎉', '🤔', '👀'];
 
@@ -288,14 +289,12 @@ export const HiringRequestDetailDialog = ({
     return grouped;
   };
 
-  const handleCommentInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+  const handleCommentChange = (value: string) => {
     setNewComment(value);
     
-    // Check for @ mentions
-    const cursorPos = e.target.selectionStart || 0;
-    const textBeforeCursor = value.substring(0, cursorPos);
-    const atMatch = textBeforeCursor.match(/@(\w*)$/);
+    // Check for @ mentions in plain text extracted from HTML
+    const plainText = value.replace(/<[^>]*>/g, '');
+    const atMatch = plainText.match(/@(\w*)$/);
     
     if (atMatch) {
       setShowMentions(true);
@@ -308,17 +307,13 @@ export const HiringRequestDetailDialog = ({
 
   const insertMention = (email: string) => {
     const name = getDisplayName(email);
-    const cursorPos = commentInputRef.current?.selectionStart || newComment.length;
-    const textBeforeCursor = newComment.substring(0, cursorPos);
-    const textAfterCursor = newComment.substring(cursorPos);
-    
-    // Replace the @partial with @Name
-    const newText = textBeforeCursor.replace(/@\w*$/, `@${name} `) + textAfterCursor;
-    setNewComment(newText);
+    // Replace the @partial with @Name in the content
+    const updatedContent = newComment.replace(/@\w*(<\/p>)?$/, `<span class="text-primary font-medium">@${name}</span> $1`);
+    setNewComment(updatedContent);
     setShowMentions(false);
     setMentionFilter('');
     
-    // Focus back on input
+    // Focus back on editor
     setTimeout(() => commentInputRef.current?.focus(), 0);
   };
 
@@ -328,19 +323,14 @@ export const HiringRequestDetailDialog = ({
     return name.includes(mentionFilter) || email.includes(mentionFilter);
   });
 
-  const renderCommentWithMentions = (content: string) => {
-    // Highlight @mentions in the content
-    const parts = content.split(/(@\w+)/g);
-    return parts.map((part, i) => {
-      if (part.startsWith('@')) {
-        return (
-          <span key={i} className="text-primary font-medium">
-            {part}
-          </span>
-        );
-      }
-      return part;
-    });
+  const renderCommentContent = (content: string) => {
+    // Render HTML content with proper styling for @mentions and links
+    return (
+      <div 
+        className="text-sm prose prose-sm max-w-none [&_a]:text-primary [&_a]:hover:underline [&_.text-primary]:text-primary [&_.font-medium]:font-medium"
+        dangerouslySetInnerHTML={{ __html: content }}
+      />
+    );
   };
 
   const handleFieldUpdate = async (field: string, value: string) => {
@@ -795,7 +785,7 @@ export const HiringRequestDetailDialog = ({
                         </div>
                       </div>
                     ) : (
-                      <p className="text-sm">{renderCommentWithMentions(comment.content)}</p>
+                      renderCommentContent(comment.content)
                     )}
                     
                     {/* Reactions */}
@@ -866,26 +856,16 @@ export const HiringRequestDetailDialog = ({
                 </span>
               </div>
               <div className="flex-1 relative">
-                <Input
+                <CommentEditor
                   ref={commentInputRef}
                   value={newComment}
-                  onChange={handleCommentInputChange}
+                  onChange={handleCommentChange}
                   placeholder="Add a comment... (use @ to mention)"
-                  className="flex-1 h-9"
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !showMentions) {
-                      e.preventDefault();
-                      e.stopPropagation();
-                      if (newComment.trim()) {
-                        handleAddComment();
-                      }
+                  onSubmit={() => {
+                    if (newComment.trim() && newComment !== '<p></p>') {
+                      handleAddComment();
+                      commentInputRef.current?.clear();
                     }
-                    if (e.key === 'Escape') {
-                      setShowMentions(false);
-                    }
-                  }}
-                  onPaste={(e) => {
-                    e.stopPropagation();
                   }}
                 />
                 
@@ -921,8 +901,9 @@ export const HiringRequestDetailDialog = ({
                 onClick={(e) => {
                   e.preventDefault();
                   handleAddComment();
+                  commentInputRef.current?.clear();
                 }}
-                disabled={!newComment.trim() || addingComment}
+                disabled={!newComment.trim() || newComment === '<p></p>' || addingComment}
                 className="shrink-0 h-9 w-9"
               >
                 {addingComment ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
