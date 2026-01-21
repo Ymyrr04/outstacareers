@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -50,10 +50,14 @@ export const PIPELINE_STAGES: { id: PipelineStage; label: string; emoji?: string
 export const useHiringRequests = () => {
   const [requests, setRequests] = useState<HiringRequest[]>([]);
   const [loading, setLoading] = useState(true);
+  const hasInitiallyLoadedRef = useRef(false);
   const { toast } = useToast();
 
-  const fetchRequests = useCallback(async () => {
-    setLoading(true);
+  const fetchRequests = useCallback(async (showLoading = false) => {
+    // Only show loading skeleton on initial load
+    if (showLoading && !hasInitiallyLoadedRef.current) {
+      setLoading(true);
+    }
     
     // Fetch hiring requests with client names
     const { data, error } = await supabase
@@ -98,10 +102,11 @@ export const useHiringRequests = () => {
 
     setRequests(mappedRequests);
     setLoading(false);
+    hasInitiallyLoadedRef.current = true;
   }, [toast]);
 
   useEffect(() => {
-    fetchRequests();
+    fetchRequests(true); // Show loading only on initial fetch
 
     // Subscribe to realtime changes
     const channel = supabase
@@ -114,7 +119,7 @@ export const useHiringRequests = () => {
           table: 'client_hiring_requests',
         },
         () => {
-          fetchRequests();
+          fetchRequests(false); // Don't show loading on realtime updates
         }
       )
       .subscribe();

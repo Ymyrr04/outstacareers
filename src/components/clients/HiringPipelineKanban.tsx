@@ -278,14 +278,14 @@ export const HiringPipelineKanban = () => {
         open={addDialogOpen}
         onOpenChange={setAddDialogOpen}
         defaultStage={addToStage}
-        onCreated={fetchRequests}
+        onCreated={() => fetchRequests(false)}
       />
 
       {/* Detail Dialog */}
       <HiringRequestDetailDialog
         request={selectedRequest}
         onOpenChange={(open) => !open && setSelectedRequest(null)}
-        onUpdated={fetchRequests}
+        onUpdated={() => fetchRequests(false)}
       />
     </>
   );
