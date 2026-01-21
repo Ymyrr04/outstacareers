@@ -413,8 +413,11 @@ export function CommunicationHistory({
                           <p className="text-sm text-muted-foreground">
                             To: {email.recipient_email}
                           </p>
+                          <p className="text-xs text-muted-foreground">
+                            Scheduled on: {format(new Date(email.created_at), 'MMMM do, yyyy h:mm a')}
+                          </p>
                           <p className="text-sm text-muted-foreground">
-                            Scheduled for: {format(new Date(email.scheduled_for), 'MMMM do, yyyy h:mm a')}
+                            Send at: {format(new Date(email.scheduled_for), 'MMMM do, yyyy h:mm a')}
                           </p>
                           <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                             ({formatDistanceToNow(new Date(email.scheduled_for), { addSuffix: true })})
