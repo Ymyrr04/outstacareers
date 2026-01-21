@@ -721,7 +721,7 @@ export const HiringRequestDetailDialog = ({
                 return (
                   <div key={comment.id} className="bg-muted/30 rounded-lg p-3">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-medium">{commenterName}</span>
+                      <span className="text-sm font-semibold">{commenterName}</span>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">
                           {format(new Date(comment.created_at), 'MMM d, h:mm a')}
