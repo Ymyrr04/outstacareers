@@ -287,35 +287,28 @@ export const HiringPipelineKanban = () => {
                 {/* Column Content */}
                 <Droppable droppableId={stage.id}>
                   {(provided, snapshot) => (
-                    <ScrollArea 
+                    <div
+                      ref={provided.innerRef}
+                      {...provided.droppableProps}
                       className={`
-                        flex-1 rounded-lg p-2 transition-all duration-300 ease-in-out
+                        flex-1 rounded-lg p-2 transition-all duration-150 overflow-y-auto
                         ${snapshot.isDraggingOver 
-                          ? 'bg-primary/10 ring-2 ring-primary/40 shadow-inner scale-[1.01]' 
-                          : 'bg-muted/30 ring-1 ring-transparent'
+                          ? 'bg-primary/10 ring-2 ring-primary/40' 
+                          : 'bg-muted/30'
                         }
                       `}
                     >
-                      <div
-                        ref={provided.innerRef}
-                        {...provided.droppableProps}
-                        className={`
-                          min-h-[100px] transition-all duration-200
-                          ${snapshot.isDraggingOver ? 'py-1' : ''}
-                        `}
-                      >
-                        {stageRequests.map((request, index) => (
-                          <KanbanCard 
-                            key={request.id} 
-                            request={request} 
-                            index={index}
-                            onClick={() => setSelectedRequest(request)}
-                            adminUsers={adminUsers}
-                          />
-                        ))}
-                        {provided.placeholder}
-                      </div>
-                    </ScrollArea>
+                      {stageRequests.map((request, index) => (
+                        <KanbanCard 
+                          key={request.id} 
+                          request={request} 
+                          index={index}
+                          onClick={() => setSelectedRequest(request)}
+                          adminUsers={adminUsers}
+                        />
+                      ))}
+                      {provided.placeholder}
+                    </div>
                   )}
                 </Droppable>
 
