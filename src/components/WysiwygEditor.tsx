@@ -27,7 +27,34 @@ export function WysiwygEditor({
   const [linkUrl, setLinkUrl] = useState('');
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
   const [bubbleMenuPos, setBubbleMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [hasSelection, setHasSelection] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
+  const mousePos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // Track mouse position for bubble menu placement
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      mousePos.current = { x: e.clientX, y: e.clientY };
+      
+      // Update bubble menu position if there's a selection
+      if (hasSelection && editorRef.current) {
+        const editorRect = editorRef.current.getBoundingClientRect();
+        
+        // Position relative to editor, centered on mouse X
+        let left = e.clientX - editorRect.left;
+        const menuHalfWidth = 120;
+        left = Math.max(menuHalfWidth, Math.min(left, editorRect.width - menuHalfWidth));
+        
+        // Position above the mouse cursor
+        const top = e.clientY - editorRect.top - 50;
+        
+        setBubbleMenuPos({ top: Math.max(0, top), left });
+      }
+    };
+
+    document.addEventListener('mousemove', handleMouseMove);
+    return () => document.removeEventListener('mousemove', handleMouseMove);
+  }, [hasSelection]);
 
   const editor = useEditor({
     extensions: [
@@ -59,32 +86,20 @@ export function WysiwygEditor({
     onSelectionUpdate: ({ editor }) => {
       const { from, to } = editor.state.selection;
       if (from === to || editor.state.selection.empty) {
+        setHasSelection(false);
         setBubbleMenuPos(null);
         return;
       }
       
-      // Get the selection coordinates
-      const { view } = editor;
-      const start = view.coordsAtPos(from);
-      const end = view.coordsAtPos(to);
+      setHasSelection(true);
       
-      // Position above the selection, centered horizontally
+      // Initial position based on current mouse position
       if (editorRef.current) {
         const editorRect = editorRef.current.getBoundingClientRect();
-        
-        // Calculate center of selection in viewport coords
-        const selectionCenterX = (start.left + end.right) / 2;
-        
-        // Convert to relative position within editor
-        let left = selectionCenterX - editorRect.left;
-        
-        // Clamp to stay within editor bounds (with padding for menu width ~200px)
+        let left = mousePos.current.x - editorRect.left;
         const menuHalfWidth = 120;
         left = Math.max(menuHalfWidth, Math.min(left, editorRect.width - menuHalfWidth));
-        
-        // Position above the selection top
-        const top = start.top - editorRect.top - 45;
-        
+        const top = mousePos.current.y - editorRect.top - 50;
         setBubbleMenuPos({ top: Math.max(0, top), left });
       }
     },
