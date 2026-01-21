@@ -124,29 +124,34 @@ const KanbanCard = ({ request, index, onClick, adminUsers }: KanbanCardProps) =>
 
   return (
     <Draggable draggableId={request.id} index={index}>
-      {(provided, snapshot) => (
-        <div
-          ref={provided.innerRef}
-          {...provided.draggableProps}
-          {...provided.dragHandleProps}
-          onClick={onClick}
-          style={{
-            ...provided.draggableProps.style,
-            // Smooth transform during drag
-            transform: snapshot.isDragging 
-              ? `${provided.draggableProps.style?.transform} rotate(3deg)` 
-              : provided.draggableProps.style?.transform,
-          }}
-          className={`
-            group p-3 rounded-lg border bg-card cursor-grab active:cursor-grabbing
-            transition-all duration-200 mb-2
-            hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5
-            ${snapshot.isDragging 
-              ? 'shadow-2xl ring-2 ring-primary/60 scale-105 opacity-95 z-50 border-primary/50' 
-              : 'shadow-sm'
-            }
-          `}
-        >
+      {(provided, snapshot) => {
+        // Build custom style for drag effects
+        const draggableStyle = provided.draggableProps.style;
+        const customStyle = snapshot.isDragging ? {
+          ...draggableStyle,
+          boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)',
+          transform: draggableStyle?.transform 
+            ? `${draggableStyle.transform} rotate(4deg) scale(1.05)` 
+            : 'rotate(4deg) scale(1.05)',
+        } : draggableStyle;
+
+        return (
+          <div
+            ref={provided.innerRef}
+            {...provided.draggableProps}
+            {...provided.dragHandleProps}
+            onClick={onClick}
+            style={customStyle}
+            className={`
+              group p-3 rounded-lg border bg-card cursor-grab active:cursor-grabbing
+              mb-2 transition-shadow
+              hover:shadow-lg hover:border-primary/30
+              ${snapshot.isDragging 
+                ? 'ring-2 ring-primary/60 z-50 border-primary/50 !opacity-100' 
+                : 'shadow-sm hover:shadow-md'
+              }
+            `}
+          >
           {/* Title with job role */}
           <div className="flex items-start gap-2 mb-2">
             <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30 flex-shrink-0 mt-0.5" />
@@ -211,7 +216,8 @@ const KanbanCard = ({ request, index, onClick, adminUsers }: KanbanCardProps) =>
             </div>
           </div>
         </div>
-      )}
+        );
+      }}
     </Draggable>
   );
 };
