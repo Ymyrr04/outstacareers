@@ -41,6 +41,7 @@ import { CVImagePreview } from '@/components/CVImagePreview';
 import { useEmailTemplates, statusToTrigger, useUnreadMessageCounts } from '@/hooks/useEmailTemplates';
 import { addMinutes } from 'date-fns';
 import { MyApplicantsDashboard } from '@/components/MyApplicantsDashboard';
+import { ThemeToggle } from '@/components/ThemeToggle';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 // Status options for applicant tracking - new pipeline order
@@ -934,6 +935,7 @@ const Admin = () => {
             <h1 className="text-xl font-bold">Admin Dashboard</h1>
           </div>
           <div className="flex items-center gap-4">
+            <ThemeToggle />
             <span className="text-sm text-muted-foreground">{user?.email}</span>
             <Button variant="outline" size="sm" onClick={signOut}>
               <LogOut className="w-4 h-4 mr-2" />
