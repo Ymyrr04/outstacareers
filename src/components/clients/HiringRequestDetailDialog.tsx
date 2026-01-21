@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useHiringRequests, type HiringRequest, type PipelineStage, type Priority, type ClientStatus, PIPELINE_STAGES } from '@/hooks/useHiringRequests';
-import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X, MessageSquare, Send, Save } from 'lucide-react';
+import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X, MessageSquare, Send, Save, UserCircle } from 'lucide-react';
 import { WysiwygEditor } from '@/components/WysiwygEditor';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,6 +26,11 @@ interface Comment {
   user_id: string;
   content: string;
   created_at: string;
+}
+
+interface AdminUser {
+  user_id: string;
+  email: string;
 }
 
 const INDUSTRIES = [
@@ -57,6 +62,7 @@ export const HiringRequestDetailDialog = ({
   const [newComment, setNewComment] = useState('');
   const [loadingComments, setLoadingComments] = useState(false);
   const [addingComment, setAddingComment] = useState(false);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
 
   const [formData, setFormData] = useState({
     job_title: '',
@@ -68,6 +74,7 @@ export const HiringRequestDetailDialog = ({
     start_date: '',
     target_end_date: '',
     notes: '',
+    assigned_admin_id: '',
   });
 
   useEffect(() => {
@@ -82,12 +89,21 @@ export const HiringRequestDetailDialog = ({
         start_date: request.start_date || '',
         target_end_date: request.target_end_date || '',
         notes: request.notes || '',
+        assigned_admin_id: request.assigned_admin_id || '',
       });
       setEditingField(null);
       setHasUnsavedChanges(false);
       fetchComments(request.id);
+      fetchAdminUsers();
     }
   }, [request]);
+
+  const fetchAdminUsers = async () => {
+    const { data, error } = await supabase.functions.invoke('get-admin-users');
+    if (!error && data?.adminUsers) {
+      setAdminUsers(data.adminUsers);
+    }
+  };
 
   const fetchComments = async (requestId: string) => {
     setLoadingComments(true);
@@ -145,6 +161,7 @@ export const HiringRequestDetailDialog = ({
     else if (field === 'target_end_date') updates.target_end_date = value || null;
     else if (field === 'job_title') updates.job_title = value;
     else if (field === 'notes') updates.notes = value || null;
+    else if (field === 'assigned_admin_id') updates.assigned_admin_id = value || null;
 
     const success = await updateRequest(request.id, updates);
     setSaving(false);
@@ -391,6 +408,38 @@ export const HiringRequestDetailDialog = ({
                   }}
                   className="h-8 text-sm w-36 px-2"
                 />
+              </div>
+            </div>
+
+            {/* Assignee Row */}
+            <div className="flex items-center py-2 hover:bg-muted/50 rounded px-2 -mx-2">
+              <div className="flex items-center gap-2 w-32 text-muted-foreground text-sm">
+                <UserCircle className="w-4 h-4" />
+                Assignee
+              </div>
+              <div className="flex-1">
+                <Select 
+                  value={formData.assigned_admin_id || '__none__'} 
+                  onValueChange={(v) => handleFieldUpdate('assigned_admin_id', v === '__none__' ? '' : v)}
+                >
+                  <SelectTrigger className="border-0 bg-transparent h-auto p-0 hover:bg-transparent focus:ring-0">
+                    {formData.assigned_admin_id ? (
+                      <Badge variant="outline" className="font-normal">
+                        {adminUsers.find(a => a.user_id === formData.assigned_admin_id)?.email || 'Unknown'}
+                      </Badge>
+                    ) : (
+                      <span className="text-muted-foreground">—</span>
+                    )}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">Unassigned</SelectItem>
+                    {adminUsers.map(admin => (
+                      <SelectItem key={admin.user_id} value={admin.user_id}>
+                        {admin.email}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
           </div>
