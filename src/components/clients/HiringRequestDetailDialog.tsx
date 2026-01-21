@@ -381,7 +381,7 @@ export const HiringRequestDetailDialog = ({
 
   return (
     <Dialog open={!!request} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl p-0 gap-0 overflow-hidden [&>button]:hidden max-h-[85vh] flex flex-col">
+      <DialogContent className="max-w-4xl w-[90vw] p-0 gap-0 overflow-hidden [&>button]:hidden max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center gap-3 p-4 pr-12 border-b bg-muted/30 shrink-0">
           <CheckCircle2 className="w-5 h-5 text-muted-foreground shrink-0" />
