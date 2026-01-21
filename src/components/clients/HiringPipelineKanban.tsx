@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useHiringRequests, PIPELINE_STAGES, type HiringRequest, type PipelineStage } from '@/hooks/useHiringRequests';
@@ -7,9 +7,16 @@ import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Plus, MessageCircle, Loader2 } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Plus, MessageCircle } from 'lucide-react';
 import { AddHiringRequestDialog } from './AddHiringRequestDialog';
 import { HiringRequestDetailDialog } from './HiringRequestDetailDialog';
+import { supabase } from '@/integrations/supabase/client';
+
+interface AdminUser {
+  user_id: string;
+  email: string;
+}
 
 const INDUSTRY_COLORS: Record<string, string> = {
   'Healthcare': 'bg-green-500/20 text-green-700 dark:text-green-400 border-green-500/30',
@@ -32,9 +39,13 @@ interface KanbanCardProps {
   request: HiringRequest;
   index: number;
   onClick: () => void;
+  adminUsers: AdminUser[];
 }
 
-const KanbanCard = ({ request, index, onClick }: KanbanCardProps) => {
+const KanbanCard = ({ request, index, onClick, adminUsers }: KanbanCardProps) => {
+  const assignee = adminUsers.find(a => a.user_id === request.assigned_admin_id);
+  const assigneeInitial = assignee?.email?.charAt(0).toUpperCase() || '?';
+  const assigneeName = assignee?.email?.split('@')[0] || 'Unassigned';
   const formatDateRange = () => {
     if (!request.start_date && !request.target_end_date) return null;
     
@@ -99,11 +110,18 @@ const KanbanCard = ({ request, index, onClick }: KanbanCardProps) => {
           {/* Footer with avatar, date, and comment count */}
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
-              <Avatar className="h-5 w-5">
-                <AvatarFallback className="text-[10px] bg-primary/10">
-                  {request.assigned_admin_id ? 'A' : '?'}
-                </AvatarFallback>
-              </Avatar>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Avatar className="h-5 w-5 cursor-default">
+                    <AvatarFallback className={`text-[10px] ${assignee ? 'bg-primary/20 text-primary' : 'bg-muted'}`}>
+                      {assigneeInitial}
+                    </AvatarFallback>
+                  </Avatar>
+                </TooltipTrigger>
+                <TooltipContent side="bottom" className="text-xs">
+                  {assignee ? assignee.email : 'Unassigned'}
+                </TooltipContent>
+              </Tooltip>
               {dateRange && (
                 <span className="text-primary">{dateRange}</span>
               )}
@@ -126,6 +144,17 @@ export const HiringPipelineKanban = () => {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<HiringRequest | null>(null);
   const [addToStage, setAddToStage] = useState<PipelineStage>('backlog');
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+
+  useEffect(() => {
+    const fetchAdminUsers = async () => {
+      const { data, error } = await supabase.functions.invoke('get-admin-users');
+      if (!error && data?.adminUsers) {
+        setAdminUsers(data.adminUsers);
+      }
+    };
+    fetchAdminUsers();
+  }, []);
 
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
@@ -199,6 +228,7 @@ export const HiringPipelineKanban = () => {
                             request={request} 
                             index={index}
                             onClick={() => setSelectedRequest(request)}
+                            adminUsers={adminUsers}
                           />
                         ))}
                         {provided.placeholder}
