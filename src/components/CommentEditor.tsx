@@ -307,7 +307,7 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(({
       {/* Editor Content */}
       <EditorContent 
         editor={editor} 
-        className="[&_.ProseMirror]:min-h-[36px] [&_.ProseMirror]:max-h-[120px] [&_.ProseMirror]:overflow-y-auto [&_.ProseMirror_p]:my-0 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-4 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-4 [&_.ProseMirror_li]:my-0"
+        className="[&_.ProseMirror]:min-h-[36px] [&_.ProseMirror]:max-h-[300px] [&_.ProseMirror]:overflow-y-auto [&_.ProseMirror_p]:my-0 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-4 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-4 [&_.ProseMirror_li]:my-0"
       />
       
       <style>{`
