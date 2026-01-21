@@ -14,6 +14,11 @@ interface Client {
   id: string;
   company_name: string;
   industry: string | null;
+  leads_from: string | null;
+}
+
+interface ContractorJobTitle {
+  job_title: string | null;
 }
 
 interface AddHiringRequestDialogProps {
@@ -71,23 +76,42 @@ export const AddHiringRequestDialog = ({
     setLoading(true);
     const { data } = await supabase
       .from('clients')
-      .select('id, company_name, industry')
+      .select('id, company_name, industry, leads_from')
       .order('company_name');
     
     setClients(data || []);
     setLoading(false);
   };
 
-  const handleClientChange = (clientId: string) => {
+  const handleClientChange = async (clientId: string) => {
     if (clientId === '__new__') {
       setShowAddClient(true);
       return;
     }
     const client = clients.find(c => c.id === clientId);
+    
+    // Check if client has existing contractors
+    const { data: contractors } = await supabase
+      .from('contractor_assignments')
+      .select('job_title')
+      .eq('client_id', clientId)
+      .order('created_at', { ascending: false });
+    
+    const hasExistingContractors = contractors && contractors.length > 0;
+    const existingJobTitles = contractors
+      ?.map((c: ContractorJobTitle) => c.job_title)
+      .filter((title): title is string => !!title) || [];
+    
     setFormData(prev => ({
       ...prev,
       client_id: clientId,
       industry: client?.industry || prev.industry,
+      // Auto-set to 'existing' if client has contractors
+      client_status: hasExistingContractors ? 'existing' : prev.client_status,
+      // Auto-fill source from client's leads_from
+      source: client?.leads_from || prev.source,
+      // Auto-fill first job title from existing contractors
+      job_title: existingJobTitles[0] || prev.job_title,
     }));
   };
 
@@ -95,7 +119,7 @@ export const AddHiringRequestDialog = ({
     // Refresh clients list and select the newest one
     const { data } = await supabase
       .from('clients')
-      .select('id, company_name, industry')
+      .select('id, company_name, industry, leads_from')
       .order('created_at', { ascending: false })
       .limit(1);
     
@@ -105,6 +129,7 @@ export const AddHiringRequestDialog = ({
         ...prev,
         client_id: data[0].id,
         industry: data[0].industry || prev.industry,
+        source: data[0].leads_from || prev.source,
       }));
     }
   };
