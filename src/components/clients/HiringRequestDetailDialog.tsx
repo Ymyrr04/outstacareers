@@ -807,9 +807,16 @@ export const HiringRequestDetailDialog = ({
                 placeholder="Add a comment..."
                 className="flex-1 h-9"
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                    handleAddComment();
+                  if (e.key === 'Enter') {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    if (e.metaKey || e.ctrlKey) {
+                      handleAddComment();
+                    }
                   }
+                }}
+                onPaste={(e) => {
+                  e.stopPropagation();
                 }}
               />
               <Button 
