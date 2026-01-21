@@ -13,10 +13,28 @@ import { AddHiringRequestDialog } from './AddHiringRequestDialog';
 import { HiringRequestDetailDialog } from './HiringRequestDetailDialog';
 import { supabase } from '@/integrations/supabase/client';
 
+// Celebration GIFs pool
+const CELEBRATION_GIFS = [
+  'https://media.giphy.com/media/26u4cqiYI30juCOGY/giphy.gif', // Confetti
+  'https://media.giphy.com/media/artj92V8o75VPL7AeQ/giphy.gif', // Party popper
+  'https://media.giphy.com/media/xT0GqssRweIhlz209i/giphy.gif', // Checkmark
+  'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif', // Dancing
+  'https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif', // Fireworks
+  'https://media.giphy.com/media/111ebonMs90YLu/giphy.gif', // Thumbs up
+  'https://media.giphy.com/media/l3q2XhfQ8oCkm1Ts4/giphy.gif', // Clapping
+  'https://media.giphy.com/media/3oz8xRF0v9WMAUVLNK/giphy.gif', // Star burst
+];
+
 // Celebration GIF component
 const CelebrationPopup = ({ show, onComplete }: { show: boolean; onComplete: () => void }) => {
+  const [gifUrl, setGifUrl] = useState('');
+
   useEffect(() => {
     if (show) {
+      // Pick a random GIF when showing
+      const randomGif = CELEBRATION_GIFS[Math.floor(Math.random() * CELEBRATION_GIFS.length)];
+      setGifUrl(randomGif);
+      
       const timer = setTimeout(() => {
         onComplete();
       }, 2500);
@@ -32,7 +50,7 @@ const CelebrationPopup = ({ show, onComplete }: { show: boolean; onComplete: () 
         <div className="relative">
           {/* Celebration GIF */}
           <img 
-            src="https://media.giphy.com/media/artj92V8o75VPL7AeQ/giphy.gif" 
+            src={gifUrl} 
             alt="Celebration" 
             className="w-64 h-64 object-contain drop-shadow-2xl"
           />
