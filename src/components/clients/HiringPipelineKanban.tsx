@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format, isPast, startOfDay } from 'date-fns';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useHiringRequests, PIPELINE_STAGES, type HiringRequest, type PipelineStage } from '@/hooks/useHiringRequests';
 import { Badge } from '@/components/ui/badge';
@@ -121,8 +121,8 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
     if (end) return `Until ${end}`;
     return null;
   };
-
   const dateRange = formatDateRange();
+  const isOverdue = !isClosed && request.target_end_date && isPast(startOfDay(new Date(request.target_end_date)));
 
   return (
     <Draggable draggableId={request.id} index={index}>
@@ -213,7 +213,7 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
             </div>
             <div className="flex items-center gap-2">
               {dateRange && (
-                <span className="text-primary">{dateRange}</span>
+                <span className={isOverdue ? 'text-red-500 font-medium' : 'text-primary'}>{dateRange}</span>
               )}
               {request.comment_count > 0 && (
                 <div className="flex items-center gap-1">
