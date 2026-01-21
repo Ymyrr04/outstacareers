@@ -1475,47 +1475,52 @@ const Admin = () => {
                     </div>
                 
                     <Tabs value={activeStatusFolder} onValueChange={(v) => setActiveStatusFolder(v as ApplicantStatusFolder)} className="space-y-4">
-                    <TabsList className="flex-wrap h-auto gap-1">
-                      {APPLICANT_STATUS_FOLDERS.map((status) => {
+                    <TabsList className="flex-wrap h-auto gap-0 p-1 bg-muted/50 rounded-lg">
+                      {APPLICANT_STATUS_FOLDERS.map((status, index) => {
                         const count = applicants.filter(a => a.status === status).length;
                         const isDragOver = dragOverFolder === status;
+                        const isLast = index === APPLICANT_STATUS_FOLDERS.length - 1;
                         return (
-                          <TabsTrigger 
-                            key={status} 
-                            value={status} 
-                            className={`flex items-center gap-2 transition-all ${
-                              isDragOver ? 'ring-1 ring-primary/50 bg-primary/5' : ''
-                            }`}
-                            onDragOver={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              if (draggedApplicant && draggedApplicant.status !== status) {
-                                setDragOverFolder(status);
-                              }
-                            }}
-                            onDragLeave={(e) => {
-                              e.preventDefault();
-                              setDragOverFolder(null);
-                            }}
-                            onDrop={(e) => {
-                              e.preventDefault();
-                              e.stopPropagation();
-                              setDragOverFolder(null);
-                              if (draggedApplicant && draggedApplicant.status !== status) {
-                                handleUpdateApplicantStatus(draggedApplicant.id, status);
-                                setDraggedApplicant(null);
-                              }
-                            }}
-                          >
-                            <FolderOpen className={`w-4 h-4 ${isDragOver ? 'text-primary' : ''}`} />
-                            {status}
-                            {/* Only show count badge on "For Review" folder */}
-                            {status === 'For Review' && count > 0 && (
-                              <Badge variant="secondary" className="ml-1 text-xs">
-                                {count}
-                              </Badge>
+                          <div key={status} className="flex items-center">
+                            <TabsTrigger 
+                              value={status} 
+                              className={`flex items-center gap-2 transition-all px-3 py-1.5 rounded-md ${
+                                isDragOver ? 'ring-2 ring-primary bg-primary/10' : ''
+                              }`}
+                              onDragOver={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                if (draggedApplicant && draggedApplicant.status !== status) {
+                                  setDragOverFolder(status);
+                                }
+                              }}
+                              onDragLeave={(e) => {
+                                e.preventDefault();
+                                setDragOverFolder(null);
+                              }}
+                              onDrop={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                setDragOverFolder(null);
+                                if (draggedApplicant && draggedApplicant.status !== status) {
+                                  handleUpdateApplicantStatus(draggedApplicant.id, status);
+                                  setDraggedApplicant(null);
+                                }
+                              }}
+                            >
+                              <FolderOpen className={`w-4 h-4 ${isDragOver ? 'text-primary' : ''}`} />
+                              {status}
+                              {/* Only show count badge on "For Review" folder */}
+                              {status === 'For Review' && count > 0 && (
+                                <Badge variant="secondary" className="ml-1 text-xs">
+                                  {count}
+                                </Badge>
+                              )}
+                            </TabsTrigger>
+                            {!isLast && (
+                              <div className="h-4 w-px bg-border mx-1" />
                             )}
-                          </TabsTrigger>
+                          </div>
                         );
                       })}
                     </TabsList>
