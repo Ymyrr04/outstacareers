@@ -13,6 +13,39 @@ import { AddHiringRequestDialog } from './AddHiringRequestDialog';
 import { HiringRequestDetailDialog } from './HiringRequestDetailDialog';
 import { supabase } from '@/integrations/supabase/client';
 
+// Celebration GIF component
+const CelebrationPopup = ({ show, onComplete }: { show: boolean; onComplete: () => void }) => {
+  useEffect(() => {
+    if (show) {
+      const timer = setTimeout(() => {
+        onComplete();
+      }, 2500);
+      return () => clearTimeout(timer);
+    }
+  }, [show, onComplete]);
+
+  if (!show) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
+      <div className="animate-scale-in">
+        <div className="relative">
+          {/* Celebration GIF */}
+          <img 
+            src="https://media.giphy.com/media/artj92V8o75VPL7AeQ/giphy.gif" 
+            alt="Celebration" 
+            className="w-64 h-64 object-contain drop-shadow-2xl"
+          />
+          {/* Success message */}
+          <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full font-bold text-lg shadow-lg animate-fade-in whitespace-nowrap">
+            🎉 Task Completed!
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 interface AdminUser {
   user_id: string;
   email: string;
@@ -165,6 +198,7 @@ export const HiringPipelineKanban = () => {
   const [selectedRequest, setSelectedRequest] = useState<HiringRequest | null>(null);
   const [addToStage, setAddToStage] = useState<PipelineStage>('backlog');
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [showCelebration, setShowCelebration] = useState(false);
 
   useEffect(() => {
     const fetchAdminUsers = async () => {
@@ -183,6 +217,11 @@ export const HiringPipelineKanban = () => {
     const destStage = result.destination.droppableId as PipelineStage;
 
     if (sourceStage === destStage) return;
+
+    // Show celebration when moving to closed
+    if (destStage === 'closed' && sourceStage !== 'closed') {
+      setShowCelebration(true);
+    }
 
     updateStage(result.draggableId, destStage);
   };
@@ -286,6 +325,12 @@ export const HiringPipelineKanban = () => {
         request={selectedRequest}
         onOpenChange={(open) => !open && setSelectedRequest(null)}
         onUpdated={() => fetchRequests(false)}
+      />
+
+      {/* Celebration Popup */}
+      <CelebrationPopup 
+        show={showCelebration} 
+        onComplete={() => setShowCelebration(false)} 
       />
     </>
   );
