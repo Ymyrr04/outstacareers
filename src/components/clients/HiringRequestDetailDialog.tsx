@@ -7,8 +7,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useHiringRequests, type HiringRequest, type PipelineStage, type Priority, type ClientStatus, PIPELINE_STAGES } from '@/hooks/useHiringRequests';
-import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X, MessageSquare, Send, Save, UserCircle, Pencil } from 'lucide-react';
+import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X, MessageSquare, Send, Save, UserCircle, Pencil, SmilePlus } from 'lucide-react';
 import { WysiwygEditor } from '@/components/WysiwygEditor';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,6 +28,13 @@ interface Comment {
   user_id: string;
   content: string;
   created_at: string;
+}
+
+interface CommentReaction {
+  id: string;
+  comment_id: string;
+  user_id: string;
+  emoji: string;
 }
 
 interface AdminUser {
@@ -80,6 +89,10 @@ export const HiringRequestDetailDialog = ({
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentContent, setEditingCommentContent] = useState('');
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
+  const [reactions, setReactions] = useState<CommentReaction[]>([]);
+  const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
+
+  const REACTION_EMOJIS = ['👍', '❤️', '😄', '🎉', '🤔', '👀'];
 
   const [formData, setFormData] = useState({
     job_title: '',
@@ -132,6 +145,17 @@ export const HiringRequestDetailDialog = ({
     
     if (!error && data) {
       setComments(data);
+      // Fetch reactions for these comments
+      const commentIds = data.map(c => c.id);
+      if (commentIds.length > 0) {
+        const { data: reactionsData } = await supabase
+          .from('hiring_request_comment_reactions')
+          .select('*')
+          .in('comment_id', commentIds);
+        if (reactionsData) {
+          setReactions(reactionsData);
+        }
+      }
     }
     setLoadingComments(false);
   };
@@ -203,6 +227,61 @@ export const HiringRequestDetailDialog = ({
       toast.success('Comment deleted');
     }
     setDeletingCommentId(null);
+  };
+
+  const handleToggleReaction = async (commentId: string, emoji: string) => {
+    if (!user) return;
+    
+    const existingReaction = reactions.find(
+      r => r.comment_id === commentId && r.user_id === user.id && r.emoji === emoji
+    );
+    
+    if (existingReaction) {
+      // Remove reaction
+      const { error } = await supabase
+        .from('hiring_request_comment_reactions')
+        .delete()
+        .eq('id', existingReaction.id);
+      
+      if (!error) {
+        setReactions(prev => prev.filter(r => r.id !== existingReaction.id));
+      }
+    } else {
+      // Add reaction
+      const { data, error } = await supabase
+        .from('hiring_request_comment_reactions')
+        .insert({
+          comment_id: commentId,
+          user_id: user.id,
+          emoji,
+        })
+        .select()
+        .single();
+      
+      if (!error && data) {
+        setReactions(prev => [...prev, data]);
+      }
+    }
+    setShowEmojiPicker(null);
+  };
+
+  const getReactionsForComment = (commentId: string) => {
+    const commentReactions = reactions.filter(r => r.comment_id === commentId);
+    const grouped: Record<string, { count: number; users: string[]; hasOwn: boolean }> = {};
+    
+    commentReactions.forEach(r => {
+      if (!grouped[r.emoji]) {
+        grouped[r.emoji] = { count: 0, users: [], hasOwn: false };
+      }
+      grouped[r.emoji].count++;
+      const adminUser = adminUsers.find(a => a.user_id === r.user_id);
+      grouped[r.emoji].users.push(getDisplayName(adminUser?.email));
+      if (r.user_id === user?.id) {
+        grouped[r.emoji].hasOwn = true;
+      }
+    });
+    
+    return grouped;
   };
 
   const handleFieldUpdate = async (field: string, value: string) => {
@@ -654,6 +733,56 @@ export const HiringRequestDetailDialog = ({
                     ) : (
                       <p className="text-sm">{comment.content}</p>
                     )}
+                    
+                    {/* Reactions */}
+                    <div className="flex items-center gap-1 mt-2 flex-wrap">
+                      {Object.entries(getReactionsForComment(comment.id)).map(([emoji, data]) => (
+                        <Tooltip key={emoji}>
+                          <TooltipTrigger asChild>
+                            <button
+                              onClick={() => handleToggleReaction(comment.id, emoji)}
+                              className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-full text-xs border transition-colors ${
+                                data.hasOwn 
+                                  ? 'bg-primary/10 border-primary/30 text-primary' 
+                                  : 'bg-muted/50 border-border hover:bg-muted'
+                              }`}
+                            >
+                              <span>{emoji}</span>
+                              <span>{data.count}</span>
+                            </button>
+                          </TooltipTrigger>
+                          <TooltipContent side="top" className="text-xs">
+                            {data.users.join(', ')}
+                          </TooltipContent>
+                        </Tooltip>
+                      ))}
+                      
+                      {/* Add Reaction Button */}
+                      <Popover open={showEmojiPicker === comment.id} onOpenChange={(open) => setShowEmojiPicker(open ? comment.id : null)}>
+                        <PopoverTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 opacity-50 hover:opacity-100"
+                          >
+                            <SmilePlus className="h-3.5 w-3.5" />
+                          </Button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-2" side="top">
+                          <div className="flex gap-1">
+                            {REACTION_EMOJIS.map(emoji => (
+                              <button
+                                key={emoji}
+                                onClick={() => handleToggleReaction(comment.id, emoji)}
+                                className="text-lg hover:scale-125 transition-transform p-1"
+                              >
+                                {emoji}
+                              </button>
+                            ))}
+                          </div>
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                   </div>
                 );
               })
