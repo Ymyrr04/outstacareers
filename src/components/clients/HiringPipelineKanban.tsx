@@ -130,11 +130,21 @@ const KanbanCard = ({ request, index, onClick, adminUsers }: KanbanCardProps) =>
           {...provided.draggableProps}
           {...provided.dragHandleProps}
           onClick={onClick}
+          style={{
+            ...provided.draggableProps.style,
+            // Smooth transform during drag
+            transform: snapshot.isDragging 
+              ? `${provided.draggableProps.style?.transform} rotate(3deg)` 
+              : provided.draggableProps.style?.transform,
+          }}
           className={`
-            group p-3 rounded-lg border bg-card cursor-pointer
+            group p-3 rounded-lg border bg-card cursor-grab active:cursor-grabbing
             transition-all duration-200 mb-2
-            hover:shadow-md hover:border-primary/30
-            ${snapshot.isDragging ? 'shadow-lg ring-2 ring-primary/50 rotate-2' : ''}
+            hover:shadow-md hover:border-primary/30 hover:-translate-y-0.5
+            ${snapshot.isDragging 
+              ? 'shadow-2xl ring-2 ring-primary/60 scale-105 opacity-95 z-50 border-primary/50' 
+              : 'shadow-sm'
+            }
           `}
         >
           {/* Title with job role */}
@@ -286,14 +296,20 @@ export const HiringPipelineKanban = () => {
                   {(provided, snapshot) => (
                     <ScrollArea 
                       className={`
-                        flex-1 rounded-lg p-2 transition-colors
-                        ${snapshot.isDraggingOver ? 'bg-primary/5 ring-2 ring-primary/20' : 'bg-muted/30'}
+                        flex-1 rounded-lg p-2 transition-all duration-300 ease-in-out
+                        ${snapshot.isDraggingOver 
+                          ? 'bg-primary/10 ring-2 ring-primary/40 shadow-inner scale-[1.01]' 
+                          : 'bg-muted/30 ring-1 ring-transparent'
+                        }
                       `}
                     >
                       <div
                         ref={provided.innerRef}
                         {...provided.droppableProps}
-                        className="min-h-[100px]"
+                        className={`
+                          min-h-[100px] transition-all duration-200
+                          ${snapshot.isDraggingOver ? 'py-1' : ''}
+                        `}
                       >
                         {stageRequests.map((request, index) => (
                           <KanbanCard 
