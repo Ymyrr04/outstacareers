@@ -7,7 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useHiringRequests, type PipelineStage, type Priority, type ClientStatus, PIPELINE_STAGES } from '@/hooks/useHiringRequests';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
+import { AddClientDialog } from './AddClientDialog';
 
 interface Client {
   id: string;
@@ -44,6 +45,7 @@ export const AddHiringRequestDialog = ({
   const [clients, setClients] = useState<Client[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [showAddClient, setShowAddClient] = useState(false);
 
   const [formData, setFormData] = useState({
     client_id: '',
@@ -77,12 +79,34 @@ export const AddHiringRequestDialog = ({
   };
 
   const handleClientChange = (clientId: string) => {
+    if (clientId === '__new__') {
+      setShowAddClient(true);
+      return;
+    }
     const client = clients.find(c => c.id === clientId);
     setFormData(prev => ({
       ...prev,
       client_id: clientId,
       industry: client?.industry || prev.industry,
     }));
+  };
+
+  const handleClientAdded = async () => {
+    // Refresh clients list and select the newest one
+    const { data } = await supabase
+      .from('clients')
+      .select('id, company_name, industry')
+      .order('created_at', { ascending: false })
+      .limit(1);
+    
+    if (data && data[0]) {
+      await fetchClients();
+      setFormData(prev => ({
+        ...prev,
+        client_id: data[0].id,
+        industry: data[0].industry || prev.industry,
+      }));
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -128,33 +152,43 @@ export const AddHiringRequestDialog = ({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Add Hiring Request</DialogTitle>
-        </DialogHeader>
+    <>
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Add Hiring Request</DialogTitle>
+          </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="grid grid-cols-2 gap-4">
-            {/* Client */}
-            <div className="col-span-2">
-              <Label>Client</Label>
-              <Select 
-                value={formData.client_id} 
-                onValueChange={handleClientChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select a client..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {clients.map(client => (
-                    <SelectItem key={client.id} value={client.id}>
-                      {client.company_name}
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              {/* Client */}
+              <div className="col-span-2">
+                <Label>Client</Label>
+                <Select 
+                  value={formData.client_id} 
+                  onValueChange={handleClientChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select a client..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__new__" className="text-primary font-medium">
+                      <span className="flex items-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        Add New Client
+                      </span>
                     </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                    {clients.length > 0 && (
+                      <div className="border-t my-1" />
+                    )}
+                    {clients.map(client => (
+                      <SelectItem key={client.id} value={client.id}>
+                        {client.company_name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
             {/* Job Title */}
             <div className="col-span-2">
@@ -289,5 +323,12 @@ export const AddHiringRequestDialog = ({
         </form>
       </DialogContent>
     </Dialog>
+
+    <AddClientDialog
+      open={showAddClient}
+      onOpenChange={setShowAddClient}
+      onClientAdded={handleClientAdded}
+    />
+  </>
   );
 };
