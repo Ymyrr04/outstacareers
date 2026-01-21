@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 
 interface WysiwygEditorProps {
   value: string;
@@ -26,6 +26,8 @@ export function WysiwygEditor({
 }: WysiwygEditorProps) {
   const [linkUrl, setLinkUrl] = useState('');
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
+  const [bubbleMenuPos, setBubbleMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const editorRef = useRef<HTMLDivElement>(null);
 
   const editor = useEditor({
     extensions: [
@@ -53,6 +55,26 @@ export function WysiwygEditor({
       const html = editor.getHTML();
       // Convert empty paragraph to empty string
       onChange(html === '<p></p>' ? '' : html);
+    },
+    onSelectionUpdate: ({ editor }) => {
+      const { from, to } = editor.state.selection;
+      if (from === to || editor.state.selection.empty) {
+        setBubbleMenuPos(null);
+        return;
+      }
+      
+      // Get the selection coordinates
+      const { view } = editor;
+      const start = view.coordsAtPos(from);
+      const end = view.coordsAtPos(to);
+      
+      // Position above the selection, centered
+      if (editorRef.current) {
+        const editorRect = editorRef.current.getBoundingClientRect();
+        const top = start.top - editorRect.top - 45; // 45px above selection
+        const left = (start.left + end.left) / 2 - editorRect.left;
+        setBubbleMenuPos({ top, left });
+      }
     },
     editorProps: {
       attributes: {
@@ -198,8 +220,84 @@ export function WysiwygEditor({
   }
 
   return (
-    <div className="border rounded-md overflow-hidden bg-background">
-      {/* Toolbar */}
+    <div className="border rounded-md overflow-hidden bg-background relative" ref={editorRef}>
+      {/* Floating Bubble Menu - appears when text is selected */}
+      {bubbleMenuPos && (
+        <div 
+          className="absolute z-50 flex items-center gap-0.5 p-1 bg-background border rounded-lg shadow-lg animate-fade-in"
+          style={{ 
+            top: bubbleMenuPos.top, 
+            left: bubbleMenuPos.left,
+            transform: 'translateX(-50%)',
+          }}
+        >
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className={`h-7 w-7 p-0 ${editor.isActive('bold') ? 'bg-muted' : ''}`}
+            onClick={() => editor.chain().focus().toggleBold().run()}
+            title="Bold"
+          >
+            <Bold className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className={`h-7 w-7 p-0 ${editor.isActive('italic') ? 'bg-muted' : ''}`}
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+            title="Italic"
+          >
+            <Italic className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className={`h-7 w-7 p-0 ${editor.isActive('underline') ? 'bg-muted' : ''}`}
+            onClick={() => editor.chain().focus().toggleUnderline().run()}
+            title="Underline"
+          >
+            <UnderlineIcon className="h-3.5 w-3.5" />
+          </Button>
+          <div className="w-px h-4 bg-border mx-0.5" />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className={`h-7 w-7 p-0 ${editor.isActive('bulletList') ? 'bg-muted' : ''}`}
+            onClick={() => editor.chain().focus().toggleBulletList().run()}
+            title="Bullet List"
+          >
+            <List className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className={`h-7 w-7 p-0 ${editor.isActive('orderedList') ? 'bg-muted' : ''}`}
+            onClick={() => editor.chain().focus().toggleOrderedList().run()}
+            title="Numbered List"
+          >
+            <ListOrdered className="h-3.5 w-3.5" />
+          </Button>
+          <div className="w-px h-4 bg-border mx-0.5" />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className={`h-7 px-2 gap-1 ${editor.isActive('link') ? 'bg-muted' : ''}`}
+            onClick={() => setLinkPopoverOpen(true)}
+            title="Link"
+          >
+            <LinkIcon className="h-3.5 w-3.5" />
+            <span className="text-xs">Link</span>
+          </Button>
+        </div>
+      )}
+
+      {/* Static Toolbar */}
       <div className="flex items-center gap-0.5 p-1 border-b bg-muted/30">
         <Button
           type="button"
