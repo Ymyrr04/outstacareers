@@ -27,18 +27,52 @@ export function WysiwygEditor({
   const [linkUrl, setLinkUrl] = useState('');
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
   const [bubbleMenuPos, setBubbleMenuPos] = useState<{ top: number; left: number } | null>(null);
+  const [showBubbleMenu, setShowBubbleMenu] = useState(false);
   const [hasSelection, setHasSelection] = useState(false);
   const [isHoveringMenu, setIsHoveringMenu] = useState(false);
+  const [isMouseDown, setIsMouseDown] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
   const mousePos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Track mouse position for bubble menu placement
+  // Track mouse down/up to show toolbar only after selection is complete
+  useEffect(() => {
+    const handleMouseDown = () => {
+      setIsMouseDown(true);
+      setShowBubbleMenu(false);
+      if (showTimeoutRef.current) {
+        clearTimeout(showTimeoutRef.current);
+      }
+    };
+    
+    const handleMouseUp = () => {
+      setIsMouseDown(false);
+      // Show bubble menu with delay after mouse is released (if there's a selection)
+      if (hasSelection) {
+        showTimeoutRef.current = setTimeout(() => {
+          setShowBubbleMenu(true);
+        }, 150); // 150ms delay
+      }
+    };
+
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('mouseup', handleMouseUp);
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('mouseup', handleMouseUp);
+      if (showTimeoutRef.current) {
+        clearTimeout(showTimeoutRef.current);
+      }
+    };
+  }, [hasSelection]);
+
+  // Track mouse position for bubble menu placement (only when not holding mouse)
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       mousePos.current = { x: e.clientX, y: e.clientY };
       
-      // Only update position if there's a selection AND not hovering over the menu
-      if (hasSelection && !isHoveringMenu && editorRef.current) {
+      // Only update position if showing menu AND not hovering over menu AND not dragging
+      if (showBubbleMenu && !isHoveringMenu && !isMouseDown && editorRef.current) {
         const editorRect = editorRef.current.getBoundingClientRect();
         
         // Position relative to editor, centered on mouse X
@@ -55,7 +89,7 @@ export function WysiwygEditor({
 
     document.addEventListener('mousemove', handleMouseMove);
     return () => document.removeEventListener('mousemove', handleMouseMove);
-  }, [hasSelection, isHoveringMenu]);
+  }, [showBubbleMenu, isHoveringMenu, isMouseDown]);
 
   const editor = useEditor({
     extensions: [
@@ -88,13 +122,17 @@ export function WysiwygEditor({
       const { from, to } = editor.state.selection;
       if (from === to || editor.state.selection.empty) {
         setHasSelection(false);
+        setShowBubbleMenu(false);
         setBubbleMenuPos(null);
+        if (showTimeoutRef.current) {
+          clearTimeout(showTimeoutRef.current);
+        }
         return;
       }
       
       setHasSelection(true);
       
-      // Initial position based on current mouse position
+      // Set initial position based on current mouse position (will be shown after mouseup)
       if (editorRef.current) {
         const editorRect = editorRef.current.getBoundingClientRect();
         let left = mousePos.current.x - editorRect.left;
@@ -249,8 +287,8 @@ export function WysiwygEditor({
 
   return (
     <div className="border rounded-md overflow-hidden bg-background relative" ref={editorRef}>
-      {/* Floating Bubble Menu - appears when text is selected */}
-      {bubbleMenuPos && (
+      {/* Floating Bubble Menu - appears when text is selected and mouse is released */}
+      {showBubbleMenu && bubbleMenuPos && (
         <div 
           className="absolute z-50 flex items-center gap-0.5 p-1 bg-background border rounded-lg shadow-lg animate-fade-in"
           style={{ 
