@@ -4,11 +4,12 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useHiringRequests, type HiringRequest, type PipelineStage, type Priority, type ClientStatus, PIPELINE_STAGES } from '@/hooks/useHiringRequests';
 import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X } from 'lucide-react';
+import { WysiwygEditor } from '@/components/WysiwygEditor';
+import { FormattedNotes } from '@/components/FormattedNotes';
 
 interface HiringRequestDetailDialogProps {
   request: HiringRequest | null;
@@ -322,26 +323,41 @@ export const HiringRequestDetailDialog = ({
 
         {/* Description Section */}
         <div className="p-4 border-t">
-          <div className="flex items-center gap-2 text-muted-foreground text-sm mb-2">
-            <FileText className="w-4 h-4" />
-            Description
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2 text-muted-foreground text-sm">
+              <FileText className="w-4 h-4" />
+              Description
+            </div>
+            {editingField === 'notes' && (
+              <Button 
+                size="sm" 
+                variant="outline"
+                onClick={() => {
+                  handleFieldUpdate('notes', formData.notes);
+                }}
+                disabled={saving}
+              >
+                {saving ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : null}
+                Done
+              </Button>
+            )}
           </div>
           {editingField === 'notes' ? (
-            <Textarea
-              autoFocus
+            <WysiwygEditor
               value={formData.notes}
-              onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-              onBlur={() => handleFieldUpdate('notes', formData.notes)}
-              className="min-h-[150px]"
+              onChange={(value) => setFormData(prev => ({ ...prev, notes: value }))}
               placeholder="Post Job Description here..."
+              minHeight="200px"
             />
           ) : (
             <div 
-              className="min-h-[100px] p-3 bg-muted/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors whitespace-pre-wrap text-sm"
+              className="min-h-[100px] p-3 bg-muted/30 rounded-lg cursor-pointer hover:bg-muted/50 transition-colors"
               onClick={() => setEditingField('notes')}
             >
-              {formData.notes || (
-                <span className="text-muted-foreground italic">Post Job Description here...</span>
+              {formData.notes ? (
+                <FormattedNotes content={formData.notes} />
+              ) : (
+                <span className="text-muted-foreground italic text-sm">Post Job Description here...</span>
               )}
             </div>
           )}
