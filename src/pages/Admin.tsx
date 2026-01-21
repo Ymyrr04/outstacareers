@@ -969,10 +969,12 @@ const Admin = () => {
               <ClipboardList className="w-4 h-4" />
               Recruiter Dash
             </TabsTrigger>
-            <TabsTrigger value="pipeline" className="flex items-center gap-2">
-              <Kanban className="w-4 h-4" />
-              Pipeline
-            </TabsTrigger>
+            {user?.email?.toLowerCase() === 'mark@outsta.io' && (
+              <TabsTrigger value="pipeline" className="flex items-center gap-2">
+                <Kanban className="w-4 h-4" />
+                Pipeline
+              </TabsTrigger>
+            )}
             <TabsTrigger value="clients" className="flex items-center gap-2">
               <Building2 className="w-4 h-4" />
               Clients
