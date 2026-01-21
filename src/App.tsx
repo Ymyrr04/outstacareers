@@ -5,6 +5,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { HelmetProvider } from "react-helmet-async";
+import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
@@ -22,30 +23,32 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <HelmetProvider>
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/reset-password" element={<ResetPassword />} />
-              <Route path="/admin" element={<Admin />} />
-              <Route path="/jobs/:company/:titleSlug/:jobId" element={<JobApplication />} />
-              <Route path="/job/:jobId" element={<JobDetails />} />
-              <Route path="/apply/:jobId" element={<ApplyJob />} />
-              <Route path="/interview/:sessionId" element={<ResumeInterview />} />
-              <Route path="/image-editor" element={<ImageEditor />} />
-              <Route path="/auth/calendly/callback" element={<CalendlyCallback />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+    <ThemeProvider attribute="class" defaultTheme="light" enableSystem>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Index />} />
+                <Route path="/auth" element={<Auth />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+                <Route path="/admin" element={<Admin />} />
+                <Route path="/jobs/:company/:titleSlug/:jobId" element={<JobApplication />} />
+                <Route path="/job/:jobId" element={<JobDetails />} />
+                <Route path="/apply/:jobId" element={<ApplyJob />} />
+                <Route path="/interview/:sessionId" element={<ResumeInterview />} />
+                <Route path="/image-editor" element={<ImageEditor />} />
+                <Route path="/auth/calendly/callback" element={<CalendlyCallback />} />
+                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ThemeProvider>
   </HelmetProvider>
 );
 

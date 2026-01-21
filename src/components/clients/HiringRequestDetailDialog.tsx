@@ -8,7 +8,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useHiringRequests, type HiringRequest, type PipelineStage, type Priority, type ClientStatus, PIPELINE_STAGES } from '@/hooks/useHiringRequests';
-import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X, MessageSquare, Send, Save, UserCircle } from 'lucide-react';
+import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X, MessageSquare, Send, Save, UserCircle, Pencil } from 'lucide-react';
 import { WysiwygEditor } from '@/components/WysiwygEditor';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { supabase } from '@/integrations/supabase/client';
@@ -77,6 +77,9 @@ export const HiringRequestDetailDialog = ({
   const [loadingComments, setLoadingComments] = useState(false);
   const [addingComment, setAddingComment] = useState(false);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editingCommentContent, setEditingCommentContent] = useState('');
+  const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
 
   const [formData, setFormData] = useState({
     job_title: '',
@@ -158,6 +161,48 @@ export const HiringRequestDetailDialog = ({
       onUpdated?.();
     }
     setAddingComment(false);
+  };
+
+  const handleEditComment = async (commentId: string) => {
+    if (!editingCommentContent.trim() || !request) return;
+    
+    const { error } = await supabase
+      .from('hiring_request_comments')
+      .update({ content: editingCommentContent.trim() })
+      .eq('id', commentId);
+    
+    if (error) {
+      toast.error('Failed to update comment');
+    } else {
+      setEditingCommentId(null);
+      setEditingCommentContent('');
+      fetchComments(request.id);
+      toast.success('Comment updated');
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!request) return;
+    
+    setDeletingCommentId(commentId);
+    const { error } = await supabase
+      .from('hiring_request_comments')
+      .delete()
+      .eq('id', commentId);
+    
+    if (error) {
+      toast.error('Failed to delete comment');
+    } else {
+      fetchComments(request.id);
+      // Update comment count
+      await supabase
+        .from('client_hiring_requests')
+        .update({ comment_count: Math.max((request.comment_count || 1) - 1, 0) })
+        .eq('id', request.id);
+      onUpdated?.();
+      toast.success('Comment deleted');
+    }
+    setDeletingCommentId(null);
   };
 
   const handleFieldUpdate = async (field: string, value: string) => {
@@ -537,15 +582,78 @@ export const HiringRequestDetailDialog = ({
               comments.map(comment => {
                 const commenterAdmin = adminUsers.find(a => a.user_id === comment.user_id);
                 const commenterName = getDisplayName(commenterAdmin?.email);
+                const isOwnComment = user?.id === comment.user_id;
+                const isEditing = editingCommentId === comment.id;
+                
                 return (
                   <div key={comment.id} className="bg-muted/30 rounded-lg p-3">
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-xs font-medium">{commenterName}</span>
-                      <span className="text-xs text-muted-foreground">
-                        {format(new Date(comment.created_at), 'MMM d, h:mm a')}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(comment.created_at), 'MMM d, h:mm a')}
+                        </span>
+                        {isOwnComment && !isEditing && (
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5"
+                              onClick={() => {
+                                setEditingCommentId(comment.id);
+                                setEditingCommentContent(comment.content);
+                              }}
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-5 w-5 text-destructive hover:text-destructive"
+                              onClick={() => handleDeleteComment(comment.id)}
+                              disabled={deletingCommentId === comment.id}
+                            >
+                              {deletingCommentId === comment.id ? (
+                                <Loader2 className="h-3 w-3 animate-spin" />
+                              ) : (
+                                <Trash2 className="h-3 w-3" />
+                              )}
+                            </Button>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                    <p className="text-sm">{comment.content}</p>
+                    {isEditing ? (
+                      <div className="flex gap-2 mt-2">
+                        <Textarea
+                          value={editingCommentContent}
+                          onChange={(e) => setEditingCommentContent(e.target.value)}
+                          className="min-h-[60px] text-sm resize-none flex-1"
+                        />
+                        <div className="flex flex-col gap-1">
+                          <Button
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => handleEditComment(comment.id)}
+                          >
+                            <Save className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => {
+                              setEditingCommentId(null);
+                              setEditingCommentContent('');
+                            }}
+                          >
+                            <X className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <p className="text-sm">{comment.content}</p>
+                    )}
                   </div>
                 );
               })
