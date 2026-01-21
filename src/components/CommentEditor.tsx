@@ -2,7 +2,7 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
-import { Bold, Italic, Underline as UnderlineIcon, Link as LinkIcon } from 'lucide-react';
+import { Bold, Italic, Underline as UnderlineIcon, Link as LinkIcon, List, ListOrdered } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
@@ -81,9 +81,22 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(({
         return false;
       },
       handlePaste: (view, event) => {
-        // Check if we have HTML content - if so, let TipTap handle it natively
+        // Check if we have HTML content
         const htmlContent = event.clipboardData?.getData('text/html');
         if (htmlContent && htmlContent.includes('<')) {
+          // Convert ordered lists to unordered lists in HTML
+          if (htmlContent.includes('<ol') || htmlContent.includes('<OL')) {
+            event.preventDefault();
+            const convertedHtml = htmlContent
+              .replace(/<ol([^>]*)>/gi, '<ul$1>')
+              .replace(/<\/ol>/gi, '</ul>');
+            
+            const editorInstance = (view as any).editor;
+            if (editorInstance) {
+              editorInstance.chain().focus().insertContent(convertedHtml).run();
+              return true;
+            }
+          }
           return false; // Let TipTap handle HTML paste natively
         }
         
@@ -135,9 +148,10 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(({
               }
               currentList.push(trimmed.replace(bulletPattern, '').replace(dashPattern, '').trim());
             } else if (numberedPattern.test(line)) {
-              if (listType !== 'ol') {
+              // Convert numbered lists to bullet points by default
+              if (listType !== 'ul') {
                 flushList();
-                listType = 'ol';
+                listType = 'ul';
               }
               currentList.push(trimmed.replace(numberedPattern, '').trim());
             } else {
@@ -235,6 +249,31 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(({
           title="Underline (Ctrl+U)"
         >
           <UnderlineIcon className="h-3 w-3" />
+        </Button>
+        
+        <div className="w-px h-4 bg-border mx-0.5" />
+        
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={`h-6 w-6 p-0 ${editor.isActive('bulletList') ? 'bg-muted' : ''}`}
+          onClick={() => editor.chain().focus().toggleBulletList().run()}
+          disabled={disabled}
+          title="Bullet List"
+        >
+          <List className="h-3 w-3" />
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className={`h-6 w-6 p-0 ${editor.isActive('orderedList') ? 'bg-muted' : ''}`}
+          onClick={() => editor.chain().focus().toggleOrderedList().run()}
+          disabled={disabled}
+          title="Numbered List"
+        >
+          <ListOrdered className="h-3 w-3" />
         </Button>
         
         <div className="w-px h-4 bg-border mx-0.5" />
