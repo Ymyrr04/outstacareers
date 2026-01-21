@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, MessageCircle } from 'lucide-react';
+import { Plus, MessageCircle, Check } from 'lucide-react';
 import { AddHiringRequestDialog } from './AddHiringRequestDialog';
 import { HiringRequestDetailDialog } from './HiringRequestDetailDialog';
 import { supabase } from '@/integrations/supabase/client';
@@ -102,9 +102,11 @@ interface KanbanCardProps {
   index: number;
   onClick: () => void;
   adminUsers: AdminUser[];
+  onComplete: (id: string) => void;
 }
 
-const KanbanCard = ({ request, index, onClick, adminUsers }: KanbanCardProps) => {
+const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanCardProps) => {
+  const isClosed = request.pipeline_stage === 'closed';
   const assignee = adminUsers.find(a => a.user_id === request.assigned_admin_id);
   const assigneeInitial = assignee?.email?.charAt(0).toUpperCase() || '?';
   const assigneeName = getDisplayName(assignee?.email);
@@ -142,7 +144,25 @@ const KanbanCard = ({ request, index, onClick, adminUsers }: KanbanCardProps) =>
         >
           {/* Title with job role */}
           <div className="flex items-start gap-2 mb-2">
-            <div className="w-4 h-4 rounded-full border-2 border-muted-foreground/30 flex-shrink-0 mt-0.5" />
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (!isClosed) {
+                  onComplete(request.id);
+                }
+              }}
+              className={`
+                w-4 h-4 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center
+                transition-all duration-150
+                ${isClosed 
+                  ? 'bg-green-500 border-green-500 text-white' 
+                  : 'border-muted-foreground/30 hover:border-primary hover:bg-primary/10'
+                }
+              `}
+              title={isClosed ? 'Completed' : 'Mark as complete'}
+            >
+              {isClosed && <Check className="w-3 h-3" strokeWidth={3} />}
+            </button>
             <p className="text-sm font-medium leading-tight">
               {request.client_name} {'{' + request.job_title + '}'}
               {request.source && (
@@ -248,6 +268,11 @@ export const HiringPipelineKanban = () => {
     setAddDialogOpen(true);
   };
 
+  const handleCompleteTask = (id: string) => {
+    setCelebrationGif(getRandomGif());
+    updateStage(id, 'closed');
+  };
+
   if (loading) {
     return (
       <div className="flex gap-4 p-4 overflow-x-auto">
@@ -305,6 +330,7 @@ export const HiringPipelineKanban = () => {
                           index={index}
                           onClick={() => setSelectedRequest(request)}
                           adminUsers={adminUsers}
+                          onComplete={handleCompleteTask}
                         />
                       ))}
                       {provided.placeholder}
