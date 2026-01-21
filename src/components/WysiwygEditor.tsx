@@ -68,12 +68,24 @@ export function WysiwygEditor({
       const start = view.coordsAtPos(from);
       const end = view.coordsAtPos(to);
       
-      // Position above the selection, centered
+      // Position above the selection, centered horizontally
       if (editorRef.current) {
         const editorRect = editorRef.current.getBoundingClientRect();
-        const top = start.top - editorRect.top - 45; // 45px above selection
-        const left = (start.left + end.left) / 2 - editorRect.left;
-        setBubbleMenuPos({ top, left });
+        
+        // Calculate center of selection in viewport coords
+        const selectionCenterX = (start.left + end.right) / 2;
+        
+        // Convert to relative position within editor
+        let left = selectionCenterX - editorRect.left;
+        
+        // Clamp to stay within editor bounds (with padding for menu width ~200px)
+        const menuHalfWidth = 120;
+        left = Math.max(menuHalfWidth, Math.min(left, editorRect.width - menuHalfWidth));
+        
+        // Position above the selection top
+        const top = start.top - editorRect.top - 45;
+        
+        setBubbleMenuPos({ top: Math.max(0, top), left });
       }
     },
     editorProps: {
