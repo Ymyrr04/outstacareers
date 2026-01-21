@@ -60,9 +60,23 @@ export function WysiwygEditor({
         style: `min-height: ${minHeight}`,
       },
       handlePaste: (view, event) => {
-        // Check if we have HTML content - if so, let TipTap handle it natively
+        // Check if we have HTML content
         const htmlContent = event.clipboardData?.getData('text/html');
         if (htmlContent && htmlContent.includes('<')) {
+          // Convert ordered lists to unordered lists in HTML
+          if (htmlContent.includes('<ol') || htmlContent.includes('<OL')) {
+            event.preventDefault();
+            // Replace <ol> with <ul> and </ol> with </ul>
+            const convertedHtml = htmlContent
+              .replace(/<ol([^>]*)>/gi, '<ul$1>')
+              .replace(/<\/ol>/gi, '</ul>');
+            
+            const editor = (view as any).editor;
+            if (editor) {
+              editor.chain().focus().insertContent(convertedHtml).run();
+              return true;
+            }
+          }
           return false; // Let TipTap handle HTML paste natively
         }
         
