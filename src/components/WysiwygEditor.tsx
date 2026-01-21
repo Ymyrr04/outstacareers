@@ -28,6 +28,7 @@ export function WysiwygEditor({
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
   const [bubbleMenuPos, setBubbleMenuPos] = useState<{ top: number; left: number } | null>(null);
   const [hasSelection, setHasSelection] = useState(false);
+  const [isHoveringMenu, setIsHoveringMenu] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
   const mousePos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
@@ -36,8 +37,8 @@ export function WysiwygEditor({
     const handleMouseMove = (e: MouseEvent) => {
       mousePos.current = { x: e.clientX, y: e.clientY };
       
-      // Update bubble menu position if there's a selection
-      if (hasSelection && editorRef.current) {
+      // Only update position if there's a selection AND not hovering over the menu
+      if (hasSelection && !isHoveringMenu && editorRef.current) {
         const editorRect = editorRef.current.getBoundingClientRect();
         
         // Position relative to editor, centered on mouse X
@@ -54,7 +55,7 @@ export function WysiwygEditor({
 
     document.addEventListener('mousemove', handleMouseMove);
     return () => document.removeEventListener('mousemove', handleMouseMove);
-  }, [hasSelection]);
+  }, [hasSelection, isHoveringMenu]);
 
   const editor = useEditor({
     extensions: [
@@ -257,6 +258,9 @@ export function WysiwygEditor({
             left: bubbleMenuPos.left,
             transform: 'translateX(-50%)',
           }}
+          onMouseEnter={() => setIsHoveringMenu(true)}
+          onMouseLeave={() => setIsHoveringMenu(false)}
+          onMouseDown={(e) => e.preventDefault()} // Prevent losing selection when clicking toolbar
         >
           <Button
             type="button"
