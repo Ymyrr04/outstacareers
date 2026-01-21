@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
-import { format } from 'date-fns';
+import { format, addMinutes } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -52,7 +52,7 @@ import { SendEmailDialog } from '@/components/SendEmailDialog';
 import { CheckAvailabilityButton } from '@/components/CheckAvailabilityButton';
 import { ApplicantSourceBadge } from '@/components/ApplicantSourceBadge';
 import { InterviewInviteDialog } from '@/components/InterviewInviteDialog';
-import { useUnreadMessageCounts } from '@/hooks/useEmailTemplates';
+import { useUnreadMessageCounts, useEmailTemplates, statusToTrigger } from '@/hooks/useEmailTemplates';
 import { CVImagePreview } from '@/components/CVImagePreview';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
 import { ApplicantNotesEditor, ApplicantNotesEditorRef } from '@/components/ApplicantNotesEditor';
@@ -140,7 +140,7 @@ export const MyApplicantsDashboard = () => {
   
   // Communication state
   const [communicationHistoryApplicant, setCommunicationHistoryApplicant] = useState<{ id: string; name: string; email: string } | null>(null);
-  const [sendEmailApplicant, setSendEmailApplicant] = useState<{ id: string; full_name: string; email: string; job_title: string; status: string } | null>(null);
+  const [sendEmailApplicant, setSendEmailApplicant] = useState<{ id: string; full_name: string; email: string; job_title: string; status: string; preselectedTemplate?: string } | null>(null);
   const [interviewInviteApplicant, setInterviewInviteApplicant] = useState<{ full_name: string; email: string; job_title: string } | null>(null);
   
   // Expanded view state
@@ -155,6 +155,7 @@ export const MyApplicantsDashboard = () => {
   const expandedRowRef = useRef<HTMLTableRowElement>(null);
   
   const { unreadCounts, markAsRead: markMessagesAsRead } = useUnreadMessageCounts();
+  const { templates, getTemplateByTrigger } = useEmailTemplates();
 
   // Handle Escape key and click-outside to close expanded row
   useEffect(() => {
@@ -413,8 +414,11 @@ export const MyApplicantsDashboard = () => {
     return counts;
   }, [applicants, filteredJobs, selectedJobFilter]);
 
-  // Handle status change
+  // Handle status change with email automation (same as Applicants tab)
   const handleStatusChange = async (applicantId: string, newStatus: string) => {
+    const applicant = applicants.find(a => a.id === applicantId);
+    if (!applicant) return;
+
     const { error } = await supabase
       .from('applicants_prescreen')
       .update({ status: newStatus })
@@ -430,7 +434,84 @@ export const MyApplicantsDashboard = () => {
       setApplicants(prev =>
         prev.map(a => (a.id === applicantId ? { ...a, status: newStatus } : a))
       );
-      toast({ title: 'Status updated' });
+      toast({
+        title: 'Status Updated',
+        description: `Applicant moved to "${newStatus}"`,
+      });
+
+      // Send automated email if template is enabled
+      const trigger = statusToTrigger[newStatus];
+      if (trigger) {
+        const template = getTemplateByTrigger(trigger);
+        if (template && template.is_enabled) {
+          // Process template variables - extract first name from full name
+          const firstName = applicant.full_name.split(' ')[0];
+          
+          let processedSubject = template.subject
+            .replace(/\{\{applicant_name\}\}/g, applicant.full_name)
+            .replace(/\{\{first_name\}\}/g, firstName)
+            .replace(/\{\{full_name\}\}/g, applicant.full_name)
+            .replace(/\{\{job_title\}\}/g, applicant.job_title);
+          
+          let processedBody = template.body_html
+            .replace(/\{\{applicant_name\}\}/g, applicant.full_name)
+            .replace(/\{\{first_name\}\}/g, firstName)
+            .replace(/\{\{full_name\}\}/g, applicant.full_name)
+            .replace(/\{\{job_title\}\}/g, applicant.job_title);
+
+          // Calculate schedule time for delayed emails (like rejection)
+          // delay_hours stores minutes for consistency
+          let scheduleFor: string | undefined;
+          if (template.delay_hours > 0) {
+            scheduleFor = addMinutes(new Date(), template.delay_hours).toISOString();
+          }
+
+          // For interview or SIV status, open the email dialog instead of auto-sending
+          if (trigger === 'for_interview' || trigger === 'siv') {
+            setSendEmailApplicant({
+              id: applicant.id,
+              full_name: applicant.full_name,
+              email: applicant.email,
+              job_title: applicant.job_title,
+              status: newStatus,
+              preselectedTemplate: trigger,
+            });
+            return;
+          }
+
+          // Send email
+          try {
+            const { data, error: emailError } = await supabase.functions.invoke('send-applicant-email', {
+              body: {
+                applicantId: applicant.id,
+                templateId: template.id,
+                subject: processedSubject,
+                bodyHtml: processedBody,
+                recipientEmail: applicant.email,
+                applicantStatusAtSend: newStatus,
+                isAutomated: true,
+                scheduleFor,
+              },
+            });
+
+            if (emailError) throw emailError;
+
+            toast({
+              title: data.scheduled ? 'Email Scheduled' : 'Email Sent',
+              description: data.scheduled 
+                ? `Email scheduled for ${applicant.email}`
+                : `Automated email sent to ${applicant.email}`,
+            });
+          } catch (emailErr: any) {
+            console.error('Failed to send automated email:', emailErr);
+            toast({
+              title: 'Email Failed',
+              description: 'Status updated but email failed to send',
+              variant: 'destructive',
+            });
+          }
+        }
+      }
     }
   };
 
@@ -1348,6 +1429,7 @@ export const MyApplicantsDashboard = () => {
             job_title: sendEmailApplicant.job_title,
             status: sendEmailApplicant.status,
           }}
+          preselectedTemplate={sendEmailApplicant.preselectedTemplate}
         />
       )}
 
