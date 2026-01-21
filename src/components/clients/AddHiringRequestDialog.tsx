@@ -21,6 +21,11 @@ interface ContractorJobTitle {
   job_title: string | null;
 }
 
+interface AdminUser {
+  user_id: string;
+  email: string;
+}
+
 interface AddHiringRequestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -48,6 +53,7 @@ export const AddHiringRequestDialog = ({
 }: AddHiringRequestDialogProps) => {
   const { createRequest } = useHiringRequests();
   const [clients, setClients] = useState<Client[]>([]);
+  const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showAddClient, setShowAddClient] = useState(false);
@@ -63,14 +69,23 @@ export const AddHiringRequestDialog = ({
     start_date: '',
     target_end_date: '',
     notes: '',
+    assigned_admin_id: '',
   });
 
   useEffect(() => {
     if (open) {
       setFormData(prev => ({ ...prev, pipeline_stage: defaultStage }));
       fetchClients();
+      fetchAdminUsers();
     }
   }, [open, defaultStage]);
+
+  const fetchAdminUsers = async () => {
+    const { data, error } = await supabase.functions.invoke('get-admin-users');
+    if (!error && data?.adminUsers) {
+      setAdminUsers(data.adminUsers);
+    }
+  };
 
   const fetchClients = async () => {
     setLoading(true);
@@ -153,6 +168,7 @@ export const AddHiringRequestDialog = ({
       start_date: formData.start_date || null,
       target_end_date: formData.target_end_date || null,
       notes: formData.notes.trim() || null,
+      assigned_admin_id: formData.assigned_admin_id || null,
     });
 
     setSaving(false);
@@ -172,6 +188,7 @@ export const AddHiringRequestDialog = ({
         start_date: '',
         target_end_date: '',
         notes: '',
+        assigned_admin_id: '',
       });
     }
   };
@@ -296,13 +313,33 @@ export const AddHiringRequestDialog = ({
               </Select>
             </div>
 
+            {/* Assignee */}
+            <div>
+              <Label>Assignee</Label>
+              <Select 
+                value={formData.assigned_admin_id} 
+                onValueChange={(v) => setFormData(prev => ({ ...prev, assigned_admin_id: v }))}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select admin..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {adminUsers.map(admin => (
+                    <SelectItem key={admin.user_id} value={admin.user_id}>
+                      {admin.email}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
             {/* Source */}
-            <div className="col-span-2">
+            <div>
               <Label>Source / Referral</Label>
               <Input
                 value={formData.source}
                 onChange={(e) => setFormData(prev => ({ ...prev, source: e.target.value }))}
-                placeholder="e.g., BNI Revival, Adam W, LinkedIn"
+                placeholder="e.g., BNI, LinkedIn"
               />
             </div>
 
