@@ -35,6 +35,21 @@ const getIndustryClass = (industry: string | null): string => {
   return INDUSTRY_COLORS[industry] || 'bg-muted text-muted-foreground';
 };
 
+// Map emails to display names
+const EMAIL_TO_NAME: Record<string, string> = {
+  'czarina@outsta.io': 'Czarina',
+  'kristine@outsta.io': 'Kristine',
+  'eduardo@outsta.io': 'Eduardo',
+  'mark@outsta.io': 'Mark',
+  'liezl@outsta.io': 'Liezl',
+};
+
+const getDisplayName = (email: string | undefined): string => {
+  if (!email) return 'Unassigned';
+  const lowerEmail = email.toLowerCase();
+  return EMAIL_TO_NAME[lowerEmail] || email.split('@')[0];
+};
+
 interface KanbanCardProps {
   request: HiringRequest;
   index: number;
@@ -45,7 +60,7 @@ interface KanbanCardProps {
 const KanbanCard = ({ request, index, onClick, adminUsers }: KanbanCardProps) => {
   const assignee = adminUsers.find(a => a.user_id === request.assigned_admin_id);
   const assigneeInitial = assignee?.email?.charAt(0).toUpperCase() || '?';
-  const assigneeName = assignee?.email?.split('@')[0] || 'Unassigned';
+  const assigneeName = getDisplayName(assignee?.email);
   const formatDateRange = () => {
     if (!request.start_date && !request.target_end_date) return null;
     
@@ -107,31 +122,36 @@ const KanbanCard = ({ request, index, onClick, adminUsers }: KanbanCardProps) =>
             </Badge>
           </div>
 
-          {/* Footer with avatar, date, and comment count */}
+          {/* Footer with avatar, name, date, and comment count */}
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <div className="flex items-center gap-2">
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Avatar className="h-5 w-5 cursor-default">
-                    <AvatarFallback className={`text-[10px] ${assignee ? 'bg-primary/20 text-primary' : 'bg-muted'}`}>
-                      {assigneeInitial}
-                    </AvatarFallback>
-                  </Avatar>
+                  <div className="flex items-center gap-1.5 cursor-default">
+                    <Avatar className="h-5 w-5">
+                      <AvatarFallback className={`text-[10px] ${assignee ? 'bg-primary/20 text-primary' : 'bg-muted'}`}>
+                        {assigneeInitial}
+                      </AvatarFallback>
+                    </Avatar>
+                    <span className={assignee ? 'text-foreground' : ''}>{assigneeName}</span>
+                  </div>
                 </TooltipTrigger>
                 <TooltipContent side="bottom" className="text-xs">
                   {assignee ? assignee.email : 'Unassigned'}
                 </TooltipContent>
               </Tooltip>
+            </div>
+            <div className="flex items-center gap-2">
               {dateRange && (
                 <span className="text-primary">{dateRange}</span>
               )}
+              {request.comment_count > 0 && (
+                <div className="flex items-center gap-1">
+                  {request.comment_count}
+                  <MessageCircle className="w-3 h-3" />
+                </div>
+              )}
             </div>
-            {request.comment_count > 0 && (
-              <div className="flex items-center gap-1">
-                {request.comment_count}
-                <MessageCircle className="w-3 h-3" />
-              </div>
-            )}
           </div>
         </div>
       )}
