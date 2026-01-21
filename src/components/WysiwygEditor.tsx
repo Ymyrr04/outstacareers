@@ -32,12 +32,18 @@ export function WysiwygEditor({
   const [isHoveringMenu, setIsHoveringMenu] = useState(false);
   const [isMouseDown, setIsMouseDown] = useState(false);
   const editorRef = useRef<HTMLDivElement>(null);
+  const bubbleMenuRef = useRef<HTMLDivElement>(null);
   const mousePos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Track mouse down/up to show toolbar only after selection is complete
   useEffect(() => {
-    const handleMouseDown = () => {
+    const handleMouseDown = (e: MouseEvent) => {
+      // Don't hide menu if clicking inside it
+      if (bubbleMenuRef.current && bubbleMenuRef.current.contains(e.target as Node)) {
+        return;
+      }
+      
       setIsMouseDown(true);
       setShowBubbleMenu(false);
       if (showTimeoutRef.current) {
@@ -291,6 +297,7 @@ export function WysiwygEditor({
       {/* Floating Bubble Menu - appears when text is selected and mouse is released */}
       {showBubbleMenu && bubbleMenuPos && (
         <div 
+          ref={bubbleMenuRef}
           className="absolute z-50 flex items-center gap-0.5 p-1 bg-background border rounded-lg shadow-lg animate-fade-in"
           style={{ 
             top: bubbleMenuPos.top, 
