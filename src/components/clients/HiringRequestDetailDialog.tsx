@@ -788,62 +788,71 @@ export const HiringRequestDetailDialog = ({
               })
             )}
           </div>
-
-          {/* Add Comment */}
-          <div className="flex gap-2">
-            <Textarea
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              placeholder="Add a comment..."
-              className="min-h-[60px] text-sm resize-none"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
-                  handleAddComment();
-                }
-              }}
-            />
-            <Button 
-              size="icon" 
-              onClick={handleAddComment}
-              disabled={!newComment.trim() || addingComment}
-              className="shrink-0"
-            >
-              {addingComment ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-            </Button>
-          </div>
-          <p className="text-xs text-muted-foreground mt-1">Press Ctrl+Enter to send</p>
         </div>
         </div>
 
-        {/* Footer */}
-        <div className="flex items-center justify-between p-4 border-t bg-muted/20 shrink-0">
-          <div className="text-xs text-muted-foreground">
-            Created: {format(new Date(request.created_at), 'MMM d, yyyy h:mm a')}
+        {/* Sticky Add Comment + Footer */}
+        <div className="shrink-0 border-t bg-background">
+          {/* Add Comment - Always visible */}
+          <div className="p-3 border-b">
+            <div className="flex gap-2 items-center">
+              <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <span className="text-xs font-medium text-primary">
+                  {user?.email?.charAt(0).toUpperCase() || 'U'}
+                </span>
+              </div>
+              <Input
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                placeholder="Add a comment..."
+                className="flex-1 h-9"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                    handleAddComment();
+                  }
+                }}
+              />
+              <Button 
+                size="icon" 
+                onClick={handleAddComment}
+                disabled={!newComment.trim() || addingComment}
+                className="shrink-0 h-9 w-9"
+              >
+                {addingComment ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+              </Button>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {saving && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="destructive" size="sm" disabled={deleting}>
-                  {deleting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
-                  Delete
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>Delete Hiring Request?</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    This will permanently delete "{request.client_name} - {request.job_title}". This action cannot be undone.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>Cancel</AlertDialogCancel>
-                  <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+
+          {/* Footer */}
+          <div className="flex items-center justify-between px-4 py-3 bg-muted/20">
+            <div className="text-xs text-muted-foreground">
+              Created: {format(new Date(request.created_at), 'MMM d, yyyy h:mm a')}
+            </div>
+            <div className="flex items-center gap-2">
+              {saving && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="destructive" size="sm" disabled={deleting}>
+                    {deleting ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Trash2 className="w-4 h-4 mr-2" />}
                     Delete
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Hiring Request?</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      This will permanently delete "{request.client_name} - {request.job_title}". This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction onClick={handleDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
         </div>
       </DialogContent>
