@@ -32,33 +32,62 @@ import { AddPipelineStageDialog } from './AddPipelineStageDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-// Celebration video URL
+// Celebration GIFs pool
+const CELEBRATION_GIFS = [
+  'https://media.giphy.com/media/26u4cqiYI30juCOGY/giphy.gif', // Confetti
+  'https://media.giphy.com/media/artj92V8o75VPL7AeQ/giphy.gif', // Party popper
+  'https://media.giphy.com/media/xT0GqssRweIhlz209i/giphy.gif', // Checkmark
+  'https://media.giphy.com/media/l0MYt5jPR6QX5pnqM/giphy.gif', // Dancing
+  'https://media.giphy.com/media/26tOZ42Mg6pbTUPHW/giphy.gif', // Fireworks
+  'https://media.giphy.com/media/111ebonMs90YLu/giphy.gif', // Thumbs up
+  'https://media.giphy.com/media/l3q2XhfQ8oCkm1Ts4/giphy.gif', // Clapping
+  'https://media.giphy.com/media/3oz8xRF0v9WMAUVLNK/giphy.gif', // Star burst
+];
+
+const getRandomGif = () => CELEBRATION_GIFS[Math.floor(Math.random() * CELEBRATION_GIFS.length)];
+
+// Celebration video URL (used when multiple closures in an hour)
 const CELEBRATION_VIDEO = '/videos/celebration.mp4';
 
-// Celebration Popup component with video
-const CelebrationPopup = ({ show, onComplete }: { show: boolean; onComplete: () => void }) => {
+// Celebration Popup component - shows GIF or video based on streak
+const CelebrationPopup = ({ 
+  mediaUrl, 
+  isVideo, 
+  onComplete 
+}: { 
+  mediaUrl: string | null; 
+  isVideo: boolean;
+  onComplete: () => void;
+}) => {
   useEffect(() => {
-    if (show) {
+    if (mediaUrl) {
       const timer = setTimeout(() => {
         onComplete();
-      }, 4000); // Slightly longer for video
+      }, isVideo ? 4000 : 2500);
       return () => clearTimeout(timer);
     }
-  }, [show, onComplete]);
+  }, [mediaUrl, isVideo, onComplete]);
 
-  if (!show) return null;
+  if (!mediaUrl) return null;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
       <div className="animate-scale-in">
         <div className="relative">
-          {/* Celebration Video */}
-          <video 
-            src={CELEBRATION_VIDEO}
-            autoPlay
-            playsInline
-            className="w-80 h-80 object-contain drop-shadow-2xl rounded-lg"
-          />
+          {isVideo ? (
+            <video 
+              src={mediaUrl}
+              autoPlay
+              playsInline
+              className="w-80 h-80 object-contain drop-shadow-2xl rounded-lg"
+            />
+          ) : (
+            <img 
+              src={mediaUrl} 
+              alt="Celebration" 
+              className="w-64 h-64 object-contain drop-shadow-2xl"
+            />
+          )}
           {/* Success message */}
           <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-green-500 text-white px-4 py-2 rounded-full font-bold text-lg shadow-lg animate-fade-in whitespace-nowrap">
             🎉 Task Completed!
@@ -254,7 +283,9 @@ export const HiringPipelineKanban = () => {
   const [selectedRequest, setSelectedRequest] = useState<HiringRequest | null>(null);
   const [addToStage, setAddToStage] = useState<string>('backlog');
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
-  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationMedia, setCelebrationMedia] = useState<string | null>(null);
+  const [isVideoMode, setIsVideoMode] = useState(false);
+  const [closureTimestamps, setClosureTimestamps] = useState<number[]>([]);
   const { toast } = useToast();
   
   const loading = requestsLoading || stagesLoading;
@@ -285,7 +316,7 @@ export const HiringPipelineKanban = () => {
 
     // Show celebration when moving to closed
     if (destStage === 'closed' && sourceStage !== 'closed') {
-      setShowCelebration(true);
+      triggerCelebration();
     }
 
     updateStage(result.draggableId, destStage);
@@ -296,8 +327,28 @@ export const HiringPipelineKanban = () => {
     setAddDialogOpen(true);
   };
 
+  // Trigger celebration with GIF or video based on hourly closures
+  const triggerCelebration = () => {
+    const now = Date.now();
+    const oneHourAgo = now - 60 * 60 * 1000;
+    
+    // Filter timestamps within the last hour and add the new one
+    const recentClosures = closureTimestamps.filter(t => t > oneHourAgo);
+    const updatedClosures = [...recentClosures, now];
+    setClosureTimestamps(updatedClosures);
+    
+    // If more than 1 closure in the hour, show video; otherwise show GIF
+    if (updatedClosures.length > 1) {
+      setCelebrationMedia(CELEBRATION_VIDEO);
+      setIsVideoMode(true);
+    } else {
+      setCelebrationMedia(getRandomGif());
+      setIsVideoMode(false);
+    }
+  };
+
   const handleCompleteTask = (id: string) => {
-    setShowCelebration(true);
+    triggerCelebration();
     updateStage(id, 'closed');
   };
 
@@ -434,8 +485,9 @@ export const HiringPipelineKanban = () => {
 
       {/* Celebration Popup */}
       <CelebrationPopup 
-        show={showCelebration} 
-        onComplete={() => setShowCelebration(false)} 
+        mediaUrl={celebrationMedia}
+        isVideo={isVideoMode}
+        onComplete={() => setCelebrationMedia(null)} 
       />
     </>
   );
