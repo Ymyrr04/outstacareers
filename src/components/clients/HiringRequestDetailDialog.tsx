@@ -637,13 +637,13 @@ export const HiringRequestDetailDialog = ({
                   <SelectTrigger className="border-0 bg-transparent h-auto p-0 hover:bg-transparent focus:ring-0">
                     {formData.assigned_admin_id ? (
                       <Badge variant="outline" className="font-normal flex items-center gap-1.5 pr-2">
-                        <Avatar className="h-5 w-5">
+                        <Avatar className="h-6 w-6">
                           {(() => {
                             const email = adminUsers.find(a => a.user_id === formData.assigned_admin_id)?.email?.toLowerCase();
                             const avatar = email ? ADMIN_AVATARS[email] : undefined;
                             return avatar ? <AvatarImage src={avatar} alt="" /> : null;
                           })()}
-                          <AvatarFallback className="text-[10px] bg-primary/20 text-primary">
+                          <AvatarFallback className="text-xs bg-blue-500 text-white">
                             {getAdminDisplayName(adminUsers.find(a => a.user_id === formData.assigned_admin_id)?.email, 'U').charAt(0)}
                           </AvatarFallback>
                         </Avatar>
@@ -760,11 +760,11 @@ export const HiringRequestDetailDialog = ({
                   <div key={comment.id} className="bg-muted/30 rounded-lg p-3">
                     <div className="flex items-center justify-between mb-1">
                       <div className="flex items-center gap-2">
-                        <Avatar className="h-6 w-6">
+                        <Avatar className="h-7 w-7">
                           {commenterAvatar ? (
                             <AvatarImage src={commenterAvatar} alt={commenterName} />
                           ) : null}
-                          <AvatarFallback className="text-xs bg-primary/20 text-primary">
+                          <AvatarFallback className="text-xs bg-blue-500 text-white">
                             {commenterInitial}
                           </AvatarFallback>
                         </Avatar>
