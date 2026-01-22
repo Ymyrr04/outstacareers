@@ -284,19 +284,43 @@ export const AddHiringRequestDialog = ({
             {/* Industry */}
             <div>
               <Label>Industry</Label>
-              <Select 
-                value={formData.industry} 
-                onValueChange={(v) => setFormData(prev => ({ ...prev, industry: v }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Select..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {INDUSTRIES.map(industry => (
-                    <SelectItem key={industry} value={industry}>{industry}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {formData.industry === '__custom__' || (formData.industry && !INDUSTRIES.includes(formData.industry)) ? (
+                <div className="flex gap-2">
+                  <Input
+                    value={formData.industry === '__custom__' ? '' : formData.industry}
+                    onChange={(e) => setFormData(prev => ({ ...prev, industry: e.target.value }))}
+                    placeholder="Enter industry..."
+                    autoFocus
+                  />
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setFormData(prev => ({ ...prev, industry: '' }))}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Select 
+                  value={formData.industry} 
+                  onValueChange={(v) => setFormData(prev => ({ ...prev, industry: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {INDUSTRIES.map(industry => (
+                      <SelectItem key={industry} value={industry}>{industry}</SelectItem>
+                    ))}
+                    <SelectItem value="__custom__" className="text-primary font-medium">
+                      <span className="flex items-center gap-1">
+                        <Plus className="w-3 h-3" /> Add Other
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             {/* Pipeline Stage */}
