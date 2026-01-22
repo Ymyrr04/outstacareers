@@ -79,9 +79,11 @@ export const ClientAnalyticsDashboard = () => {
   const [roleSortField, setRoleSortField] = useState<SortField>('hired');
   const [roleSortDir, setRoleSortDir] = useState<SortDirection>('desc');
 
+  const [hiringRequests, setHiringRequests] = useState<{ client_status: string }[]>([]);
+
   const fetchData = useCallback(async () => {
     try {
-      const [contractorsRes, clientsRes, applicantsRes] = await Promise.all([
+      const [contractorsRes, clientsRes, applicantsRes, hiringRequestsRes] = await Promise.all([
         supabase
           .from('contractor_assignments')
           .select(`*, country, client:clients(id, company_name, industry)`),
@@ -92,6 +94,10 @@ export const ClientAnalyticsDashboard = () => {
           .from('applicants_prescreen')
           .select('job_source, full_name, job_title, email')
           .neq('job_source', 'Contractor Import'),
+        supabase
+          .from('client_hiring_requests')
+          .select('client_status')
+          .neq('pipeline_stage', 'closed'),
       ]);
 
       if (contractorsRes.error) throw contractorsRes.error;
@@ -99,6 +105,7 @@ export const ClientAnalyticsDashboard = () => {
 
       setContractors(contractorsRes.data || []);
       setClients(clientsRes.data || []);
+      setHiringRequests(hiringRequestsRes.data || []);
 
       // Calculate application source stats with deduplication
       if (!applicantsRes.error && applicantsRes.data) {
@@ -183,9 +190,19 @@ export const ClientAnalyticsDashboard = () => {
       )
       .subscribe();
 
+    const hiringRequestsChannel = supabase
+      .channel('analytics-hiring-requests')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'client_hiring_requests' },
+        () => fetchData()
+      )
+      .subscribe();
+
     return () => {
       supabase.removeChannel(contractorsChannel);
       supabase.removeChannel(clientsChannel);
+      supabase.removeChannel(hiringRequestsChannel);
     };
   }, [fetchData]);
 
@@ -435,7 +452,9 @@ export const ClientAnalyticsDashboard = () => {
   
   const clientsLost = clients.filter(c => !clientsWithActiveContractors.has(c.id) && !c.is_hiring).length;
   
-  const newClientsHiring = clients.filter(c => c.is_hiring === true).length;
+  // Count hiring requests by client_status from pipeline (excluding closed)
+  const newClientsHiring = hiringRequests.filter(r => r.client_status === 'new').length;
+  const existingClientsHiring = hiringRequests.filter(r => r.client_status === 'existing' || r.client_status === 'returning').length;
 
   // Sort handlers for retention tables
   const handleCompanySort = (field: SortField) => {
@@ -1024,12 +1043,25 @@ export const ClientAnalyticsDashboard = () => {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
+              <div className="p-2 bg-amber-500/10 rounded-lg">
+                <UserPlus className="w-5 h-5 text-amber-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{newClientsHiring || 0}</p>
+                <p className="text-sm text-muted-foreground">New Client (Hiring)</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
               <div className="p-2 bg-purple-500/10 rounded-lg">
                 <Building2 className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{newClientsHiring || 0}</p>
-                <p className="text-sm text-muted-foreground">Clients Hiring</p>
+                <p className="text-2xl font-bold">{existingClientsHiring || 0}</p>
+                <p className="text-sm text-muted-foreground">Existing Client (Hiring)</p>
               </div>
             </div>
           </CardContent>
