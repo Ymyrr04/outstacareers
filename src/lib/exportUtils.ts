@@ -61,9 +61,14 @@ export const exportJobs = async (): Promise<{ success: boolean; count: number; e
   }
 };
 
-// Export Applicants
-export const exportApplicants = async (): Promise<{ success: boolean; count: number; error?: string }> => {
+// Export Applicants (optionally with CVs)
+export const exportApplicants = async (options?: { 
+  includeCVs?: boolean;
+  onProgress?: (step: string) => void;
+}): Promise<{ success: boolean; count: number; error?: string }> => {
   try {
+    options?.onProgress?.('Fetching applicants...');
+    
     const { data, error } = await supabase
       .from('applicants_prescreen')
       .select('*')
@@ -76,8 +81,98 @@ export const exportApplicants = async (): Promise<{ success: boolean; count: num
       'Start Availability', 'Years Experience', 'Total Score', 'AI Summary',
       'Home Office', 'Noise Canceling Headset', 'Laptop/PC', 'Good Internet', 
       'Internet Speed', 'Power Backup', 'Can Work 40-50 hrs', 'US Timezone OK',
-      'Currently Working', 'Has Experience', 'Job Source', 'Submitted At', 'Notes'
+      'Currently Working', 'Has Experience', 'Job Source', 'Submitted At', 'Notes',
+      ...(options?.includeCVs ? ['CV Filename'] : [])
     ];
+    
+    const applicantsWithCVs = (data || []).filter(a => a.cv_file_url);
+    
+    // If including CVs, create a ZIP
+    if (options?.includeCVs && applicantsWithCVs.length > 0) {
+      const zip = new JSZip();
+      const dateStr = new Date().toISOString().split('T')[0];
+      const cvFolder = zip.folder('CVs');
+      
+      // Track CV filenames for the CSV
+      const cvFilenames: Record<string, string> = {};
+      
+      // Download CVs
+      let downloaded = 0;
+      for (const applicant of applicantsWithCVs) {
+        if (!applicant.cv_file_url) continue;
+        
+        options?.onProgress?.(`Downloading CVs... (${++downloaded}/${applicantsWithCVs.length})`);
+        
+        try {
+          // Extract path from URL or use as-is if already a path
+          let cvPath = applicant.cv_file_url;
+          if (cvPath.includes('/cv-uploads/')) {
+            cvPath = cvPath.split('/cv-uploads/').pop() || cvPath;
+          }
+          
+          const { data: fileData, error: downloadError } = await supabase.storage
+            .from('cv-uploads')
+            .download(cvPath);
+          
+          if (downloadError || !fileData) {
+            console.warn(`Failed to download CV for ${applicant.full_name}:`, downloadError);
+            continue;
+          }
+          
+          // Generate filename: "Name - JobTitle.ext"
+          const ext = cvPath.split('.').pop()?.toLowerCase() || 'pdf';
+          const safeName = applicant.full_name.replace(/[^a-zA-Z0-9 ]/g, '').trim();
+          const safeTitle = (applicant.job_title || 'Unknown').replace(/[^a-zA-Z0-9 ]/g, '').trim();
+          const filename = `${safeName} - ${safeTitle}.${ext}`;
+          
+          cvFilenames[applicant.id] = filename;
+          cvFolder?.file(filename, fileData);
+        } catch (err) {
+          console.warn(`Error processing CV for ${applicant.full_name}:`, err);
+        }
+      }
+      
+      options?.onProgress?.('Creating ZIP file...');
+      
+      // Create CSV with CV filename column
+      const rows = (data || []).map(a => [
+        a.full_name,
+        a.email,
+        a.phone,
+        a.whatsapp,
+        a.location,
+        a.job_title,
+        a.status,
+        a.start_availability,
+        a.years_of_experience,
+        a.total_score,
+        a.ai_summary,
+        a.home_office ? 'Yes' : 'No',
+        a.noise_canceling_headset ? 'Yes' : 'No',
+        a.laptop_or_pc ? 'Yes' : 'No',
+        a.good_internet ? 'Yes' : 'No',
+        a.internet_speed,
+        a.power_backup ? 'Yes' : 'No',
+        a.can_work_40_50 ? 'Yes' : 'No',
+        a.us_timezone_ok ? 'Yes' : 'No',
+        a.currently_working ? 'Yes' : 'No',
+        a.has_experience ? 'Yes' : 'No',
+        a.job_source,
+        a.submitted_at ? new Date(a.submitted_at).toLocaleString() : '',
+        a.notes,
+        cvFilenames[a.id] || '',
+      ]);
+      
+      const csv = generateCSV(headers, rows);
+      zip.file(`applicants_${dateStr}.csv`, csv);
+      
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      downloadFile(zipBlob, `applicants_with_cvs_${dateStr}.zip`, 'application/zip');
+      
+      return { success: true, count: data?.length || 0 };
+    }
+    
+    // Standard CSV export without CVs
     const rows = (data || []).map(a => [
       a.full_name,
       a.email,
