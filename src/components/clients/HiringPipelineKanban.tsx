@@ -46,8 +46,9 @@ const CELEBRATION_GIFS = [
 
 const getRandomGif = () => CELEBRATION_GIFS[Math.floor(Math.random() * CELEBRATION_GIFS.length)];
 
-// Celebration video URL (used when multiple closures in an hour)
-const CELEBRATION_VIDEO = '/videos/celebration.mp4';
+// Celebration video URLs
+const CELEBRATION_VIDEO_1 = '/videos/celebration.mp4';
+const CELEBRATION_VIDEO_2 = '/videos/celebration2.mp4';
 
 // Celebration Popup component - shows GIF or video based on streak
 const CelebrationPopup = ({ 
@@ -329,18 +330,25 @@ export const HiringPipelineKanban = () => {
     setAddDialogOpen(true);
   };
 
-  // Trigger celebration - alternates: GIF, Video, GIF, Video...
+  // Trigger celebration - cycles: GIF (1st), Video1 (2nd), Video2 (3rd), repeat...
   const triggerCelebration = () => {
     const newCount = closureCount + 1;
     setClosureCount(newCount);
     
-    // Every 2nd closure plays the video (2, 4, 6, 8...)
-    if (newCount % 2 === 0) {
-      setCelebrationMedia(CELEBRATION_VIDEO);
-      setIsVideoMode(true);
-    } else {
+    const cyclePosition = newCount % 3;
+    
+    if (cyclePosition === 1) {
+      // 1st, 4th, 7th... → Random GIF
       setCelebrationMedia(getRandomGif());
       setIsVideoMode(false);
+    } else if (cyclePosition === 2) {
+      // 2nd, 5th, 8th... → Video 1
+      setCelebrationMedia(CELEBRATION_VIDEO_1);
+      setIsVideoMode(true);
+    } else {
+      // 3rd, 6th, 9th... → Video 2
+      setCelebrationMedia(CELEBRATION_VIDEO_2);
+      setIsVideoMode(true);
     }
   };
 
