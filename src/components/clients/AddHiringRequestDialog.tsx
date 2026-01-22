@@ -76,6 +76,8 @@ export const AddHiringRequestDialog = ({
     target_end_date: '',
     notes: '',
     assigned_admin_id: '',
+    hours_per_week: 'TBD',
+    hours_per_week_custom: '',
   });
 
   useEffect(() => {
@@ -219,6 +221,10 @@ export const AddHiringRequestDialog = ({
     }
 
     setSaving(true);
+    const hoursValue = formData.hours_per_week === 'custom' 
+      ? formData.hours_per_week_custom.trim() || null
+      : formData.hours_per_week === 'TBD' ? 'TBD' : formData.hours_per_week;
+    
     const success = await createRequest({
       client_id: formData.client_id || null,
       job_title: formData.job_title.trim(),
@@ -231,6 +237,7 @@ export const AddHiringRequestDialog = ({
       target_end_date: formData.target_end_date || null,
       notes: formData.notes.trim() || null,
       assigned_admin_id: formData.assigned_admin_id || null,
+      hours_per_week: hoursValue,
     });
 
     setSaving(false);
@@ -251,6 +258,8 @@ export const AddHiringRequestDialog = ({
         target_end_date: '',
         notes: '',
         assigned_admin_id: '',
+        hours_per_week: 'TBD',
+        hours_per_week_custom: '',
       });
     }
   };
@@ -466,6 +475,49 @@ export const AddHiringRequestDialog = ({
                     <SelectItem value="__custom__">
                       <span className="flex items-center gap-1">
                         <Plus className="w-3 h-3" /> Add Other
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+
+            {/* Hours per Week */}
+            <div>
+              <Label>Hours per Week</Label>
+              {formData.hours_per_week === 'custom' ? (
+                <div className="flex gap-2">
+                  <Input
+                    type="number"
+                    min="1"
+                    max="168"
+                    value={formData.hours_per_week_custom}
+                    onChange={(e) => setFormData(prev => ({ ...prev, hours_per_week_custom: e.target.value }))}
+                    placeholder="e.g., 40"
+                    autoFocus
+                  />
+                  <Button 
+                    type="button" 
+                    variant="ghost" 
+                    size="sm"
+                    onClick={() => setFormData(prev => ({ ...prev, hours_per_week: 'TBD', hours_per_week_custom: '' }))}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Select 
+                  value={formData.hours_per_week} 
+                  onValueChange={(v) => setFormData(prev => ({ ...prev, hours_per_week: v }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="TBD">TBD</SelectItem>
+                    <SelectItem value="custom" className="text-primary font-medium">
+                      <span className="flex items-center gap-1">
+                        <Plus className="w-3 h-3" /> Enter Hours
                       </span>
                     </SelectItem>
                   </SelectContent>

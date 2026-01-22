@@ -396,6 +396,7 @@ export type Database = {
           client_status: string
           comment_count: number | null
           created_at: string
+          hours_per_week: string | null
           id: string
           industry: string | null
           job_title: string
@@ -413,6 +414,7 @@ export type Database = {
           client_status?: string
           comment_count?: number | null
           created_at?: string
+          hours_per_week?: string | null
           id?: string
           industry?: string | null
           job_title: string
@@ -430,6 +432,7 @@ export type Database = {
           client_status?: string
           comment_count?: number | null
           created_at?: string
+          hours_per_week?: string | null
           id?: string
           industry?: string | null
           job_title?: string

@@ -19,6 +19,7 @@ export interface HiringRequest {
   target_end_date: string | null;
   assigned_admin_id: string | null;
   notes: string | null;
+  hours_per_week: string | null;
   comment_count: number;
   created_at: string;
   updated_at: string;
@@ -36,6 +37,7 @@ export interface CreateHiringRequest {
   target_end_date?: string | null;
   assigned_admin_id?: string | null;
   notes?: string | null;
+  hours_per_week?: string | null;
 }
 
 // Legacy constant for backwards compatibility - now loaded dynamically
@@ -95,6 +97,7 @@ export const useHiringRequests = () => {
       target_end_date: r.target_end_date,
       assigned_admin_id: r.assigned_admin_id,
       notes: r.notes,
+      hours_per_week: r.hours_per_week,
       comment_count: r.comment_count || 0,
       created_at: r.created_at,
       updated_at: r.updated_at,
