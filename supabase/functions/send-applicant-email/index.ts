@@ -34,6 +34,7 @@ interface SendEmailRequest {
   attachments?: Attachment[];
   cc?: string[]; // CC email addresses
   bcc?: string[]; // BCC email addresses
+  inReplyTo?: string; // Message-ID of the email being replied to (for threading)
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -69,6 +70,7 @@ const handler = async (req: Request): Promise<Response> => {
       attachments,
       cc,
       bcc,
+      inReplyTo,
     }: SendEmailRequest = await req.json();
 
     console.log("Processing email request for:", recipientEmail);
@@ -145,6 +147,13 @@ const handler = async (req: Request): Promise<Response> => {
         "Message-ID": messageId,
       },
     };
+
+    // Add In-Reply-To and References headers for threading if replying to an email
+    if (inReplyTo) {
+      emailOptions.headers["In-Reply-To"] = inReplyTo;
+      emailOptions.headers["References"] = inReplyTo;
+      console.log("Adding threading headers - In-Reply-To:", inReplyTo);
+    }
 
     // Add CC if provided
     if (cc && cc.length > 0) {

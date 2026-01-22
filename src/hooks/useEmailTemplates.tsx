@@ -26,6 +26,7 @@ export interface EmailLog {
   applicant_status_at_send: string | null;
   is_automated: boolean;
   error_message: string | null;
+  message_id: string | null;
   created_at: string;
 }
 
