@@ -79,7 +79,7 @@ export const ClientAnalyticsDashboard = () => {
   const [roleSortField, setRoleSortField] = useState<SortField>('hired');
   const [roleSortDir, setRoleSortDir] = useState<SortDirection>('desc');
 
-  const [hiringRequests, setHiringRequests] = useState<{ client_status: string }[]>([]);
+  const [hiringRequests, setHiringRequests] = useState<{ client_status: string; client_id: string | null }[]>([]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -96,7 +96,7 @@ export const ClientAnalyticsDashboard = () => {
           .neq('job_source', 'Contractor Import'),
         supabase
           .from('client_hiring_requests')
-          .select('client_status')
+          .select('client_status, client_id')
           .neq('pipeline_stage', 'closed'),
       ]);
 
@@ -452,9 +452,9 @@ export const ClientAnalyticsDashboard = () => {
   
   const clientsLost = clients.filter(c => !clientsWithActiveContractors.has(c.id) && !c.is_hiring).length;
   
-  // Count hiring requests by client_status from pipeline (excluding closed)
-  const newClientsHiring = hiringRequests.filter(r => r.client_status === 'new').length;
-  const existingClientsHiring = hiringRequests.filter(r => r.client_status === 'existing' || r.client_status === 'returning').length;
+  // Count unique clients by client_status from pipeline (excluding closed)
+  const newClientsHiring = new Set(hiringRequests.filter(r => r.client_status === 'new').map(r => r.client_id)).size;
+  const existingClientsHiring = new Set(hiringRequests.filter(r => r.client_status === 'existing' || r.client_status === 'returning').map(r => r.client_id)).size;
 
   // Sort handlers for retention tables
   const handleCompanySort = (field: SortField) => {
