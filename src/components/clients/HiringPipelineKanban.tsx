@@ -309,15 +309,15 @@ export const HiringPipelineKanban = () => {
   return (
     <>
       {/* Pipeline Header with Export */}
-      <div className="flex items-center justify-between px-4 py-2 border-b">
-        <h2 className="text-lg font-semibold">Hiring Pipeline</h2>
-        <Button variant="outline" size="sm" onClick={handleExport}>
-          <Download className="w-4 h-4 mr-2" />
+      <div className="flex items-center justify-between px-4 py-1 border-b">
+        <h2 className="text-sm font-semibold">Hiring Pipeline</h2>
+        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleExport}>
+          <Download className="w-3 h-3 mr-1.5" />
           Export
         </Button>
       </div>
       <DragDropContext onDragEnd={handleDragEnd}>
-        <div className="flex gap-4 p-4 overflow-x-auto h-[calc(100vh-200px)]">
+        <div className="flex gap-4 px-4 pt-2 pb-4 overflow-x-auto h-[calc(100vh-160px)]">
           {stages.map(stage => {
             const stageRequests = requestsByStage[stage.slug] || [];
             
