@@ -84,21 +84,7 @@ const getIndustryClass = (industry: string | null): string => {
   if (!industry) return 'bg-muted text-muted-foreground';
   return INDUSTRY_COLORS[industry] || 'bg-muted text-muted-foreground';
 };
-
-// Map emails to display names
-const EMAIL_TO_NAME: Record<string, string> = {
-  'czarina@outsta.io': 'Czarina',
-  'kristine@outsta.io': 'Kristine',
-  'eduardo@outsta.io': 'Eduardo',
-  'mark@outsta.io': 'Mark',
-  'liezl@outsta.io': 'Liezl',
-};
-
-const getDisplayName = (email: string | undefined): string => {
-  if (!email) return 'Unassigned';
-  const lowerEmail = email.toLowerCase();
-  return EMAIL_TO_NAME[lowerEmail] || email.split('@')[0];
-};
+import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 
 interface KanbanCardProps {
   request: HiringRequest;
@@ -111,8 +97,8 @@ interface KanbanCardProps {
 const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanCardProps) => {
   const isClosed = request.pipeline_stage === 'closed';
   const assignee = adminUsers.find(a => a.user_id === request.assigned_admin_id);
-  const assigneeInitial = assignee?.email?.charAt(0).toUpperCase() || '?';
-  const assigneeName = getDisplayName(assignee?.email);
+  const assigneeName = getAdminDisplayName(assignee?.email);
+  const assigneeInitial = assigneeName.charAt(0).toUpperCase();
   const formatDateRange = () => {
     if (!request.start_date && !request.target_end_date) return null;
     

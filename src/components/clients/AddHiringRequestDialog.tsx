@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useHiringRequests, type Priority, type ClientStatus } from '@/hooks/useHiringRequests';
 import { usePipelineStages } from '@/hooks/usePipelineStages';
 import { Loader2, Plus } from 'lucide-react';
+import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import { AddClientDialog } from './AddClientDialog';
 
 interface Client {
@@ -329,7 +330,7 @@ export const AddHiringRequestDialog = ({
                 <SelectContent>
                   {adminUsers.map(admin => (
                     <SelectItem key={admin.user_id} value={admin.user_id}>
-                      {admin.email}
+                      {getAdminDisplayName(admin.email)}
                     </SelectItem>
                   ))}
                 </SelectContent>

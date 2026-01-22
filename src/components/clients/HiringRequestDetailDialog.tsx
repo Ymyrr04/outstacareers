@@ -19,6 +19,7 @@ import { FormattedNotes } from '@/components/FormattedNotes';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 
 interface HiringRequestDetailDialogProps {
   request: HiringRequest | null;
@@ -45,19 +46,7 @@ interface AdminUser {
   email: string;
 }
 
-const EMAIL_TO_NAME: Record<string, string> = {
-  'czarina@outsta.io': 'Czarina',
-  'kristine@outsta.io': 'Kristine',
-  'eduardo@outsta.io': 'Eduardo',
-  'mark@outsta.io': 'Mark',
-  'liezl@outsta.io': 'Liezl',
-};
-
-const getDisplayName = (email: string | undefined): string => {
-  if (!email) return 'Unknown';
-  const normalized = email.toLowerCase();
-  return EMAIL_TO_NAME[normalized] || email.split('@')[0];
-};
+// Use shared getAdminDisplayName from lib
 
 const INDUSTRIES = [
   'Healthcare',
@@ -282,7 +271,7 @@ export const HiringRequestDetailDialog = ({
       }
       grouped[r.emoji].count++;
       const adminUser = adminUsers.find(a => a.user_id === r.user_id);
-      grouped[r.emoji].users.push(getDisplayName(adminUser?.email));
+      grouped[r.emoji].users.push(getAdminDisplayName(adminUser?.email, 'Unknown'));
       if (r.user_id === user?.id) {
         grouped[r.emoji].hasOwn = true;
       }
@@ -308,7 +297,7 @@ export const HiringRequestDetailDialog = ({
   };
 
   const insertMention = (email: string) => {
-    const name = getDisplayName(email);
+    const name = getAdminDisplayName(email, 'Unknown');
     // Replace the @partial with @Name in the content
     const updatedContent = newComment.replace(/@\w*(<\/p>)?$/, `<span class="text-primary font-medium">@${name}</span> $1`);
     setNewComment(updatedContent);
@@ -320,7 +309,7 @@ export const HiringRequestDetailDialog = ({
   };
 
   const filteredMentionUsers = adminUsers.filter(admin => {
-    const name = getDisplayName(admin.email).toLowerCase();
+    const name = getAdminDisplayName(admin.email, 'Unknown').toLowerCase();
     const email = admin.email.toLowerCase();
     return name.includes(mentionFilter) || email.includes(mentionFilter);
   });
@@ -615,7 +604,7 @@ export const HiringRequestDetailDialog = ({
                   <SelectTrigger className="border-0 bg-transparent h-auto p-0 hover:bg-transparent focus:ring-0">
                     {formData.assigned_admin_id ? (
                       <Badge variant="outline" className="font-normal">
-                        {adminUsers.find(a => a.user_id === formData.assigned_admin_id)?.email || 'Unknown'}
+                        {getAdminDisplayName(adminUsers.find(a => a.user_id === formData.assigned_admin_id)?.email, 'Unknown')}
                       </Badge>
                     ) : (
                       <span className="text-muted-foreground">—</span>
@@ -625,7 +614,7 @@ export const HiringRequestDetailDialog = ({
                     <SelectItem value="__none__">Unassigned</SelectItem>
                     {adminUsers.map(admin => (
                       <SelectItem key={admin.user_id} value={admin.user_id}>
-                        {admin.email}
+                        {getAdminDisplayName(admin.email)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -717,7 +706,7 @@ export const HiringRequestDetailDialog = ({
             ) : (
               comments.map(comment => {
                 const commenterAdmin = adminUsers.find(a => a.user_id === comment.user_id);
-                const commenterName = getDisplayName(commenterAdmin?.email);
+                const commenterName = getAdminDisplayName(commenterAdmin?.email, 'Unknown');
                 const isOwnComment = user?.id === comment.user_id;
                 const isEditing = editingCommentId === comment.id;
                 
@@ -889,7 +878,7 @@ export const HiringRequestDetailDialog = ({
                             </span>
                           </div>
                           <div className="flex flex-col">
-                            <span className="font-medium">{getDisplayName(admin.email)}</span>
+                            <span className="font-medium">{getAdminDisplayName(admin.email)}</span>
                             <span className="text-xs text-muted-foreground">{admin.email}</span>
                           </div>
                         </button>
