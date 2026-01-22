@@ -497,10 +497,16 @@ export function WysiwygEditor({
       </div>
       
       {/* Editor Content */}
-      <EditorContent 
-        editor={editor} 
-        className="[&_.ProseMirror]:min-h-[100px] [&_.ProseMirror_p]:my-1 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-5 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-5 [&_.ProseMirror_li]:my-0.5"
-      />
+      <div 
+        className="overflow-y-auto" 
+        style={{ maxHeight: minHeight === "100px" ? "200px" : `calc(${minHeight} * 2)` }}
+      >
+        <EditorContent 
+          editor={editor} 
+          className="[&_.ProseMirror]:min-h-[100px] [&_.ProseMirror]:p-3 [&_.ProseMirror_p]:my-1 [&_.ProseMirror_ul]:list-disc [&_.ProseMirror_ul]:pl-5 [&_.ProseMirror_ol]:list-decimal [&_.ProseMirror_ol]:pl-5 [&_.ProseMirror_li]:my-0.5"
+          style={{ minHeight }}
+        />
+      </div>
       
       {/* Placeholder styles */}
       <style>{`
