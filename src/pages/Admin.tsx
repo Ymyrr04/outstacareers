@@ -247,6 +247,9 @@ const Admin = () => {
 // Sort state
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   
+  // Export state - tracks ongoing export to prevent interruption
+  const [isExporting, setIsExporting] = useState(false);
+  
   // Main tab state for layout control
   const [activeMainTab, setActiveMainTab] = useState('jobs');
   
@@ -280,6 +283,20 @@ const Admin = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [expandedApplicant]);
+  
+  // Prevent page refresh/close during export
+  useEffect(() => {
+    if (!isExporting) return;
+    
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = 'Export in progress. Are you sure you want to leave?';
+      return e.returnValue;
+    };
+    
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isExporting]);
   
   // Helper to calculate overall score (prioritizes candidates with both CV + Interview)
   const getOverallScore = (applicant: Applicant): { score: number; hasInterview: boolean } => {
@@ -1387,12 +1404,18 @@ const Admin = () => {
                       <Button
                         variant="ghost"
                         className="w-full justify-start text-sm"
+                        disabled={isExporting}
                         onClick={async () => {
-                          const result = await exportApplicants();
-                          if (result.success) {
-                            toast({ title: 'Success', description: `Exported ${result.count} applicants` });
-                          } else {
-                            toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
+                          setIsExporting(true);
+                          try {
+                            const result = await exportApplicants();
+                            if (result.success) {
+                              toast({ title: 'Export Complete', description: `Exported ${result.count} applicants` });
+                            } else {
+                              toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
+                            }
+                          } finally {
+                            setIsExporting(false);
                           }
                         }}
                       >
@@ -1402,16 +1425,22 @@ const Admin = () => {
                       <Button
                         variant="ghost"
                         className="w-full justify-start text-sm"
+                        disabled={isExporting}
                         onClick={async () => {
-                          const result = await exportApplicants({ includeCVs: true });
-                          if (result.success) {
-                            toast({ title: 'Export Complete', description: `Exported ${result.count} applicants with CVs` });
-                          } else {
-                            toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
+                          setIsExporting(true);
+                          try {
+                            const result = await exportApplicants({ includeCVs: true });
+                            if (result.success) {
+                              toast({ title: 'Export Complete', description: `Exported ${result.count} applicants with CVs` });
+                            } else {
+                              toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
+                            }
+                          } finally {
+                            setIsExporting(false);
                           }
                         }}
                       >
-                        <FolderOpen className="w-4 h-4 mr-2" />
+                        {isExporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FolderOpen className="w-4 h-4 mr-2" />}
                         Export with CVs (ZIP)
                       </Button>
                     </div>
