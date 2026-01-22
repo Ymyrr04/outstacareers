@@ -57,6 +57,7 @@ const getRandomGif = () => CELEBRATION_GIFS[Math.floor(Math.random() * CELEBRATI
 // Celebration video URLs
 const CELEBRATION_VIDEO_1 = '/videos/celebration.mp4';
 const CELEBRATION_VIDEO_2 = '/videos/celebration2.mp4';
+const CELEBRATION_AUDIO = '/audio/celebration-fanfare.mp3';
 
 // Preload videos on module load
 const preloadedVideos: HTMLVideoElement[] = [];
@@ -67,6 +68,11 @@ const preloadedVideos: HTMLVideoElement[] = [];
   video.load();
   preloadedVideos.push(video);
 });
+
+// Preload celebration audio
+const preloadedAudio = new Audio(CELEBRATION_AUDIO);
+preloadedAudio.preload = 'auto';
+preloadedAudio.volume = 0.5;
 
 // Celebration Popup component - shows GIF or video based on streak
 const CelebrationPopup = ({ 
@@ -349,7 +355,7 @@ export const HiringPipelineKanban = () => {
     setAddDialogOpen(true);
   };
 
-  // Trigger celebration - cycles: GIF (1st), Video1 (2nd), Video2 (3rd), repeat...
+  // Trigger celebration - cycles: GIF (1st), Video1 (2nd), Video2 with audio (3rd), repeat...
   const triggerCelebration = () => {
     const newCount = closureCount + 1;
     setClosureCount(newCount);
@@ -365,9 +371,12 @@ export const HiringPipelineKanban = () => {
       setCelebrationMedia(CELEBRATION_VIDEO_1);
       setIsVideoMode(true);
     } else {
-      // 3rd, 6th, 9th... → Video 2
+      // 3rd, 6th, 9th... → Video 2 with background music
       setCelebrationMedia(CELEBRATION_VIDEO_2);
       setIsVideoMode(true);
+      // Play celebration fanfare audio
+      preloadedAudio.currentTime = 0;
+      preloadedAudio.play().catch(() => {});
     }
   };
 
