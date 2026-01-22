@@ -44,6 +44,14 @@ const CELEBRATION_GIFS = [
   'https://media.giphy.com/media/3oz8xRF0v9WMAUVLNK/giphy.gif', // Star burst
 ];
 
+// Preload all GIFs on module load
+const preloadedGifs: HTMLImageElement[] = [];
+CELEBRATION_GIFS.forEach(url => {
+  const img = new Image();
+  img.src = url;
+  preloadedGifs.push(img);
+});
+
 const getRandomGif = () => CELEBRATION_GIFS[Math.floor(Math.random() * CELEBRATION_GIFS.length)];
 
 // Celebration video URLs
