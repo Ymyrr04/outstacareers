@@ -1046,6 +1046,39 @@ export type Database = {
         }
         Relationships: []
       }
+      pipeline_stages: {
+        Row: {
+          created_at: string
+          emoji: string | null
+          id: string
+          is_system: boolean
+          name: string
+          slug: string
+          stage_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          emoji?: string | null
+          id?: string
+          is_system?: boolean
+          name: string
+          slug: string
+          stage_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          emoji?: string | null
+          id?: string
+          is_system?: boolean
+          name?: string
+          slug?: string
+          stage_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       scheduled_emails: {
         Row: {
           applicant_id: string

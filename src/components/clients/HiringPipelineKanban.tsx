@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { format, isPast, startOfDay } from 'date-fns';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { useHiringRequests, PIPELINE_STAGES, type HiringRequest, type PipelineStage } from '@/hooks/useHiringRequests';
+import { useHiringRequests, type HiringRequest } from '@/hooks/useHiringRequests';
+import { usePipelineStages } from '@/hooks/usePipelineStages';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -11,6 +12,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Plus, MessageCircle, Check } from 'lucide-react';
 import { AddHiringRequestDialog } from './AddHiringRequestDialog';
 import { HiringRequestDetailDialog } from './HiringRequestDetailDialog';
+import { AddPipelineStageDialog } from './AddPipelineStageDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -231,13 +233,23 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
 };
 
 export const HiringPipelineKanban = () => {
-  const { requestsByStage, loading, updateStage, fetchRequests } = useHiringRequests();
+  const { requests, loading: requestsLoading, updateStage, fetchRequests } = useHiringRequests();
+  const { stages, loading: stagesLoading } = usePipelineStages();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
+  const [addStageDialogOpen, setAddStageDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<HiringRequest | null>(null);
-  const [addToStage, setAddToStage] = useState<PipelineStage>('backlog');
+  const [addToStage, setAddToStage] = useState<string>('backlog');
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [celebrationGif, setCelebrationGif] = useState<string | null>(null);
   const { toast } = useToast();
+  
+  const loading = requestsLoading || stagesLoading;
+  
+  // Group requests by pipeline stage dynamically
+  const requestsByStage = stages.reduce((acc, stage) => {
+    acc[stage.slug] = requests.filter(r => r.pipeline_stage === stage.slug);
+    return acc;
+  }, {} as Record<string, HiringRequest[]>);
 
   useEffect(() => {
     const fetchAdminUsers = async () => {
@@ -252,8 +264,8 @@ export const HiringPipelineKanban = () => {
   const handleDragEnd = (result: DropResult) => {
     if (!result.destination) return;
 
-    const sourceStage = result.source.droppableId as PipelineStage;
-    const destStage = result.destination.droppableId as PipelineStage;
+    const sourceStage = result.source.droppableId;
+    const destStage = result.destination.droppableId;
 
     if (sourceStage === destStage) return;
 
@@ -265,7 +277,7 @@ export const HiringPipelineKanban = () => {
     updateStage(result.draggableId, destStage);
   };
 
-  const handleAddTask = (stage: PipelineStage) => {
+  const handleAddTask = (stage: string) => {
     setAddToStage(stage);
     setAddDialogOpen(true);
   };
@@ -278,8 +290,8 @@ export const HiringPipelineKanban = () => {
   if (loading) {
     return (
       <div className="flex gap-4 p-4 overflow-x-auto">
-        {PIPELINE_STAGES.map(stage => (
-          <div key={stage.id} className="flex-shrink-0 w-72">
+        {[1, 2, 3, 4, 5].map(i => (
+          <div key={i} className="flex-shrink-0 w-72">
             <Skeleton className="h-8 w-full mb-4" />
             <div className="space-y-2">
               <Skeleton className="h-24 w-full" />
@@ -296,15 +308,15 @@ export const HiringPipelineKanban = () => {
     <>
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="flex gap-4 p-4 overflow-x-auto h-[calc(100vh-200px)]">
-          {PIPELINE_STAGES.map(stage => {
-            const stageRequests = requestsByStage[stage.id] || [];
+          {stages.map(stage => {
+            const stageRequests = requestsByStage[stage.slug] || [];
             
             return (
               <div key={stage.id} className="flex-shrink-0 w-72 flex flex-col">
                 {/* Column Header */}
                 <div className="flex items-center gap-2 mb-3 px-1">
                   <h3 className="font-semibold text-sm">
-                    {stage.label} {stage.emoji && stage.emoji}
+                    {stage.name} {stage.emoji && stage.emoji}
                   </h3>
                   <Badge variant="secondary" className="text-xs">
                     {stageRequests.length}
@@ -312,7 +324,7 @@ export const HiringPipelineKanban = () => {
                 </div>
 
                 {/* Column Content */}
-                <Droppable droppableId={stage.id}>
+                <Droppable droppableId={stage.slug}>
                   {(provided, snapshot) => (
                     <div
                       ref={provided.innerRef}
@@ -345,7 +357,7 @@ export const HiringPipelineKanban = () => {
                   variant="ghost"
                   size="sm"
                   className="mt-2 w-full justify-start text-muted-foreground hover:text-foreground"
-                  onClick={() => handleAddTask(stage.id)}
+                  onClick={() => handleAddTask(stage.slug)}
                 >
                   <Plus className="w-4 h-4 mr-2" />
                   Add task
@@ -359,12 +371,7 @@ export const HiringPipelineKanban = () => {
             <Button
               variant="outline"
               className="h-full min-h-[200px] border-dashed border-2 text-muted-foreground hover:text-foreground hover:border-primary/50 flex flex-col gap-2"
-              onClick={() => {
-                toast({
-                  title: 'Coming Soon',
-                  description: 'Custom pipeline sections will be available in a future update.',
-                });
-              }}
+              onClick={() => setAddStageDialogOpen(true)}
             >
               <Plus className="w-6 h-6" />
               <span className="text-sm font-medium">Add Section</span>
@@ -379,6 +386,12 @@ export const HiringPipelineKanban = () => {
         onOpenChange={setAddDialogOpen}
         defaultStage={addToStage}
         onCreated={() => fetchRequests(false)}
+      />
+
+      {/* Add Pipeline Stage Dialog */}
+      <AddPipelineStageDialog
+        open={addStageDialogOpen}
+        onOpenChange={setAddStageDialogOpen}
       />
 
       {/* Detail Dialog */}
