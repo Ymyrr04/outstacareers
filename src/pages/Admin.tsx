@@ -15,6 +15,7 @@ import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive } from 'lucide-react';
 import { exportJobs, exportApplicants, exportAllData } from '@/lib/exportUtils';
+import { useBackgroundExport } from '@/hooks/useBackgroundExport';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useEmailReplies } from '@/hooks/useEmailTemplates';
 import { ClientsDashboard, ContractorsDashboard, ClientAnalyticsDashboard, HiringPipelineKanban } from '@/components/clients';
@@ -247,7 +248,19 @@ const Admin = () => {
 // Sort state
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   
-  // Export state - tracks ongoing export to prevent interruption
+  // Background export hook (survives page refresh)
+  const { 
+    exportJob, 
+    isExporting: isBackgroundExporting, 
+    isCompleted: exportCompleted, 
+    isFailed: exportFailed,
+    progress: exportProgress,
+    startExport: startBackgroundExport,
+    downloadExport,
+    clearExport
+  } = useBackgroundExport();
+  
+  // Legacy export state for CSV-only export
   const [isExporting, setIsExporting] = useState(false);
   
   // Main tab state for layout control
@@ -284,19 +297,27 @@ const Admin = () => {
     };
   }, [expandedApplicant]);
   
-  // Prevent page refresh/close during export
+  // Show toast when background export completes
   useEffect(() => {
-    if (!isExporting) return;
-    
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = 'Export in progress. Are you sure you want to leave?';
-      return e.returnValue;
-    };
-    
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [isExporting]);
+    if (exportCompleted && exportJob) {
+      toast({ 
+        title: 'Export Complete', 
+        description: `Exported ${exportJob.processed_items} applicants with CVs. Click to download.`,
+        action: (
+          <Button size="sm" onClick={() => downloadExport(exportJob.id)}>
+            Download
+          </Button>
+        )
+      });
+    } else if (exportFailed && exportJob) {
+      toast({ 
+        title: 'Export Failed', 
+        description: exportJob.error_message || 'An error occurred during export',
+        variant: 'destructive'
+      });
+      clearExport();
+    }
+  }, [exportCompleted, exportFailed, exportJob, toast, downloadExport, clearExport]);
   
   // Helper to calculate overall score (prioritizes candidates with both CV + Interview)
   const getOverallScore = (applicant: Applicant): { score: number; hasInterview: boolean } => {
@@ -1394,55 +1415,93 @@ const Admin = () => {
                 {/* Export Dropdown */}
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline">
-                      <Download className="w-4 h-4 mr-2" />
+                    <Button variant="outline" className="relative">
+                      {isBackgroundExporting ? (
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      ) : (
+                        <Download className="w-4 h-4 mr-2" />
+                      )}
                       Export
+                      {isBackgroundExporting && exportProgress && (
+                        <Badge variant="secondary" className="ml-2 text-xs">
+                          {exportProgress.percentage}%
+                        </Badge>
+                      )}
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-56 p-2" align="end">
+                  <PopoverContent className="w-64 p-2" align="end">
                     <div className="space-y-1">
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start text-sm"
-                        disabled={isExporting}
-                        onClick={async () => {
-                          setIsExporting(true);
-                          try {
-                            const result = await exportApplicants();
-                            if (result.success) {
-                              toast({ title: 'Export Complete', description: `Exported ${result.count} applicants` });
-                            } else {
-                              toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
-                            }
-                          } finally {
-                            setIsExporting(false);
-                          }
-                        }}
-                      >
-                        <FileText className="w-4 h-4 mr-2" />
-                        Export CSV Only
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        className="w-full justify-start text-sm"
-                        disabled={isExporting}
-                        onClick={async () => {
-                          setIsExporting(true);
-                          try {
-                            const result = await exportApplicants({ includeCVs: true });
-                            if (result.success) {
-                              toast({ title: 'Export Complete', description: `Exported ${result.count} applicants with CVs` });
-                            } else {
-                              toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
-                            }
-                          } finally {
-                            setIsExporting(false);
-                          }
-                        }}
-                      >
-                        {isExporting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FolderOpen className="w-4 h-4 mr-2" />}
-                        Export with CVs (ZIP)
-                      </Button>
+                      {isBackgroundExporting && exportProgress ? (
+                        <div className="p-3 text-center">
+                          <Loader2 className="w-6 h-6 mx-auto mb-2 animate-spin text-primary" />
+                          <p className="text-sm font-medium">Exporting CVs...</p>
+                          <p className="text-xs text-muted-foreground">
+                            {exportProgress.processed} / {exportProgress.total} files
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            You can refresh or navigate away safely
+                          </p>
+                        </div>
+                      ) : exportCompleted && exportJob ? (
+                        <div className="p-3 text-center">
+                          <CheckCircle className="w-6 h-6 mx-auto mb-2 text-green-500" />
+                          <p className="text-sm font-medium">Export Ready!</p>
+                          <Button 
+                            size="sm" 
+                            className="mt-2 w-full"
+                            onClick={() => {
+                              downloadExport(exportJob.id);
+                              clearExport();
+                            }}
+                          >
+                            <Download className="w-4 h-4 mr-2" />
+                            Download ZIP
+                          </Button>
+                        </div>
+                      ) : (
+                        <>
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-start text-sm"
+                            disabled={isExporting || isBackgroundExporting}
+                            onClick={async () => {
+                              setIsExporting(true);
+                              try {
+                                const result = await exportApplicants();
+                                if (result.success) {
+                                  toast({ title: 'Export Complete', description: `Exported ${result.count} applicants` });
+                                } else {
+                                  toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
+                                }
+                              } finally {
+                                setIsExporting(false);
+                              }
+                            }}
+                          >
+                            <FileText className="w-4 h-4 mr-2" />
+                            Export CSV Only
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            className="w-full justify-start text-sm"
+                            disabled={isExporting || isBackgroundExporting}
+                            onClick={async () => {
+                              try {
+                                await startBackgroundExport();
+                                toast({ title: 'Export Started', description: 'Processing in background. You can refresh or navigate away.' });
+                              } catch (error) {
+                                toast({ title: 'Error', description: 'Failed to start export', variant: 'destructive' });
+                              }
+                            }}
+                          >
+                            <FolderOpen className="w-4 h-4 mr-2" />
+                            Export with CVs (ZIP)
+                          </Button>
+                          <p className="text-xs text-muted-foreground px-2 pt-2">
+                            CV export runs in background and survives page refresh
+                          </p>
+                        </>
+                      )}
                     </div>
                   </PopoverContent>
                 </Popover>

@@ -53,3 +53,15 @@ verify_jwt = false
 
 [functions.get-admin-users]
 verify_jwt = true
+
+[functions.export-applicants]
+verify_jwt = false
+
+[functions.calendly-auth]
+verify_jwt = true
+
+[functions.edit-contractor-image]
+verify_jwt = true
+
+[functions.process-scheduled-contractors]
+verify_jwt = false

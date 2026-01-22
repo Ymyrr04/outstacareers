@@ -729,6 +729,45 @@ export type Database = {
         }
         Relationships: []
       }
+      export_jobs: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          error_message: string | null
+          export_type: string
+          file_url: string | null
+          id: string
+          processed_items: number | null
+          status: string
+          total_items: number | null
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          export_type?: string
+          file_url?: string | null
+          id?: string
+          processed_items?: number | null
+          status?: string
+          total_items?: number | null
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          error_message?: string | null
+          export_type?: string
+          file_url?: string | null
+          id?: string
+          processed_items?: number | null
+          status?: string
+          total_items?: number | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       hiring_request_comment_reactions: {
         Row: {
           comment_id: string
