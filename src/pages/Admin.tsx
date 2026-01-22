@@ -1403,15 +1403,9 @@ const Admin = () => {
                         variant="ghost"
                         className="w-full justify-start text-sm"
                         onClick={async () => {
-                          toast({ title: 'Exporting...', description: 'Downloading CVs, this may take a moment...' });
-                          const result = await exportApplicants({ 
-                            includeCVs: true,
-                            onProgress: (step) => {
-                              toast({ title: 'Exporting...', description: step });
-                            }
-                          });
+                          const result = await exportApplicants({ includeCVs: true });
                           if (result.success) {
-                            toast({ title: 'Success', description: `Exported ${result.count} applicants with CVs` });
+                            toast({ title: 'Export Complete', description: `Exported ${result.count} applicants with CVs` });
                           } else {
                             toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
                           }
