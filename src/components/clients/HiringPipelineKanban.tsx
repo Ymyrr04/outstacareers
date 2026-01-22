@@ -287,7 +287,7 @@ export const HiringPipelineKanban = () => {
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [celebrationMedia, setCelebrationMedia] = useState<string | null>(null);
   const [isVideoMode, setIsVideoMode] = useState(false);
-  const [closureTimestamps, setClosureTimestamps] = useState<number[]>([]);
+  const [closureCount, setClosureCount] = useState(0);
   const { toast } = useToast();
   
   const loading = requestsLoading || stagesLoading;
@@ -329,18 +329,13 @@ export const HiringPipelineKanban = () => {
     setAddDialogOpen(true);
   };
 
-  // Trigger celebration with GIF or video based on hourly closures
+  // Trigger celebration - alternates: GIF, Video, GIF, Video...
   const triggerCelebration = () => {
-    const now = Date.now();
-    const oneHourAgo = now - 60 * 60 * 1000;
+    const newCount = closureCount + 1;
+    setClosureCount(newCount);
     
-    // Filter timestamps within the last hour and add the new one
-    const recentClosures = closureTimestamps.filter(t => t > oneHourAgo);
-    const updatedClosures = [...recentClosures, now];
-    setClosureTimestamps(updatedClosures);
-    
-    // If more than 1 closure in the hour, show video; otherwise show GIF
-    if (updatedClosures.length > 1) {
+    // Every 2nd closure plays the video (2, 4, 6, 8...)
+    if (newCount % 2 === 0) {
       setCelebrationMedia(CELEBRATION_VIDEO);
       setIsVideoMode(true);
     } else {
