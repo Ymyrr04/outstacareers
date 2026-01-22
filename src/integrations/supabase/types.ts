@@ -14,6 +14,33 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_tab_permissions: {
+        Row: {
+          can_view: boolean
+          created_at: string
+          id: string
+          tab_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          can_view?: boolean
+          created_at?: string
+          id?: string
+          tab_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          can_view?: boolean
+          created_at?: string
+          id?: string
+          tab_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       analytics_events: {
         Row: {
           created_at: string

@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useEmailReplies } from '@/hooks/useEmailTemplates';
 import { ClientsDashboard, ContractorsDashboard, ClientAnalyticsDashboard, HiringPipelineKanban } from '@/components/clients';
@@ -43,6 +43,8 @@ import { addMinutes } from 'date-fns';
 import { MyApplicantsDashboard } from '@/components/MyApplicantsDashboard';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
+import { useTabPermissions, TabId } from '@/hooks/useTabPermissions';
+import { AdminPermissionsManager } from '@/components/AdminPermissionsManager';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 // Status options for applicant tracking - new pipeline order
@@ -185,6 +187,7 @@ const Admin = () => {
   const { user, isAdmin, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { canViewTab, loading: tabPermissionsLoading } = useTabPermissions();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [jobsLoading, setJobsLoading] = useState(true);
   const [adminUsersMap, setAdminUsersMap] = useState<Record<string, string>>({});
@@ -889,7 +892,7 @@ const Admin = () => {
     </div>
   );
 
-  if (loading) {
+  if (loading || tabPermissionsLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <p>Loading...</p>
@@ -948,48 +951,67 @@ const Admin = () => {
 
       <main className="px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
         <Tabs defaultValue="jobs" className="space-y-6" value={activeMainTab} onValueChange={setActiveMainTab}>
-          <TabsList>
-            <TabsTrigger value="jobs" className="flex items-center gap-2">
-              <Briefcase className="w-4 h-4" />
-              Jobs
-            </TabsTrigger>
-            <TabsTrigger value="applicants" className="flex items-center gap-2">
-              <Users className="w-4 h-4" />
-              Applicants
-              {applicants.length > 0 && (
-                <Badge variant="secondary" className="ml-1">{applicants.length}</Badge>
-              )}
-              {(() => {
-                const newCount = applicants.filter(a => a.status === 'For Review' && !a.details_viewed_at).length;
-                return newCount > 0 ? (
-                  <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-xs ml-1">
-                    {newCount} new
-                  </Badge>
-                ) : null;
-              })()}
-            </TabsTrigger>
-            <TabsTrigger value="my-applicants" className="flex items-center gap-2">
-              <ClipboardList className="w-4 h-4" />
-              Recruiter Dash
-            </TabsTrigger>
-            {user?.email?.toLowerCase() === 'mark@outsta.io' && (
+          <TabsList className="flex-wrap">
+            {canViewTab('jobs') && (
+              <TabsTrigger value="jobs" className="flex items-center gap-2">
+                <Briefcase className="w-4 h-4" />
+                Jobs
+              </TabsTrigger>
+            )}
+            {canViewTab('applicants') && (
+              <TabsTrigger value="applicants" className="flex items-center gap-2">
+                <Users className="w-4 h-4" />
+                Applicants
+                {applicants.length > 0 && (
+                  <Badge variant="secondary" className="ml-1">{applicants.length}</Badge>
+                )}
+                {(() => {
+                  const newCount = applicants.filter(a => a.status === 'For Review' && !a.details_viewed_at).length;
+                  return newCount > 0 ? (
+                    <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-xs ml-1">
+                      {newCount} new
+                    </Badge>
+                  ) : null;
+                })()}
+              </TabsTrigger>
+            )}
+            {canViewTab('recruiter-dash') && (
+              <TabsTrigger value="my-applicants" className="flex items-center gap-2">
+                <ClipboardList className="w-4 h-4" />
+                Recruiter Dash
+              </TabsTrigger>
+            )}
+            {canViewTab('pipeline') && (
               <TabsTrigger value="pipeline" className="flex items-center gap-2">
                 <Kanban className="w-4 h-4" />
                 Pipeline
               </TabsTrigger>
             )}
-            <TabsTrigger value="clients" className="flex items-center gap-2">
-              <Building2 className="w-4 h-4" />
-              Clients
-            </TabsTrigger>
-            <TabsTrigger value="contractors" className="flex items-center gap-2">
-              <UserCog className="w-4 h-4" />
-              Contractors
-            </TabsTrigger>
-            <TabsTrigger value="analytics" className="flex items-center gap-2">
-              <Zap className="w-4 h-4" />
-              Analytics
-            </TabsTrigger>
+            {canViewTab('clients') && (
+              <TabsTrigger value="clients" className="flex items-center gap-2">
+                <Building2 className="w-4 h-4" />
+                Clients
+              </TabsTrigger>
+            )}
+            {canViewTab('contractors') && (
+              <TabsTrigger value="contractors" className="flex items-center gap-2">
+                <UserCog className="w-4 h-4" />
+                Contractors
+              </TabsTrigger>
+            )}
+            {canViewTab('analytics') && (
+              <TabsTrigger value="analytics" className="flex items-center gap-2">
+                <Zap className="w-4 h-4" />
+                Analytics
+              </TabsTrigger>
+            )}
+            {/* Settings tab - only for super admins (mark@outsta.io) */}
+            {user?.email?.toLowerCase() === 'mark@outsta.io' && (
+              <TabsTrigger value="settings" className="flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                Permissions
+              </TabsTrigger>
+            )}
           </TabsList>
 
           <TabsContent value="my-applicants" className="space-y-6" keepMounted>
@@ -2465,6 +2487,17 @@ const Admin = () => {
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6" keepMounted>
             <ClientAnalyticsDashboard />
+          </TabsContent>
+
+          {/* Settings/Permissions Tab - Super Admin Only */}
+          <TabsContent value="settings" className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-2xl font-bold">Admin Permissions</h2>
+                <p className="text-muted-foreground">Control which tabs each admin can access</p>
+              </div>
+            </div>
+            <AdminPermissionsManager />
           </TabsContent>
         </Tabs>
       </main>
