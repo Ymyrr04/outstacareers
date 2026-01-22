@@ -153,20 +153,42 @@ export const AddHiringRequestDialog = ({
   };
 
   const handleClientAdded = async () => {
-    // Refresh clients list and select the newest one
-    const { data } = await supabase
+    // Refresh clients list first
+    const { data: allClients } = await supabase
+      .from('clients')
+      .select('id, company_name, industry, leads_from')
+      .order('company_name');
+    
+    if (allClients) {
+      setClients(allClients);
+      
+      // Extract unique industries and sources
+      const clientIndustries = allClients
+        .map(c => c.industry)
+        .filter((ind): ind is string => !!ind && ind.trim() !== '');
+      const allIndustries = [...new Set([...DEFAULT_INDUSTRIES, ...clientIndustries])];
+      setIndustries(allIndustries.sort());
+
+      const clientSources = allClients
+        .map(c => c.leads_from)
+        .filter((src): src is string => !!src && src.trim() !== '');
+      setSources([...new Set(clientSources)].sort());
+    }
+    
+    // Get the newest client and select it
+    const { data: newestClient } = await supabase
       .from('clients')
       .select('id, company_name, industry, leads_from')
       .order('created_at', { ascending: false })
-      .limit(1);
+      .limit(1)
+      .single();
     
-    if (data && data[0]) {
-      await fetchClients();
+    if (newestClient) {
       setFormData(prev => ({
         ...prev,
-        client_id: data[0].id,
-        industry: data[0].industry || prev.industry,
-        source: data[0].leads_from || prev.source,
+        client_id: newestClient.id,
+        industry: newestClient.industry || prev.industry,
+        source: newestClient.leads_from || prev.source,
       }));
     }
   };
