@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { useHiringRequests, type HiringRequest, type PipelineStage, type Priority, type ClientStatus, PIPELINE_STAGES } from '@/hooks/useHiringRequests';
+import { useHiringRequests, type HiringRequest, type Priority, type ClientStatus } from '@/hooks/useHiringRequests';
+import { usePipelineStages } from '@/hooks/usePipelineStages';
 import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X, MessageSquare, Send, Save, UserCircle, Pencil, SmilePlus, ChevronDown } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { WysiwygEditor } from '@/components/WysiwygEditor';
@@ -76,6 +77,7 @@ export const HiringRequestDetailDialog = ({
   onUpdated 
 }: HiringRequestDetailDialogProps) => {
   const { updateRequest, deleteRequest } = useHiringRequests();
+  const { stages } = usePipelineStages();
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -104,7 +106,7 @@ export const HiringRequestDetailDialog = ({
     priority: 'high' as Priority,
     industry: '',
     client_status: 'new' as ClientStatus,
-    pipeline_stage: 'backlog' as PipelineStage,
+    pipeline_stage: 'backlog',
     source: '',
     start_date: '',
     target_end_date: '',
@@ -342,7 +344,7 @@ export const HiringRequestDetailDialog = ({
     if (field === 'priority') updates.priority = value as Priority;
     else if (field === 'industry') updates.industry = value || null;
     else if (field === 'client_status') updates.client_status = value as ClientStatus;
-    else if (field === 'pipeline_stage') updates.pipeline_stage = value as PipelineStage;
+    else if (field === 'pipeline_stage') updates.pipeline_stage = value;
     else if (field === 'source') updates.source = value || null;
     else if (field === 'start_date') updates.start_date = value || null;
     else if (field === 'target_end_date') updates.target_end_date = value || null;
@@ -377,7 +379,7 @@ export const HiringRequestDetailDialog = ({
 
   if (!request) return null;
 
-  const stageLabel = PIPELINE_STAGES.find(s => s.id === request.pipeline_stage)?.label || request.pipeline_stage;
+  const stageLabel = stages.find(s => s.slug === request.pipeline_stage)?.name || request.pipeline_stage;
 
   return (
     <Dialog open={!!request} onOpenChange={onOpenChange}>
@@ -432,9 +434,9 @@ export const HiringRequestDetailDialog = ({
                     </Badge>
                   </SelectTrigger>
                   <SelectContent>
-                    {PIPELINE_STAGES.map(stage => (
-                      <SelectItem key={stage.id} value={stage.id}>
-                        {stage.emoji} {stage.label}
+                    {stages.map(stage => (
+                      <SelectItem key={stage.id} value={stage.slug}>
+                        {stage.emoji} {stage.name}
                       </SelectItem>
                     ))}
                   </SelectContent>

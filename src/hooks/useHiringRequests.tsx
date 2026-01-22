@@ -2,7 +2,6 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
-export type PipelineStage = 'backlog' | 'sourcing' | 'pitch' | 'scheduled_interview' | 'closed';
 export type Priority = 'high' | 'low';
 export type ClientStatus = 'new' | 'existing';
 
@@ -14,7 +13,7 @@ export interface HiringRequest {
   priority: Priority;
   industry: string | null;
   client_status: ClientStatus;
-  pipeline_stage: PipelineStage;
+  pipeline_stage: string;
   source: string | null;
   start_date: string | null;
   target_end_date: string | null;
@@ -31,7 +30,7 @@ export interface CreateHiringRequest {
   priority?: Priority;
   industry?: string | null;
   client_status?: ClientStatus;
-  pipeline_stage?: PipelineStage;
+  pipeline_stage?: string;
   source?: string | null;
   start_date?: string | null;
   target_end_date?: string | null;
@@ -39,7 +38,8 @@ export interface CreateHiringRequest {
   notes?: string | null;
 }
 
-export const PIPELINE_STAGES: { id: PipelineStage; label: string; emoji?: string }[] = [
+// Legacy constant for backwards compatibility - now loaded dynamically
+export const PIPELINE_STAGES: { id: string; label: string; emoji?: string }[] = [
   { id: 'backlog', label: 'Backlog' },
   { id: 'sourcing', label: 'Sourcing & Screening', emoji: '⏳' },
   { id: 'pitch', label: 'Pitch', emoji: '🚀' },
@@ -89,7 +89,7 @@ export const useHiringRequests = () => {
       priority: r.priority as Priority,
       industry: r.industry,
       client_status: r.client_status as ClientStatus,
-      pipeline_stage: r.pipeline_stage as PipelineStage,
+      pipeline_stage: r.pipeline_stage as string,
       source: r.source,
       start_date: r.start_date,
       target_end_date: r.target_end_date,
@@ -180,7 +180,7 @@ export const useHiringRequests = () => {
     return true;
   };
 
-  const updateStage = async (id: string, newStage: PipelineStage): Promise<boolean> => {
+  const updateStage = async (id: string, newStage: string): Promise<boolean> => {
     // Optimistic update
     setRequests(prev => prev.map(r => 
       r.id === id ? { ...r, pipeline_stage: newStage } : r
@@ -233,7 +233,7 @@ export const useHiringRequests = () => {
   const requestsByStage = PIPELINE_STAGES.reduce((acc, stage) => {
     acc[stage.id] = requests.filter(r => r.pipeline_stage === stage.id);
     return acc;
-  }, {} as Record<PipelineStage, HiringRequest[]>);
+  }, {} as Record<string, HiringRequest[]>);
 
   return {
     requests,

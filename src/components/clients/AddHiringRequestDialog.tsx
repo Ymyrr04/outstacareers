@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useHiringRequests, type PipelineStage, type Priority, type ClientStatus, PIPELINE_STAGES } from '@/hooks/useHiringRequests';
+import { useHiringRequests, type Priority, type ClientStatus } from '@/hooks/useHiringRequests';
+import { usePipelineStages } from '@/hooks/usePipelineStages';
 import { Loader2, Plus } from 'lucide-react';
 import { AddClientDialog } from './AddClientDialog';
 
@@ -29,7 +30,7 @@ interface AdminUser {
 interface AddHiringRequestDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  defaultStage?: PipelineStage;
+  defaultStage?: string;
   onCreated?: () => void;
 }
 
@@ -52,6 +53,7 @@ export const AddHiringRequestDialog = ({
   onCreated 
 }: AddHiringRequestDialogProps) => {
   const { createRequest } = useHiringRequests();
+  const { stages } = usePipelineStages();
   const [clients, setClients] = useState<Client[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(false);
@@ -300,14 +302,14 @@ export const AddHiringRequestDialog = ({
               <Label>Stage</Label>
               <Select 
                 value={formData.pipeline_stage} 
-                onValueChange={(v) => setFormData(prev => ({ ...prev, pipeline_stage: v as PipelineStage }))}
+                onValueChange={(v) => setFormData(prev => ({ ...prev, pipeline_stage: v }))}
               >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {PIPELINE_STAGES.map(stage => (
-                    <SelectItem key={stage.id} value={stage.id}>{stage.label}</SelectItem>
+                  {stages.map(stage => (
+                    <SelectItem key={stage.id} value={stage.slug}>{stage.name}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
