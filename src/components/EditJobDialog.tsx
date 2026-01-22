@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { Pencil, Plus, X } from 'lucide-react';
+import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import JobInterviewQuestionsManager from '@/components/JobInterviewQuestionsManager';
 import { JobDescriptionParser } from '@/components/JobDescriptionParser';
 
@@ -374,7 +375,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
                 <SelectItem value="__none__">No assignment</SelectItem>
                 {adminUsers.map((admin) => (
                   <SelectItem key={admin.user_id} value={admin.user_id}>
-                    {admin.email}
+                    {getAdminDisplayName(admin.email)}
                   </SelectItem>
                 ))}
               </SelectContent>

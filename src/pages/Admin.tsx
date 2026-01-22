@@ -42,6 +42,7 @@ import { useEmailTemplates, statusToTrigger, useUnreadMessageCounts } from '@/ho
 import { addMinutes } from 'date-fns';
 import { MyApplicantsDashboard } from '@/components/MyApplicantsDashboard';
 import { ThemeToggle } from '@/components/ThemeToggle';
+import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 // Status options for applicant tracking - new pipeline order
@@ -1034,7 +1035,7 @@ const Admin = () => {
                   <SelectItem value="all">All Admins</SelectItem>
                   <SelectItem value="unassigned">Unassigned</SelectItem>
                   {Object.entries(adminUsersMap).map(([id, email]) => (
-                    <SelectItem key={id} value={id}>{email}</SelectItem>
+                    <SelectItem key={id} value={id}>{getAdminDisplayName(email)}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
@@ -1100,7 +1101,7 @@ const Admin = () => {
                             {job.assigned_admin_id && adminUsersMap[job.assigned_admin_id] && (
                               <Badge variant="outline" className="text-xs">
                                 <UserCog className="w-3 h-3 mr-1" />
-                                {adminUsersMap[job.assigned_admin_id]}
+                                {getAdminDisplayName(adminUsersMap[job.assigned_admin_id])}
                               </Badge>
                             )}
                           </div>
