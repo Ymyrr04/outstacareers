@@ -19,6 +19,7 @@ export const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClient
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [existingIndustries, setExistingIndustries] = useState<string[]>([]);
+  const [existingSources, setExistingSources] = useState<string[]>([]);
   const [form, setForm] = useState({
     company_name: '',
     industry: '',
@@ -43,8 +44,7 @@ export const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClient
   const fetchExistingIndustries = async () => {
     const { data } = await supabase
       .from('clients')
-      .select('industry')
-      .not('industry', 'is', null)
+      .select('industry, leads_from')
       .order('industry');
     
     if (data) {
@@ -55,6 +55,14 @@ export const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClient
           .filter((i): i is string => !!i && i.trim() !== '')
       )];
       setExistingIndustries(uniqueIndustries);
+
+      // Get unique sources/leads_from
+      const uniqueSources = [...new Set(
+        data
+          .map(c => c.leads_from)
+          .filter((s): s is string => !!s && s.trim() !== '')
+      )];
+      setExistingSources(uniqueSources);
     }
   };
 
@@ -183,10 +191,16 @@ export const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClient
               <Label htmlFor="leads_from">Leads from</Label>
               <Input
                 id="leads_from"
+                list="leads-from-suggestions"
                 value={form.leads_from}
                 onChange={(e) => setForm({ ...form, leads_from: e.target.value })}
                 placeholder="e.g. Referral, LinkedIn, Website"
               />
+              <datalist id="leads-from-suggestions">
+                {existingSources.map((source) => (
+                  <option key={source} value={source} />
+                ))}
+              </datalist>
             </div>
 
             <div className="space-y-2">
