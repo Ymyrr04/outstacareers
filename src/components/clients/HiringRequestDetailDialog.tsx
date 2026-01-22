@@ -636,7 +636,17 @@ export const HiringRequestDetailDialog = ({
                 >
                   <SelectTrigger className="border-0 bg-transparent h-auto p-0 hover:bg-transparent focus:ring-0">
                     {formData.assigned_admin_id ? (
-                      <Badge variant="outline" className="font-normal">
+                      <Badge variant="outline" className="font-normal flex items-center gap-1.5 pr-2">
+                        <Avatar className="h-5 w-5">
+                          {(() => {
+                            const email = adminUsers.find(a => a.user_id === formData.assigned_admin_id)?.email?.toLowerCase();
+                            const avatar = email ? ADMIN_AVATARS[email] : undefined;
+                            return avatar ? <AvatarImage src={avatar} alt="" /> : null;
+                          })()}
+                          <AvatarFallback className="text-[10px] bg-primary/20 text-primary">
+                            {getAdminDisplayName(adminUsers.find(a => a.user_id === formData.assigned_admin_id)?.email, 'U').charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
                         {getAdminDisplayName(adminUsers.find(a => a.user_id === formData.assigned_admin_id)?.email, 'Unknown')}
                       </Badge>
                     ) : (
