@@ -35,7 +35,7 @@ interface AddHiringRequestDialogProps {
   onCreated?: () => void;
 }
 
-const INDUSTRIES = [
+const DEFAULT_INDUSTRIES = [
   'Healthcare',
   'Legal',
   'E-Commerce',
@@ -56,6 +56,7 @@ export const AddHiringRequestDialog = ({
   const { createRequest } = useHiringRequests();
   const { stages } = usePipelineStages();
   const [clients, setClients] = useState<Client[]>([]);
+  const [industries, setIndustries] = useState<string[]>(DEFAULT_INDUSTRIES);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -98,6 +99,16 @@ export const AddHiringRequestDialog = ({
       .order('company_name');
     
     setClients(data || []);
+    
+    // Extract unique industries from clients and merge with defaults
+    if (data) {
+      const clientIndustries = data
+        .map(c => c.industry)
+        .filter((ind): ind is string => !!ind && ind.trim() !== '');
+      const allIndustries = [...new Set([...DEFAULT_INDUSTRIES, ...clientIndustries])];
+      setIndustries(allIndustries.sort());
+    }
+    
     setLoading(false);
   };
 
@@ -284,7 +295,7 @@ export const AddHiringRequestDialog = ({
             {/* Industry */}
             <div>
               <Label>Industry</Label>
-              {formData.industry === '__custom__' || (formData.industry && !INDUSTRIES.includes(formData.industry)) ? (
+              {formData.industry === '__custom__' || (formData.industry && !industries.includes(formData.industry)) ? (
                 <div className="flex gap-2">
                   <Input
                     value={formData.industry === '__custom__' ? '' : formData.industry}
@@ -310,7 +321,7 @@ export const AddHiringRequestDialog = ({
                     <SelectValue placeholder="Select..." />
                   </SelectTrigger>
                   <SelectContent>
-                    {INDUSTRIES.map(industry => (
+                    {industries.map(industry => (
                       <SelectItem key={industry} value={industry}>{industry}</SelectItem>
                     ))}
                     <SelectItem value="__custom__" className="text-primary font-medium">
