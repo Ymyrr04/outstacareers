@@ -48,7 +48,7 @@ interface AdminUser {
 
 // Use shared getAdminDisplayName from lib
 
-const INDUSTRIES = [
+const DEFAULT_INDUSTRIES = [
   'Healthcare',
   'Legal',
   'E-Commerce',
@@ -79,6 +79,7 @@ export const HiringRequestDetailDialog = ({
   const [loadingComments, setLoadingComments] = useState(false);
   const [addingComment, setAddingComment] = useState(false);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [industries, setIndustries] = useState<string[]>(DEFAULT_INDUSTRIES);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentContent, setEditingCommentContent] = useState('');
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
@@ -121,8 +122,23 @@ export const HiringRequestDetailDialog = ({
       setHasUnsavedChanges(false);
       fetchComments(request.id);
       fetchAdminUsers();
+      fetchIndustries();
     }
   }, [request]);
+
+  const fetchIndustries = async () => {
+    const { data } = await supabase
+      .from('clients')
+      .select('industry');
+    
+    if (data) {
+      const clientIndustries = data
+        .map(c => c.industry)
+        .filter((ind): ind is string => !!ind && ind.trim() !== '');
+      const allIndustries = [...new Set([...DEFAULT_INDUSTRIES, ...clientIndustries])];
+      setIndustries(allIndustries.sort());
+    }
+  };
 
   const fetchAdminUsers = async () => {
     const { data, error } = await supabase.functions.invoke('get-admin-users');
@@ -484,7 +500,7 @@ export const HiringRequestDetailDialog = ({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="__none__">None</SelectItem>
-                    {INDUSTRIES.map(industry => (
+                    {industries.map(industry => (
                       <SelectItem key={industry} value={industry}>{industry}</SelectItem>
                     ))}
                   </SelectContent>
