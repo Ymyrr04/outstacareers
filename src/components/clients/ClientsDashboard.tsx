@@ -74,7 +74,7 @@ export interface ClientCommunication {
 export const ClientsDashboard = () => {
   const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
-  const [hiringRequests, setHiringRequests] = useState<{ client_status: string }[]>([]);
+  const [hiringRequests, setHiringRequests] = useState<{ client_id: string | null; client_status: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -89,7 +89,7 @@ export const ClientsDashboard = () => {
         supabase.from('clients').select('*').order('company_name', { ascending: true }),
         supabase.from('client_contacts').select('client_id'),
         supabase.from('contractor_assignments').select('client_id, status'),
-        supabase.from('client_hiring_requests').select('client_status').neq('pipeline_stage', 'closed'),
+        supabase.from('client_hiring_requests').select('client_id, client_status').neq('pipeline_stage', 'closed'),
       ]);
 
       if (clientsRes.error) throw clientsRes.error;
@@ -199,6 +199,19 @@ export const ClientsDashboard = () => {
   // Count hiring clients from the clients table itself
   const newClientsHiring = clients.filter(c => c.is_hiring && (c.contractor_count || 0) === 0).length;
   const existingClientsHiring = clients.filter(c => c.is_hiring && (c.contractor_count || 0) > 0).length;
+  
+  // Count open hiring requests per client
+  const hiringRequestCountByClient = hiringRequests.reduce((acc, req) => {
+    if (req.client_id) {
+      acc[req.client_id] = (acc[req.client_id] || 0) + 1;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+  
+  // Total open roles for existing clients (clients that are hiring and have active contractors)
+  const existingClientsOpenRoles = clients
+    .filter(c => c.is_hiring && (c.contractor_count || 0) > 0)
+    .reduce((sum, c) => sum + (hiringRequestCountByClient[c.id] || 0), 0);
 
   // Export clients to CSV
   const handleExport = async () => {
@@ -358,7 +371,14 @@ export const ClientsDashboard = () => {
                 <Building2 className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{existingClientsHiring}</p>
+                <div className="flex items-center gap-2">
+                  <p className="text-2xl font-bold">{existingClientsHiring}</p>
+                  {existingClientsOpenRoles > 0 && (
+                    <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                      {existingClientsOpenRoles} {existingClientsOpenRoles === 1 ? 'role' : 'roles'}
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-sm text-muted-foreground">Existing Client (Hiring)</p>
               </div>
             </div>
@@ -441,6 +461,12 @@ export const ClientsDashboard = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-6 text-sm">
+                    {hiringRequestCountByClient[client.id] > 0 && (
+                      <div className="text-center">
+                        <p className="font-semibold text-purple-600">{hiringRequestCountByClient[client.id]}</p>
+                        <p className="text-muted-foreground text-xs">Open Roles</p>
+                      </div>
+                    )}
                     <div className="text-center">
                       <p className="font-semibold">{client.contact_count}</p>
                       <p className="text-muted-foreground text-xs">Contacts</p>
