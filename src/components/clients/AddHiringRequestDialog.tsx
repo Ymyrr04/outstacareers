@@ -58,6 +58,7 @@ export const AddHiringRequestDialog = ({
   const [clients, setClients] = useState<Client[]>([]);
   const [industries, setIndustries] = useState<string[]>(DEFAULT_INDUSTRIES);
   const [sources, setSources] = useState<string[]>([]);
+  const [jobTitles, setJobTitles] = useState<string[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -82,8 +83,25 @@ export const AddHiringRequestDialog = ({
       setFormData(prev => ({ ...prev, pipeline_stage: defaultStage }));
       fetchClients();
       fetchAdminUsers();
+      fetchJobTitles();
     }
   }, [open, defaultStage]);
+
+  const fetchJobTitles = async () => {
+    const { data } = await supabase
+      .from('contractor_assignments')
+      .select('job_title')
+      .not('job_title', 'is', null);
+    
+    if (data) {
+      const uniqueTitles = [...new Set(
+        data
+          .map(c => c.job_title)
+          .filter((t): t is string => !!t && t.trim() !== '')
+      )].sort();
+      setJobTitles(uniqueTitles);
+    }
+  };
 
   const fetchAdminUsers = async () => {
     const { data, error } = await supabase.functions.invoke('get-admin-users');
@@ -280,11 +298,17 @@ export const AddHiringRequestDialog = ({
             <div className="col-span-2">
               <Label>Job Title *</Label>
               <Input
+                list="job-title-suggestions"
                 value={formData.job_title}
                 onChange={(e) => setFormData(prev => ({ ...prev, job_title: e.target.value }))}
                 placeholder="e.g., Billing CSR, Senior Accountant"
                 required
               />
+              <datalist id="job-title-suggestions">
+                {jobTitles.map((title) => (
+                  <option key={title} value={title} />
+                ))}
+              </datalist>
             </div>
 
             {/* Priority */}
