@@ -39,6 +39,7 @@ import {
   Check,
   X,
 } from 'lucide-react';
+import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import {
   Table,
   TableBody,
@@ -733,7 +734,7 @@ export const MyApplicantsDashboard = () => {
           <p className="text-muted-foreground">
             {selectedAdminFilter === 'all' 
               ? `Viewing applicants across ${allJobs.length} assigned jobs`
-              : `${filteredJobs.length} job${filteredJobs.length !== 1 ? 's' : ''} • ${adminUsersMap[selectedAdminFilter] || 'Unknown Admin'}`
+              : `${filteredJobs.length} job${filteredJobs.length !== 1 ? 's' : ''} • ${getAdminDisplayName(adminUsersMap[selectedAdminFilter], 'Unknown Admin')}`
             }
           </p>
         </div>
@@ -764,7 +765,7 @@ export const MyApplicantsDashboard = () => {
           <SelectContent>
             <SelectItem value="all">All Admins</SelectItem>
             {Object.entries(adminUsersMap).map(([id, email]) => (
-              <SelectItem key={id} value={id}>{email}</SelectItem>
+              <SelectItem key={id} value={id}>{getAdminDisplayName(email)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
