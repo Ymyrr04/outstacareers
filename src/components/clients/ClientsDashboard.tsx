@@ -185,8 +185,8 @@ export const ClientsDashboard = () => {
       statusFilter === 'all' ||
       (statusFilter === 'active' && hasActiveContractors) ||
       (statusFilter === 'lost' && isLost) ||
-      (statusFilter === 'newHiring' && client.is_hiring) ||
-      (statusFilter === 'existingHiring' && hasActiveContractors);
+      (statusFilter === 'newHiring' && client.is_hiring && !hasActiveContractors) ||
+      (statusFilter === 'existingHiring' && client.is_hiring && hasActiveContractors);
     
     return matchesSearch && matchesStatusFilter;
   });
@@ -196,9 +196,9 @@ export const ClientsDashboard = () => {
   const totalActiveClients = clients.filter(c => (c.contractor_count || 0) > 0).length;
   const clientsLost = clients.filter(c => (c.contractor_count || 0) === 0 && !c.is_hiring).length;
   
-  // Count from pipeline by client_status
-  const newClientsHiring = hiringRequests.filter(r => r.client_status === 'new').length;
-  const existingClientsHiring = hiringRequests.filter(r => r.client_status === 'existing' || r.client_status === 'returning').length;
+  // Count hiring clients from the clients table itself
+  const newClientsHiring = clients.filter(c => c.is_hiring && (c.contractor_count || 0) === 0).length;
+  const existingClientsHiring = clients.filter(c => c.is_hiring && (c.contractor_count || 0) > 0).length;
 
   // Export clients to CSV
   const handleExport = async () => {
