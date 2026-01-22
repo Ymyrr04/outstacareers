@@ -9,7 +9,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, MessageCircle, Check } from 'lucide-react';
+import { Plus, MessageCircle, Check, Download } from 'lucide-react';
+import { exportPipeline } from '@/lib/exportUtils';
 import { AddHiringRequestDialog } from './AddHiringRequestDialog';
 import { HiringRequestDetailDialog } from './HiringRequestDetailDialog';
 import { AddPipelineStageDialog } from './AddPipelineStageDialog';
@@ -296,8 +297,25 @@ export const HiringPipelineKanban = () => {
     );
   }
 
+  const handleExport = async () => {
+    const result = await exportPipeline();
+    if (result.success) {
+      toast({ title: 'Success', description: `Exported ${result.count} pipeline requests` });
+    } else {
+      toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
+    }
+  };
+
   return (
     <>
+      {/* Pipeline Header with Export */}
+      <div className="flex items-center justify-between px-4 py-2 border-b">
+        <h2 className="text-lg font-semibold">Hiring Pipeline</h2>
+        <Button variant="outline" size="sm" onClick={handleExport}>
+          <Download className="w-4 h-4 mr-2" />
+          Export
+        </Button>
+      </div>
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="flex gap-4 p-4 overflow-x-auto h-[calc(100vh-200px)]">
           {stages.map(stage => {

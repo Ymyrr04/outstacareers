@@ -13,7 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive } from 'lucide-react';
+import { exportJobs, exportApplicants, exportAllData } from '@/lib/exportUtils';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useEmailReplies } from '@/hooks/useEmailTemplates';
 import { ClientsDashboard, ContractorsDashboard, ClientAnalyticsDashboard, HiringPipelineKanban } from '@/components/clients';
@@ -940,6 +941,22 @@ const Admin = () => {
           </div>
           <div className="flex items-center gap-4">
             <ThemeToggle />
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={async () => {
+                toast({ title: 'Exporting...', description: 'Preparing your data...' });
+                const result = await exportAllData();
+                if (result.success) {
+                  toast({ title: 'Success', description: 'All data exported as ZIP file' });
+                } else {
+                  toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
+                }
+              }}
+            >
+              <Archive className="w-4 h-4 mr-2" />
+              Export All
+            </Button>
             <span className="text-sm text-muted-foreground">{user?.email}</span>
             <Button variant="outline" size="sm" onClick={signOut}>
               <LogOut className="w-4 h-4 mr-2" />
@@ -1024,7 +1041,24 @@ const Admin = () => {
                 <h2 className="text-2xl font-bold">All Jobs</h2>
                 <p className="text-muted-foreground">Manage your job listings</p>
               </div>
-              <AddJobDialog onJobAdded={fetchJobs} />
+              <div className="flex items-center gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={async () => {
+                    const result = await exportJobs();
+                    if (result.success) {
+                      toast({ title: 'Success', description: `Exported ${result.count} jobs` });
+                    } else {
+                      toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
+                    }
+                  }}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
+                </Button>
+                <AddJobDialog onJobAdded={fetchJobs} />
+              </div>
             </div>
 
             {/* Jobs Search and Filters */}
@@ -1334,11 +1368,25 @@ const Admin = () => {
                 </Popover>
                 
                 <Button 
-                  variant="outline" 
+                  variant="outline"
                   onClick={() => setEmailTemplateEditorOpen(true)}
                 >
                   <Settings className="w-4 h-4 mr-2" />
                   Email Templates
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={async () => {
+                    const result = await exportApplicants();
+                    if (result.success) {
+                      toast({ title: 'Success', description: `Exported ${result.count} applicants` });
+                    } else {
+                      toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
+                    }
+                  }}
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Export
                 </Button>
                 <BulkUploadDialog 
                   jobs={jobs.map(j => ({ 
