@@ -65,7 +65,7 @@ const CelebrationPopup = ({
     if (mediaUrl && !isVideo) {
       const timer = setTimeout(() => {
         onComplete();
-      }, 2500);
+      }, 1800); // Faster GIF display
       return () => clearTimeout(timer);
     }
   }, [mediaUrl, isVideo, onComplete]);
@@ -74,7 +74,7 @@ const CelebrationPopup = ({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none bg-black/20">
-      <div className={isVideo ? "animate-[zoomIn_0.5s_ease-out_forwards]" : "animate-scale-in"}>
+      <div className={isVideo ? "animate-[zoomIn_0.35s_ease-out_forwards]" : "animate-scale-in"}>
         <div className="relative">
           {isVideo ? (
             <video 
@@ -83,6 +83,7 @@ const CelebrationPopup = ({
               playsInline
               onEnded={onComplete}
               className="w-[500px] h-[500px] object-contain drop-shadow-2xl rounded-lg"
+              ref={(el) => { if (el) el.playbackRate = 1.25; }}
             />
           ) : (
             <img 
