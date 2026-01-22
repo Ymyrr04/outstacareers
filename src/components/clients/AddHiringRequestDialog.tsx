@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
+import { WysiwygEditor } from '@/components/WysiwygEditor';
 import { useHiringRequests, type Priority, type ClientStatus } from '@/hooks/useHiringRequests';
 import { usePipelineStages } from '@/hooks/usePipelineStages';
 import { Loader2, Plus } from 'lucide-react';
@@ -447,11 +447,11 @@ export const AddHiringRequestDialog = ({
             {/* Job Description */}
             <div className="col-span-2">
               <Label>Job Description</Label>
-              <Textarea
+              <WysiwygEditor
                 value={formData.notes}
-                onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                onChange={(html) => setFormData(prev => ({ ...prev, notes: html }))}
                 placeholder="Role details, requirements, responsibilities..."
-                rows={3}
+                minHeight="100px"
               />
             </div>
           </div>
