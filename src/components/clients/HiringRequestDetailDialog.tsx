@@ -19,7 +19,23 @@ import { FormattedNotes } from '@/components/FormattedNotes';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { getAdminDisplayName } from '@/lib/adminDisplayNames';
+import { getAdminDisplayName, getAdminAvatar } from '@/lib/adminDisplayNames';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+
+// Import admin avatars
+import czaAvatar from '@/assets/team/cza.png';
+import kristineAvatar from '@/assets/team/kristine.png';
+import eduardoAvatar from '@/assets/team/eduardo.png';
+import markAvatar from '@/assets/team/mark.png';
+import liezlAvatar from '@/assets/team/liezl-new.png';
+
+const ADMIN_AVATARS: Record<string, string> = {
+  'czarina@outsta.io': czaAvatar,
+  'kristine@outsta.io': kristineAvatar,
+  'eduardo@outsta.io': eduardoAvatar,
+  'mark@outsta.io': markAvatar,
+  'liezl@outsta.io': liezlAvatar,
+};
 
 interface HiringRequestDetailDialogProps {
   request: HiringRequest | null;
@@ -723,14 +739,27 @@ export const HiringRequestDetailDialog = ({
             ) : (
               comments.map(comment => {
                 const commenterAdmin = adminUsers.find(a => a.user_id === comment.user_id);
+                const commenterEmail = commenterAdmin?.email?.toLowerCase();
                 const commenterName = getAdminDisplayName(commenterAdmin?.email, 'Unknown');
+                const commenterAvatar = commenterEmail ? ADMIN_AVATARS[commenterEmail] : undefined;
+                const commenterInitial = commenterName.charAt(0).toUpperCase();
                 const isOwnComment = user?.id === comment.user_id;
                 const isEditing = editingCommentId === comment.id;
                 
                 return (
                   <div key={comment.id} className="bg-muted/30 rounded-lg p-3">
                     <div className="flex items-center justify-between mb-1">
-                      <span className="text-sm font-semibold">{commenterName}</span>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                          {commenterAvatar ? (
+                            <AvatarImage src={commenterAvatar} alt={commenterName} />
+                          ) : null}
+                          <AvatarFallback className="text-xs bg-primary/20 text-primary">
+                            {commenterInitial}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span className="text-sm font-semibold">{commenterName}</span>
+                      </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">
                           {format(new Date(comment.created_at), 'MMM d, h:mm a')}
