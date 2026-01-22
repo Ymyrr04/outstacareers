@@ -12,6 +12,7 @@ import { Plus, MessageCircle, Check } from 'lucide-react';
 import { AddHiringRequestDialog } from './AddHiringRequestDialog';
 import { HiringRequestDetailDialog } from './HiringRequestDetailDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
 
 // Celebration GIFs pool
 const CELEBRATION_GIFS = [
@@ -236,6 +237,7 @@ export const HiringPipelineKanban = () => {
   const [addToStage, setAddToStage] = useState<PipelineStage>('backlog');
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [celebrationGif, setCelebrationGif] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchAdminUsers = async () => {
@@ -351,6 +353,23 @@ export const HiringPipelineKanban = () => {
               </div>
             );
           })}
+
+          {/* Add Section Button */}
+          <div className="flex-shrink-0 w-72 flex flex-col">
+            <Button
+              variant="outline"
+              className="h-full min-h-[200px] border-dashed border-2 text-muted-foreground hover:text-foreground hover:border-primary/50 flex flex-col gap-2"
+              onClick={() => {
+                toast({
+                  title: 'Coming Soon',
+                  description: 'Custom pipeline sections will be available in a future update.',
+                });
+              }}
+            >
+              <Plus className="w-6 h-6" />
+              <span className="text-sm font-medium">Add Section</span>
+            </Button>
+          </div>
         </div>
       </DragDropContext>
 
