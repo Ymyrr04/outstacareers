@@ -37,6 +37,8 @@ interface ReplyContext {
   originalBody: string;
   fromEmail: string;
   receivedAt: string;
+  inReplyTo?: string; // Message-ID for threading
+  isFollowUp?: boolean; // Indicates this is a follow-up to our own sent email
 }
 
 // Decode MIME encoded words (RFC 2047) for display
@@ -261,6 +263,23 @@ export function CommunicationHistory({
       originalBody: reply.body_text || '',
       fromEmail: reply.from_email,
       receivedAt: reply.received_at,
+      inReplyTo: reply.in_reply_to || undefined,
+    });
+    setReplySubject(subject);
+    setReplyBody('');
+    setShowReplyComposer(true);
+  };
+
+  // Open reply composer for follow-up to our own sent email
+  const handleFollowUp = (sentEmail: EmailLog) => {
+    const subject = sentEmail.subject.startsWith('Re:') ? sentEmail.subject : `Re: ${sentEmail.subject}`;
+    setReplyContext({
+      subject: sentEmail.subject,
+      originalBody: '',
+      fromEmail: sentEmail.recipient_email,
+      receivedAt: sentEmail.sent_at || sentEmail.created_at,
+      inReplyTo: sentEmail.message_id || undefined,
+      isFollowUp: true,
     });
     setReplySubject(subject);
     setReplyBody('');
@@ -289,6 +308,7 @@ export function CommunicationHistory({
           recipientEmail: applicantEmail,
           applicantStatusAtSend: null,
           isAutomated: false,
+          inReplyTo: replyContext?.inReplyTo || undefined, // For proper email threading
         },
       });
 
@@ -614,9 +634,22 @@ export function CommunicationHistory({
                             <div className="border-t">
                               {/* Original Sent Email */}
                               <div className="bg-muted/30 p-4">
-                                <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
-                                  <Send className="h-3 w-3" />
-                                  <span>Sent message</span>
+                                <div className="flex items-center justify-between gap-2 mb-2">
+                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <Send className="h-3 w-3" />
+                                    <span>Sent message</span>
+                                  </div>
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleFollowUp(thread.sentEmail);
+                                    }}
+                                  >
+                                    <CornerUpLeft className="h-4 w-4 mr-1.5" />
+                                    Follow up
+                                  </Button>
                                 </div>
                                 <div className="prose prose-sm max-w-none dark:prose-invert break-words overflow-hidden">
                                   <div 
@@ -757,10 +790,10 @@ export function CommunicationHistory({
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CornerUpLeft className="h-5 w-5" />
-              Reply to {applicantName}
+              {replyContext?.isFollowUp ? 'Follow up' : 'Reply to'} {applicantName}
             </DialogTitle>
             <DialogDescription>
-              Replying to: {applicantEmail}
+              {replyContext?.isFollowUp ? 'Following up on' : 'Replying to'}: {applicantEmail}
             </DialogDescription>
           </DialogHeader>
 
@@ -772,7 +805,7 @@ export function CommunicationHistory({
                   <span className="font-medium">Original subject:</span> {replyContext.subject}
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  Received {format(new Date(replyContext.receivedAt), 'PPP p')}
+                  {replyContext.isFollowUp ? 'Sent' : 'Received'} {format(new Date(replyContext.receivedAt), 'PPP p')}
                 </p>
               </div>
             )}
