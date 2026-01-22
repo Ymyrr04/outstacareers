@@ -336,10 +336,10 @@ export const HiringPipelineKanban = () => {
                       ref={provided.innerRef}
                       {...provided.droppableProps}
                       className={`
-                        flex-1 rounded-lg p-2 transition-all duration-150 overflow-y-auto border
+                        flex-1 rounded-lg p-2 transition-all duration-150 overflow-y-auto border shadow-sm
                         ${snapshot.isDraggingOver 
                           ? 'bg-primary/10 ring-2 ring-primary/40 border-primary/40' 
-                          : 'bg-muted/50 dark:bg-muted/30 border-border/50'
+                          : 'bg-muted dark:bg-muted/30 border-border'
                         }
                       `}
                     >
