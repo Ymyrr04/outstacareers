@@ -209,6 +209,11 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
             >
               {request.client_status === 'new' ? 'New' : request.client_status === 'returning' ? 'Returning' : 'Existing'}
             </Badge>
+            {request.hours_per_week && request.hours_per_week !== 'TBD' && (
+              <Badge variant="outline" className="text-xs bg-slate-500/10 text-slate-600 dark:text-slate-400 border-slate-500/30">
+                {request.hours_per_week}h/wk
+              </Badge>
+            )}
           </div>
 
           {/* Footer with avatar, name, date, and comment count */}
