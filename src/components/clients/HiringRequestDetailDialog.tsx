@@ -464,14 +464,15 @@ export const HiringRequestDetailDialog = ({
                 >
                   <SelectTrigger className="border-0 bg-transparent h-auto p-0 hover:bg-transparent focus:ring-0">
                     <Badge 
-                      variant={formData.priority === 'high' ? 'destructive' : 'secondary'}
-                      className="font-normal"
+                      variant={formData.priority === 'high' ? 'destructive' : formData.priority === 'medium' ? 'default' : 'secondary'}
+                      className={`font-normal ${formData.priority === 'medium' ? 'bg-amber-500 hover:bg-amber-600' : ''}`}
                     >
-                      {formData.priority === 'high' ? 'High' : 'Low'}
+                      {formData.priority === 'high' ? 'High' : formData.priority === 'medium' ? 'Medium' : 'Low'}
                     </Badge>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="high">High</SelectItem>
+                    <SelectItem value="medium">Medium</SelectItem>
                     <SelectItem value="low">Low</SelectItem>
                   </SelectContent>
                 </Select>
