@@ -1374,20 +1374,55 @@ const Admin = () => {
                   <Settings className="w-4 h-4 mr-2" />
                   Email Templates
                 </Button>
-                <Button 
-                  variant="outline"
-                  onClick={async () => {
-                    const result = await exportApplicants();
-                    if (result.success) {
-                      toast({ title: 'Success', description: `Exported ${result.count} applicants` });
-                    } else {
-                      toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
-                    }
-                  }}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  Export
-                </Button>
+                {/* Export Dropdown */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline">
+                      <Download className="w-4 h-4 mr-2" />
+                      Export
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-56 p-2" align="end">
+                    <div className="space-y-1">
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start text-sm"
+                        onClick={async () => {
+                          const result = await exportApplicants();
+                          if (result.success) {
+                            toast({ title: 'Success', description: `Exported ${result.count} applicants` });
+                          } else {
+                            toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
+                          }
+                        }}
+                      >
+                        <FileText className="w-4 h-4 mr-2" />
+                        Export CSV Only
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        className="w-full justify-start text-sm"
+                        onClick={async () => {
+                          toast({ title: 'Exporting...', description: 'Downloading CVs, this may take a moment...' });
+                          const result = await exportApplicants({ 
+                            includeCVs: true,
+                            onProgress: (step) => {
+                              toast({ title: 'Exporting...', description: step });
+                            }
+                          });
+                          if (result.success) {
+                            toast({ title: 'Success', description: `Exported ${result.count} applicants with CVs` });
+                          } else {
+                            toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
+                          }
+                        }}
+                      >
+                        <FolderOpen className="w-4 h-4 mr-2" />
+                        Export with CVs (ZIP)
+                      </Button>
+                    </div>
+                  </PopoverContent>
+                </Popover>
                 <BulkUploadDialog 
                   jobs={jobs.map(j => ({ 
                     id: j.id, 
