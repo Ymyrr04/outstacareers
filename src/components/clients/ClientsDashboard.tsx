@@ -5,7 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Building2, Users, Search, Plus, Loader2, Globe, Download, Upload, TrendingUp } from 'lucide-react';
+import { Building2, Users, Search, Plus, Loader2, Globe, Download, Upload, TrendingUp, UserPlus } from 'lucide-react';
 import { AddClientDialog } from './AddClientDialog';
 import { ClientDetailPanel } from './ClientDetailPanel';
 import { ClientImportDialog } from './ClientImportDialog';
@@ -74,44 +74,37 @@ export interface ClientCommunication {
 export const ClientsDashboard = () => {
   const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
+  const [hiringRequests, setHiringRequests] = useState<{ client_status: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'lost' | 'hiring'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'lost' | 'newHiring' | 'existingHiring'>('all');
 
   const fetchClients = async () => {
     setLoading(true);
     try {
-      // Fetch clients with counts
-      const { data: clientsData, error } = await supabase
-        .from('clients')
-        .select('*')
-        .order('company_name', { ascending: true });
+      // Fetch clients, counts, and hiring requests in parallel
+      const [clientsRes, contactCountsRes, contractorCountsRes, hiringRequestsRes] = await Promise.all([
+        supabase.from('clients').select('*').order('company_name', { ascending: true }),
+        supabase.from('client_contacts').select('client_id'),
+        supabase.from('contractor_assignments').select('client_id, status'),
+        supabase.from('client_hiring_requests').select('client_status').neq('pipeline_stage', 'closed'),
+      ]);
 
-      if (error) throw error;
-
-      // Fetch contact counts
-      const { data: contactCounts } = await supabase
-        .from('client_contacts')
-        .select('client_id');
-
-      // Fetch actual contractor counts from contractor_assignments
-      const { data: contractorCounts } = await supabase
-        .from('contractor_assignments')
-        .select('client_id, status');
+      if (clientsRes.error) throw clientsRes.error;
 
       // Build counts maps
       const contactMap: Record<string, number> = {};
       const contractorMap: Record<string, number> = {};
 
-      contactCounts?.forEach(c => {
+      contactCountsRes.data?.forEach(c => {
         contactMap[c.client_id] = (contactMap[c.client_id] || 0) + 1;
       });
 
       // Count only active contractors (exclude scheduled, terminated, resigned, rendering)
-      contractorCounts?.forEach(c => {
+      contractorCountsRes.data?.forEach(c => {
         const status = c.status?.toLowerCase();
         if (status === 'active') {
           contractorMap[c.client_id] = (contractorMap[c.client_id] || 0) + 1;
@@ -119,13 +112,14 @@ export const ClientsDashboard = () => {
       });
 
       // Enrich clients with actual contractor counts
-      const enrichedClients = (clientsData || []).map(client => ({
+      const enrichedClients = (clientsRes.data || []).map(client => ({
         ...client,
         contact_count: contactMap[client.id] || 0,
         contractor_count: contractorMap[client.id] || 0,
       }));
 
       setClients(enrichedClients);
+      setHiringRequests(hiringRequestsRes.data || []);
     } catch (err: any) {
       toast({
         title: 'Error',
@@ -154,7 +148,8 @@ export const ClientsDashboard = () => {
       statusFilter === 'all' ||
       (statusFilter === 'active' && hasActiveContractors) ||
       (statusFilter === 'lost' && isLost) ||
-      (statusFilter === 'hiring' && client.is_hiring);
+      (statusFilter === 'newHiring' && client.is_hiring) ||
+      (statusFilter === 'existingHiring' && hasActiveContractors);
     
     return matchesSearch && matchesStatusFilter;
   });
@@ -163,7 +158,10 @@ export const ClientsDashboard = () => {
   const totalActiveContractors = clients.reduce((sum, c) => sum + (c.contractor_count || 0), 0);
   const totalActiveClients = clients.filter(c => (c.contractor_count || 0) > 0).length;
   const clientsLost = clients.filter(c => (c.contractor_count || 0) === 0 && !c.is_hiring).length;
-  const clientsHiring = clients.filter(c => c.is_hiring).length;
+  
+  // Count from pipeline by client_status
+  const newClientsHiring = hiringRequests.filter(r => r.client_status === 'new').length;
+  const existingClientsHiring = hiringRequests.filter(r => r.client_status === 'existing' || r.client_status === 'returning').length;
 
   // Export clients to CSV
   const handleExport = async () => {
@@ -298,17 +296,33 @@ export const ClientsDashboard = () => {
           </CardContent>
         </Card>
         <Card 
-          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'hiring' ? 'ring-2 ring-amber-500' : ''}`}
-          onClick={() => setStatusFilter(statusFilter === 'hiring' ? 'all' : 'hiring')}
+          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'newHiring' ? 'ring-2 ring-amber-500' : ''}`}
+          onClick={() => setStatusFilter(statusFilter === 'newHiring' ? 'all' : 'newHiring')}
         >
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-amber-500/10 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-amber-600" />
+                <UserPlus className="w-5 h-5 text-amber-600" />
               </div>
               <div>
-                <p className="text-2xl font-bold">{clientsHiring}</p>
+                <p className="text-2xl font-bold">{newClientsHiring}</p>
                 <p className="text-sm text-muted-foreground">New Client (Hiring)</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'existingHiring' ? 'ring-2 ring-purple-500' : ''}`}
+          onClick={() => setStatusFilter(statusFilter === 'existingHiring' ? 'all' : 'existingHiring')}
+        >
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-purple-500/10 rounded-lg">
+                <Building2 className="w-5 h-5 text-purple-600" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{existingClientsHiring}</p>
+                <p className="text-sm text-muted-foreground">Existing Client (Hiring)</p>
               </div>
             </div>
           </CardContent>
