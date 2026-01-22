@@ -104,10 +104,21 @@ const CelebrationPopup = ({
             <video 
               src={mediaUrl}
               autoPlay
+              muted
               playsInline
               onEnded={onComplete}
               className="w-[500px] h-[500px] object-contain drop-shadow-2xl rounded-lg"
-              ref={(el) => { if (el) el.playbackRate = 1.25; }}
+              ref={(el) => { 
+                if (el) {
+                  el.playbackRate = 1.25;
+                  // Ensure autoplay works across all browsers
+                  el.play().catch(() => {
+                    // If autoplay fails, try muted playback
+                    el.muted = true;
+                    el.play().catch(() => {});
+                  });
+                }
+              }}
             />
           ) : (
             <img 
