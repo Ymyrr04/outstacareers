@@ -59,11 +59,12 @@ const CelebrationPopup = ({
   isVideo: boolean;
   onComplete: () => void;
 }) => {
+  // Only use timeout for GIFs - videos will use onEnded event
   useEffect(() => {
-    if (mediaUrl) {
+    if (mediaUrl && !isVideo) {
       const timer = setTimeout(() => {
         onComplete();
-      }, isVideo ? 4000 : 2500);
+      }, 2500);
       return () => clearTimeout(timer);
     }
   }, [mediaUrl, isVideo, onComplete]);
@@ -79,6 +80,7 @@ const CelebrationPopup = ({
               src={mediaUrl}
               autoPlay
               playsInline
+              onEnded={onComplete}
               className="w-80 h-80 object-contain drop-shadow-2xl rounded-lg"
             />
           ) : (
