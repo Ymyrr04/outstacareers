@@ -7,7 +7,22 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+
+// Import admin avatars
+import czaAvatar from '@/assets/team/cza.png';
+import kristineAvatar from '@/assets/team/kristine.png';
+import eduardoAvatar from '@/assets/team/eduardo.png';
+import markAvatar from '@/assets/team/mark.png';
+import liezlAvatar from '@/assets/team/liezl-new.png';
+
+const ADMIN_AVATARS: Record<string, string> = {
+  'czarina@outsta.io': czaAvatar,
+  'kristine@outsta.io': kristineAvatar,
+  'eduardo@outsta.io': eduardoAvatar,
+  'mark@outsta.io': markAvatar,
+  'liezl@outsta.io': liezlAvatar,
+};
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Plus, MessageCircle, Check, Download } from 'lucide-react';
 import { exportPipeline } from '@/lib/exportUtils';
@@ -98,8 +113,10 @@ interface KanbanCardProps {
 const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanCardProps) => {
   const isClosed = request.pipeline_stage === 'closed';
   const assignee = adminUsers.find(a => a.user_id === request.assigned_admin_id);
+  const assigneeEmail = assignee?.email?.toLowerCase();
   const assigneeName = getAdminDisplayName(assignee?.email);
   const assigneeInitial = assigneeName.charAt(0).toUpperCase();
+  const assigneeAvatar = assigneeEmail ? ADMIN_AVATARS[assigneeEmail] : undefined;
   const formatDateRange = () => {
     if (!request.start_date && !request.target_end_date) return null;
     
@@ -201,6 +218,9 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-1.5 cursor-default">
                     <Avatar className="h-5 w-5">
+                      {assigneeAvatar ? (
+                        <AvatarImage src={assigneeAvatar} alt={assigneeName} />
+                      ) : null}
                       <AvatarFallback className={`text-[10px] ${assignee ? 'bg-primary/20 text-primary' : 'bg-muted'}`}>
                         {assigneeInitial}
                       </AvatarFallback>
