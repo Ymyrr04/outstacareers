@@ -452,9 +452,17 @@ export const ClientAnalyticsDashboard = () => {
   
   const clientsLost = clients.filter(c => !clientsWithActiveContractors.has(c.id) && !c.is_hiring).length;
   
-  // Count unique clients by client_status from pipeline (excluding closed)
-  const newClientsHiring = new Set(hiringRequests.filter(r => r.client_status === 'new').map(r => r.client_id)).size;
-  const existingClientsHiring = new Set(hiringRequests.filter(r => r.client_status === 'existing' || r.client_status === 'returning').map(r => r.client_id)).size;
+  // Count hiring clients from the clients table (matching ClientsDashboard logic)
+  // Build contractor count per client
+  const contractorCountByClient = contractors
+    .filter(c => c.status === 'active')
+    .reduce((acc, c) => {
+      acc[c.client_id] = (acc[c.client_id] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+  
+  const newClientsHiring = clients.filter(c => c.is_hiring && (contractorCountByClient[c.id] || 0) === 0).length;
+  const existingClientsHiring = clients.filter(c => c.is_hiring && (contractorCountByClient[c.id] || 0) > 0).length;
 
   // Sort handlers for retention tables
   const handleCompanySort = (field: SortField) => {
