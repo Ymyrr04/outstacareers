@@ -218,12 +218,12 @@ export const AddHiringRequestDialog = ({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
+        <DialogContent className="max-w-lg max-h-[90vh] flex flex-col">
+          <DialogHeader className="flex-shrink-0">
             <DialogTitle>Add Hiring Request</DialogTitle>
           </DialogHeader>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4 overflow-y-auto flex-1 pr-2">
             <div className="grid grid-cols-2 gap-4">
               {/* Client */}
               <div className="col-span-2">
