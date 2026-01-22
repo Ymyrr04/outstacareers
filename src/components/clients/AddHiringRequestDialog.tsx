@@ -57,6 +57,7 @@ export const AddHiringRequestDialog = ({
   const { stages } = usePipelineStages();
   const [clients, setClients] = useState<Client[]>([]);
   const [industries, setIndustries] = useState<string[]>(DEFAULT_INDUSTRIES);
+  const [sources, setSources] = useState<string[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -100,13 +101,20 @@ export const AddHiringRequestDialog = ({
     
     setClients(data || []);
     
-    // Extract unique industries from clients and merge with defaults
+    // Extract unique industries and sources from clients
     if (data) {
       const clientIndustries = data
         .map(c => c.industry)
         .filter((ind): ind is string => !!ind && ind.trim() !== '');
       const allIndustries = [...new Set([...DEFAULT_INDUSTRIES, ...clientIndustries])];
       setIndustries(allIndustries.sort());
+
+      // Extract unique sources/referrals
+      const clientSources = data
+        .map(c => c.leads_from)
+        .filter((src): src is string => !!src && src.trim() !== '');
+      const uniqueSources = [...new Set(clientSources)].sort();
+      setSources(uniqueSources);
     }
     
     setLoading(false);
@@ -375,11 +383,47 @@ export const AddHiringRequestDialog = ({
             {/* Source */}
             <div>
               <Label>Source / Referral</Label>
-              <Input
-                value={formData.source}
-                onChange={(e) => setFormData(prev => ({ ...prev, source: e.target.value }))}
-                placeholder="e.g., BNI, LinkedIn"
-              />
+              {formData.source === '__custom__' || (formData.source && !sources.includes(formData.source)) ? (
+                <div className="flex gap-2">
+                  <Input
+                    value={formData.source === '__custom__' ? '' : formData.source}
+                    onChange={(e) => setFormData(prev => ({ ...prev, source: e.target.value }))}
+                    placeholder="Enter source..."
+                    className="flex-1"
+                  />
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => setFormData(prev => ({ ...prev, source: '' }))}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Select
+                  value={formData.source || '__none__'}
+                  onValueChange={(value) => setFormData(prev => ({ 
+                    ...prev, 
+                    source: value === '__none__' ? '' : value 
+                  }))}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select source..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">None</SelectItem>
+                    {sources.map(source => (
+                      <SelectItem key={source} value={source}>{source}</SelectItem>
+                    ))}
+                    <SelectItem value="__custom__">
+                      <span className="flex items-center gap-1">
+                        <Plus className="w-3 h-3" /> Add Other
+                      </span>
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
 
             {/* Date Range */}
