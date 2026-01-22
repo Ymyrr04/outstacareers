@@ -72,8 +72,8 @@ const CelebrationPopup = ({
   if (!mediaUrl) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none">
-      <div className="animate-scale-in">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center pointer-events-none bg-black/20">
+      <div className={isVideo ? "animate-[zoomIn_0.5s_ease-out_forwards]" : "animate-scale-in"}>
         <div className="relative">
           {isVideo ? (
             <video 
@@ -81,7 +81,7 @@ const CelebrationPopup = ({
               autoPlay
               playsInline
               onEnded={onComplete}
-              className="w-80 h-80 object-contain drop-shadow-2xl rounded-lg"
+              className="w-[500px] h-[500px] object-contain drop-shadow-2xl rounded-lg"
             />
           ) : (
             <img 
