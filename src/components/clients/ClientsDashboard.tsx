@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -82,8 +82,7 @@ export const ClientsDashboard = () => {
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'lost' | 'newHiring' | 'existingHiring'>('all');
 
-  const fetchClients = async () => {
-    setLoading(true);
+  const fetchClients = useCallback(async () => {
     try {
       // Fetch clients, counts, and hiring requests in parallel
       const [clientsRes, contactCountsRes, contractorCountsRes, hiringRequestsRes] = await Promise.all([
@@ -129,11 +128,49 @@ export const ClientsDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
+  // Initial fetch
   useEffect(() => {
+    setLoading(true);
     fetchClients();
-  }, []);
+  }, [fetchClients]);
+
+  // Real-time subscriptions for auto-refresh
+  useEffect(() => {
+    const clientsChannel = supabase
+      .channel('clients-dashboard-clients')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'clients' },
+        () => fetchClients()
+      )
+      .subscribe();
+
+    const contractorsChannel = supabase
+      .channel('clients-dashboard-contractors')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'contractor_assignments' },
+        () => fetchClients()
+      )
+      .subscribe();
+
+    const hiringRequestsChannel = supabase
+      .channel('clients-dashboard-hiring-requests')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'client_hiring_requests' },
+        () => fetchClients()
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(clientsChannel);
+      supabase.removeChannel(contractorsChannel);
+      supabase.removeChannel(hiringRequestsChannel);
+    };
+  }, [fetchClients]);
 
   const filteredClients = clients.filter(client => {
     const matchesSearch = !searchTerm || 
