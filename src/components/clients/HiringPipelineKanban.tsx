@@ -189,9 +189,15 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
             )}
             <Badge 
               variant="outline" 
-              className={`text-xs ${request.client_status === 'new' ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/30' : 'bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/30'}`}
+              className={`text-xs ${
+                request.client_status === 'new' 
+                  ? 'bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 border-emerald-500/30' 
+                  : request.client_status === 'returning'
+                    ? 'bg-purple-500/20 text-purple-700 dark:text-purple-400 border-purple-500/30'
+                    : 'bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/30'
+              }`}
             >
-              {request.client_status === 'new' ? 'New' : 'Existing'}
+              {request.client_status === 'new' ? 'New' : request.client_status === 'returning' ? 'Returning' : 'Existing'}
             </Badge>
           </div>
 

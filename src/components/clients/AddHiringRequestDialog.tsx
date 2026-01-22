@@ -275,6 +275,7 @@ export const AddHiringRequestDialog = ({
                 <SelectContent>
                   <SelectItem value="new">New</SelectItem>
                   <SelectItem value="existing">Existing</SelectItem>
+                  <SelectItem value="returning">Returning</SelectItem>
                 </SelectContent>
               </Select>
             </div>
