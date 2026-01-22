@@ -5,7 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Building2, Users, Search, Plus, Loader2, Globe, Download, Upload, TrendingUp, UserPlus } from 'lucide-react';
+import { Building2, Users, Search, Plus, Loader2, Globe, Download, Upload, TrendingUp, UserPlus, Briefcase } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AddClientDialog } from './AddClientDialog';
 import { ClientDetailPanel } from './ClientDetailPanel';
 import { ClientImportDialog } from './ClientImportDialog';
@@ -74,7 +75,7 @@ export interface ClientCommunication {
 export const ClientsDashboard = () => {
   const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
-  const [hiringRequests, setHiringRequests] = useState<{ client_id: string | null; client_status: string }[]>([]);
+  const [hiringRequests, setHiringRequests] = useState<{ client_id: string | null; client_status: string; job_title: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -89,7 +90,7 @@ export const ClientsDashboard = () => {
         supabase.from('clients').select('*').order('company_name', { ascending: true }),
         supabase.from('client_contacts').select('client_id'),
         supabase.from('contractor_assignments').select('client_id, status'),
-        supabase.from('client_hiring_requests').select('client_id, client_status').neq('pipeline_stage', 'closed'),
+        supabase.from('client_hiring_requests').select('client_id, client_status, job_title').neq('pipeline_stage', 'closed'),
       ]);
 
       if (clientsRes.error) throw clientsRes.error;
@@ -462,10 +463,32 @@ export const ClientsDashboard = () => {
                   </div>
                   <div className="flex items-center gap-6 text-sm">
                     {hiringRequestCountByClient[client.id] > 0 && (
-                      <div className="text-center">
-                        <p className="font-semibold text-purple-600">{hiringRequestCountByClient[client.id]}</p>
-                        <p className="text-muted-foreground text-xs">Open Roles</p>
-                      </div>
+                      <Popover>
+                        <PopoverTrigger asChild onClick={(e) => e.stopPropagation()}>
+                          <div className="text-center cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg px-2 py-1 -mx-2 -my-1 transition-colors">
+                            <p className="font-semibold text-purple-600">{hiringRequestCountByClient[client.id]}</p>
+                            <p className="text-muted-foreground text-xs">Open Roles</p>
+                          </div>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 p-3" onClick={(e) => e.stopPropagation()}>
+                          <div className="space-y-2">
+                            <h4 className="font-semibold text-sm flex items-center gap-2">
+                              <Briefcase className="w-4 h-4 text-purple-600" />
+                              Open Roles
+                            </h4>
+                            <ul className="space-y-1">
+                              {hiringRequests
+                                .filter(r => r.client_id === client.id)
+                                .map((role, idx) => (
+                                  <li key={idx} className="text-sm flex items-center gap-2 py-1 border-b border-border/50 last:border-0">
+                                    <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
+                                    {role.job_title}
+                                  </li>
+                                ))}
+                            </ul>
+                          </div>
+                        </PopoverContent>
+                      </Popover>
                     )}
                     <div className="text-center">
                       <p className="font-semibold">{client.contact_count}</p>
