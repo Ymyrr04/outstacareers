@@ -165,9 +165,15 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
           <div className="flex flex-wrap gap-1 mb-2">
             <Badge 
               variant="outline" 
-              className={`text-xs ${request.priority === 'high' ? 'bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/30' : 'bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-500/30'}`}
+              className={`text-xs ${
+                request.priority === 'high' 
+                  ? 'bg-red-500/20 text-red-700 dark:text-red-400 border-red-500/30' 
+                  : request.priority === 'medium'
+                  ? 'bg-amber-500/20 text-amber-700 dark:text-amber-400 border-amber-500/30'
+                  : 'bg-blue-500/20 text-blue-700 dark:text-blue-400 border-blue-500/30'
+              }`}
             >
-              {request.priority === 'high' ? 'High' : 'Low'}
+              {request.priority === 'high' ? 'High' : request.priority === 'medium' ? 'Medium' : 'Low'}
             </Badge>
             {request.industry && (
               <Badge variant="outline" className={`text-xs ${getIndustryClass(request.industry)}`}>
