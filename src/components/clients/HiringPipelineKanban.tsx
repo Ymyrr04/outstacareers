@@ -217,11 +217,11 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-1.5 cursor-default">
-                    <Avatar className="h-5 w-5">
+                    <Avatar className="h-6 w-6">
                       {assigneeAvatar ? (
                         <AvatarImage src={assigneeAvatar} alt={assigneeName} />
                       ) : null}
-                      <AvatarFallback className={`text-[10px] ${assignee ? 'bg-primary/20 text-primary' : 'bg-muted'}`}>
+                      <AvatarFallback className={`text-xs ${assignee ? 'bg-blue-500 text-white' : 'bg-muted'}`}>
                         {assigneeInitial}
                       </AvatarFallback>
                     </Avatar>
