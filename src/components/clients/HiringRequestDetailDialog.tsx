@@ -557,15 +557,16 @@ export const HiringRequestDetailDialog = ({
                 >
                   <SelectTrigger className="border-0 bg-transparent h-auto p-0 hover:bg-transparent focus:ring-0">
                     <Badge 
-                      variant={formData.client_status === 'new' ? 'default' : 'secondary'}
+                      variant={formData.client_status === 'new' ? 'default' : formData.client_status === 'returning' ? 'outline' : 'secondary'}
                       className="font-normal"
                     >
-                      {formData.client_status === 'new' ? 'New' : 'Existing'}
+                      {formData.client_status === 'new' ? 'New' : formData.client_status === 'returning' ? 'Returning' : 'Existing'}
                     </Badge>
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="new">New</SelectItem>
                     <SelectItem value="existing">Existing</SelectItem>
+                    <SelectItem value="returning">Returning</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

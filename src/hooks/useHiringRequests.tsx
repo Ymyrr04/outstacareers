@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export type Priority = 'high' | 'low';
-export type ClientStatus = 'new' | 'existing';
+export type ClientStatus = 'new' | 'existing' | 'returning';
 
 export interface HiringRequest {
   id: string;
