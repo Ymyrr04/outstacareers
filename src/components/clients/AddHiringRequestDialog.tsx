@@ -57,7 +57,6 @@ export const AddHiringRequestDialog = ({
   const { stages } = usePipelineStages();
   const [clients, setClients] = useState<Client[]>([]);
   const [industries, setIndustries] = useState<string[]>(DEFAULT_INDUSTRIES);
-  const [sources, setSources] = useState<string[]>([]);
   const [jobTitles, setJobTitles] = useState<string[]>([]);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(false);
@@ -71,7 +70,6 @@ export const AddHiringRequestDialog = ({
     industry: '',
     client_status: 'new' as ClientStatus,
     pipeline_stage: defaultStage,
-    source: '',
     start_date: '',
     target_end_date: '',
     notes: '',
@@ -128,13 +126,6 @@ export const AddHiringRequestDialog = ({
         .filter((ind): ind is string => !!ind && ind.trim() !== '');
       const allIndustries = [...new Set([...DEFAULT_INDUSTRIES, ...clientIndustries])];
       setIndustries(allIndustries.sort());
-
-      // Extract unique sources/referrals
-      const clientSources = data
-        .map(c => c.leads_from)
-        .filter((src): src is string => !!src && src.trim() !== '');
-      const uniqueSources = [...new Set(clientSources)].sort();
-      setSources(uniqueSources);
     }
     
     setLoading(false);
@@ -165,8 +156,6 @@ export const AddHiringRequestDialog = ({
       industry: client?.industry || prev.industry,
       // Auto-set to 'existing' if client has contractors
       client_status: hasExistingContractors ? 'existing' : prev.client_status,
-      // Auto-fill source from client's leads_from
-      source: client?.leads_from || prev.source,
       // Auto-fill first job title from existing contractors
       job_title: existingJobTitles[0] || prev.job_title,
     }));
@@ -188,11 +177,6 @@ export const AddHiringRequestDialog = ({
         .filter((ind): ind is string => !!ind && ind.trim() !== '');
       const allIndustries = [...new Set([...DEFAULT_INDUSTRIES, ...clientIndustries])];
       setIndustries(allIndustries.sort());
-
-      const clientSources = allClients
-        .map(c => c.leads_from)
-        .filter((src): src is string => !!src && src.trim() !== '');
-      setSources([...new Set(clientSources)].sort());
     }
     
     // Get the newest client and select it
@@ -208,7 +192,6 @@ export const AddHiringRequestDialog = ({
         ...prev,
         client_id: newestClient.id,
         industry: newestClient.industry || prev.industry,
-        source: newestClient.leads_from || prev.source,
       }));
     }
   };
@@ -232,7 +215,6 @@ export const AddHiringRequestDialog = ({
       industry: formData.industry || null,
       client_status: formData.client_status,
       pipeline_stage: formData.pipeline_stage,
-      source: formData.source.trim() || null,
       start_date: formData.start_date || null,
       target_end_date: formData.target_end_date || null,
       notes: formData.notes.trim() || null,
@@ -253,7 +235,6 @@ export const AddHiringRequestDialog = ({
         industry: '',
         client_status: 'new',
         pipeline_stage: defaultStage,
-        source: '',
         start_date: '',
         target_end_date: '',
         notes: '',
@@ -436,51 +417,6 @@ export const AddHiringRequestDialog = ({
               </Select>
             </div>
 
-            {/* Source */}
-            <div>
-              <Label>Source / Referral</Label>
-              {formData.source === '__custom__' || (formData.source && !sources.includes(formData.source)) ? (
-                <div className="flex gap-2">
-                  <Input
-                    value={formData.source === '__custom__' ? '' : formData.source}
-                    onChange={(e) => setFormData(prev => ({ ...prev, source: e.target.value }))}
-                    placeholder="Enter source..."
-                    className="flex-1"
-                  />
-                  <Button 
-                    type="button" 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => setFormData(prev => ({ ...prev, source: '' }))}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <Select
-                  value={formData.source || '__none__'}
-                  onValueChange={(value) => setFormData(prev => ({ 
-                    ...prev, 
-                    source: value === '__none__' ? '' : value 
-                  }))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select source..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">None</SelectItem>
-                    {sources.map(source => (
-                      <SelectItem key={source} value={source}>{source}</SelectItem>
-                    ))}
-                    <SelectItem value="__custom__">
-                      <span className="flex items-center gap-1">
-                        <Plus className="w-3 h-3" /> Add Other
-                      </span>
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
 
             {/* Hours per Week */}
             <div>
