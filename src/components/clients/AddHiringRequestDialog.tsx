@@ -365,13 +365,13 @@ export const AddHiringRequestDialog = ({
               />
             </div>
 
-            {/* Notes */}
+            {/* Job Description */}
             <div className="col-span-2">
-              <Label>Notes</Label>
+              <Label>Job Description</Label>
               <Textarea
                 value={formData.notes}
                 onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
-                placeholder="Additional details..."
+                placeholder="Role details, requirements, responsibilities..."
                 rows={3}
               />
             </div>
