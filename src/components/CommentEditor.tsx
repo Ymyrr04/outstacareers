@@ -15,6 +15,7 @@ interface CommentEditorProps {
   placeholder?: string;
   disabled?: boolean;
   onSubmit?: () => void;
+  onTabPress?: () => boolean; // Return true if handled externally (e.g., mention selection)
   compact?: boolean;
 }
 
@@ -29,6 +30,7 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(({
   placeholder = "Add a comment...",
   disabled = false,
   onSubmit,
+  onTabPress,
   compact = true
 }, ref) => {
   const [linkUrl, setLinkUrl] = useState('');
@@ -69,6 +71,14 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(({
         class: `prose prose-sm max-w-none focus:outline-none px-3 py-2 ${compact ? 'min-h-[36px]' : 'min-h-[80px]'}`,
       },
       handleKeyDown: (view, event) => {
+        // Handle Tab for mention auto-complete
+        if (event.key === 'Tab' && onTabPress) {
+          const handled = onTabPress();
+          if (handled) {
+            event.preventDefault();
+            return true;
+          }
+        }
         // Submit on Enter (without shift)
         if (event.key === 'Enter' && !event.shiftKey && onSubmit) {
           const content = view.state.doc.textContent.trim();

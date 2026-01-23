@@ -962,6 +962,14 @@ export const HiringRequestDetailDialog = ({
                       commentInputRef.current?.clear();
                     }
                   }}
+                  onTabPress={() => {
+                    // Auto-select first mention suggestion on Tab
+                    if (showMentions && filteredMentionUsers.length > 0) {
+                      insertMention(filteredMentionUsers[0].email);
+                      return true;
+                    }
+                    return false;
+                  }}
                 />
                 
                 {/* Mentions Dropdown */}
