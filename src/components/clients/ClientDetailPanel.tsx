@@ -195,10 +195,35 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
 
     setDeleting(true);
     try {
+      // Get current user for audit trail
+      const { data: { user } } = await supabase.auth.getUser();
+      
+      // Archive client before deletion
+      const { error: archiveError } = await supabase.from('deleted_clients').insert({
+        original_id: client.id,
+        company_name: client.company_name,
+        industry: client.industry,
+        website: client.website,
+        address: client.address,
+        notes: client.notes,
+        leads_from: client.leads_from,
+        company_links: client.company_links,
+        yearly_increase: client.yearly_increase,
+        contractor_count: client.contractor_count,
+        is_hiring: client.is_hiring,
+        created_at: client.created_at,
+        deleted_by: user?.id || null,
+      });
+      
+      if (archiveError) {
+        console.error('Failed to archive client:', archiveError);
+        // Continue with deletion even if archive fails
+      }
+      
       const { error } = await supabase.from('clients').delete().eq('id', client.id);
       if (error) throw error;
 
-      toast({ title: 'Success', description: 'Client deleted successfully' });
+      toast({ title: 'Success', description: 'Client archived and deleted successfully' });
       onClose();
       onUpdate();
     } catch (err: any) {
