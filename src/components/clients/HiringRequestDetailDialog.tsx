@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { useHiringRequests, type HiringRequest, type Priority, type ClientStatus } from '@/hooks/useHiringRequests';
 import { usePipelineStages } from '@/hooks/usePipelineStages';
+import { useSlackNotifications } from '@/hooks/useSlackNotifications';
 import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X, MessageSquare, Send, Save, UserCircle, Pencil, SmilePlus, ChevronDown } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { WysiwygEditor } from '@/components/WysiwygEditor';
@@ -83,6 +84,7 @@ export const HiringRequestDetailDialog = ({
 }: HiringRequestDetailDialogProps) => {
   const { updateRequest, deleteRequest } = useHiringRequests();
   const { stages } = usePipelineStages();
+  const { notifyMention, notifyStatusChange } = useSlackNotifications();
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -203,6 +205,33 @@ export const HiringRequestDetailDialog = ({
     if (error) {
       toast.error('Failed to add comment');
     } else {
+      // Check for @mentions and send Slack notifications
+      const mentionPattern = /@(\w+)/g;
+      const plainText = newComment.replace(/<[^>]*>/g, '');
+      const mentions = plainText.match(mentionPattern);
+      
+      if (mentions) {
+        // Find admin users whose names match the mentions
+        for (const mention of mentions) {
+          const mentionedName = mention.substring(1).toLowerCase();
+          const mentionedAdmin = adminUsers.find(admin => {
+            const displayName = getAdminDisplayName(admin.email, '').toLowerCase();
+            return displayName === mentionedName;
+          });
+          
+          if (mentionedAdmin) {
+            notifyMention({
+              mentionedEmail: mentionedAdmin.email,
+              mentionedByEmail: user.email || '',
+              commentContent: newComment,
+              requestId: request.id,
+              requestTitle: request.job_title,
+              clientName: request.client_name || 'Unknown Client',
+            });
+          }
+        }
+      }
+      
       setNewComment('');
       fetchComments(request.id);
       // Update comment count on request
@@ -359,6 +388,9 @@ export const HiringRequestDetailDialog = ({
   const handleFieldUpdate = async (field: string, value: string) => {
     if (!request) return;
     
+    // Capture old stage for status change notification
+    const oldPipelineStage = request.pipeline_stage;
+    
     setSaving(true);
     const updates: Partial<HiringRequest> = {};
     
@@ -379,6 +411,21 @@ export const HiringRequestDetailDialog = ({
     setHasUnsavedChanges(false);
 
     if (success) {
+      // Send Slack notification for pipeline stage changes
+      if (field === 'pipeline_stage' && value !== oldPipelineStage) {
+        const oldStageLabel = stages.find(s => s.slug === oldPipelineStage)?.name || oldPipelineStage;
+        const newStageLabel = stages.find(s => s.slug === value)?.name || value;
+        
+        notifyStatusChange({
+          requestId: request.id,
+          requestTitle: request.job_title,
+          clientName: request.client_name || 'Unknown Client',
+          oldStage: oldStageLabel,
+          newStage: newStageLabel,
+          changedByEmail: user?.email || '',
+        });
+      }
+      
       setFormData(prev => ({ ...prev, [field]: value }));
       onUpdated?.();
       toast.success('Saved');

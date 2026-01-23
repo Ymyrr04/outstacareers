@@ -65,3 +65,6 @@ verify_jwt = true
 
 [functions.process-scheduled-contractors]
 verify_jwt = false
+
+[functions.send-slack-notification]
+verify_jwt = true
