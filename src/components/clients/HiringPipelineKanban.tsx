@@ -179,13 +179,13 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
   const assigneeAvatar = assigneeEmail ? ADMIN_AVATARS[assigneeEmail] : undefined;
   const currentYear = new Date().getFullYear();
   
-  // Format date with year if not current year
+  // Format date with short year if not current year (e.g., "Nov 23, '24")
   const formatDateWithYear = (dateStr: string) => {
     const date = new Date(dateStr);
     const dateYear = date.getFullYear();
     return dateYear === currentYear 
       ? format(date, 'MMM d') 
-      : format(date, 'MMM d, yyyy');
+      : format(date, "MMM d, ''yy");
   };
   
   const formatDateRange = () => {
