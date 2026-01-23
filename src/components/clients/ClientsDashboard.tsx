@@ -5,7 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Building2, Users, Search, Plus, Loader2, Globe, Download, Upload, TrendingUp, UserPlus, Briefcase } from 'lucide-react';
+import { Building2, Users, Search, Plus, Loader2, Globe, Download, Upload, TrendingUp, UserPlus, Briefcase, ChevronDown } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AddClientDialog } from './AddClientDialog';
 import { ClientDetailPanel } from './ClientDetailPanel';
@@ -75,13 +76,14 @@ export interface ClientCommunication {
 export const ClientsDashboard = () => {
   const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
-  const [hiringRequests, setHiringRequests] = useState<{ client_id: string | null; client_status: string; job_title: string; pipeline_stage: string }[]>([]);
+  const [hiringRequests, setHiringRequests] = useState<{ client_id: string | null; client_status: string; job_title: string; pipeline_stage: string; created_at: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'lost' | 'newHiring' | 'existingHiring'>('all');
+  const [lostYearFilter, setLostYearFilter] = useState<number>(new Date().getFullYear());
 
   const fetchClients = useCallback(async () => {
     try {
@@ -90,7 +92,7 @@ export const ClientsDashboard = () => {
         supabase.from('clients').select('*').order('company_name', { ascending: true }),
         supabase.from('client_contacts').select('client_id'),
         supabase.from('contractor_assignments').select('client_id, status'),
-        supabase.from('client_hiring_requests').select('client_id, client_status, job_title, pipeline_stage').neq('pipeline_stage', 'closed'),
+        supabase.from('client_hiring_requests').select('client_id, client_status, job_title, pipeline_stage, created_at'),
       ]);
 
       if (clientsRes.error) throw clientsRes.error;
@@ -176,10 +178,24 @@ export const ClientsDashboard = () => {
   // Pipeline stages that count as "actively hiring"
   const ACTIVE_HIRING_STAGES = ['sourcing', 'pitch', 'scheduled_interview'];
   
+  // Lost stages in the pipeline
+  const LOST_STAGES = ['lost_client', 'lost_outsta'];
+  
   // Get unique client IDs that have hiring requests in active stages
   const clientsWithActiveHiringRequests = new Set(
     hiringRequests
       .filter(req => req.client_id && ACTIVE_HIRING_STAGES.includes(req.pipeline_stage))
+      .map(req => req.client_id!)
+  );
+  
+  // Clients lost = clients with hiring requests in lost stages, filtered by year
+  const clientsInLostStages = new Set(
+    hiringRequests
+      .filter(req => 
+        req.client_id && 
+        LOST_STAGES.includes(req.pipeline_stage) &&
+        new Date(req.created_at).getFullYear() === lostYearFilter
+      )
       .map(req => req.client_id!)
   );
   
@@ -192,11 +208,11 @@ export const ClientsDashboard = () => {
     // Apply status filter using pipeline-based hiring logic
     const hasActiveContractors = (client.contractor_count || 0) > 0;
     const isActivelyHiring = clientsWithActiveHiringRequests.has(client.id);
-    const isLost = !hasActiveContractors && !isActivelyHiring;
+    const isInLostStage = clientsInLostStages.has(client.id);
     const matchesStatusFilter = 
       statusFilter === 'all' ||
       (statusFilter === 'active' && hasActiveContractors) ||
-      (statusFilter === 'lost' && isLost) ||
+      (statusFilter === 'lost' && isInLostStage) ||
       (statusFilter === 'newHiring' && isActivelyHiring && !hasActiveContractors) ||
       (statusFilter === 'existingHiring' && isActivelyHiring && hasActiveContractors);
     
@@ -215,14 +231,7 @@ export const ClientsDashboard = () => {
     clientsWithActiveHiringRequests.has(c.id) && (c.contractor_count || 0) > 0
   ).length;
   
-  // Clients lost = no active contractors AND no hiring requests in active stages
-  // Only count clients created in current year (2026)
-  const currentYear = new Date().getFullYear();
-  const clientsLost = clients.filter(c => 
-    (c.contractor_count || 0) === 0 && 
-    !clientsWithActiveHiringRequests.has(c.id) &&
-    new Date(c.created_at).getFullYear() === currentYear
-  ).length;
+  const clientsLost = clientsInLostStages.size;
   
   // Count open hiring requests per client (in active stages only)
   const hiringRequestCountByClient = hiringRequests
@@ -364,8 +373,26 @@ export const ClientsDashboard = () => {
               <div className="p-2 bg-red-500/10 rounded-lg">
                 <Building2 className="w-5 h-5 text-red-600" />
               </div>
-              <div>
-                <p className="text-2xl font-bold">{clientsLost}</p>
+              <div className="flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="text-2xl font-bold">{clientsLost}</p>
+                  <Select
+                    value={lostYearFilter.toString()}
+                    onValueChange={(v) => setLostYearFilter(parseInt(v))}
+                  >
+                    <SelectTrigger 
+                      className="h-7 w-[80px] text-xs"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent onClick={(e) => e.stopPropagation()}>
+                      <SelectItem value="2024">2024</SelectItem>
+                      <SelectItem value="2025">2025</SelectItem>
+                      <SelectItem value="2026">2026</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
                 <p className="text-sm text-muted-foreground">Clients Lost</p>
               </div>
             </div>
