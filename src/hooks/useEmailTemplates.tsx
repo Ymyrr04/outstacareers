@@ -482,13 +482,21 @@ interface UnreadApplicantInfo {
   count: number;
 }
 
-export function useUnreadMessageCounts() {
-  const [unreadApplicants, setUnreadApplicants] = useState<UnreadApplicantInfo[]>([]);
-  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
+// Global cache for unread data to persist across component remounts
+let globalUnreadCache: {
+  applicants: UnreadApplicantInfo[];
+  counts: Record<string, number>;
+  lastFetched: number;
+} = { applicants: [], counts: {}, lastFetched: 0 };
 
-  const fetchUnreadCounts = useCallback(async () => {
-    setLoading(true);
+export function useUnreadMessageCounts() {
+  // Initialize from cache immediately for instant display
+  const [unreadApplicants, setUnreadApplicants] = useState<UnreadApplicantInfo[]>(globalUnreadCache.applicants);
+  const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>(globalUnreadCache.counts);
+  const [loading, setLoading] = useState(globalUnreadCache.lastFetched === 0);
+
+  const fetchUnreadCounts = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     
     // Fetch unread replies with applicant info in a single query using join
     const { data, error } = await supabase
@@ -537,30 +545,71 @@ export function useUnreadMessageCounts() {
       count: counts[a.id] || 0
     }));
     
+    // Update global cache
+    globalUnreadCache = {
+      applicants: applicantsWithCounts,
+      counts,
+      lastFetched: Date.now()
+    };
+    
     setUnreadApplicants(applicantsWithCounts);
     setUnreadCounts(counts);
     setLoading(false);
   }, []);
 
   useEffect(() => {
-    fetchUnreadCounts();
+    // Only fetch if cache is stale (older than 30 seconds) or empty
+    const cacheAge = Date.now() - globalUnreadCache.lastFetched;
+    if (cacheAge > 30000 || globalUnreadCache.lastFetched === 0) {
+      fetchUnreadCounts(globalUnreadCache.lastFetched > 0); // Silent if we have cached data
+    }
+    
+    // Subscribe to realtime changes for instant updates
+    const channel = supabase
+      .channel('unread-replies-changes')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'email_replies' },
+        () => {
+          // Silently refresh on any change
+          fetchUnreadCounts(true);
+        }
+      )
+      .subscribe();
+    
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, [fetchUnreadCounts]);
 
-  // Mark replies as read for an applicant
+  // Mark replies as read for an applicant (optimistic update)
   const markAsRead = async (applicantId: string) => {
+    // Optimistic update
+    setUnreadCounts(prev => {
+      const next = { ...prev };
+      delete next[applicantId];
+      return next;
+    });
+    setUnreadApplicants(prev => prev.filter(a => a.id !== applicantId));
+    
+    // Update cache
+    globalUnreadCache = {
+      ...globalUnreadCache,
+      applicants: globalUnreadCache.applicants.filter(a => a.id !== applicantId),
+      counts: Object.fromEntries(
+        Object.entries(globalUnreadCache.counts).filter(([id]) => id !== applicantId)
+      )
+    };
+    
     const { error } = await supabase
       .from('email_replies')
       .update({ is_read: true })
       .eq('applicant_id', applicantId)
       .eq('is_read', false);
 
-    if (!error) {
-      setUnreadCounts(prev => {
-        const next = { ...prev };
-        delete next[applicantId];
-        return next;
-      });
-      setUnreadApplicants(prev => prev.filter(a => a.id !== applicantId));
+    if (error) {
+      // Rollback on error
+      fetchUnreadCounts(true);
     }
   };
 
