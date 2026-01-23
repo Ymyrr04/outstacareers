@@ -76,7 +76,7 @@ export interface ClientCommunication {
 export const ClientsDashboard = () => {
   const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
-  const [hiringRequests, setHiringRequests] = useState<{ id?: string; client_id: string | null; client_status: string; job_title: string; pipeline_stage: string; created_at: string }[]>([]);
+  const [hiringRequests, setHiringRequests] = useState<{ id?: string; client_id: string | null; client_status: string; job_title: string; pipeline_stage: string; start_date: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -92,7 +92,7 @@ export const ClientsDashboard = () => {
         supabase.from('clients').select('*').order('company_name', { ascending: true }),
         supabase.from('client_contacts').select('client_id'),
         supabase.from('contractor_assignments').select('client_id, status'),
-        supabase.from('client_hiring_requests').select('id, client_id, client_status, job_title, pipeline_stage, created_at'),
+        supabase.from('client_hiring_requests').select('id, client_id, client_status, job_title, pipeline_stage, start_date'),
       ]);
 
       if (clientsRes.error) throw clientsRes.error;
@@ -188,20 +188,16 @@ export const ClientsDashboard = () => {
       .map(req => req.client_id!)
   );
   
-  // Clients lost = clients with hiring requests in lost stages, filtered by year
-  // Debug: Check actual years in the data
+  // Clients lost = clients with hiring requests in lost stages, filtered by year based on start_date
+  // If start_date is empty, default to 2025
   const lostRequests = hiringRequests.filter(req => 
     req.client_id && LOST_STAGES.includes(req.pipeline_stage)
   );
   
-  const yearsInLostData = [...new Set(lostRequests.map(r => r.created_at ? new Date(r.created_at).getFullYear() : 'NO_DATE'))];
-  console.log(`[v4] Lost requests: ${lostRequests.length}, Years found: ${yearsInLostData.join(', ')}, Filter: ${lostYearFilter}`);
-  
-  // Filter by year
+  // Filter by year using start_date (default to 2025 if null)
   const lostRequestsForYear = lostRequests.filter(req => {
-    if (!req.created_at) return false;
-    const reqYear = new Date(req.created_at).getFullYear();
-    return reqYear === lostYearFilter;
+    const year = req.start_date ? new Date(req.start_date).getFullYear() : 2025;
+    return year === lostYearFilter;
   });
   
   const clientsInLostStages = new Set(lostRequestsForYear.map(req => req.client_id!));
@@ -400,7 +396,7 @@ export const ClientsDashboard = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <p className="text-sm text-muted-foreground">Lost ({lostYearFilter}) - v3</p>
+                <p className="text-sm text-muted-foreground">Clients Lost</p>
               </div>
             </div>
           </CardContent>
