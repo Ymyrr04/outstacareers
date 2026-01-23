@@ -260,26 +260,40 @@ export function useEmailLogs(applicantId?: string) {
   const { toast } = useToast();
 
   const fetchLogs = useCallback(async () => {
-    setLoading(true);
-    let query = supabase
-      .from('email_logs')
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (applicantId) {
-      query = query.eq('applicant_id', applicantId);
+    // Don't fetch if no applicantId is provided to avoid loading all logs
+    if (!applicantId) {
+      setLogs([]);
+      setLoading(false);
+      return;
     }
+    
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('email_logs')
+        .select('*')
+        .eq('applicant_id', applicantId)
+        .order('created_at', { ascending: false });
 
-    const { data, error } = await query;
-
-    if (error) {
+      if (error) {
+        console.error('Error fetching email logs:', error);
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch email logs',
+          variant: 'destructive',
+        });
+        setLogs([]);
+      } else {
+        setLogs(data || []);
+      }
+    } catch (err) {
+      console.error('Exception fetching email logs:', err);
       toast({
         title: 'Error',
         description: 'Failed to fetch email logs',
         variant: 'destructive',
       });
-    } else {
-      setLogs(data || []);
+      setLogs([]);
     }
     setLoading(false);
   }, [applicantId, toast]);
