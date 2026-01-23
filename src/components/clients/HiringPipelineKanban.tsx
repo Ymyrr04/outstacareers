@@ -178,15 +178,7 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
   const assigneeInitial = assigneeName.charAt(0).toUpperCase();
   const assigneeAvatar = assigneeEmail ? ADMIN_AVATARS[assigneeEmail] : undefined;
   const formatDateRange = () => {
-    // For closed cards, show start_date – closed_at
-    if (isClosed && request.closed_at) {
-      const start = request.start_date ? format(new Date(request.start_date), 'MMM d') : '';
-      const closed = format(new Date(request.closed_at), 'MMM d');
-      if (start) return `${start} – ${closed}`;
-      return `Closed ${closed}`;
-    }
-    
-    // For open cards, show start_date – target_end_date
+    // Always show start_date – target_end_date (the original timeline)
     if (!request.start_date && !request.target_end_date) return null;
     
     const start = request.start_date ? format(new Date(request.start_date), 'MMM d') : '';
@@ -199,6 +191,7 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
   };
   const dateRange = formatDateRange();
   const isOverdue = !isClosed && request.target_end_date && isPast(startOfDay(new Date(request.target_end_date)));
+  const closedDate = isClosed && request.closed_at ? format(new Date(request.closed_at), 'MMM d') : null;
 
   return (
     <Draggable draggableId={request.id} index={index}>
@@ -308,13 +301,14 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
               </Tooltip>
             </div>
             <div className="flex items-center gap-2">
-              {isClosed && request.closed_at ? (
+              {dateRange && (
+                <span className={isOverdue ? 'text-red-500 font-medium' : 'text-muted-foreground'}>{dateRange}</span>
+              )}
+              {closedDate && (
                 <span className="text-emerald-600 dark:text-emerald-400 font-medium">
-                  Closed {format(new Date(request.closed_at), 'MMM d')}
+                  ✓ {closedDate}
                 </span>
-              ) : dateRange ? (
-                <span className={isOverdue ? 'text-red-500 font-medium' : 'text-primary'}>{dateRange}</span>
-              ) : null}
+              )}
               {request.comment_count > 0 && (
                 <div className="flex items-center gap-1">
                   {request.comment_count}
