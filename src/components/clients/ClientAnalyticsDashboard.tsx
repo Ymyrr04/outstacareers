@@ -79,7 +79,7 @@ export const ClientAnalyticsDashboard = () => {
   const [roleSortField, setRoleSortField] = useState<SortField>('hired');
   const [roleSortDir, setRoleSortDir] = useState<SortDirection>('desc');
 
-  const [hiringRequests, setHiringRequests] = useState<{ client_status: string; client_id: string | null }[]>([]);
+  const [hiringRequests, setHiringRequests] = useState<{ client_status: string; client_id: string | null; pipeline_stage: string }[]>([]);
 
   const fetchData = useCallback(async () => {
     try {
@@ -96,7 +96,7 @@ export const ClientAnalyticsDashboard = () => {
           .neq('job_source', 'Contractor Import'),
         supabase
           .from('client_hiring_requests')
-          .select('client_status, client_id')
+          .select('client_status, client_id, pipeline_stage')
           .neq('pipeline_stage', 'closed'),
       ]);
 
@@ -450,9 +450,6 @@ export const ClientAnalyticsDashboard = () => {
   );
   const totalActiveClients = clientsWithActiveContractors.size;
   
-  const clientsLost = clients.filter(c => !clientsWithActiveContractors.has(c.id) && !c.is_hiring).length;
-  
-  // Count hiring clients from the clients table (matching ClientsDashboard logic)
   // Build contractor count per client
   const contractorCountByClient = contractors
     .filter(c => c.status === 'active')
@@ -461,8 +458,27 @@ export const ClientAnalyticsDashboard = () => {
       return acc;
     }, {} as Record<string, number>);
   
-  const newClientsHiring = clients.filter(c => c.is_hiring && (contractorCountByClient[c.id] || 0) === 0).length;
-  const existingClientsHiring = clients.filter(c => c.is_hiring && (contractorCountByClient[c.id] || 0) > 0).length;
+  // Pipeline stages that count as "actively hiring"
+  const ACTIVE_HIRING_STAGES = ['sourcing', 'pitch', 'scheduled_interview'];
+  
+  // Get unique client IDs that have hiring requests in active stages
+  const clientsWithActiveHiringRequests = new Set(
+    hiringRequests
+      .filter(req => req.client_id && ACTIVE_HIRING_STAGES.includes(req.pipeline_stage))
+      .map(req => req.client_id!)
+  );
+  
+  const clientsLost = clients.filter(c => 
+    !clientsWithActiveContractors.has(c.id) && !clientsWithActiveHiringRequests.has(c.id)
+  ).length;
+  
+  // Count hiring clients based on having requests in active pipeline stages
+  const newClientsHiring = clients.filter(c => 
+    clientsWithActiveHiringRequests.has(c.id) && (contractorCountByClient[c.id] || 0) === 0
+  ).length;
+  const existingClientsHiring = clients.filter(c => 
+    clientsWithActiveHiringRequests.has(c.id) && (contractorCountByClient[c.id] || 0) > 0
+  ).length;
 
   // Sort handlers for retention tables
   const handleCompanySort = (field: SortField) => {
