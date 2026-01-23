@@ -224,7 +224,7 @@ const Admin = () => {
   const [communicationHistoryApplicant, setCommunicationHistoryApplicant] = useState<{ id: string; name: string; email: string } | null>(null);
   const [sendEmailApplicant, setSendEmailApplicant] = useState<{ id: string; full_name: string; email: string; job_title: string; status: string; preselectedTemplate?: string } | null>(null);
   const { templates, getTemplateByTrigger } = useEmailTemplates();
-  const { unreadCounts, markAsRead: markMessagesAsRead, fetchUnreadCounts } = useUnreadMessageCounts();
+  const { unreadCounts, unreadApplicants, markAsRead: markMessagesAsRead, fetchUnreadCounts } = useUnreadMessageCounts();
   const { replies: allReplies, fetching: fetchingReplies, fetchNewReplies } = useEmailReplies();
   const [unreadPopoverOpen, setUnreadPopoverOpen] = useState(false);
   
@@ -1332,73 +1332,54 @@ const Admin = () => {
                         </div>
                       ) : (
                         <div className="divide-y">
-                          {Object.entries(unreadCounts).map(([applicantId, count]) => {
-                            const applicant = applicants.find(a => a.id === applicantId);
-                            if (!applicant) return null;
-                            return (
-                              <div
-                                key={applicantId}
-                                className="w-full px-4 py-3 hover:bg-muted/50 transition-colors"
-                              >
-                                <div className="flex items-center justify-between gap-2 mb-2">
-                                  <div className="min-w-0">
-                                    <p className="font-medium text-sm truncate">{applicant.full_name}</p>
-                                    <p className="text-xs text-muted-foreground truncate">{applicant.email}</p>
-                                  </div>
-                                  <Badge variant="destructive" className="shrink-0">
-                                    {count} new
-                                  </Badge>
+                          {unreadApplicants.map((applicant) => (
+                            <div
+                              key={applicant.id}
+                              className="w-full px-4 py-3 hover:bg-muted/50 transition-colors"
+                            >
+                              <div className="flex items-center justify-between gap-2 mb-2">
+                                <div className="min-w-0">
+                                  <p className="font-medium text-sm truncate">{applicant.full_name}</p>
+                                  <p className="text-xs text-muted-foreground truncate">{applicant.email}</p>
                                 </div>
-                                <div className="flex items-center gap-3 text-xs">
-                                  {/* CV Assessment link */}
-                                  {applicant.total_score !== null && (
-                                    <button
-                                      onClick={() => {
-                                        setActiveAssessmentTab('cv');
-                                        setActiveMainTab('applicants');
-                                        setExpandedApplicant(applicantId);
-                                        setUnreadPopoverOpen(false);
-                                      }}
-                                      className="flex items-center gap-1 text-green-600 hover:underline"
-                                    >
-                                      <Star className="w-3 h-3" />
-                                      CV Assessment
-                                    </button>
-                                  )}
-                                  {/* Interview Results link */}
-                                  {applicant.interview_session?.status === 'completed' && (
-                                    <button
-                                      onClick={() => {
-                                        setActiveAssessmentTab('interview');
-                                        setActiveMainTab('applicants');
-                                        setExpandedApplicant(applicantId);
-                                        setUnreadPopoverOpen(false);
-                                      }}
-                                      className="flex items-center gap-1 text-purple-600 hover:underline"
-                                    >
-                                      <ClipboardList className="w-3 h-3" />
-                                      Interview Results
-                                    </button>
-                                  )}
-                                  {/* Communication History link */}
+                                <Badge variant="destructive" className="shrink-0">
+                                  {applicant.count} new
+                                </Badge>
+                              </div>
+                              <div className="flex items-center gap-3 text-xs">
+                                {/* CV Assessment link */}
+                                {applicant.total_score !== null && (
                                   <button
                                     onClick={() => {
-                                      setCommunicationHistoryApplicant({
-                                        id: applicantId,
-                                        name: applicant.full_name,
-                                        email: applicant.email
-                                      });
+                                      setActiveAssessmentTab('cv');
+                                      setActiveMainTab('applicants');
+                                      setExpandedApplicant(applicant.id);
                                       setUnreadPopoverOpen(false);
                                     }}
-                                    className="flex items-center gap-1 text-blue-600 hover:underline"
+                                    className="flex items-center gap-1 text-green-600 hover:underline"
                                   >
-                                    <History className="w-3 h-3" />
-                                    Messages
+                                    <Star className="w-3 h-3" />
+                                    CV Assessment
                                   </button>
-                                </div>
+                                )}
+                                {/* Communication History link */}
+                                <button
+                                  onClick={() => {
+                                    setCommunicationHistoryApplicant({
+                                      id: applicant.id,
+                                      name: applicant.full_name,
+                                      email: applicant.email
+                                    });
+                                    setUnreadPopoverOpen(false);
+                                  }}
+                                  className="flex items-center gap-1 text-blue-600 hover:underline"
+                                >
+                                  <History className="w-3 h-3" />
+                                  Messages
+                                </button>
                               </div>
-                            );
-                          })}
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
