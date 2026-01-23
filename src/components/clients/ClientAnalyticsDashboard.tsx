@@ -80,7 +80,7 @@ export const ClientAnalyticsDashboard = () => {
   const [roleSortDir, setRoleSortDir] = useState<SortDirection>('desc');
 
   const [hiringRequests, setHiringRequests] = useState<{ client_status: string; client_id: string | null; pipeline_stage: string; start_date: string | null }[]>([]);
-  const [lostYearFilter, setLostYearFilter] = useState(2025);
+  const [lostYearFilter, setLostYearFilter] = useState(2026);
 
   const fetchData = useCallback(async () => {
     try {
