@@ -216,8 +216,12 @@ export const ClientsDashboard = () => {
   ).length;
   
   // Clients lost = no active contractors AND no hiring requests in active stages
+  // Only count clients created in current year (2026)
+  const currentYear = new Date().getFullYear();
   const clientsLost = clients.filter(c => 
-    (c.contractor_count || 0) === 0 && !clientsWithActiveHiringRequests.has(c.id)
+    (c.contractor_count || 0) === 0 && 
+    !clientsWithActiveHiringRequests.has(c.id) &&
+    new Date(c.created_at).getFullYear() === currentYear
   ).length;
   
   // Count open hiring requests per client (in active stages only)
