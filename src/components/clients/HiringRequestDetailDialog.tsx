@@ -120,10 +120,15 @@ export const HiringRequestDetailDialog = ({
     target_end_date: '',
     notes: '',
     assigned_admin_id: '',
+    closed_at: '',
   });
 
   useEffect(() => {
     if (request) {
+      // Format closed_at for date input (YYYY-MM-DD)
+      const closedAtDate = request.closed_at 
+        ? request.closed_at.split('T')[0] 
+        : '';
       setFormData({
         job_title: request.job_title,
         priority: request.priority,
@@ -135,6 +140,7 @@ export const HiringRequestDetailDialog = ({
         target_end_date: request.target_end_date || '',
         notes: request.notes || '',
         assigned_admin_id: request.assigned_admin_id || '',
+        closed_at: closedAtDate,
       });
       setEditingField(null);
       setHasUnsavedChanges(false);
@@ -674,6 +680,30 @@ export const HiringRequestDetailDialog = ({
                 />
               </div>
             </div>
+
+            {/* Closed Date Row - Only show when in closed stage */}
+            {formData.pipeline_stage === 'closed' && (
+              <div className="flex items-center py-2 hover:bg-muted/50 rounded px-2 -mx-2">
+                <div className="flex items-center gap-2 w-32 text-muted-foreground text-sm">
+                  <CheckCircle2 className="w-4 h-4 text-green-600" />
+                  Closed Date
+                </div>
+                <div className="flex-1">
+                  <Input
+                    type="date"
+                    value={formData.closed_at}
+                    onChange={(e) => {
+                      const dateValue = e.target.value;
+                      setFormData(prev => ({ ...prev, closed_at: dateValue }));
+                      // Convert to ISO string for database
+                      const isoDate = dateValue ? new Date(dateValue + 'T12:00:00').toISOString() : null;
+                      handleFieldUpdate('closed_at', isoDate || '');
+                    }}
+                    className="h-8 text-sm w-36 px-2"
+                  />
+                </div>
+              </div>
+            )}
 
 
             {/* Assignee Row */}

@@ -39,6 +39,7 @@ export interface CreateHiringRequest {
   assigned_admin_id?: string | null;
   notes?: string | null;
   hours_per_week?: string | null;
+  closed_at?: string | null;
 }
 
 // Legacy constant for backwards compatibility - now loaded dynamically

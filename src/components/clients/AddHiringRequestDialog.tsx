@@ -212,6 +212,9 @@ export const AddHiringRequestDialog = ({
       ? formData.hours_per_week_custom.trim() || null
       : formData.hours_per_week === 'TBD' ? 'TBD' : formData.hours_per_week;
     
+    // Set closed_at if creating directly in closed stage
+    const closedAt = formData.pipeline_stage === 'closed' ? new Date().toISOString() : null;
+    
     const success = await createRequest({
       client_id: formData.client_id || null,
       job_title: formData.job_title.trim(),
@@ -224,6 +227,7 @@ export const AddHiringRequestDialog = ({
       notes: formData.notes.trim() || null,
       assigned_admin_id: formData.assigned_admin_id || null,
       hours_per_week: hoursValue,
+      closed_at: closedAt,
     });
 
     setSaving(false);
