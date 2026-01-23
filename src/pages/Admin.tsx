@@ -266,6 +266,9 @@ const Admin = () => {
   // Main tab state for layout control
   const [activeMainTab, setActiveMainTab] = useState('jobs');
   
+  // Track which tabs have been visited (for lazy loading heavy components)
+  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set(['jobs']));
+  
   // Assessment tab state for CV/Interview navigation
   const [activeAssessmentTab, setActiveAssessmentTab] = useState<'cv' | 'interview'>('cv');
   
@@ -1078,7 +1081,10 @@ const Admin = () => {
       </header>
 
       <main className="px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
-        <Tabs defaultValue="jobs" className="space-y-6" value={activeMainTab} onValueChange={setActiveMainTab}>
+        <Tabs defaultValue="jobs" className="space-y-6" value={activeMainTab} onValueChange={(tab) => {
+          setActiveMainTab(tab);
+          setVisitedTabs(prev => new Set([...prev, tab]));
+        }}>
           <TabsList className="flex-wrap">
             {canViewTab('jobs') && (
               <TabsTrigger value="jobs" className="flex items-center gap-2">
@@ -1143,7 +1149,12 @@ const Admin = () => {
           </TabsList>
 
           <TabsContent value="my-applicants" className="space-y-6" keepMounted>
-            <MyApplicantsDashboard />
+            {visitedTabs.has('my-applicants') ? <MyApplicantsDashboard /> : (
+              <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Loading...</span>
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="jobs" className="space-y-6" keepMounted>
@@ -2690,22 +2701,37 @@ const Admin = () => {
               <h2 className="text-lg font-semibold">Client Hiring Pipeline</h2>
               <p className="text-xs text-muted-foreground">Track client hiring requests through the recruitment pipeline</p>
             </div>
-            <HiringPipelineKanban />
+            {visitedTabs.has('pipeline') && <HiringPipelineKanban />}
           </TabsContent>
 
           {/* Clients Tab */}
           <TabsContent value="clients" className="space-y-6" keepMounted>
-            <ClientsDashboard />
+            {visitedTabs.has('clients') ? <ClientsDashboard /> : (
+              <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Loading...</span>
+              </div>
+            )}
           </TabsContent>
 
           {/* Contractors Tab */}
           <TabsContent value="contractors" className="space-y-6" keepMounted>
-            <ContractorsDashboard />
+            {visitedTabs.has('contractors') ? <ContractorsDashboard /> : (
+              <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Loading...</span>
+              </div>
+            )}
           </TabsContent>
 
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6" keepMounted>
-            <ClientAnalyticsDashboard />
+            {visitedTabs.has('analytics') ? <ClientAnalyticsDashboard /> : (
+              <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
+                <Loader2 className="w-5 h-5 animate-spin" />
+                <span>Loading...</span>
+              </div>
+            )}
           </TabsContent>
 
           {/* Settings/Permissions Tab - Super Admin Only */}
