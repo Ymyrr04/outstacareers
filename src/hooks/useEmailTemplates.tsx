@@ -549,6 +549,7 @@ interface UnreadApplicantInfo {
   email: string;
   total_score: number | null;
   count: number;
+  assigned_admin_id: string | null;
 }
 
 // Global cache for unread data to persist across component remounts
@@ -567,7 +568,7 @@ export function useUnreadMessageCounts() {
   const fetchUnreadCounts = useCallback(async (silent = false) => {
     if (!silent) setLoading(true);
     
-    // Fetch unread replies with applicant info in a single query using join
+    // Fetch unread replies with applicant info and job's assigned admin in a single query using join
     const { data, error } = await supabase
       .from('email_replies')
       .select(`
@@ -576,7 +577,10 @@ export function useUnreadMessageCounts() {
           id,
           full_name,
           email,
-          total_score
+          total_score,
+          jobs!applicants_prescreen_job_id_fkey (
+            assigned_admin_id
+          )
         )
       `)
       .eq('is_read', false);
@@ -603,6 +607,7 @@ export function useUnreadMessageCounts() {
           full_name: applicant.full_name,
           email: applicant.email,
           total_score: applicant.total_score,
+          assigned_admin_id: applicant.jobs?.assigned_admin_id || null,
           count: 0
         });
       }
