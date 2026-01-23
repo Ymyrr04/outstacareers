@@ -179,13 +179,13 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
   const assigneeAvatar = assigneeEmail ? ADMIN_AVATARS[assigneeEmail] : undefined;
   const currentYear = new Date().getFullYear();
   
-  // Format date with short year if not current year (e.g., "Nov 23, '24")
+  // Format date with year if not current year
   const formatDateWithYear = (dateStr: string) => {
     const date = new Date(dateStr);
     const dateYear = date.getFullYear();
     return dateYear === currentYear 
       ? format(date, 'MMM d') 
-      : format(date, "MMM d, ''yy");
+      : format(date, 'MMM d, yyyy');
   };
   
   const formatDateRange = () => {
@@ -293,7 +293,7 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
           </div>
 
           {/* Footer with avatar, name, date, and comment count */}
-          <div className="flex items-center justify-between text-xs text-muted-foreground gap-2">
+          <div className="flex items-start justify-between text-xs text-muted-foreground gap-2">
             <div className="flex items-center gap-2 min-w-0 shrink-0">
               <Tooltip>
                 <TooltipTrigger asChild>
@@ -314,17 +314,17 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
                 </TooltipContent>
               </Tooltip>
             </div>
-            <div className="flex items-center gap-2 shrink-0">
+            <div className="flex flex-col items-end gap-0.5 shrink-0">
               {dateRange && (
-                <span className={`whitespace-nowrap ${isOverdue ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>{dateRange}</span>
+                <span className={isOverdue ? 'text-red-500 font-medium' : 'text-muted-foreground'}>{dateRange}</span>
               )}
               {closedDate && (
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium whitespace-nowrap">
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
                   ✓ {closedDate}
                 </span>
               )}
               {request.comment_count > 0 && (
-                <div className="flex items-center gap-0.5 shrink-0">
+                <div className="flex items-center gap-0.5">
                   {request.comment_count}
                   <MessageCircle className="w-3 h-3" />
                 </div>
