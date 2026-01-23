@@ -31,6 +31,7 @@ import { AddHiringRequestDialog } from './AddHiringRequestDialog';
 import { HiringRequestDetailDialog } from './HiringRequestDetailDialog';
 import { AddPipelineStageDialog } from './AddPipelineStageDialog';
 import { PipelineImportDialog } from './PipelineImportDialog';
+import { RecruiterAnalytics } from './RecruiterAnalytics';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -516,6 +517,12 @@ export const HiringPipelineKanban = () => {
 
   return (
     <>
+      {/* Recruiter Analytics Section */}
+      <div className="px-4 py-3 border-b">
+        <h3 className="text-sm font-semibold mb-2">Recruiter Performance</h3>
+        <RecruiterAnalytics requests={requests} adminUsers={adminUsers} />
+      </div>
+
       {/* Pipeline Header with Import/Export */}
       <div className="flex items-center justify-between px-4 py-1 border-b">
         <div className="flex items-center gap-4">
