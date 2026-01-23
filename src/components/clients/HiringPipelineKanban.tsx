@@ -175,12 +175,19 @@ interface KanbanCardProps {
 
 const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanCardProps) => {
   const isClosed = request.pipeline_stage === 'closed';
+  const isLost = request.pipeline_stage === 'lost_client' || request.pipeline_stage === 'lost_outsta';
   const assignee = adminUsers.find(a => a.user_id === request.assigned_admin_id);
   const assigneeEmail = assignee?.email?.toLowerCase();
   const assigneeName = getAdminDisplayName(assignee?.email);
   const assigneeInitial = assigneeName.charAt(0).toUpperCase();
   const assigneeAvatar = assigneeEmail ? ADMIN_AVATARS[assigneeEmail] : undefined;
   const currentYear = new Date().getFullYear();
+  
+  // Check if a date is from a previous year
+  const isFromPreviousYear = (dateStr: string) => {
+    const date = new Date(dateStr);
+    return date.getFullYear() < currentYear;
+  };
   
   // Format date with year if not current year
   const formatDateWithYear = (dateStr: string) => {
@@ -194,6 +201,13 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
   const formatDateRange = () => {
     // Always show start_date – target_end_date (the original timeline)
     if (!request.start_date && !request.target_end_date) return null;
+    
+    // Hide dates from previous years on lost stages
+    if (isLost) {
+      const startFromPrevYear = request.start_date && isFromPreviousYear(request.start_date);
+      const endFromPrevYear = request.target_end_date && isFromPreviousYear(request.target_end_date);
+      if (startFromPrevYear || endFromPrevYear) return null;
+    }
     
     const start = request.start_date ? formatDateWithYear(request.start_date) : '';
     const end = request.target_end_date ? formatDateWithYear(request.target_end_date) : '';
