@@ -240,14 +240,15 @@ export const ClientAnalyticsDashboard = () => {
       .sort((a, b) => b.value - a.value);
   }, [clients, activeClientIds]);
 
-  // Clients by Lead Source
+  // Clients by Lead Source - ONLY active clients (with 1+ active contractors)
   const clientsByLeadsFrom = useMemo(() => {
+    const activeClients = clients.filter(c => activeClientIds.has(c.id));
     const leadsMap: Record<string, number> = {};
-    clients.forEach(c => {
+    activeClients.forEach(c => {
       const source = c.leads_from || 'Unknown';
       leadsMap[source] = (leadsMap[source] || 0) + 1;
     });
-    const total = clients.length;
+    const total = activeClients.length;
     return Object.entries(leadsMap)
       .map(([name, value]) => ({ 
         name, 
@@ -255,7 +256,7 @@ export const ClientAnalyticsDashboard = () => {
         percentage: total > 0 ? Math.round((value / total) * 100) : 0 
       }))
       .sort((a, b) => b.value - a.value);
-  }, [clients]);
+  }, [clients, activeClientIds]);
 
   // 2. Monthly stats (Hires, Resignations, Terminations) - Starting from 2026
   const monthlyStats = useMemo(() => {
