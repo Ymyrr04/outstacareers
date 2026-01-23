@@ -557,12 +557,12 @@ export const HiringPipelineKanban = () => {
             return (
               <div key={stage.id} className="flex-shrink-0 w-72 flex flex-col">
                 {/* Column Header */}
-                <div className="flex items-center justify-between mb-3 px-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-sm">
-                      {stage.name} {stage.emoji && stage.emoji}
+                <div className="flex items-center justify-between mb-3 px-1 gap-2">
+                  <div className="flex items-center gap-2 min-w-0 flex-shrink">
+                    <h3 className="font-semibold text-sm whitespace-nowrap truncate">
+                      {stage.name}{stage.emoji && ` ${stage.emoji}`}
                     </h3>
-                    <Badge variant="secondary" className="text-xs">
+                    <Badge variant="secondary" className="text-xs flex-shrink-0">
                       {stageRequests.length}
                     </Badge>
                   </div>
