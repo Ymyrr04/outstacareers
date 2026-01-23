@@ -189,12 +189,23 @@ export const ClientsDashboard = () => {
   );
   
   // Clients lost = clients with hiring requests in lost stages, filtered by year
+  // Debug: log the hiring requests with created_at
+  const lostRequests = hiringRequests.filter(req => 
+    req.client_id && LOST_STAGES.includes(req.pipeline_stage)
+  );
+  console.log('Lost requests sample:', lostRequests.slice(0, 3).map(r => ({ 
+    stage: r.pipeline_stage, 
+    created_at: r.created_at,
+    year: r.created_at ? new Date(r.created_at).getFullYear() : 'NO DATE'
+  })));
+  console.log('Total lost requests:', lostRequests.length, 'Filter year:', lostYearFilter);
+  
   const clientsInLostStages = new Set(
     hiringRequests
       .filter(req => 
         req.client_id && 
         LOST_STAGES.includes(req.pipeline_stage) &&
-        new Date(req.created_at).getFullYear() === lostYearFilter
+        req.created_at && new Date(req.created_at).getFullYear() === lostYearFilter
       )
       .map(req => req.client_id!)
   );
