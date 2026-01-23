@@ -71,7 +71,8 @@ export const useHiringRequests = () => {
       .select(`
         *,
         clients (
-          company_name
+          company_name,
+          leads_from
         )
       `)
       .order('created_at', { ascending: false });
@@ -96,7 +97,7 @@ export const useHiringRequests = () => {
       industry: r.industry,
       client_status: r.client_status as ClientStatus,
       pipeline_stage: r.pipeline_stage as string,
-      source: r.source,
+      source: r.source || r.clients?.leads_from || null,
       start_date: r.start_date,
       target_end_date: r.target_end_date,
       assigned_admin_id: r.assigned_admin_id,
