@@ -79,7 +79,8 @@ export const ClientAnalyticsDashboard = () => {
   const [roleSortField, setRoleSortField] = useState<SortField>('hired');
   const [roleSortDir, setRoleSortDir] = useState<SortDirection>('desc');
 
-  const [hiringRequests, setHiringRequests] = useState<{ client_status: string; client_id: string | null; pipeline_stage: string }[]>([]);
+  const [hiringRequests, setHiringRequests] = useState<{ client_status: string; client_id: string | null; pipeline_stage: string; start_date: string | null }[]>([]);
+  const [lostYearFilter, setLostYearFilter] = useState(2025);
 
   const fetchData = useCallback(async () => {
     try {
@@ -96,8 +97,7 @@ export const ClientAnalyticsDashboard = () => {
           .neq('job_source', 'Contractor Import'),
         supabase
           .from('client_hiring_requests')
-          .select('client_status, client_id, pipeline_stage')
-          .neq('pipeline_stage', 'closed'),
+          .select('client_status, client_id, pipeline_stage, start_date'),
       ]);
 
       if (contractorsRes.error) throw contractorsRes.error;
@@ -481,9 +481,18 @@ export const ClientAnalyticsDashboard = () => {
       .map(req => req.client_id!)
   );
   
-  const clientsLost = clients.filter(c => 
-    !clientsWithActiveContractors.has(c.id) && !clientsWithActiveHiringRequests.has(c.id)
-  ).length;
+  // Clients lost = unique clients with hiring requests in lost stages, filtered by year based on start_date
+  // If start_date is empty, default to 2025
+  const LOST_STAGES = ['lost_client', 'lost_outsta'];
+  const lostRequests = hiringRequests.filter(req => 
+    req.client_id && LOST_STAGES.includes(req.pipeline_stage)
+  );
+  const lostRequestsForYear = lostRequests.filter(req => {
+    const year = req.start_date ? new Date(req.start_date).getFullYear() : 2025;
+    return year === lostYearFilter;
+  });
+  const clientsInLostStages = new Set(lostRequestsForYear.map(req => req.client_id!));
+  const clientsLost = clientsInLostStages.size;
   
   // Count hiring clients based on having requests in active pipeline stages
   const newClientsHiring = clients.filter(c => 
@@ -1111,7 +1120,17 @@ export const ClientAnalyticsDashboard = () => {
               </div>
               <div>
                 <p className="text-2xl font-bold">{clientsLost || 0}</p>
-                <p className="text-sm text-muted-foreground">Clients Lost</p>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={lostYearFilter}
+                    onChange={(e) => setLostYearFilter(Number(e.target.value))}
+                    className="text-xs border rounded px-1 py-0.5 bg-background"
+                  >
+                    <option value={2025}>2025</option>
+                    <option value={2026}>2026</option>
+                  </select>
+                  <p className="text-sm text-muted-foreground">Clients Lost</p>
+                </div>
               </div>
             </div>
           </CardContent>
