@@ -254,12 +254,20 @@ export function useEmailTemplates() {
   };
 }
 
+// Cache for email logs per applicant
+const emailLogsCache = new Map<string, { logs: EmailLog[]; timestamp: number }>();
+const CACHE_TTL = 60000; // 1 minute cache
+
 export function useEmailLogs(applicantId?: string) {
-  const [logs, setLogs] = useState<EmailLog[]>([]);
-  const [loading, setLoading] = useState(true);
+  // Initialize from cache if available
+  const cached = applicantId ? emailLogsCache.get(applicantId) : null;
+  const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
+  
+  const [logs, setLogs] = useState<EmailLog[]>(isCacheValid ? cached.logs : []);
+  const [loading, setLoading] = useState(!isCacheValid);
   const { toast } = useToast();
 
-  const fetchLogs = useCallback(async () => {
+  const fetchLogs = useCallback(async (silent = false) => {
     // Don't fetch if no applicantId is provided to avoid loading all logs
     if (!applicantId) {
       setLogs([]);
@@ -267,7 +275,7 @@ export function useEmailLogs(applicantId?: string) {
       return;
     }
     
-    setLoading(true);
+    if (!silent) setLoading(true);
     try {
       const { data, error } = await supabase
         .from('email_logs')
@@ -277,41 +285,61 @@ export function useEmailLogs(applicantId?: string) {
 
       if (error) {
         console.error('Error fetching email logs:', error);
+        if (!silent) {
+          toast({
+            title: 'Error',
+            description: 'Failed to fetch email logs',
+            variant: 'destructive',
+          });
+        }
+        setLogs([]);
+      } else {
+        const logsData = data || [];
+        setLogs(logsData);
+        // Update cache
+        emailLogsCache.set(applicantId, { logs: logsData, timestamp: Date.now() });
+      }
+    } catch (err) {
+      console.error('Exception fetching email logs:', err);
+      if (!silent) {
         toast({
           title: 'Error',
           description: 'Failed to fetch email logs',
           variant: 'destructive',
         });
-        setLogs([]);
-      } else {
-        setLogs(data || []);
       }
-    } catch (err) {
-      console.error('Exception fetching email logs:', err);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch email logs',
-        variant: 'destructive',
-      });
       setLogs([]);
     }
     setLoading(false);
   }, [applicantId, toast]);
 
   useEffect(() => {
-    fetchLogs();
-  }, [fetchLogs]);
+    // Only fetch if cache is stale or empty
+    const cached = applicantId ? emailLogsCache.get(applicantId) : null;
+    const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
+    
+    if (!isCacheValid) {
+      fetchLogs(!!cached); // Silent if we have stale cache data
+    }
+  }, [fetchLogs, applicantId]);
 
   return { logs, loading, fetchLogs };
 }
 
+// Cache for scheduled emails per applicant
+const scheduledEmailsCache = new Map<string, { emails: ScheduledEmail[]; timestamp: number }>();
+
 export function useScheduledEmails(applicantId?: string) {
-  const [scheduledEmails, setScheduledEmails] = useState<ScheduledEmail[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = applicantId || 'all';
+  const cached = scheduledEmailsCache.get(cacheKey);
+  const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
+  
+  const [scheduledEmails, setScheduledEmails] = useState<ScheduledEmail[]>(isCacheValid ? cached.emails : []);
+  const [loading, setLoading] = useState(!isCacheValid);
   const { toast } = useToast();
 
-  const fetchScheduledEmails = useCallback(async () => {
-    setLoading(true);
+  const fetchScheduledEmails = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     let query = supabase
       .from('scheduled_emails')
       .select('*')
@@ -325,20 +353,29 @@ export function useScheduledEmails(applicantId?: string) {
     const { data, error } = await query;
 
     if (error) {
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch scheduled emails',
-        variant: 'destructive',
-      });
+      if (!silent) {
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch scheduled emails',
+          variant: 'destructive',
+        });
+      }
     } else {
-      setScheduledEmails(data || []);
+      const emails = data || [];
+      setScheduledEmails(emails);
+      scheduledEmailsCache.set(cacheKey, { emails, timestamp: Date.now() });
     }
     setLoading(false);
-  }, [applicantId, toast]);
+  }, [applicantId, toast, cacheKey]);
 
   useEffect(() => {
-    fetchScheduledEmails();
-  }, [fetchScheduledEmails]);
+    const cached = scheduledEmailsCache.get(cacheKey);
+    const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
+    
+    if (!isCacheValid) {
+      fetchScheduledEmails(!!cached);
+    }
+  }, [fetchScheduledEmails, cacheKey]);
 
   const cancelScheduledEmail = async (id: string) => {
     const { data: userData } = await supabase.auth.getUser();
@@ -407,14 +444,21 @@ export interface EmailReply {
   in_reply_to?: string | null;
 }
 
+// Cache for email replies per applicant
+const emailRepliesCache = new Map<string, { replies: EmailReply[]; timestamp: number }>();
+
 export function useEmailReplies(applicantId?: string) {
-  const [replies, setReplies] = useState<EmailReply[]>([]);
-  const [loading, setLoading] = useState(true);
+  const cacheKey = applicantId || 'all';
+  const cached = emailRepliesCache.get(cacheKey);
+  const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
+  
+  const [replies, setReplies] = useState<EmailReply[]>(isCacheValid ? cached.replies : []);
+  const [loading, setLoading] = useState(!isCacheValid);
   const [fetching, setFetching] = useState(false);
   const { toast } = useToast();
 
-  const fetchReplies = useCallback(async () => {
-    setLoading(true);
+  const fetchReplies = useCallback(async (silent = false) => {
+    if (!silent) setLoading(true);
     let query = supabase
       .from('email_replies')
       .select('*')
@@ -429,14 +473,21 @@ export function useEmailReplies(applicantId?: string) {
     if (error) {
       console.error('Failed to fetch email replies:', error);
     } else {
-      setReplies(data || []);
+      const repliesData = data || [];
+      setReplies(repliesData);
+      emailRepliesCache.set(cacheKey, { replies: repliesData, timestamp: Date.now() });
     }
     setLoading(false);
-  }, [applicantId]);
+  }, [applicantId, cacheKey]);
 
   useEffect(() => {
-    fetchReplies();
-  }, [fetchReplies]);
+    const cached = emailRepliesCache.get(cacheKey);
+    const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
+    
+    if (!isCacheValid) {
+      fetchReplies(!!cached);
+    }
+  }, [fetchReplies, cacheKey]);
 
   const fetchNewReplies = async () => {
     setFetching(true);
