@@ -266,9 +266,6 @@ const Admin = () => {
   // Main tab state for layout control
   const [activeMainTab, setActiveMainTab] = useState('jobs');
   
-  // Track which tabs have been visited (for lazy loading heavy components)
-  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set(['jobs']));
-  
   // Assessment tab state for CV/Interview navigation
   const [activeAssessmentTab, setActiveAssessmentTab] = useState<'cv' | 'interview'>('cv');
   
@@ -1081,10 +1078,7 @@ const Admin = () => {
       </header>
 
       <main className="px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
-        <Tabs defaultValue="jobs" className="space-y-6" value={activeMainTab} onValueChange={(tab) => {
-          setActiveMainTab(tab);
-          setVisitedTabs(prev => new Set([...prev, tab]));
-        }}>
+        <Tabs defaultValue="jobs" className="space-y-6" value={activeMainTab} onValueChange={setActiveMainTab}>
           <TabsList className="flex-wrap">
             {canViewTab('jobs') && (
               <TabsTrigger value="jobs" className="flex items-center gap-2">
@@ -1148,16 +1142,11 @@ const Admin = () => {
             )}
           </TabsList>
 
-          <TabsContent value="my-applicants" className="space-y-6" keepMounted>
-            {visitedTabs.has('my-applicants') ? <MyApplicantsDashboard /> : (
-              <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Loading...</span>
-              </div>
-            )}
+          <TabsContent value="my-applicants" className="space-y-6">
+            <MyApplicantsDashboard />
           </TabsContent>
 
-          <TabsContent value="jobs" className="space-y-6" keepMounted>
+          <TabsContent value="jobs" className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold">All Jobs</h2>
@@ -1365,7 +1354,7 @@ const Admin = () => {
             )}
           </TabsContent>
 
-          <TabsContent value="applicants" className="space-y-6" keepMounted>
+          <TabsContent value="applicants" className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold">Pre-Screening Submissions</h2>
@@ -2696,42 +2685,27 @@ const Admin = () => {
           </TabsContent>
 
           {/* Pipeline Kanban Tab */}
-          <TabsContent value="pipeline" className="space-y-2" keepMounted>
+          <TabsContent value="pipeline" className="space-y-2">
             <div className="px-4 pt-2">
               <h2 className="text-lg font-semibold">Client Hiring Pipeline</h2>
               <p className="text-xs text-muted-foreground">Track client hiring requests through the recruitment pipeline</p>
             </div>
-            {visitedTabs.has('pipeline') && <HiringPipelineKanban />}
+            <HiringPipelineKanban />
           </TabsContent>
 
           {/* Clients Tab */}
-          <TabsContent value="clients" className="space-y-6" keepMounted>
-            {visitedTabs.has('clients') ? <ClientsDashboard /> : (
-              <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Loading...</span>
-              </div>
-            )}
+          <TabsContent value="clients" className="space-y-6">
+            <ClientsDashboard />
           </TabsContent>
 
           {/* Contractors Tab */}
-          <TabsContent value="contractors" className="space-y-6" keepMounted>
-            {visitedTabs.has('contractors') ? <ContractorsDashboard /> : (
-              <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Loading...</span>
-              </div>
-            )}
+          <TabsContent value="contractors" className="space-y-6">
+            <ContractorsDashboard />
           </TabsContent>
 
           {/* Analytics Tab */}
-          <TabsContent value="analytics" className="space-y-6" keepMounted>
-            {visitedTabs.has('analytics') ? <ClientAnalyticsDashboard /> : (
-              <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Loading...</span>
-              </div>
-            )}
+          <TabsContent value="analytics" className="space-y-6">
+            <ClientAnalyticsDashboard />
           </TabsContent>
 
           {/* Settings/Permissions Tab - Super Admin Only */}
