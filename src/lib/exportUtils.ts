@@ -1,6 +1,19 @@
 import JSZip from 'jszip';
 import { supabase } from '@/integrations/supabase/client';
 
+// Helper to strip HTML tags and convert to plain text
+const stripHtml = (html: string | null | undefined): string => {
+  if (!html) return '';
+  // Create a temporary element to parse HTML
+  const temp = document.createElement('div');
+  temp.innerHTML = html;
+  // Get text content and clean up whitespace
+  let text = temp.textContent || temp.innerText || '';
+  // Replace multiple spaces/newlines with single space
+  text = text.replace(/\s+/g, ' ').trim();
+  return text;
+};
+
 // Helper to escape CSV values
 const escapeCSV = (value: any): string => {
   if (value === null || value === undefined) return '';
@@ -159,7 +172,7 @@ export const exportApplicants = async (options?: {
         a.has_experience ? 'Yes' : 'No',
         a.job_source,
         a.submitted_at ? new Date(a.submitted_at).toLocaleString() : '',
-        a.notes,
+        stripHtml(a.notes),
         cvFilenames[a.id] || '',
       ]);
       
@@ -197,7 +210,7 @@ export const exportApplicants = async (options?: {
       a.has_experience ? 'Yes' : 'No',
       a.job_source,
       a.submitted_at ? new Date(a.submitted_at).toLocaleString() : '',
-      a.notes,
+      stripHtml(a.notes),
     ]);
 
     const csv = generateCSV(headers, rows);
@@ -233,7 +246,7 @@ export const exportPipeline = async (): Promise<{ success: boolean; count: numbe
       r.source,
       r.start_date,
       r.target_end_date,
-      r.notes,
+      stripHtml(r.notes),
       r.created_at ? new Date(r.created_at).toLocaleString() : '',
     ]);
 
@@ -282,7 +295,7 @@ export const exportContractors = async (): Promise<{ success: boolean; count: nu
       c.is_replacement ? 'Replacement' : 'New',
       c.country || c.applicant?.location,
       c.source,
-      c.notes,
+      stripHtml(c.notes),
     ]);
 
     const csv = generateCSV(headers, rows);
@@ -337,7 +350,7 @@ export const exportClients = async (): Promise<{ success: boolean; count: number
         client.industry,
         client.website,
         client.is_hiring ? 'Yes' : 'No',
-        client.notes,
+        stripHtml(client.notes),
       ];
     });
 
