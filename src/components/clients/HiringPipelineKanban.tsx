@@ -178,6 +178,15 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
   const assigneeInitial = assigneeName.charAt(0).toUpperCase();
   const assigneeAvatar = assigneeEmail ? ADMIN_AVATARS[assigneeEmail] : undefined;
   const formatDateRange = () => {
+    // For closed cards, show start_date – closed_at
+    if (isClosed && request.closed_at) {
+      const start = request.start_date ? format(new Date(request.start_date), 'MMM d') : '';
+      const closed = format(new Date(request.closed_at), 'MMM d');
+      if (start) return `${start} – ${closed}`;
+      return `Closed ${closed}`;
+    }
+    
+    // For open cards, show start_date – target_end_date
     if (!request.start_date && !request.target_end_date) return null;
     
     const start = request.start_date ? format(new Date(request.start_date), 'MMM d') : '';
