@@ -354,9 +354,21 @@ export const HiringPipelineKanban = () => {
   
   const loading = requestsLoading || stagesLoading;
   
-  // Group requests by pipeline stage dynamically
+  // Group requests by pipeline stage dynamically, sort closed by completion date (oldest first)
   const requestsByStage = stages.reduce((acc, stage) => {
-    acc[stage.slug] = requests.filter(r => r.pipeline_stage === stage.slug);
+    let stageRequests = requests.filter(r => r.pipeline_stage === stage.slug);
+    
+    // Sort closed items by closed_at date (oldest first)
+    if (stage.slug === 'closed') {
+      stageRequests = stageRequests.sort((a, b) => {
+        if (!a.closed_at && !b.closed_at) return 0;
+        if (!a.closed_at) return 1;
+        if (!b.closed_at) return -1;
+        return new Date(a.closed_at).getTime() - new Date(b.closed_at).getTime();
+      });
+    }
+    
+    acc[stage.slug] = stageRequests;
     return acc;
   }, {} as Record<string, HiringRequest[]>);
 
