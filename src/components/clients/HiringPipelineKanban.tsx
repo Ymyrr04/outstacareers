@@ -111,10 +111,12 @@ const CelebrationPopup = ({
               ref={(el) => { 
                 if (el) {
                   el.playbackRate = 1.25;
-                  // Ensure autoplay works across all browsers
-                  el.play().catch(() => {
-                    // If autoplay fails, try muted playback
-                    el.muted = true;
+                  // Start muted for autoplay compliance, then unmute for audio
+                  el.play().then(() => {
+                    // Unmute after playback starts to get audio
+                    el.muted = false;
+                  }).catch(() => {
+                    // If autoplay fails completely, keep it muted
                     el.play().catch(() => {});
                   });
                 }
