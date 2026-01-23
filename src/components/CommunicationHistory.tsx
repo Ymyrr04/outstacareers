@@ -119,6 +119,8 @@ export function CommunicationHistory({
   }, [open, applicantId, onMarkAsRead]);
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
+  // Track which threads show just replies vs full thread
+  const [showRepliesOnly, setShowRepliesOnly] = useState<Set<string>>(new Set());
   const [cancelingId, setCancelingId] = useState<string | null>(null);
   const [sendingNowId, setSendingNowId] = useState<string | null>(null);
   
@@ -134,9 +136,48 @@ export function CommunicationHistory({
       const next = new Set(prev);
       if (next.has(id)) {
         next.delete(id);
+        // Also reset replies-only mode when collapsing
+        setShowRepliesOnly(prev => {
+          const nextReplies = new Set(prev);
+          nextReplies.delete(id);
+          return nextReplies;
+        });
       } else {
         next.add(id);
       }
+      return next;
+    });
+  };
+
+  // Toggle to show just replies (default when clicking reply badge)
+  const toggleRepliesView = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setExpandedThreads(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+    setShowRepliesOnly(prev => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+    // Auto-expand the first reply
+    const thread = threads.find(t => t.sentEmail.id === id);
+    if (thread && thread.replies.length > 0) {
+      setExpandedReplies(prev => {
+        const next = new Set(prev);
+        next.add(thread.replies[0].id);
+        return next;
+      });
+    }
+  };
+
+  // Show full thread (toggle off replies-only mode)
+  const showFullThread = (id: string) => {
+    setShowRepliesOnly(prev => {
+      const next = new Set(prev);
+      next.delete(id);
       return next;
     });
   };
@@ -586,6 +627,7 @@ export function CommunicationHistory({
                     {threads.map((thread) => {
                       const isExpanded = expandedThreads.has(thread.sentEmail.id);
                       const hasReplies = thread.replies.length > 0;
+                      const isRepliesOnly = showRepliesOnly.has(thread.sentEmail.id);
                       
                       return (
                         <div 
@@ -612,7 +654,10 @@ export function CommunicationHistory({
                               </div>
                               <div className="flex items-center gap-2 shrink-0">
                                 {hasReplies && (
-                                  <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                                  <Badge 
+                                    className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400 cursor-pointer hover:bg-blue-200 dark:hover:bg-blue-900/50 transition-colors"
+                                    onClick={(e) => toggleRepliesView(thread.sentEmail.id, e)}
+                                  >
                                     {thread.replies.length} {thread.replies.length === 1 ? 'reply' : 'replies'}
                                   </Badge>
                                 )}
@@ -635,32 +680,51 @@ export function CommunicationHistory({
                           {/* Expanded Thread Content */}
                           {isExpanded && (
                             <div className="border-t">
-                              {/* Original Sent Email */}
-                              <div className="bg-muted/30 p-4">
-                                <div className="flex items-center justify-between gap-2 mb-2">
-                                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                    <Send className="h-3 w-3" />
-                                    <span>Sent message</span>
-                                  </div>
+                              {/* Show "View full thread" button when in replies-only mode */}
+                              {isRepliesOnly && (
+                                <div className="bg-muted/20 px-4 py-2 border-b flex items-center justify-between">
+                                  <span className="text-sm text-muted-foreground">
+                                    Showing {thread.replies.length} {thread.replies.length === 1 ? 'reply' : 'replies'}
+                                  </span>
                                   <Button
                                     size="sm"
-                                    variant="outline"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleFollowUp(thread.sentEmail);
-                                    }}
+                                    variant="ghost"
+                                    onClick={() => showFullThread(thread.sentEmail.id)}
                                   >
-                                    <CornerUpLeft className="h-4 w-4 mr-1.5" />
-                                    Follow up
+                                    <Mail className="h-4 w-4 mr-1.5" />
+                                    View full thread
                                   </Button>
                                 </div>
-                                <div className="prose prose-sm max-w-none dark:prose-invert break-words overflow-hidden">
-                                  <div 
-                                    dangerouslySetInnerHTML={{ __html: sanitizeHtml(thread.sentEmail.body_html) }} 
-                                    className="break-words overflow-hidden [&>*]:max-w-full [&_a]:break-all"
-                                  />
+                              )}
+
+                              {/* Original Sent Email - only show when not in replies-only mode */}
+                              {!isRepliesOnly && (
+                                <div className="bg-muted/30 p-4">
+                                  <div className="flex items-center justify-between gap-2 mb-2">
+                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                      <Send className="h-3 w-3" />
+                                      <span>Sent message</span>
+                                    </div>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleFollowUp(thread.sentEmail);
+                                      }}
+                                    >
+                                      <CornerUpLeft className="h-4 w-4 mr-1.5" />
+                                      Follow up
+                                    </Button>
+                                  </div>
+                                  <div className="prose prose-sm max-w-none dark:prose-invert break-words overflow-hidden">
+                                    <div 
+                                      dangerouslySetInnerHTML={{ __html: sanitizeHtml(thread.sentEmail.body_html) }} 
+                                      className="break-words overflow-hidden [&>*]:max-w-full [&_a]:break-all"
+                                    />
+                                  </div>
                                 </div>
-                              </div>
+                              )}
 
                               {/* Replies in Thread */}
                               {thread.replies.map((reply) => {
