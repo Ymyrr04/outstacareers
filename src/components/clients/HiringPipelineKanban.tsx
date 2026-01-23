@@ -436,7 +436,7 @@ export const HiringPipelineKanban = () => {
   // Calculate role counts per recruiter (only active hiring stages: sourcing, pitch, scheduled-interview)
   // MUST be before any early returns to maintain hook order
   const recruiterStats = useMemo(() => {
-    const activeStages = ['sourcing-screening', 'pitch', 'scheduled-interview'];
+    const activeStages = ['sourcing', 'pitch', 'scheduled_interview'];
     const activeRequests = requests.filter(r => activeStages.includes(r.pipeline_stage));
     const stats: Record<string, { name: string; count: number; avatar?: string }> = {};
     
