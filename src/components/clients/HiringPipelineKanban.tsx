@@ -351,15 +351,15 @@ export const HiringPipelineKanban = () => {
   const [celebrationMedia, setCelebrationMedia] = useState<string | null>(null);
   const [isVideoMode, setIsVideoMode] = useState(false);
   const [closureCount, setClosureCount] = useState(0);
-  const [sortBy, setSortBy] = useState<'priority' | 'target_end_date' | 'closed_at' | 'created_at'>('priority');
+  const [stageSortBy, setStageSortBy] = useState<Record<string, 'priority' | 'target_end_date' | 'closed_at' | 'created_at'>>({});
   const { toast } = useToast();
   
   const loading = requestsLoading || stagesLoading;
   
-  // Sort function based on selected sort option
-  const sortRequests = (items: HiringRequest[]): HiringRequest[] => {
+  // Sort function based on sort option
+  const sortRequests = (items: HiringRequest[], sortOption: 'priority' | 'target_end_date' | 'closed_at' | 'created_at'): HiringRequest[] => {
     return [...items].sort((a, b) => {
-      switch (sortBy) {
+      switch (sortOption) {
         case 'priority': {
           const priorityOrder = { high: 0, medium: 1, low: 2 };
           return priorityOrder[a.priority] - priorityOrder[b.priority];
@@ -385,23 +385,20 @@ export const HiringPipelineKanban = () => {
     });
   };
 
-  // Group requests by pipeline stage dynamically with sorting
-  const requestsByStage = stages.reduce((acc, stage) => {
-    let stageRequests = requests.filter(r => r.pipeline_stage === stage.slug);
-    
-    // Always sort closed by closed_at date, otherwise use selected sort
-    if (stage.slug === 'closed') {
-      stageRequests = stageRequests.sort((a, b) => {
-        if (!a.closed_at && !b.closed_at) return 0;
-        if (!a.closed_at) return 1;
-        if (!b.closed_at) return -1;
-        return new Date(b.closed_at).getTime() - new Date(a.closed_at).getTime();
-      });
-    } else {
-      stageRequests = sortRequests(stageRequests);
+  // Get sorted requests for a stage
+  const getSortedRequests = (stageSlug: string, items: HiringRequest[]): HiringRequest[] => {
+    // Closed column always sorts by closed_at
+    if (stageSlug === 'closed') {
+      return sortRequests(items, 'closed_at');
     }
-    
-    acc[stage.slug] = stageRequests;
+    const sortOption = stageSortBy[stageSlug] || 'priority';
+    return sortRequests(items, sortOption);
+  };
+
+  // Group requests by pipeline stage dynamically
+  const requestsByStage = stages.reduce((acc, stage) => {
+    const stageRequests = requests.filter(r => r.pipeline_stage === stage.slug);
+    acc[stage.slug] = getSortedRequests(stage.slug, stageRequests);
     return acc;
   }, {} as Record<string, HiringRequest[]>);
 
@@ -540,18 +537,6 @@ export const HiringPipelineKanban = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
-            <SelectTrigger className="h-7 w-[140px] text-xs">
-              <ArrowUpDown className="w-3 h-3 mr-1.5" />
-              <SelectValue placeholder="Sort by" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="priority">Priority</SelectItem>
-              <SelectItem value="target_end_date">Target Date</SelectItem>
-              <SelectItem value="closed_at">Closed Date</SelectItem>
-              <SelectItem value="created_at">Created Date</SelectItem>
-            </SelectContent>
-          </Select>
           <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setImportDialogOpen(true)}>
             <Upload className="w-3 h-3 mr-1.5" />
             Import
@@ -566,17 +551,38 @@ export const HiringPipelineKanban = () => {
         <div className="flex gap-4 px-4 pt-2 pb-4 overflow-x-auto h-[calc(100vh-160px)]">
           {stages.map(stage => {
             const stageRequests = requestsByStage[stage.slug] || [];
+            const currentSort = stage.slug === 'closed' ? 'closed_at' : (stageSortBy[stage.slug] || 'priority');
+            const isClosedColumn = stage.slug === 'closed';
             
             return (
               <div key={stage.id} className="flex-shrink-0 w-72 flex flex-col">
                 {/* Column Header */}
-                <div className="flex items-center gap-2 mb-3 px-1">
-                  <h3 className="font-semibold text-sm">
-                    {stage.name} {stage.emoji && stage.emoji}
-                  </h3>
-                  <Badge variant="secondary" className="text-xs">
-                    {stageRequests.length}
-                  </Badge>
+                <div className="flex items-center justify-between mb-3 px-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-semibold text-sm">
+                      {stage.name} {stage.emoji && stage.emoji}
+                    </h3>
+                    <Badge variant="secondary" className="text-xs">
+                      {stageRequests.length}
+                    </Badge>
+                  </div>
+                  {!isClosedColumn && (
+                    <Select 
+                      value={currentSort} 
+                      onValueChange={(v) => setStageSortBy(prev => ({ ...prev, [stage.slug]: v as any }))}
+                    >
+                      <SelectTrigger className="h-6 w-[100px] text-[10px] px-2">
+                        <ArrowUpDown className="w-2.5 h-2.5 mr-1" />
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="bg-popover z-50">
+                        <SelectItem value="priority" className="text-xs">Priority</SelectItem>
+                        <SelectItem value="target_end_date" className="text-xs">Target Date</SelectItem>
+                        <SelectItem value="closed_at" className="text-xs">Closed Date</SelectItem>
+                        <SelectItem value="created_at" className="text-xs">Created Date</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  )}
                 </div>
 
                 {/* Column Content */}
