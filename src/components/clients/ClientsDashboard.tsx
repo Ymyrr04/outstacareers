@@ -189,26 +189,18 @@ export const ClientsDashboard = () => {
   );
   
   // Clients lost = clients with hiring requests in lost stages, filtered by year
-  // Debug: log the hiring requests with created_at
-  const lostRequests = hiringRequests.filter(req => 
-    req.client_id && LOST_STAGES.includes(req.pipeline_stage)
-  );
-  console.log('Lost requests sample:', lostRequests.slice(0, 3).map(r => ({ 
-    stage: r.pipeline_stage, 
-    created_at: r.created_at,
-    year: r.created_at ? new Date(r.created_at).getFullYear() : 'NO DATE'
-  })));
-  console.log('Total lost requests:', lostRequests.length, 'Filter year:', lostYearFilter);
+  // Filter hiring requests in lost stages by selected year
+  const lostRequestsForYear = hiringRequests.filter(req => {
+    if (!req.client_id || !LOST_STAGES.includes(req.pipeline_stage)) return false;
+    if (!req.created_at) return false;
+    const reqYear = new Date(req.created_at).getFullYear();
+    return reqYear === lostYearFilter;
+  });
   
-  const clientsInLostStages = new Set(
-    hiringRequests
-      .filter(req => 
-        req.client_id && 
-        LOST_STAGES.includes(req.pipeline_stage) &&
-        req.created_at && new Date(req.created_at).getFullYear() === lostYearFilter
-      )
-      .map(req => req.client_id!)
-  );
+  const clientsInLostStages = new Set(lostRequestsForYear.map(req => req.client_id!));
+  
+  // Debug: Show count in console
+  console.log(`[ClientsDashboard v3] Lost requests for ${lostYearFilter}:`, lostRequestsForYear.length, 'Unique clients:', clientsInLostStages.size);
   
   const filteredClients = clients.filter(client => {
     const matchesSearch = !searchTerm || 
@@ -404,7 +396,7 @@ export const ClientsDashboard = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <p className="text-sm text-muted-foreground">Clients Lost ({lostYearFilter})</p>
+                <p className="text-sm text-muted-foreground">Lost ({lostYearFilter}) - v3</p>
               </div>
             </div>
           </CardContent>
