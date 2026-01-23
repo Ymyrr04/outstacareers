@@ -142,7 +142,63 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
       .trim();
   };
 
-  const parseCSVLine = (line: string): string[] => {
+  // Parse CSV with proper handling of quoted fields (including multiline)
+  const parseCSV = (text: string): string[][] => {
+    const rows: string[][] = [];
+    let currentRow: string[] = [];
+    let currentField = '';
+    let inQuotes = false;
+
+    for (let i = 0; i < text.length; i++) {
+      const char = text[i];
+      const nextChar = text[i + 1];
+
+      if (char === '"') {
+        if (inQuotes && nextChar === '"') {
+          // Escaped quote
+          currentField += '"';
+          i++;
+        } else {
+          // Toggle quote state
+          inQuotes = !inQuotes;
+        }
+      } else if (char === ',' && !inQuotes) {
+        currentRow.push(currentField.trim());
+        currentField = '';
+      } else if ((char === '\n' || (char === '\r' && nextChar === '\n')) && !inQuotes) {
+        currentRow.push(currentField.trim());
+        if (currentRow.some(f => f)) { // Only add non-empty rows
+          rows.push(currentRow);
+        }
+        currentRow = [];
+        currentField = '';
+        if (char === '\r') i++; // Skip \n in \r\n
+      } else if (char === '\r' && !inQuotes) {
+        // Handle \r without \n
+        currentRow.push(currentField.trim());
+        if (currentRow.some(f => f)) {
+          rows.push(currentRow);
+        }
+        currentRow = [];
+        currentField = '';
+      } else {
+        currentField += char;
+      }
+    }
+
+    // Handle last field/row
+    if (currentField || currentRow.length > 0) {
+      currentRow.push(currentField.trim());
+      if (currentRow.some(f => f)) {
+        rows.push(currentRow);
+      }
+    }
+
+    return rows;
+  };
+
+  // Parse pipe-delimited markdown table line
+  const parsePipeLine = (line: string): string[] => {
     const values: string[] = [];
     let current = '';
     let inQuotes = false;
@@ -162,6 +218,75 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
     return values;
   };
 
+  // Detect file format and parse accordingly
+  const parseFile = (text: string): ParsedRow[] => {
+    // Check if it's a pipe-delimited markdown table
+    const firstLines = text.split('\n').slice(0, 10);
+    const isPipeDelimited = firstLines.some(line => line.trim().startsWith('|'));
+    
+    if (isPipeDelimited) {
+      return parseMarkdownTable(text);
+    } else {
+      return parseStandardCSV(text);
+    }
+  };
+
+  // Parse standard comma-separated CSV
+  const parseStandardCSV = (text: string): ParsedRow[] => {
+    const allRows = parseCSV(text);
+    if (allRows.length < 2) return []; // Need header + at least one data row
+
+    const headers = allRows[0];
+    
+    // Find column indices
+    const nameIdx = headers.findIndex(h => h.toLowerCase() === 'name');
+    const sectionIdx = headers.findIndex(h => {
+      const lower = h.toLowerCase();
+      return lower.includes('section') || lower === 'column' || lower.includes('section/column');
+    });
+    const assigneeEmailIdx = headers.findIndex(h => h.toLowerCase().includes('assignee email'));
+    const priorityIdx = headers.findIndex(h => h.toLowerCase().includes('priority'));
+    const industryIdx = headers.findIndex(h => h.toLowerCase() === 'industry');
+    const clientStatusIdx = headers.findIndex(h => {
+      const lower = h.toLowerCase();
+      return lower.includes('existing') || lower.includes('new / existing') || lower === 'existing / new';
+    });
+    const notesIdx = headers.findIndex(h => h.toLowerCase() === 'notes');
+    const startDateIdx = headers.findIndex(h => h.toLowerCase().includes('start date'));
+    const dueDateIdx = headers.findIndex(h => h.toLowerCase().includes('due date'));
+
+    console.log('CSV Headers found:', headers);
+    console.log('Column indices:', { nameIdx, sectionIdx, assigneeEmailIdx, priorityIdx, industryIdx, clientStatusIdx, notesIdx });
+
+    const rows: ParsedRow[] = [];
+
+    // Process data rows (skip header)
+    for (let i = 1; i < allRows.length; i++) {
+      const values = allRows[i];
+      
+      const rawName = nameIdx >= 0 ? values[nameIdx] || '' : '';
+      if (!rawName) continue; // Skip empty rows
+      
+      const { clientName, jobTitle } = extractClientAndJob(rawName);
+      
+      rows.push({
+        name: rawName,
+        clientName,
+        jobTitle,
+        section: sectionIdx >= 0 ? values[sectionIdx] || '' : '',
+        assigneeEmail: assigneeEmailIdx >= 0 ? values[assigneeEmailIdx] || '' : '',
+        priority: priorityIdx >= 0 ? values[priorityIdx] || '' : '',
+        industry: industryIdx >= 0 ? values[industryIdx] || '' : '',
+        clientStatus: clientStatusIdx >= 0 ? values[clientStatusIdx] || '' : '',
+        notes: notesIdx >= 0 ? cleanNotes(values[notesIdx] || '') : '',
+        startDate: startDateIdx >= 0 ? values[startDateIdx] || '' : '',
+        dueDate: dueDateIdx >= 0 ? values[dueDateIdx] || '' : '',
+      });
+    }
+
+    return rows;
+  };
+
   // Parse the markdown table format from Excel parsing
   const parseMarkdownTable = (text: string): ParsedRow[] => {
     const lines = text.split('\n').filter(line => line.trim().startsWith('|'));
@@ -175,7 +300,7 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
     });
     if (headerIdx === -1) return [];
 
-    const headers = parseCSVLine(lines[headerIdx]);
+    const headers = parsePipeLine(lines[headerIdx]);
     
     // Find column indices - handle various header formats
     const nameIdx = headers.findIndex(h => h.toLowerCase() === 'name');
@@ -194,7 +319,7 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
     const startDateIdx = headers.findIndex(h => h.toLowerCase().includes('start date'));
     const dueDateIdx = headers.findIndex(h => h.toLowerCase().includes('due date'));
 
-    console.log('Headers found:', headers);
+    console.log('Markdown Headers found:', headers);
     console.log('Column indices:', { nameIdx, sectionIdx, assigneeEmailIdx, priorityIdx, industryIdx, clientStatusIdx, notesIdx });
 
     const rows: ParsedRow[] = [];
@@ -205,7 +330,7 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
       // Skip separator rows
       if (line.match(/^\|[\s-]+\|/)) continue;
       
-      const values = parseCSVLine(line);
+      const values = parsePipeLine(line);
       
       const rawName = nameIdx >= 0 ? values[nameIdx] || '' : '';
       if (!rawName || rawName.match(/^[\s-]*$/)) continue; // Skip empty or separator rows
@@ -237,7 +362,7 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
     await fetchAdminUsers();
 
     const text = await file.text();
-    const rows = parseMarkdownTable(text);
+    const rows = parseFile(text);
     setParsedRows(rows);
     setResult(null);
 
