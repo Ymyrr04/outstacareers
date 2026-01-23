@@ -83,7 +83,7 @@ export const ClientsDashboard = () => {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'lost' | 'newHiring' | 'existingHiring'>('all');
-  const [lostYearFilter, setLostYearFilter] = useState<number>(new Date().getFullYear());
+  const [lostYearFilter, setLostYearFilter] = useState<number>(2025);
 
   const fetchClients = useCallback(async () => {
     try {
