@@ -258,6 +258,70 @@ export function useEmailTemplates() {
 const emailLogsCache = new Map<string, { logs: EmailLog[]; timestamp: number }>();
 const CACHE_TTL = 60000; // 1 minute cache
 
+// Cache for scheduled emails per applicant (forward declared for preload fn)
+const scheduledEmailsCache = new Map<string, { emails: ScheduledEmail[]; timestamp: number }>();
+
+// EmailReply interface (forward declared for cache type)
+export interface EmailReply {
+  id: string;
+  applicant_id: string;
+  from_email: string;
+  subject: string;
+  body_text: string | null;
+  body_html: string | null;
+  received_at: string;
+  gmail_message_id: string;
+  created_at: string;
+  is_read: boolean;
+  in_reply_to?: string | null;
+}
+
+// Cache for email replies per applicant (forward declared for preload fn)
+const emailRepliesCache = new Map<string, { replies: EmailReply[]; timestamp: number }>();
+
+// Pre-load email data for a specific applicant (used by unread system)
+async function preloadApplicantEmailData(applicantId: string) {
+  // Pre-load email logs if not cached
+  const logsCache = emailLogsCache.get(applicantId);
+  if (!logsCache || Date.now() - logsCache.timestamp >= CACHE_TTL) {
+    const { data: logsData } = await supabase
+      .from('email_logs')
+      .select('*')
+      .eq('applicant_id', applicantId)
+      .order('created_at', { ascending: false });
+    if (logsData) {
+      emailLogsCache.set(applicantId, { logs: logsData, timestamp: Date.now() });
+    }
+  }
+
+  // Pre-load scheduled emails if not cached
+  const scheduledCache = scheduledEmailsCache.get(applicantId);
+  if (!scheduledCache || Date.now() - scheduledCache.timestamp >= CACHE_TTL) {
+    const { data: scheduledData } = await supabase
+      .from('scheduled_emails')
+      .select('*')
+      .eq('applicant_id', applicantId)
+      .eq('status', 'pending')
+      .order('scheduled_for', { ascending: true });
+    if (scheduledData) {
+      scheduledEmailsCache.set(applicantId, { emails: scheduledData, timestamp: Date.now() });
+    }
+  }
+
+  // Pre-load email replies if not cached
+  const repliesCache = emailRepliesCache.get(applicantId);
+  if (!repliesCache || Date.now() - repliesCache.timestamp >= CACHE_TTL) {
+    const { data: repliesData } = await supabase
+      .from('email_replies')
+      .select('*')
+      .eq('applicant_id', applicantId)
+      .order('received_at', { ascending: false });
+    if (repliesData) {
+      emailRepliesCache.set(applicantId, { replies: repliesData as EmailReply[], timestamp: Date.now() });
+    }
+  }
+}
+
 export function useEmailLogs(applicantId?: string) {
   // Initialize from cache if available
   const cached = applicantId ? emailLogsCache.get(applicantId) : null;
@@ -326,8 +390,7 @@ export function useEmailLogs(applicantId?: string) {
   return { logs, loading, fetchLogs };
 }
 
-// Cache for scheduled emails per applicant
-const scheduledEmailsCache = new Map<string, { emails: ScheduledEmail[]; timestamp: number }>();
+// scheduledEmailsCache is declared above near emailLogsCache
 
 export function useScheduledEmails(applicantId?: string) {
   // Don't fetch if no applicantId - return empty
@@ -439,22 +502,7 @@ export function useScheduledEmails(applicantId?: string) {
   return { scheduledEmails, loading, fetchScheduledEmails, cancelScheduledEmail };
 }
 
-export interface EmailReply {
-  id: string;
-  applicant_id: string;
-  from_email: string;
-  subject: string;
-  body_text: string | null;
-  body_html: string | null;
-  received_at: string;
-  gmail_message_id: string;
-  created_at: string;
-  is_read: boolean;
-  in_reply_to?: string | null;
-}
-
-// Cache for email replies per applicant
-const emailRepliesCache = new Map<string, { replies: EmailReply[]; timestamp: number }>();
+// EmailReply interface is declared above near emailLogsCache
 
 export function useEmailReplies(applicantId?: string) {
   // Don't fetch if no applicantId - return empty
@@ -629,6 +677,12 @@ export function useUnreadMessageCounts() {
     setUnreadApplicants(applicantsWithCounts);
     setUnreadCounts(counts);
     setLoading(false);
+    
+    // Pre-load email data for all applicants with unread messages (in background)
+    // This ensures Communication History opens instantly
+    applicantsWithCounts.forEach(applicant => {
+      preloadApplicantEmailData(applicant.id);
+    });
   }, []);
 
   useEffect(() => {
