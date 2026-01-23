@@ -189,18 +189,22 @@ export const ClientsDashboard = () => {
   );
   
   // Clients lost = clients with hiring requests in lost stages, filtered by year
-  // Filter hiring requests in lost stages by selected year
-  const lostRequestsForYear = hiringRequests.filter(req => {
-    if (!req.client_id || !LOST_STAGES.includes(req.pipeline_stage)) return false;
+  // Debug: Check actual years in the data
+  const lostRequests = hiringRequests.filter(req => 
+    req.client_id && LOST_STAGES.includes(req.pipeline_stage)
+  );
+  
+  const yearsInLostData = [...new Set(lostRequests.map(r => r.created_at ? new Date(r.created_at).getFullYear() : 'NO_DATE'))];
+  console.log(`[v4] Lost requests: ${lostRequests.length}, Years found: ${yearsInLostData.join(', ')}, Filter: ${lostYearFilter}`);
+  
+  // Filter by year
+  const lostRequestsForYear = lostRequests.filter(req => {
     if (!req.created_at) return false;
     const reqYear = new Date(req.created_at).getFullYear();
     return reqYear === lostYearFilter;
   });
   
   const clientsInLostStages = new Set(lostRequestsForYear.map(req => req.client_id!));
-  
-  // Debug: Show count in console
-  console.log(`[ClientsDashboard v3] Lost requests for ${lostYearFilter}:`, lostRequestsForYear.length, 'Unique clients:', clientsInLostStages.size);
   
   const filteredClients = clients.filter(client => {
     const matchesSearch = !searchTerm || 
@@ -378,7 +382,7 @@ export const ClientsDashboard = () => {
               </div>
               <div className="flex-1">
                 <div className="flex items-center gap-2">
-                  <p className="text-2xl font-bold">{clientsLost}</p>
+                  <p className="text-2xl font-bold">{clientsInLostStages.size}</p>
                   <Select
                     value={lostYearFilter.toString()}
                     onValueChange={(v) => setLostYearFilter(parseInt(v))}
