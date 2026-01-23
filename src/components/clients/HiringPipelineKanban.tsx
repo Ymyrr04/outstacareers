@@ -501,7 +501,7 @@ export const HiringPipelineKanban = () => {
                   <AvatarFallback className="text-[10px] bg-primary/10">{stat.name[0]}</AvatarFallback>
                 </Avatar>
                 <span className="text-xs text-muted-foreground">{stat.name}</span>
-                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">{stat.count}</Badge>
+                <Badge variant="secondary" className="text-xs px-2 py-0.5 h-5">{stat.count}</Badge>
               </div>
             ))}
           </div>
