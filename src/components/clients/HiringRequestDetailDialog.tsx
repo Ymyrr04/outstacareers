@@ -491,7 +491,7 @@ export const HiringRequestDetailDialog = ({
                 <MapPin className="w-4 h-4" />
                 Stage
               </div>
-              <div className="flex-1">
+              <div className="flex-1 flex items-center gap-2">
                 <Select 
                   value={formData.pipeline_stage} 
                   onValueChange={(v) => handleFieldUpdate('pipeline_stage', v)}
@@ -509,6 +509,11 @@ export const HiringRequestDetailDialog = ({
                     ))}
                   </SelectContent>
                 </Select>
+                {request.pipeline_stage === 'closed' && request.closed_at && (
+                  <Badge variant="outline" className="font-normal text-emerald-600 border-emerald-300">
+                    {format(new Date(request.closed_at), 'MMM d, yyyy')}
+                  </Badge>
+                )}
               </div>
             </div>
 
@@ -670,20 +675,6 @@ export const HiringRequestDetailDialog = ({
               </div>
             </div>
 
-            {/* Closed Date Row - Only show when closed */}
-            {request.pipeline_stage === 'closed' && request.closed_at && (
-              <div className="flex items-center py-2 hover:bg-muted/50 rounded px-2 -mx-2">
-                <div className="flex items-center gap-2 w-32 text-muted-foreground text-sm">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-500" />
-                  Closed Date
-                </div>
-                <div className="flex-1">
-                  <Badge variant="outline" className="font-normal text-emerald-600 border-emerald-300">
-                    {format(new Date(request.closed_at), 'MMM d, yyyy')}
-                  </Badge>
-                </div>
-              </div>
-            )}
 
             {/* Assignee Row */}
             <div className="flex items-center py-2 hover:bg-muted/50 rounded px-2 -mx-2">
