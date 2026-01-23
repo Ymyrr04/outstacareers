@@ -191,8 +191,10 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
   };
   const dateRange = formatDateRange();
   const isOverdue = !isClosed && request.target_end_date && isPast(startOfDay(new Date(request.target_end_date)));
-  // Show closed date if in closed stage - use closed_at if available, otherwise show "Closed" indicator
-  const closedDate = isClosed ? (request.closed_at ? format(new Date(request.closed_at), 'MMM d') : 'Closed') : null;
+  // Show closed date if in closed stage - use closed_at, fallback to updated_at for display
+  const closedDate = isClosed 
+    ? format(new Date(request.closed_at || request.updated_at), 'MMM d') 
+    : null;
 
   return (
     <Draggable draggableId={request.id} index={index}>
