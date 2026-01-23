@@ -53,6 +53,8 @@ export const useHiringRequests = () => {
   const [requests, setRequests] = useState<HiringRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const hasInitiallyLoadedRef = useRef(false);
+  const pendingUpdatesRef = useRef<Set<string>>(new Set());
+  const realtimeDebounceRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   const fetchRequests = useCallback(async (showLoading = false) => {
@@ -111,7 +113,7 @@ export const useHiringRequests = () => {
   useEffect(() => {
     fetchRequests(true); // Show loading only on initial fetch
 
-    // Subscribe to realtime changes
+    // Subscribe to realtime changes with debounce to prevent overwriting optimistic updates
     const channel = supabase
       .channel('hiring_requests_changes')
       .on(
@@ -122,13 +124,27 @@ export const useHiringRequests = () => {
           table: 'client_hiring_requests',
         },
         () => {
-          fetchRequests(false); // Don't show loading on realtime updates
+          // Don't refresh if there are pending updates (to preserve optimistic state)
+          if (pendingUpdatesRef.current.size > 0) {
+            return;
+          }
+          
+          // Debounce realtime updates to prevent rapid successive fetches
+          if (realtimeDebounceRef.current) {
+            clearTimeout(realtimeDebounceRef.current);
+          }
+          realtimeDebounceRef.current = setTimeout(() => {
+            fetchRequests(false);
+          }, 300);
         }
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
+      if (realtimeDebounceRef.current) {
+        clearTimeout(realtimeDebounceRef.current);
+      }
     };
   }, [fetchRequests]);
 
@@ -184,6 +200,9 @@ export const useHiringRequests = () => {
   };
 
   const updateStage = async (id: string, newStage: string): Promise<boolean> => {
+    // Track this update as pending to prevent realtime from overwriting
+    pendingUpdatesRef.current.add(id);
+    
     // Optimistic update
     setRequests(prev => prev.map(r => 
       r.id === id ? { ...r, pipeline_stage: newStage } : r
@@ -194,9 +213,15 @@ export const useHiringRequests = () => {
       .update({ pipeline_stage: newStage })
       .eq('id', id);
 
+    // Remove from pending after a short delay to let realtime settle
+    setTimeout(() => {
+      pendingUpdatesRef.current.delete(id);
+    }, 500);
+
     if (error) {
       console.error('Error updating stage:', error);
       // Revert on error
+      pendingUpdatesRef.current.delete(id);
       fetchRequests();
       toast({
         title: 'Error',
