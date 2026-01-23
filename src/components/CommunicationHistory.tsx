@@ -103,9 +103,12 @@ export function CommunicationHistory({
   applicantEmail,
   onMarkAsRead
 }: CommunicationHistoryProps) {
-  const { logs, loading: logsLoading, fetchLogs } = useEmailLogs(applicantId);
-  const { scheduledEmails, loading: scheduledLoading, cancelScheduledEmail, fetchScheduledEmails } = useScheduledEmails(applicantId);
-  const { replies, loading: repliesLoading, fetching, fetchNewReplies } = useEmailReplies(applicantId);
+  // Only pass applicantId when dialog is open to defer loading
+  const effectiveApplicantId = open ? applicantId : undefined;
+  
+  const { logs, loading: logsLoading, fetchLogs } = useEmailLogs(effectiveApplicantId);
+  const { scheduledEmails, loading: scheduledLoading, cancelScheduledEmail, fetchScheduledEmails } = useScheduledEmails(effectiveApplicantId);
+  const { replies, loading: repliesLoading, fetching, fetchNewReplies } = useEmailReplies(effectiveApplicantId);
   const { toast } = useToast();
   
   // Mark messages as read when dialog opens

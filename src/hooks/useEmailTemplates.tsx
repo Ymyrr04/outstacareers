@@ -330,27 +330,30 @@ export function useEmailLogs(applicantId?: string) {
 const scheduledEmailsCache = new Map<string, { emails: ScheduledEmail[]; timestamp: number }>();
 
 export function useScheduledEmails(applicantId?: string) {
-  const cacheKey = applicantId || 'all';
-  const cached = scheduledEmailsCache.get(cacheKey);
+  // Don't fetch if no applicantId - return empty
+  const cacheKey = applicantId || '';
+  const cached = applicantId ? scheduledEmailsCache.get(cacheKey) : null;
   const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
   
   const [scheduledEmails, setScheduledEmails] = useState<ScheduledEmail[]>(isCacheValid ? cached.emails : []);
-  const [loading, setLoading] = useState(!isCacheValid);
+  const [loading, setLoading] = useState(applicantId ? !isCacheValid : false);
   const { toast } = useToast();
 
   const fetchScheduledEmails = useCallback(async (silent = false) => {
+    // Skip if no applicantId
+    if (!applicantId) {
+      setScheduledEmails([]);
+      setLoading(false);
+      return;
+    }
+    
     if (!silent) setLoading(true);
-    let query = supabase
+    const { data, error } = await supabase
       .from('scheduled_emails')
       .select('*')
+      .eq('applicant_id', applicantId)
       .eq('status', 'pending')
       .order('scheduled_for', { ascending: true });
-
-    if (applicantId) {
-      query = query.eq('applicant_id', applicantId);
-    }
-
-    const { data, error } = await query;
 
     if (error) {
       if (!silent) {
@@ -369,13 +372,19 @@ export function useScheduledEmails(applicantId?: string) {
   }, [applicantId, toast, cacheKey]);
 
   useEffect(() => {
+    if (!applicantId) {
+      setScheduledEmails([]);
+      setLoading(false);
+      return;
+    }
+    
     const cached = scheduledEmailsCache.get(cacheKey);
     const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
     
     if (!isCacheValid) {
       fetchScheduledEmails(!!cached);
     }
-  }, [fetchScheduledEmails, cacheKey]);
+  }, [fetchScheduledEmails, cacheKey, applicantId]);
 
   const cancelScheduledEmail = async (id: string) => {
     const { data: userData } = await supabase.auth.getUser();
@@ -448,27 +457,30 @@ export interface EmailReply {
 const emailRepliesCache = new Map<string, { replies: EmailReply[]; timestamp: number }>();
 
 export function useEmailReplies(applicantId?: string) {
-  const cacheKey = applicantId || 'all';
-  const cached = emailRepliesCache.get(cacheKey);
+  // Don't fetch if no applicantId - return empty
+  const cacheKey = applicantId || '';
+  const cached = applicantId ? emailRepliesCache.get(cacheKey) : null;
   const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
   
   const [replies, setReplies] = useState<EmailReply[]>(isCacheValid ? cached.replies : []);
-  const [loading, setLoading] = useState(!isCacheValid);
+  const [loading, setLoading] = useState(applicantId ? !isCacheValid : false);
   const [fetching, setFetching] = useState(false);
   const { toast } = useToast();
 
   const fetchReplies = useCallback(async (silent = false) => {
+    // Skip if no applicantId
+    if (!applicantId) {
+      setReplies([]);
+      setLoading(false);
+      return;
+    }
+    
     if (!silent) setLoading(true);
-    let query = supabase
+    const { data, error } = await supabase
       .from('email_replies')
       .select('*')
+      .eq('applicant_id', applicantId)
       .order('received_at', { ascending: false });
-
-    if (applicantId) {
-      query = query.eq('applicant_id', applicantId);
-    }
-
-    const { data, error } = await query;
 
     if (error) {
       console.error('Failed to fetch email replies:', error);
@@ -481,13 +493,19 @@ export function useEmailReplies(applicantId?: string) {
   }, [applicantId, cacheKey]);
 
   useEffect(() => {
+    if (!applicantId) {
+      setReplies([]);
+      setLoading(false);
+      return;
+    }
+    
     const cached = emailRepliesCache.get(cacheKey);
     const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
     
     if (!isCacheValid) {
       fetchReplies(!!cached);
     }
-  }, [fetchReplies, cacheKey]);
+  }, [fetchReplies, cacheKey, applicantId]);
 
   const fetchNewReplies = async () => {
     setFetching(true);
