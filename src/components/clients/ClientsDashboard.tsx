@@ -75,7 +75,7 @@ export interface ClientCommunication {
 export const ClientsDashboard = () => {
   const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
-  const [hiringRequests, setHiringRequests] = useState<{ client_id: string | null; client_status: string; job_title: string }[]>([]);
+  const [hiringRequests, setHiringRequests] = useState<{ client_id: string | null; client_status: string; job_title: string; pipeline_stage: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -90,7 +90,7 @@ export const ClientsDashboard = () => {
         supabase.from('clients').select('*').order('company_name', { ascending: true }),
         supabase.from('client_contacts').select('client_id'),
         supabase.from('contractor_assignments').select('client_id, status'),
-        supabase.from('client_hiring_requests').select('client_id, client_status, job_title').neq('pipeline_stage', 'closed'),
+        supabase.from('client_hiring_requests').select('client_id, client_status, job_title, pipeline_stage').neq('pipeline_stage', 'closed'),
       ]);
 
       if (clientsRes.error) throw clientsRes.error;
@@ -173,21 +173,32 @@ export const ClientsDashboard = () => {
     };
   }, [fetchClients]);
 
+  // Pipeline stages that count as "actively hiring"
+  const ACTIVE_HIRING_STAGES = ['sourcing', 'pitch', 'scheduled_interview'];
+  
+  // Get unique client IDs that have hiring requests in active stages
+  const clientsWithActiveHiringRequests = new Set(
+    hiringRequests
+      .filter(req => req.client_id && ACTIVE_HIRING_STAGES.includes(req.pipeline_stage))
+      .map(req => req.client_id!)
+  );
+  
   const filteredClients = clients.filter(client => {
     const matchesSearch = !searchTerm || 
       client.company_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.industry?.toLowerCase().includes(searchTerm.toLowerCase()) ||
       client.leads_from?.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Apply status filter
+    // Apply status filter using pipeline-based hiring logic
     const hasActiveContractors = (client.contractor_count || 0) > 0;
-    const isLost = !hasActiveContractors && !client.is_hiring;
+    const isActivelyHiring = clientsWithActiveHiringRequests.has(client.id);
+    const isLost = !hasActiveContractors && !isActivelyHiring;
     const matchesStatusFilter = 
       statusFilter === 'all' ||
       (statusFilter === 'active' && hasActiveContractors) ||
       (statusFilter === 'lost' && isLost) ||
-      (statusFilter === 'newHiring' && client.is_hiring && !hasActiveContractors) ||
-      (statusFilter === 'existingHiring' && client.is_hiring && hasActiveContractors);
+      (statusFilter === 'newHiring' && isActivelyHiring && !hasActiveContractors) ||
+      (statusFilter === 'existingHiring' && isActivelyHiring && hasActiveContractors);
     
     return matchesSearch && matchesStatusFilter;
   });
@@ -195,23 +206,33 @@ export const ClientsDashboard = () => {
   // Summary stats
   const totalActiveContractors = clients.reduce((sum, c) => sum + (c.contractor_count || 0), 0);
   const totalActiveClients = clients.filter(c => (c.contractor_count || 0) > 0).length;
-  const clientsLost = clients.filter(c => (c.contractor_count || 0) === 0 && !c.is_hiring).length;
   
-  // Count hiring clients from the clients table itself
-  const newClientsHiring = clients.filter(c => c.is_hiring && (c.contractor_count || 0) === 0).length;
-  const existingClientsHiring = clients.filter(c => c.is_hiring && (c.contractor_count || 0) > 0).length;
+  // Count hiring clients based on having requests in active pipeline stages
+  const newClientsHiring = clients.filter(c => 
+    clientsWithActiveHiringRequests.has(c.id) && (c.contractor_count || 0) === 0
+  ).length;
+  const existingClientsHiring = clients.filter(c => 
+    clientsWithActiveHiringRequests.has(c.id) && (c.contractor_count || 0) > 0
+  ).length;
   
-  // Count open hiring requests per client
-  const hiringRequestCountByClient = hiringRequests.reduce((acc, req) => {
-    if (req.client_id) {
-      acc[req.client_id] = (acc[req.client_id] || 0) + 1;
-    }
-    return acc;
-  }, {} as Record<string, number>);
+  // Clients lost = no active contractors AND no hiring requests in active stages
+  const clientsLost = clients.filter(c => 
+    (c.contractor_count || 0) === 0 && !clientsWithActiveHiringRequests.has(c.id)
+  ).length;
   
-  // Total open roles for existing clients (clients that are hiring and have active contractors)
+  // Count open hiring requests per client (in active stages only)
+  const hiringRequestCountByClient = hiringRequests
+    .filter(req => ACTIVE_HIRING_STAGES.includes(req.pipeline_stage))
+    .reduce((acc, req) => {
+      if (req.client_id) {
+        acc[req.client_id] = (acc[req.client_id] || 0) + 1;
+      }
+      return acc;
+    }, {} as Record<string, number>);
+  
+  // Total open roles for existing clients (clients with active contractors and requests in active stages)
   const existingClientsOpenRoles = clients
-    .filter(c => c.is_hiring && (c.contractor_count || 0) > 0)
+    .filter(c => clientsWithActiveHiringRequests.has(c.id) && (c.contractor_count || 0) > 0)
     .reduce((sum, c) => sum + (hiringRequestCountByClient[c.id] || 0), 0);
 
   // Export clients to CSV
