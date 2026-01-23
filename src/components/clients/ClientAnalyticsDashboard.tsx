@@ -211,14 +211,26 @@ export const ClientAnalyticsDashboard = () => {
     localStorage.setItem('analytics-card-order', JSON.stringify(cardOrder));
   }, [cardOrder]);
 
-  // 1. Clients per Industry (with percentages)
+  // Get set of active client IDs (clients with 1+ active contractors)
+  const activeClientIds = useMemo(() => {
+    const ids = new Set<string>();
+    contractors.forEach(c => {
+      if (c.status === 'active' && c.client_id) {
+        ids.add(c.client_id);
+      }
+    });
+    return ids;
+  }, [contractors]);
+
+  // 1. Clients per Industry - ONLY active clients (with 1+ active contractors)
   const clientsByIndustry = useMemo(() => {
+    const activeClients = clients.filter(c => activeClientIds.has(c.id));
     const industryMap: Record<string, number> = {};
-    clients.forEach(c => {
+    activeClients.forEach(c => {
       const industry = c.industry || 'Unknown';
       industryMap[industry] = (industryMap[industry] || 0) + 1;
     });
-    const total = clients.length;
+    const total = activeClients.length;
     return Object.entries(industryMap)
       .map(([name, value]) => ({ 
         name, 
@@ -226,7 +238,7 @@ export const ClientAnalyticsDashboard = () => {
         percentage: total > 0 ? Math.round((value / total) * 100) : 0 
       }))
       .sort((a, b) => b.value - a.value);
-  }, [clients]);
+  }, [clients, activeClientIds]);
 
   // Clients by Lead Source
   const clientsByLeadsFrom = useMemo(() => {
