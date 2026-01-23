@@ -24,7 +24,8 @@ const ADMIN_AVATARS: Record<string, string> = {
   'liezl@outsta.io': liezlAvatar,
 };
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, MessageCircle, Check, Download, Upload } from 'lucide-react';
+import { Plus, MessageCircle, Check, Download, Upload, ArrowUpDown } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { exportPipeline } from '@/lib/exportUtils';
 import { AddHiringRequestDialog } from './AddHiringRequestDialog';
 import { HiringRequestDetailDialog } from './HiringRequestDetailDialog';
@@ -350,15 +351,45 @@ export const HiringPipelineKanban = () => {
   const [celebrationMedia, setCelebrationMedia] = useState<string | null>(null);
   const [isVideoMode, setIsVideoMode] = useState(false);
   const [closureCount, setClosureCount] = useState(0);
+  const [sortBy, setSortBy] = useState<'priority' | 'target_end_date' | 'closed_at' | 'created_at'>('priority');
   const { toast } = useToast();
   
   const loading = requestsLoading || stagesLoading;
   
-  // Group requests by pipeline stage dynamically, sort closed by completion date (most recent first)
+  // Sort function based on selected sort option
+  const sortRequests = (items: HiringRequest[]): HiringRequest[] => {
+    return [...items].sort((a, b) => {
+      switch (sortBy) {
+        case 'priority': {
+          const priorityOrder = { high: 0, medium: 1, low: 2 };
+          return priorityOrder[a.priority] - priorityOrder[b.priority];
+        }
+        case 'target_end_date': {
+          if (!a.target_end_date && !b.target_end_date) return 0;
+          if (!a.target_end_date) return 1;
+          if (!b.target_end_date) return -1;
+          return new Date(a.target_end_date).getTime() - new Date(b.target_end_date).getTime();
+        }
+        case 'closed_at': {
+          if (!a.closed_at && !b.closed_at) return 0;
+          if (!a.closed_at) return 1;
+          if (!b.closed_at) return -1;
+          return new Date(b.closed_at).getTime() - new Date(a.closed_at).getTime();
+        }
+        case 'created_at': {
+          return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+        }
+        default:
+          return 0;
+      }
+    });
+  };
+
+  // Group requests by pipeline stage dynamically with sorting
   const requestsByStage = stages.reduce((acc, stage) => {
     let stageRequests = requests.filter(r => r.pipeline_stage === stage.slug);
     
-    // Sort closed items by closed_at date (most recent first)
+    // Always sort closed by closed_at date, otherwise use selected sort
     if (stage.slug === 'closed') {
       stageRequests = stageRequests.sort((a, b) => {
         if (!a.closed_at && !b.closed_at) return 0;
@@ -366,6 +397,8 @@ export const HiringPipelineKanban = () => {
         if (!b.closed_at) return -1;
         return new Date(b.closed_at).getTime() - new Date(a.closed_at).getTime();
       });
+    } else {
+      stageRequests = sortRequests(stageRequests);
     }
     
     acc[stage.slug] = stageRequests;
@@ -507,6 +540,18 @@ export const HiringPipelineKanban = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          <Select value={sortBy} onValueChange={(v) => setSortBy(v as typeof sortBy)}>
+            <SelectTrigger className="h-7 w-[140px] text-xs">
+              <ArrowUpDown className="w-3 h-3 mr-1.5" />
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="priority">Priority</SelectItem>
+              <SelectItem value="target_end_date">Target Date</SelectItem>
+              <SelectItem value="closed_at">Closed Date</SelectItem>
+              <SelectItem value="created_at">Created Date</SelectItem>
+            </SelectContent>
+          </Select>
           <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setImportDialogOpen(true)}>
             <Upload className="w-3 h-3 mr-1.5" />
             Import
