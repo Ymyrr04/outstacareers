@@ -1362,7 +1362,7 @@ const Admin = () => {
                                     CV Assessment
                                   </button>
                                 )}
-                                {/* Communication History link */}
+                                {/* Communication History link - keeps popover open */}
                                 <button
                                   onClick={() => {
                                     setCommunicationHistoryApplicant({
@@ -1370,7 +1370,7 @@ const Admin = () => {
                                       name: applicant.full_name,
                                       email: applicant.email
                                     });
-                                    setUnreadPopoverOpen(false);
+                                    // Don't close popover - let user continue browsing
                                   }}
                                   className="flex items-center gap-1 text-blue-600 hover:underline"
                                 >
