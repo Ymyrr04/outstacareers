@@ -167,33 +167,48 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
     const lines = text.split('\n').filter(line => line.trim().startsWith('|'));
     if (lines.length < 3) return []; // Need header, separator, and at least one data row
 
-    // Find header row (contains "Name" or "Task ID")
-    const headerIdx = lines.findIndex(line => 
-      line.toLowerCase().includes('task id') || line.toLowerCase().includes('|name|')
-    );
+    // Find header row - look for the one with "Task ID" AND "Name" columns
+    const headerIdx = lines.findIndex(line => {
+      const lower = line.toLowerCase();
+      return (lower.includes('task id') || lower.includes('|name|')) && 
+             (lower.includes('section') || lower.includes('assignee'));
+    });
     if (headerIdx === -1) return [];
 
     const headers = parseCSVLine(lines[headerIdx]);
     
-    // Find column indices
+    // Find column indices - handle various header formats
     const nameIdx = headers.findIndex(h => h.toLowerCase() === 'name');
-    const sectionIdx = headers.findIndex(h => h.toLowerCase().includes('section') || h.toLowerCase().includes('column'));
+    const sectionIdx = headers.findIndex(h => {
+      const lower = h.toLowerCase();
+      return lower.includes('section') || lower === 'column' || lower.includes('section/column');
+    });
     const assigneeEmailIdx = headers.findIndex(h => h.toLowerCase().includes('assignee email'));
     const priorityIdx = headers.findIndex(h => h.toLowerCase().includes('priority'));
     const industryIdx = headers.findIndex(h => h.toLowerCase() === 'industry');
-    const clientStatusIdx = headers.findIndex(h => h.toLowerCase().includes('existing') || h.toLowerCase().includes('new'));
+    const clientStatusIdx = headers.findIndex(h => {
+      const lower = h.toLowerCase();
+      return lower.includes('existing') || lower.includes('new / existing') || lower === 'existing / new';
+    });
     const notesIdx = headers.findIndex(h => h.toLowerCase() === 'notes');
     const startDateIdx = headers.findIndex(h => h.toLowerCase().includes('start date'));
     const dueDateIdx = headers.findIndex(h => h.toLowerCase().includes('due date'));
 
+    console.log('Headers found:', headers);
+    console.log('Column indices:', { nameIdx, sectionIdx, assigneeEmailIdx, priorityIdx, industryIdx, clientStatusIdx, notesIdx });
+
     const rows: ParsedRow[] = [];
 
-    // Skip header and separator row
-    for (let i = headerIdx + 2; i < lines.length; i++) {
-      const values = parseCSVLine(lines[i]);
+    // Skip header and separator row (the line with |---|---|...)
+    for (let i = headerIdx + 1; i < lines.length; i++) {
+      const line = lines[i];
+      // Skip separator rows
+      if (line.match(/^\|[\s-]+\|/)) continue;
+      
+      const values = parseCSVLine(line);
       
       const rawName = nameIdx >= 0 ? values[nameIdx] || '' : '';
-      if (!rawName) continue; // Skip empty rows
+      if (!rawName || rawName.match(/^[\s-]*$/)) continue; // Skip empty or separator rows
       
       const { clientName, jobTitle } = extractClientAndJob(rawName);
       
