@@ -293,8 +293,8 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
           </div>
 
           {/* Footer with avatar, name, date, and comment count */}
-          <div className="flex items-center justify-between text-xs text-muted-foreground">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between text-xs text-muted-foreground gap-2">
+            <div className="flex items-center gap-2 min-w-0 shrink-0">
               <Tooltip>
                 <TooltipTrigger asChild>
                   <div className="flex items-center gap-1.5 cursor-default">
@@ -314,17 +314,17 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
                 </TooltipContent>
               </Tooltip>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               {dateRange && (
-                <span className={isOverdue ? 'text-red-500 font-medium' : 'text-muted-foreground'}>{dateRange}</span>
+                <span className={`whitespace-nowrap ${isOverdue ? 'text-red-500 font-medium' : 'text-muted-foreground'}`}>{dateRange}</span>
               )}
               {closedDate && (
-                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium whitespace-nowrap">
                   ✓ {closedDate}
                 </span>
               )}
               {request.comment_count > 0 && (
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5 shrink-0">
                   {request.comment_count}
                   <MessageCircle className="w-3 h-3" />
                 </div>
