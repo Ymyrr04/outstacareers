@@ -308,9 +308,13 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
               </Tooltip>
             </div>
             <div className="flex items-center gap-2">
-              {dateRange && (
+              {isClosed && request.closed_at ? (
+                <span className="text-emerald-600 dark:text-emerald-400 font-medium">
+                  Closed {format(new Date(request.closed_at), 'MMM d')}
+                </span>
+              ) : dateRange ? (
                 <span className={isOverdue ? 'text-red-500 font-medium' : 'text-primary'}>{dateRange}</span>
-              )}
+              ) : null}
               {request.comment_count > 0 && (
                 <div className="flex items-center gap-1">
                   {request.comment_count}
