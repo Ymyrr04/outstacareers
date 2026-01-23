@@ -177,12 +177,23 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
   const assigneeName = getAdminDisplayName(assignee?.email);
   const assigneeInitial = assigneeName.charAt(0).toUpperCase();
   const assigneeAvatar = assigneeEmail ? ADMIN_AVATARS[assigneeEmail] : undefined;
+  const currentYear = new Date().getFullYear();
+  
+  // Format date with year if not current year
+  const formatDateWithYear = (dateStr: string) => {
+    const date = new Date(dateStr);
+    const dateYear = date.getFullYear();
+    return dateYear === currentYear 
+      ? format(date, 'MMM d') 
+      : format(date, 'MMM d, yyyy');
+  };
+  
   const formatDateRange = () => {
     // Always show start_date – target_end_date (the original timeline)
     if (!request.start_date && !request.target_end_date) return null;
     
-    const start = request.start_date ? format(new Date(request.start_date), 'MMM d') : '';
-    const end = request.target_end_date ? format(new Date(request.target_end_date), 'MMM d') : '';
+    const start = request.start_date ? formatDateWithYear(request.start_date) : '';
+    const end = request.target_end_date ? formatDateWithYear(request.target_end_date) : '';
     
     if (start && end) return `${start} – ${end}`;
     if (start) return `From ${start}`;
@@ -193,7 +204,7 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
   const isOverdue = !isClosed && request.target_end_date && isPast(startOfDay(new Date(request.target_end_date)));
   // Show closed date if in closed stage - use closed_at, fallback to updated_at for display
   const closedDate = isClosed 
-    ? format(new Date(request.closed_at || request.updated_at), 'MMM d') 
+    ? formatDateWithYear(request.closed_at || request.updated_at) 
     : null;
 
   return (
