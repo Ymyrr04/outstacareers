@@ -76,7 +76,7 @@ export interface ClientCommunication {
 export const ClientsDashboard = () => {
   const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
-  const [hiringRequests, setHiringRequests] = useState<{ client_id: string | null; client_status: string; job_title: string; pipeline_stage: string; created_at: string }[]>([]);
+  const [hiringRequests, setHiringRequests] = useState<{ id?: string; client_id: string | null; client_status: string; job_title: string; pipeline_stage: string; created_at: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -87,12 +87,12 @@ export const ClientsDashboard = () => {
 
   const fetchClients = useCallback(async () => {
     try {
-      // Fetch clients, counts, and hiring requests in parallel
+      // Fetch clients, counts, and hiring requests in parallel (v2 - includes created_at for year filtering)
       const [clientsRes, contactCountsRes, contractorCountsRes, hiringRequestsRes] = await Promise.all([
         supabase.from('clients').select('*').order('company_name', { ascending: true }),
         supabase.from('client_contacts').select('client_id'),
         supabase.from('contractor_assignments').select('client_id, status'),
-        supabase.from('client_hiring_requests').select('client_id, client_status, job_title, pipeline_stage, created_at'),
+        supabase.from('client_hiring_requests').select('id, client_id, client_status, job_title, pipeline_stage, created_at'),
       ]);
 
       if (clientsRes.error) throw clientsRes.error;
