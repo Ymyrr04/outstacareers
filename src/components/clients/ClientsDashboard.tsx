@@ -393,7 +393,7 @@ export const ClientsDashboard = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <p className="text-sm text-muted-foreground">Clients Lost</p>
+                <p className="text-sm text-muted-foreground">Clients Lost ({lostYearFilter})</p>
               </div>
             </div>
           </CardContent>
