@@ -24,11 +24,12 @@ const ADMIN_AVATARS: Record<string, string> = {
   'liezl@outsta.io': liezlAvatar,
 };
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, MessageCircle, Check, Download } from 'lucide-react';
+import { Plus, MessageCircle, Check, Download, Upload } from 'lucide-react';
 import { exportPipeline } from '@/lib/exportUtils';
 import { AddHiringRequestDialog } from './AddHiringRequestDialog';
 import { HiringRequestDetailDialog } from './HiringRequestDetailDialog';
 import { AddPipelineStageDialog } from './AddPipelineStageDialog';
+import { PipelineImportDialog } from './PipelineImportDialog';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -342,6 +343,7 @@ export const HiringPipelineKanban = () => {
   const { stages, loading: stagesLoading } = usePipelineStages();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [addStageDialogOpen, setAddStageDialogOpen] = useState(false);
+  const [importDialogOpen, setImportDialogOpen] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<HiringRequest | null>(null);
   const [addToStage, setAddToStage] = useState<string>('backlog');
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
@@ -447,13 +449,19 @@ export const HiringPipelineKanban = () => {
 
   return (
     <>
-      {/* Pipeline Header with Export */}
+      {/* Pipeline Header with Import/Export */}
       <div className="flex items-center justify-between px-4 py-1 border-b">
         <h2 className="text-sm font-semibold">Hiring Pipeline</h2>
-        <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleExport}>
-          <Download className="w-3 h-3 mr-1.5" />
-          Export
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setImportDialogOpen(true)}>
+            <Upload className="w-3 h-3 mr-1.5" />
+            Import
+          </Button>
+          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleExport}>
+            <Download className="w-3 h-3 mr-1.5" />
+            Export
+          </Button>
+        </div>
       </div>
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="flex gap-4 px-4 pt-2 pb-4 overflow-x-auto h-[calc(100vh-160px)]">
@@ -541,6 +549,13 @@ export const HiringPipelineKanban = () => {
       <AddPipelineStageDialog
         open={addStageDialogOpen}
         onOpenChange={setAddStageDialogOpen}
+      />
+
+      {/* Pipeline Import Dialog */}
+      <PipelineImportDialog
+        open={importDialogOpen}
+        onOpenChange={setImportDialogOpen}
+        onImported={() => fetchRequests(false)}
       />
 
       {/* Detail Dialog */}
