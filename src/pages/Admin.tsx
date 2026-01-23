@@ -2703,10 +2703,10 @@ const Admin = () => {
           </TabsContent>
 
           {/* Pipeline Kanban Tab */}
-          <TabsContent value="pipeline" className="space-y-2">
-            <div className="px-4 pt-2">
-              <h2 className="text-lg font-semibold">Client Hiring Pipeline</h2>
-              <p className="text-xs text-muted-foreground">Track client hiring requests through the recruitment pipeline</p>
+          <TabsContent value="pipeline" className="space-y-1">
+            <div className="px-4 pt-1">
+              <h2 className="text-sm font-semibold">Client Hiring Pipeline</h2>
+              <p className="text-[11px] text-muted-foreground">Track client hiring requests through the recruitment pipeline</p>
             </div>
             <HiringPipelineKanban />
           </TabsContent>
