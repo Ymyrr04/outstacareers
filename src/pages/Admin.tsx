@@ -724,20 +724,93 @@ const Admin = () => {
   };
 
   const handleDeleteApplicant = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this applicant?')) return;
+    if (!confirm('Are you sure you want to move this applicant to trash?')) return;
 
-    const { error } = await supabase.from('applicants_prescreen').delete().eq('id', id);
-
-    if (error) {
+    // First, get the applicant data to archive
+    const applicant = applicants.find(a => a.id === id);
+    if (!applicant) {
       toast({
         title: 'Error',
-        description: error.message,
+        description: 'Applicant not found',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Get current user ID for deleted_by
+    const { data: { user } } = await supabase.auth.getUser();
+
+    // Archive to deleted_applicants table - cast to any to bypass type checking for new table
+    const { error: archiveError } = await supabase.from('deleted_applicants' as any).insert({
+      original_id: applicant.id,
+      full_name: applicant.full_name,
+      email: applicant.email,
+      phone: applicant.phone,
+      location: applicant.location,
+      job_title: applicant.job_title,
+      job_id: applicant.job_id,
+      status: applicant.status,
+      cv_file_url: applicant.cv_file_url,
+      cv_text: applicant.cv_text,
+      voice_recording_url: applicant.voice_recording_url,
+      vocaroo_link: applicant.vocaroo_link,
+      notes: applicant.notes,
+      candidate_profile: applicant.candidate_profile,
+      total_score: applicant.total_score,
+      role_experience_score: applicant.role_experience_score,
+      skills_tools_score: applicant.skills_tools_score,
+      availability_setup_score: applicant.availability_setup_score,
+      bonus_red_flag_score: applicant.bonus_red_flag_score,
+      ranking_status: applicant.ranking_status,
+      ai_summary: applicant.ai_summary,
+      ai_assessment_details: applicant.ai_assessment_details,
+      extracted_skills: applicant.extracted_skills,
+      extracted_tools: applicant.extracted_tools,
+      years_of_experience: applicant.years_of_experience,
+      is_starred: applicant.is_starred,
+      home_office: applicant.home_office,
+      noise_canceling_headset: applicant.noise_canceling_headset,
+      laptop_or_pc: applicant.laptop_or_pc,
+      good_internet: applicant.good_internet,
+      power_backup: applicant.power_backup,
+      can_work_40_50: applicant.can_work_40_50,
+      us_timezone_ok: applicant.us_timezone_ok,
+      has_experience: applicant.has_experience,
+      currently_working: applicant.currently_working,
+      internet_speed: applicant.internet_speed,
+      start_availability: applicant.start_availability,
+      device_type: applicant.device_type,
+      apply_url: applicant.apply_url,
+      job_source: applicant.job_source,
+      original_job_id: applicant.original_job_id,
+      original_job_title: applicant.original_job_title,
+      reprofiled_at: applicant.reprofiled_at,
+      submitted_at: applicant.submitted_at,
+      deleted_by: user?.id,
+    } as any);
+
+    if (archiveError) {
+      toast({
+        title: 'Error',
+        description: 'Failed to archive applicant: ' + archiveError.message,
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Now delete from original table
+    const { error: deleteError } = await supabase.from('applicants_prescreen').delete().eq('id', id);
+
+    if (deleteError) {
+      toast({
+        title: 'Error',
+        description: deleteError.message,
         variant: 'destructive',
       });
     } else {
       toast({
-        title: 'Success',
-        description: 'Applicant deleted successfully',
+        title: 'Moved to Trash',
+        description: 'Applicant moved to trash. Can be restored from the Trash tab.',
       });
       fetchApplicants();
     }

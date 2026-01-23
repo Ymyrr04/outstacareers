@@ -583,6 +583,162 @@ export type Database = {
           },
         ]
       }
+      deleted_applicants: {
+        Row: {
+          ai_assessment_details: Json | null
+          ai_summary: string | null
+          apply_url: string | null
+          availability_setup_score: number | null
+          bonus_red_flag_score: number | null
+          can_work_40_50: boolean | null
+          candidate_profile: string | null
+          created_at: string | null
+          currently_working: boolean | null
+          cv_file_url: string | null
+          cv_text: string | null
+          deleted_at: string
+          deleted_by: string | null
+          device_type: string | null
+          email: string
+          extracted_skills: string[] | null
+          extracted_tools: string[] | null
+          full_name: string
+          good_internet: boolean | null
+          has_experience: boolean | null
+          home_office: boolean | null
+          id: string
+          internet_speed: string | null
+          is_starred: boolean | null
+          job_id: string | null
+          job_source: string | null
+          job_title: string | null
+          laptop_or_pc: boolean | null
+          location: string | null
+          noise_canceling_headset: boolean | null
+          notes: string | null
+          original_id: string
+          original_job_id: string | null
+          original_job_title: string | null
+          phone: string | null
+          power_backup: boolean | null
+          ranking_status: string | null
+          reprofiled_at: string | null
+          role_experience_score: number | null
+          skills_tools_score: number | null
+          start_availability: string | null
+          status: string | null
+          submitted_at: string | null
+          total_score: number | null
+          us_timezone_ok: boolean | null
+          vocaroo_link: string | null
+          voice_recording_url: string | null
+          whatsapp: string | null
+          years_of_experience: number | null
+        }
+        Insert: {
+          ai_assessment_details?: Json | null
+          ai_summary?: string | null
+          apply_url?: string | null
+          availability_setup_score?: number | null
+          bonus_red_flag_score?: number | null
+          can_work_40_50?: boolean | null
+          candidate_profile?: string | null
+          created_at?: string | null
+          currently_working?: boolean | null
+          cv_file_url?: string | null
+          cv_text?: string | null
+          deleted_at?: string
+          deleted_by?: string | null
+          device_type?: string | null
+          email: string
+          extracted_skills?: string[] | null
+          extracted_tools?: string[] | null
+          full_name: string
+          good_internet?: boolean | null
+          has_experience?: boolean | null
+          home_office?: boolean | null
+          id?: string
+          internet_speed?: string | null
+          is_starred?: boolean | null
+          job_id?: string | null
+          job_source?: string | null
+          job_title?: string | null
+          laptop_or_pc?: boolean | null
+          location?: string | null
+          noise_canceling_headset?: boolean | null
+          notes?: string | null
+          original_id: string
+          original_job_id?: string | null
+          original_job_title?: string | null
+          phone?: string | null
+          power_backup?: boolean | null
+          ranking_status?: string | null
+          reprofiled_at?: string | null
+          role_experience_score?: number | null
+          skills_tools_score?: number | null
+          start_availability?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          total_score?: number | null
+          us_timezone_ok?: boolean | null
+          vocaroo_link?: string | null
+          voice_recording_url?: string | null
+          whatsapp?: string | null
+          years_of_experience?: number | null
+        }
+        Update: {
+          ai_assessment_details?: Json | null
+          ai_summary?: string | null
+          apply_url?: string | null
+          availability_setup_score?: number | null
+          bonus_red_flag_score?: number | null
+          can_work_40_50?: boolean | null
+          candidate_profile?: string | null
+          created_at?: string | null
+          currently_working?: boolean | null
+          cv_file_url?: string | null
+          cv_text?: string | null
+          deleted_at?: string
+          deleted_by?: string | null
+          device_type?: string | null
+          email?: string
+          extracted_skills?: string[] | null
+          extracted_tools?: string[] | null
+          full_name?: string
+          good_internet?: boolean | null
+          has_experience?: boolean | null
+          home_office?: boolean | null
+          id?: string
+          internet_speed?: string | null
+          is_starred?: boolean | null
+          job_id?: string | null
+          job_source?: string | null
+          job_title?: string | null
+          laptop_or_pc?: boolean | null
+          location?: string | null
+          noise_canceling_headset?: boolean | null
+          notes?: string | null
+          original_id?: string
+          original_job_id?: string | null
+          original_job_title?: string | null
+          phone?: string | null
+          power_backup?: boolean | null
+          ranking_status?: string | null
+          reprofiled_at?: string | null
+          role_experience_score?: number | null
+          skills_tools_score?: number | null
+          start_availability?: string | null
+          status?: string | null
+          submitted_at?: string | null
+          total_score?: number | null
+          us_timezone_ok?: boolean | null
+          vocaroo_link?: string | null
+          voice_recording_url?: string | null
+          whatsapp?: string | null
+          years_of_experience?: number | null
+        }
+        Relationships: []
+      }
       email_logs: {
         Row: {
           applicant_id: string
