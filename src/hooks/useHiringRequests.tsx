@@ -21,6 +21,7 @@ export interface HiringRequest {
   notes: string | null;
   hours_per_week: string | null;
   comment_count: number;
+  closed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -101,6 +102,7 @@ export const useHiringRequests = () => {
       notes: r.notes,
       hours_per_week: r.hours_per_week,
       comment_count: r.comment_count || 0,
+      closed_at: r.closed_at,
       created_at: r.created_at,
       updated_at: r.updated_at,
     }));
@@ -203,14 +205,17 @@ export const useHiringRequests = () => {
     // Track this update as pending to prevent realtime from overwriting
     pendingUpdatesRef.current.add(id);
     
+    // Set closed_at when moving to closed, clear it when moving out
+    const closedAt = newStage === 'closed' ? new Date().toISOString() : null;
+    
     // Optimistic update
     setRequests(prev => prev.map(r => 
-      r.id === id ? { ...r, pipeline_stage: newStage } : r
+      r.id === id ? { ...r, pipeline_stage: newStage, closed_at: closedAt } : r
     ));
 
     const { error } = await supabase
       .from('client_hiring_requests')
-      .update({ pipeline_stage: newStage })
+      .update({ pipeline_stage: newStage, closed_at: closedAt })
       .eq('id', id);
 
     // Remove from pending after a short delay to let realtime settle

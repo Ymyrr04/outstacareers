@@ -394,6 +394,7 @@ export type Database = {
           assigned_admin_id: string | null
           client_id: string | null
           client_status: string
+          closed_at: string | null
           comment_count: number | null
           created_at: string
           hours_per_week: string | null
@@ -412,6 +413,7 @@ export type Database = {
           assigned_admin_id?: string | null
           client_id?: string | null
           client_status?: string
+          closed_at?: string | null
           comment_count?: number | null
           created_at?: string
           hours_per_week?: string | null
@@ -430,6 +432,7 @@ export type Database = {
           assigned_admin_id?: string | null
           client_id?: string | null
           client_status?: string
+          closed_at?: string | null
           comment_count?: number | null
           created_at?: string
           hours_per_week?: string | null
