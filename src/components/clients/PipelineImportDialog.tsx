@@ -3,10 +3,13 @@ import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, FileText, CheckCircle, XCircle, Download, AlertTriangle } from 'lucide-react';
+import { Loader2, Upload, FileText, CheckCircle, XCircle, Download, AlertTriangle, RefreshCw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { usePipelineStages, type PipelineStage } from '@/hooks/usePipelineStages';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+
+type ImportMode = 'insert' | 'update' | 'replace';
 
 interface PipelineImportDialogProps {
   open: boolean;
@@ -34,6 +37,8 @@ interface ImportResult {
   failed: number;
   errors: string[];
   clientsCreated: number;
+  updated: number;
+  skipped: number;
 }
 
 // Admin email to user_id mapping (will be fetched)
@@ -50,6 +55,7 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
   const [parsedRows, setParsedRows] = useState<ParsedRow[]>([]);
   const [result, setResult] = useState<ImportResult | null>(null);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
+  const [importMode, setImportMode] = useState<ImportMode>('update');
 
   // Fetch admin users on mount
   const fetchAdminUsers = async () => {
@@ -390,7 +396,7 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
     if (parsedRows.length === 0) return;
 
     setImporting(true);
-    const importResult: ImportResult = { success: 0, failed: 0, errors: [], clientsCreated: 0 };
+    const importResult: ImportResult = { success: 0, failed: 0, errors: [], clientsCreated: 0, updated: 0, skipped: 0 };
 
     // Cache for clients (to avoid creating duplicates)
     const clientCache: Record<string, string> = {}; // name -> id
@@ -403,6 +409,38 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
     (existingClients || []).forEach(c => {
       clientCache[c.company_name.toLowerCase()] = c.id;
     });
+
+    // Fetch existing hiring requests for update/skip mode
+    const { data: existingRequests } = await supabase
+      .from('client_hiring_requests')
+      .select('id, client_id, job_title, clients(company_name)');
+
+    // Build a lookup map: "clientname|jobtitle" -> request id
+    const requestLookup: Record<string, string> = {};
+    (existingRequests || []).forEach((req: any) => {
+      const clientName = req.clients?.company_name?.toLowerCase() || '';
+      const jobTitle = req.job_title?.toLowerCase() || '';
+      const key = `${clientName}|${jobTitle}`;
+      requestLookup[key] = req.id;
+    });
+
+    // Replace mode: delete all existing requests first
+    if (importMode === 'replace') {
+      const { error: deleteError } = await supabase
+        .from('client_hiring_requests')
+        .delete()
+        .neq('id', '00000000-0000-0000-0000-000000000000'); // Delete all
+      
+      if (deleteError) {
+        toast({
+          title: 'Error',
+          description: `Failed to clear existing requests: ${deleteError.message}`,
+          variant: 'destructive',
+        });
+        setImporting(false);
+        return;
+      }
+    }
 
     for (const row of parsedRows) {
       try {
@@ -448,30 +486,54 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
         // Map to pipeline stage
         const pipelineStage = mapSectionToStage(row.section, stages);
 
-        // Create hiring request
-        const { error: requestError } = await supabase
-          .from('client_hiring_requests')
-          .insert({
-            client_id: clientId,
-            job_title: row.jobTitle || row.name,
-            priority: mapPriority(row.priority),
-            industry: row.industry || null,
-            client_status: mapClientStatus(row.clientStatus),
-            pipeline_stage: pipelineStage,
-            assigned_admin_id: assignedAdminId,
-            notes: row.notes || null,
-            start_date: parseDate(row.startDate),
-            target_end_date: parseDate(row.dueDate),
-            closed_at: pipelineStage === 'closed' 
-              ? (parseDate(row.completedDate) ? new Date(parseDate(row.completedDate)!).toISOString() : new Date().toISOString())
-              : null,
-          });
+        // Check if this request already exists (for update/insert modes)
+        const lookupKey = `${row.clientName.toLowerCase()}|${(row.jobTitle || row.name).toLowerCase()}`;
+        const existingRequestId = requestLookup[lookupKey];
 
-        if (requestError) {
-          throw new Error(`Failed to create request: ${requestError.message}`);
+        if (existingRequestId && importMode === 'insert') {
+          // Insert mode: skip existing
+          importResult.skipped++;
+          continue;
         }
 
-        importResult.success++;
+        const requestData = {
+          client_id: clientId,
+          job_title: row.jobTitle || row.name,
+          priority: mapPriority(row.priority),
+          industry: row.industry || null,
+          client_status: mapClientStatus(row.clientStatus),
+          pipeline_stage: pipelineStage,
+          assigned_admin_id: assignedAdminId,
+          notes: row.notes || null,
+          start_date: parseDate(row.startDate),
+          target_end_date: parseDate(row.dueDate),
+          closed_at: pipelineStage === 'closed' 
+            ? (parseDate(row.completedDate) ? new Date(parseDate(row.completedDate)!).toISOString() : new Date().toISOString())
+            : null,
+        };
+
+        if (existingRequestId && importMode === 'update') {
+          // Update mode: update existing record
+          const { error: updateError } = await supabase
+            .from('client_hiring_requests')
+            .update(requestData)
+            .eq('id', existingRequestId);
+
+          if (updateError) {
+            throw new Error(`Failed to update request: ${updateError.message}`);
+          }
+          importResult.updated++;
+        } else {
+          // Insert new record
+          const { error: requestError } = await supabase
+            .from('client_hiring_requests')
+            .insert(requestData);
+
+          if (requestError) {
+            throw new Error(`Failed to create request: ${requestError.message}`);
+          }
+          importResult.success++;
+        }
       } catch (err: any) {
         importResult.failed++;
         importResult.errors.push(`${row.name}: ${err.message}`);
@@ -481,10 +543,17 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
     setResult(importResult);
     setImporting(false);
 
-    if (importResult.success > 0) {
+    const totalProcessed = importResult.success + importResult.updated;
+    if (totalProcessed > 0) {
+      const parts = [];
+      if (importResult.success > 0) parts.push(`${importResult.success} inserted`);
+      if (importResult.updated > 0) parts.push(`${importResult.updated} updated`);
+      if (importResult.skipped > 0) parts.push(`${importResult.skipped} skipped`);
+      if (importResult.clientsCreated > 0) parts.push(`${importResult.clientsCreated} clients created`);
+      
       toast({
         title: 'Import Complete',
-        description: `Imported ${importResult.success} pipeline requests${importResult.clientsCreated > 0 ? ` (created ${importResult.clientsCreated} new clients)` : ''}`,
+        description: parts.join(', '),
       });
       onImported();
     }
@@ -605,6 +674,48 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
               </CardContent>
             </Card>
 
+            {/* Import Mode */}
+            <Card>
+              <CardContent className="pt-4">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-medium">Import Mode</p>
+                    <p className="text-sm text-muted-foreground">Choose how to handle existing records</p>
+                  </div>
+                  <Select value={importMode} onValueChange={(v) => setImportMode(v as ImportMode)}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="update">
+                        <div className="flex items-center gap-2">
+                          <RefreshCw className="w-4 h-4" />
+                          <span>Update Existing</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="insert">
+                        <div className="flex items-center gap-2">
+                          <Upload className="w-4 h-4" />
+                          <span>Insert Only</span>
+                        </div>
+                      </SelectItem>
+                      <SelectItem value="replace">
+                        <div className="flex items-center gap-2">
+                          <XCircle className="w-4 h-4" />
+                          <span>Replace All</span>
+                        </div>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {importMode === 'update' && '⟳ Matches by Client + Job Title. Updates existing, inserts new.'}
+                  {importMode === 'insert' && '+ Only inserts new records, skips existing matches.'}
+                  {importMode === 'replace' && '⚠️ Deletes ALL existing requests, then inserts from file.'}
+                </p>
+              </CardContent>
+            </Card>
+
             {/* File Upload */}
             <div className="space-y-2">
               <input
@@ -663,13 +774,26 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
             {result && (
               <Card>
                 <CardContent className="pt-4 space-y-3">
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 text-green-600">
-                      <CheckCircle className="w-5 h-5" />
-                      <span>{result.success} imported</span>
-                    </div>
-                    {result.clientsCreated > 0 && (
+                  <div className="flex flex-wrap items-center gap-4">
+                    {result.success > 0 && (
+                      <div className="flex items-center gap-2 text-green-600">
+                        <CheckCircle className="w-5 h-5" />
+                        <span>{result.success} inserted</span>
+                      </div>
+                    )}
+                    {result.updated > 0 && (
                       <div className="flex items-center gap-2 text-blue-600">
+                        <RefreshCw className="w-5 h-5" />
+                        <span>{result.updated} updated</span>
+                      </div>
+                    )}
+                    {result.skipped > 0 && (
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <span>{result.skipped} skipped</span>
+                      </div>
+                    )}
+                    {result.clientsCreated > 0 && (
+                      <div className="flex items-center gap-2 text-purple-600">
                         <span>{result.clientsCreated} clients created</span>
                       </div>
                     )}
