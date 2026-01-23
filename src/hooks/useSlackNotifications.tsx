@@ -27,7 +27,14 @@ interface StatusChangePayload {
   changedByEmail: string;
 }
 
-async function invokeSlackNotification(payload: Record<string, unknown>) {
+// Slack notifications temporarily disabled
+async function invokeSlackNotification(_payload: Record<string, unknown>) {
+  // Return success without calling API to avoid 401 errors
+  // Re-enable by uncommenting the code below once Slack connector is authenticated
+  console.log('[Slack] Notifications disabled - would have sent:', _payload.type);
+  return { success: true, data: null };
+  
+  /*
   try {
     const { data, error } = await supabase.functions.invoke('send-slack-notification', {
       body: payload,
@@ -43,6 +50,7 @@ async function invokeSlackNotification(payload: Record<string, unknown>) {
     console.error('Failed to send Slack notification:', err);
     return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
   }
+  */
 }
 
 export function useSlackNotifications() {
