@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { WysiwygEditor } from '@/components/WysiwygEditor';
 import { useHiringRequests, type Priority, type ClientStatus } from '@/hooks/useHiringRequests';
 import { usePipelineStages } from '@/hooks/usePipelineStages';
+import { useSlackNotifications } from '@/hooks/useSlackNotifications';
+import { useAuth } from '@/hooks/useAuth';
 import { Loader2, Plus } from 'lucide-react';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import { AddClientDialog } from './AddClientDialog';
@@ -55,6 +57,8 @@ export const AddHiringRequestDialog = ({
 }: AddHiringRequestDialogProps) => {
   const { createRequest } = useHiringRequests();
   const { stages } = usePipelineStages();
+  const { notifyNewRequest } = useSlackNotifications();
+  const { user } = useAuth();
   const [clients, setClients] = useState<Client[]>([]);
   const [industries, setIndustries] = useState<string[]>(DEFAULT_INDUSTRIES);
   const [jobTitles, setJobTitles] = useState<string[]>([]);
@@ -225,6 +229,17 @@ export const AddHiringRequestDialog = ({
     setSaving(false);
 
     if (success) {
+      // Send Slack notification for new request
+      const selectedClient = clients.find(c => c.id === formData.client_id);
+      notifyNewRequest({
+        requestId: '', // We don't have the ID from createRequest, but it's optional for display
+        requestTitle: formData.job_title.trim(),
+        clientName: selectedClient?.company_name || 'Unknown Client',
+        createdByEmail: user?.email || '',
+        priority: formData.priority,
+        industry: formData.industry || undefined,
+      });
+
       onOpenChange(false);
       onCreated?.();
       // Reset form
