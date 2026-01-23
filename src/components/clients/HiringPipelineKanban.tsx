@@ -491,8 +491,7 @@ export const HiringPipelineKanban = () => {
     <>
       {/* Pipeline Header with Import/Export */}
       <div className="flex items-center justify-between px-4 py-1 border-b">
-        <div className="flex items-center gap-6">
-          <h2 className="text-sm font-semibold">Hiring Pipeline</h2>
+        <div className="flex items-center gap-4">
           {/* Recruiter Stats */}
           <div className="flex items-center gap-4">
             {recruiterStats.map(stat => (
