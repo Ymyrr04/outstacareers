@@ -69,8 +69,8 @@ export const RecruiterAnalytics = ({ requests, adminUsers }: RecruiterAnalyticsP
   const recruiterStats = useMemo(() => {
     const stats: Record<string, RecruiterStats> = {};
     
-    // Initialize with known recruiters
-    const keyRecruiters = ['czarina@outsta.io', 'kristine@outsta.io', 'eduardo@outsta.io', 'mark@outsta.io', 'liezl@outsta.io'];
+    // Initialize with known recruiters (Mark and Liezl excluded from display)
+    const keyRecruiters = ['czarina@outsta.io', 'kristine@outsta.io', 'eduardo@outsta.io'];
     keyRecruiters.forEach(email => {
       stats[email] = {
         email,
