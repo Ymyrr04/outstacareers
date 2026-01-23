@@ -44,7 +44,7 @@ import { useEmailTemplates, statusToTrigger, useUnreadMessageCounts } from '@/ho
 import { addMinutes } from 'date-fns';
 import { MyApplicantsDashboard } from '@/components/MyApplicantsDashboard';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { getAdminDisplayName } from '@/lib/adminDisplayNames';
+import { getAdminDisplayName, getAdminAvatar } from '@/lib/adminDisplayNames';
 import { useTabPermissions, TabId } from '@/hooks/useTabPermissions';
 import { AdminPermissionsManager } from '@/components/AdminPermissionsManager';
 
@@ -1411,9 +1411,27 @@ const Admin = () => {
                               className="w-full px-4 py-3 hover:bg-muted/50 transition-colors"
                             >
                               <div className="flex items-center justify-between gap-2 mb-2">
-                                <div className="min-w-0">
-                                  <p className="font-medium text-sm truncate">{applicant.full_name}</p>
-                                  <p className="text-xs text-muted-foreground truncate">{applicant.email}</p>
+                                <div className="flex items-center gap-2 min-w-0">
+                                  {/* Admin avatar indicator */}
+                                  {applicant.assigned_admin_id && (
+                                    <div className="shrink-0" title={getAdminDisplayName(applicant.assigned_admin_id)}>
+                                      {getAdminAvatar(applicant.assigned_admin_id) ? (
+                                        <img
+                                          src={getAdminAvatar(applicant.assigned_admin_id)}
+                                          alt={getAdminDisplayName(applicant.assigned_admin_id)}
+                                          className="w-6 h-6 rounded-full object-cover"
+                                        />
+                                      ) : (
+                                        <div className="w-6 h-6 rounded-full bg-blue-500 flex items-center justify-center text-white text-[10px] font-medium">
+                                          {getAdminDisplayName(applicant.assigned_admin_id).charAt(0).toUpperCase()}
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+                                  <div className="min-w-0">
+                                    <p className="font-medium text-sm truncate">{applicant.full_name}</p>
+                                    <p className="text-xs text-muted-foreground truncate">{applicant.email}</p>
+                                  </div>
                                 </div>
                                 <Badge variant="destructive" className="shrink-0">
                                   {applicant.count} new
