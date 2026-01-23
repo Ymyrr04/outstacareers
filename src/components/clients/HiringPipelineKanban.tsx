@@ -387,11 +387,8 @@ export const HiringPipelineKanban = () => {
 
   // Get sorted requests for a stage
   const getSortedRequests = (stageSlug: string, items: HiringRequest[]): HiringRequest[] => {
-    // Closed column always sorts by closed_at
-    if (stageSlug === 'closed') {
-      return sortRequests(items, 'closed_at');
-    }
-    const sortOption = stageSortBy[stageSlug] || 'priority';
+    // Default to closed_at for closed column, priority for others
+    const sortOption = stageSortBy[stageSlug] || (stageSlug === 'closed' ? 'closed_at' : 'priority');
     return sortRequests(items, sortOption);
   };
 
@@ -551,8 +548,7 @@ export const HiringPipelineKanban = () => {
         <div className="flex gap-4 px-4 pt-2 pb-4 overflow-x-auto h-[calc(100vh-160px)]">
           {stages.map(stage => {
             const stageRequests = requestsByStage[stage.slug] || [];
-            const currentSort = stage.slug === 'closed' ? 'closed_at' : (stageSortBy[stage.slug] || 'priority');
-            const isClosedColumn = stage.slug === 'closed';
+            const currentSort = stageSortBy[stage.slug] || (stage.slug === 'closed' ? 'closed_at' : 'priority');
             
             return (
               <div key={stage.id} className="flex-shrink-0 w-72 flex flex-col">
@@ -566,23 +562,21 @@ export const HiringPipelineKanban = () => {
                       {stageRequests.length}
                     </Badge>
                   </div>
-                  {!isClosedColumn && (
-                    <Select 
-                      value={currentSort} 
-                      onValueChange={(v) => setStageSortBy(prev => ({ ...prev, [stage.slug]: v as any }))}
-                    >
-                      <SelectTrigger className="h-6 w-[100px] text-[10px] px-2">
-                        <ArrowUpDown className="w-2.5 h-2.5 mr-1" />
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="bg-popover z-50">
-                        <SelectItem value="priority" className="text-xs">Priority</SelectItem>
-                        <SelectItem value="target_end_date" className="text-xs">Target Date</SelectItem>
-                        <SelectItem value="closed_at" className="text-xs">Closed Date</SelectItem>
-                        <SelectItem value="created_at" className="text-xs">Created Date</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
+                  <Select 
+                    value={currentSort} 
+                    onValueChange={(v) => setStageSortBy(prev => ({ ...prev, [stage.slug]: v as any }))}
+                  >
+                    <SelectTrigger className="h-6 w-[100px] text-[10px] px-2 flex-shrink-0">
+                      <ArrowUpDown className="w-2.5 h-2.5 mr-1" />
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent className="bg-popover z-50">
+                      <SelectItem value="priority" className="text-xs">Priority</SelectItem>
+                      <SelectItem value="target_end_date" className="text-xs">Target Date</SelectItem>
+                      <SelectItem value="closed_at" className="text-xs">Closed Date</SelectItem>
+                      <SelectItem value="created_at" className="text-xs">Created Date</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Column Content */}
