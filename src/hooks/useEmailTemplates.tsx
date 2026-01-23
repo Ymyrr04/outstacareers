@@ -474,27 +474,71 @@ export function useEmailReplies(applicantId?: string) {
 }
 
 // Hook to get unread message counts per applicant
+interface UnreadApplicantInfo {
+  id: string;
+  full_name: string;
+  email: string;
+  total_score: number | null;
+  count: number;
+}
+
 export function useUnreadMessageCounts() {
+  const [unreadApplicants, setUnreadApplicants] = useState<UnreadApplicantInfo[]>([]);
   const [unreadCounts, setUnreadCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
 
   const fetchUnreadCounts = useCallback(async () => {
     setLoading(true);
+    
+    // Fetch unread replies with applicant info in a single query using join
     const { data, error } = await supabase
       .from('email_replies')
-      .select('applicant_id')
+      .select(`
+        applicant_id,
+        applicants_prescreen!inner (
+          id,
+          full_name,
+          email,
+          total_score
+        )
+      `)
       .eq('is_read', false);
 
     if (error) {
       console.error('Failed to fetch unread counts:', error);
-    } else {
-      // Count unread messages per applicant
-      const counts: Record<string, number> = {};
-      (data || []).forEach(reply => {
-        counts[reply.applicant_id] = (counts[reply.applicant_id] || 0) + 1;
-      });
-      setUnreadCounts(counts);
+      setLoading(false);
+      return;
     }
+
+    // Aggregate counts and build applicant info map
+    const applicantMap = new Map<string, UnreadApplicantInfo>();
+    const counts: Record<string, number> = {};
+    
+    (data || []).forEach((reply: any) => {
+      const applicantId = reply.applicant_id;
+      const applicant = reply.applicants_prescreen;
+      
+      counts[applicantId] = (counts[applicantId] || 0) + 1;
+      
+      if (!applicantMap.has(applicantId) && applicant) {
+        applicantMap.set(applicantId, {
+          id: applicant.id,
+          full_name: applicant.full_name,
+          email: applicant.email,
+          total_score: applicant.total_score,
+          count: 0
+        });
+      }
+    });
+    
+    // Set counts on applicant info
+    const applicantsWithCounts = Array.from(applicantMap.values()).map(a => ({
+      ...a,
+      count: counts[a.id] || 0
+    }));
+    
+    setUnreadApplicants(applicantsWithCounts);
+    setUnreadCounts(counts);
     setLoading(false);
   }, []);
 
@@ -516,8 +560,9 @@ export function useUnreadMessageCounts() {
         delete next[applicantId];
         return next;
       });
+      setUnreadApplicants(prev => prev.filter(a => a.id !== applicantId));
     }
   };
 
-  return { unreadCounts, loading, fetchUnreadCounts, markAsRead };
+  return { unreadCounts, unreadApplicants, loading, fetchUnreadCounts, markAsRead };
 }
