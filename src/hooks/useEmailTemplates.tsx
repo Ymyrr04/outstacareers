@@ -323,13 +323,29 @@ async function preloadApplicantEmailData(applicantId: string) {
 }
 
 export function useEmailLogs(applicantId?: string) {
-  // Initialize from cache if available
-  const cached = applicantId ? emailLogsCache.get(applicantId) : null;
-  const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
-  
-  const [logs, setLogs] = useState<EmailLog[]>(isCacheValid ? cached.logs : []);
-  const [loading, setLoading] = useState(!isCacheValid);
+  const [logs, setLogs] = useState<EmailLog[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  // Sync from cache when applicantId changes
+  useEffect(() => {
+    if (!applicantId) {
+      setLogs([]);
+      setLoading(false);
+      return;
+    }
+    
+    const cached = emailLogsCache.get(applicantId);
+    const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
+    
+    if (isCacheValid) {
+      setLogs(cached.logs);
+      setLoading(false);
+    } else if (cached) {
+      // Show stale data while refreshing
+      setLogs(cached.logs);
+    }
+  }, [applicantId]);
 
   const fetchLogs = useCallback(async (silent = false) => {
     // Don't fetch if no applicantId is provided to avoid loading all logs
@@ -378,8 +394,10 @@ export function useEmailLogs(applicantId?: string) {
   }, [applicantId, toast]);
 
   useEffect(() => {
+    if (!applicantId) return;
+    
     // Only fetch if cache is stale or empty
-    const cached = applicantId ? emailLogsCache.get(applicantId) : null;
+    const cached = emailLogsCache.get(applicantId);
     const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
     
     if (!isCacheValid) {
@@ -393,14 +411,29 @@ export function useEmailLogs(applicantId?: string) {
 // scheduledEmailsCache is declared above near emailLogsCache
 
 export function useScheduledEmails(applicantId?: string) {
-  // Don't fetch if no applicantId - return empty
-  const cacheKey = applicantId || '';
-  const cached = applicantId ? scheduledEmailsCache.get(cacheKey) : null;
-  const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
-  
-  const [scheduledEmails, setScheduledEmails] = useState<ScheduledEmail[]>(isCacheValid ? cached.emails : []);
-  const [loading, setLoading] = useState(applicantId ? !isCacheValid : false);
+  const [scheduledEmails, setScheduledEmails] = useState<ScheduledEmail[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+
+  // Sync from cache when applicantId changes
+  useEffect(() => {
+    if (!applicantId) {
+      setScheduledEmails([]);
+      setLoading(false);
+      return;
+    }
+    
+    const cached = scheduledEmailsCache.get(applicantId);
+    const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
+    
+    if (isCacheValid) {
+      setScheduledEmails(cached.emails);
+      setLoading(false);
+    } else if (cached) {
+      // Show stale data while refreshing
+      setScheduledEmails(cached.emails);
+    }
+  }, [applicantId]);
 
   const fetchScheduledEmails = useCallback(async (silent = false) => {
     // Skip if no applicantId
@@ -429,25 +462,21 @@ export function useScheduledEmails(applicantId?: string) {
     } else {
       const emails = data || [];
       setScheduledEmails(emails);
-      scheduledEmailsCache.set(cacheKey, { emails, timestamp: Date.now() });
+      scheduledEmailsCache.set(applicantId, { emails, timestamp: Date.now() });
     }
     setLoading(false);
-  }, [applicantId, toast, cacheKey]);
+  }, [applicantId, toast]);
 
   useEffect(() => {
-    if (!applicantId) {
-      setScheduledEmails([]);
-      setLoading(false);
-      return;
-    }
+    if (!applicantId) return;
     
-    const cached = scheduledEmailsCache.get(cacheKey);
+    const cached = scheduledEmailsCache.get(applicantId);
     const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
     
     if (!isCacheValid) {
       fetchScheduledEmails(!!cached);
     }
-  }, [fetchScheduledEmails, cacheKey, applicantId]);
+  }, [fetchScheduledEmails, applicantId]);
 
   const cancelScheduledEmail = async (id: string) => {
     const { data: userData } = await supabase.auth.getUser();
@@ -505,15 +534,30 @@ export function useScheduledEmails(applicantId?: string) {
 // EmailReply interface is declared above near emailLogsCache
 
 export function useEmailReplies(applicantId?: string) {
-  // Don't fetch if no applicantId - return empty
-  const cacheKey = applicantId || '';
-  const cached = applicantId ? emailRepliesCache.get(cacheKey) : null;
-  const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
-  
-  const [replies, setReplies] = useState<EmailReply[]>(isCacheValid ? cached.replies : []);
-  const [loading, setLoading] = useState(applicantId ? !isCacheValid : false);
+  const [replies, setReplies] = useState<EmailReply[]>([]);
+  const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
   const { toast } = useToast();
+
+  // Sync from cache when applicantId changes
+  useEffect(() => {
+    if (!applicantId) {
+      setReplies([]);
+      setLoading(false);
+      return;
+    }
+    
+    const cached = emailRepliesCache.get(applicantId);
+    const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
+    
+    if (isCacheValid) {
+      setReplies(cached.replies);
+      setLoading(false);
+    } else if (cached) {
+      // Show stale data while refreshing
+      setReplies(cached.replies);
+    }
+  }, [applicantId]);
 
   const fetchReplies = useCallback(async (silent = false) => {
     // Skip if no applicantId
@@ -535,25 +579,21 @@ export function useEmailReplies(applicantId?: string) {
     } else {
       const repliesData = data || [];
       setReplies(repliesData);
-      emailRepliesCache.set(cacheKey, { replies: repliesData, timestamp: Date.now() });
+      emailRepliesCache.set(applicantId, { replies: repliesData, timestamp: Date.now() });
     }
     setLoading(false);
-  }, [applicantId, cacheKey]);
+  }, [applicantId]);
 
   useEffect(() => {
-    if (!applicantId) {
-      setReplies([]);
-      setLoading(false);
-      return;
-    }
+    if (!applicantId) return;
     
-    const cached = emailRepliesCache.get(cacheKey);
+    const cached = emailRepliesCache.get(applicantId);
     const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
     
     if (!isCacheValid) {
       fetchReplies(!!cached);
     }
-  }, [fetchReplies, cacheKey, applicantId]);
+  }, [fetchReplies, applicantId]);
 
   const fetchNewReplies = async () => {
     setFetching(true);

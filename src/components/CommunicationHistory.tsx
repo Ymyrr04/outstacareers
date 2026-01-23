@@ -106,16 +106,10 @@ export function CommunicationHistory({
   // Only pass applicantId when dialog is open to defer loading
   const effectiveApplicantId = open ? applicantId : undefined;
   
-  // Debug logging
-  console.log('[CommunicationHistory] open:', open, 'applicantId:', applicantId, 'effectiveApplicantId:', effectiveApplicantId);
-  
   const { logs, loading: logsLoading, fetchLogs } = useEmailLogs(effectiveApplicantId);
   const { scheduledEmails, loading: scheduledLoading, cancelScheduledEmail, fetchScheduledEmails } = useScheduledEmails(effectiveApplicantId);
   const { replies, loading: repliesLoading, fetching, fetchNewReplies } = useEmailReplies(effectiveApplicantId);
   const { toast } = useToast();
-  
-  // Debug: log what data we receive
-  console.log('[CommunicationHistory] logs:', logs.length, 'scheduledEmails:', scheduledEmails.length, 'replies:', replies.length, 'loading:', logsLoading || scheduledLoading || repliesLoading);
   
   // Mark messages as read when dialog opens
   useEffect(() => {
