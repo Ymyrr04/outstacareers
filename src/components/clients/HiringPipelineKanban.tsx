@@ -433,33 +433,8 @@ export const HiringPipelineKanban = () => {
     updateStage(id, 'closed');
   };
 
-  if (loading) {
-    return (
-      <div className="flex gap-4 p-4 overflow-x-auto">
-        {[1, 2, 3, 4, 5].map(i => (
-          <div key={i} className="flex-shrink-0 w-72">
-            <Skeleton className="h-8 w-full mb-4" />
-            <div className="space-y-2">
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
-              <Skeleton className="h-24 w-full" />
-            </div>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  const handleExport = async () => {
-    const result = await exportPipeline();
-    if (result.success) {
-      toast({ title: 'Success', description: `Exported ${result.count} pipeline requests` });
-    } else {
-      toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
-    }
-  };
-
   // Calculate role counts per recruiter (excluding 'closed' stage)
+  // MUST be before any early returns to maintain hook order
   const recruiterStats = useMemo(() => {
     const activeRequests = requests.filter(r => r.pipeline_stage !== 'closed');
     const stats: Record<string, { name: string; count: number; avatar?: string }> = {};
@@ -484,6 +459,32 @@ export const HiringPipelineKanban = () => {
     
     return Object.values(stats);
   }, [requests, adminUsers]);
+
+  const handleExport = async () => {
+    const result = await exportPipeline();
+    if (result.success) {
+      toast({ title: 'Success', description: `Exported ${result.count} pipeline requests` });
+    } else {
+      toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex gap-4 p-4 overflow-x-auto">
+        {[1, 2, 3, 4, 5].map(i => (
+          <div key={i} className="flex-shrink-0 w-72">
+            <Skeleton className="h-8 w-full mb-4" />
+            <div className="space-y-2">
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <>
