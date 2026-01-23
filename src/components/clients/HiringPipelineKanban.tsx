@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format, isPast, startOfDay } from 'date-fns';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useHiringRequests, type HiringRequest } from '@/hooks/useHiringRequests';
@@ -459,11 +459,52 @@ export const HiringPipelineKanban = () => {
     }
   };
 
+  // Calculate role counts per recruiter (excluding 'closed' stage)
+  const recruiterStats = useMemo(() => {
+    const activeRequests = requests.filter(r => r.pipeline_stage !== 'closed');
+    const stats: Record<string, { name: string; count: number; avatar?: string }> = {};
+    
+    // Key recruiters to always show
+    const keyRecruiters = ['czarina@outsta.io', 'kristine@outsta.io', 'eduardo@outsta.io'];
+    keyRecruiters.forEach(email => {
+      stats[email] = { 
+        name: email === 'czarina@outsta.io' ? 'Cza' : email === 'kristine@outsta.io' ? 'Kristine' : 'Eduardo',
+        count: 0,
+        avatar: ADMIN_AVATARS[email]
+      };
+    });
+    
+    activeRequests.forEach(r => {
+      const admin = adminUsers.find(a => a.user_id === r.assigned_admin_id);
+      const email = admin?.email?.toLowerCase();
+      if (email && keyRecruiters.includes(email)) {
+        stats[email].count++;
+      }
+    });
+    
+    return Object.values(stats);
+  }, [requests, adminUsers]);
+
   return (
     <>
       {/* Pipeline Header with Import/Export */}
       <div className="flex items-center justify-between px-4 py-1 border-b">
-        <h2 className="text-sm font-semibold">Hiring Pipeline</h2>
+        <div className="flex items-center gap-6">
+          <h2 className="text-sm font-semibold">Hiring Pipeline</h2>
+          {/* Recruiter Stats */}
+          <div className="flex items-center gap-4">
+            {recruiterStats.map(stat => (
+              <div key={stat.name} className="flex items-center gap-1.5">
+                <Avatar className="h-5 w-5">
+                  {stat.avatar && <AvatarImage src={stat.avatar} alt={stat.name} />}
+                  <AvatarFallback className="text-[10px] bg-primary/10">{stat.name[0]}</AvatarFallback>
+                </Avatar>
+                <span className="text-xs text-muted-foreground">{stat.name}</span>
+                <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">{stat.count}</Badge>
+              </div>
+            ))}
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setImportDialogOpen(true)}>
             <Upload className="w-3 h-3 mr-1.5" />
