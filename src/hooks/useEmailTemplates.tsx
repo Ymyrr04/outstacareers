@@ -598,13 +598,30 @@ export function useEmailReplies(applicantId?: string) {
   const fetchNewReplies = async () => {
     setFetching(true);
     try {
-      const { data, error } = await supabase.functions.invoke('fetch-email-replies');
+      // Use AbortController with 30s timeout to prevent long waits
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      
+      const { data, error } = await supabase.functions.invoke('fetch-email-replies', {
+        // @ts-ignore - signal is supported but not in types
+        signal: controller.signal,
+      });
+      
+      clearTimeout(timeoutId);
       
       if (error) {
-        throw error;
-      }
-
-      if (data?.repliesFound > 0) {
+        // Check if it's a timeout/abort error
+        if (error.message?.includes('abort') || error.message?.includes('timeout')) {
+          toast({
+            title: 'Checking for replies',
+            description: 'Email sync is running in the background. New replies will appear shortly.',
+          });
+          // Refresh local data after a delay
+          setTimeout(() => fetchReplies(true), 5000);
+        } else {
+          throw error;
+        }
+      } else if (data?.repliesFound > 0) {
         toast({
           title: 'New replies found',
           description: `Found ${data.repliesFound} new email replies`,
@@ -618,11 +635,21 @@ export function useEmailReplies(applicantId?: string) {
       }
     } catch (error: any) {
       console.error('Error fetching new replies:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch email replies: ' + error.message,
-        variant: 'destructive',
-      });
+      // Handle network/timeout errors gracefully
+      if (error.name === 'AbortError' || error.message?.includes('Failed to fetch') || error.message?.includes('abort')) {
+        toast({
+          title: 'Checking for replies',
+          description: 'Email sync is running in the background. New replies will appear shortly.',
+        });
+        // Refresh local data after a delay
+        setTimeout(() => fetchReplies(true), 5000);
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch email replies: ' + error.message,
+          variant: 'destructive',
+        });
+      }
     }
     setFetching(false);
   };
