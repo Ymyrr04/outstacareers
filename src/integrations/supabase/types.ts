@@ -739,6 +739,60 @@ export type Database = {
         }
         Relationships: []
       }
+      deleted_clients: {
+        Row: {
+          address: string | null
+          company_links: string | null
+          company_name: string
+          contractor_count: number | null
+          created_at: string | null
+          deleted_at: string
+          deleted_by: string | null
+          id: string
+          industry: string | null
+          is_hiring: boolean | null
+          leads_from: string | null
+          notes: string | null
+          original_id: string
+          website: string | null
+          yearly_increase: boolean | null
+        }
+        Insert: {
+          address?: string | null
+          company_links?: string | null
+          company_name: string
+          contractor_count?: number | null
+          created_at?: string | null
+          deleted_at?: string
+          deleted_by?: string | null
+          id?: string
+          industry?: string | null
+          is_hiring?: boolean | null
+          leads_from?: string | null
+          notes?: string | null
+          original_id: string
+          website?: string | null
+          yearly_increase?: boolean | null
+        }
+        Update: {
+          address?: string | null
+          company_links?: string | null
+          company_name?: string
+          contractor_count?: number | null
+          created_at?: string | null
+          deleted_at?: string
+          deleted_by?: string | null
+          id?: string
+          industry?: string | null
+          is_hiring?: boolean | null
+          leads_from?: string | null
+          notes?: string | null
+          original_id?: string
+          website?: string | null
+          yearly_increase?: boolean | null
+        }
+        Relationships: []
+      }
       email_logs: {
         Row: {
           applicant_id: string
