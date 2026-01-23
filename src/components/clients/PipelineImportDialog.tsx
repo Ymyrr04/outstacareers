@@ -26,6 +26,7 @@ interface ParsedRow {
   notes: string;
   startDate: string;
   dueDate: string;
+  completedDate: string; // For closed items - when they were completed
 }
 
 interface ImportResult {
@@ -254,6 +255,10 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
     const notesIdx = headers.findIndex(h => h.toLowerCase() === 'notes');
     const startDateIdx = headers.findIndex(h => h.toLowerCase().includes('start date'));
     const dueDateIdx = headers.findIndex(h => h.toLowerCase().includes('due date'));
+    const completedDateIdx = headers.findIndex(h => {
+      const lower = h.toLowerCase();
+      return lower.includes('completed') || lower.includes('completion') || lower.includes('closed');
+    });
 
     console.log('CSV Headers found:', headers);
     console.log('Column indices:', { nameIdx, sectionIdx, assigneeEmailIdx, priorityIdx, industryIdx, clientStatusIdx, notesIdx });
@@ -281,6 +286,7 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
         notes: notesIdx >= 0 ? cleanNotes(values[notesIdx] || '') : '',
         startDate: startDateIdx >= 0 ? values[startDateIdx] || '' : '',
         dueDate: dueDateIdx >= 0 ? values[dueDateIdx] || '' : '',
+        completedDate: completedDateIdx >= 0 ? values[completedDateIdx] || '' : '',
       });
     }
 
@@ -318,6 +324,10 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
     const notesIdx = headers.findIndex(h => h.toLowerCase() === 'notes');
     const startDateIdx = headers.findIndex(h => h.toLowerCase().includes('start date'));
     const dueDateIdx = headers.findIndex(h => h.toLowerCase().includes('due date'));
+    const completedDateIdx = headers.findIndex(h => {
+      const lower = h.toLowerCase();
+      return lower.includes('completed') || lower.includes('completion') || lower.includes('closed');
+    });
 
     console.log('Markdown Headers found:', headers);
     console.log('Column indices:', { nameIdx, sectionIdx, assigneeEmailIdx, priorityIdx, industryIdx, clientStatusIdx, notesIdx });
@@ -349,6 +359,7 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
         notes: notesIdx >= 0 ? cleanNotes(values[notesIdx] || '') : '',
         startDate: startDateIdx >= 0 ? values[startDateIdx] || '' : '',
         dueDate: dueDateIdx >= 0 ? values[dueDateIdx] || '' : '',
+        completedDate: completedDateIdx >= 0 ? values[completedDateIdx] || '' : '',
       });
     }
 
@@ -451,7 +462,9 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
             notes: row.notes || null,
             start_date: parseDate(row.startDate),
             target_end_date: parseDate(row.dueDate),
-            closed_at: pipelineStage === 'closed' ? new Date().toISOString() : null,
+            closed_at: pipelineStage === 'closed' 
+              ? (parseDate(row.completedDate) ? new Date(parseDate(row.completedDate)!).toISOString() : new Date().toISOString())
+              : null,
           });
 
         if (requestError) {
@@ -496,6 +509,7 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
       'Existing / New',
       'Start Date',
       'Due Date',
+      'Completed Date',
       'Notes'
     ];
     
@@ -508,12 +522,27 @@ export const PipelineImportDialog = ({ open, onOpenChange, onImported }: Pipelin
       'New',
       '01/15/26',
       '02/01/26',
+      '',
       'Looking for experienced account manager'
+    ];
+    
+    const closedExampleRow = [
+      'Beta Inc {Customer Support}',
+      'Closed',
+      'kristine@outsta.io',
+      'Medium',
+      'Healthcare',
+      'Existing',
+      '12/01/25',
+      '12/15/25',
+      '12/20/25',
+      'Successfully placed'
     ];
 
     const csvContent = [
       headers.join(','),
-      exampleRow.join(',')
+      exampleRow.join(','),
+      closedExampleRow.join(',')
     ].join('\n');
 
     const blob = new Blob([csvContent], { type: 'text/csv' });
