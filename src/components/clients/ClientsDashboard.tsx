@@ -533,7 +533,7 @@ export const ClientsDashboard = () => {
                             </h4>
                             <ul className="space-y-1">
                               {hiringRequests
-                                .filter(r => r.client_id === client.id)
+                                .filter(r => r.client_id === client.id && ACTIVE_HIRING_STAGES.includes(r.pipeline_stage))
                                 .map((role, idx) => (
                                   <li key={idx} className="text-sm flex items-center gap-2 py-1 border-b border-border/50 last:border-0">
                                     <span className="w-1.5 h-1.5 rounded-full bg-purple-500" />
