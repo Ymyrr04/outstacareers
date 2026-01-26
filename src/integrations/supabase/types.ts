@@ -523,6 +523,7 @@ export type Database = {
           source: string | null
           start_date: string | null
           status: string | null
+          status_changed_at: string | null
           timesheet_link: string | null
           updated_at: string
         }
@@ -543,6 +544,7 @@ export type Database = {
           source?: string | null
           start_date?: string | null
           status?: string | null
+          status_changed_at?: string | null
           timesheet_link?: string | null
           updated_at?: string
         }
@@ -563,6 +565,7 @@ export type Database = {
           source?: string | null
           start_date?: string | null
           status?: string | null
+          status_changed_at?: string | null
           timesheet_link?: string | null
           updated_at?: string
         }

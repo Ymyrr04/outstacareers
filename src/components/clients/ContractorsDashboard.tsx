@@ -67,6 +67,7 @@ interface ContractorWithDetails {
   start_date: string | null;
   end_date: string | null;
   status: string;
+  status_changed_at: string | null;
   notes: string | null;
   contact_number: string | null;
   emergency_number: string | null;
@@ -127,6 +128,7 @@ export const ContractorsDashboard = () => {
   } | null>(null);
   const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
     status: true,
+    statusChanged: true,
     name: true,
     email: true,
     company: true,
@@ -146,6 +148,7 @@ export const ContractorsDashboard = () => {
 
   const columnLabels: Record<string, string> = {
     status: 'Status',
+    statusChanged: 'Status Changed',
     name: 'Name',
     email: 'Email',
     company: 'Company',
@@ -752,6 +755,7 @@ export const ContractorsDashboard = () => {
                   <TableHeader>
                     <TableRow>
                       {visibleColumns.status && <TableHead className="w-[140px]">Status</TableHead>}
+                      {visibleColumns.statusChanged && <TableHead className="w-[130px]">Status Changed</TableHead>}
                       {visibleColumns.name && <TableHead className="min-w-[180px]">Name</TableHead>}
                       {visibleColumns.email && <TableHead className="min-w-[200px]">Email</TableHead>}
                       {visibleColumns.company && <TableHead className="min-w-[180px]">Company</TableHead>}
@@ -831,6 +835,18 @@ export const ContractorsDashboard = () => {
                                 </SelectItem>
                               </SelectContent>
                             </Select>
+                          </TableCell>
+                        )}
+                        {visibleColumns.statusChanged && (
+                          <TableCell>
+                            {contractor.status_changed_at ? (
+                              <span className="flex items-center gap-1 text-sm text-muted-foreground whitespace-nowrap">
+                                <Clock className="w-3 h-3" />
+                                {format(new Date(contractor.status_changed_at), 'MMM d, yyyy')}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
                           </TableCell>
                         )}
                         {visibleColumns.name && (
@@ -1031,6 +1047,7 @@ export const ContractorsDashboard = () => {
                     <TableHeader>
                       <TableRow>
                         {visibleColumns.status && <TableHead className="w-[140px]">Status</TableHead>}
+                        {visibleColumns.statusChanged && <TableHead className="w-[130px]">Status Changed</TableHead>}
                         {visibleColumns.name && <TableHead className="min-w-[180px]">Name</TableHead>}
                         {visibleColumns.email && <TableHead className="min-w-[200px]">Email</TableHead>}
                         {visibleColumns.company && <TableHead className="min-w-[180px]">Company</TableHead>}
@@ -1111,6 +1128,18 @@ export const ContractorsDashboard = () => {
                                   </SelectItem>
                                 </SelectContent>
                               </Select>
+                            </TableCell>
+                          )}
+                          {visibleColumns.statusChanged && (
+                            <TableCell>
+                              {contractor.status_changed_at ? (
+                                <span className="flex items-center gap-1 text-sm text-muted-foreground whitespace-nowrap">
+                                  <Clock className="w-3 h-3" />
+                                  {format(new Date(contractor.status_changed_at), 'MMM d, yyyy')}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
                             </TableCell>
                           )}
                           {visibleColumns.name && (
