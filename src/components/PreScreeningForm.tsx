@@ -570,6 +570,28 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
       {/* Step 1: Pre-screening Questions */}
       {currentStep === 'prescreening' && (
         <div className="space-y-6">
+          {/* Important Interview Notice */}
+          <div className="p-4 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <div className="flex items-start gap-3">
+              <Mic className="w-5 h-5 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+              <div>
+                <p className="font-semibold text-amber-800 dark:text-amber-200 mb-1">
+                  Important: Interview Assessment Ahead
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-300 leading-relaxed">
+                  After submitting this form, you will complete a <strong>10-15 minute interview assessment</strong> that includes voice recordings, written responses, and multiple-choice questions.
+                </p>
+                <p className="text-sm text-amber-700 dark:text-amber-300 leading-relaxed mt-2">
+                  <strong>Please prepare:</strong>
+                </p>
+                <ul className="text-sm text-amber-700 dark:text-amber-300 list-disc list-inside mt-1 space-y-1">
+                  <li>Find a <strong>quiet environment</strong> with minimal background noise</li>
+                  <li>Have your <strong>headset or microphone ready</strong></li>
+                  <li>Set aside <strong>15-20 minutes</strong> of uninterrupted time</li>
+                </ul>
+              </div>
+            </div>
+          </div>
           <div className="space-y-2">
             <Label htmlFor="full_name" className="text-base">Full Name *</Label>
             <Input
