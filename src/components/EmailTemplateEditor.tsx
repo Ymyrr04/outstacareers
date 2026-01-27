@@ -87,14 +87,24 @@ const plainTextToHtml = (text: string): string => {
   html = html.replace(/__([^_]+)__/g, '<u>$1</u>');
   
   // Convert markdown-style links [text](url) to HTML links
+  // Use a function to clean up the URL (remove newlines, trim whitespace)
   html = html.replace(
     /\[([^\]]+)\]\(([^)]+)\)/g,
-    '<a href="$2" style="color: #0066cc;">$1</a>'
+    (match, linkText, url) => {
+      // Clean the URL: remove newlines, trim whitespace, remove any stray quotes
+      const cleanUrl = url
+        .replace(/[\r\n]+/g, '') // Remove line breaks
+        .replace(/["']/g, '') // Remove quotes that might have been accidentally included
+        .trim();
+      // Clean the link text similarly
+      const cleanText = linkText.replace(/[\r\n]+/g, ' ').trim();
+      return `<a href="${cleanUrl}" style="color: #0066cc;">${cleanText}</a>`;
+    }
   );
   
-  // Convert bare URLs to links (but not ones already in markdown format)
+  // Convert bare URLs to links (but not ones already in markdown format or already in href)
   html = html.replace(
-    /(?<!\()\b(https?:\/\/[^\s<>\[\]()]+)(?!\))/gi,
+    /(?<!\(|href=")(?<!")(?<!')(\bhttps?:\/\/[^\s<>\[\]()]+)(?!\))/gi,
     '<a href="$1" style="color: #0066cc;">$1</a>'
   );
   
