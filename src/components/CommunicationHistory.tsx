@@ -11,7 +11,7 @@ import { useEmailLogs, useScheduledEmails, useEmailReplies, EmailLog, EmailReply
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow, format } from 'date-fns';
-import { sanitizeHtml } from '@/lib/sanitize';
+import { sanitizeHtml, sanitizeEmailReply } from '@/lib/sanitize';
 import { 
   Mail, Clock, CheckCircle, XCircle, AlertTriangle, 
   Loader2, Send, Ban, ChevronDown, ChevronUp,
@@ -595,11 +595,11 @@ export function CommunicationHistory({
                                   <div className="prose prose-sm max-w-none dark:prose-invert break-words overflow-hidden">
                                     {reply.body_html ? (
                                       <div 
-                                        dangerouslySetInnerHTML={{ __html: sanitizeHtml(reply.body_html) }} 
+                                        dangerouslySetInnerHTML={{ __html: sanitizeEmailReply(reply.body_html) }} 
                                         className="break-words overflow-hidden [&>*]:max-w-full [&_a]:break-all"
                                       />
                                     ) : (
-                                      <p className="whitespace-pre-wrap break-words">{reply.body_text || '(No content)'}</p>
+                                      <p className="whitespace-pre-wrap break-words">{sanitizeEmailReply(reply.body_text || '') || '(No content)'}</p>
                                     )}
                                   </div>
                                   <div className="mt-3 pt-3 border-t flex justify-end">
@@ -773,11 +773,11 @@ export function CommunicationHistory({
                                         <div className="prose prose-sm max-w-none dark:prose-invert break-words overflow-hidden">
                                           {reply.body_html ? (
                                             <div 
-                                              dangerouslySetInnerHTML={{ __html: sanitizeHtml(reply.body_html) }} 
+                                              dangerouslySetInnerHTML={{ __html: sanitizeEmailReply(reply.body_html) }} 
                                               className="break-words overflow-hidden [&>*]:max-w-full [&_a]:break-all"
                                             />
                                           ) : (
-                                            <p className="whitespace-pre-wrap break-words">{reply.body_text || '(No content)'}</p>
+                                            <p className="whitespace-pre-wrap break-words">{sanitizeEmailReply(reply.body_text || '') || '(No content)'}</p>
                                           )}
                                         </div>
                                         <div className="mt-3 pt-3 border-t flex justify-end">
