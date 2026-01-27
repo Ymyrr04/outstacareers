@@ -589,6 +589,9 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
                   <li>Have your <strong>headset or microphone ready</strong></li>
                   <li>Set aside <strong>15-20 minutes</strong> of uninterrupted time</li>
                 </ul>
+                <p className="text-sm text-amber-800 dark:text-amber-200 font-medium mt-3 pt-2 border-t border-amber-200 dark:border-amber-700">
+                  ⚠️ Incomplete assessments will significantly affect your overall score and may prevent you from advancing to the next stage.
+                </p>
               </div>
             </div>
           </div>
