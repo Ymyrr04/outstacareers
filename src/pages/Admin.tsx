@@ -197,6 +197,7 @@ const Admin = () => {
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [applicantsLoading, setApplicantsLoading] = useState(true);
   const [expandedApplicant, setExpandedApplicant] = useState<string | null>(null);
+  const [expandingApplicantId, setExpandingApplicantId] = useState<string | null>(null);
   const [downloadingCv, setDownloadingCv] = useState<string | null>(null);
   const [activeStatusFolder, setActiveStatusFolder] = useState<ApplicantStatusFolder>('For Review');
   const [previewCv, setPreviewCv] = useState<{ url: string; path: string; name: string; cvText: string | null } | null>(null);
@@ -1682,11 +1683,18 @@ const Admin = () => {
                       statusOptions={APPLICANT_STATUS_OPTIONS}
                       onUpdateStatus={handleUpdateApplicantStatus}
                       onViewDetails={async (id) => {
-                        const newExpanded = expandedApplicant === id ? null : id;
-                        setExpandedApplicant(newExpanded);
+                        if (expandedApplicant === id) {
+                          setExpandedApplicant(null);
+                          return;
+                        }
+                        // Show loading state
+                        setExpandingApplicantId(id);
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                        setExpandedApplicant(id);
+                        setExpandingApplicantId(null);
                         // Mark as viewed when expanding details
                         const applicant = applicants.find(a => a.id === id);
-                        if (newExpanded && applicant && !applicant.details_viewed_at) {
+                        if (applicant && !applicant.details_viewed_at) {
                           await supabase
                             .from('applicants_prescreen')
                             .update({ details_viewed_at: new Date().toISOString() })
@@ -1754,6 +1762,7 @@ const Admin = () => {
                       onToggleStar={handleToggleStar}
                       unreadCounts={unreadCounts}
                       expandedApplicant={expandedApplicant}
+                      expandingApplicantId={expandingApplicantId}
                       loadingPreview={loadingPreview}
                       downloadingCv={downloadingCv}
                     />
@@ -2104,16 +2113,23 @@ const Admin = () => {
                             {applicant.total_score !== null && (
                               <button
                                 onMouseDown={(e) => e.stopPropagation()}
-                                onClick={(e) => {
+                                onClick={async (e) => {
                                   e.stopPropagation();
                                   setActiveAssessmentTab('cv');
                                   if (expandedApplicant !== applicant.id) {
+                                    setExpandingApplicantId(applicant.id);
+                                    await new Promise(resolve => setTimeout(resolve, 50));
                                     setExpandedApplicant(applicant.id);
+                                    setExpandingApplicantId(null);
                                   }
                                 }}
                                 className="flex items-center gap-1 text-green-600 hover:underline cursor-pointer"
                               >
-                                <Star className="w-3.5 h-3.5" />
+                                {expandingApplicantId === applicant.id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <Star className="w-3.5 h-3.5" />
+                                )}
                                 CV Assessment
                                 {unreadCounts[applicant.id] && unreadCounts[applicant.id] > 0 && (
                                   <span className="relative flex h-2 w-2 ml-1">
@@ -2128,16 +2144,23 @@ const Admin = () => {
                             {applicant.interview_session?.status === 'completed' && (
                               <button
                                 onMouseDown={(e) => e.stopPropagation()}
-                                onClick={(e) => {
+                                onClick={async (e) => {
                                   e.stopPropagation();
                                   setActiveAssessmentTab('interview');
                                   if (expandedApplicant !== applicant.id) {
+                                    setExpandingApplicantId(applicant.id);
+                                    await new Promise(resolve => setTimeout(resolve, 50));
                                     setExpandedApplicant(applicant.id);
+                                    setExpandingApplicantId(null);
                                   }
                                 }}
                                 className="flex items-center gap-1 text-purple-600 hover:underline cursor-pointer"
                               >
-                                <ClipboardList className="w-3.5 h-3.5" />
+                                {expandingApplicantId === applicant.id ? (
+                                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                  <ClipboardList className="w-3.5 h-3.5" />
+                                )}
                                 Interview Results
                                 {unreadCounts[applicant.id] && unreadCounts[applicant.id] > 0 && (
                                   <span className="relative flex h-2 w-2 ml-1">
@@ -2212,11 +2235,20 @@ const Admin = () => {
                           <Button
                             variant="outline"
                             size="sm"
+                            disabled={expandingApplicantId === applicant.id}
                             onClick={async () => {
-                              const newExpanded = expandedApplicant === applicant.id ? null : applicant.id;
-                              setExpandedApplicant(newExpanded);
+                              if (expandedApplicant === applicant.id) {
+                                setExpandedApplicant(null);
+                                return;
+                              }
+                              // Show loading state
+                              setExpandingApplicantId(applicant.id);
+                              // Small delay to show loading state before heavy render
+                              await new Promise(resolve => setTimeout(resolve, 50));
+                              setExpandedApplicant(applicant.id);
+                              setExpandingApplicantId(null);
                               // Mark as viewed when expanding details
-                              if (newExpanded && !applicant.details_viewed_at) {
+                              if (!applicant.details_viewed_at) {
                                 await supabase
                                   .from('applicants_prescreen')
                                   .update({ details_viewed_at: new Date().toISOString() })
@@ -2228,7 +2260,9 @@ const Admin = () => {
                               }
                             }}
                           >
-                            {expandedApplicant === applicant.id ? 'Hide Details' : 'View Details'}
+                            {expandingApplicantId === applicant.id ? (
+                              <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Loading...</>
+                            ) : expandedApplicant === applicant.id ? 'Hide Details' : 'View Details'}
                           </Button>
                           <Button
                             variant="outline"
@@ -2285,6 +2319,27 @@ const Admin = () => {
                           </Button>
                         </div>
                       </div>
+
+                      {/* Loading skeleton when expanding */}
+                      {expandingApplicantId === applicant.id && (
+                        <div className="mt-4 pt-4 border-t border-border animate-pulse">
+                          <div className="flex items-center gap-2 mb-4">
+                            <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                            <span className="text-sm text-muted-foreground">Loading applicant details...</span>
+                          </div>
+                          <div className="space-y-4">
+                            <Skeleton className="h-10 w-full" />
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                              <Skeleton className="h-20 w-full" />
+                              <Skeleton className="h-20 w-full" />
+                              <Skeleton className="h-20 w-full" />
+                              <Skeleton className="h-20 w-full" />
+                            </div>
+                            <Skeleton className="h-24 w-full" />
+                            <Skeleton className="h-32 w-full" />
+                          </div>
+                        </div>
+                      )}
 
                       {expandedApplicant === applicant.id && (
                         <div className="mt-4 pt-4 border-t border-border" onMouseDown={(e) => e.stopPropagation()}>

@@ -7,6 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Skeleton } from '@/components/ui/skeleton';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
 import { 
   Mail, 
@@ -145,6 +146,7 @@ interface ApplicantSearchResultsProps {
   onToggleStar?: (applicantId: string) => void;
   unreadCounts?: Record<string, number>;
   expandedApplicant: string | null;
+  expandingApplicantId?: string | null;
   loadingPreview: boolean;
   downloadingCv?: string | null;
 }
@@ -166,6 +168,7 @@ export default function ApplicantSearchResults({
   onToggleStar,
   unreadCounts = {},
   expandedApplicant,
+  expandingApplicantId,
   loadingPreview,
   downloadingCv,
 }: ApplicantSearchResultsProps) {
@@ -495,7 +498,11 @@ export default function ApplicantSearchResults({
                       }}
                       className="flex items-center gap-1 text-green-600 hover:underline cursor-pointer"
                     >
-                      <Star className="w-3.5 h-3.5" />
+                      {expandingApplicantId === applicant.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <Star className="w-3.5 h-3.5" />
+                      )}
                       CV Assessment
                       {unreadCounts[applicant.id] && unreadCounts[applicant.id] > 0 && (
                         <span className="relative flex h-2 w-2 ml-1">
@@ -517,7 +524,11 @@ export default function ApplicantSearchResults({
                       }}
                       className="flex items-center gap-1 text-purple-600 hover:underline cursor-pointer"
                     >
-                      <ClipboardList className="w-3.5 h-3.5" />
+                      {expandingApplicantId === applicant.id ? (
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      ) : (
+                        <ClipboardList className="w-3.5 h-3.5" />
+                      )}
                       Interview Results
                       {unreadCounts[applicant.id] && unreadCounts[applicant.id] > 0 && (
                         <span className="relative flex h-2 w-2 ml-1">
@@ -576,9 +587,12 @@ export default function ApplicantSearchResults({
                 <Button
                   variant="outline"
                   size="sm"
+                  disabled={expandingApplicantId === applicant.id}
                   onClick={() => onViewDetails(applicant.id)}
                 >
-                  {expandedApplicant === applicant.id ? 'Hide' : 'Details'}
+                  {expandingApplicantId === applicant.id ? (
+                    <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Loading</>
+                  ) : expandedApplicant === applicant.id ? 'Hide' : 'Details'}
                 </Button>
                 
                 {onSendInvite && (
@@ -637,6 +651,27 @@ export default function ApplicantSearchResults({
                 </Button>
               </div>
             </div>
+
+            {/* Loading skeleton when expanding */}
+            {expandingApplicantId === applicant.id && (
+              <div className="mt-4 pt-4 border-t border-border animate-pulse">
+                <div className="flex items-center gap-2 mb-4">
+                  <Loader2 className="w-5 h-5 animate-spin text-primary" />
+                  <span className="text-sm text-muted-foreground">Loading applicant details...</span>
+                </div>
+                <div className="space-y-4">
+                  <Skeleton className="h-10 w-full" />
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                    <Skeleton className="h-20 w-full" />
+                  </div>
+                  <Skeleton className="h-24 w-full" />
+                  <Skeleton className="h-32 w-full" />
+                </div>
+              </div>
+            )}
 
             {/* Expanded Details Section */}
             {expandedApplicant === applicant.id && (
