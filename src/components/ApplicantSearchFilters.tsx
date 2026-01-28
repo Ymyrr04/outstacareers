@@ -75,20 +75,15 @@ export default function ApplicantSearchFilters({
   // Filter applicants based on all criteria (use applied search term - triggered by Enter)
   const filteredApplicants = useMemo(() => {
     return applicants.filter(applicant => {
-      // Search term filter (only applied after Enter is pressed)
+      // Search term filter - focuses on name, email, phone, job title only (not CV content)
       if (appliedSearchTerm.trim()) {
         const term = appliedSearchTerm.toLowerCase().trim();
-        const nameParts = applicant.full_name.toLowerCase().split(/\s+/);
-        const matchesFirstName = nameParts.some(part => part.includes(term));
-        const matchesLastName = nameParts.some(part => part.includes(term));
         const matchesFullName = applicant.full_name.toLowerCase().includes(term);
         const matchesEmail = applicant.email.toLowerCase().includes(term);
         const matchesPhone = applicant.phone?.toLowerCase().includes(term) || false;
         const matchesJobTitle = applicant.job_title.toLowerCase().includes(term);
-        const matchesCvContent = applicant.cv_text?.toLowerCase().includes(term) || false;
         
-        if (!matchesFirstName && !matchesLastName && !matchesFullName && 
-            !matchesEmail && !matchesPhone && !matchesJobTitle && !matchesCvContent) {
+        if (!matchesFullName && !matchesEmail && !matchesPhone && !matchesJobTitle) {
           return false;
         }
       }
@@ -184,7 +179,7 @@ export default function ApplicantSearchFilters({
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           )}
           <Input
-            placeholder="Search and press Enter..."
+            placeholder="Search name, email, phone, job title..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             onKeyDown={handleSearchKeyDown}
