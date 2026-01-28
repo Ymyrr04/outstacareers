@@ -267,16 +267,27 @@ export const ContractorsDashboard = () => {
 
     setUpdatingStatusId(pendingStatusChange.contractorId);
     try {
+      // If rendering for termination, go directly to terminated status
+      const finalStatus = data.status === 'rendering' && data.renderingReason === 'termination' 
+        ? 'terminated' 
+        : data.status;
+
       const updateData: Record<string, any> = { 
-        status: data.status,
+        status: finalStatus,
       };
 
-      // Set notes for rendering
-      if (data.renderingReason) {
-        updateData.notes = `Rendering for ${data.renderingReason}${data.effectiveDate ? ` - Effective: ${data.effectiveDate}` : ''}`;
+      // Set notes for rendering (only for resignation, since termination goes directly to terminated)
+      if (data.status === 'rendering' && data.renderingReason === 'resign') {
+        updateData.notes = `Rendering for resignation${data.effectiveDate ? ` - Effective: ${data.effectiveDate}` : ''}`;
       }
       
-      // Set notes for resigned/terminated with reason
+      // Set notes for terminated via rendering
+      if (data.status === 'rendering' && data.renderingReason === 'termination') {
+        updateData.notes = `Terminated${data.effectiveDate ? ` - Effective: ${data.effectiveDate}` : ''}`;
+        updateData.end_date = data.effectiveDate || null;
+      }
+      
+      // Set notes for resigned/terminated with reason (direct status change)
       if ((data.status === 'resigned' || data.status === 'terminated') && data.reason) {
         updateData.notes = `${data.status === 'resigned' ? 'Resignation' : 'Termination'} reason: ${data.reason}`;
       }
@@ -286,7 +297,7 @@ export const ContractorsDashboard = () => {
         updateData.start_date = data.startDate;
       }
       
-      // Set end_date for resigned/terminated
+      // Set end_date for resigned/terminated (direct status change)
       if ((data.status === 'resigned' || data.status === 'terminated') && data.effectiveDate) {
         updateData.end_date = data.effectiveDate;
       }
@@ -302,7 +313,7 @@ export const ContractorsDashboard = () => {
         prev.map(c => c.id === pendingStatusChange.contractorId 
           ? { 
               ...c, 
-              status: data.status, 
+              status: finalStatus, 
               start_date: updateData.start_date || c.start_date,
               end_date: updateData.end_date || c.end_date 
             } 
@@ -312,7 +323,7 @@ export const ContractorsDashboard = () => {
 
       toast({
         title: 'Status Updated',
-        description: `Contractor status changed to ${data.status}`,
+        description: `Contractor status changed to ${finalStatus}`,
       });
 
       setStatusDialogOpen(false);
