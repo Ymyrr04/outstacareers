@@ -271,12 +271,12 @@ const Admin = () => {
   const [isTabSwitching, startTabTransition] = useTransition();
   const [showDelayedLoader, setShowDelayedLoader] = useState(false);
   
-  // Show loading screen only if tab switching takes more than 2 seconds
+  // Show loading screen only if tab switching takes more than 500ms
   useEffect(() => {
     if (isTabSwitching) {
       const timer = setTimeout(() => {
         setShowDelayedLoader(true);
-      }, 2000);
+      }, 500);
       return () => clearTimeout(timer);
     } else {
       setShowDelayedLoader(false);
