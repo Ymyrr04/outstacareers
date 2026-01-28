@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import { useEffect, useState, useMemo, useCallback, useRef, useTransition } from 'react';
 import { format } from 'date-fns';
 import { useNavigate, Link } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -266,6 +266,14 @@ const Admin = () => {
   
   // Main tab state for layout control
   const [activeMainTab, setActiveMainTab] = useState('jobs');
+  const [isTabSwitching, startTabTransition] = useTransition();
+  
+  // Handle tab switching with transition to prevent UI freeze
+  const handleMainTabChange = useCallback((newTab: string) => {
+    startTabTransition(() => {
+      setActiveMainTab(newTab);
+    });
+  }, []);
   
   // Assessment tab state for CV/Interview navigation
   const [activeAssessmentTab, setActiveAssessmentTab] = useState<'cv' | 'interview'>('cv');
@@ -1079,7 +1087,7 @@ const Admin = () => {
       </header>
 
       <main className="px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
-        <Tabs defaultValue="jobs" className="space-y-6" value={activeMainTab} onValueChange={setActiveMainTab}>
+        <Tabs defaultValue="jobs" className="space-y-6" value={activeMainTab} onValueChange={handleMainTabChange}>
           <TabsList className="flex-wrap">
             {canViewTab('jobs') && (
               <TabsTrigger value="jobs" className="flex items-center gap-2">
@@ -1591,7 +1599,7 @@ const Admin = () => {
               </div>
             </div>
 
-            {applicantsLoading ? (
+            {(applicantsLoading || isTabSwitching) ? (
               <div className="space-y-4 animate-fade-in">
                 {/* Skeleton tabs */}
                 <div className="flex gap-2">
@@ -1636,7 +1644,7 @@ const Admin = () => {
                 
                 <div className="flex items-center justify-center gap-2 text-muted-foreground py-4">
                   <Loader2 className="w-5 h-5 animate-spin" />
-                  <span>Loading {applicants.length > 0 ? applicants.length : ''} applicants...</span>
+                  <span>{isTabSwitching ? 'Preparing view...' : `Loading ${applicants.length > 0 ? applicants.length : ''} applicants...`}</span>
                 </div>
               </div>
             ) : applicants.length === 0 ? (
