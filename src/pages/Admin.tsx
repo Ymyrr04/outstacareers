@@ -269,6 +269,19 @@ const Admin = () => {
   // Main tab state for layout control
   const [activeMainTab, setActiveMainTab] = useState('jobs');
   const [isTabSwitching, startTabTransition] = useTransition();
+  const [showDelayedLoader, setShowDelayedLoader] = useState(false);
+  
+  // Show loading screen only if tab switching takes more than 2 seconds
+  useEffect(() => {
+    if (isTabSwitching) {
+      const timer = setTimeout(() => {
+        setShowDelayedLoader(true);
+      }, 2000);
+      return () => clearTimeout(timer);
+    } else {
+      setShowDelayedLoader(false);
+    }
+  }, [isTabSwitching]);
   
   // Handle tab switching with transition to prevent UI freeze
   const handleMainTabChange = useCallback((newTab: string) => {
@@ -1152,6 +1165,15 @@ const Admin = () => {
               </TabsTrigger>
             )}
           </TabsList>
+
+          {/* Delayed loading overlay - shows only if tab switching takes more than 2 seconds */}
+          {showDelayedLoader && (
+            <div className="flex flex-col items-center justify-center py-24 text-muted-foreground animate-fade-in">
+              <Loader2 className="w-8 h-8 animate-spin mb-4" />
+              <p className="text-lg">Loading tab content...</p>
+              <p className="text-sm mt-1">This may take a moment for large datasets</p>
+            </div>
+          )}
 
           <TabsContent value="my-applicants" className="space-y-6">
             <MyApplicantsDashboard />
