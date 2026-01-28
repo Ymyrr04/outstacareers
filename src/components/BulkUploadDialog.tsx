@@ -32,13 +32,14 @@ interface FileStatus {
 }
 
 const STATUS_OPTIONS = [
-  'Reviewed',
-  'Pass Screening',
-  'Reject',
-  '50/50',
+  'For Review',
   'For Interview',
-  'Candidate Successful',
-  'Bench'
+  'SIV',
+  'Client Interview',
+  'Hired',
+  'Bench',
+  'Reject',
+  'Archive'
 ] as const;
 
 interface BulkUploadDialogProps {
@@ -138,7 +139,7 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
     }
 
     setIsProcessing(true);
-    const runScoring = selectedStatus === 'Reviewed';
+    const runScoring = selectedStatus === 'For Review';
 
     let successCount = 0;
     let skippedCount = 0;
@@ -378,14 +379,14 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
                 {STATUS_OPTIONS.map(status => (
                   <SelectItem key={status} value={status}>
                     {status}
-                    {status === 'Reviewed' && (
+                    {status === 'For Review' && (
                       <span className="ml-2 text-xs text-muted-foreground">(with AI scoring)</span>
                     )}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {selectedStatus === 'Reviewed' && (
+            {selectedStatus === 'For Review' && (
               <p className="text-xs text-muted-foreground">
                 <AlertCircle className="w-3 h-3 inline mr-1" />
                 AI scoring will be performed on each CV
