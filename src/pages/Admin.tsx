@@ -270,21 +270,42 @@ const Admin = () => {
   const [activeMainTab, setActiveMainTab] = useState('jobs');
   const [isTabSwitching, startTabTransition] = useTransition();
   const [showDelayedLoader, setShowDelayedLoader] = useState(false);
+  const [manualTabLoading, setManualTabLoading] = useState(false);
   
-  // Show loading screen only if tab switching takes more than 500ms
+  // Heavy tabs that need loading indicator
+  const heavyTabs = ['applicants', 'recruiter-dash', 'pipeline', 'contractors'];
+  
+  // Show loading screen for heavy tabs - show immediately, hide after content renders
   useEffect(() => {
-    if (isTabSwitching) {
-      const timer = setTimeout(() => {
-        setShowDelayedLoader(true);
-      }, 500);
-      return () => clearTimeout(timer);
-    } else {
-      setShowDelayedLoader(false);
+    if (manualTabLoading) {
+      setShowDelayedLoader(true);
+      // Auto-hide after a maximum of 5 seconds (safety fallback)
+      const maxTimer = setTimeout(() => {
+        setShowDelayedLoader(false);
+        setManualTabLoading(false);
+      }, 5000);
+      return () => clearTimeout(maxTimer);
     }
-  }, [isTabSwitching]);
+  }, [manualTabLoading]);
+  
+  // Hide loader when tab content has rendered (detect via activeMainTab settling)
+  useEffect(() => {
+    if (manualTabLoading && !isTabSwitching) {
+      // Give React time to render the content, then hide loader
+      const hideTimer = setTimeout(() => {
+        setShowDelayedLoader(false);
+        setManualTabLoading(false);
+      }, 100);
+      return () => clearTimeout(hideTimer);
+    }
+  }, [manualTabLoading, isTabSwitching, activeMainTab]);
   
   // Handle tab switching with transition to prevent UI freeze
   const handleMainTabChange = useCallback((newTab: string) => {
+    // Show loading immediately for heavy tabs
+    if (heavyTabs.includes(newTab)) {
+      setManualTabLoading(true);
+    }
     startTabTransition(() => {
       setActiveMainTab(newTab);
     });
