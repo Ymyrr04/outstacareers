@@ -20,12 +20,12 @@ interface VirtualizedApplicantListProps {
   onUpdateStatus: (id: string, status: string) => void;
   onViewDetails: (id: string) => void;
   onDelete: (id: string) => void;
-  onPreviewCv: (path: string, name: string, cvText?: string | null) => void;
+  onPreviewCv: (id: string, path: string, name: string, cvText: string | null) => void;
   onDownloadCv: (id: string, path: string, name: string) => void;
   onToggleStar: (id: string) => void;
-  onSendEmail: (applicant: { id: string; name: string; email: string }) => void;
+  onSendEmail: (applicant: { id: string; full_name: string; email: string; job_title: string; status: string }) => void;
   onViewHistory: (applicant: { id: string; name: string; email: string }) => void;
-  onSendInvite: (applicant: { id: string; name: string; email: string; jobId: string | null; jobTitle: string }) => void;
+  onSendInvite: (applicant: { full_name: string; email: string; job_title: string }) => void;
   expandedApplicant: string | null;
   expandingApplicantId: string | null;
   loadingPreview: boolean;
@@ -274,7 +274,7 @@ export const VirtualizedApplicantList = ({
                                 variant="ghost"
                                 size="icon"
                                 className="h-8 w-8"
-                                onClick={() => onPreviewCv(applicant.cv_file_url!, applicant.full_name, applicant.cv_text)}
+                                onClick={() => onPreviewCv(applicant.id, applicant.cv_file_url!, applicant.full_name, applicant.cv_text)}
                                 disabled={loadingPreview}
                               >
                                 <FileText className="w-4 h-4" />
@@ -299,7 +299,13 @@ export const VirtualizedApplicantList = ({
                             variant="ghost"
                             size="icon"
                             className="h-8 w-8"
-                            onClick={() => onSendEmail({ id: applicant.id, name: applicant.full_name, email: applicant.email })}
+                            onClick={() => onSendEmail({ 
+                              id: applicant.id, 
+                              full_name: applicant.full_name, 
+                              email: applicant.email,
+                              job_title: applicant.job_title,
+                              status: applicant.status
+                            })}
                           >
                             <Mail className="w-4 h-4" />
                           </Button>
@@ -321,11 +327,9 @@ export const VirtualizedApplicantList = ({
                             size="icon"
                             className="h-8 w-8"
                             onClick={() => onSendInvite({ 
-                              id: applicant.id, 
-                              name: applicant.full_name, 
+                              full_name: applicant.full_name, 
                               email: applicant.email,
-                              jobId: applicant.job_id,
-                              jobTitle: applicant.job_title
+                              job_title: applicant.job_title
                             })}
                           >
                             <Send className="w-4 h-4" />
