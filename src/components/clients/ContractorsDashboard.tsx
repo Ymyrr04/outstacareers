@@ -287,8 +287,8 @@ export const ContractorsDashboard = () => {
         updateData.start_date = data.startDate;
       }
       
-      // Set end_date for resigned/terminated
-      if ((data.status === 'resigned' || data.status === 'terminated') && data.effectiveDate) {
+      // Set end_date for rendering, resigned/terminated
+      if ((data.status === 'rendering' || data.status === 'resigned' || data.status === 'terminated') && data.effectiveDate) {
         updateData.end_date = data.effectiveDate;
       }
 
