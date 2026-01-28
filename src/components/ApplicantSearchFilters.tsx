@@ -69,7 +69,7 @@ export default function ApplicantSearchFilters({
     
     debounceTimerRef.current = setTimeout(() => {
       setDebouncedSearchTerm(searchTerm);
-    }, 300); // 300ms debounce
+    }, 1500); // 1.5 second debounce - wait for user to finish typing
     
     return () => {
       if (debounceTimerRef.current) {
