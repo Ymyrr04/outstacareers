@@ -57,15 +57,21 @@ class SimpleIMAPClient {
     return lines;
   }
 
+  private writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
+  
   private async sendCommand(command: string): Promise<string[]> {
     this.tagCounter++;
     const tag = `A${this.tagCounter}`;
     const fullCommand = `${tag} ${command}\r\n`;
     
     const encoder = new TextEncoder();
-    const writer = this.conn!.writable.getWriter();
-    await writer.write(encoder.encode(fullCommand));
-    writer.releaseLock();
+    
+    // Reuse the writer or create one if needed
+    if (!this.writer) {
+      this.writer = this.conn!.writable.getWriter();
+    }
+    
+    await this.writer.write(encoder.encode(fullCommand));
     
     return await this.readResponse();
   }
@@ -243,6 +249,15 @@ class SimpleIMAPClient {
       await this.sendCommand("LOGOUT");
     } catch {
       // Ignore logout errors
+    }
+    // Release the writer lock before closing
+    if (this.writer) {
+      try {
+        this.writer.releaseLock();
+      } catch {
+        // Ignore release errors
+      }
+      this.writer = null;
     }
     this.conn?.close();
   }
