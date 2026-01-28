@@ -34,6 +34,7 @@ import {
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
 import {
   Table,
   TableBody,
@@ -1321,9 +1322,16 @@ export const ContractorsDashboard = () => {
                           {visibleColumns.notes && (
                             <TableCell>
                               {contractor.notes ? (
-                                <span className="text-sm text-muted-foreground line-clamp-2 max-w-[200px]" title={contractor.notes}>
-                                  {contractor.notes}
-                                </span>
+                                <HoverCard>
+                                  <HoverCardTrigger asChild>
+                                    <span className="text-sm text-muted-foreground line-clamp-1 max-w-[200px] cursor-help underline decoration-dotted underline-offset-2">
+                                      {contractor.notes}
+                                    </span>
+                                  </HoverCardTrigger>
+                                  <HoverCardContent className="w-80 text-sm" align="start">
+                                    <p className="whitespace-pre-wrap">{contractor.notes}</p>
+                                  </HoverCardContent>
+                                </HoverCard>
                               ) : (
                                 <span className="text-muted-foreground">—</span>
                               )}
