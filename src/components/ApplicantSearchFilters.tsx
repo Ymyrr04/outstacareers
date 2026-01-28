@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef, useTransition } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -55,6 +55,9 @@ export default function ApplicantSearchFilters({
   
   const [skillSearch, setSkillSearch] = useState('');
   const [toolSearch, setToolSearch] = useState('');
+  
+  // Use transition for non-blocking filter updates
+  const [isPending, startTransition] = useTransition();
 
   // Debounce search term to avoid filtering on every keystroke
   const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -75,8 +78,8 @@ export default function ApplicantSearchFilters({
     };
   }, [searchTerm]);
 
-  // Track if search is pending (user is typing but results not yet filtered)
-  const isSearching = searchTerm !== debouncedSearchTerm && searchTerm.trim().length > 0;
+  // Track if search/filtering is pending
+  const isSearching = isPending || (searchTerm !== debouncedSearchTerm && searchTerm.trim().length > 0);
 
   // Filter applicants based on all criteria (use debounced search term for performance)
   const filteredApplicants = useMemo(() => {
@@ -133,9 +136,11 @@ export default function ApplicantSearchFilters({
     });
   }, [applicants, debouncedSearchTerm, selectedSkills, selectedTools, selectedExperienceRanges]);
 
-  // Update parent when filters change
+  // Update parent when filters change (use startTransition for non-urgent updates)
   useEffect(() => {
-    onFilteredApplicants(filteredApplicants);
+    startTransition(() => {
+      onFilteredApplicants(filteredApplicants);
+    });
   }, [filteredApplicants, onFilteredApplicants]);
 
   const clearAllFilters = () => {
