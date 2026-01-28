@@ -28,6 +28,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import BulkUploadDialog from '@/components/BulkUploadDialog';
 import ApplicantSearchFilters from '@/components/ApplicantSearchFilters';
 import ApplicantSearchResults from '@/components/ApplicantSearchResults';
+import { PaginatedSearchResults } from '@/components/PaginatedSearchResults';
+import { PaginatedFolderView } from '@/components/PaginatedFolderView';
 import { InterviewInviteDialog } from '@/components/InterviewInviteDialog';
 import { EmailTemplateEditor } from '@/components/EmailTemplateEditor';
 import { CommunicationHistory } from '@/components/CommunicationHistory';
@@ -233,6 +235,9 @@ const Admin = () => {
   
   // Search state
   const [searchTerm, setSearchTerm] = useState('');
+  const [paginatedSearchTerm, setPaginatedSearchTerm] = useState('');
+  const [paginatedSearchInput, setPaginatedSearchInput] = useState('');
+  const [paginatedSortOption, setPaginatedSortOption] = useState<'newest' | 'score-desc' | 'score-asc' | 'starred'>('newest');
   const [activeApplicantTab, setActiveApplicantTab] = useState<'folders' | 'search'>('folders');
   const [searchFilteredApplicants, setSearchFilteredApplicants] = useState<Applicant[]>([]);
   
@@ -1713,17 +1718,47 @@ const Admin = () => {
                     </TabsTrigger>
                   </TabsList>
 
-                  {/* Advanced Search Tab */}
+                  {/* Advanced Search Tab - Server-side Paginated */}
                   <TabsContent value="search" className="space-y-4" keepMounted>
-                    <ApplicantSearchFilters
-                      applicants={applicants}
-                      onFilteredApplicants={handleSearchFilteredApplicants}
-                      allSkills={allSkills}
-                      allTools={allTools}
-                    />
-                    
-                    <ApplicantSearchResults
-                      applicants={searchFilteredApplicants}
+                    {/* Search controls */}
+                    <div className="flex gap-3">
+                      <div className="relative flex-1">
+                        <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                        <Input
+                          placeholder="Search by name, email, phone, or job title... (Press Enter)"
+                          value={paginatedSearchInput}
+                          onChange={(e) => setPaginatedSearchInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter') {
+                              setPaginatedSearchTerm(paginatedSearchInput);
+                            }
+                          }}
+                          className="pl-10"
+                        />
+                      </div>
+                      <Button 
+                        variant="outline" 
+                        onClick={() => setPaginatedSearchTerm(paginatedSearchInput)}
+                      >
+                        <SearchIcon className="w-4 h-4 mr-2" />
+                        Search
+                      </Button>
+                      <Select value={paginatedSortOption} onValueChange={(v) => setPaginatedSortOption(v as any)}>
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Sort by..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="newest">Newest First</SelectItem>
+                          <SelectItem value="score-desc">Score: High to Low</SelectItem>
+                          <SelectItem value="score-asc">Score: Low to High</SelectItem>
+                          <SelectItem value="starred">Starred First</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <PaginatedSearchResults
+                      searchTerm={paginatedSearchTerm}
+                      sortBy={paginatedSortOption}
                       statusOptions={APPLICANT_STATUS_OPTIONS}
                       onUpdateStatus={handleUpdateApplicantStatus}
                       onViewDetails={async (id) => {
@@ -1731,84 +1766,29 @@ const Admin = () => {
                           setExpandedApplicant(null);
                           return;
                         }
-                        // Show loading state
                         setExpandingApplicantId(id);
                         await new Promise(resolve => setTimeout(resolve, 50));
                         setExpandedApplicant(id);
                         setExpandingApplicantId(null);
-                        // Mark as viewed when expanding details
-                        const applicant = applicants.find(a => a.id === id);
-                        if (applicant && !applicant.details_viewed_at) {
-                          await supabase
-                            .from('applicants_prescreen')
-                            .update({ details_viewed_at: new Date().toISOString() })
-                            .eq('id', id);
-                          // Update local state
-                          setApplicants(prev => prev.map(a => 
-                            a.id === id ? { ...a, details_viewed_at: new Date().toISOString() } : a
-                          ));
-                        }
+                        // Mark as viewed
+                        await supabase
+                          .from('applicants_prescreen')
+                          .update({ details_viewed_at: new Date().toISOString() })
+                          .eq('id', id);
                       }}
                       onDelete={handleDeleteApplicant}
-                      onPreviewCv={handlePreviewCv}
-                      onShowNotes={(id, name, notes) => setNotesPopup({ id, name, notes })}
+                      onPreviewCv={(id, path, name, cvText) => handlePreviewCv(id, path, name, cvText)}
                       onDownloadCv={handleDownloadCv}
-                      onUpdateApplicant={async (applicantId, data) => {
-                        const { error } = await supabase
-                          .from('applicants_prescreen')
-                          .update({
-                            full_name: data.full_name,
-                            email: data.email,
-                            phone: data.phone,
-                            notes: data.notes,
-                          })
-                          .eq('id', applicantId);
-                        
-                        if (error) {
-                          toast({
-                            title: 'Error',
-                            description: 'Failed to update applicant: ' + error.message,
-                            variant: 'destructive',
-                          });
-                        } else {
-                          setApplicants(prev => prev.map(a => 
-                            a.id === applicantId 
-                              ? { ...a, ...data } 
-                              : a
-                          ));
-                          toast({
-                            title: 'Success',
-                            description: 'Applicant information updated',
-                          });
-                        }
-                      }}
-                      onSendInvite={(applicant) => setInterviewInviteApplicant(applicant)}
+                      onToggleStar={handleToggleStar}
                       onSendEmail={(applicant) => setSendEmailApplicant(applicant)}
                       onViewHistory={(applicant) => setCommunicationHistoryApplicant(applicant)}
-                      onCheckAvailability={async (applicant) => {
-                        try {
-                          const { error } = await supabase.functions.invoke('send-availability-check', {
-                            body: { applicantId: applicant.id },
-                          });
-                          if (error) throw error;
-                          toast({
-                            title: 'Availability check sent',
-                            description: `Email sent to ${applicant.email}`,
-                          });
-                        } catch (error: any) {
-                          toast({
-                            title: 'Failed to send',
-                            description: error.message || 'Please try again',
-                            variant: 'destructive',
-                          });
-                        }
-                      }}
-                      onToggleStar={handleToggleStar}
-                      unreadCounts={unreadCounts}
+                      onSendInvite={(applicant) => setInterviewInviteApplicant(applicant)}
                       expandedApplicant={expandedApplicant}
                       expandingApplicantId={expandingApplicantId}
                       loadingPreview={loadingPreview}
                       downloadingCv={downloadingCv}
+                      unreadCounts={unreadCounts}
+                      enabled={activeApplicantTab === 'search'}
                     />
                   </TabsContent>
 

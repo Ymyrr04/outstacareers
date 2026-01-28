@@ -93,11 +93,13 @@ export interface PaginatedApplicant {
 interface UsePaginatedApplicantsOptions {
   pageSize?: number;
   status?: string;
+  searchTerm?: string;
+  sortBy?: 'newest' | 'score-desc' | 'score-asc' | 'starred';
   enabled?: boolean;
 }
 
 export const usePaginatedApplicants = (options: UsePaginatedApplicantsOptions = {}) => {
-  const { pageSize = 50, status, enabled = true } = options;
+  const { pageSize = 50, status, searchTerm, sortBy = 'newest', enabled = true } = options;
   const { toast } = useToast();
   
   const [applicants, setApplicants] = useState<PaginatedApplicant[]>([]);
@@ -118,14 +120,34 @@ export const usePaginatedApplicants = (options: UsePaginatedApplicantsOptions = 
       // Build query
       let query = supabase
         .from('applicants_prescreen')
-        .select('*', { count: 'exact' })
-        .order('submitted_at', { ascending: false })
-        .range(page * pageSize, (page + 1) * pageSize - 1);
+        .select('*', { count: 'exact' });
       
       // Filter by status if provided
       if (status) {
         query = query.eq('status', status);
       }
+      
+      // Apply search filter (server-side for name, email, job_title)
+      if (searchTerm && searchTerm.trim()) {
+        const term = searchTerm.trim();
+        query = query.or(`full_name.ilike.%${term}%,email.ilike.%${term}%,job_title.ilike.%${term}%,phone.ilike.%${term}%`);
+      }
+      
+      // Apply sorting
+      if (sortBy === 'score-desc') {
+        query = query.order('total_score', { ascending: false, nullsFirst: false });
+      } else if (sortBy === 'score-asc') {
+        query = query.order('total_score', { ascending: true, nullsFirst: true });
+      } else if (sortBy === 'starred') {
+        query = query.order('is_starred', { ascending: false, nullsFirst: false })
+                     .order('total_score', { ascending: false, nullsFirst: false });
+      } else {
+        // Default: newest first
+        query = query.order('submitted_at', { ascending: false });
+      }
+      
+      // Add pagination
+      query = query.range(page * pageSize, (page + 1) * pageSize - 1);
       
       const { data: applicantsData, error: applicantsError, count } = await query;
 
@@ -198,14 +220,18 @@ export const usePaginatedApplicants = (options: UsePaginatedApplicantsOptions = 
     } finally {
       setLoading(false);
     }
-  }, [enabled, pageSize, status, toast]);
+  }, [enabled, pageSize, status, searchTerm, sortBy, toast]);
 
-  // Initial fetch
+  // Reset when filters change
   useEffect(() => {
     if (enabled) {
+      interviewSessionsCache.current = {};
+      setApplicants([]);
+      setCurrentPage(0);
+      setHasMore(true);
       fetchPage(0);
     }
-  }, [enabled, status, fetchPage]);
+  }, [enabled, status, searchTerm, sortBy]);
 
   // Load next page
   const loadNextPage = useCallback(() => {
