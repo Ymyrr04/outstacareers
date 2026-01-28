@@ -24,6 +24,7 @@ import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Skeleton } from '@/components/ui/skeleton';
 import BulkUploadDialog from '@/components/BulkUploadDialog';
 import ApplicantSearchFilters from '@/components/ApplicantSearchFilters';
 import ApplicantSearchResults from '@/components/ApplicantSearchResults';
@@ -1591,9 +1592,52 @@ const Admin = () => {
             </div>
 
             {applicantsLoading ? (
-              <div className="flex items-center justify-center py-12 gap-2 text-muted-foreground">
-                <Loader2 className="w-5 h-5 animate-spin" />
-                <span>Loading applicants...</span>
+              <div className="space-y-4 animate-fade-in">
+                {/* Skeleton tabs */}
+                <div className="flex gap-2">
+                  <Skeleton className="h-10 w-32" />
+                  <Skeleton className="h-10 w-36" />
+                </div>
+                
+                {/* Skeleton search bar */}
+                <Skeleton className="h-10 w-full max-w-md" />
+                
+                {/* Skeleton folder tabs */}
+                <div className="flex gap-2 flex-wrap">
+                  {[1, 2, 3, 4, 5, 6].map((i) => (
+                    <Skeleton key={i} className="h-9 w-24" />
+                  ))}
+                </div>
+                
+                {/* Skeleton applicant cards */}
+                <div className="space-y-3">
+                  {[1, 2, 3, 4, 5].map((i) => (
+                    <Card key={i} className="overflow-hidden">
+                      <CardContent className="p-4">
+                        <div className="flex items-start gap-4">
+                          <Skeleton className="h-12 w-12 rounded-full" />
+                          <div className="flex-1 space-y-2">
+                            <Skeleton className="h-5 w-48" />
+                            <Skeleton className="h-4 w-64" />
+                            <div className="flex gap-2">
+                              <Skeleton className="h-6 w-20" />
+                              <Skeleton className="h-6 w-16" />
+                            </div>
+                          </div>
+                          <div className="flex gap-2">
+                            <Skeleton className="h-9 w-9" />
+                            <Skeleton className="h-9 w-9" />
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+                
+                <div className="flex items-center justify-center gap-2 text-muted-foreground py-4">
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  <span>Loading {applicants.length > 0 ? applicants.length : ''} applicants...</span>
+                </div>
               </div>
             ) : applicants.length === 0 ? (
               <Card>
