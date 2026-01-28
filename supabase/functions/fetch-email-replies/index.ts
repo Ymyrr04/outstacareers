@@ -147,8 +147,9 @@ class SimpleIMAPClient {
     });
   }
 
-  async fetchMessage(msgNum: number): Promise<{ subject: string; date: string; messageId: string; inReplyTo: string; body: string } | null> {
-    const response = await this.sendCommand(`FETCH ${msgNum} (BODY[HEADER.FIELDS (SUBJECT DATE MESSAGE-ID IN-REPLY-TO REFERENCES)] BODY[TEXT])`);
+  async fetchMessage(msgNum: number): Promise<{ subject: string; date: string; messageId: string; inReplyTo: string; body: string; isRead: boolean } | null> {
+    // Fetch message with FLAGS to get read status
+    const response = await this.sendCommand(`FETCH ${msgNum} (FLAGS BODY[HEADER.FIELDS (SUBJECT DATE MESSAGE-ID IN-REPLY-TO REFERENCES)] BODY[TEXT])`);
     
     let subject = "";
     let date = "";
@@ -156,8 +157,13 @@ class SimpleIMAPClient {
     let inReplyTo = "";
     let body = "";
     let inBody = false;
+    let isRead = false;
     
     for (const line of response) {
+      // Check for FLAGS with \Seen flag (indicates email is read in Gmail)
+      if (line.includes("FLAGS")) {
+        isRead = line.includes("\\Seen");
+      }
       if (line.includes("Subject:")) {
         const rawSubject = line.replace(/Subject:\s*/i, "").trim();
         subject = this.decodeMimeWord(rawSubject);
@@ -185,7 +191,7 @@ class SimpleIMAPClient {
     // Clean up the body
     body = this.cleanEmailBody(body);
     
-    return { subject, date, messageId, inReplyTo, body: body.trim() };
+    return { subject, date, messageId, inReplyTo, body: body.trim(), isRead };
   }
 
   private cleanEmailBody(rawBody: string): string {
@@ -323,6 +329,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Mailbox has ${messageCount} messages`);
 
     const newReplies: any[] = [];
+    const readInGmailMessageIds: string[] = []; // Track emails read in Gmail to sync status
 
     // Create a map of email -> applicant ids for fallback matching
     const emailToApplicantsMap = new Map<string, string[]>();
@@ -346,7 +353,16 @@ const handler = async (req: Request): Promise<Response> => {
         for (const msgNum of msgNums) {
           const message = await client.fetchMessage(msgNum);
           
-          if (message && message.messageId && !existingMessageIds.has(message.messageId)) {
+          if (message && message.messageId) {
+            // Check if this email already exists
+            if (existingMessageIds.has(message.messageId)) {
+              // If email exists and is now read in Gmail, update our database
+              if (message.isRead) {
+                readInGmailMessageIds.push(message.messageId);
+              }
+              continue;
+            }
+            
             // THREAD MATCHING: Try to match via in_reply_to header first
             let matchedApplicantId: string | null = null;
             
@@ -370,7 +386,7 @@ const handler = async (req: Request): Promise<Response> => {
             }
             
             if (matchedApplicantId) {
-              console.log(`Found reply from: ${email} - ${message.subject}`);
+              console.log(`Found reply from: ${email} - ${message.subject} (read: ${message.isRead})`);
               
               let receivedAt: string;
               try {
@@ -387,6 +403,7 @@ const handler = async (req: Request): Promise<Response> => {
                 in_reply_to: message.inReplyTo || null,
                 received_at: receivedAt,
                 gmail_message_id: message.messageId,
+                is_read: message.isRead, // Sync read status from Gmail
               });
               
               existingMessageIds.add(message.messageId);
@@ -399,7 +416,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     await client.logout();
-    console.log(`Disconnected from IMAP. Found ${newReplies.length} new replies`);
+    console.log(`Disconnected from IMAP. Found ${newReplies.length} new replies, ${readInGmailMessageIds.length} emails marked as read in Gmail`);
 
     // Insert new replies using upsert to handle duplicates gracefully
     if (newReplies.length > 0) {
@@ -417,11 +434,32 @@ const handler = async (req: Request): Promise<Response> => {
       console.log(`Saved ${newReplies.length} new replies`);
     }
 
+    // Update existing unread emails that are now marked as read in Gmail
+    let readSyncCount = 0;
+    if (readInGmailMessageIds.length > 0) {
+      const { data: updatedData, error: updateError } = await supabase
+        .from("email_replies")
+        .update({ is_read: true })
+        .in('gmail_message_id', readInGmailMessageIds)
+        .eq('is_read', false) // Only update those that are unread in our system
+        .select('id');
+
+      if (updateError) {
+        console.error("Failed to sync read status:", updateError);
+      } else {
+        readSyncCount = updatedData?.length || 0;
+        if (readSyncCount > 0) {
+          console.log(`Synced read status for ${readSyncCount} emails from Gmail`);
+        }
+      }
+    }
+
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Found and saved ${newReplies.length} new replies`,
-        repliesFound: newReplies.length 
+        message: `Found ${newReplies.length} new replies, synced ${readSyncCount} read statuses`,
+        repliesFound: newReplies.length,
+        readStatusSynced: readSyncCount
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
