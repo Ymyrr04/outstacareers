@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -44,6 +44,7 @@ export default function ApplicantSearchFilters({
   allTools,
 }: ApplicantSearchFiltersProps) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [selectedTools, setSelectedTools] = useState<string[]>([]);
   const [selectedExperienceRanges, setSelectedExperienceRanges] = useState<string[]>([]);
@@ -55,12 +56,31 @@ export default function ApplicantSearchFilters({
   const [skillSearch, setSkillSearch] = useState('');
   const [toolSearch, setToolSearch] = useState('');
 
-  // Filter applicants based on all criteria
+  // Debounce search term to avoid filtering on every keystroke
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+  
+  useEffect(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    
+    debounceTimerRef.current = setTimeout(() => {
+      setDebouncedSearchTerm(searchTerm);
+    }, 300); // 300ms debounce
+    
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, [searchTerm]);
+
+  // Filter applicants based on all criteria (use debounced search term for performance)
   const filteredApplicants = useMemo(() => {
     return applicants.filter(applicant => {
-      // Search term filter
-      if (searchTerm.trim()) {
-        const term = searchTerm.toLowerCase().trim();
+      // Search term filter (using debounced value)
+      if (debouncedSearchTerm.trim()) {
+        const term = debouncedSearchTerm.toLowerCase().trim();
         const nameParts = applicant.full_name.toLowerCase().split(/\s+/);
         const matchesFirstName = nameParts.some(part => part.includes(term));
         const matchesLastName = nameParts.some(part => part.includes(term));
@@ -108,7 +128,7 @@ export default function ApplicantSearchFilters({
       
       return true;
     });
-  }, [applicants, searchTerm, selectedSkills, selectedTools, selectedExperienceRanges]);
+  }, [applicants, debouncedSearchTerm, selectedSkills, selectedTools, selectedExperienceRanges]);
 
   // Update parent when filters change
   useEffect(() => {
