@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect, useDeferredValue } from 'react';
 import { format, addMinutes } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -132,6 +132,7 @@ export const MyApplicantsDashboard = () => {
   const [activeStatusFolder, setActiveStatusFolder] = useState<ApplicantStatusFolder>('For Review');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchInput, setSearchInput] = useState('');
+  const deferredSearchInput = useDeferredValue(searchInput);
   const [selectedJobFilter, setSelectedJobFilter] = useState<string>('all');
   const [selectedAdminFilter, setSelectedAdminFilter] = useState<string>('all');
   const [sortOption, setSortOption] = useState<SortOption>('newest');
@@ -764,14 +765,14 @@ export const MyApplicantsDashboard = () => {
                 setSearchTerm(searchInput);
               }
             }}
-            className={`pl-9 ${searchInput && searchInput !== searchTerm ? 'pr-24' : searchInput ? 'pr-10' : ''}`}
+            className={`pl-9 ${deferredSearchInput && deferredSearchInput !== searchTerm ? 'pr-24' : deferredSearchInput ? 'pr-10' : ''}`}
           />
-          {searchInput && searchInput !== searchTerm && (
+          {deferredSearchInput && deferredSearchInput !== searchTerm && (
             <span className="absolute right-10 top-1/2 -translate-y-1/2 text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
               Press Enter
             </span>
           )}
-          {searchInput && (
+          {deferredSearchInput && (
             <button
               onClick={() => {
                 setSearchInput('');
