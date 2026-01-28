@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Search, Filter, X, ChevronDown, Briefcase, Wrench, Calendar } from 'lucide-react';
+import { Search, Filter, X, ChevronDown, Briefcase, Wrench, Calendar, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Applicant {
@@ -74,6 +74,9 @@ export default function ApplicantSearchFilters({
       }
     };
   }, [searchTerm]);
+
+  // Track if search is pending (user is typing but results not yet filtered)
+  const isSearching = searchTerm !== debouncedSearchTerm && searchTerm.trim().length > 0;
 
   // Filter applicants based on all criteria (use debounced search term for performance)
   const filteredApplicants = useMemo(() => {
@@ -178,7 +181,11 @@ export default function ApplicantSearchFilters({
       <div className="flex flex-wrap gap-3 items-center">
         {/* Search input */}
         <div className="relative flex-1 min-w-[300px]">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          {isSearching ? (
+            <Loader2 className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-primary animate-spin" />
+          ) : (
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          )}
           <Input
             placeholder="Search by name, email, phone, job role, or CV content..."
             value={searchTerm}
@@ -187,7 +194,10 @@ export default function ApplicantSearchFilters({
           />
           {searchTerm && (
             <button
-              onClick={() => setSearchTerm('')}
+              onClick={() => {
+                setSearchTerm('');
+                setDebouncedSearchTerm('');
+              }}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
               <X className="w-4 h-4" />
