@@ -707,28 +707,6 @@ export const ContractorsDashboard = () => {
           </Popover>
         </div>
         <div className="flex gap-2">
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button variant="outline" className="text-destructive hover:text-destructive" disabled={contractors.length === 0}>
-                <Trash2 className="w-4 h-4 mr-2" />
-                Clear All
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Delete all contractors?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This will permanently delete all {contractors.length} contractor records. This action cannot be undone.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
-                <AlertDialogAction onClick={handleClearAll} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
-                  Delete All
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
           <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
             <Upload className="w-4 h-4 mr-2" />
             Import
