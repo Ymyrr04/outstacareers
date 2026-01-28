@@ -372,33 +372,39 @@ export const MyApplicantsDashboard = () => {
     });
   };
 
+  // Check if we're in search mode (searching across all folders)
+  const isSearchMode = searchTerm.trim().length > 0;
+
   // Filter applicants based on admin and job selection
   const filteredApplicants = useMemo(() => {
     // First filter by admin (via jobs assigned to that admin)
     const jobIdsForAdmin = filteredJobs.map(j => j.id);
     let filtered = applicants.filter(a => a.job_id && jobIdsForAdmin.includes(a.job_id));
     
-    // Then filter by status folder
-    filtered = filtered.filter(a => a.status === activeStatusFolder);
+    // When searching, scan ALL folders; otherwise filter by active folder
+    if (!isSearchMode) {
+      filtered = filtered.filter(a => a.status === activeStatusFolder);
+    }
     
     // Then filter by specific job if selected
     if (selectedJobFilter !== 'all') {
       filtered = filtered.filter(a => a.job_id === selectedJobFilter);
     }
     
-    // Then filter by search term
+    // Then filter by search term (searches across all folders)
     if (searchTerm.trim()) {
       const term = searchTerm.toLowerCase();
       filtered = filtered.filter(a =>
         a.full_name.toLowerCase().includes(term) ||
         a.email.toLowerCase().includes(term) ||
         a.job_title.toLowerCase().includes(term) ||
-        a.location.toLowerCase().includes(term)
+        a.location.toLowerCase().includes(term) ||
+        (a.phone && a.phone.toLowerCase().includes(term))
       );
     }
     
     return sortApplicants(filtered);
-  }, [applicants, filteredJobs, activeStatusFolder, selectedJobFilter, searchTerm, sortOption]);
+  }, [applicants, filteredJobs, activeStatusFolder, selectedJobFilter, searchTerm, sortOption, isSearchMode]);
 
   // Folder counts - based on filtered admin jobs
   const folderCounts = useMemo(() => {
@@ -814,30 +820,40 @@ export const MyApplicantsDashboard = () => {
         )}
       </div>
 
-      {/* Status Folder Tabs */}
-      <div className="flex flex-wrap gap-2">
-        {APPLICANT_STATUS_FOLDERS.map(folder => (
-          <Button
-            key={folder}
-            variant={activeStatusFolder === folder ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setActiveStatusFolder(folder)}
-            onDragOver={(e) => handleDragOver(e, folder)}
-            onDragLeave={handleDragLeave}
-            onDrop={(e) => handleDrop(e, folder)}
-            className={`transition-all ${
-              dragOverFolder === folder ? 'ring-2 ring-primary ring-offset-2' : ''
-            }`}
-          >
-            {folder}
-            {folderCounts[folder] > 0 && (
-              <Badge variant="secondary" className="ml-2">
-                {folderCounts[folder]}
-              </Badge>
-            )}
-          </Button>
-        ))}
-      </div>
+      {/* Status Folder Tabs - hidden when searching */}
+      {isSearchMode ? (
+        <div className="flex items-center gap-2 p-3 bg-muted/50 rounded-lg border">
+          <SearchIcon className="w-4 h-4 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">
+            Searching across all folders for "<span className="font-medium text-foreground">{searchTerm}</span>"
+          </span>
+          <Badge variant="secondary">{filteredApplicants.length} result{filteredApplicants.length !== 1 ? 's' : ''}</Badge>
+        </div>
+      ) : (
+        <div className="flex flex-wrap gap-2">
+          {APPLICANT_STATUS_FOLDERS.map(folder => (
+            <Button
+              key={folder}
+              variant={activeStatusFolder === folder ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveStatusFolder(folder)}
+              onDragOver={(e) => handleDragOver(e, folder)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, folder)}
+              className={`transition-all ${
+                dragOverFolder === folder ? 'ring-2 ring-primary ring-offset-2' : ''
+              }`}
+            >
+              {folder}
+              {folderCounts[folder] > 0 && (
+                <Badge variant="secondary" className="ml-2">
+                  {folderCounts[folder]}
+                </Badge>
+              )}
+            </Button>
+          ))}
+        </div>
+      )}
 
       {/* Applicants Table */}
       {filteredApplicants.length === 0 ? (
@@ -845,8 +861,10 @@ export const MyApplicantsDashboard = () => {
           <CardContent className="py-8 text-center">
             <Users className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
             <p className="text-muted-foreground">
-              No applicants in "{activeStatusFolder}" folder
-              {selectedJobFilter !== 'all' && ' for this job'}
+              {isSearchMode 
+                ? `No applicants found matching "${searchTerm}"`
+                : `No applicants in "${activeStatusFolder}" folder${selectedJobFilter !== 'all' ? ' for this job' : ''}`
+              }
             </p>
           </CardContent>
         </Card>
@@ -861,7 +879,7 @@ export const MyApplicantsDashboard = () => {
                 <TableHead>Contact</TableHead>
                 <TableHead>Score</TableHead>
                 <TableHead>Applied</TableHead>
-                <TableHead>Status</TableHead>
+                <TableHead>{isSearchMode ? 'Folder' : 'Status'}</TableHead>
                 <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
