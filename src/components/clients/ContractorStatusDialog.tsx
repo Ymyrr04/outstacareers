@@ -54,6 +54,7 @@ export const ContractorStatusDialog = ({
         status,
         renderingReason,
         effectiveDate: effectiveDate ? format(effectiveDate, 'yyyy-MM-dd') : undefined,
+        reason: reason.trim() || undefined,
       });
     } else if (status === 'scheduled') {
       onConfirm({
@@ -69,7 +70,7 @@ export const ContractorStatusDialog = ({
     }
   };
 
-  const showReasonField = status === 'resigned' || status === 'terminated';
+  const showReasonField = status === 'rendering' || status === 'resigned' || status === 'terminated';
 
   const getDialogTitle = () => {
     switch (status) {
