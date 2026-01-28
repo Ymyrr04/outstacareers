@@ -756,7 +756,7 @@ export const MyApplicantsDashboard = () => {
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search applicants... (Press Enter)"
+            placeholder="Search applicants..."
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             onKeyDown={(e) => {
@@ -764,8 +764,24 @@ export const MyApplicantsDashboard = () => {
                 setSearchTerm(searchInput);
               }
             }}
-            className="pl-9"
+            className={`pl-9 ${searchInput && searchInput !== searchTerm ? 'pr-24' : searchInput ? 'pr-10' : ''}`}
           />
+          {searchInput && searchInput !== searchTerm && (
+            <span className="absolute right-10 top-1/2 -translate-y-1/2 text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+              Press Enter
+            </span>
+          )}
+          {searchInput && (
+            <button
+              onClick={() => {
+                setSearchInput('');
+                setSearchTerm('');
+              }}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
         </div>
         <Select value={selectedAdminFilter} onValueChange={(v) => {
           setSelectedAdminFilter(v);
