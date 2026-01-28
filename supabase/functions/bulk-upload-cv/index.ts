@@ -196,58 +196,65 @@ serve(async (req) => {
     // Generate file hash
     const fileHash = generateFileHash(file_base64);
 
-    // Step 3: Check for duplicates
+    // Step 3: Check for duplicates (only for the SAME job/role)
     const duplicateCheck: DuplicateCheckResult = { isDuplicate: false };
 
+    // Only check duplicates within the same job - different roles are allowed
     if (contactInfo.email) {
       const { data: emailMatch } = await supabase
         .from('applicants_prescreen')
-        .select('id, email')
+        .select('id, email, job_id')
         .eq('email', contactInfo.email)
+        .eq('job_id', job_id)
         .maybeSingle();
       
       if (emailMatch) {
         duplicateCheck.isDuplicate = true;
-        duplicateCheck.reason = `Duplicate email: ${contactInfo.email}`;
+        duplicateCheck.reason = `Duplicate email for this role: ${contactInfo.email}`;
       }
     }
 
     if (!duplicateCheck.isDuplicate && contactInfo.phone) {
       const { data: phoneMatch } = await supabase
         .from('applicants_prescreen')
-        .select('id, phone')
+        .select('id, phone, job_id')
         .eq('phone', contactInfo.phone)
+        .eq('job_id', job_id)
         .maybeSingle();
       
       if (phoneMatch) {
         duplicateCheck.isDuplicate = true;
-        duplicateCheck.reason = `Duplicate phone: ${contactInfo.phone}`;
+        duplicateCheck.reason = `Duplicate phone for this role: ${contactInfo.phone}`;
       }
     }
 
+    // File hash check is also scoped to the same job
     if (!duplicateCheck.isDuplicate) {
       const { data: hashMatch } = await supabase
         .from('applicants_prescreen')
-        .select('id, file_hash')
+        .select('id, file_hash, job_id')
         .eq('file_hash', fileHash)
+        .eq('job_id', job_id)
         .maybeSingle();
       
       if (hashMatch) {
         duplicateCheck.isDuplicate = true;
-        duplicateCheck.reason = 'Duplicate file (same content)';
+        duplicateCheck.reason = 'Duplicate file for this role (same content)';
       }
     }
 
+    // Name + file check is also scoped to the same job
     if (!duplicateCheck.isDuplicate && contactInfo.fullName) {
       const { data: nameMatch } = await supabase
         .from('applicants_prescreen')
-        .select('id, full_name, cv_file_url')
+        .select('id, full_name, cv_file_url, job_id')
         .ilike('full_name', contactInfo.fullName)
+        .eq('job_id', job_id)
         .maybeSingle();
       
       if (nameMatch && nameMatch.cv_file_url?.includes(file_name.split('.')[0])) {
         duplicateCheck.isDuplicate = true;
-        duplicateCheck.reason = `Duplicate name + file: ${contactInfo.fullName}`;
+        duplicateCheck.reason = `Duplicate name + file for this role: ${contactInfo.fullName}`;
       }
     }
 
