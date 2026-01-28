@@ -407,9 +407,14 @@ export const ContractorsDashboard = () => {
   const activeContractors = filteredContractors.filter(c => 
     !['terminated', 'resigned', 'rendering'].includes(c.status?.toLowerCase())
   );
-  const separatedContractors = filteredContractors.filter(c => 
-    ['terminated', 'resigned', 'rendering'].includes(c.status?.toLowerCase())
-  );
+  const separatedContractors = filteredContractors
+    .filter(c => ['terminated', 'resigned', 'rendering'].includes(c.status?.toLowerCase()))
+    .sort((a, b) => {
+      // Sort by status_changed_at descending (most recent first)
+      const dateA = a.status_changed_at ? new Date(a.status_changed_at).getTime() : 0;
+      const dateB = b.status_changed_at ? new Date(b.status_changed_at).getTime() : 0;
+      return dateB - dateA;
+    });
 
   // Summary stats
   const activeCount = contractors.filter(c => c.status === 'active').length;
