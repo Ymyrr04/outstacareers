@@ -268,6 +268,10 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  const startTime = Date.now();
+  const MAX_RUNTIME_MS = 25000; // 25 seconds max to leave buffer for cleanup
+  const BATCH_SIZE = 50; // Process 50 emails per run
+
   try {
     const gmailUser = Deno.env.get("GMAIL_USER");
     const gmailAppPassword = Deno.env.get("GMAIL_APP_PASSWORD");
@@ -284,19 +288,47 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get all applicant emails to search for
-    const { data: applicants, error: applicantsError } = await supabase
-      .from("applicants_prescreen")
-      .select("id, email");
+    // Get applicants with recent activity (sent emails in last 30 days) - more targeted approach
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const { data: recentEmailLogs, error: emailLogsError } = await supabase
+      .from("email_logs")
+      .select("applicant_id, message_id, recipient_email")
+      .gte("sent_at", thirtyDaysAgo.toISOString())
+      .not("message_id", "is", null);
 
-    if (applicantsError) {
-      throw new Error(`Failed to fetch applicants: ${applicantsError.message}`);
+    if (emailLogsError) {
+      throw new Error(`Failed to fetch email logs: ${emailLogsError.message}`);
     }
 
-    if (!applicants || applicants.length === 0) {
-      console.log("No applicants found to check replies for");
+    // Build maps for efficient lookups
+    const messageIdToApplicantMap = new Map<string, string>();
+    const emailToApplicantMap = new Map<string, string[]>();
+    const uniqueEmails = new Set<string>();
+
+    if (recentEmailLogs) {
+      for (const log of recentEmailLogs) {
+        if (log.message_id) {
+          messageIdToApplicantMap.set(log.message_id, log.applicant_id);
+        }
+        const email = log.recipient_email.toLowerCase();
+        uniqueEmails.add(email);
+        if (!emailToApplicantMap.has(email)) {
+          emailToApplicantMap.set(email, []);
+        }
+        if (!emailToApplicantMap.get(email)!.includes(log.applicant_id)) {
+          emailToApplicantMap.get(email)!.push(log.applicant_id);
+        }
+      }
+    }
+
+    console.log(`Found ${uniqueEmails.size} unique emails from recent communications`);
+    console.log(`Loaded ${messageIdToApplicantMap.size} message IDs for thread matching`);
+
+    if (uniqueEmails.size === 0) {
       return new Response(
-        JSON.stringify({ success: true, message: "No applicants to check", repliesFound: 0 }),
+        JSON.stringify({ success: true, message: "No recent emails to check", repliesFound: 0 }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
       );
     }
@@ -310,24 +342,9 @@ const handler = async (req: Request): Promise<Response> => {
       existingReplies?.map((r: { gmail_message_id: string }) => r.gmail_message_id) || []
     );
 
-    // Get all email_logs with message_id for thread matching
-    const { data: emailLogs } = await supabase
-      .from("email_logs")
-      .select("message_id, applicant_id")
-      .not("message_id", "is", null);
-    
-    // Create a map of message_id -> applicant_id for fast lookups
-    const messageIdToApplicantMap = new Map<string, string>();
-    if (emailLogs) {
-      for (const log of emailLogs) {
-        if (log.message_id) {
-          messageIdToApplicantMap.set(log.message_id, log.applicant_id);
-        }
-      }
-    }
-    console.log(`Loaded ${messageIdToApplicantMap.size} message IDs for thread matching`);
-
-    console.log(`Checking replies from ${applicants.length} applicants`);
+    // Limit to batch size for this run
+    const emailsToProcess = [...uniqueEmails].slice(0, BATCH_SIZE);
+    console.log(`Processing batch of ${emailsToProcess.length} emails (out of ${uniqueEmails.size} total)`);
 
     // Connect to Gmail via IMAP
     const client = new SimpleIMAPClient();
@@ -344,28 +361,24 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(`Mailbox has ${messageCount} messages`);
 
     const newReplies: any[] = [];
-    const readInGmailMessageIds: string[] = []; // Track emails read in Gmail to sync status
+    const readInGmailMessageIds: string[] = [];
+    let processedCount = 0;
 
-    // Create a map of email -> applicant ids for fallback matching
-    const emailToApplicantsMap = new Map<string, string[]>();
-    for (const applicant of applicants as ApplicantEmail[]) {
-      const email = applicant.email.toLowerCase();
-      if (!emailToApplicantsMap.has(email)) {
-        emailToApplicantsMap.set(email, []);
+    // Search for emails from each unique applicant email (using emailsToProcess, not all uniqueEmails)
+    for (const email of emailsToProcess) {
+      // Check if we're running out of time
+      if (Date.now() - startTime > MAX_RUNTIME_MS) {
+        console.log(`Stopping early due to time limit. Processed ${processedCount}/${emailsToProcess.length} emails`);
+        break;
       }
-      emailToApplicantsMap.get(email)!.push(applicant.id);
-    }
 
-    // Get unique emails to search
-    const uniqueEmails = [...emailToApplicantsMap.keys()];
-    console.log(`Searching for replies from ${uniqueEmails.length} unique email addresses`);
-
-    // Search for emails from each unique applicant email
-    for (const email of uniqueEmails) {
       try {
         const msgNums = await client.searchFrom(email, 30);
         
         for (const msgNum of msgNums) {
+          // Check time again before fetching each message
+          if (Date.now() - startTime > MAX_RUNTIME_MS) break;
+          
           const message = await client.fetchMessage(msgNum);
           
           if (message && message.messageId) {
@@ -391,7 +404,7 @@ const handler = async (req: Request): Promise<Response> => {
             
             // FALLBACK: If no thread match, use the first applicant with this email
             if (!matchedApplicantId) {
-              const applicantIds = emailToApplicantsMap.get(email.toLowerCase());
+              const applicantIds = emailToApplicantMap.get(email.toLowerCase());
               if (applicantIds && applicantIds.length > 0) {
                 matchedApplicantId = applicantIds[0];
                 if (applicantIds.length > 1) {
@@ -418,15 +431,17 @@ const handler = async (req: Request): Promise<Response> => {
                 in_reply_to: message.inReplyTo || null,
                 received_at: receivedAt,
                 gmail_message_id: message.messageId,
-                is_read: message.isRead, // Sync read status from Gmail
+                is_read: message.isRead,
               });
               
               existingMessageIds.add(message.messageId);
             }
           }
         }
+        processedCount++;
       } catch (err) {
         console.error(`Error searching for ${email}:`, err);
+        processedCount++;
       }
     }
 
@@ -456,7 +471,7 @@ const handler = async (req: Request): Promise<Response> => {
         .from("email_replies")
         .update({ is_read: true })
         .in('gmail_message_id', readInGmailMessageIds)
-        .eq('is_read', false) // Only update those that are unread in our system
+        .eq('is_read', false)
         .select('id');
 
       if (updateError) {
@@ -469,12 +484,16 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    const runtime = Date.now() - startTime;
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Found ${newReplies.length} new replies, synced ${readSyncCount} read statuses`,
+        message: `Processed ${processedCount}/${emailsToProcess.length} emails. Found ${newReplies.length} new replies, synced ${readSyncCount} read statuses`,
         repliesFound: newReplies.length,
-        readStatusSynced: readSyncCount
+        readStatusSynced: readSyncCount,
+        processedEmails: processedCount,
+        totalEmails: uniqueEmails.size,
+        runtimeMs: runtime
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
