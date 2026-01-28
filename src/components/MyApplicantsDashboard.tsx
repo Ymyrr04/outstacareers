@@ -131,6 +131,7 @@ export const MyApplicantsDashboard = () => {
   const [applicants, setApplicants] = useState<Applicant[]>([]);
   const [activeStatusFolder, setActiveStatusFolder] = useState<ApplicantStatusFolder>('For Review');
   const [searchTerm, setSearchTerm] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [selectedJobFilter, setSelectedJobFilter] = useState<string>('all');
   const [selectedAdminFilter, setSelectedAdminFilter] = useState<string>('all');
   const [sortOption, setSortOption] = useState<SortOption>('newest');
@@ -749,9 +750,14 @@ export const MyApplicantsDashboard = () => {
         <div className="relative flex-1 min-w-[200px] max-w-sm">
           <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
-            placeholder="Search applicants..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search applicants... (Press Enter)"
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                setSearchTerm(searchInput);
+              }
+            }}
             className="pl-9"
           />
         </div>
@@ -800,6 +806,7 @@ export const MyApplicantsDashboard = () => {
               setSelectedAdminFilter('all');
               setSelectedJobFilter('all');
               setSearchTerm('');
+              setSearchInput('');
             }}
           >
             Clear filters
