@@ -240,6 +240,7 @@ const Admin = () => {
   const [paginatedSortOption, setPaginatedSortOption] = useState<'newest' | 'score-desc' | 'score-asc' | 'starred'>('newest');
   const [activeApplicantTab, setActiveApplicantTab] = useState<'folders' | 'search'>('folders');
   const [searchFilteredApplicants, setSearchFilteredApplicants] = useState<Applicant[]>([]);
+  const [openAccordions, setOpenAccordions] = useState<string[]>([]);
   
   // Jobs filter state
   const [jobSearchTerm, setJobSearchTerm] = useState('');
@@ -346,6 +347,18 @@ const Admin = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [expandedApplicant]);
+
+  // Close accordion sections on Escape key (when no applicant is expanded)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !expandedApplicant && openAccordions.length > 0) {
+        setOpenAccordions([]);
+      }
+    };
+    
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [expandedApplicant, openAccordions]);
   
   // Show toast when background export completes
   useEffect(() => {
@@ -1914,7 +1927,7 @@ const Admin = () => {
                           </CardContent>
                         </Card>
                       ) : (
-                        <Accordion type="multiple" className="space-y-4">
+                        <Accordion type="multiple" value={openAccordions} onValueChange={setOpenAccordions} className="space-y-4">
                           {Object.entries(groupedByRole).map(([jobTitle, jobApplicants]) => {
                             const newCount = jobApplicants.filter(a => !a.details_viewed_at).length;
                             return (
