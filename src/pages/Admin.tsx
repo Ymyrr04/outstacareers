@@ -200,6 +200,7 @@ const Admin = () => {
   const [expandingApplicantId, setExpandingApplicantId] = useState<string | null>(null);
   const [downloadingCv, setDownloadingCv] = useState<string | null>(null);
   const [activeStatusFolder, setActiveStatusFolder] = useState<ApplicantStatusFolder>('For Review');
+  const [isFolderSwitching, setIsFolderSwitching] = useState(false);
   const [previewCv, setPreviewCv] = useState<{ url: string; path: string; name: string; cvText: string | null } | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
   
@@ -1795,7 +1796,12 @@ const Admin = () => {
                       </Select>
                     </div>
                 
-                    <Tabs value={activeStatusFolder} onValueChange={(v) => setActiveStatusFolder(v as ApplicantStatusFolder)} className="space-y-4">
+                    <Tabs value={activeStatusFolder} onValueChange={async (v) => {
+                      setIsFolderSwitching(true);
+                      await new Promise(resolve => setTimeout(resolve, 50));
+                      setActiveStatusFolder(v as ApplicantStatusFolder);
+                      setIsFolderSwitching(false);
+                    }} className="space-y-4">
                     <TabsList className="flex-wrap h-auto gap-0 p-1 bg-muted/50 rounded-lg">
                       {APPLICANT_STATUS_FOLDERS.map((status, index) => {
                         const count = applicants.filter(a => a.status === status).length;
@@ -1872,7 +1878,12 @@ const Admin = () => {
 
                   return (
                     <TabsContent key={status} value={status} className="space-y-4">
-                      {statusApplicants.length === 0 ? (
+                      {isFolderSwitching ? (
+                        <div className="flex items-center justify-center py-12 text-muted-foreground">
+                          <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                          Loading applicants...
+                        </div>
+                      ) : statusApplicants.length === 0 ? (
                         <Card>
                           <CardContent className="py-12 text-center">
                             <FolderOpen className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
