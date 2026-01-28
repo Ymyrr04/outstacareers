@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback, useRef, useTransition } from 'react';
+import { useState, useEffect, useMemo, useCallback, useTransition } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -44,7 +44,7 @@ export default function ApplicantSearchFilters({
   allTools,
 }: ApplicantSearchFiltersProps) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState('');
+  const [appliedSearchTerm, setAppliedSearchTerm] = useState('');
   const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [selectedTools, setSelectedTools] = useState<string[]>([]);
   const [selectedExperienceRanges, setSelectedExperienceRanges] = useState<string[]>([]);
@@ -59,34 +59,25 @@ export default function ApplicantSearchFilters({
   // Use transition for non-blocking filter updates
   const [isPending, startTransition] = useTransition();
 
-  // Debounce search term to avoid filtering on every keystroke
-  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
-  
-  useEffect(() => {
-    if (debounceTimerRef.current) {
-      clearTimeout(debounceTimerRef.current);
+  // Handle Enter key to apply search
+  const handleSearchKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      setAppliedSearchTerm(searchTerm);
     }
-    
-    debounceTimerRef.current = setTimeout(() => {
-      setDebouncedSearchTerm(searchTerm);
-    }, 1500); // 1.5 second debounce - wait for user to finish typing
-    
-    return () => {
-      if (debounceTimerRef.current) {
-        clearTimeout(debounceTimerRef.current);
-      }
-    };
-  }, [searchTerm]);
+  };
+
+  // Track if search is pending (user typed but hasn't pressed Enter)
+  const hasUnappliedSearch = searchTerm !== appliedSearchTerm && searchTerm.trim().length > 0;
 
   // Track if search/filtering is pending
-  const isSearching = isPending || (searchTerm !== debouncedSearchTerm && searchTerm.trim().length > 0);
+  const isSearching = isPending;
 
-  // Filter applicants based on all criteria (use debounced search term for performance)
+  // Filter applicants based on all criteria (use applied search term - triggered by Enter)
   const filteredApplicants = useMemo(() => {
     return applicants.filter(applicant => {
-      // Search term filter (using debounced value)
-      if (debouncedSearchTerm.trim()) {
-        const term = debouncedSearchTerm.toLowerCase().trim();
+      // Search term filter (only applied after Enter is pressed)
+      if (appliedSearchTerm.trim()) {
+        const term = appliedSearchTerm.toLowerCase().trim();
         const nameParts = applicant.full_name.toLowerCase().split(/\s+/);
         const matchesFirstName = nameParts.some(part => part.includes(term));
         const matchesLastName = nameParts.some(part => part.includes(term));
@@ -134,7 +125,7 @@ export default function ApplicantSearchFilters({
       
       return true;
     });
-  }, [applicants, debouncedSearchTerm, selectedSkills, selectedTools, selectedExperienceRanges]);
+  }, [applicants, appliedSearchTerm, selectedSkills, selectedTools, selectedExperienceRanges]);
 
   // Update parent when filters change (use startTransition for non-urgent updates)
   useEffect(() => {
@@ -145,12 +136,13 @@ export default function ApplicantSearchFilters({
 
   const clearAllFilters = () => {
     setSearchTerm('');
+    setAppliedSearchTerm('');
     setSelectedSkills([]);
     setSelectedTools([]);
     setSelectedExperienceRanges([]);
   };
 
-  const hasActiveFilters = searchTerm.trim() || selectedSkills.length > 0 || 
+  const hasActiveFilters = appliedSearchTerm.trim() || selectedSkills.length > 0 || 
                            selectedTools.length > 0 || selectedExperienceRanges.length > 0;
 
   const toggleSkill = (skill: string) => {
@@ -192,16 +184,22 @@ export default function ApplicantSearchFilters({
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           )}
           <Input
-            placeholder="Search by name, email, phone, job role, or CV content..."
+            placeholder="Search and press Enter..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10 pr-10"
+            onKeyDown={handleSearchKeyDown}
+            className={cn("pl-10", hasUnappliedSearch ? "pr-24" : "pr-10")}
           />
+          {hasUnappliedSearch && (
+            <span className="absolute right-10 top-1/2 transform -translate-y-1/2 text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+              Press Enter
+            </span>
+          )}
           {searchTerm && (
             <button
               onClick={() => {
                 setSearchTerm('');
-                setDebouncedSearchTerm('');
+                setAppliedSearchTerm('');
               }}
               className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
             >
@@ -408,10 +406,10 @@ export default function ApplicantSearchFilters({
         <div className="flex flex-wrap gap-2 items-center">
           <Filter className="w-4 h-4 text-muted-foreground" />
           
-          {searchTerm.trim() && (
+          {appliedSearchTerm.trim() && (
             <Badge variant="secondary" className="gap-1">
-              Search: "{searchTerm}"
-              <button onClick={() => setSearchTerm('')} className="ml-1 hover:text-foreground">
+              Search: "{appliedSearchTerm}"
+              <button onClick={() => { setSearchTerm(''); setAppliedSearchTerm(''); }} className="ml-1 hover:text-foreground">
                 <X className="w-3 h-3" />
               </button>
             </Badge>
