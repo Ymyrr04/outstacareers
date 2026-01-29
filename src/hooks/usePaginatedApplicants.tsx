@@ -175,13 +175,28 @@ export const usePaginatedApplicants = (options: UsePaginatedApplicantsOptions = 
         const uncachedIds = applicantIds.filter(id => !interviewSessionsCache.current[id]);
         
         if (uncachedIds.length > 0) {
+          // Fetch all sessions for these applicants, prioritizing completed ones
           const { data: sessionsData } = await supabase
             .from('interview_sessions')
             .select('*')
-            .in('applicant_id', uncachedIds);
+            .in('applicant_id', uncachedIds)
+            .order('completed_at', { ascending: false, nullsFirst: false });
           
           if (sessionsData) {
+            // Group sessions by applicant_id, prioritizing completed sessions
+            const sessionsByApplicant: Record<string, typeof sessionsData[0]> = {};
+            
             sessionsData.forEach(session => {
+              const existing = sessionsByApplicant[session.applicant_id];
+              // Prefer completed sessions over in-progress ones
+              if (!existing || 
+                  (session.status === 'completed' && existing.status !== 'completed') ||
+                  (session.status === 'completed_manual_review' && existing.status === 'in_progress')) {
+                sessionsByApplicant[session.applicant_id] = session;
+              }
+            });
+            
+            Object.values(sessionsByApplicant).forEach(session => {
               interviewSessionsCache.current[session.applicant_id] = {
                 id: session.id,
                 status: session.status,
