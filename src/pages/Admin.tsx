@@ -678,24 +678,32 @@ const Admin = () => {
       const { data: sessionsData } = await supabase
         .from('interview_sessions')
         .select('*')
-        .in('applicant_id', applicantIds);
+        .in('applicant_id', applicantIds)
+        .order('completed_at', { ascending: false, nullsFirst: false });
       
       if (sessionsData) {
+        // Group sessions by applicant_id, prioritizing completed sessions
         sessionsData.forEach(session => {
-          interviewSessions[session.applicant_id] = {
-            id: session.id,
-            status: session.status,
-            experience_score: session.experience_score,
-            technical_score: session.technical_score,
-            communication_score: session.communication_score,
-            situational_score: session.situational_score,
-            personality_score: session.personality_score,
-            overall_score: session.overall_score,
-            ai_summary: session.ai_summary,
-            ai_strengths: session.ai_strengths,
-            ai_concerns: session.ai_concerns,
-            completed_at: session.completed_at
-          };
+          const existing = interviewSessions[session.applicant_id];
+          // Prefer completed sessions over in-progress ones
+          if (!existing || 
+              (session.status === 'completed' && existing.status !== 'completed') ||
+              (session.status === 'completed_manual_review' && existing.status === 'in_progress')) {
+            interviewSessions[session.applicant_id] = {
+              id: session.id,
+              status: session.status,
+              experience_score: session.experience_score,
+              technical_score: session.technical_score,
+              communication_score: session.communication_score,
+              situational_score: session.situational_score,
+              personality_score: session.personality_score,
+              overall_score: session.overall_score,
+              ai_summary: session.ai_summary,
+              ai_strengths: session.ai_strengths,
+              ai_concerns: session.ai_concerns,
+              completed_at: session.completed_at
+            };
+          }
         });
       }
     }
