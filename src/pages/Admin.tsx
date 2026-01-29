@@ -2175,7 +2175,7 @@ const Admin = () => {
                             )}
 
                             {/* Interview Results quick link */}
-                            {applicant.interview_session?.status === 'completed' && (
+                            {(applicant.interview_session?.status === 'completed' || applicant.interview_session?.status === 'completed_manual_review') && (
                               <button
                                 onMouseDown={(e) => e.stopPropagation()}
                                 onClick={async (e) => {
