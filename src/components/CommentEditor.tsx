@@ -231,7 +231,7 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(({
           type="button"
           variant="ghost"
           size="sm"
-          className={`h-6 w-6 p-0 ${editor.isActive('bold') ? 'bg-muted' : ''}`}
+          className={`h-6 w-6 p-0 ${editor.isActive('bold') ? 'bg-primary/20 text-primary ring-1 ring-primary/30' : ''}`}
           onClick={() => editor.chain().focus().toggleBold().run()}
           disabled={disabled}
           title="Bold (Ctrl+B)"
@@ -242,7 +242,7 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(({
           type="button"
           variant="ghost"
           size="sm"
-          className={`h-6 w-6 p-0 ${editor.isActive('italic') ? 'bg-muted' : ''}`}
+          className={`h-6 w-6 p-0 ${editor.isActive('italic') ? 'bg-primary/20 text-primary ring-1 ring-primary/30' : ''}`}
           onClick={() => editor.chain().focus().toggleItalic().run()}
           disabled={disabled}
           title="Italic (Ctrl+I)"
@@ -253,7 +253,7 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(({
           type="button"
           variant="ghost"
           size="sm"
-          className={`h-6 w-6 p-0 ${editor.isActive('underline') ? 'bg-muted' : ''}`}
+          className={`h-6 w-6 p-0 ${editor.isActive('underline') ? 'bg-primary/20 text-primary ring-1 ring-primary/30' : ''}`}
           onClick={() => editor.chain().focus().toggleUnderline().run()}
           disabled={disabled}
           title="Underline (Ctrl+U)"
