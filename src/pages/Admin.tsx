@@ -212,8 +212,9 @@ const Admin = () => {
     full_name: string;
     email: string;
     phone: string;
+    whatsapp: string;
     notes: string;
-  }>({ full_name: '', email: '', phone: '', notes: '' });
+  }>({ full_name: '', email: '', phone: '', whatsapp: '', notes: '' });
   const [savingEdit, setSavingEdit] = useState(false);
   // Ref for notes editor to get value on save (avoids re-renders on keystroke)
   const notesEditorRef = useRef<ApplicantNotesEditorRef>(null);
@@ -985,13 +986,14 @@ const Admin = () => {
       full_name: applicant.full_name,
       email: applicant.email,
       phone: applicant.phone || '',
+      whatsapp: applicant.whatsapp || '',
       notes: applicant.notes || '',
     });
   };
 
   const handleCancelEdit = () => {
     setEditingApplicant(null);
-    setEditForm({ full_name: '', email: '', phone: '', notes: '' });
+    setEditForm({ full_name: '', email: '', phone: '', whatsapp: '', notes: '' });
   };
 
   const handleSaveEdit = async (applicantId: string) => {
@@ -1014,6 +1016,7 @@ const Admin = () => {
         full_name: editForm.full_name.trim(),
         email: editForm.email.trim(),
         phone: editForm.phone.trim() || null,
+        whatsapp: editForm.whatsapp.trim() || null,
         notes: notesValue.trim() || null,
       })
       .eq('id', applicantId);
@@ -1033,6 +1036,7 @@ const Admin = () => {
               full_name: editForm.full_name.trim(),
               email: editForm.email.trim(),
               phone: editForm.phone.trim() || null,
+              whatsapp: editForm.whatsapp.trim() || null,
               notes: notesValue.trim() || null,
             } 
           : a
@@ -2600,7 +2604,7 @@ const Admin = () => {
                             </div>
                             
                             {editingApplicant === applicant.id ? (
-                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                                 <div className="space-y-2">
                                   <Label htmlFor="edit-name" className="flex items-center gap-1">
                                     <User className="w-3.5 h-3.5" />
@@ -2637,6 +2641,19 @@ const Admin = () => {
                                     value={editForm.phone}
                                     onChange={(e) => setEditForm(prev => ({ ...prev, phone: e.target.value }))}
                                     placeholder="Phone number"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="edit-whatsapp" className="flex items-center gap-1">
+                                    <MessageCircle className="w-3.5 h-3.5 text-green-600" />
+                                    WhatsApp
+                                  </Label>
+                                  <Input
+                                    id="edit-whatsapp"
+                                    type="tel"
+                                    value={editForm.whatsapp}
+                                    onChange={(e) => setEditForm(prev => ({ ...prev, whatsapp: e.target.value }))}
+                                    placeholder="WhatsApp number"
                                   />
                                 </div>
                               </div>

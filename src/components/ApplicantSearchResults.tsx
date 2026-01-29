@@ -85,6 +85,7 @@ interface Applicant {
   full_name: string;
   email: string;
   phone: string | null;
+  whatsapp?: string | null;
   job_title: string;
   location: string;
   status: string;
@@ -138,7 +139,7 @@ interface ApplicantSearchResultsProps {
   onPreviewCv: (applicantId: string, cvPath: string, name: string, cvText: string | null) => void;
   onShowNotes: (id: string, name: string, notes: string) => void;
   onDownloadCv?: (applicantId: string, cvPath: string, applicantName: string) => void;
-  onUpdateApplicant?: (applicantId: string, data: { full_name: string; email: string; phone: string | null; notes: string | null }) => Promise<void>;
+  onUpdateApplicant?: (applicantId: string, data: { full_name: string; email: string; phone: string | null; whatsapp?: string | null; notes: string | null }) => Promise<void>;
   onSendInvite?: (applicant: { full_name: string; email: string; job_title: string }) => void;
   onSendEmail?: (applicant: { id: string; full_name: string; email: string; job_title: string; status: string }) => void;
   onViewHistory?: (applicant: { id: string; name: string; email: string }) => void;
@@ -173,7 +174,7 @@ export default function ApplicantSearchResults({
   downloadingCv,
 }: ApplicantSearchResultsProps) {
   const [editingApplicant, setEditingApplicant] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState({ full_name: '', email: '', phone: '', notes: '' });
+  const [editForm, setEditForm] = useState({ full_name: '', email: '', phone: '', whatsapp: '', notes: '' });
   const [savingEdit, setSavingEdit] = useState(false);
   const [activeTab, setActiveTab] = useState<string>('cv');
   
@@ -221,13 +222,14 @@ export default function ApplicantSearchResults({
       full_name: applicant.full_name,
       email: applicant.email,
       phone: applicant.phone || '',
+      whatsapp: applicant.whatsapp || '',
       notes: applicant.notes || '',
     });
   };
 
   const handleCancelEdit = () => {
     setEditingApplicant(null);
-    setEditForm({ full_name: '', email: '', phone: '', notes: '' });
+    setEditForm({ full_name: '', email: '', phone: '', whatsapp: '', notes: '' });
   };
 
   const handleSaveEdit = async (applicantId: string) => {
@@ -239,6 +241,7 @@ export default function ApplicantSearchResults({
       full_name: editForm.full_name.trim(),
       email: editForm.email.trim(),
       phone: editForm.phone.trim() || null,
+      whatsapp: editForm.whatsapp.trim() || null,
       notes: notesValue.trim() || null,
     });
     setSavingEdit(false);
@@ -886,7 +889,7 @@ export default function ApplicantSearchResults({
                   </div>
                   
                   {editingApplicant === applicant.id ? (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="edit-name" className="flex items-center gap-1">
                           <User className="w-3.5 h-3.5" />
@@ -925,9 +928,22 @@ export default function ApplicantSearchResults({
                           placeholder="Phone number"
                         />
                       </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="edit-whatsapp" className="flex items-center gap-1">
+                          <MessageCircle className="w-3.5 h-3.5 text-green-600" />
+                          WhatsApp
+                        </Label>
+                        <Input
+                          id="edit-whatsapp"
+                          type="tel"
+                          value={editForm.whatsapp}
+                          onChange={(e) => setEditForm(prev => ({ ...prev, whatsapp: e.target.value }))}
+                          placeholder="WhatsApp number"
+                        />
+                      </div>
                     </div>
                   ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                       <div className="flex items-center gap-2">
                         <User className="w-4 h-4 text-muted-foreground" />
                         <span className="text-sm">{applicant.full_name}</span>
@@ -943,6 +959,31 @@ export default function ApplicantSearchResults({
                         {applicant.phone ? (
                           <a href={`tel:${applicant.phone}`} className="text-sm text-primary hover:underline">
                             {applicant.phone}
+                          </a>
+                        ) : (
+                          <span className="text-sm text-muted-foreground">Not provided</span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <MessageCircle className="w-4 h-4 text-green-600" />
+                        {applicant.whatsapp ? (
+                          <a 
+                            href={`https://wa.me/${applicant.whatsapp.replace(/[^0-9]/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-green-600 hover:underline"
+                          >
+                            {applicant.whatsapp}
+                          </a>
+                        ) : applicant.phone ? (
+                          <a 
+                            href={`https://wa.me/${applicant.phone.replace(/[^0-9]/g, '')}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-sm text-green-600 hover:underline flex items-center gap-1"
+                          >
+                            {applicant.phone}
+                            <span className="text-xs text-muted-foreground">(phone)</span>
                           </a>
                         ) : (
                           <span className="text-sm text-muted-foreground">Not provided</span>
