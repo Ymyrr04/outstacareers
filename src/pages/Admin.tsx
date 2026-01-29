@@ -719,6 +719,15 @@ const Admin = () => {
     setApplicantsLoading(false);
   }, [toast]);
 
+  // Update a single applicant's interview session cache
+  const updateApplicantInterviewSession = useCallback((applicantId: string, session: InterviewSession) => {
+    setApplicants(prev => prev.map(app => 
+      app.id === applicantId 
+        ? { ...app, interview_session: session }
+        : app
+    ));
+  }, []);
+
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth');
@@ -2553,6 +2562,7 @@ const Admin = () => {
                               <InterviewResultsFetcher 
                                 applicantId={applicant.id}
                                 cachedSession={applicant.interview_session}
+                                onSessionFound={(session) => updateApplicantInterviewSession(applicant.id, session)}
                               />
                             </TabsContent>
                           </Tabs>
