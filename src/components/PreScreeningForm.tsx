@@ -878,7 +878,7 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
             <FileText className="w-14 h-14 text-primary mx-auto mb-3" />
             <h4 className="font-semibold text-xl">Upload Your CV</h4>
             <p className="text-base text-muted-foreground mt-1">
-              Please upload your CV in PDF format only
+              Please upload your CV in <span className="font-semibold text-primary">PDF format only</span>
             </p>
           </div>
 
@@ -922,7 +922,7 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
               <div className="space-y-2">
                 <Upload className="w-12 h-12 text-muted-foreground mx-auto" />
                 <p className="font-medium text-lg text-foreground">Click to upload your CV</p>
-                <p className="text-base text-muted-foreground">PDF format only (max 10MB)</p>
+                <p className="text-base text-muted-foreground"><span className="font-semibold text-primary">PDF format only</span> (max 10MB)</p>
               </div>
             )}
           </div>
