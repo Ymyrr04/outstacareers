@@ -60,16 +60,12 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
   const selectedJob = jobs.find(j => j.id === selectedJobId);
 
   const validateAndSetFiles = useCallback((files: File[]) => {
-    const validFiles = files.filter(file => 
-      file.type === 'application/pdf' || 
-      file.type === 'application/msword' ||
-      file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    );
+    const validFiles = files.filter(file => file.type === 'application/pdf');
     
     if (validFiles.length !== files.length) {
       toast({
-        title: 'Some files skipped',
-        description: 'Only PDF and DOC/DOCX files are accepted',
+        title: 'Invalid file type',
+        description: 'Only PDF files are accepted',
         variant: 'destructive',
       });
     }
@@ -308,7 +304,7 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
         <div className="space-y-4 flex-1 overflow-hidden flex flex-col">
           {/* Drag & Drop File Input */}
           <div className="space-y-2">
-            <Label>Select CV Files (PDF, DOC, DOCX)</Label>
+            <Label>Select CV Files (PDF only)</Label>
             <div
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
@@ -325,7 +321,7 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
               <input
                 type="file"
                 multiple
-                accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                accept=".pdf,application/pdf"
                 onChange={handleFileChange}
                 disabled={isProcessing}
                 className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
@@ -339,7 +335,7 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
                     {isDragOver ? 'Drop files here' : 'Drag & drop CV files here'}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    or click to browse • PDF, DOC, DOCX
+                    or click to browse • PDF only
                   </p>
                 </div>
               </div>

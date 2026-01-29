@@ -253,17 +253,11 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Validate file type
-    const allowedTypes = [
-      'application/pdf',
-      'application/msword',
-      'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
-    ];
-    
-    if (!allowedTypes.includes(file.type)) {
+    // Validate file type - PDF only
+    if (file.type !== 'application/pdf') {
       toast({
         title: "Invalid file type",
-        description: "Please upload a PDF or DOC/DOCX file.",
+        description: "Please upload your CV in PDF format only.",
         variant: "destructive",
       });
       return;
@@ -884,7 +878,7 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
             <FileText className="w-14 h-14 text-primary mx-auto mb-3" />
             <h4 className="font-semibold text-xl">Upload Your CV</h4>
             <p className="text-base text-muted-foreground mt-1">
-              Please upload your CV in PDF or DOC/DOCX format
+              Please upload your CV in PDF format only
             </p>
           </div>
 
@@ -910,7 +904,7 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+              accept=".pdf,application/pdf"
               onChange={handleFileChange}
               className="hidden"
             />
@@ -928,7 +922,7 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
               <div className="space-y-2">
                 <Upload className="w-12 h-12 text-muted-foreground mx-auto" />
                 <p className="font-medium text-lg text-foreground">Click to upload your CV</p>
-                <p className="text-base text-muted-foreground">PDF, DOC, or DOCX (max 10MB)</p>
+                <p className="text-base text-muted-foreground">PDF format only (max 10MB)</p>
               </div>
             )}
           </div>
