@@ -231,7 +231,7 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(({
           type="button"
           variant="ghost"
           size="sm"
-          className={`h-6 w-6 p-0 ${editor.isActive('bold') ? 'bg-primary/20 text-primary ring-1 ring-primary/30' : ''}`}
+          className={`h-6 w-6 p-0 ${editor.isActive('bold') ? 'bg-primary text-primary-foreground' : ''}`}
           onClick={() => editor.chain().focus().toggleBold().run()}
           disabled={disabled}
           title="Bold (Ctrl+B)"
@@ -242,7 +242,7 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(({
           type="button"
           variant="ghost"
           size="sm"
-          className={`h-6 w-6 p-0 ${editor.isActive('italic') ? 'bg-primary/20 text-primary ring-1 ring-primary/30' : ''}`}
+          className={`h-6 w-6 p-0 ${editor.isActive('italic') ? 'bg-primary text-primary-foreground' : ''}`}
           onClick={() => editor.chain().focus().toggleItalic().run()}
           disabled={disabled}
           title="Italic (Ctrl+I)"
@@ -253,7 +253,7 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(({
           type="button"
           variant="ghost"
           size="sm"
-          className={`h-6 w-6 p-0 ${editor.isActive('underline') ? 'bg-primary/20 text-primary ring-1 ring-primary/30' : ''}`}
+          className={`h-6 w-6 p-0 ${editor.isActive('underline') ? 'bg-primary text-primary-foreground' : ''}`}
           onClick={() => editor.chain().focus().toggleUnderline().run()}
           disabled={disabled}
           title="Underline (Ctrl+U)"
@@ -267,7 +267,7 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(({
           type="button"
           variant="ghost"
           size="sm"
-          className={`h-6 w-6 p-0 ${editor.isActive('bulletList') ? 'bg-muted' : ''}`}
+          className={`h-6 w-6 p-0 ${editor.isActive('bulletList') ? 'bg-primary text-primary-foreground' : ''}`}
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           disabled={disabled}
           title="Bullet List"
@@ -278,7 +278,7 @@ export const CommentEditor = forwardRef<CommentEditorRef, CommentEditorProps>(({
           type="button"
           variant="ghost"
           size="sm"
-          className={`h-6 w-6 p-0 ${editor.isActive('orderedList') ? 'bg-muted' : ''}`}
+          className={`h-6 w-6 p-0 ${editor.isActive('orderedList') ? 'bg-primary text-primary-foreground' : ''}`}
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           disabled={disabled}
           title="Numbered List"
