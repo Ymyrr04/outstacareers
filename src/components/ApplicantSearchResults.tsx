@@ -669,14 +669,14 @@ export default function ApplicantSearchResults({
                       <Star className="w-4 h-4" />
                       CV Assessment
                       {applicant.total_score !== null && (
-                        <Badge variant="secondary" className="ml-1">{applicant.total_score}/100</Badge>
+                        <Badge className="ml-1 bg-blue-600 text-white hover:bg-blue-600">{applicant.total_score}/100</Badge>
                       )}
                     </TabsTrigger>
                     <TabsTrigger value="interview" className="flex items-center gap-2">
                       <ClipboardList className="w-4 h-4" />
                       Interview Results
-                      {applicant.interview_session?.status === 'completed' && applicant.interview_session.overall_score !== null && (
-                        <Badge variant="secondary" className="ml-1 bg-purple-100 text-purple-700">{applicant.interview_session.overall_score}/100</Badge>
+                      {(applicant.interview_session?.status === 'completed' || applicant.interview_session?.status === 'completed_manual_review') && applicant.interview_session.overall_score !== null && (
+                        <Badge className="ml-1 bg-purple-600 text-white hover:bg-purple-600">{applicant.interview_session.overall_score}/100</Badge>
                       )}
                     </TabsTrigger>
                   </TabsList>
