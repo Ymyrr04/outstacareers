@@ -500,7 +500,7 @@ export default function ApplicantSearchResults({
                   )}
 
                   {/* Interview Results quick link */}
-                  {applicant.interview_session?.status === 'completed' && (
+                  {(applicant.interview_session?.status === 'completed' || applicant.interview_session?.status === 'completed_manual_review') && (
                     <button
                       onClick={() => {
                         setActiveTab('interview');
