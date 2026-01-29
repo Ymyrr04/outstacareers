@@ -312,7 +312,7 @@ export function WysiwygEditor({
             type="button"
             variant="ghost"
             size="sm"
-            className={`h-7 w-7 p-0 ${editor.isActive('bold') ? 'bg-muted' : ''}`}
+            className={`h-7 w-7 p-0 ${editor.isActive('bold') ? 'bg-primary text-primary-foreground' : ''}`}
             onClick={() => editor.chain().focus().toggleBold().run()}
             title="Bold"
           >
@@ -322,7 +322,7 @@ export function WysiwygEditor({
             type="button"
             variant="ghost"
             size="sm"
-            className={`h-7 w-7 p-0 ${editor.isActive('italic') ? 'bg-muted' : ''}`}
+            className={`h-7 w-7 p-0 ${editor.isActive('italic') ? 'bg-primary text-primary-foreground' : ''}`}
             onClick={() => editor.chain().focus().toggleItalic().run()}
             title="Italic"
           >
@@ -332,7 +332,7 @@ export function WysiwygEditor({
             type="button"
             variant="ghost"
             size="sm"
-            className={`h-7 w-7 p-0 ${editor.isActive('underline') ? 'bg-muted' : ''}`}
+            className={`h-7 w-7 p-0 ${editor.isActive('underline') ? 'bg-primary text-primary-foreground' : ''}`}
             onClick={() => editor.chain().focus().toggleUnderline().run()}
             title="Underline"
           >
@@ -343,7 +343,7 @@ export function WysiwygEditor({
             type="button"
             variant="ghost"
             size="sm"
-            className={`h-7 w-7 p-0 ${editor.isActive('bulletList') ? 'bg-muted' : ''}`}
+            className={`h-7 w-7 p-0 ${editor.isActive('bulletList') ? 'bg-primary text-primary-foreground' : ''}`}
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             title="Bullet List"
           >
@@ -353,7 +353,7 @@ export function WysiwygEditor({
             type="button"
             variant="ghost"
             size="sm"
-            className={`h-7 w-7 p-0 ${editor.isActive('orderedList') ? 'bg-muted' : ''}`}
+            className={`h-7 w-7 p-0 ${editor.isActive('orderedList') ? 'bg-primary text-primary-foreground' : ''}`}
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             title="Numbered List"
           >
@@ -364,7 +364,7 @@ export function WysiwygEditor({
             type="button"
             variant="ghost"
             size="sm"
-            className={`h-7 px-2 gap-1 ${editor.isActive('link') ? 'bg-muted' : ''}`}
+            className={`h-7 px-2 gap-1 ${editor.isActive('link') ? 'bg-primary text-primary-foreground' : ''}`}
             onClick={() => setLinkPopoverOpen(true)}
             title="Link"
           >
@@ -380,7 +380,7 @@ export function WysiwygEditor({
           type="button"
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('bold') ? 'bg-muted' : ''}`}
+          className={`h-8 w-8 p-0 ${editor.isActive('bold') ? 'bg-primary text-primary-foreground' : ''}`}
           onClick={() => editor.chain().focus().toggleBold().run()}
           disabled={disabled}
           title="Bold (Ctrl+B)"
@@ -391,7 +391,7 @@ export function WysiwygEditor({
           type="button"
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('italic') ? 'bg-muted' : ''}`}
+          className={`h-8 w-8 p-0 ${editor.isActive('italic') ? 'bg-primary text-primary-foreground' : ''}`}
           onClick={() => editor.chain().focus().toggleItalic().run()}
           disabled={disabled}
           title="Italic (Ctrl+I)"
@@ -402,7 +402,7 @@ export function WysiwygEditor({
           type="button"
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('underline') ? 'bg-muted' : ''}`}
+          className={`h-8 w-8 p-0 ${editor.isActive('underline') ? 'bg-primary text-primary-foreground' : ''}`}
           onClick={() => editor.chain().focus().toggleUnderline().run()}
           disabled={disabled}
           title="Underline (Ctrl+U)"
@@ -416,7 +416,7 @@ export function WysiwygEditor({
           type="button"
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('bulletList') ? 'bg-muted' : ''}`}
+          className={`h-8 w-8 p-0 ${editor.isActive('bulletList') ? 'bg-primary text-primary-foreground' : ''}`}
           onClick={() => editor.chain().focus().toggleBulletList().run()}
           disabled={disabled}
           title="Bullet List"
@@ -427,7 +427,7 @@ export function WysiwygEditor({
           type="button"
           variant="ghost"
           size="sm"
-          className={`h-8 w-8 p-0 ${editor.isActive('orderedList') ? 'bg-muted' : ''}`}
+          className={`h-8 w-8 p-0 ${editor.isActive('orderedList') ? 'bg-primary text-primary-foreground' : ''}`}
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
           disabled={disabled}
           title="Numbered List"
@@ -443,7 +443,7 @@ export function WysiwygEditor({
               type="button"
               variant="ghost"
               size="sm"
-              className={`h-8 px-2 gap-1 ${editor.isActive('link') ? 'bg-muted' : ''}`}
+              className={`h-8 px-2 gap-1 ${editor.isActive('link') ? 'bg-primary text-primary-foreground' : ''}`}
               disabled={disabled}
               title="Insert Link (Ctrl+K)"
             >
