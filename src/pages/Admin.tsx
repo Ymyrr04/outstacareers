@@ -2069,18 +2069,35 @@ const Admin = () => {
                                 {applicant.ranking_status}
                               </Badge>
                             )}
-                            {/* CV Score */}
-                            {applicant.total_score !== null && (
-                              <Badge variant="outline" className="font-mono bg-purple-50 border-purple-300 text-purple-700 dark:bg-purple-900/50 dark:border-purple-600 dark:text-purple-200">
-                                CV: {applicant.total_score}/100
-                              </Badge>
-                            )}
-                            {/* Interview Score */}
-                            {(applicant.interview_session?.status === 'completed' || applicant.interview_session?.status === 'completed_manual_review') && applicant.interview_session?.overall_score != null && (
-                              <Badge variant="outline" className="font-mono bg-purple-50 border-purple-300 text-purple-700 dark:bg-purple-900/50 dark:border-purple-600 dark:text-purple-200">
-                                Interview: {applicant.interview_session.overall_score}/100
-                              </Badge>
-                            )}
+                            {/* Overall Score - Average of CV and Interview */}
+                            {(() => {
+                              const cvScore = applicant.total_score;
+                              const interviewScore = (applicant.interview_session?.status === 'completed' || applicant.interview_session?.status === 'completed_manual_review') 
+                                ? applicant.interview_session?.overall_score 
+                                : null;
+                              
+                              if (cvScore !== null && interviewScore !== null) {
+                                const avgScore = Math.round((cvScore + interviewScore) / 2);
+                                return (
+                                  <Badge variant="outline" className="font-mono bg-purple-50 border-purple-300 text-purple-700 dark:bg-purple-900/50 dark:border-purple-600 dark:text-purple-200">
+                                    Overall Score: {avgScore}/100
+                                  </Badge>
+                                );
+                              } else if (cvScore !== null) {
+                                return (
+                                  <Badge variant="outline" className="font-mono bg-purple-50 border-purple-300 text-purple-700 dark:bg-purple-900/50 dark:border-purple-600 dark:text-purple-200">
+                                    CV: {cvScore}/100
+                                  </Badge>
+                                );
+                              } else if (interviewScore !== null) {
+                                return (
+                                  <Badge variant="outline" className="font-mono bg-purple-50 border-purple-300 text-purple-700 dark:bg-purple-900/50 dark:border-purple-600 dark:text-purple-200">
+                                    Interview: {interviewScore}/100
+                                  </Badge>
+                                );
+                              }
+                              return null;
+                            })()}
                           </div>
                           <CopyableText text={applicant.email} className="text-sm text-muted-foreground hover:underline" />
                           <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
