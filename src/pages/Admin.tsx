@@ -2069,30 +2069,20 @@ const Admin = () => {
                                 {applicant.ranking_status}
                               </Badge>
                             )}
-                            {/* Overall Score - Average of CV and Interview */}
+                            {/* Overall Score - Always average of CV (or 0) and Interview (or 0) */}
                             {(() => {
-                              const cvScore = applicant.total_score;
+                              const cvScore = applicant.total_score ?? 0;
                               const interviewScore = (applicant.interview_session?.status === 'completed' || applicant.interview_session?.status === 'completed_manual_review') 
-                                ? applicant.interview_session?.overall_score 
-                                : null;
+                                ? (applicant.interview_session?.overall_score ?? 0)
+                                : 0;
                               
-                              if (cvScore !== null && interviewScore !== null) {
+                              // Only show if at least one assessment exists
+                              if (applicant.total_score !== null || 
+                                  ((applicant.interview_session?.status === 'completed' || applicant.interview_session?.status === 'completed_manual_review') && applicant.interview_session?.overall_score != null)) {
                                 const avgScore = Math.round((cvScore + interviewScore) / 2);
                                 return (
                                   <Badge variant="outline" className="font-mono bg-purple-50 border-purple-300 text-purple-700 dark:bg-purple-900/50 dark:border-purple-600 dark:text-purple-200">
                                     Overall Score: {avgScore}/100
-                                  </Badge>
-                                );
-                              } else if (cvScore !== null) {
-                                return (
-                                  <Badge variant="outline" className="font-mono bg-purple-50 border-purple-300 text-purple-700 dark:bg-purple-900/50 dark:border-purple-600 dark:text-purple-200">
-                                    CV: {cvScore}/100
-                                  </Badge>
-                                );
-                              } else if (interviewScore !== null) {
-                                return (
-                                  <Badge variant="outline" className="font-mono bg-purple-50 border-purple-300 text-purple-700 dark:bg-purple-900/50 dark:border-purple-600 dark:text-purple-200">
-                                    Interview: {interviewScore}/100
                                   </Badge>
                                 );
                               }
