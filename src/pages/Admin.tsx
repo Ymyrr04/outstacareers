@@ -2071,7 +2071,7 @@ const Admin = () => {
                             )}
                             {/* CV Score */}
                             {applicant.total_score !== null && (
-                              <Badge variant="outline" className="font-mono">
+                              <Badge variant="outline" className="font-mono bg-purple-50 border-purple-300 text-purple-700 dark:bg-purple-900/50 dark:border-purple-600 dark:text-purple-200">
                                 CV: {applicant.total_score}/100
                               </Badge>
                             )}
