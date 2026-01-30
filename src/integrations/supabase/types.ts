@@ -1062,6 +1062,7 @@ export type Database = {
           created_at: string
           id: string
           paste_detected: boolean | null
+          pasted_content: string | null
           question_id: string
           selected_option_id: string | null
           session_id: string
@@ -1076,6 +1077,7 @@ export type Database = {
           created_at?: string
           id?: string
           paste_detected?: boolean | null
+          pasted_content?: string | null
           question_id: string
           selected_option_id?: string | null
           session_id: string
@@ -1090,6 +1092,7 @@ export type Database = {
           created_at?: string
           id?: string
           paste_detected?: boolean | null
+          pasted_content?: string | null
           question_id?: string
           selected_option_id?: string | null
           session_id?: string
