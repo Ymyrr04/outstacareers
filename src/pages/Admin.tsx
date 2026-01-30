@@ -670,42 +670,57 @@ const Admin = () => {
       return;
     }
 
-    // Fetch interview sessions for all applicants
+    // Fetch interview sessions for all applicants in chunks to avoid URL length limits
     const applicantIds = (applicantsData || []).map(a => a.id);
     let interviewSessions: Record<string, InterviewSession> = {};
     
     if (applicantIds.length > 0) {
-      const { data: sessionsData } = await supabase
-        .from('interview_sessions')
-        .select('*')
-        .in('applicant_id', applicantIds)
-        .order('completed_at', { ascending: false, nullsFirst: false });
-      
-      if (sessionsData) {
-        // Group sessions by applicant_id, prioritizing completed sessions
-        sessionsData.forEach(session => {
-          const existing = interviewSessions[session.applicant_id];
-          // Prefer completed sessions over in-progress ones
-          if (!existing || 
-              (session.status === 'completed' && existing.status !== 'completed') ||
-              (session.status === 'completed_manual_review' && existing.status === 'in_progress')) {
-            interviewSessions[session.applicant_id] = {
-              id: session.id,
-              status: session.status,
-              experience_score: session.experience_score,
-              technical_score: session.technical_score,
-              communication_score: session.communication_score,
-              situational_score: session.situational_score,
-              personality_score: session.personality_score,
-              overall_score: session.overall_score,
-              ai_summary: session.ai_summary,
-              ai_strengths: session.ai_strengths,
-              ai_concerns: session.ai_concerns,
-              completed_at: session.completed_at
-            };
-          }
-        });
+      // Chunk IDs into batches of 100 to avoid URL length limits
+      const CHUNK_SIZE = 100;
+      const chunks: string[][] = [];
+      for (let i = 0; i < applicantIds.length; i += CHUNK_SIZE) {
+        chunks.push(applicantIds.slice(i, i + CHUNK_SIZE));
       }
+      
+      // Fetch sessions for all chunks in parallel
+      const sessionPromises = chunks.map(chunk =>
+        supabase
+          .from('interview_sessions')
+          .select('*')
+          .in('applicant_id', chunk)
+          .order('completed_at', { ascending: false, nullsFirst: false })
+      );
+      
+      const results = await Promise.all(sessionPromises);
+      
+      // Combine all session data
+      results.forEach(({ data: sessionsData }) => {
+        if (sessionsData) {
+          // Group sessions by applicant_id, prioritizing completed sessions
+          sessionsData.forEach(session => {
+            const existing = interviewSessions[session.applicant_id];
+            // Prefer completed sessions over in-progress ones
+            if (!existing || 
+                (session.status === 'completed' && existing.status !== 'completed') ||
+                (session.status === 'completed_manual_review' && existing.status === 'in_progress')) {
+              interviewSessions[session.applicant_id] = {
+                id: session.id,
+                status: session.status,
+                experience_score: session.experience_score,
+                technical_score: session.technical_score,
+                communication_score: session.communication_score,
+                situational_score: session.situational_score,
+                personality_score: session.personality_score,
+                overall_score: session.overall_score,
+                ai_summary: session.ai_summary,
+                ai_strengths: session.ai_strengths,
+                ai_concerns: session.ai_concerns,
+                completed_at: session.completed_at
+              };
+            }
+          });
+        }
+      });
     }
 
     // Combine applicants with their interview sessions
