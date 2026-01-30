@@ -2076,8 +2076,8 @@ const Admin = () => {
                               </Badge>
                             )}
                             {/* Interview Score */}
-                            {applicant.interview_session?.status === 'completed' && applicant.interview_session.overall_score !== null && (
-                              <Badge variant="outline" className="font-mono bg-purple-50 border-purple-300 text-purple-700">
+                            {(applicant.interview_session?.status === 'completed' || applicant.interview_session?.status === 'completed_manual_review') && applicant.interview_session?.overall_score != null && (
+                              <Badge variant="outline" className="font-mono bg-purple-50 border-purple-300 text-purple-700 dark:bg-purple-900/50 dark:border-purple-600 dark:text-purple-200">
                                 Interview: {applicant.interview_session.overall_score}/100
                               </Badge>
                             )}
