@@ -57,6 +57,7 @@ interface Answer {
   selected_option_id?: string;
   options?: MultipleChoiceOption[];
   paste_detected?: boolean;
+  pasted_content?: string | null;
 }
 
 type InterviewStep = 'loading' | 'voice' | 'text' | 'multiple_choice' | 'submitting' | 'complete' | 'no_questions' | 'error';
@@ -409,7 +410,8 @@ export function InterviewSession({
           voice_duration_seconds: answer.voice_duration_seconds || null,
           text_answer: answer.text_answer || null,
           selected_option_id: answer.selected_option_id || null,
-          paste_detected: answer.paste_detected || false
+          paste_detected: answer.paste_detected || false,
+          pasted_content: answer.pasted_content || null
         });
 
       if (answerError) {
@@ -442,7 +444,7 @@ export function InterviewSession({
     moveToNextQuestion();
   };
 
-  const handleTextAnswer = async (textAnswer: string, pasteDetected: boolean = false) => {
+  const handleTextAnswer = async (textAnswer: string, pasteDetected: boolean = false, pastedContent: string | null = null) => {
     if (!currentQuestion) return;
 
     const answer: Answer = {
@@ -451,7 +453,8 @@ export function InterviewSession({
       question_context: currentQuestion.question_context,
       section: 'text',
       text_answer: textAnswer,
-      paste_detected: pasteDetected
+      paste_detected: pasteDetected,
+      pasted_content: pastedContent
     };
 
     // Save immediately to database to prevent data loss

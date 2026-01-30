@@ -13,7 +13,7 @@ interface TextQuestionStepProps {
   question: TextQuestion;
   questionNumber: number;
   totalQuestions: number;
-  onAnswer: (textAnswer: string, pasteDetected: boolean) => void;
+  onAnswer: (textAnswer: string, pasteDetected: boolean, pastedContent: string | null) => void;
 }
 
 export function TextQuestionStep({
@@ -24,17 +24,24 @@ export function TextQuestionStep({
 }: TextQuestionStepProps) {
   const [answer, setAnswer] = useState("");
   const [pasteDetected, setPasteDetected] = useState(false);
+  const [pastedContent, setPastedContent] = useState<string | null>(null);
 
   const handleSubmit = () => {
     if (answer.trim().length >= 50) {
-      onAnswer(answer.trim(), pasteDetected);
+      onAnswer(answer.trim(), pasteDetected, pastedContent);
       setAnswer("");
       setPasteDetected(false);
+      setPastedContent(null);
     }
   };
 
-  const handlePaste = () => {
-    setPasteDetected(true);
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const text = e.clipboardData.getData('text');
+    if (text) {
+      setPasteDetected(true);
+      // Accumulate pasted content if user pastes multiple times
+      setPastedContent(prev => prev ? `${prev}\n---\n${text}` : text);
+    }
   };
 
   const wordCount = answer.trim().split(/\s+/).filter(Boolean).length;

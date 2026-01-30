@@ -39,6 +39,7 @@ interface InterviewAnswer {
   ai_feedback: string | null;
   answered_at: string;
   paste_detected: boolean | null;
+  pasted_content: string | null;
 }
 
 interface InterviewResultsViewProps {
@@ -56,6 +57,54 @@ interface InterviewResultsViewProps {
     status: string;
     completed_at: string | null;
   };
+}
+
+// Helper component to highlight pasted content within text
+function HighlightedText({ text, pastedContent }: { text: string; pastedContent: string | null }) {
+  if (!pastedContent || !text) {
+    return <p className="text-sm whitespace-pre-wrap">{text}</p>;
+  }
+
+  // Split pasted content by separator (in case of multiple pastes)
+  const pastedParts = pastedContent.split('\n---\n');
+  
+  // Create a highlighted version by finding and marking pasted segments
+  let result: React.ReactNode[] = [];
+  let remainingText = text;
+  let keyIndex = 0;
+
+  // For each pasted part, try to find it in the text and highlight
+  for (const pastedPart of pastedParts) {
+    const trimmedPaste = pastedPart.trim();
+    if (!trimmedPaste) continue;
+    
+    const index = remainingText.indexOf(trimmedPaste);
+    if (index !== -1) {
+      // Add text before the paste
+      if (index > 0) {
+        result.push(<span key={keyIndex++}>{remainingText.slice(0, index)}</span>);
+      }
+      // Add highlighted pasted text
+      result.push(
+        <mark key={keyIndex++} className="bg-amber-200 dark:bg-amber-800/50 px-0.5 rounded">
+          {trimmedPaste}
+        </mark>
+      );
+      remainingText = remainingText.slice(index + trimmedPaste.length);
+    }
+  }
+
+  // Add any remaining text
+  if (remainingText) {
+    result.push(<span key={keyIndex++}>{remainingText}</span>);
+  }
+
+  // If no highlights were made (paste was modified), show regular text with a note
+  if (result.length === 0 || (result.length === 1 && typeof result[0] === 'string')) {
+    return <p className="text-sm whitespace-pre-wrap">{text}</p>;
+  }
+
+  return <p className="text-sm whitespace-pre-wrap">{result}</p>;
 }
 
 export function InterviewResultsView({ sessionId, session }: InterviewResultsViewProps) {
@@ -423,7 +472,10 @@ export function InterviewResultsView({ sessionId, session }: InterviewResultsVie
                               </div>
                             )}
                             <div className="p-3 bg-background rounded-lg">
-                              <p className="text-sm whitespace-pre-wrap">{answer.text_answer}</p>
+                              <HighlightedText 
+                                text={answer.text_answer} 
+                                pastedContent={answer.pasted_content} 
+                              />
                             </div>
                           </div>
                         ) : (
