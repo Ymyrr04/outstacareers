@@ -175,44 +175,57 @@ export const usePaginatedApplicants = (options: UsePaginatedApplicantsOptions = 
         const uncachedIds = applicantIds.filter(id => !interviewSessionsCache.current[id]);
         
         if (uncachedIds.length > 0) {
-          // Fetch all sessions for these applicants, prioritizing completed ones
-          const { data: sessionsData } = await supabase
-            .from('interview_sessions')
-            .select('*')
-            .in('applicant_id', uncachedIds)
-            .order('completed_at', { ascending: false, nullsFirst: false });
-          
-          if (sessionsData) {
-            // Group sessions by applicant_id, prioritizing completed sessions
-            const sessionsByApplicant: Record<string, typeof sessionsData[0]> = {};
-            
-            sessionsData.forEach(session => {
-              const existing = sessionsByApplicant[session.applicant_id];
-              // Prefer completed sessions over in-progress ones
-              if (!existing || 
-                  (session.status === 'completed' && existing.status !== 'completed') ||
-                  (session.status === 'completed_manual_review' && existing.status === 'in_progress')) {
-                sessionsByApplicant[session.applicant_id] = session;
-              }
-            });
-            
-            Object.values(sessionsByApplicant).forEach(session => {
-              interviewSessionsCache.current[session.applicant_id] = {
-                id: session.id,
-                status: session.status,
-                experience_score: session.experience_score,
-                technical_score: session.technical_score,
-                communication_score: session.communication_score,
-                situational_score: session.situational_score,
-                personality_score: session.personality_score,
-                overall_score: session.overall_score,
-                ai_summary: session.ai_summary,
-                ai_strengths: session.ai_strengths,
-                ai_concerns: session.ai_concerns,
-                completed_at: session.completed_at
-              };
-            });
+          // Chunk IDs into batches of 100 to avoid URL length limits
+          const CHUNK_SIZE = 100;
+          const chunks: string[][] = [];
+          for (let i = 0; i < uncachedIds.length; i += CHUNK_SIZE) {
+            chunks.push(uncachedIds.slice(i, i + CHUNK_SIZE));
           }
+          
+          // Fetch sessions for all chunks in parallel
+          const sessionPromises = chunks.map(chunk =>
+            supabase
+              .from('interview_sessions')
+              .select('*')
+              .in('applicant_id', chunk)
+              .order('completed_at', { ascending: false, nullsFirst: false })
+          );
+          
+          const results = await Promise.all(sessionPromises);
+          
+          // Group sessions by applicant_id, prioritizing completed sessions
+          const sessionsByApplicant: Record<string, any> = {};
+          
+          results.forEach(({ data: sessionsData }) => {
+            if (sessionsData) {
+              sessionsData.forEach(session => {
+                const existing = sessionsByApplicant[session.applicant_id];
+                // Prefer completed sessions over in-progress ones
+                if (!existing || 
+                    (session.status === 'completed' && existing.status !== 'completed') ||
+                    (session.status === 'completed_manual_review' && existing.status === 'in_progress')) {
+                  sessionsByApplicant[session.applicant_id] = session;
+                }
+              });
+            }
+          });
+          
+          Object.values(sessionsByApplicant).forEach(session => {
+            interviewSessionsCache.current[session.applicant_id] = {
+              id: session.id,
+              status: session.status,
+              experience_score: session.experience_score,
+              technical_score: session.technical_score,
+              communication_score: session.communication_score,
+              situational_score: session.situational_score,
+              personality_score: session.personality_score,
+              overall_score: session.overall_score,
+              ai_summary: session.ai_summary,
+              ai_strengths: session.ai_strengths,
+              ai_concerns: session.ai_concerns,
+              completed_at: session.completed_at
+            };
+          });
         }
       }
 
