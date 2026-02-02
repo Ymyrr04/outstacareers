@@ -121,11 +121,15 @@ export const PaginatedFolderView = ({
     const cvScore = applicant.total_score;
     const interviewScore = applicant.interview_session?.overall_score;
     
-    if (cvScore !== null && interviewScore !== null) {
+    // Check for valid numeric scores (not null and not NaN)
+    const hasCvScore = cvScore !== null && !isNaN(cvScore);
+    const hasInterviewScore = interviewScore !== null && !isNaN(interviewScore);
+    
+    if (hasCvScore && hasInterviewScore) {
       return { score: Math.round((cvScore + interviewScore) / 2), label: 'Overall' };
     }
-    if (cvScore !== null) return { score: cvScore, label: 'CV' };
-    if (interviewScore !== null) return { score: interviewScore, label: 'Interview' };
+    if (hasCvScore) return { score: cvScore, label: 'CV' };
+    if (hasInterviewScore) return { score: interviewScore, label: 'Interview' };
     return null;
   };
 

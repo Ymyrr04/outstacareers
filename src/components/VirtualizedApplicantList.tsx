@@ -5,7 +5,8 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Star, Eye, Trash2, GripVertical, Loader2, FileText, Download, Mail, History, Send, Phone, MessageCircle, MapPin, Clock, Check, X } from 'lucide-react';
+import { Star, Eye, Trash2, GripVertical, Loader2, FileText, Download, Mail, History, Send, Phone, MessageCircle, MapPin, Clock, Check, X, RefreshCw } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format } from 'date-fns';
 import { ApplicantSourceBadge } from '@/components/ApplicantSourceBadge';
 import { CopyableText } from '@/components/CopyableText';
@@ -26,10 +27,12 @@ interface VirtualizedApplicantListProps {
   onSendEmail: (applicant: { id: string; full_name: string; email: string; job_title: string; status: string }) => void;
   onViewHistory: (applicant: { id: string; name: string; email: string }) => void;
   onSendInvite: (applicant: { full_name: string; email: string; job_title: string }) => void;
+  onRescoreCv: (id: string) => void;
   expandedApplicant: string | null;
   expandingApplicantId: string | null;
   loadingPreview: boolean;
   downloadingCv: string | null;
+  rescoring: string | null;
   unreadCounts: Record<string, number>;
   totalCount: number;
 }
@@ -52,10 +55,12 @@ export const VirtualizedApplicantList = ({
   onSendEmail,
   onViewHistory,
   onSendInvite,
+  onRescoreCv,
   expandedApplicant,
   expandingApplicantId,
   loadingPreview,
   downloadingCv,
+  rescoring,
   unreadCounts,
   totalCount,
 }: VirtualizedApplicantListProps) => {
@@ -96,11 +101,15 @@ export const VirtualizedApplicantList = ({
     const cvScore = applicant.total_score;
     const interviewScore = applicant.interview_session?.overall_score;
     
-    if (cvScore !== null && interviewScore !== null) {
+    // Check for valid numeric scores (not null and not NaN)
+    const hasCvScore = cvScore !== null && !isNaN(cvScore);
+    const hasInterviewScore = interviewScore !== null && !isNaN(interviewScore);
+    
+    if (hasCvScore && hasInterviewScore) {
       return { score: Math.round((cvScore + interviewScore) / 2), label: 'Overall' };
     }
-    if (cvScore !== null) return { score: cvScore, label: 'CV' };
-    if (interviewScore !== null) return { score: interviewScore, label: 'Interview' };
+    if (hasCvScore) return { score: cvScore, label: 'CV' };
+    if (hasInterviewScore) return { score: interviewScore, label: 'Interview' };
     return null;
   };
 
@@ -196,11 +205,38 @@ export const VirtualizedApplicantList = ({
                           {isNew && (
                             <Badge className="bg-amber-500 text-white text-xs">NEW</Badge>
                           )}
-                          {scoreDisplay && (
+                          {scoreDisplay ? (
                             <Badge className={`${getScoreColor(scoreDisplay.score)} text-white text-xs`}>
                               {scoreDisplay.label}: {scoreDisplay.score}
                             </Badge>
-                          )}
+                          ) : applicant.cv_file_url ? (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    className="h-5 px-2 text-xs gap-1"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      onRescoreCv(applicant.id);
+                                    }}
+                                    disabled={rescoring === applicant.id}
+                                  >
+                                    {rescoring === applicant.id ? (
+                                      <Loader2 className="w-3 h-3 animate-spin" />
+                                    ) : (
+                                      <RefreshCw className="w-3 h-3" />
+                                    )}
+                                    Score
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>CV needs scoring. Click to process.</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          ) : null}
                           {applicant.job_source && (
                             <ApplicantSourceBadge source={applicant.job_source} />
                           )}

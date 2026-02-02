@@ -201,6 +201,7 @@ const Admin = () => {
   const [expandedApplicant, setExpandedApplicant] = useState<string | null>(null);
   const [expandingApplicantId, setExpandingApplicantId] = useState<string | null>(null);
   const [downloadingCv, setDownloadingCv] = useState<string | null>(null);
+  const [rescoring, setRescoring] = useState<string | null>(null);
   const [activeStatusFolder, setActiveStatusFolder] = useState<ApplicantStatusFolder>('For Review');
   const [isFolderSwitching, setIsFolderSwitching] = useState(false);
   const [previewCv, setPreviewCv] = useState<{ url: string; path: string; name: string; cvText: string | null } | null>(null);
@@ -606,6 +607,53 @@ const Admin = () => {
       });
     } finally {
       setDownloadingCv(null);
+    }
+  };
+
+  const handleRescoreCv = async (applicantId: string) => {
+    setRescoring(applicantId);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      
+      if (!token) {
+        throw new Error('Not authenticated');
+      }
+
+      const response = await supabase.functions.invoke('rescore-cv', {
+        body: { applicant_id: applicantId },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.error) {
+        throw new Error(response.error.message || 'Failed to rescore CV');
+      }
+
+      if (response.data?.error) {
+        toast({
+          title: 'Cannot rescore',
+          description: response.data.error,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      toast({
+        title: 'CV Rescored',
+        description: `New score: ${response.data?.scores?.total_score || 'N/A'}`,
+      });
+
+      // Refresh the applicant data
+      fetchApplicants();
+    } catch (error) {
+      console.error('Error rescoring CV:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to rescore CV',
+        variant: 'destructive',
+      });
+    } finally {
+      setRescoring(null);
     }
   };
 
@@ -1832,10 +1880,12 @@ const Admin = () => {
                       onSendEmail={(applicant) => setSendEmailApplicant(applicant)}
                       onViewHistory={(applicant) => setCommunicationHistoryApplicant(applicant)}
                       onSendInvite={(applicant) => setInterviewInviteApplicant(applicant)}
+                      onRescoreCv={handleRescoreCv}
                       expandedApplicant={expandedApplicant}
                       expandingApplicantId={expandingApplicantId}
                       loadingPreview={loadingPreview}
                       downloadingCv={downloadingCv}
+                      rescoring={rescoring}
                       unreadCounts={unreadCounts}
                       enabled={activeApplicantTab === 'search'}
                     />
