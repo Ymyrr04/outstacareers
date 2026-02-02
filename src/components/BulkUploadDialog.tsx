@@ -20,15 +20,14 @@ interface Job {
 
 interface FileStatus {
   name: string;
-  status: 'pending' | 'uploading' | 'checking' | 'extracting' | 'scoring' | 'completed' | 'skipped' | 'failed';
+  status: 'pending' | 'uploading' | 'checking' | 'extracting' | 'completed' | 'skipped' | 'failed';
   message?: string;
   extractedInfo?: {
     email?: string;
     phone?: string;
     fullName?: string;
   };
-  score?: number;
-  rankingStatus?: string;
+  extractionMethod?: string;
 }
 
 const STATUS_OPTIONS = [
@@ -135,7 +134,6 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
     }
 
     setIsProcessing(true);
-    const runScoring = selectedStatus === 'For Review';
 
     let successCount = 0;
     let skippedCount = 0;
@@ -153,13 +151,8 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
         updateFileStatus(i, { status: 'checking' });
         await new Promise(resolve => setTimeout(resolve, 200)); // Brief pause for UI
 
-        // Step 3: Extracting
+        // Step 3: Extracting (may use Vision AI for proper parsing)
         updateFileStatus(i, { status: 'extracting' });
-
-        // Step 4: Scoring (if applicable)
-        if (runScoring) {
-          updateFileStatus(i, { status: 'scoring' });
-        }
 
         // Call the edge function
         const { data, error } = await supabase.functions.invoke('bulk-upload-cv', {
@@ -169,11 +162,7 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
             file_type: file.type,
             job_id: selectedJobId,
             job_title: selectedJob?.title || 'Unknown',
-            job_description: selectedJob?.description || '',
-            job_qualifications: selectedJob?.qualifications || [],
-            job_responsibilities: selectedJob?.responsibilities || [],
             status: selectedStatus,
-            run_scoring: runScoring,
           },
         });
 
@@ -198,8 +187,7 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
           updateFileStatus(i, { 
             status: 'completed',
             extractedInfo: data.extracted_info,
-            score: data.total_score,
-            rankingStatus: data.ranking_status,
+            extractionMethod: data.extraction_method,
           });
           successCount++;
         } else {
@@ -253,7 +241,6 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
       case 'uploading':
       case 'checking':
       case 'extracting':
-      case 'scoring':
         return <Loader2 className="w-4 h-4 text-primary animate-spin" />;
       case 'completed':
         return <CheckCircle className="w-4 h-4 text-green-500" />;
@@ -274,10 +261,8 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
         return 'Checking duplicate...';
       case 'extracting':
         return 'Extracting data...';
-      case 'scoring':
-        return 'AI Scoring...';
       case 'completed':
-        return fs.score !== undefined ? `Score: ${fs.score} (${fs.rankingStatus})` : 'Completed';
+        return fs.extractionMethod === 'vision' ? 'Completed (AI Vision)' : 'Completed';
       case 'skipped':
         return fs.message || 'Skipped (duplicate)';
       case 'failed':

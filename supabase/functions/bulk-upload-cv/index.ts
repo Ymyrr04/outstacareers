@@ -12,11 +12,7 @@ interface ProcessCVRequest {
   file_type: string;
   job_id: string;
   job_title: string;
-  job_description?: string;
-  job_qualifications?: string[];
-  job_responsibilities?: string[];
   status: string;
-  run_scoring: boolean;
 }
 
 interface DuplicateCheckResult {
@@ -271,14 +267,10 @@ serve(async (req) => {
       file_type, 
       job_id, 
       job_title, 
-      job_description,
-      job_qualifications,
-      job_responsibilities,
       status, 
-      run_scoring 
     } = body;
 
-    console.log('Processing CV:', { file_name, job_title, status, run_scoring });
+    console.log('Processing CV:', { file_name, job_title, status });
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
@@ -427,117 +419,9 @@ serve(async (req) => {
       );
     }
 
-    // Step 5: Run AI scoring if status is "Reviewed"
-    let scoreResult = null;
-    if (run_scoring && cvText && cvText.length > 50 && !isCorruptedText(cvText)) {
-      console.log('Running AI scoring with metadata extraction...');
-      
-      if (LOVABLE_API_KEY) {
-        const systemPrompt = `You are an expert HR recruiter and CV evaluator. Your task is to score a candidate's CV against a job posting and provide detailed analysis.
-
-SCORING RULES (total = 100):
-- Role experience match: 0-45 points (how well their experience matches the role)
-- Skills and tools match: 0-45 points (how well their skills match required qualifications)
-- Availability and setup readiness: 0-5 points (remote work readiness indicators)
-- Bonus or red flags: -5 to +5 points (exceptional achievements or concerning patterns)
-
-RANKING STATUS:
-- Strong Match: total_score >= 70
-- Partial Match: total_score >= 40 AND < 70
-- Low Match: total_score < 40
-
-EXTRACTION REQUIREMENTS:
-You MUST also extract searchable metadata from the CV:
-1. extracted_skills: List ALL skills mentioned (soft skills, hard skills, languages, certifications)
-   Examples: "Customer Service", "Sales", "Legal Intake", "Spanish", "Problem Solving"
-2. extracted_tools: List ALL software/tools/platforms mentioned
-   Examples: "Salesforce", "HubSpot", "Excel", "Google Workspace", "Clio", "Zendesk"
-3. years_of_experience: Estimate total professional experience in years (null if unclear)
-
-You MUST return ONLY valid JSON with NO additional text. The JSON must have this exact structure:
-{
-  "role_experience_score": <number 0-45>,
-  "skills_tools_score": <number 0-45>,
-  "availability_setup_score": <number 0-5>,
-  "bonus_red_flag_score": <number -5 to 5>,
-  "total_score": <sum of all scores>,
-  "ranking_status": "<Strong Match|Partial Match|Low Match>",
-  "summary": "<max 3 sentences summarizing the candidate's fit>",
-  "assessment_details": {
-    "matched_tools": [{"tool": "<tool/skill name>", "found": true, "context": "<brief context>"}],
-    "missing_tools": ["<required tool/skill not found>"],
-    "experience_highlights": [{"role": "<job title>", "company": "<company>", "duration": "<time>", "relevance": "<why relevant>"}],
-    "strengths": ["<strength 1>", "<strength 2>"],
-    "concerns": ["<concern if any>"]
-  },
-  "extracted_skills": ["<skill 1>", "<skill 2>", ...],
-  "extracted_tools": ["<tool 1>", "<tool 2>", ...],
-  "years_of_experience": <number or null>
-}`;
-
-        const userPrompt = `Evaluate this candidate's CV for the following job:
-
-JOB TITLE: ${job_title}
-
-JOB DESCRIPTION: ${job_description || 'Not provided'}
-
-KEY QUALIFICATIONS REQUIRED:
-${job_qualifications?.length ? job_qualifications.map((q, i) => `${i + 1}. ${q}`).join('\n') : 'Not specified'}
-
-RESPONSIBILITIES:
-${job_responsibilities?.length ? job_responsibilities.map((r, i) => `${i + 1}. ${r}`).join('\n') : 'Not specified'}
-
-CANDIDATE CV TEXT:
-${cvText.substring(0, 8000)}
-
-Return ONLY the JSON scoring object with detailed assessment_details and extracted metadata, no other text.`;
-
-        try {
-          const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              model: 'google/gemini-2.5-flash',
-              messages: [
-                { role: 'system', content: systemPrompt },
-                { role: 'user', content: userPrompt }
-              ],
-            }),
-          });
-
-          if (aiResponse.ok) {
-            const aiData = await aiResponse.json();
-            const content = aiData.choices?.[0]?.message?.content;
-            
-            if (content) {
-              let jsonContent = content.trim();
-              if (jsonContent.startsWith('```json')) {
-                jsonContent = jsonContent.slice(7);
-              } else if (jsonContent.startsWith('```')) {
-                jsonContent = jsonContent.slice(3);
-              }
-              if (jsonContent.endsWith('```')) {
-                jsonContent = jsonContent.slice(0, -3);
-              }
-              
-              try {
-                scoreResult = JSON.parse(jsonContent.trim());
-                console.log('AI scoring complete with metadata:', scoreResult.total_score);
-              } catch (parseError) {
-                console.error('Failed to parse AI response:', parseError);
-              }
-            }
-          } else {
-            console.error('AI API error:', aiResponse.status);
-          }
-        } catch (aiError) {
-          console.error('AI scoring error:', aiError);
-        }
-      }
-    }
+    // Step 5: Skip AI scoring for bulk uploads (recruitment manager already reviewed)
+    // The contact info was already extracted in Step 2 (using Vision if needed)
+    console.log('Bulk upload - skipping AI scoring (already reviewed by manager)');
 
     // Step 6: Create applicant record
     const applicantData: Record<string, unknown> = {
@@ -565,21 +449,7 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
       currently_working: false,
     };
 
-    // Add scoring data if available
-    if (scoreResult) {
-      applicantData.role_experience_score = scoreResult.role_experience_score || 0;
-      applicantData.skills_tools_score = scoreResult.skills_tools_score || 0;
-      applicantData.availability_setup_score = scoreResult.availability_setup_score || 0;
-      applicantData.bonus_red_flag_score = scoreResult.bonus_red_flag_score || 0;
-      applicantData.total_score = scoreResult.total_score || 0;
-      applicantData.ranking_status = scoreResult.ranking_status || 'Low Match';
-      applicantData.ai_summary = scoreResult.summary || null;
-      applicantData.ai_assessment_details = scoreResult.assessment_details || null;
-      // Add extracted metadata
-      applicantData.extracted_skills = Array.isArray(scoreResult.extracted_skills) ? scoreResult.extracted_skills : [];
-      applicantData.extracted_tools = Array.isArray(scoreResult.extracted_tools) ? scoreResult.extracted_tools : [];
-      applicantData.years_of_experience = typeof scoreResult.years_of_experience === 'number' ? scoreResult.years_of_experience : null;
-    }
+    // No scoring data for bulk uploads - manager already reviewed
 
     const { data: insertedApplicant, error: insertError } = await supabase
       .from('applicants_prescreen')
@@ -595,7 +465,7 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
       );
     }
 
-    console.log('Applicant saved:', insertedApplicant.id);
+    console.log('Applicant saved:', insertedApplicant.id, 'Extraction method:', extractionMethod);
 
     return new Response(
       JSON.stringify({
@@ -603,9 +473,7 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
         skipped: false,
         applicant_id: insertedApplicant.id,
         extracted_info: contactInfo,
-        scored: !!scoreResult,
-        total_score: scoreResult?.total_score || null,
-        ranking_status: scoreResult?.ranking_status || null,
+        extraction_method: extractionMethod,
       }),
       { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
