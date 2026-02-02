@@ -17,10 +17,12 @@ interface PaginatedSearchResultsProps {
   onSendEmail: (applicant: { id: string; full_name: string; email: string; job_title: string; status: string }) => void;
   onViewHistory: (applicant: { id: string; name: string; email: string }) => void;
   onSendInvite: (applicant: { full_name: string; email: string; job_title: string }) => void;
+  onRescoreCv: (id: string) => void;
   expandedApplicant: string | null;
   expandingApplicantId: string | null;
   loadingPreview: boolean;
   downloadingCv: string | null;
+  rescoring: string | null;
   unreadCounts: Record<string, number>;
   enabled?: boolean;
 }
@@ -38,10 +40,12 @@ export const PaginatedSearchResults = ({
   onSendEmail,
   onViewHistory,
   onSendInvite,
+  onRescoreCv,
   expandedApplicant,
   expandingApplicantId,
   loadingPreview,
   downloadingCv,
+  rescoring,
   unreadCounts,
   enabled = true,
 }: PaginatedSearchResultsProps) => {
@@ -117,10 +121,12 @@ export const PaginatedSearchResults = ({
       onSendEmail={onSendEmail}
       onViewHistory={onViewHistory}
       onSendInvite={onSendInvite}
+      onRescoreCv={onRescoreCv}
       expandedApplicant={expandedApplicant}
       expandingApplicantId={expandingApplicantId}
       loadingPreview={loadingPreview}
       downloadingCv={downloadingCv}
+      rescoring={rescoring}
       unreadCounts={unreadCounts}
       totalCount={totalCount}
     />
