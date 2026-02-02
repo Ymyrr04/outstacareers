@@ -34,6 +34,108 @@ function sanitizeText(text: string): string {
     .trim();
 }
 
+// Check if text looks like corrupted/binary data
+function isCorruptedText(text: string): boolean {
+  if (!text || text.length < 50) return true;
+  
+  // Count readable characters vs garbage
+  const readableChars = text.match(/[a-zA-Z0-9\s.,;:!?@#$%&*()\-_+=\[\]{}|\\'"<>/]/g) || [];
+  const readableRatio = readableChars.length / text.length;
+  
+  // If less than 60% readable characters, it's likely corrupted
+  if (readableRatio < 0.6) return true;
+  
+  // Check for common PDF binary markers in the text
+  const binaryMarkers = [
+    'endstream', 'endobj', 'xref', '/Filter', '/FlateDecode',
+    'stream', 'obj', '<<', '>>', '/Length', '/Type'
+  ];
+  
+  let markerCount = 0;
+  for (const marker of binaryMarkers) {
+    if (text.includes(marker)) markerCount++;
+  }
+  
+  // If multiple PDF structure markers found, text extraction failed
+  if (markerCount >= 3) return true;
+  
+  return false;
+}
+
+// Extract text from PDF using AI Vision
+async function extractTextWithVision(
+  base64Data: string,
+  mimeType: string,
+  LOVABLE_API_KEY: string
+): Promise<{ success: boolean; text?: string; error?: string }> {
+  try {
+    console.log('Attempting AI Vision extraction...');
+
+    const visionResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `You are a CV/Resume text extractor. Extract ALL text content from this document exactly as it appears, preserving the structure and layout as much as possible. 
+
+Extract:
+- Full name
+- Contact information (email, phone, address)
+- Professional summary/objective if present
+- Work experience (job titles, companies, dates, responsibilities)
+- Education (degrees, institutions, dates)
+- Skills and certifications
+- Any other relevant sections
+
+Format the output as clean, readable plain text that can be used for job matching analysis. Do NOT add any commentary or analysis - just extract the text content.
+
+If the document is not readable or is not a CV/resume, respond with: "EXTRACTION_FAILED: [reason]"`
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:${mimeType};base64,${base64Data}`
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 4000,
+      }),
+    });
+
+    if (!visionResponse.ok) {
+      const errorText = await visionResponse.text();
+      console.error('Vision API error:', visionResponse.status, errorText);
+      return { success: false, error: `Vision API error: ${visionResponse.status}` };
+    }
+
+    const visionData = await visionResponse.json();
+    const extractedText = visionData.choices?.[0]?.message?.content;
+
+    if (!extractedText || extractedText.startsWith('EXTRACTION_FAILED:')) {
+      console.error('Vision extraction failed:', extractedText);
+      return { success: false, error: extractedText || 'No text extracted' };
+    }
+
+    console.log(`Vision extraction successful. Extracted ${extractedText.length} characters.`);
+    return { success: true, text: extractedText };
+
+  } catch (error) {
+    console.error('Vision extraction error:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
 // Simple text extraction from PDF (basic approach)
 async function extractTextFromPDF(base64Data: string): Promise<string> {
   try {
@@ -178,8 +280,12 @@ serve(async (req) => {
 
     console.log('Processing CV:', { file_name, job_title, status, run_scoring });
 
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+
     // Step 1: Extract text from CV
     let cvText = '';
+    let extractionMethod = 'standard';
+    
     if (file_type.includes('pdf')) {
       cvText = await extractTextFromPDF(file_base64);
     } else {
@@ -189,9 +295,34 @@ serve(async (req) => {
     cvText = sanitizeText(cvText);
     console.log('Extracted text length:', cvText.length);
 
+    // Check if text extraction failed and try Vision API
+    if (isCorruptedText(cvText) && LOVABLE_API_KEY) {
+      console.log('Text extraction appears corrupted, trying AI Vision...');
+      
+      // Determine MIME type for vision
+      let mimeType = file_type;
+      if (!mimeType || mimeType === 'application/octet-stream') {
+        const fileName = file_name.toLowerCase();
+        if (fileName.endsWith('.pdf')) mimeType = 'application/pdf';
+        else if (fileName.endsWith('.png')) mimeType = 'image/png';
+        else if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) mimeType = 'image/jpeg';
+        else mimeType = 'application/pdf'; // default to PDF
+      }
+      
+      const visionResult = await extractTextWithVision(file_base64, mimeType, LOVABLE_API_KEY);
+      
+      if (visionResult.success && visionResult.text) {
+        cvText = sanitizeText(visionResult.text);
+        extractionMethod = 'vision';
+        console.log('Vision extraction successful, text length:', cvText.length);
+      } else {
+        console.log('Vision extraction failed:', visionResult.error);
+      }
+    }
+
     // Step 2: Extract contact info
     const contactInfo = extractContactInfo(cvText);
-    console.log('Extracted contact info:', contactInfo);
+    console.log('Extracted contact info:', contactInfo, 'Method:', extractionMethod);
 
     // Generate file hash
     const fileHash = generateFileHash(file_base64);
@@ -298,10 +429,9 @@ serve(async (req) => {
 
     // Step 5: Run AI scoring if status is "Reviewed"
     let scoreResult = null;
-    if (run_scoring && cvText && cvText.length > 50) {
+    if (run_scoring && cvText && cvText.length > 50 && !isCorruptedText(cvText)) {
       console.log('Running AI scoring with metadata extraction...');
       
-      const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
       if (LOVABLE_API_KEY) {
         const systemPrompt = `You are an expert HR recruiter and CV evaluator. Your task is to score a candidate's CV against a job posting and provide detailed analysis.
 
