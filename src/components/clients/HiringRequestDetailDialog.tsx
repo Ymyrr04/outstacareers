@@ -382,10 +382,10 @@ export const HiringRequestDetailDialog = ({
   });
 
   const renderCommentContent = (content: string) => {
-    // Render HTML content with proper styling for @mentions and links
+    // Render HTML content with proper styling for @mentions, links, and lists
     return (
       <div 
-        className="text-sm prose prose-sm max-w-none [&_a]:text-primary [&_a]:underline [&_a]:hover:opacity-80 [&_.text-primary]:text-primary [&_.font-medium]:font-medium"
+        className="text-sm prose prose-sm max-w-none [&_a]:text-primary [&_a]:underline [&_a]:hover:opacity-80 [&_.text-primary]:text-primary [&_.font-medium]:font-medium [&_ul]:list-disc [&_ul]:pl-5 [&_ul]:my-1 [&_ol]:list-decimal [&_ol]:pl-5 [&_ol]:my-1 [&_li]:my-0.5"
         dangerouslySetInnerHTML={{ __html: content }}
       />
     );
