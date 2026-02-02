@@ -620,8 +620,13 @@ const Admin = () => {
         throw new Error('Not authenticated');
       }
 
+      toast({
+        title: 'Processing CV',
+        description: 'Using AI vision to extract text and score the CV...',
+      });
+
       const response = await supabase.functions.invoke('rescore-cv', {
-        body: { applicant_id: applicantId },
+        body: { applicant_id: applicantId, force_vision: true },
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -632,15 +637,19 @@ const Admin = () => {
       if (response.data?.error) {
         toast({
           title: 'Cannot rescore',
-          description: response.data.error,
+          description: response.data.error + (response.data.suggestion ? `\n${response.data.suggestion}` : ''),
           variant: 'destructive',
         });
         return;
       }
 
+      const extractionMethod = response.data?.extraction_method === 'vision' 
+        ? '(used AI vision)' 
+        : '';
+
       toast({
-        title: 'CV Rescored',
-        description: `New score: ${response.data?.scores?.total_score || 'N/A'}`,
+        title: 'CV Rescored Successfully',
+        description: `New score: ${response.data?.scores?.total_score || 'N/A'}/100 ${extractionMethod}`,
       });
 
       // Refresh the applicant data
@@ -649,7 +658,7 @@ const Admin = () => {
       console.error('Error rescoring CV:', error);
       toast({
         title: 'Error',
-        description: 'Failed to rescore CV',
+        description: 'Failed to rescore CV. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -2497,10 +2506,31 @@ const Admin = () => {
                             <TabsContent value="cv" className="mt-4">
                               {applicant.total_score !== null ? (
                                 <div className="p-4 bg-muted/50 rounded-lg">
-                                  <h4 className="font-semibold mb-3 flex items-center gap-2">
-                                    <Star className="w-4 h-4" />
-                                    AI CV Assessment
-                                  </h4>
+                                  <div className="flex items-center justify-between mb-3">
+                                    <h4 className="font-semibold flex items-center gap-2">
+                                      <Star className="w-4 h-4" />
+                                      AI CV Assessment
+                                    </h4>
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      onClick={() => handleRescoreCv(applicant.id)}
+                                      disabled={rescoring === applicant.id}
+                                      className="gap-1"
+                                    >
+                                      {rescoring === applicant.id ? (
+                                        <>
+                                          <Loader2 className="w-3 h-3 animate-spin" />
+                                          Rescoring...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <RefreshCw className="w-3 h-3" />
+                                          Rescore CV
+                                        </>
+                                      )}
+                                    </Button>
+                                  </div>
                                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                                     <div className="text-center p-2 bg-background rounded">
                                       <p className="text-xs text-muted-foreground">Role Experience</p>
@@ -2627,7 +2657,27 @@ const Admin = () => {
                               ) : (
                                 <div className="p-6 bg-muted/30 rounded-lg text-center">
                                   <Star className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                                  <p className="text-muted-foreground">No CV assessment available yet</p>
+                                  <p className="text-muted-foreground mb-4">No CV assessment available yet</p>
+                                  {applicant.cv_file_url && (
+                                    <Button
+                                      variant="default"
+                                      onClick={() => handleRescoreCv(applicant.id)}
+                                      disabled={rescoring === applicant.id}
+                                      className="gap-2"
+                                    >
+                                      {rescoring === applicant.id ? (
+                                        <>
+                                          <Loader2 className="w-4 h-4 animate-spin" />
+                                          Processing with AI Vision...
+                                        </>
+                                      ) : (
+                                        <>
+                                          <RefreshCw className="w-4 h-4" />
+                                          Score CV with AI Vision
+                                        </>
+                                      )}
+                                    </Button>
+                                  )}
                                 </div>
                               )}
                             </TabsContent>

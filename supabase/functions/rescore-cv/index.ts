@@ -6,6 +6,133 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Check if text looks like corrupted/binary data
+function isCorruptedText(text: string): boolean {
+  if (!text || text.length < 50) return true;
+  
+  // Count readable characters vs garbage
+  const readableChars = text.match(/[a-zA-Z0-9\s.,;:!?@#$%&*()\-_+=\[\]{}|\\'"<>/]/g) || [];
+  const readableRatio = readableChars.length / text.length;
+  
+  // If less than 60% readable characters, it's likely corrupted
+  if (readableRatio < 0.6) return true;
+  
+  // Check for common PDF binary markers in the text
+  const binaryMarkers = [
+    'endstream', 'endobj', 'xref', '/Filter', '/FlateDecode',
+    'stream', 'obj', '<<', '>>', '/Length', '/Type'
+  ];
+  
+  let markerCount = 0;
+  for (const marker of binaryMarkers) {
+    if (text.includes(marker)) markerCount++;
+  }
+  
+  // If multiple PDF structure markers found, text extraction failed
+  if (markerCount >= 3) return true;
+  
+  return false;
+}
+
+async function extractTextWithVision(
+  supabase: any,
+  cvFileUrl: string,
+  LOVABLE_API_KEY: string
+): Promise<{ success: boolean; text?: string; error?: string }> {
+  try {
+    console.log(`Attempting vision extraction for: ${cvFileUrl}`);
+
+    // Download the PDF file
+    const { data: fileData, error: downloadError } = await supabase.storage
+      .from('cv-uploads')
+      .download(cvFileUrl);
+
+    if (downloadError || !fileData) {
+      console.error('Error downloading CV file:', downloadError);
+      return { success: false, error: 'Could not download CV file' };
+    }
+
+    // Convert PDF to base64 for vision API
+    const arrayBuffer = await fileData.arrayBuffer();
+    const base64Data = btoa(
+      new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
+    );
+
+    // Determine MIME type
+    const fileName = cvFileUrl.toLowerCase();
+    let mimeType = 'application/pdf';
+    if (fileName.endsWith('.png')) mimeType = 'image/png';
+    else if (fileName.endsWith('.jpg') || fileName.endsWith('.jpeg')) mimeType = 'image/jpeg';
+    else if (fileName.endsWith('.webp')) mimeType = 'image/webp';
+
+    console.log(`Sending ${mimeType} file to vision AI for text extraction...`);
+
+    // Use Gemini vision to extract text from the document
+    const visionResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        model: 'google/gemini-2.5-flash',
+        messages: [
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: `You are a CV/Resume text extractor. Extract ALL text content from this document exactly as it appears, preserving the structure and layout as much as possible. 
+
+Extract:
+- Full name
+- Contact information (email, phone, address)
+- Professional summary/objective if present
+- Work experience (job titles, companies, dates, responsibilities)
+- Education (degrees, institutions, dates)
+- Skills and certifications
+- Any other relevant sections
+
+Format the output as clean, readable plain text that can be used for job matching analysis. Do NOT add any commentary or analysis - just extract the text content.
+
+If the document is not readable or is not a CV/resume, respond with: "EXTRACTION_FAILED: [reason]"`
+              },
+              {
+                type: 'image_url',
+                image_url: {
+                  url: `data:${mimeType};base64,${base64Data}`
+                }
+              }
+            ]
+          }
+        ],
+        max_tokens: 4000,
+      }),
+    });
+
+    if (!visionResponse.ok) {
+      const errorText = await visionResponse.text();
+      console.error('Vision API error:', visionResponse.status, errorText);
+      return { success: false, error: `Vision API error: ${visionResponse.status}` };
+    }
+
+    const visionData = await visionResponse.json();
+    const extractedText = visionData.choices?.[0]?.message?.content;
+
+    if (!extractedText || extractedText.startsWith('EXTRACTION_FAILED:')) {
+      console.error('Vision extraction failed:', extractedText);
+      return { success: false, error: extractedText || 'No text extracted' };
+    }
+
+    console.log(`Vision extraction successful. Extracted ${extractedText.length} characters.`);
+    return { success: true, text: extractedText };
+
+  } catch (error) {
+    console.error('Vision extraction error:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -14,9 +141,17 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
+    
+    if (!LOVABLE_API_KEY) {
+      return new Response(JSON.stringify({ error: 'AI service not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
 
-    const { applicant_id } = await req.json();
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const { applicant_id, force_vision = false } = await req.json();
     
     if (!applicant_id) {
       return new Response(JSON.stringify({ error: 'applicant_id is required' }), {
@@ -42,43 +177,53 @@ serve(async (req) => {
     console.log(`Re-scoring CV for applicant: ${applicant.full_name} (${applicant_id})`);
     console.log(`CV text length: ${applicant.cv_text?.length || 0}`);
     console.log(`CV file URL: ${applicant.cv_file_url || 'none'}`);
+    console.log(`Force vision: ${force_vision}`);
 
-    // If no cv_text but has cv_file_url, we need to download and extract
+    // Determine if we need vision extraction
     let cvText = applicant.cv_text;
-    
-    if (!cvText && applicant.cv_file_url) {
-      console.log('No CV text found, attempting to download from storage...');
-      
-      // Download the file from storage
-      const { data: fileData, error: downloadError } = await supabase.storage
-        .from('cv-uploads')
-        .download(applicant.cv_file_url);
+    const textIsCorrupted = isCorruptedText(cvText || '');
+    let extractionMethod = 'existing';
 
-      if (downloadError) {
-        console.error('Error downloading CV file:', downloadError);
+    if (force_vision || textIsCorrupted) {
+      if (!applicant.cv_file_url) {
         return new Response(JSON.stringify({ 
-          error: 'Could not download CV file',
-          details: downloadError.message 
+          error: 'CV text is corrupted/missing and no file available for vision extraction',
+          suggestion: 'Please re-upload the CV through the application form.'
         }), {
-          status: 500,
+          status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
 
-      // For now, we'll just note that server-side PDF extraction would require additional setup
-      return new Response(JSON.stringify({ 
-        error: 'CV text extraction not available server-side. Please re-upload the CV through the application form.',
-        cv_file_exists: true,
-        cv_file_url: applicant.cv_file_url
-      }), {
-        status: 400,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
+      console.log('Text is corrupted or vision forced, attempting vision extraction...');
+      const visionResult = await extractTextWithVision(supabase, applicant.cv_file_url, LOVABLE_API_KEY);
+      
+      if (!visionResult.success || !visionResult.text) {
+        return new Response(JSON.stringify({ 
+          error: 'Vision extraction failed',
+          details: visionResult.error,
+          suggestion: 'The PDF may be encrypted, password-protected, or in an unsupported format.'
+        }), {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+
+      cvText = visionResult.text;
+      extractionMethod = 'vision';
+
+      // Update the applicant record with the extracted text
+      await supabase
+        .from('applicants_prescreen')
+        .update({ cv_text: cvText })
+        .eq('id', applicant_id);
+
+      console.log('Updated applicant with vision-extracted text');
     }
 
     if (!cvText) {
       return new Response(JSON.stringify({ 
-        error: 'No CV text available for scoring. The applicant needs to re-upload their CV.' 
+        error: 'No CV text available for scoring. Please re-upload the CV.' 
       }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -105,14 +250,6 @@ serve(async (req) => {
     }
 
     // Run CV scoring
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    if (!LOVABLE_API_KEY) {
-      return new Response(JSON.stringify({ error: 'AI service not configured' }), {
-        status: 500,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-
     const systemPrompt = `You are an expert HR recruiter and CV evaluator. Your task is to score a candidate's CV against a job posting and provide detailed analysis.
 
 SCORING RULES (total = 100):
@@ -152,7 +289,7 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
 
     console.log('Calling AI for CV scoring...');
 
-    const aiResponse = await fetch('https://api.lovable.dev/v1/chat/completions', {
+    const aiResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -191,12 +328,16 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
     // Parse the JSON response
     let scores;
     try {
-      const jsonMatch = aiContent.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        scores = JSON.parse(jsonMatch[0]);
-      } else {
-        throw new Error('No JSON found in response');
+      let jsonContent = aiContent.trim();
+      if (jsonContent.startsWith('```json')) {
+        jsonContent = jsonContent.slice(7);
+      } else if (jsonContent.startsWith('```')) {
+        jsonContent = jsonContent.slice(3);
       }
+      if (jsonContent.endsWith('```')) {
+        jsonContent = jsonContent.slice(0, -3);
+      }
+      scores = JSON.parse(jsonContent.trim());
     } catch (parseError) {
       console.error('Failed to parse AI response:', parseError);
       return new Response(JSON.stringify({ error: 'Failed to parse AI response', raw: aiContent }), {
@@ -244,13 +385,17 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
       });
     }
 
-    console.log(`Successfully re-scored applicant ${applicant_id} with total score: ${scores.total_score}`);
+    console.log(`Successfully re-scored applicant ${applicant_id} with total score: ${totalScore}`);
 
     return new Response(JSON.stringify({ 
       success: true,
+      extraction_method: extractionMethod,
       scores: {
-        total_score: scores.total_score,
-        ranking_status: scores.ranking_status,
+        total_score: totalScore,
+        ranking_status: rankingStatus,
+        role_experience_score: scores.role_experience_score,
+        skills_tools_score: scores.skills_tools_score,
+        availability_setup_score: scores.availability_setup_score,
       }
     }), {
       status: 200,
