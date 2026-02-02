@@ -58,14 +58,19 @@ function isCorruptedText(text: string): boolean {
   return false;
 }
 
-// Extract text from PDF using AI Vision
-async function extractTextWithVision(
+// Extract text and contact info from PDF using AI Vision
+async function extractWithVision(
   base64Data: string,
   mimeType: string,
   LOVABLE_API_KEY: string
-): Promise<{ success: boolean; text?: string; error?: string }> {
+): Promise<{ 
+  success: boolean; 
+  text?: string; 
+  contactInfo?: { fullName?: string; email?: string; phone?: string };
+  error?: string 
+}> {
   try {
-    console.log('Attempting AI Vision extraction...');
+    console.log('Attempting AI Vision extraction with structured contact info...');
 
     const visionResponse = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -81,20 +86,31 @@ async function extractTextWithVision(
             content: [
               {
                 type: 'text',
-                text: `You are a CV/Resume text extractor. Extract ALL text content from this document exactly as it appears, preserving the structure and layout as much as possible. 
+                text: `You are a CV/Resume parser. Analyze this document and extract:
 
-Extract:
-- Full name
-- Contact information (email, phone, address)
-- Professional summary/objective if present
-- Work experience (job titles, companies, dates, responsibilities)
-- Education (degrees, institutions, dates)
-- Skills and certifications
-- Any other relevant sections
+1. CONTACT INFORMATION (return as JSON at the START of your response):
+\`\`\`json
+{
+  "fullName": "First Name Last Name",
+  "email": "email@example.com", 
+  "phone": "+1234567890"
+}
+\`\`\`
 
-Format the output as clean, readable plain text that can be used for job matching analysis. Do NOT add any commentary or analysis - just extract the text content.
+IMPORTANT for name extraction:
+- If name is formatted as "Last Name, First Name" (e.g., "Akol, Mary Grace Dalangpan"), convert it to "First Name Last Name" format (e.g., "Mary Grace Dalangpan Akol")
+- The name is usually prominently displayed at the top of the CV
+- Look for the largest/boldest text near the top - that's typically the name
+- Include middle names if present
 
-If the document is not readable or is not a CV/resume, respond with: "EXTRACTION_FAILED: [reason]"`
+2. Then extract ALL other text content from the document including:
+- Professional summary
+- Work experience
+- Education  
+- Skills
+
+If you cannot find a field, use null for that field.
+If this is not a CV/resume, respond with: "EXTRACTION_FAILED: [reason]"`
               },
               {
                 type: 'image_url',
@@ -116,15 +132,44 @@ If the document is not readable or is not a CV/resume, respond with: "EXTRACTION
     }
 
     const visionData = await visionResponse.json();
-    const extractedText = visionData.choices?.[0]?.message?.content;
+    const extractedContent = visionData.choices?.[0]?.message?.content;
 
-    if (!extractedText || extractedText.startsWith('EXTRACTION_FAILED:')) {
-      console.error('Vision extraction failed:', extractedText);
-      return { success: false, error: extractedText || 'No text extracted' };
+    if (!extractedContent || extractedContent.startsWith('EXTRACTION_FAILED:')) {
+      console.error('Vision extraction failed:', extractedContent);
+      return { success: false, error: extractedContent || 'No content extracted' };
     }
 
-    console.log(`Vision extraction successful. Extracted ${extractedText.length} characters.`);
-    return { success: true, text: extractedText };
+    // Parse the JSON contact info from the response
+    let contactInfo: { fullName?: string; email?: string; phone?: string } = {};
+    
+    const jsonMatch = extractedContent.match(/```json\s*([\s\S]*?)\s*```/);
+    if (jsonMatch) {
+      try {
+        const parsed = JSON.parse(jsonMatch[1]);
+        contactInfo = {
+          fullName: parsed.fullName || undefined,
+          email: parsed.email || undefined,
+          phone: parsed.phone || undefined,
+        };
+        console.log('Parsed contact info from Vision:', contactInfo);
+      } catch (e) {
+        console.error('Failed to parse contact JSON:', e);
+      }
+    }
+
+    // Also try to extract email/phone with regex as fallback
+    if (!contactInfo.email) {
+      const emailMatch = extractedContent.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+      if (emailMatch) contactInfo.email = emailMatch[0].toLowerCase();
+    }
+    
+    if (!contactInfo.phone) {
+      const phoneMatch = extractedContent.match(/\+?[0-9]{10,15}/);
+      if (phoneMatch) contactInfo.phone = phoneMatch[0];
+    }
+
+    console.log(`Vision extraction successful. Text length: ${extractedContent.length}, Contact: ${JSON.stringify(contactInfo)}`);
+    return { success: true, text: extractedContent, contactInfo };
 
   } catch (error) {
     console.error('Vision extraction error:', error);
@@ -288,6 +333,8 @@ serve(async (req) => {
     console.log('Extracted text length:', cvText.length);
 
     // Check if text extraction failed and try Vision API
+    let visionContactInfo: { fullName?: string; email?: string; phone?: string } | undefined;
+    
     if (isCorruptedText(cvText) && LOVABLE_API_KEY) {
       console.log('Text extraction appears corrupted, trying AI Vision...');
       
@@ -301,20 +348,26 @@ serve(async (req) => {
         else mimeType = 'application/pdf'; // default to PDF
       }
       
-      const visionResult = await extractTextWithVision(file_base64, mimeType, LOVABLE_API_KEY);
+      const visionResult = await extractWithVision(file_base64, mimeType, LOVABLE_API_KEY);
       
       if (visionResult.success && visionResult.text) {
         cvText = sanitizeText(visionResult.text);
         extractionMethod = 'vision';
-        console.log('Vision extraction successful, text length:', cvText.length);
+        visionContactInfo = visionResult.contactInfo;
+        console.log('Vision extraction successful, text length:', cvText.length, 'Contact:', visionContactInfo);
       } else {
         console.log('Vision extraction failed:', visionResult.error);
       }
     }
 
-    // Step 2: Extract contact info
-    const contactInfo = extractContactInfo(cvText);
-    console.log('Extracted contact info:', contactInfo, 'Method:', extractionMethod);
+    // Step 2: Extract contact info - prefer Vision results if available
+    const regexContactInfo = extractContactInfo(cvText);
+    const contactInfo = {
+      fullName: visionContactInfo?.fullName || regexContactInfo.fullName,
+      email: visionContactInfo?.email || regexContactInfo.email,
+      phone: visionContactInfo?.phone || regexContactInfo.phone,
+    };
+    console.log('Final contact info:', contactInfo, 'Method:', extractionMethod, 'Vision contact:', visionContactInfo);
 
     // Generate file hash
     const fileHash = generateFileHash(file_base64);
