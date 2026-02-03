@@ -30,24 +30,24 @@ serve(async (req) => {
       });
     }
 
-    // IMPORTANT: Validate the caller's JWT using an anon-key client bound to the Authorization header.
-    // Using the service-role client here can trigger AuthSessionMissingError in edge-runtime.
+    // Validate the caller's JWT using an anon-key client bound to the Authorization header.
+    // getUser() fetches user from auth server and validates the token in one call.
     const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: authHeader } },
       auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims();
+    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
     
-    if (claimsError || !claimsData?.claims) {
-      console.error("Token validation error:", claimsError);
+    if (userError || !user) {
+      console.error("Token validation error:", userError);
       return new Response(JSON.stringify({ error: "Invalid token" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const userId = claimsData.claims.sub as string;
+    const userId = user.id;
 
     // Check if user is admin or super_admin
     const { data: roleData } = await supabase
