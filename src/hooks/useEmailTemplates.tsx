@@ -808,5 +808,29 @@ export function useUnreadMessageCounts() {
     }
   };
 
-  return { unreadCounts, unreadApplicants, loading, fetchUnreadCounts, markAsRead };
+  // Mark all replies as read (optimistic update)
+  const markAllAsRead = async () => {
+    // Optimistic update
+    setUnreadCounts({});
+    setUnreadApplicants([]);
+    
+    // Update cache
+    globalUnreadCache = {
+      applicants: [],
+      counts: {},
+      lastFetched: Date.now()
+    };
+    
+    const { error } = await supabase
+      .from('email_replies')
+      .update({ is_read: true })
+      .eq('is_read', false);
+
+    if (error) {
+      // Rollback on error
+      fetchUnreadCounts(true);
+    }
+  };
+
+  return { unreadCounts, unreadApplicants, loading, fetchUnreadCounts, markAsRead, markAllAsRead };
 }

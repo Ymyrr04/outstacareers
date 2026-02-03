@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck } from 'lucide-react';
 import { exportJobs, exportApplicants, exportAllData } from '@/lib/exportUtils';
 import { useBackgroundExport } from '@/hooks/useBackgroundExport';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -231,7 +231,7 @@ const Admin = () => {
   const [communicationHistoryApplicant, setCommunicationHistoryApplicant] = useState<{ id: string; name: string; email: string } | null>(null);
   const [sendEmailApplicant, setSendEmailApplicant] = useState<{ id: string; full_name: string; email: string; job_title: string; status: string; preselectedTemplate?: string } | null>(null);
   const { templates, getTemplateByTrigger } = useEmailTemplates();
-  const { unreadCounts, unreadApplicants, markAsRead: markMessagesAsRead, fetchUnreadCounts } = useUnreadMessageCounts();
+  const { unreadCounts, unreadApplicants, markAsRead: markMessagesAsRead, markAllAsRead, fetchUnreadCounts } = useUnreadMessageCounts();
   const { replies: allReplies, fetching: fetchingReplies, fetchNewReplies } = useEmailReplies();
   const [unreadPopoverOpen, setUnreadPopoverOpen] = useState(false);
   
@@ -1549,19 +1549,32 @@ const Admin = () => {
                   <PopoverContent className="w-80 p-0" align="end">
                     <div className="flex items-center justify-between border-b px-4 py-3">
                       <h4 className="font-semibold text-sm">Unread Replies</h4>
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="h-7 px-2 text-xs"
-                        onClick={async () => {
-                          await fetchNewReplies();
-                          await fetchUnreadCounts();
-                        }}
-                        disabled={fetchingReplies}
-                      >
-                        <RefreshCw className={`w-3 h-3 mr-1 ${fetchingReplies ? 'animate-spin' : ''}`} />
-                        Refresh
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        {Object.keys(unreadCounts).length > 0 && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="h-7 px-2 text-xs"
+                            onClick={markAllAsRead}
+                          >
+                            <CheckCheck className="w-3 h-3 mr-1" />
+                            Mark all read
+                          </Button>
+                        )}
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="h-7 px-2 text-xs"
+                          onClick={async () => {
+                            await fetchNewReplies();
+                            await fetchUnreadCounts();
+                          }}
+                          disabled={fetchingReplies}
+                        >
+                          <RefreshCw className={`w-3 h-3 mr-1 ${fetchingReplies ? 'animate-spin' : ''}`} />
+                          Refresh
+                        </Button>
+                      </div>
                     </div>
                     <div className="max-h-[300px] overflow-y-auto">
                       {Object.keys(unreadCounts).length === 0 ? (
