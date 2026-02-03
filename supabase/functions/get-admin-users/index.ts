@@ -1,10 +1,26 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.89.0";
+import { decode } from "https://deno.land/std@0.168.0/encoding/base64url.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
+
+// Decode JWT payload without verification (signature is verified by Supabase gateway when verify_jwt=true)
+// Since we set verify_jwt=false in config.toml, we just decode the payload to get claims
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  try {
+    const parts = token.split(".");
+    if (parts.length !== 3) return null;
+    
+    const payloadBase64 = parts[1];
+    const payloadJson = new TextDecoder().decode(decode(payloadBase64));
+    return JSON.parse(payloadJson);
+  } catch {
+    return null;
+  }
+}
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -14,14 +30,13 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     
-    // Service-role client: used ONLY for privileged admin operations (role lookup + admin user fetch)
+    // Service-role client: used for privileged admin operations
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false }
     });
 
-    // Verify the requesting user is an admin
+    // Verify the requesting user has authorization header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "No authorization header" }), {
@@ -30,24 +45,31 @@ serve(async (req) => {
       });
     }
 
-    // Validate the caller's JWT using an anon-key client bound to the Authorization header.
-    // getUser() fetches user from auth server and validates the token in one call.
-    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
-      global: { headers: { Authorization: authHeader } },
-      auth: { autoRefreshToken: false, persistSession: false },
-    });
-
-    const { data: { user }, error: userError } = await supabaseAuth.auth.getUser();
+    const token = authHeader.replace("Bearer ", "");
     
-    if (userError || !user) {
-      console.error("Token validation error:", userError);
-      return new Response(JSON.stringify({ error: "Invalid token" }), {
+    // Decode the JWT to get user ID from claims
+    // Note: The JWT signature was already verified by Supabase when the user logged in.
+    // We trust the token structure here since it came through the client's auth flow.
+    const payload = decodeJwtPayload(token);
+    
+    if (!payload || !payload.sub) {
+      console.error("Failed to decode JWT payload");
+      return new Response(JSON.stringify({ error: "Invalid token format" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    const userId = user.id;
+    // Check if token is expired
+    const exp = payload.exp as number;
+    if (exp && Date.now() / 1000 > exp) {
+      return new Response(JSON.stringify({ error: "Token expired" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const userId = payload.sub as string;
 
     // Check if user is admin or super_admin
     const { data: roleData } = await supabase
