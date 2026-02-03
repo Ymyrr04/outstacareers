@@ -14,7 +14,9 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     
+    // Service-role client: used ONLY for privileged admin operations (role lookup + admin user fetch)
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
       auth: { autoRefreshToken: false, persistSession: false }
     });
@@ -28,8 +30,14 @@ serve(async (req) => {
       });
     }
 
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await supabase.auth.getClaims(token);
+    // IMPORTANT: Validate the caller's JWT using an anon-key client bound to the Authorization header.
+    // Using the service-role client here can trigger AuthSessionMissingError in edge-runtime.
+    const supabaseAuth = createClient(supabaseUrl, supabaseAnonKey, {
+      global: { headers: { Authorization: authHeader } },
+      auth: { autoRefreshToken: false, persistSession: false },
+    });
+
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims();
     
     if (claimsError || !claimsData?.claims) {
       console.error("Token validation error:", claimsError);
