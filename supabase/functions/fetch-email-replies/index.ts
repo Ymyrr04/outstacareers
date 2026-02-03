@@ -15,17 +15,29 @@ interface ApplicantEmail {
 class SimpleIMAPClient {
   private conn: Deno.TlsConn | null = null;
   private reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
+  private writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
   private tagCounter = 0;
   private buffer = "";
+  private isConnected = false;
 
   async connect(host: string, port: number): Promise<void> {
     this.conn = await Deno.connectTls({ hostname: host, port });
     this.reader = this.conn.readable.getReader();
+    this.writer = this.conn.writable.getWriter();
+    this.isConnected = true;
     // Read greeting
     await this.readResponse();
   }
 
+  isActive(): boolean {
+    return this.isConnected && this.conn !== null && this.writer !== null;
+  }
+
   private async readResponse(): Promise<string[]> {
+    if (!this.isActive()) {
+      throw new Error("IMAP connection is not active");
+    }
+    
     const lines: string[] = [];
     const decoder = new TextDecoder();
     
@@ -49,29 +61,39 @@ class SimpleIMAPClient {
       }
       
       // Read more data
-      const { value, done } = await this.reader!.read();
-      if (done) break;
-      this.buffer += decoder.decode(value);
+      try {
+        const { value, done } = await this.reader!.read();
+        if (done) {
+          this.isConnected = false;
+          break;
+        }
+        this.buffer += decoder.decode(value);
+      } catch (err) {
+        this.isConnected = false;
+        throw err;
+      }
     }
     
     return lines;
   }
-
-  private writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
   
   private async sendCommand(command: string): Promise<string[]> {
+    if (!this.isActive()) {
+      throw new Error("IMAP connection is not active");
+    }
+    
     this.tagCounter++;
     const tag = `A${this.tagCounter}`;
     const fullCommand = `${tag} ${command}\r\n`;
     
     const encoder = new TextEncoder();
     
-    // Reuse the writer or create one if needed
-    if (!this.writer) {
-      this.writer = this.conn!.writable.getWriter();
+    try {
+      await this.writer!.write(encoder.encode(fullCommand));
+    } catch (err) {
+      this.isConnected = false;
+      throw err;
     }
-    
-    await this.writer.write(encoder.encode(fullCommand));
     
     return await this.readResponse();
   }
@@ -245,8 +267,14 @@ class SimpleIMAPClient {
   }
 
   async logout(): Promise<void> {
+    this.isConnected = false;
     try {
-      await this.sendCommand("LOGOUT");
+      if (this.writer) {
+        const encoder = new TextEncoder();
+        this.tagCounter++;
+        const tag = `A${this.tagCounter}`;
+        await this.writer.write(encoder.encode(`${tag} LOGOUT\r\n`));
+      }
     } catch {
       // Ignore logout errors
     }
@@ -259,7 +287,21 @@ class SimpleIMAPClient {
       }
       this.writer = null;
     }
-    this.conn?.close();
+    // Release reader lock
+    if (this.reader) {
+      try {
+        this.reader.releaseLock();
+      } catch {
+        // Ignore release errors
+      }
+      this.reader = null;
+    }
+    try {
+      this.conn?.close();
+    } catch {
+      // Ignore close errors
+    }
+    this.conn = null;
   }
 }
 
@@ -366,9 +408,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Search for emails from each unique applicant email (using emailsToProcess, not all uniqueEmails)
     for (const email of emailsToProcess) {
-      // Check if we're running out of time
+      // Check if we're running out of time or connection is lost
       if (Date.now() - startTime > MAX_RUNTIME_MS) {
         console.log(`Stopping early due to time limit. Processed ${processedCount}/${emailsToProcess.length} emails`);
+        break;
+      }
+      
+      if (!client.isActive()) {
+        console.log(`IMAP connection lost. Processed ${processedCount}/${emailsToProcess.length} emails before disconnect`);
         break;
       }
 
@@ -376,8 +423,8 @@ const handler = async (req: Request): Promise<Response> => {
         const msgNums = await client.searchFrom(email, 30);
         
         for (const msgNum of msgNums) {
-          // Check time again before fetching each message
-          if (Date.now() - startTime > MAX_RUNTIME_MS) break;
+          // Check time and connection again before fetching each message
+          if (Date.now() - startTime > MAX_RUNTIME_MS || !client.isActive()) break;
           
           const message = await client.fetchMessage(msgNum);
           
@@ -439,9 +486,15 @@ const handler = async (req: Request): Promise<Response> => {
           }
         }
         processedCount++;
-      } catch (err) {
+      } catch (err: any) {
         console.error(`Error searching for ${email}:`, err);
         processedCount++;
+        
+        // If connection error, stop processing
+        if (err.name === 'BadResource' || err.message?.includes('connection') || !client.isActive()) {
+          console.log(`Connection error detected. Stopping processing.`);
+          break;
+        }
       }
     }
 
