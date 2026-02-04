@@ -107,7 +107,7 @@ const JobDetails = () => {
   const handleCopyLink = async () => {
     if (!job) return;
     
-    const productionOrigin = 'https://outstacareers.lovable.app';
+    const productionOrigin = 'https://outstahub.com';
     const jobUrl = `${productionOrigin}${generateJobUrl(job.title, job.id)}`;
     
     try {

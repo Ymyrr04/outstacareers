@@ -58,7 +58,7 @@ async function notifyAssignedAdmin(
       },
     });
 
-    const applicantProfileUrl = `https://outstacareers.lovable.app/admin?applicant=${applicantId}`;
+    const applicantProfileUrl = `https://outstahub.com/admin?applicant=${applicantId}`;
     const statusLabel = interviewStatus === 'completed' ? 'Completed Assessment' : 'Completed (Manual Review)';
     const subject = `New Application: ${applicantName} - ${jobTitle} (${statusLabel})`;
     const bodyHtml = `

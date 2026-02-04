@@ -318,7 +318,7 @@ const JobsSection = () => {
       e.stopPropagation();
       
       // Use the production URL for shareable links
-      const productionOrigin = 'https://outstacareers.lovable.app';
+      const productionOrigin = 'https://outstahub.com';
       const jobUrl = `${productionOrigin}${generateJobUrl(job.title, job.id)}`;
       
       try {

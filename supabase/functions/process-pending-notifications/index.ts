@@ -141,7 +141,7 @@ serve(async (req) => {
           },
         });
 
-        const applicantProfileUrl = `https://outstacareers.lovable.app/admin?applicant=${session.applicant_id}`;
+        const applicantProfileUrl = `https://outstahub.com/admin?applicant=${session.applicant_id}`;
         const subject = `New Application: ${applicant.full_name} - ${job.title || applicant.job_title} (Interview Incomplete)`;
         const bodyHtml = `
           <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
