@@ -266,6 +266,7 @@ const Admin = () => {
     isCompleted: exportCompleted, 
     isFailed: exportFailed,
     progress: exportProgress,
+    isRestoring: isRestoringExport,
     startExport: startBackgroundExport,
     downloadExport,
     clearExport
@@ -1681,14 +1682,26 @@ const Admin = () => {
                   </PopoverTrigger>
                   <PopoverContent className="w-64 p-2" align="end">
                     <div className="space-y-1">
-                      {isBackgroundExporting && exportProgress ? (
+                      {isBackgroundExporting ? (
                         <div className="p-3 text-center">
                           <Loader2 className="w-6 h-6 mx-auto mb-2 animate-spin text-primary" />
-                          <p className="text-sm font-medium">Exporting CVs...</p>
-                          <p className="text-xs text-muted-foreground">
-                            {exportProgress.processed} / {exportProgress.total} files
+                          <p className="text-sm font-medium">
+                            {isRestoringExport ? 'Resuming export...' : 'Exporting CVs...'}
                           </p>
-                          <p className="text-xs text-muted-foreground mt-1">
+                          <p className="text-xs text-muted-foreground">
+                            {exportProgress && exportProgress.total > 0 
+                              ? `${exportProgress.processed} / ${exportProgress.total} files`
+                              : 'Preparing files...'}
+                          </p>
+                          {exportProgress && exportProgress.total > 0 && (
+                            <div className="w-full bg-secondary rounded-full h-2 mt-2">
+                              <div 
+                                className="bg-primary h-2 rounded-full transition-all duration-300" 
+                                style={{ width: `${exportProgress.percentage}%` }}
+                              />
+                            </div>
+                          )}
+                          <p className="text-xs text-muted-foreground mt-2">
                             You can refresh or navigate away safely
                           </p>
                         </div>
