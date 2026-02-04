@@ -11,13 +11,78 @@ interface ExportJob {
 }
 
 const STORAGE_KEY = 'pendingExportJobId';
+const BATCH_INTERVAL = 1500; // Process batches every 1.5 seconds
 
 export function useBackgroundExport() {
   const [exportJob, setExportJob] = useState<ExportJob | null>(null);
   const [isPolling, setIsPolling] = useState(false);
-  const [isRestoring, setIsRestoring] = useState(true); // Track if we're restoring from localStorage
+  const [isRestoring, setIsRestoring] = useState(true);
   const pollIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const hasRestoredRef = useRef(false); // Prevent double restore
+  const batchIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const hasRestoredRef = useRef(false);
+  const isProcessingBatchRef = useRef(false);
+
+  const processBatch = useCallback(async (jobId: string) => {
+    if (isProcessingBatchRef.current) return;
+    isProcessingBatchRef.current = true;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.error('No session for batch processing');
+        isProcessingBatchRef.current = false;
+        return;
+      }
+
+      const response = await supabase.functions.invoke('export-applicants', {
+        body: { action: 'process-batch', jobId },
+      });
+
+      if (response.error) {
+        console.error('Batch processing error:', response.error);
+        isProcessingBatchRef.current = false;
+        return;
+      }
+
+      const result = response.data;
+      
+      if (result.status === 'completed') {
+        setExportJob(prev => prev ? {
+          ...prev,
+          status: 'completed',
+          processed_items: prev.total_items
+        } : null);
+        setIsPolling(false);
+        // Stop batch processing
+        if (batchIntervalRef.current) {
+          clearInterval(batchIntervalRef.current);
+          batchIntervalRef.current = null;
+        }
+      } else if (result.status === 'failed') {
+        setExportJob(prev => prev ? {
+          ...prev,
+          status: 'failed',
+          error_message: result.error
+        } : null);
+        setIsPolling(false);
+        if (batchIntervalRef.current) {
+          clearInterval(batchIntervalRef.current);
+          batchIntervalRef.current = null;
+        }
+      } else if (result.continue) {
+        // Update progress
+        setExportJob(prev => prev ? {
+          ...prev,
+          processed_items: result.processed_items,
+          total_items: result.total_items
+        } : null);
+      }
+    } catch (error) {
+      console.error('Failed to process batch:', error);
+    } finally {
+      isProcessingBatchRef.current = false;
+    }
+  }, []);
 
   const startExport = useCallback(async () => {
     try {
@@ -30,23 +95,32 @@ export function useBackgroundExport() {
 
       if (response.error) throw response.error;
 
-      const { jobId } = response.data;
+      const { jobId, totalItems } = response.data;
+      
       setExportJob({ 
         id: jobId, 
         status: 'processing', 
-        total_items: 0, 
+        total_items: totalItems || 0, 
         processed_items: 0, 
         file_url: null,
         error_message: null 
       });
       setIsPolling(true);
 
+      // Start batch processing
+      batchIntervalRef.current = setInterval(() => {
+        processBatch(jobId);
+      }, BATCH_INTERVAL);
+
+      // Process first batch immediately
+      processBatch(jobId);
+
       return jobId;
     } catch (error) {
       console.error('Failed to start export:', error);
       throw error;
     }
-  }, []);
+  }, [processBatch]);
 
   const checkStatus = useCallback(async (jobId: string) => {
     try {
@@ -61,6 +135,10 @@ export function useBackgroundExport() {
 
       if (job.status === 'completed' || job.status === 'failed') {
         setIsPolling(false);
+        if (batchIntervalRef.current) {
+          clearInterval(batchIntervalRef.current);
+          batchIntervalRef.current = null;
+        }
       }
 
       return job;
@@ -95,14 +173,19 @@ export function useBackgroundExport() {
       clearInterval(pollIntervalRef.current);
       pollIntervalRef.current = null;
     }
+    if (batchIntervalRef.current) {
+      clearInterval(batchIntervalRef.current);
+      batchIntervalRef.current = null;
+    }
+    localStorage.removeItem(STORAGE_KEY);
   }, []);
 
-  // Poll for status updates
+  // Poll for status updates (backup, in case batch processing is being done by another tab)
   useEffect(() => {
     if (isPolling && exportJob?.id) {
       pollIntervalRef.current = setInterval(() => {
         checkStatus(exportJob.id);
-      }, 2000);
+      }, 3000);
 
       return () => {
         if (pollIntervalRef.current) {
@@ -122,7 +205,7 @@ export function useBackgroundExport() {
     }
   }, [exportJob]);
 
-  // Restore pending export on mount - runs once
+  // Restore pending export on mount and resume batch processing
   useEffect(() => {
     if (hasRestoredRef.current) return;
     hasRestoredRef.current = true;
@@ -147,6 +230,12 @@ export function useBackgroundExport() {
           console.log('Restored export job status:', job);
           if (job.status === 'processing' || job.status === 'pending') {
             setIsPolling(true);
+            // Resume batch processing
+            batchIntervalRef.current = setInterval(() => {
+              processBatch(pendingJobId);
+            }, BATCH_INTERVAL);
+            // Process first batch immediately
+            processBatch(pendingJobId);
           }
         })
         .catch((err) => {
@@ -160,14 +249,26 @@ export function useBackgroundExport() {
     } else {
       setIsRestoring(false);
     }
-  }, [checkStatus]);
+  }, [checkStatus, processBatch]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (pollIntervalRef.current) {
+        clearInterval(pollIntervalRef.current);
+      }
+      if (batchIntervalRef.current) {
+        clearInterval(batchIntervalRef.current);
+      }
+    };
+  }, []);
 
   return {
     exportJob,
     isExporting: exportJob?.status === 'processing' || exportJob?.status === 'pending',
     isCompleted: exportJob?.status === 'completed',
     isFailed: exportJob?.status === 'failed',
-    isRestoring, // New: indicates if we're loading from storage
+    isRestoring,
     progress: exportJob ? {
       processed: exportJob.processed_items,
       total: exportJob.total_items,
