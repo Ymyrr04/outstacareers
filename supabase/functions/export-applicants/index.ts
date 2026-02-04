@@ -8,7 +8,7 @@ const corsHeaders = {
 };
 
 // Process a batch of CVs in each function call to avoid timeout
-const BATCH_SIZE = 25;
+const BATCH_SIZE = 20;
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -67,12 +67,14 @@ serve(async (req) => {
         .not('cv_file_url', 'is', null);
 
       // Update job with total count and set to processing
+      // file_url stores temp folder path during processing
       await supabase
         .from('export_jobs')
         .update({ 
           total_items: count || 0,
           processed_items: 0,
-          status: 'processing'
+          status: 'processing',
+          file_url: `temp/${job.id}` // Temp folder path
         })
         .eq('id', job.id);
 
@@ -82,7 +84,6 @@ serve(async (req) => {
     }
 
     if (action === 'process-batch') {
-      // Process next batch of CVs
       const { data: job, error: jobError } = await supabase
         .from('export_jobs')
         .select('*')
@@ -103,11 +104,12 @@ serve(async (req) => {
       }
 
       const currentOffset = job.processed_items || 0;
+      const tempFolder = `temp/${jobId}`;
 
       // Fetch next batch of applicants with CVs
       const { data: applicants, error: fetchError } = await supabase
         .from('applicants_prescreen')
-        .select('*')
+        .select('id, full_name, job_title, cv_file_url')
         .not('cv_file_url', 'is', null)
         .order('submitted_at', { ascending: false })
         .range(currentOffset, currentOffset + BATCH_SIZE - 1);
@@ -116,12 +118,11 @@ serve(async (req) => {
 
       if (!applicants || applicants.length === 0) {
         // All batches processed, now create the final ZIP
-        return await createFinalZip(supabase, jobId);
+        return await createFinalZip(supabase, jobId, tempFolder);
       }
 
-      // Download this batch of CVs and store temporarily
+      // Process this batch - copy CVs to temp folder
       let successCount = 0;
-      const batchResults: { applicantId: string; fileName: string; data: string }[] = [];
 
       for (const applicant of applicants) {
         if (!applicant.cv_file_url) continue;
@@ -132,6 +133,7 @@ serve(async (req) => {
             cvPath = cvPath.split('/cv-uploads/').pop()!;
           }
 
+          // Download CV
           const { data: fileData, error: downloadError } = await supabase.storage
             .from('cv-uploads')
             .download(cvPath);
@@ -142,42 +144,32 @@ serve(async (req) => {
             const ext = cvPath.split('.').pop() || 'pdf';
             const filename = `${safeName} - ${safeTitle} - ${applicant.id.slice(0, 8)}.${ext}`;
             
+            // Upload to temp folder in exports bucket
             const arrayBuffer = await fileData.arrayBuffer();
-            // Convert to base64 for storage
-            const base64 = btoa(
-              new Uint8Array(arrayBuffer).reduce((data, byte) => data + String.fromCharCode(byte), '')
-            );
+            await supabase.storage
+              .from('exports')
+              .upload(`${tempFolder}/${filename}`, arrayBuffer, {
+                contentType: fileData.type || 'application/pdf',
+                upsert: true
+              });
             
-            batchResults.push({
-              applicantId: applicant.id,
-              fileName: filename,
-              data: base64
-            });
             successCount++;
           }
         } catch (e) {
-          console.error(`Failed to download CV for ${applicant.full_name}:`, e);
+          console.error(`Failed to process CV for ${applicant.full_name}:`, e);
         }
       }
-
-      // Store batch results in a temporary table or directly in the job
-      // For simplicity, we'll store batch file references and build ZIP at the end
-      const existingData = job.file_url ? JSON.parse(job.file_url) : [];
-      const updatedData = [...existingData, ...batchResults];
 
       // Update progress
       const newProcessedCount = currentOffset + applicants.length;
       await supabase
         .from('export_jobs')
-        .update({ 
-          processed_items: newProcessedCount,
-          file_url: JSON.stringify(updatedData)
-        })
+        .update({ processed_items: newProcessedCount })
         .eq('id', jobId);
 
       // Check if we've processed all items
       if (newProcessedCount >= job.total_items) {
-        return await createFinalZip(supabase, jobId);
+        return await createFinalZip(supabase, jobId, tempFolder);
       }
 
       return new Response(JSON.stringify({ 
@@ -191,6 +183,22 @@ serve(async (req) => {
       });
     }
 
+    if (action === 'finalize') {
+      // Manual finalize if needed
+      const { data: job } = await supabase
+        .from('export_jobs')
+        .select('*')
+        .eq('id', jobId)
+        .single();
+      
+      if (job && job.status === 'processing') {
+        return await createFinalZip(supabase, jobId, `temp/${jobId}`);
+      }
+      return new Response(JSON.stringify({ status: job?.status || 'not_found' }), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     if (action === 'status') {
       const { data: job, error } = await supabase
         .from('export_jobs')
@@ -200,7 +208,6 @@ serve(async (req) => {
 
       if (error) throw error;
 
-      // Return status without file_url (it contains temp data)
       return new Response(JSON.stringify({
         ...job,
         file_url: job.status === 'completed' ? 'ready' : null
@@ -223,9 +230,8 @@ serve(async (req) => {
         });
       }
 
-      // The file_url now contains the actual storage path
       const storagePath = job.file_url;
-      if (!storagePath || storagePath === 'ready') {
+      if (!storagePath || storagePath.startsWith('temp/')) {
         return new Response(JSON.stringify({ error: 'Export file not found' }), {
           status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -234,7 +240,7 @@ serve(async (req) => {
 
       const { data: signedUrl } = await supabase.storage
         .from('exports')
-        .createSignedUrl(storagePath, 3600); // 1 hour expiry
+        .createSignedUrl(storagePath, 3600);
 
       return new Response(JSON.stringify({ url: signedUrl?.signedUrl }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -256,19 +262,21 @@ serve(async (req) => {
   }
 });
 
-async function createFinalZip(supabase: any, jobId: string) {
+async function createFinalZip(supabase: any, jobId: string, tempFolder: string) {
   try {
-    // Fetch the job with accumulated CV data
-    const { data: job, error: jobError } = await supabase
-      .from('export_jobs')
-      .select('*')
-      .eq('id', jobId)
-      .single();
+    console.log(`Creating final ZIP for job ${jobId} from ${tempFolder}`);
+    
+    // List all files in temp folder
+    const { data: tempFiles, error: listError } = await supabase.storage
+      .from('exports')
+      .list(tempFolder);
 
-    if (jobError || !job) throw new Error('Job not found');
+    if (listError) {
+      console.error('Error listing temp files:', listError);
+      throw listError;
+    }
 
-    const cvData: { applicantId: string; fileName: string; data: string }[] = 
-      job.file_url ? JSON.parse(job.file_url) : [];
+    console.log(`Found ${tempFiles?.length || 0} files in temp folder`);
 
     // Fetch all applicants for CSV
     const { data: applicants, error: fetchError } = await supabase
@@ -307,25 +315,31 @@ async function createFinalZip(supabase: any, jobId: string) {
 
     zip.file(`applicants_${dateStr}.csv`, csvContent);
 
-    // Add CVs from accumulated data
+    // Download temp files and add to ZIP
     const cvFolder = zip.folder('CVs');
-    for (const cv of cvData) {
+    
+    for (const file of (tempFiles || [])) {
+      if (file.name === '.emptyFolderPlaceholder') continue;
+      
       try {
-        // Decode base64 back to binary
-        const binaryString = atob(cv.data);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
+        const { data: fileData, error: downloadError } = await supabase.storage
+          .from('exports')
+          .download(`${tempFolder}/${file.name}`);
+
+        if (!downloadError && fileData) {
+          const arrayBuffer = await fileData.arrayBuffer();
+          cvFolder?.file(file.name, arrayBuffer);
         }
-        cvFolder?.file(cv.fileName, bytes);
       } catch (e) {
-        console.error(`Failed to add CV ${cv.fileName} to ZIP:`, e);
+        console.error(`Failed to add ${file.name} to ZIP:`, e);
       }
     }
 
     // Generate final ZIP
     const zipBlob = await zip.generateAsync({ type: 'arraybuffer' });
     const fileName = `export_${dateStr}_${jobId}.zip`;
+
+    console.log(`Uploading final ZIP: ${fileName}`);
 
     // Upload to storage
     const { error: uploadError } = await supabase.storage
@@ -337,7 +351,15 @@ async function createFinalZip(supabase: any, jobId: string) {
 
     if (uploadError) throw uploadError;
 
-    // Mark job as complete with storage path
+    // Clean up temp files
+    if (tempFiles && tempFiles.length > 0) {
+      const filesToDelete = tempFiles.map((f: any) => `${tempFolder}/${f.name}`);
+      await supabase.storage
+        .from('exports')
+        .remove(filesToDelete);
+    }
+
+    // Mark job as complete
     await supabase
       .from('export_jobs')
       .update({ 
@@ -347,15 +369,13 @@ async function createFinalZip(supabase: any, jobId: string) {
       })
       .eq('id', jobId);
 
+    console.log(`Export completed: ${fileName}`);
+
     return new Response(JSON.stringify({ 
       status: 'completed',
       message: 'Export complete'
     }), {
-      headers: { 
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-        'Content-Type': 'application/json' 
-      },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
   } catch (error: unknown) {
@@ -376,11 +396,7 @@ async function createFinalZip(supabase: any, jobId: string) {
       error: message
     }), {
       status: 500,
-      headers: { 
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-        'Content-Type': 'application/json' 
-      },
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 }
