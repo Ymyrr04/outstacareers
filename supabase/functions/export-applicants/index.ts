@@ -266,17 +266,35 @@ async function createFinalZip(supabase: any, jobId: string, tempFolder: string) 
   try {
     console.log(`Creating final ZIP for job ${jobId} from ${tempFolder}`);
     
-    // List all files in temp folder
-    const { data: tempFiles, error: listError } = await supabase.storage
-      .from('exports')
-      .list(tempFolder);
+    // List ALL files in temp folder using pagination (default limit is 100)
+    let allTempFiles: any[] = [];
+    let offset = 0;
+    const pageSize = 1000; // Max allowed by Supabase Storage
+    
+    while (true) {
+      const { data: tempFiles, error: listError } = await supabase.storage
+        .from('exports')
+        .list(tempFolder, {
+          limit: pageSize,
+          offset: offset
+        });
 
-    if (listError) {
-      console.error('Error listing temp files:', listError);
-      throw listError;
+      if (listError) {
+        console.error('Error listing temp files:', listError);
+        throw listError;
+      }
+      
+      if (!tempFiles || tempFiles.length === 0) break;
+      
+      allTempFiles = [...allTempFiles, ...tempFiles];
+      
+      // If we got fewer than pageSize, we've reached the end
+      if (tempFiles.length < pageSize) break;
+      
+      offset += pageSize;
     }
 
-    console.log(`Found ${tempFiles?.length || 0} files in temp folder`);
+    console.log(`Found ${allTempFiles.length} files in temp folder`);
 
     // Fetch all applicants for CSV
     const { data: applicants, error: fetchError } = await supabase
@@ -318,7 +336,7 @@ async function createFinalZip(supabase: any, jobId: string, tempFolder: string) 
     // Download temp files and add to ZIP
     const cvFolder = zip.folder('CVs');
     
-    for (const file of (tempFiles || [])) {
+    for (const file of allTempFiles) {
       if (file.name === '.emptyFolderPlaceholder') continue;
       
       try {
@@ -352,8 +370,8 @@ async function createFinalZip(supabase: any, jobId: string, tempFolder: string) 
     if (uploadError) throw uploadError;
 
     // Clean up temp files
-    if (tempFiles && tempFiles.length > 0) {
-      const filesToDelete = tempFiles.map((f: any) => `${tempFolder}/${f.name}`);
+    if (allTempFiles.length > 0) {
+      const filesToDelete = allTempFiles.map((f: any) => `${tempFolder}/${f.name}`);
       await supabase.storage
         .from('exports')
         .remove(filesToDelete);
