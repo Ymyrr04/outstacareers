@@ -228,22 +228,36 @@ export function useBackgroundExport() {
       checkStatus(pendingJobId)
         .then((job) => {
           console.log('Restored export job status:', job);
-          if (job.status === 'processing' || job.status === 'pending') {
-            setIsPolling(true);
-            // Resume batch processing
-            batchIntervalRef.current = setInterval(() => {
-              processBatch(pendingJobId);
-            }, BATCH_INTERVAL);
-            // Process first batch immediately
-            processBatch(pendingJobId);
+          
+          // If job failed or completed, clear it and show appropriate state
+          if (job.status === 'failed') {
+            console.log('Export job was failed, clearing...');
+            localStorage.removeItem(STORAGE_KEY);
+            setExportJob(prev => prev ? { ...prev, status: 'failed', error_message: job.error_message } : null);
+            setIsRestoring(false);
+            return;
           }
+          
+          if (job.status === 'completed') {
+            console.log('Export job was completed');
+            setIsRestoring(false);
+            return;
+          }
+          
+          // Job is still processing, resume
+          setIsPolling(true);
+          // Resume batch processing
+          batchIntervalRef.current = setInterval(() => {
+            processBatch(pendingJobId);
+          }, BATCH_INTERVAL);
+          // Process first batch immediately
+          processBatch(pendingJobId);
+          setIsRestoring(false);
         })
         .catch((err) => {
           console.error('Failed to restore export job:', err);
           localStorage.removeItem(STORAGE_KEY);
           setExportJob(null);
-        })
-        .finally(() => {
           setIsRestoring(false);
         });
     } else {
