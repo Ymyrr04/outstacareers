@@ -126,6 +126,7 @@ export type Database = {
           original_job_title: string | null
           phone: string | null
           power_backup: boolean
+          pre_archive_status: string | null
           ranking_status: string | null
           reprofiled_at: string | null
           role_experience_score: number | null
@@ -180,6 +181,7 @@ export type Database = {
           original_job_title?: string | null
           phone?: string | null
           power_backup: boolean
+          pre_archive_status?: string | null
           ranking_status?: string | null
           reprofiled_at?: string | null
           role_experience_score?: number | null
@@ -234,6 +236,7 @@ export type Database = {
           original_job_title?: string | null
           phone?: string | null
           power_backup?: boolean
+          pre_archive_status?: string | null
           ranking_status?: string | null
           reprofiled_at?: string | null
           role_experience_score?: number | null
