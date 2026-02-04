@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { X, Loader2, CheckCircle, ExternalLink, Upload, FileText, Clock, Mic } from "lucide-react";
+import { X, Loader2, CheckCircle, ExternalLink, Upload, FileText, Clock, Mic, AlertCircle, CalendarClock } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { z } from "zod";
@@ -79,7 +79,19 @@ const JOB_SOURCE_OPTIONS = [
   'Other'
 ];
 
-type Step = 'prescreening' | 'cv-upload' | 'interview' | 'submitting';
+type Step = 'prescreening' | 'cv-upload' | 'interview' | 'submitting' | 'cooldown' | 'incomplete';
+
+interface CooldownData {
+  daysRemaining: number;
+  eligibleDate: string;
+  completedAt: string;
+}
+
+interface IncompleteData {
+  sessionId: string;
+  resumeUrl: string;
+  expiresAt: string;
+}
 
 const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProps) => {
   const isPageMode = mode === 'page';
@@ -100,6 +112,10 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
   // Interview state
   const [interviewSessionId, setInterviewSessionId] = useState<string>("");
   const [applicantId, setApplicantId] = useState<string>("");
+  
+  // Duplicate application state
+  const [cooldownData, setCooldownData] = useState<CooldownData | null>(null);
+  const [incompleteData, setIncompleteData] = useState<IncompleteData | null>(null);
   
   const [formData, setFormData] = useState<FormData>({
     full_name: "",
@@ -394,8 +410,31 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
         },
       });
 
+      // Handle special error responses
+      if (response.data?.error === 'cooldown_period') {
+        setCooldownData({
+          daysRemaining: response.data.days_remaining,
+          eligibleDate: response.data.eligible_date,
+          completedAt: response.data.completed_at
+        });
+        setCurrentStep('cooldown');
+        setIsScoring(false);
+        return;
+      }
+      
+      if (response.data?.error === 'incomplete_assessment') {
+        setIncompleteData({
+          sessionId: response.data.session_id,
+          resumeUrl: response.data.resume_url,
+          expiresAt: response.data.expires_at
+        });
+        setCurrentStep('incomplete');
+        setIsScoring(false);
+        return;
+      }
+
       if (response.error || response.data?.error) {
-        throw new Error(response.data?.error || response.error?.message || 'Failed to submit application');
+        throw new Error(response.data?.message || response.data?.error || response.error?.message || 'Failed to submit application');
       }
 
       const newApplicantId = response.data?.applicant_id;
@@ -514,6 +553,15 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
     </div>
   );
 
+  // Calculate formatted date helper
+  const formatDate = (dateStr: string) => {
+    return new Date(dateStr).toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
   if (isSuccess) {
     if (isPageMode) {
       return (
@@ -535,6 +583,106 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
             <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
             <h3 className="text-xl font-bold text-foreground mb-2">Application Submitted!</h3>
             <p className="text-muted-foreground">Redirecting you to complete your application...</p>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Cooldown period screen
+  if (currentStep === 'cooldown' && cooldownData) {
+    const content = (
+      <div className="p-8 text-center">
+        <CalendarClock className="w-16 h-16 text-amber-500 mx-auto mb-4" />
+        <h3 className="text-2xl font-bold text-foreground mb-3">Application Cooldown</h3>
+        <p className="text-muted-foreground mb-6">
+          You already completed the assessment for <strong>{job.title}</strong>.
+        </p>
+        <div className="bg-muted/50 rounded-lg p-6 mb-6">
+          <p className="text-sm text-muted-foreground mb-2">You can re-apply in</p>
+          <p className="text-4xl font-bold text-primary">{cooldownData.daysRemaining} days</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Eligible on: <strong>{formatDate(cooldownData.eligibleDate)}</strong>
+          </p>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          This 90-day cooldown helps ensure fair evaluation for all candidates.
+        </p>
+        <Button onClick={onClose} variant="outline" className="mt-2">
+          Browse Other Positions
+        </Button>
+      </div>
+    );
+
+    if (isPageMode) {
+      return content;
+    }
+
+    return (
+      <>
+        <div 
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" 
+          onClick={onClose}
+        />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-background rounded-xl shadow-2xl border border-border p-0 animate-in fade-in zoom-in-95 duration-300">
+            {content}
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // Incomplete assessment screen
+  if (currentStep === 'incomplete' && incompleteData) {
+    const expiresAt = new Date(incompleteData.expiresAt);
+    const now = new Date();
+    const hoursRemaining = Math.max(0, Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60)));
+    
+    const content = (
+      <div className="p-8 text-center">
+        <AlertCircle className="w-16 h-16 text-blue-500 mx-auto mb-4" />
+        <h3 className="text-2xl font-bold text-foreground mb-3">Incomplete Assessment</h3>
+        <p className="text-muted-foreground mb-6">
+          You have an incomplete assessment for <strong>{job.title}</strong>.
+        </p>
+        <div className="bg-muted/50 rounded-lg p-6 mb-6">
+          <p className="text-sm text-muted-foreground mb-2">Time remaining to complete</p>
+          <p className="text-4xl font-bold text-primary">{hoursRemaining} hours</p>
+          <p className="text-sm text-muted-foreground mt-2">
+            Expires: {formatDate(incompleteData.expiresAt)}
+          </p>
+        </div>
+        <p className="text-sm text-muted-foreground mb-6">
+          Continue where you left off to complete your application.
+        </p>
+        <div className="flex flex-col gap-3">
+          <Button 
+            onClick={() => window.location.href = incompleteData.resumeUrl}
+            className="w-full"
+          >
+            Resume Assessment
+          </Button>
+          <Button onClick={onClose} variant="outline" className="w-full">
+            Cancel
+          </Button>
+        </div>
+      </div>
+    );
+
+    if (isPageMode) {
+      return content;
+    }
+
+    return (
+      <>
+        <div 
+          className="fixed inset-0 z-40 bg-black/40 backdrop-blur-sm animate-in fade-in duration-200" 
+          onClick={onClose}
+        />
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="w-full max-w-md bg-background rounded-xl shadow-2xl border border-border p-0 animate-in fade-in zoom-in-95 duration-300">
+            {content}
           </div>
         </div>
       </>

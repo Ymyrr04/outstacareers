@@ -402,6 +402,89 @@ serve(async (req) => {
       }
     }
 
+    // Check for existing applications for this email + job combination
+    const applicantEmail = body.email.trim().toLowerCase();
+    if (body.job_id) {
+      // Find existing applications for this email + job
+      const { data: existingApps, error: existingError } = await supabase
+        .from('applicants_prescreen')
+        .select('id, status, submitted_at')
+        .eq('email', applicantEmail)
+        .eq('job_id', body.job_id)
+        .order('submitted_at', { ascending: false });
+
+      if (!existingError && existingApps && existingApps.length > 0) {
+        const latestApp = existingApps[0];
+        
+        // Check for completed interview sessions (status = 'completed' or 'completed_manual_review')
+        const { data: completedSessions } = await supabase
+          .from('interview_sessions')
+          .select('id, completed_at, status')
+          .eq('applicant_id', latestApp.id)
+          .in('status', ['completed', 'completed_manual_review'])
+          .order('completed_at', { ascending: false })
+          .limit(1);
+
+        if (completedSessions && completedSessions.length > 0) {
+          const completedSession = completedSessions[0];
+          const completedAt = new Date(completedSession.completed_at);
+          const now = new Date();
+          const daysSinceCompletion = Math.floor((now.getTime() - completedAt.getTime()) / (1000 * 60 * 60 * 24));
+          const cooldownDays = 90;
+          
+          if (daysSinceCompletion < cooldownDays) {
+            const daysRemaining = cooldownDays - daysSinceCompletion;
+            const eligibleDate = new Date(completedAt.getTime() + cooldownDays * 24 * 60 * 60 * 1000);
+            
+            console.log(`Applicant ${applicantEmail} already completed assessment for job ${body.job_id}. Days remaining: ${daysRemaining}`);
+            
+            return new Response(JSON.stringify({ 
+              error: 'cooldown_period',
+              message: `You have already completed the assessment for this role.`,
+              days_remaining: daysRemaining,
+              eligible_date: eligibleDate.toISOString(),
+              completed_at: completedSession.completed_at
+            }), {
+              status: 409,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+            });
+          }
+        }
+
+        // Check for incomplete interview sessions within 2 days (resume window)
+        const twoDaysAgo = new Date();
+        twoDaysAgo.setDate(twoDaysAgo.getDate() - 2);
+        
+        const { data: inProgressSessions } = await supabase
+          .from('interview_sessions')
+          .select('id, started_at, status')
+          .eq('applicant_id', latestApp.id)
+          .eq('status', 'in_progress')
+          .gte('started_at', twoDaysAgo.toISOString())
+          .order('started_at', { ascending: false })
+          .limit(1);
+
+        if (inProgressSessions && inProgressSessions.length > 0) {
+          const session = inProgressSessions[0];
+          const startedAt = new Date(session.started_at);
+          const expiresAt = new Date(startedAt.getTime() + 2 * 24 * 60 * 60 * 1000);
+          
+          console.log(`Applicant ${applicantEmail} has incomplete assessment for job ${body.job_id}. Session: ${session.id}`);
+          
+          return new Response(JSON.stringify({ 
+            error: 'incomplete_assessment',
+            message: 'You have an incomplete assessment for this role. Please complete it to continue.',
+            session_id: session.id,
+            resume_url: `/interview/${session.id}`,
+            expires_at: expiresAt.toISOString()
+          }), {
+            status: 409,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          });
+        }
+      }
+    }
+
     // Insert the application WITHOUT scoring data - scoring will run in background
     const insertData: Record<string, unknown> = {
       full_name: body.full_name.trim(),
