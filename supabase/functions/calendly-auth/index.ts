@@ -7,7 +7,7 @@ const corsHeaders = {
 
 const CALENDLY_CLIENT_ID = Deno.env.get('CALENDLY_CLIENT_ID');
 const CALENDLY_CLIENT_SECRET = Deno.env.get('CALENDLY_CLIENT_SECRET');
-const REDIRECT_URI = 'https://outstacareers.lovable.app/auth/calendly/callback';
+const REDIRECT_URI = 'https://outstahub.com/auth/calendly/callback';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {

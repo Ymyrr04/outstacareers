@@ -241,7 +241,7 @@ async function notifyAssignedAdmin(
       },
     });
 
-    const applicantProfileUrl = `https://outstacareers.lovable.app/admin?applicant=${applicantId}`;
+    const applicantProfileUrl = `https://outstahub.com/admin?applicant=${applicantId}`;
     const subject = `New Application: ${applicantName} applied for ${jobTitle}`;
     const bodyHtml = `
       <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #333;">
