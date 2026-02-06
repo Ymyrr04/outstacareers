@@ -445,7 +445,7 @@ serve(async (req) => {
               eligible_date: eligibleDate.toISOString(),
               completed_at: completedSession.completed_at
             }), {
-              status: 409,
+              status: 200,
               headers: { ...corsHeaders, 'Content-Type': 'application/json' },
             });
           }
@@ -478,7 +478,7 @@ serve(async (req) => {
             resume_url: `/interview/${session.id}`,
             expires_at: expiresAt.toISOString()
           }), {
-            status: 409,
+            status: 200,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           });
         }
