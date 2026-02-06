@@ -10,6 +10,7 @@ interface PaginatedSearchResultsProps {
   statusOptions: readonly string[];
   onUpdateStatus: (id: string, status: string) => void;
   onViewDetails: (id: string) => void;
+  onNavigateToFolder?: (id: string, status: string) => void;
   onDelete: (id: string) => void;
   onPreviewCv: (id: string, path: string, name: string, cvText: string | null) => void;
   onDownloadCv: (id: string, path: string, name: string) => void;
@@ -33,6 +34,7 @@ export const PaginatedSearchResults = ({
   statusOptions,
   onUpdateStatus,
   onViewDetails,
+  onNavigateToFolder,
   onDelete,
   onPreviewCv,
   onDownloadCv,
@@ -68,6 +70,18 @@ export const PaginatedSearchResults = ({
     updateApplicant(id, { status });
     onUpdateStatus(id, status);
   }, [updateApplicant, onUpdateStatus]);
+
+  // When View is clicked, navigate to the applicant's folder
+  const handleViewDetails = useCallback((id: string) => {
+    if (onNavigateToFolder) {
+      const applicant = applicants.find(a => a.id === id);
+      if (applicant) {
+        onNavigateToFolder(id, applicant.status);
+        return;
+      }
+    }
+    onViewDetails(id);
+  }, [applicants, onNavigateToFolder, onViewDetails]);
 
   // When star is toggled, update local state
   const handleToggleStar = useCallback((id: string) => {
@@ -113,7 +127,7 @@ export const PaginatedSearchResults = ({
       onLoadMore={loadNextPage}
       statusOptions={statusOptions}
       onUpdateStatus={handleUpdateStatus}
-      onViewDetails={onViewDetails}
+      onViewDetails={handleViewDetails}
       onDelete={onDelete}
       onPreviewCv={onPreviewCv}
       onDownloadCv={onDownloadCv}
