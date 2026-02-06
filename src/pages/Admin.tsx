@@ -50,6 +50,7 @@ import { ThemeToggle } from '@/components/ThemeToggle';
 import { getAdminDisplayName, getAdminAvatar } from '@/lib/adminDisplayNames';
 import { useTabPermissions, TabId } from '@/hooks/useTabPermissions';
 import { AdminPermissionsManager } from '@/components/AdminPermissionsManager';
+import { HiredAssignmentDialog } from '@/components/HiredAssignmentDialog';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 // Status options for applicant tracking - new pipeline order
@@ -251,6 +252,17 @@ const Admin = () => {
   
   // Reprofiling state
   const [reprofilingApplicant, setReprofilingApplicant] = useState<Applicant | null>(null);
+  
+  // Hired assignment dialog state
+  const [hiredAssignmentApplicant, setHiredAssignmentApplicant] = useState<{
+    id: string;
+    full_name: string;
+    email: string;
+    phone: string | null;
+    location: string;
+    job_title: string;
+  } | null>(null);
+  const [pendingHiredStatusApplicantId, setPendingHiredStatusApplicantId] = useState<string | null>(null);
   
   // Drag and drop state
   const [draggedApplicant, setDraggedApplicant] = useState<Applicant | null>(null);
@@ -972,6 +984,20 @@ const Admin = () => {
   const handleUpdateApplicantStatus = async (applicantId: string, newStatus: ApplicantStatusOption) => {
     const applicant = applicants.find(a => a.id === applicantId);
     if (!applicant) return;
+
+    // If moving to Hired, open the assignment dialog first
+    if (newStatus === 'Hired' && applicant.status !== 'Hired') {
+      setPendingHiredStatusApplicantId(applicantId);
+      setHiredAssignmentApplicant({
+        id: applicant.id,
+        full_name: applicant.full_name,
+        email: applicant.email,
+        phone: applicant.phone,
+        location: applicant.location,
+        job_title: applicant.job_title,
+      });
+      // Still update the status immediately
+    }
 
     const { error } = await supabase
       .from('applicants_prescreen')
@@ -3201,6 +3227,23 @@ const Admin = () => {
         onReprofiled={() => {
           fetchApplicants();
           setReprofilingApplicant(null);
+        }}
+      />
+
+      {/* Hired Assignment Dialog */}
+      <HiredAssignmentDialog
+        open={!!hiredAssignmentApplicant}
+        onOpenChange={(open) => {
+          if (!open) {
+            setHiredAssignmentApplicant(null);
+            setPendingHiredStatusApplicantId(null);
+          }
+        }}
+        applicant={hiredAssignmentApplicant}
+        onComplete={() => {
+          fetchApplicants();
+          setHiredAssignmentApplicant(null);
+          setPendingHiredStatusApplicantId(null);
         }}
       />
 
