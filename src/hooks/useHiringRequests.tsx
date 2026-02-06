@@ -271,9 +271,9 @@ export const useHiringRequests = () => {
       .from('client_hiring_requests')
       .insert({
         ...rest,
-        pipeline_stage: source.pipeline_stage === 'closed' ? 'backlog' : source.pipeline_stage,
+        pipeline_stage: source.pipeline_stage,
         comment_count: 0,
-        closed_at: null,
+        closed_at: source.pipeline_stage === 'closed' ? source.closed_at : null,
       });
 
     if (error) {
