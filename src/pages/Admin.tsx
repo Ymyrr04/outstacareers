@@ -1908,6 +1908,22 @@ const Admin = () => {
                           .update({ details_viewed_at: new Date().toISOString() })
                           .eq('id', id);
                       }}
+                      onNavigateToFolder={async (id, status) => {
+                        // Switch to folders view and navigate to the correct folder
+                        setActiveApplicantTab('folders');
+                        setActiveStatusFolder(status as ApplicantStatusFolder);
+                        // Small delay to let the tab/folder switch render
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        setExpandingApplicantId(id);
+                        await new Promise(resolve => setTimeout(resolve, 50));
+                        setExpandedApplicant(id);
+                        setExpandingApplicantId(null);
+                        // Mark as viewed
+                        await supabase
+                          .from('applicants_prescreen')
+                          .update({ details_viewed_at: new Date().toISOString() })
+                          .eq('id', id);
+                      }}
                       onDelete={handleDeleteApplicant}
                       onPreviewCv={(id, path, name, cvText) => handlePreviewCv(id, path, name, cvText)}
                       onDownloadCv={handleDownloadCv}
