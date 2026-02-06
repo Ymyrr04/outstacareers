@@ -88,7 +88,7 @@ export const HiredAssignmentDialog = ({ open, onOpenChange, applicant, onComplet
     return [
       `Full Name: ${applicant.full_name}`,
       `Preferred Name: ${form.preferred_name}`,
-      `Start Date and Time: ${form.start_date_time}`,
+      `Start Date and Time: ${form.start_date_time ? form.start_date_time.replace('T', ' ') : ''}`,
       `Rate Offered: ${form.rate_offered}`,
       `Country of Residence: ${form.country}`,
       `Active Phone number: ${form.phone}`,
@@ -151,7 +151,7 @@ export const HiredAssignmentDialog = ({ open, onOpenChange, applicant, onComplet
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Assign Hired Candidate — {applicant.full_name}</DialogTitle>
         </DialogHeader>
@@ -193,11 +193,26 @@ export const HiredAssignmentDialog = ({ open, onOpenChange, applicant, onComplet
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-xs">Start Date and Time</Label>
+              <Label className="text-xs">Start Date</Label>
               <Input
-                type="datetime-local"
-                value={form.start_date_time}
-                onChange={e => setForm({ ...form, start_date_time: e.target.value })}
+                type="date"
+                value={form.start_date_time.split('T')[0] || form.start_date_time}
+                onChange={e => {
+                  const time = form.start_date_time.includes('T') ? form.start_date_time.split('T')[1] : '';
+                  setForm({ ...form, start_date_time: time ? `${e.target.value}T${time}` : e.target.value });
+                }}
+                className="text-sm h-8"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-xs">Start Time</Label>
+              <Input
+                type="time"
+                value={form.start_date_time.includes('T') ? form.start_date_time.split('T')[1] : ''}
+                onChange={e => {
+                  const date = form.start_date_time.split('T')[0] || '';
+                  setForm({ ...form, start_date_time: date ? `${date}T${e.target.value}` : e.target.value });
+                }}
                 className="text-sm h-8"
               />
             </div>
