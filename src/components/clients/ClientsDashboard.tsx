@@ -51,8 +51,9 @@ export interface ContractorAssignment {
   hourly_rate: number | null;
   start_date: string | null;
   end_date: string | null;
-  status: 'active' | 'completed' | 'paused' | 'terminated';
+  status: string;
   notes: string | null;
+  timesheet_link: string | null;
   created_at: string;
   applicant?: {
     full_name: string;

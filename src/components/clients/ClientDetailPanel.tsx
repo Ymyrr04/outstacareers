@@ -267,9 +267,41 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
 
   const CONTRACTOR_STATUS_COLORS: Record<string, string> = {
     active: 'bg-green-500/10 text-green-600',
-    completed: 'bg-blue-500/10 text-blue-600',
-    paused: 'bg-amber-500/10 text-amber-600',
+    scheduled: 'bg-amber-500/10 text-amber-600',
+    rendering: 'bg-cyan-500/10 text-cyan-600',
+    resigned: 'bg-purple-500/10 text-purple-600',
     terminated: 'bg-red-500/10 text-red-600',
+  };
+
+  const SEPARATED_STATUSES = ['rendering', 'terminated', 'resigned'];
+
+  const activeContractors = contractors.filter(
+    a => !SEPARATED_STATUSES.includes(a.status?.toLowerCase?.() || '')
+  );
+  const previousContractors = contractors.filter(
+    a => SEPARATED_STATUSES.includes(a.status?.toLowerCase?.() || '')
+  );
+
+  const handleRemoveContractor = async (assignmentId: string) => {
+    if (!confirm('Remove this contractor from the client? This will delete the assignment record.')) return;
+
+    try {
+      const { error } = await supabase
+        .from('contractor_assignments')
+        .delete()
+        .eq('id', assignmentId);
+
+      if (error) throw error;
+
+      toast({ title: 'Contractor removed' });
+      fetchClientData();
+    } catch (err: any) {
+      toast({
+        title: 'Error',
+        description: err.message,
+        variant: 'destructive',
+      });
+    }
   };
 
   const COMMUNICATION_ICONS: Record<string, React.ReactNode> = {
@@ -455,7 +487,7 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
               </TabsTrigger>
               <TabsTrigger value="contractors" className="flex items-center gap-1">
                 <Briefcase className="w-4 h-4" />
-                Contractors ({contractors.length})
+                Contractors ({activeContractors.length})
               </TabsTrigger>
               <TabsTrigger value="communications" className="flex items-center gap-1">
                 <MessageSquare className="w-4 h-4" />
@@ -539,7 +571,7 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
             </TabsContent>
 
             {/* Contractors Tab */}
-            <TabsContent value="contractors" className="space-y-3">
+            <TabsContent value="contractors" className="space-y-4">
               <Button size="sm" onClick={() => setAddContractorOpen(true)}>
                 <Plus className="w-4 h-4 mr-2" />
                 Assign Contractor
@@ -552,39 +584,126 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
               ) : contractors.length === 0 ? (
                 <p className="text-center text-muted-foreground py-6">No contractors assigned</p>
               ) : (
-                <div className="space-y-2">
-                  {contractors.map(assignment => (
-                    <Card key={assignment.id} className="p-3">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <div className="flex items-center gap-2">
-                            <span className="font-medium">{assignment.applicant?.full_name || 'Unknown'}</span>
-                            <Badge className={CONTRACTOR_STATUS_COLORS[assignment.status]}>
-                              {assignment.status}
-                            </Badge>
+                <>
+                  {/* Active Contractors */}
+                  {activeContractors.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
+                        <Briefcase className="w-4 h-4" />
+                        Active Contractors ({activeContractors.length})
+                      </h4>
+                      {activeContractors.map(assignment => (
+                        <Card key={assignment.id} className="p-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{assignment.applicant?.full_name || 'Unknown'}</span>
+                                <Badge className={CONTRACTOR_STATUS_COLORS[assignment.status] || 'bg-muted text-muted-foreground'}>
+                                  {assignment.status}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {assignment.job_title || 'No title specified'}
+                              </p>
+                              <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground flex-wrap">
+                                {assignment.hourly_rate && (
+                                  <span className="flex items-center gap-1">
+                                    <DollarSign className="w-3 h-3" />
+                                    ${assignment.hourly_rate}/hr
+                                  </span>
+                                )}
+                                {assignment.start_date && (
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    Started {format(new Date(assignment.start_date), 'MMM d, yyyy')}
+                                  </span>
+                                )}
+                                {assignment.timesheet_link && (
+                                  <a
+                                    href={assignment.timesheet_link}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 text-primary hover:underline"
+                                  >
+                                    <Link className="w-3 h-3" />
+                                    Timesheet
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveContractor(assignment.id)}
+                              title="Remove contractor"
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
                           </div>
-                          <p className="text-sm text-muted-foreground">
-                            {assignment.job_title || 'No title specified'}
-                          </p>
-                          <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground">
-                            {assignment.hourly_rate && (
-                              <span className="flex items-center gap-1">
-                                <DollarSign className="w-3 h-3" />
-                                ${assignment.hourly_rate}/hr
-                              </span>
-                            )}
-                            {assignment.start_date && (
-                              <span className="flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                Started {format(new Date(assignment.start_date), 'MMM d, yyyy')}
-                              </span>
-                            )}
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Previous Contractors */}
+                  {previousContractors.length > 0 && (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2 mt-4">
+                        <Users className="w-4 h-4" />
+                        Previous Contractors ({previousContractors.length})
+                      </h4>
+                      {previousContractors.map(assignment => (
+                        <Card key={assignment.id} className="p-3 opacity-75">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{assignment.applicant?.full_name || 'Unknown'}</span>
+                                <Badge className={CONTRACTOR_STATUS_COLORS[assignment.status] || 'bg-muted text-muted-foreground'}>
+                                  {assignment.status}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground">
+                                {assignment.job_title || 'No title specified'}
+                              </p>
+                              <div className="flex items-center gap-4 mt-1 text-sm text-muted-foreground flex-wrap">
+                                {assignment.hourly_rate && (
+                                  <span className="flex items-center gap-1">
+                                    <DollarSign className="w-3 h-3" />
+                                    ${assignment.hourly_rate}/hr
+                                  </span>
+                                )}
+                                {assignment.start_date && (
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    Started {format(new Date(assignment.start_date), 'MMM d, yyyy')}
+                                  </span>
+                                )}
+                                {assignment.end_date && (
+                                  <span className="flex items-center gap-1">
+                                    <Calendar className="w-3 h-3" />
+                                    Ended {format(new Date(assignment.end_date), 'MMM d, yyyy')}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveContractor(assignment.id)}
+                              title="Remove contractor"
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
                           </div>
-                        </div>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
+                        </Card>
+                      ))}
+                    </div>
+                  )}
+
+                  {activeContractors.length === 0 && previousContractors.length === 0 && (
+                    <p className="text-center text-muted-foreground py-6">No contractors assigned</p>
+                  )}
+                </>
               )}
             </TabsContent>
 
