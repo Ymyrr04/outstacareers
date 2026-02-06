@@ -641,10 +641,10 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
     
     const content = (
       <div className="p-8 text-center">
-        <AlertCircle className="w-16 h-16 text-blue-500 mx-auto mb-4" />
-        <h3 className="text-2xl font-bold text-foreground mb-3">Incomplete Assessment</h3>
+        <AlertCircle className="w-16 h-16 text-amber-500 mx-auto mb-4" />
+        <h3 className="text-2xl font-bold text-foreground mb-3">You've Already Applied</h3>
         <p className="text-muted-foreground mb-6">
-          You have an incomplete assessment for <strong>{job.title}</strong>.
+          It looks like you've already applied for <strong>{job.title}</strong>, but your assessment is still incomplete. To proceed with your application, please complete your assessment.
         </p>
         <div className="bg-muted/50 rounded-lg p-6 mb-6">
           <p className="text-sm text-muted-foreground mb-2">Time remaining to complete</p>
@@ -654,7 +654,7 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
           </p>
         </div>
         <p className="text-sm text-muted-foreground mb-6">
-          Continue where you left off to complete your application.
+          Pick up right where you left off — your previous progress has been saved.
         </p>
         <div className="flex flex-col gap-3">
           <Button 
