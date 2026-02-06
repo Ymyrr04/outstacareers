@@ -120,19 +120,19 @@ export const HiredAssignmentDialog = ({ open, onOpenChange, applicant, onComplet
 
     setSaving(true);
     try {
-      // Create contractor assignment
+      // Create contractor assignment with all onboarding info
       const { error: assignError } = await supabase.from('contractor_assignments').insert({
         applicant_id: applicant.id,
         client_id: form.client_id,
         job_title: applicant.job_title,
-        hourly_rate: form.hourly_rate ? parseFloat(form.hourly_rate) : (form.rate_offered ? parseFloat(form.rate_offered) : null),
+        hourly_rate: form.rate_offered ? parseFloat(form.rate_offered.replace(/[^0-9.]/g, '')) : null,
         start_date: form.start_date_time ? form.start_date_time.split('T')[0] : null,
-        hours_per_week: form.hours_per_week ? parseFloat(form.hours_per_week) : (form.agreed_work_hours ? parseFloat(form.agreed_work_hours) : null),
+        hours_per_week: form.agreed_work_hours ? parseFloat(form.agreed_work_hours.replace(/[^0-9.]/g, '')) : null,
         is_replacement: form.is_replacement === 'replacement',
-        status: 'active',
+        status: form.start_date_time && new Date(form.start_date_time) > new Date() ? 'scheduled' : 'active',
         country: form.country || null,
         contact_number: form.phone || null,
-        source: null,
+        notes: onboardingNote,
       });
 
       if (assignError) throw assignError;
