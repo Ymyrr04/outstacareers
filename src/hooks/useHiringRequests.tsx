@@ -264,6 +264,35 @@ export const useHiringRequests = () => {
     return true;
   };
 
+  const duplicateRequest = async (source: HiringRequest): Promise<boolean> => {
+    const { client_name, id, created_at, updated_at, comment_count, closed_at, ...rest } = source as any;
+    
+    const { error } = await supabase
+      .from('client_hiring_requests')
+      .insert({
+        ...rest,
+        pipeline_stage: source.pipeline_stage === 'closed' ? 'backlog' : source.pipeline_stage,
+        comment_count: 0,
+        closed_at: null,
+      });
+
+    if (error) {
+      console.error('Error duplicating hiring request:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to duplicate hiring request',
+        variant: 'destructive',
+      });
+      return false;
+    }
+
+    toast({
+      title: 'Duplicated',
+      description: 'Hiring request duplicated successfully',
+    });
+    return true;
+  };
+
   // Group requests by pipeline stage
   const requestsByStage = PIPELINE_STAGES.reduce((acc, stage) => {
     acc[stage.id] = requests.filter(r => r.pipeline_stage === stage.id);
@@ -279,5 +308,6 @@ export const useHiringRequests = () => {
     updateRequest,
     updateStage,
     deleteRequest,
+    duplicateRequest,
   };
 };

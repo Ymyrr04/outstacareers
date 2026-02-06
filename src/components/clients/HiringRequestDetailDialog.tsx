@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useHiringRequests, type HiringRequest, type Priority, type ClientStatus } from '@/hooks/useHiringRequests';
 import { usePipelineStages } from '@/hooks/usePipelineStages';
 import { useSlackNotifications } from '@/hooks/useSlackNotifications';
-import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X, MessageSquare, Send, Save, UserCircle, Pencil, SmilePlus, ChevronDown } from 'lucide-react';
+import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X, MessageSquare, Send, Save, UserCircle, Pencil, SmilePlus, ChevronDown, Copy } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { WysiwygEditor } from '@/components/WysiwygEditor';
 import { CommentEditor, type CommentEditorRef } from '@/components/CommentEditor';
@@ -82,12 +82,13 @@ export const HiringRequestDetailDialog = ({
   onOpenChange,
   onUpdated 
 }: HiringRequestDetailDialogProps) => {
-  const { updateRequest, deleteRequest } = useHiringRequests();
+  const { updateRequest, deleteRequest, duplicateRequest } = useHiringRequests();
   const { stages } = usePipelineStages();
   const { notifyMention, notifyStatusChange } = useSlackNotifications();
   const { user } = useAuth();
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   const [editingField, setEditingField] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
@@ -444,6 +445,19 @@ export const HiringRequestDetailDialog = ({
     setDeleting(true);
     const success = await deleteRequest(request.id);
     setDeleting(false);
+
+    if (success) {
+      onOpenChange(false);
+      onUpdated?.();
+    }
+  };
+
+  const handleDuplicate = async () => {
+    if (!request) return;
+    
+    setDuplicating(true);
+    const success = await duplicateRequest(request);
+    setDuplicating(false);
 
     if (success) {
       onOpenChange(false);
@@ -1057,6 +1071,10 @@ export const HiringRequestDetailDialog = ({
             </div>
             <div className="flex items-center gap-2">
               {saving && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}
+              <Button variant="outline" size="sm" onClick={handleDuplicate} disabled={duplicating}>
+                {duplicating ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Copy className="w-4 h-4 mr-2" />}
+                Duplicate
+              </Button>
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button variant="destructive" size="sm" disabled={deleting}>
