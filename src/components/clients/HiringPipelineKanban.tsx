@@ -24,7 +24,7 @@ const ADMIN_AVATARS: Record<string, string> = {
   'liezl@outsta.io': liezlAvatar,
 };
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Plus, MessageCircle, Check, Download, Upload, ArrowUpDown } from 'lucide-react';
+import { Plus, MessageCircle, Check, Download, Upload, ArrowUpDown, Search, X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { exportPipeline } from '@/lib/exportUtils';
 import { AddHiringRequestDialog } from './AddHiringRequestDialog';
@@ -367,6 +367,7 @@ export const HiringPipelineKanban = () => {
   const [isVideoMode, setIsVideoMode] = useState(false);
   const [closureCount, setClosureCount] = useState(0);
   const [stageSortBy, setStageSortBy] = useState<Record<string, 'priority' | 'target_end_date' | 'closed_at' | 'created_at'>>({});
+  const [searchTerm, setSearchTerm] = useState('');
   const { toast } = useToast();
   
   const loading = requestsLoading || stagesLoading;
@@ -407,9 +408,26 @@ export const HiringPipelineKanban = () => {
     return sortRequests(items, sortOption);
   };
 
+  // Filter requests by search term
+  const filteredRequests = useMemo(() => {
+    if (!searchTerm.trim()) return requests;
+    const term = searchTerm.toLowerCase();
+    return requests.filter(r => {
+      const assignee = adminUsers.find(a => a.user_id === r.assigned_admin_id);
+      const assigneeName = getAdminDisplayName(assignee?.email).toLowerCase();
+      return (
+        r.job_title.toLowerCase().includes(term) ||
+        (r.client_name || '').toLowerCase().includes(term) ||
+        (r.industry || '').toLowerCase().includes(term) ||
+        (r.source || '').toLowerCase().includes(term) ||
+        assigneeName.includes(term)
+      );
+    });
+  }, [requests, searchTerm, adminUsers]);
+
   // Group requests by pipeline stage dynamically
   const requestsByStage = stages.reduce((acc, stage) => {
-    const stageRequests = requests.filter(r => r.pipeline_stage === stage.slug);
+    const stageRequests = filteredRequests.filter(r => r.pipeline_stage === stage.slug);
     acc[stage.slug] = getSortedRequests(stage.slug, stageRequests);
     return acc;
   }, {} as Record<string, HiringRequest[]>);
@@ -537,7 +555,7 @@ export const HiringPipelineKanban = () => {
         <RecruiterAnalytics requests={requests} adminUsers={adminUsers} />
       </div>
 
-      {/* Pipeline Header with Import/Export */}
+      {/* Pipeline Header with Search + Import/Export */}
       <div className="flex items-center justify-between px-4 py-1 border-b">
         <div className="flex items-center gap-4">
           {/* Recruiter Stats */}
@@ -555,6 +573,25 @@ export const HiringPipelineKanban = () => {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {/* Search Input */}
+          <div className="relative">
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-muted-foreground" />
+            <input
+              type="text"
+              placeholder="Search pipeline..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="h-7 w-44 rounded-md border border-input bg-background pl-7 pr-7 text-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
+            {searchTerm && (
+              <button
+                onClick={() => setSearchTerm('')}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="w-3 h-3" />
+              </button>
+            )}
+          </div>
           <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setImportDialogOpen(true)}>
             <Upload className="w-3 h-3 mr-1.5" />
             Import
