@@ -73,17 +73,10 @@ export const PaginatedSearchResults = ({
     onUpdateStatus(id, status);
   }, [updateApplicant, onUpdateStatus]);
 
-  // When View is clicked, navigate to the applicant's folder
+  // When View/Collapse is clicked, expand inline in search results
   const handleViewDetails = useCallback((id: string) => {
-    if (onNavigateToFolder) {
-      const applicant = applicants.find(a => a.id === id);
-      if (applicant) {
-        onNavigateToFolder(id, applicant.status);
-        return;
-      }
-    }
     onViewDetails(id);
-  }, [applicants, onNavigateToFolder, onViewDetails]);
+  }, [onViewDetails]);
 
   // When star is toggled, update local state
   const handleToggleStar = useCallback((id: string) => {
