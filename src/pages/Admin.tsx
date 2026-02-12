@@ -1966,7 +1966,7 @@ const Admin = () => {
                       <div className="relative flex-1">
                         <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
-                          placeholder="Search by name, email, job title, skills... (supports AND, OR, NOT)"
+                          placeholder="Search by name, email, job title, skills..."
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                           className="pl-10"
