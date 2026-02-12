@@ -132,7 +132,7 @@ export function parseBooleanSearch(query: string): ParsedBooleanQuery {
 /**
  * The searchable columns for applicant Boolean search
  */
-const SEARCH_COLUMNS = ['full_name', 'email', 'job_title', 'phone', 'cv_text', 'extracted_skills', 'extracted_tools', 'location'];
+const SEARCH_COLUMNS = ['full_name', 'email', 'job_title', 'phone', 'cv_text', 'location'];
 
 /**
  * Build a Supabase-compatible ilike filter string for a single term across multiple columns
