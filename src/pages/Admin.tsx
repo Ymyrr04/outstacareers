@@ -53,6 +53,7 @@ import { useTabPermissions, TabId } from '@/hooks/useTabPermissions';
 import { AdminPermissionsManager } from '@/components/AdminPermissionsManager';
 import { HiredAssignmentDialog } from '@/components/HiredAssignmentDialog';
 import { BooleanSearchBuilder } from '@/components/BooleanSearchBuilder';
+import { SearchApplicantExpandedView } from '@/components/SearchApplicantExpandedView';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 // Status options for applicant tracking - new pipeline order
@@ -1956,6 +1957,15 @@ const Admin = () => {
                       rescoring={rescoring}
                       unreadCounts={unreadCounts}
                       enabled={activeApplicantTab === 'search'}
+                      renderExpandedContent={(applicant) => (
+                        <SearchApplicantExpandedView
+                          applicant={applicant}
+                          onRescoreCv={handleRescoreCv}
+                          onDownloadCv={handleDownloadCv}
+                          rescoring={rescoring}
+                          downloadingCv={downloadingCv}
+                        />
+                      )}
                     />
                   </TabsContent>
 
