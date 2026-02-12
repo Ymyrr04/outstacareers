@@ -252,6 +252,7 @@ const Admin = () => {
   const [jobSearchTerm, setJobSearchTerm] = useState('');
   const [jobRegionFilter, setJobRegionFilter] = useState<string>('all');
   const [jobAdminFilter, setJobAdminFilter] = useState<string>('all');
+  const [jobStatusFilter, setJobStatusFilter] = useState<string>('active');
   
   // Batch CV scan state
   const [batchScanning, setBatchScanning] = useState(false);
@@ -1469,7 +1470,17 @@ const Admin = () => {
                   ))}
                 </SelectContent>
               </Select>
-              {(jobSearchTerm || jobRegionFilter !== 'all' || jobAdminFilter !== 'all') && (
+              <Select value={jobStatusFilter} onValueChange={setJobStatusFilter}>
+                <SelectTrigger className="w-[140px]">
+                  <SelectValue placeholder="Status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+              {(jobSearchTerm || jobRegionFilter !== 'all' || jobAdminFilter !== 'all' || jobStatusFilter !== 'active') && (
                 <Button 
                   variant="ghost" 
                   size="sm"
@@ -1477,6 +1488,7 @@ const Admin = () => {
                     setJobSearchTerm('');
                     setJobRegionFilter('all');
                     setJobAdminFilter('all');
+                    setJobStatusFilter('active');
                   }}
                 >
                   Clear filters
@@ -1516,7 +1528,12 @@ const Admin = () => {
                       (jobAdminFilter === 'unassigned' && !job.assigned_admin_id) ||
                       job.assigned_admin_id === jobAdminFilter;
                     
-                    return matchesSearch && matchesRegion && matchesAdmin;
+                    // Status filter
+                    const matchesStatus = jobStatusFilter === 'all' ||
+                      (jobStatusFilter === 'active' && job.is_active !== false) ||
+                      (jobStatusFilter === 'inactive' && job.is_active === false);
+                    
+                    return matchesSearch && matchesRegion && matchesAdmin && matchesStatus;
                   })
                   .map((job) => (
                   <Card key={job.id} className={!job.is_active ? 'opacity-60' : ''}>
@@ -1605,7 +1622,10 @@ const Admin = () => {
                   const matchesAdmin = jobAdminFilter === 'all' ||
                     (jobAdminFilter === 'unassigned' && !job.assigned_admin_id) ||
                     job.assigned_admin_id === jobAdminFilter;
-                  return matchesSearch && matchesRegion && matchesAdmin;
+                  const matchesStatus = jobStatusFilter === 'all' ||
+                    (jobStatusFilter === 'active' && job.is_active !== false) ||
+                    (jobStatusFilter === 'inactive' && job.is_active === false);
+                  return matchesSearch && matchesRegion && matchesAdmin && matchesStatus;
                 }).length === 0 && jobs.length > 0 && (
                   <Card>
                     <CardContent className="py-8 text-center">
