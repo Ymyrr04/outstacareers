@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck, UserCircle } from 'lucide-react';
 import { exportJobs, exportApplicants, exportAllData } from '@/lib/exportUtils';
 import { useBackgroundExport } from '@/hooks/useBackgroundExport';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -2376,6 +2376,26 @@ const Admin = () => {
                                     <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
                                   </span>
                                 )}
+                              </button>
+                            )}
+
+                            {/* Candidate Profile quick link */}
+                            {applicant.candidate_profile && (
+                              <button
+                                onMouseDown={(e) => e.stopPropagation()}
+                                onClick={async (e) => {
+                                  e.stopPropagation();
+                                  if (expandedApplicant !== applicant.id) {
+                                    setExpandingApplicantId(applicant.id);
+                                    await new Promise(resolve => setTimeout(resolve, 50));
+                                    setExpandedApplicant(applicant.id);
+                                    setExpandingApplicantId(null);
+                                  }
+                                }}
+                                className="flex items-center gap-1 text-blue-500 hover:underline cursor-pointer"
+                              >
+                                <UserCircle className="w-3.5 h-3.5" />
+                                Profile
                               </button>
                             )}
 
