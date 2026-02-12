@@ -1883,7 +1883,7 @@ const Admin = () => {
                       <div className="relative flex-1">
                         <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
-                          placeholder="Search by name, email, phone, or job title... (Press Enter)"
+                          placeholder='Boolean search: "React AND Node", "Python OR Java", "NOT Angular"'
                           value={paginatedSearchInput}
                           onChange={(e) => setPaginatedSearchInput(e.target.value)}
                           onKeyDown={(e) => {
@@ -1913,6 +1913,9 @@ const Admin = () => {
                         </SelectContent>
                       </Select>
                     </div>
+                    <p className="text-xs text-muted-foreground">
+                      Supports Boolean operators: <code className="bg-muted px-1 rounded">AND</code> <code className="bg-muted px-1 rounded">OR</code> <code className="bg-muted px-1 rounded">NOT</code> — e.g. <em>"React AND NOT Angular"</em>, <em>"Python OR Java"</em>. Searches name, email, job title, phone, CV text, skills, tools & location.
+                    </p>
 
                     <PaginatedSearchResults
                       searchTerm={paginatedSearchTerm}
