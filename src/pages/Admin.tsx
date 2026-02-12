@@ -15,6 +15,7 @@ import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck, UserCircle } from 'lucide-react';
 import { exportJobs, exportApplicants, exportAllData } from '@/lib/exportUtils';
+import { parseBooleanSearch } from '@/lib/booleanSearchParser';
 import { useBackgroundExport } from '@/hooks/useBackgroundExport';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useEmailReplies } from '@/hooks/useEmailTemplates';
@@ -1978,7 +1979,7 @@ const Admin = () => {
                       <div className="relative flex-1">
                         <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                         <Input
-                          placeholder="Quick search by name, email, or score..."
+                          placeholder='Boolean search: "React AND Node", "NOT Angular", or plain text...'
                           value={searchTerm}
                           onChange={(e) => setSearchTerm(e.target.value)}
                           className="pl-10"
@@ -2055,17 +2056,51 @@ const Admin = () => {
                     </TabsList>
 
                 {APPLICANT_STATUS_FOLDERS.map((status) => {
-                  // Filter by status first, then by search term
+                  // Filter by status first, then by search term (with Boolean support)
                   const statusApplicants = applicants.filter(a => {
                     if (a.status !== status) return false;
                     if (!searchTerm.trim()) return true;
                     
-                    const term = searchTerm.toLowerCase();
-                    const matchesName = a.full_name.toLowerCase().includes(term);
-                    const matchesEmail = a.email.toLowerCase().includes(term);
-                    const matchesScore = a.total_score !== null && a.total_score.toString().includes(term);
+                    const parsed = parseBooleanSearch(searchTerm.trim());
                     
-                    return matchesName || matchesEmail || matchesScore;
+                    if (!parsed.isBoolean) {
+                      // Simple search
+                      const term = searchTerm.toLowerCase().trim();
+                      const matchesName = a.full_name.toLowerCase().includes(term);
+                      const matchesEmail = a.email.toLowerCase().includes(term);
+                      const matchesScore = a.total_score !== null && a.total_score.toString().includes(term);
+                      const matchesJobTitle = a.job_title.toLowerCase().includes(term);
+                      const matchesPhone = a.phone?.toLowerCase().includes(term) || false;
+                      const matchesCv = a.cv_text?.toLowerCase().includes(term) || false;
+                      const matchesSkills = a.extracted_skills?.some(s => s.toLowerCase().includes(term)) || false;
+                      const matchesTools = a.extracted_tools?.some(t => t.toLowerCase().includes(term)) || false;
+                      const matchesLocation = a.location?.toLowerCase().includes(term) || false;
+                      return matchesName || matchesEmail || matchesScore || matchesJobTitle || matchesPhone || matchesCv || matchesSkills || matchesTools || matchesLocation;
+                    }
+                    
+                    // Boolean search - check each clause
+                    const searchableText = [
+                      a.full_name, a.email, a.job_title, a.phone,
+                      a.cv_text, a.location,
+                      ...(a.extracted_skills || []),
+                      ...(a.extracted_tools || []),
+                    ].filter(Boolean).join(' ').toLowerCase();
+                    
+                    for (const clause of parsed.clauses) {
+                      const term = clause.term.toLowerCase();
+                      const found = searchableText.includes(term);
+                      if (clause.type === 'AND' && !found) return false;
+                      if (clause.type === 'NOT' && found) return false;
+                    }
+                    
+                    // OR clauses: at least one must match
+                    const orClauses = parsed.clauses.filter(c => c.type === 'OR');
+                    if (orClauses.length > 0) {
+                      const anyOrMatch = orClauses.some(c => searchableText.includes(c.term.toLowerCase()));
+                      if (!anyOrMatch) return false;
+                    }
+                    
+                    return true;
                   });
                   // Sort applicants first, then group by role
                   const sortedApplicants = sortApplicants(statusApplicants);
