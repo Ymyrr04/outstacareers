@@ -2,11 +2,12 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Star, Check, X, RefreshCw, Loader2, Download, Mic, Phone, Mail, MessageCircle, User, Zap, Briefcase, CheckCircle, AlertTriangle, ClipboardList } from 'lucide-react';
+import { Star, Check, X, RefreshCw, Loader2, Download, Mic, Phone, Mail, MessageCircle, User, Zap, Briefcase, CheckCircle, AlertTriangle, ClipboardList, FileText } from 'lucide-react';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
 import { CandidateProfileSection } from '@/components/CandidateProfileSection';
 import { RoleHistorySection } from '@/components/RoleHistorySection';
 import { FormattedNotes } from '@/components/FormattedNotes';
+import { CVImagePreview } from '@/components/CVImagePreview';
 import type { PaginatedApplicant } from '@/hooks/usePaginatedApplicants';
 
 interface SearchApplicantExpandedViewProps {
@@ -32,6 +33,7 @@ export const SearchApplicantExpandedView = ({
   downloadingCv,
 }: SearchApplicantExpandedViewProps) => {
   const [activeTab, setActiveTab] = useState<'cv' | 'interview'>('cv');
+  const [showCvPreview, setShowCvPreview] = useState(false);
 
   return (
     <div onMouseDown={(e) => e.stopPropagation()}>
@@ -279,19 +281,40 @@ export const SearchApplicantExpandedView = ({
         />
       </div>
 
+      {/* CV Preview */}
+      {showCvPreview && applicant.cv_file_url && (
+        <div className="mb-4">
+          <CVImagePreview
+            pdfUrl={applicant.cv_file_url}
+            fileName={`${applicant.full_name} CV`}
+          />
+        </div>
+      )}
+
       {/* CV and Voice Links */}
       <div className="flex flex-wrap gap-3 mb-4">
         {applicant.cv_file_url && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onDownloadCv(applicant.id, applicant.cv_file_url!, applicant.full_name)}
-            disabled={downloadingCv === applicant.id}
-            className="inline-flex items-center gap-2 bg-primary/10 text-primary hover:bg-primary/20"
-          >
-            {downloadingCv === applicant.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            Download CV
-          </Button>
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowCvPreview(true)}
+              className="inline-flex items-center gap-2 bg-primary/10 text-primary hover:bg-primary/20"
+            >
+              <FileText className="w-4 h-4" />
+              Preview CV
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onDownloadCv(applicant.id, applicant.cv_file_url!, applicant.full_name)}
+              disabled={downloadingCv === applicant.id}
+              className="inline-flex items-center gap-2 bg-primary/10 text-primary hover:bg-primary/20"
+            >
+              {downloadingCv === applicant.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+              Download CV
+            </Button>
+          </>
         )}
         {(applicant.vocaroo_link || applicant.voice_recording_url) && (
           applicant.voice_recording_url ? (
