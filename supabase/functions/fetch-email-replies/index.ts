@@ -312,7 +312,8 @@ const handler = async (req: Request): Promise<Response> => {
 
   const startTime = Date.now();
   const MAX_RUNTIME_MS = 25000; // 25 seconds max to leave buffer for cleanup
-  const BATCH_SIZE = 50; // Process 50 emails per run
+  const BATCH_SIZE = 25; // Process 25 emails per run (reduced to prevent Gmail disconnections)
+  const MAX_RETRIES = 2; // Max reconnection attempts
 
   try {
     const gmailUser = Deno.env.get("GMAIL_USER");
@@ -388,35 +389,65 @@ const handler = async (req: Request): Promise<Response> => {
     const emailsToProcess = [...uniqueEmails].slice(0, BATCH_SIZE);
     console.log(`Processing batch of ${emailsToProcess.length} emails (out of ${uniqueEmails.size} total)`);
 
-    // Connect to Gmail via IMAP
-    const client = new SimpleIMAPClient();
-    await client.connect("imap.gmail.com", 993);
-    console.log("Connected to Gmail IMAP");
+    // Connect to Gmail via IMAP with retry support
+    let client = new SimpleIMAPClient();
+    let retryCount = 0;
 
-    const loggedIn = await client.login(gmailUser, gmailAppPassword);
-    if (!loggedIn) {
-      throw new Error("Failed to login to Gmail");
+    const connectAndLogin = async (imapClient: SimpleIMAPClient): Promise<boolean> => {
+      try {
+        await imapClient.connect("imap.gmail.com", 993);
+        console.log("Connected to Gmail IMAP");
+        const loggedIn = await imapClient.login(gmailUser, gmailAppPassword);
+        if (!loggedIn) {
+          throw new Error("Failed to login to Gmail");
+        }
+        console.log("Logged in to Gmail");
+        const messageCount = await imapClient.selectInbox();
+        console.log(`Mailbox has ${messageCount} messages`);
+        return true;
+      } catch (err) {
+        console.error("IMAP connect/login error:", err);
+        return false;
+      }
+    };
+
+    if (!await connectAndLogin(client)) {
+      throw new Error("Failed to connect to Gmail IMAP");
     }
-    console.log("Logged in to Gmail");
-
-    const messageCount = await client.selectInbox();
-    console.log(`Mailbox has ${messageCount} messages`);
 
     const newReplies: any[] = [];
     const readInGmailMessageIds: string[] = [];
     let processedCount = 0;
 
-    // Search for emails from each unique applicant email (using emailsToProcess, not all uniqueEmails)
+    // Search for emails from each unique applicant email
     for (const email of emailsToProcess) {
-      // Check if we're running out of time or connection is lost
+      // Check if we're running out of time
       if (Date.now() - startTime > MAX_RUNTIME_MS) {
         console.log(`Stopping early due to time limit. Processed ${processedCount}/${emailsToProcess.length} emails`);
         break;
       }
       
+      // If connection is lost, try to reconnect
       if (!client.isActive()) {
-        console.log(`IMAP connection lost. Processed ${processedCount}/${emailsToProcess.length} emails before disconnect`);
-        break;
+        if (retryCount >= MAX_RETRIES) {
+          console.log(`Max retries (${MAX_RETRIES}) reached. Stopping. Processed ${processedCount}/${emailsToProcess.length}`);
+          break;
+        }
+        retryCount++;
+        console.log(`IMAP connection lost. Reconnecting (attempt ${retryCount}/${MAX_RETRIES})...`);
+        
+        // Clean up old connection
+        try { await client.logout(); } catch { /* ignore */ }
+        
+        // Wait briefly before reconnecting
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        
+        client = new SimpleIMAPClient();
+        if (!await connectAndLogin(client)) {
+          console.log("Reconnection failed. Stopping processing.");
+          break;
+        }
+        console.log("Reconnected successfully. Resuming processing...");
       }
 
       try {
@@ -442,7 +473,6 @@ const handler = async (req: Request): Promise<Response> => {
             let matchedApplicantId: string | null = null;
             
             if (message.inReplyTo) {
-              // Look up the original email's applicant_id using the in_reply_to header
               matchedApplicantId = messageIdToApplicantMap.get(message.inReplyTo) || null;
               if (matchedApplicantId) {
                 console.log(`Thread match: Reply "${message.subject}" matched to applicant ${matchedApplicantId} via in_reply_to`);
@@ -490,10 +520,10 @@ const handler = async (req: Request): Promise<Response> => {
         console.error(`Error searching for ${email}:`, err);
         processedCount++;
         
-        // If connection error, stop processing
-        if (err.name === 'BadResource' || err.message?.includes('connection') || !client.isActive()) {
-          console.log(`Connection error detected. Stopping processing.`);
-          break;
+        // If connection error, mark as disconnected so retry logic kicks in on next iteration
+        if (err.name === 'BadResource' || err.name === 'UnexpectedEof' || err.message?.includes('connection') || err.message?.includes('peer closed') || !client.isActive()) {
+          console.log(`Connection error detected. Will attempt reconnection on next email.`);
+          // Don't break — let the retry logic at the top of the loop handle it
         }
       }
     }
