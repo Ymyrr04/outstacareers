@@ -2391,6 +2391,9 @@ const Admin = () => {
                                     setExpandedApplicant(applicant.id);
                                     setExpandingApplicantId(null);
                                   }
+                                  setTimeout(() => {
+                                    document.getElementById(`candidate-profile-${applicant.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                                  }, 150);
                                 }}
                                 className="flex items-center gap-1 text-blue-500 hover:underline cursor-pointer"
                               >
@@ -2963,6 +2966,7 @@ const Admin = () => {
                           </div>
 
                           {/* Candidate Profile Section */}
+                          <div id={`candidate-profile-${applicant.id}`}>
                           <CandidateProfileSection
                             applicantId={applicant.id}
                             candidateProfile={applicant.candidate_profile}
@@ -2972,6 +2976,7 @@ const Admin = () => {
                               ));
                             }}
                           />
+                          </div>
 
                           {/* Role History Section */}
                           <div className="my-4">
