@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { parseBooleanSearch, applyBooleanFilter } from '@/lib/booleanSearchParser';
 
 interface InterviewSession {
   id: string;
@@ -127,10 +128,10 @@ export const usePaginatedApplicants = (options: UsePaginatedApplicantsOptions = 
         query = query.eq('status', status);
       }
       
-      // Apply search filter (server-side for name, email, job_title)
+      // Apply search filter with Boolean operator support
       if (searchTerm && searchTerm.trim()) {
-        const term = searchTerm.trim();
-        query = query.or(`full_name.ilike.%${term}%,email.ilike.%${term}%,job_title.ilike.%${term}%,phone.ilike.%${term}%`);
+        const parsed = parseBooleanSearch(searchTerm.trim());
+        query = applyBooleanFilter(query, parsed);
       }
       
       // Apply sorting
