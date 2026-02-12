@@ -1,4 +1,4 @@
-import { useRef, useCallback, useEffect } from 'react';
+import React, { useRef, useCallback, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +35,7 @@ interface VirtualizedApplicantListProps {
   rescoring: string | null;
   unreadCounts: Record<string, number>;
   totalCount: number;
+  renderExpandedContent?: (applicant: PaginatedApplicant) => React.ReactNode;
 }
 
 const ESTIMATED_ROW_HEIGHT = 180; // Base height for collapsed cards
@@ -58,6 +59,7 @@ export const VirtualizedApplicantList = ({
   onRescoreCv,
   expandedApplicant,
   expandingApplicantId,
+  renderExpandedContent,
   loadingPreview,
   downloadingCv,
   rescoring,
@@ -423,15 +425,17 @@ export const VirtualizedApplicantList = ({
                       </div>
                     )}
 
-                    {/* Expanded content placeholder - actual content rendered by parent */}
                     {isExpanded && !isExpanding && (
                       <div className="mt-4 pt-4 border-t">
-                        <div className="text-sm text-muted-foreground">
-                          {/* Full details are rendered by the parent component */}
-                          <p className="text-center py-8">
-                            Detailed view is rendered in parent component for full functionality
-                          </p>
-                        </div>
+                        {renderExpandedContent ? (
+                          renderExpandedContent(applicant)
+                        ) : (
+                          <div className="text-sm text-muted-foreground">
+                            <p className="text-center py-8">
+                              Detailed view is rendered in parent component for full functionality
+                            </p>
+                          </div>
+                        )}
                       </div>
                     )}
                   </CardContent>

@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, ReactNode } from 'react';
 import { VirtualizedApplicantList } from './VirtualizedApplicantList';
 import { usePaginatedApplicants, PaginatedApplicant } from '@/hooks/usePaginatedApplicants';
 import { Card, CardContent } from '@/components/ui/card';
@@ -26,6 +26,7 @@ interface PaginatedSearchResultsProps {
   rescoring: string | null;
   unreadCounts: Record<string, number>;
   enabled?: boolean;
+  renderExpandedContent?: (applicant: PaginatedApplicant) => ReactNode;
 }
 
 export const PaginatedSearchResults = ({
@@ -50,6 +51,7 @@ export const PaginatedSearchResults = ({
   rescoring,
   unreadCounts,
   enabled = true,
+  renderExpandedContent,
 }: PaginatedSearchResultsProps) => {
   const {
     applicants,
@@ -143,6 +145,7 @@ export const PaginatedSearchResults = ({
       rescoring={rescoring}
       unreadCounts={unreadCounts}
       totalCount={totalCount}
+      renderExpandedContent={renderExpandedContent}
     />
   );
 };
