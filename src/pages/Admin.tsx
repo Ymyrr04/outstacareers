@@ -253,6 +253,10 @@ const Admin = () => {
   const [jobRegionFilter, setJobRegionFilter] = useState<string>('all');
   const [jobAdminFilter, setJobAdminFilter] = useState<string>('all');
   
+  // Batch CV scan state
+  const [batchScanning, setBatchScanning] = useState(false);
+  const [batchScanProgress, setBatchScanProgress] = useState<{ done: number; total: number } | null>(null);
+
   // Reprofiling state
   const [reprofilingApplicant, setReprofilingApplicant] = useState<Applicant | null>(null);
   
@@ -679,6 +683,70 @@ const Admin = () => {
       });
     } finally {
       setRescoring(null);
+    }
+  };
+
+  const handleBatchScanCvs = async () => {
+    setBatchScanning(true);
+    setBatchScanProgress(null);
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData?.session?.access_token;
+      if (!token) throw new Error('Not authenticated');
+
+      // Find applicants with cv_file_url but missing/empty cv_text
+      const { data: unprocessed, error } = await supabase
+        .from('applicants_prescreen')
+        .select('id, cv_file_url, cv_text')
+        .not('cv_file_url', 'is', null)
+        .or('cv_text.is.null,cv_text.eq.')
+        .limit(50);
+
+      if (error) throw error;
+      if (!unprocessed || unprocessed.length === 0) {
+        toast({ title: 'All CVs processed', description: 'No unprocessed CVs found.' });
+        setBatchScanning(false);
+        return;
+      }
+
+      setBatchScanProgress({ done: 0, total: unprocessed.length });
+      toast({
+        title: 'Scanning CVs',
+        description: `Processing ${unprocessed.length} unprocessed CVs with AI Vision...`,
+      });
+
+      let successCount = 0;
+      for (let i = 0; i < unprocessed.length; i++) {
+        const applicant = unprocessed[i];
+        try {
+          const response = await supabase.functions.invoke('extract-cv-with-vision', {
+            body: {
+              applicant_id: applicant.id,
+              cv_text: applicant.cv_text || '',
+              cv_file_url: applicant.cv_file_url,
+            },
+          });
+          if (response.data?.success) successCount++;
+        } catch (e) {
+          console.error(`Failed to extract CV for ${applicant.id}:`, e);
+        }
+        setBatchScanProgress({ done: i + 1, total: unprocessed.length });
+      }
+
+      toast({
+        title: 'Batch Scan Complete',
+        description: `Successfully extracted text from ${successCount}/${unprocessed.length} CVs.`,
+      });
+    } catch (error) {
+      console.error('Batch scan error:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to batch scan CVs.',
+        variant: 'destructive',
+      });
+    } finally {
+      setBatchScanning(false);
+      setBatchScanProgress(null);
     }
   };
 
@@ -1903,6 +1971,26 @@ const Admin = () => {
                           <SelectItem value="starred">Starred First</SelectItem>
                         </SelectContent>
                       </Select>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleBatchScanCvs}
+                        disabled={batchScanning}
+                        className="gap-2 whitespace-nowrap"
+                        title="Extract text from CVs that haven't been processed yet using AI Vision"
+                      >
+                        {batchScanning ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            {batchScanProgress ? `${batchScanProgress.done}/${batchScanProgress.total}` : 'Scanning...'}
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="w-4 h-4" />
+                            Scan Unprocessed CVs
+                          </>
+                        )}
+                      </Button>
                     </div>
 
 
