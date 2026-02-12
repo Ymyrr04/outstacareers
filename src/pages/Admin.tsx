@@ -52,6 +52,7 @@ import { getAdminDisplayName, getAdminAvatar } from '@/lib/adminDisplayNames';
 import { useTabPermissions, TabId } from '@/hooks/useTabPermissions';
 import { AdminPermissionsManager } from '@/components/AdminPermissionsManager';
 import { HiredAssignmentDialog } from '@/components/HiredAssignmentDialog';
+import { BooleanSearchBuilder } from '@/components/BooleanSearchBuilder';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 // Status options for applicant tracking - new pipeline order
@@ -1880,28 +1881,16 @@ const Admin = () => {
                   {/* Advanced Search Tab - Server-side Paginated */}
                   <TabsContent value="search" className="space-y-4" keepMounted>
                     {/* Search controls */}
-                    <div className="flex gap-3">
-                      <div className="relative flex-1">
-                        <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                        <Input
-                          placeholder='Boolean search: "React AND Node", "Python OR Java", "NOT Angular"'
-                          value={paginatedSearchInput}
-                          onChange={(e) => setPaginatedSearchInput(e.target.value)}
-                          onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                              setPaginatedSearchTerm(paginatedSearchInput);
-                            }
+                    <div className="flex gap-3 items-start">
+                      <div className="flex-1">
+                        <BooleanSearchBuilder
+                          onSearch={(query) => {
+                            setPaginatedSearchInput(query);
+                            setPaginatedSearchTerm(query);
                           }}
-                          className="pl-10"
+                          placeholder="Search by name, email, job title, skills, CV text..."
                         />
                       </div>
-                      <Button 
-                        variant="outline" 
-                        onClick={() => setPaginatedSearchTerm(paginatedSearchInput)}
-                      >
-                        <SearchIcon className="w-4 h-4 mr-2" />
-                        Search
-                      </Button>
                       <Select value={paginatedSortOption} onValueChange={(v) => setPaginatedSortOption(v as any)}>
                         <SelectTrigger className="w-[180px]">
                           <SelectValue placeholder="Sort by..." />
@@ -1914,9 +1903,7 @@ const Admin = () => {
                         </SelectContent>
                       </Select>
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      Supports Boolean operators: <code className="bg-muted px-1 rounded">AND</code> <code className="bg-muted px-1 rounded">OR</code> <code className="bg-muted px-1 rounded">NOT</code> — e.g. <em>"React AND NOT Angular"</em>, <em>"Python OR Java"</em>. Searches name, email, job title, phone, CV text, skills, tools & location.
-                    </p>
+
 
                     <PaginatedSearchResults
                       searchTerm={paginatedSearchTerm}
