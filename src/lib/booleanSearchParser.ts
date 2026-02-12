@@ -156,12 +156,10 @@ export function applyBooleanFilter(
   parsed: ParsedBooleanQuery
 ): any {
   if (!parsed.isBoolean) {
-    // Simple search - use original behavior but expanded to more columns
+    // Simple search - search across all text columns including cv_text
     if (parsed.simpleTerm && parsed.simpleTerm.trim()) {
       const term = parsed.simpleTerm.trim();
-      query = query.or(
-        `full_name.ilike.%${term}%,email.ilike.%${term}%,job_title.ilike.%${term}%,phone.ilike.%${term}%`
-      );
+      query = query.or(buildTermFilter(term));
     }
     return query;
   }
