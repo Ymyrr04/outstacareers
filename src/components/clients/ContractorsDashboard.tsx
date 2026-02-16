@@ -30,7 +30,10 @@ import {
   AlertTriangle,
   X,
   Columns3,
-  RotateCcw
+  RotateCcw,
+  ArrowUp,
+  ArrowDown,
+  ArrowUpDown
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -165,6 +168,35 @@ export const ContractorsDashboard = () => {
     country: 'Country',
     source: 'Source',
     notes: 'Notes',
+  };
+
+  const COLUMN_SORT_MAP: Record<string, { asc: string; desc: string }> = {
+    status: { asc: 'status', desc: 'status' },
+    statusChanged: { asc: 'status_changed_asc', desc: 'status_changed_desc' },
+    name: { asc: 'name_asc', desc: 'name_desc' },
+    company: { asc: 'company_asc', desc: 'company_desc' },
+    startDate: { asc: 'start_date_asc', desc: 'start_date_desc' },
+    position: { asc: 'position_asc', desc: 'position_desc' },
+    rate: { asc: 'rate_asc', desc: 'rate_desc' },
+    country: { asc: 'country_asc', desc: 'country_desc' },
+  };
+
+  const handleHeaderSort = (columnKey: string) => {
+    const sortConfig = COLUMN_SORT_MAP[columnKey];
+    if (!sortConfig) return;
+    if (sortBy === sortConfig.asc) {
+      setSortBy(sortConfig.desc);
+    } else {
+      setSortBy(sortConfig.asc);
+    }
+  };
+
+  const getSortIcon = (columnKey: string) => {
+    const sortConfig = COLUMN_SORT_MAP[columnKey];
+    if (!sortConfig) return null;
+    if (sortBy === sortConfig.asc) return <ArrowUp className="w-3 h-3 ml-1 inline" />;
+    if (sortBy === sortConfig.desc) return <ArrowDown className="w-3 h-3 ml-1 inline" />;
+    return <ArrowUpDown className="w-3 h-3 ml-1 inline opacity-30" />;
   };
 
   const toggleColumn = (column: string) => {
@@ -399,6 +431,18 @@ export const ContractorsDashboard = () => {
           return (b.hourly_rate || 0) - (a.hourly_rate || 0);
         case 'status':
           return a.status.localeCompare(b.status);
+        case 'status_changed_asc':
+          return (a.status_changed_at || '').localeCompare(b.status_changed_at || '');
+        case 'status_changed_desc':
+          return (b.status_changed_at || '').localeCompare(a.status_changed_at || '');
+        case 'position_asc':
+          return (a.job_title || '').localeCompare(b.job_title || '');
+        case 'position_desc':
+          return (b.job_title || '').localeCompare(a.job_title || '');
+        case 'country_asc':
+          return (a.country || a.applicant?.location || '').localeCompare(b.country || b.applicant?.location || '');
+        case 'country_desc':
+          return (b.country || b.applicant?.location || '').localeCompare(a.country || a.applicant?.location || '');
         default:
           return 0;
       }
@@ -738,21 +782,21 @@ export const ContractorsDashboard = () => {
                 <Table className="w-full table-auto">
                   <TableHeader>
                     <TableRow>
-                      {visibleColumns.status && <TableHead className="w-[140px]">Status</TableHead>}
-                      {visibleColumns.statusChanged && <TableHead className="w-[130px]">Status Changed</TableHead>}
-                      {visibleColumns.name && <TableHead className="min-w-[180px]">Name</TableHead>}
+                      {visibleColumns.status && <TableHead className="w-[140px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('status')}>Status {getSortIcon('status')}</TableHead>}
+                      {visibleColumns.statusChanged && <TableHead className="w-[130px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('statusChanged')}>Status Changed {getSortIcon('statusChanged')}</TableHead>}
+                      {visibleColumns.name && <TableHead className="min-w-[180px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('name')}>Name {getSortIcon('name')}</TableHead>}
                       {visibleColumns.email && <TableHead className="min-w-[200px]">Email</TableHead>}
-                      {visibleColumns.company && <TableHead className="min-w-[180px]">Company</TableHead>}
+                      {visibleColumns.company && <TableHead className="min-w-[180px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('company')}>Company {getSortIcon('company')}</TableHead>}
                       {visibleColumns.industry && <TableHead className="min-w-[120px]">Industry</TableHead>}
-                      {visibleColumns.startDate && <TableHead className="w-[120px]">Start Date</TableHead>}
-                      {visibleColumns.position && <TableHead className="min-w-[150px]">Position</TableHead>}
-                      {visibleColumns.rate && <TableHead className="w-[80px]">Rate</TableHead>}
+                      {visibleColumns.startDate && <TableHead className="w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('startDate')}>Start Date {getSortIcon('startDate')}</TableHead>}
+                      {visibleColumns.position && <TableHead className="min-w-[150px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('position')}>Position {getSortIcon('position')}</TableHead>}
+                      {visibleColumns.rate && <TableHead className="w-[80px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('rate')}>Rate {getSortIcon('rate')}</TableHead>}
                       {visibleColumns.hours && <TableHead className="w-[80px]">Hours</TableHead>}
                       {visibleColumns.contact && <TableHead className="min-w-[140px]">Contact</TableHead>}
                       {visibleColumns.emergency && <TableHead className="min-w-[140px]">Emergency</TableHead>}
                       {visibleColumns.timesheet && <TableHead className="min-w-[100px]">Timesheet</TableHead>}
                       {visibleColumns.type && <TableHead className="w-[100px]">Type</TableHead>}
-                      {visibleColumns.country && <TableHead className="min-w-[120px]">Country</TableHead>}
+                      {visibleColumns.country && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('country')}>Country {getSortIcon('country')}</TableHead>}
                       {visibleColumns.source && <TableHead className="min-w-[100px]">Source</TableHead>}
                       {visibleColumns.notes && <TableHead className="min-w-[200px]">Notes</TableHead>}
                     </TableRow>
@@ -1030,22 +1074,22 @@ export const ContractorsDashboard = () => {
                   <Table className="w-full table-auto">
                     <TableHeader>
                       <TableRow>
-                        {visibleColumns.status && <TableHead className="w-[140px]">Status</TableHead>}
-                        {visibleColumns.statusChanged && <TableHead className="w-[130px]">Status Changed</TableHead>}
-                        {visibleColumns.name && <TableHead className="min-w-[180px]">Name</TableHead>}
+                        {visibleColumns.status && <TableHead className="w-[140px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('status')}>Status {getSortIcon('status')}</TableHead>}
+                        {visibleColumns.statusChanged && <TableHead className="w-[130px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('statusChanged')}>Status Changed {getSortIcon('statusChanged')}</TableHead>}
+                        {visibleColumns.name && <TableHead className="min-w-[180px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('name')}>Name {getSortIcon('name')}</TableHead>}
                         {visibleColumns.email && <TableHead className="min-w-[200px]">Email</TableHead>}
-                        {visibleColumns.company && <TableHead className="min-w-[180px]">Company</TableHead>}
+                        {visibleColumns.company && <TableHead className="min-w-[180px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('company')}>Company {getSortIcon('company')}</TableHead>}
                         {visibleColumns.industry && <TableHead className="min-w-[120px]">Industry</TableHead>}
-                        {visibleColumns.startDate && <TableHead className="w-[120px]">Start Date</TableHead>}
+                        {visibleColumns.startDate && <TableHead className="w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('startDate')}>Start Date {getSortIcon('startDate')}</TableHead>}
                         <TableHead className="w-[120px]">End Date</TableHead>
-                        {visibleColumns.position && <TableHead className="min-w-[150px]">Position</TableHead>}
-                        {visibleColumns.rate && <TableHead className="w-[80px]">Rate</TableHead>}
+                        {visibleColumns.position && <TableHead className="min-w-[150px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('position')}>Position {getSortIcon('position')}</TableHead>}
+                        {visibleColumns.rate && <TableHead className="w-[80px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('rate')}>Rate {getSortIcon('rate')}</TableHead>}
                         {visibleColumns.hours && <TableHead className="w-[80px]">Hours</TableHead>}
                         {visibleColumns.contact && <TableHead className="min-w-[140px]">Contact</TableHead>}
                         {visibleColumns.emergency && <TableHead className="min-w-[140px]">Emergency</TableHead>}
                         {visibleColumns.timesheet && <TableHead className="min-w-[100px]">Timesheet</TableHead>}
                         {visibleColumns.type && <TableHead className="w-[100px]">Type</TableHead>}
-                        {visibleColumns.country && <TableHead className="min-w-[120px]">Country</TableHead>}
+                        {visibleColumns.country && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('country')}>Country {getSortIcon('country')}</TableHead>}
                         {visibleColumns.source && <TableHead className="min-w-[100px]">Source</TableHead>}
                         {visibleColumns.notes && <TableHead className="min-w-[200px]">Notes</TableHead>}
                       </TableRow>
