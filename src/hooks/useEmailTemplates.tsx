@@ -598,9 +598,9 @@ export function useEmailReplies(applicantId?: string) {
   const fetchNewReplies = async () => {
     setFetching(true);
     try {
-      // Use AbortController with 30s timeout to prevent long waits
+      // Use AbortController with 55s timeout (edge functions can take up to 50s)
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 30000);
+      const timeoutId = setTimeout(() => controller.abort(), 55000);
       
       const { data, error } = await supabase.functions.invoke('fetch-email-replies', {
         // @ts-ignore - signal is supported but not in types
@@ -610,8 +610,15 @@ export function useEmailReplies(applicantId?: string) {
       clearTimeout(timeoutId);
       
       if (error) {
-        // Check if it's a timeout/abort error
-        if (error.message?.includes('abort') || error.message?.includes('timeout')) {
+        // Check if it's a timeout/abort/network error
+        const errorMsg = error.message || '';
+        const isAbortOrNetwork = errorMsg.includes('abort') || 
+          errorMsg.includes('timeout') || 
+          errorMsg.includes('Failed to send a request') ||
+          errorMsg.includes('Failed to fetch') ||
+          error.context?.message?.includes('aborted');
+        
+        if (isAbortOrNetwork) {
           toast({
             title: 'Checking for replies',
             description: 'Email sync is running in the background. New replies will appear shortly.',
@@ -636,7 +643,8 @@ export function useEmailReplies(applicantId?: string) {
     } catch (error: any) {
       console.error('Error fetching new replies:', error);
       // Handle network/timeout errors gracefully
-      if (error.name === 'AbortError' || error.message?.includes('Failed to fetch') || error.message?.includes('abort')) {
+      const errorMsg = error?.message || '';
+      if (error.name === 'AbortError' || errorMsg.includes('Failed to fetch') || errorMsg.includes('abort') || errorMsg.includes('Failed to send a request')) {
         toast({
           title: 'Checking for replies',
           description: 'Email sync is running in the background. New replies will appear shortly.',
@@ -646,7 +654,7 @@ export function useEmailReplies(applicantId?: string) {
       } else {
         toast({
           title: 'Error',
-          description: 'Failed to fetch email replies: ' + error.message,
+          description: 'Failed to fetch email replies: ' + errorMsg,
           variant: 'destructive',
         });
       }
