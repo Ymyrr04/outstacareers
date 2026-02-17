@@ -8,8 +8,9 @@ const isProductionEnvironment = (): boolean => {
   // Exclude localhost and development environments
   if (hostname === 'localhost' || hostname === '127.0.0.1') return false;
   
-  // Exclude Lovable preview domains (id.lovableproject.com pattern)
+  // Exclude Lovable preview domains
   if (hostname.includes('lovableproject.com')) return false;
+  if (hostname.includes('lovable.app')) return false;
   
   // Exclude other common preview/staging patterns
   if (hostname.includes('preview.') || hostname.includes('staging.')) return false;
