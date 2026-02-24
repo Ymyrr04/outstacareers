@@ -630,15 +630,28 @@ export function useEmailReplies(applicantId?: string, applicantEmail?: string) {
           throw error;
         }
       } else if (data?.repliesFound > 0) {
-        toast({
-          title: 'New replies found',
-          description: `Found ${data.repliesFound} new email replies`,
-        });
+        const priorityCount = data.priorityRepliesFound || 0;
+        const totalCount = data.repliesFound;
+        
+        if (priorityCount > 0) {
+          toast({
+            title: 'New replies found',
+            description: `Found ${priorityCount} new reply(s) for this applicant (${totalCount} total across all applicants)`,
+          });
+        } else {
+          toast({
+            title: 'New replies found (other applicants)',
+            description: `Found ${totalCount} new replies across other applicants. No new reply from this applicant.`,
+          });
+        }
         await fetchReplies();
       } else {
+        const wasProcessed = data?.priorityEmailProcessed;
         toast({
           title: 'No new replies',
-          description: 'No new email replies found',
+          description: wasProcessed 
+            ? 'This applicant has not replied yet' 
+            : 'No new email replies found',
         });
       }
     } catch (error: any) {

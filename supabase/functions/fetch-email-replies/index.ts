@@ -585,12 +585,20 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    // Count replies for the priority email specifically
+    let priorityRepliesFound = 0;
+    if (priorityEmail) {
+      priorityRepliesFound = newReplies.filter(r => r.from_email.toLowerCase() === priorityEmail).length;
+    }
+
     const runtime = Date.now() - startTime;
     return new Response(
       JSON.stringify({ 
         success: true, 
         message: `Processed ${processedCount}/${emailsToProcess.length} emails. Found ${newReplies.length} new replies, synced ${readSyncCount} read statuses`,
         repliesFound: newReplies.length,
+        priorityRepliesFound,
+        priorityEmailProcessed: priorityEmail ? emailsToProcess.includes(priorityEmail) : false,
         readStatusSynced: readSyncCount,
         processedEmails: processedCount,
         totalEmails: uniqueEmails.size,
