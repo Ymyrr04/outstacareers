@@ -533,7 +533,7 @@ export function useScheduledEmails(applicantId?: string) {
 
 // EmailReply interface is declared above near emailLogsCache
 
-export function useEmailReplies(applicantId?: string) {
+export function useEmailReplies(applicantId?: string, applicantEmail?: string) {
   const [replies, setReplies] = useState<EmailReply[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetching, setFetching] = useState(false);
@@ -603,6 +603,7 @@ export function useEmailReplies(applicantId?: string) {
       const timeoutId = setTimeout(() => controller.abort(), 55000);
       
       const { data, error } = await supabase.functions.invoke('fetch-email-replies', {
+        body: { priorityEmail: applicantEmail || undefined },
         // @ts-ignore - signal is supported but not in types
         signal: controller.signal,
       });
