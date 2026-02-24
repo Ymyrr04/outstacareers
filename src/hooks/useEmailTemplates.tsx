@@ -629,30 +629,34 @@ export function useEmailReplies(applicantId?: string, applicantEmail?: string) {
         } else {
           throw error;
         }
-      } else if (data?.repliesFound > 0) {
-        const priorityCount = data.priorityRepliesFound || 0;
-        const totalCount = data.repliesFound;
-        
-        if (priorityCount > 0) {
-          toast({
-            title: 'New replies found',
-            description: `Found ${priorityCount} new reply(s) for this applicant (${totalCount} total across all applicants)`,
-          });
+      } else {
+        if (data?.repliesFound > 0) {
+          const priorityCount = data.priorityRepliesFound || 0;
+          const totalCount = data.repliesFound;
+          
+          if (priorityCount > 0) {
+            toast({
+              title: 'New replies found',
+              description: `Found ${priorityCount} new reply(s) for this applicant (${totalCount} total across all applicants)`,
+            });
+          } else {
+            toast({
+              title: 'New replies found (other applicants)',
+              description: `Found ${totalCount} new replies across other applicants. No new reply from this applicant.`,
+            });
+          }
         } else {
+          const wasProcessed = data?.priorityEmailProcessed;
           toast({
-            title: 'New replies found (other applicants)',
-            description: `Found ${totalCount} new replies across other applicants. No new reply from this applicant.`,
+            title: 'No new replies',
+            description: wasProcessed 
+              ? 'This applicant has not replied yet' 
+              : 'No new email replies found',
           });
         }
-        await fetchReplies();
-      } else {
-        const wasProcessed = data?.priorityEmailProcessed;
-        toast({
-          title: 'No new replies',
-          description: wasProcessed 
-            ? 'This applicant has not replied yet' 
-            : 'No new email replies found',
-        });
+
+        // Always refresh local list after a successful sync run
+        await fetchReplies(true);
       }
     } catch (error: any) {
       console.error('Error fetching new replies:', error);
