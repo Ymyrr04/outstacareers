@@ -228,7 +228,7 @@ const Admin = () => {
   const [notesPopup, setNotesPopup] = useState<{ id: string; name: string; notes: string } | null>(null);
   
   // Interview invite state
-  const [interviewInviteApplicant, setInterviewInviteApplicant] = useState<{ full_name: string; email: string; job_title: string } | null>(null);
+  const [interviewInviteApplicant, setInterviewInviteApplicant] = useState<{ id?: string; full_name: string; email: string; job_title: string } | null>(null);
   
   // Email system state
   const [emailTemplateEditorOpen, setEmailTemplateEditorOpen] = useState(false);
@@ -2056,7 +2056,7 @@ const Admin = () => {
                       onToggleStar={handleToggleStar}
                       onSendEmail={(applicant) => setSendEmailApplicant(applicant)}
                       onViewHistory={(applicant) => setCommunicationHistoryApplicant(applicant)}
-                      onSendInvite={(applicant) => setInterviewInviteApplicant(applicant)}
+                      onSendInvite={(applicant: any) => setInterviewInviteApplicant({ id: applicant.id, full_name: applicant.name || applicant.full_name, email: applicant.email, job_title: applicant.jobTitle || applicant.job_title })}
                       onRescoreCv={handleRescoreCv}
                       expandedApplicant={expandedApplicant}
                       expandingApplicantId={expandingApplicantId}
@@ -2642,6 +2642,7 @@ const Admin = () => {
                             variant="outline"
                             size="sm"
                             onClick={() => setInterviewInviteApplicant({
+                              id: applicant.id,
                               full_name: applicant.full_name,
                               email: applicant.email,
                               job_title: applicant.job_title

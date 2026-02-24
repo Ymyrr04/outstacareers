@@ -1,6 +1,15 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
+import { crypto } from "https://deno.land/std@0.190.0/crypto/mod.ts";
+
+// Generate a unique Message-ID for email threading
+function generateMessageId(domain: string): string {
+  const timestamp = Date.now();
+  const randomBytes = crypto.getRandomValues(new Uint8Array(8));
+  const randomHex = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  return `<${timestamp}.${randomHex}@${domain}>`;
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -112,12 +121,19 @@ const handler = async (req: Request): Promise<Response> => {
 </html>
         `;
 
+        // Generate Message-ID for thread tracking
+        const domain = gmailUser!.split('@')[1] || 'outsta.io';
+        const messageId = generateMessageId(domain);
+
         await client.send({
           from: gmailUser,
           to: email.recipient_email,
           subject: email.subject,
           content: "auto",
           html: emailHtml,
+          headers: {
+            "Message-ID": messageId,
+          },
         });
 
         // Update scheduled email status
@@ -126,7 +142,7 @@ const handler = async (req: Request): Promise<Response> => {
           .update({ status: 'sent' })
           .eq('id', email.id);
 
-        // Log the sent email
+        // Log the sent email with Message-ID
         await supabase
           .from('email_logs')
           .insert({
@@ -138,6 +154,7 @@ const handler = async (req: Request): Promise<Response> => {
             status: 'sent',
             sent_at: new Date().toISOString(),
             is_automated: true,
+            message_id: messageId,
           });
 
         processed++;

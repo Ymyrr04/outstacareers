@@ -144,7 +144,7 @@ export const MyApplicantsDashboard = () => {
   // Communication state
   const [communicationHistoryApplicant, setCommunicationHistoryApplicant] = useState<{ id: string; name: string; email: string } | null>(null);
   const [sendEmailApplicant, setSendEmailApplicant] = useState<{ id: string; full_name: string; email: string; job_title: string; status: string; preselectedTemplate?: string } | null>(null);
-  const [interviewInviteApplicant, setInterviewInviteApplicant] = useState<{ full_name: string; email: string; job_title: string } | null>(null);
+  const [interviewInviteApplicant, setInterviewInviteApplicant] = useState<{ id?: string; full_name: string; email: string; job_title: string } | null>(null);
   
   // Expanded view state
   const [expandedApplicantId, setExpandedApplicantId] = useState<string | null>(null);
@@ -1483,6 +1483,7 @@ export const MyApplicantsDashboard = () => {
             if (!open) setInterviewInviteApplicant(null);
           }}
           applicant={{
+            id: interviewInviteApplicant.id,
             full_name: interviewInviteApplicant.full_name,
             email: interviewInviteApplicant.email,
             job_title: interviewInviteApplicant.job_title,
