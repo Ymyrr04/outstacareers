@@ -254,6 +254,9 @@ const Admin = () => {
   const [jobAdminFilter, setJobAdminFilter] = useState<string>('all');
   const [jobStatusFilter, setJobStatusFilter] = useState<string>('active');
   
+  // Applicants admin filter state
+  const [applicantAdminFilter, setApplicantAdminFilter] = useState<string>('all');
+  
   // Batch CV scan state
   const [batchScanning, setBatchScanning] = useState(false);
   const [batchScanProgress, setBatchScanProgress] = useState<{ done: number; total: number } | null>(null);
@@ -2079,7 +2082,7 @@ const Admin = () => {
 
                   {/* Folder View Tab */}
                   <TabsContent value="folders" className="space-y-4" keepMounted>
-                    {/* Quick search and sort for folder view */}
+                    {/* Quick search, admin filter, and sort for folder view */}
                     <div className="flex gap-3">
                       <div className="relative flex-1">
                         <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -2090,6 +2093,18 @@ const Admin = () => {
                           className="pl-10"
                         />
                       </div>
+                      <Select value={applicantAdminFilter} onValueChange={setApplicantAdminFilter}>
+                        <SelectTrigger className="w-[180px]">
+                          <SelectValue placeholder="Filter by admin..." />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">All Admins</SelectItem>
+                          <SelectItem value="unassigned">Unassigned</SelectItem>
+                          {Object.entries(adminUsersMap).map(([id, email]) => (
+                            <SelectItem key={id} value={id}>{getAdminDisplayName(email)}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <Select value={sortOption} onValueChange={(v) => setSortOption(v as SortOption)}>
                         <SelectTrigger className="w-[180px]">
                           <SelectValue placeholder="Sort by..." />
@@ -2161,9 +2176,20 @@ const Admin = () => {
                     </TabsList>
 
                 {APPLICANT_STATUS_FOLDERS.map((status) => {
-                  // Filter by status first, then by search term (with Boolean support)
+                  // Filter by status first, then by admin filter, then by search term (with Boolean support)
                   const statusApplicants = applicants.filter(a => {
                     if (a.status !== status) return false;
+                    
+                    // Admin filter: match by job's assigned admin
+                    if (applicantAdminFilter !== 'all') {
+                      const job = jobs.find(j => j.id === a.job_id);
+                      if (applicantAdminFilter === 'unassigned') {
+                        if (job?.assigned_admin_id) return false;
+                      } else {
+                        if (job?.assigned_admin_id !== applicantAdminFilter) return false;
+                      }
+                    }
+                    
                     if (!searchTerm.trim()) return true;
                     
                     const parsed = parseBooleanSearch(searchTerm.trim());
