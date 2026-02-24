@@ -108,7 +108,7 @@ export function CommunicationHistory({
   
   const { logs, loading: logsLoading, fetchLogs } = useEmailLogs(effectiveApplicantId);
   const { scheduledEmails, loading: scheduledLoading, cancelScheduledEmail, fetchScheduledEmails } = useScheduledEmails(effectiveApplicantId);
-  const { replies, loading: repliesLoading, fetching, fetchNewReplies } = useEmailReplies(effectiveApplicantId);
+  const { replies, loading: repliesLoading, fetching, fetchNewReplies } = useEmailReplies(effectiveApplicantId, applicantEmail);
   const { toast } = useToast();
   
   // Mark messages as read when dialog opens

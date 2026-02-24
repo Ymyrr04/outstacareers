@@ -311,11 +311,22 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   const startTime = Date.now();
-  const MAX_RUNTIME_MS = 25000; // 25 seconds max to leave buffer for cleanup
-  const BATCH_SIZE = 25; // Process 25 emails per run (reduced to prevent Gmail disconnections)
-  const MAX_RETRIES = 2; // Max reconnection attempts
+  const MAX_RUNTIME_MS = 45000; // 45 seconds max to leave buffer for cleanup
+  const BATCH_SIZE = 100; // Process 100 emails per run
+  const MAX_RETRIES = 3; // Max reconnection attempts
 
   try {
+    // Parse optional request body for priority email
+    let priorityEmail: string | null = null;
+    try {
+      const body = await req.json();
+      if (body?.priorityEmail) {
+        priorityEmail = body.priorityEmail.toLowerCase();
+      }
+    } catch {
+      // No body or invalid JSON — that's fine
+    }
+
     const gmailUser = Deno.env.get("GMAIL_USER");
     const gmailAppPassword = Deno.env.get("GMAIL_APP_PASSWORD");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
@@ -332,7 +343,6 @@ const handler = async (req: Request): Promise<Response> => {
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
     // Get applicants with recent activity (sent emails in last 30 days)
-    // Include ALL sent emails, not just ones with message_id, so we can find replies by email address
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
@@ -385,8 +395,16 @@ const handler = async (req: Request): Promise<Response> => {
       existingReplies?.map((r: { gmail_message_id: string }) => r.gmail_message_id) || []
     );
 
-    // Limit to batch size for this run
-    const emailsToProcess = [...uniqueEmails].slice(0, BATCH_SIZE);
+    // Build processing list: put priority email first, then the rest
+    const allEmails = [...uniqueEmails];
+    let emailsToProcess: string[];
+    if (priorityEmail && uniqueEmails.has(priorityEmail)) {
+      // Move priority email to front
+      emailsToProcess = [priorityEmail, ...allEmails.filter(e => e !== priorityEmail)].slice(0, BATCH_SIZE);
+      console.log(`Priority email ${priorityEmail} will be processed first`);
+    } else {
+      emailsToProcess = allEmails.slice(0, BATCH_SIZE);
+    }
     console.log(`Processing batch of ${emailsToProcess.length} emails (out of ${uniqueEmails.size} total)`);
 
     // Connect to Gmail via IMAP with retry support
