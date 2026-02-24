@@ -331,15 +331,15 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Get applicants with recent activity (sent emails in last 30 days) - more targeted approach
+    // Get applicants with recent activity (sent emails in last 30 days)
+    // Include ALL sent emails, not just ones with message_id, so we can find replies by email address
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
     const { data: recentEmailLogs, error: emailLogsError } = await supabase
       .from("email_logs")
       .select("applicant_id, message_id, recipient_email")
-      .gte("sent_at", thirtyDaysAgo.toISOString())
-      .not("message_id", "is", null);
+      .gte("sent_at", thirtyDaysAgo.toISOString());
 
     if (emailLogsError) {
       throw new Error(`Failed to fetch email logs: ${emailLogsError.message}`);

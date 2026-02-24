@@ -18,6 +18,7 @@ interface InterviewInviteDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   applicant: {
+    id?: string;
     full_name: string;
     email: string;
     job_title: string;
@@ -125,6 +126,7 @@ export function InterviewInviteDialog({ open, onOpenChange, applicant }: Intervi
           interviewerName: interviewerName || "Our Team",
           additionalNotes: additionalNotes,
           isCalendlyLink: useCalendlyScheduling,
+          applicantId: applicant.id,
         },
       });
 
