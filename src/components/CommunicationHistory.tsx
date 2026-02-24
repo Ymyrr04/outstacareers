@@ -81,6 +81,18 @@ const normalizeSubject = (subject: string): string => {
     .toLowerCase();
 };
 
+// Extract and normalize Message-ID tokens for reliable threading
+const extractMessageIds = (value?: string | null): string[] => {
+  if (!value) return [];
+
+  const tokens = value.match(/<[^>]+>/g) ?? value.split(/\s+/);
+
+  return tokens
+    .map((token) => token.trim().toLowerCase())
+    .filter(Boolean)
+    .map((token) => (token.startsWith('<') && token.endsWith('>') ? token : `<${token.replace(/[<>]/g, '')}>`));
+};
+
 // Convert plain text to simple HTML
 const plainTextToHtml = (text: string): string => {
   let html = text
@@ -197,27 +209,53 @@ export function CommunicationHistory({
   // Group replies under their parent sent emails as threads
   const { threads, orphanReplies, otherLogs } = useMemo(() => {
     const threadMap = new Map<string, EmailThread>();
+    const threadMessageIdMap = new Map<string, string>();
     const matchedReplyIds = new Set<string>();
 
     // Initialize threads with sent emails only
     const sentLogs = logs.filter(log => log.status === 'sent');
     sentLogs.forEach(log => {
       threadMap.set(log.id, { sentEmail: log, replies: [] });
+
+      extractMessageIds(log.message_id).forEach((messageId) => {
+        threadMessageIdMap.set(messageId, log.id);
+      });
     });
 
-    // Match replies to sent emails by normalized subject
+    // Match replies to sent emails by message-id first, then subject fallback
     replies.forEach(reply => {
-      const replySubjectNorm = normalizeSubject(reply.subject);
-      
-      // Find the matching sent email by subject
-      for (const [logId, thread] of threadMap) {
-        const sentSubjectNorm = normalizeSubject(thread.sentEmail.subject);
-        
-        if (replySubjectNorm === sentSubjectNorm) {
-          thread.replies.push(reply);
-          matchedReplyIds.add(reply.id);
+      let matchedThread: EmailThread | undefined;
+
+      for (const replyMessageId of extractMessageIds(reply.in_reply_to)) {
+        const threadId = threadMessageIdMap.get(replyMessageId);
+        if (threadId) {
+          matchedThread = threadMap.get(threadId);
           break;
         }
+      }
+
+      if (!matchedThread) {
+        const replySubjectNorm = normalizeSubject(reply.subject);
+
+        for (const thread of threadMap.values()) {
+          const sentSubjectNorm = normalizeSubject(thread.sentEmail.subject);
+
+          if (
+            replySubjectNorm &&
+            sentSubjectNorm &&
+            (replySubjectNorm === sentSubjectNorm ||
+              replySubjectNorm.includes(sentSubjectNorm) ||
+              sentSubjectNorm.includes(replySubjectNorm))
+          ) {
+            matchedThread = thread;
+            break;
+          }
+        }
+      }
+
+      if (matchedThread) {
+        matchedThread.replies.push(reply);
+        matchedReplyIds.add(reply.id);
       }
     });
 
