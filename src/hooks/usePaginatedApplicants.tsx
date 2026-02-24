@@ -95,7 +95,7 @@ interface UsePaginatedApplicantsOptions {
   pageSize?: number;
   status?: string;
   searchTerm?: string;
-  sortBy?: 'newest' | 'score-desc' | 'score-asc' | 'starred';
+  sortBy?: 'newest' | 'oldest' | 'score-desc' | 'score-asc' | 'starred';
   enabled?: boolean;
 }
 
@@ -142,6 +142,8 @@ export const usePaginatedApplicants = (options: UsePaginatedApplicantsOptions = 
       } else if (sortBy === 'starred') {
         query = query.order('is_starred', { ascending: false, nullsFirst: false })
                      .order('total_score', { ascending: false, nullsFirst: false });
+      } else if (sortBy === 'oldest') {
+        query = query.order('submitted_at', { ascending: true });
       } else {
         // Default: newest first
         query = query.order('submitted_at', { ascending: false });

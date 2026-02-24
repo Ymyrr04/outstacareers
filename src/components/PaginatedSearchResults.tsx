@@ -6,7 +6,7 @@ import { Search, Loader2 } from 'lucide-react';
 
 interface PaginatedSearchResultsProps {
   searchTerm: string;
-  sortBy: 'newest' | 'score-desc' | 'score-asc' | 'starred';
+  sortBy: 'newest' | 'oldest' | 'score-desc' | 'score-asc' | 'starred';
   statusOptions: readonly string[];
   onUpdateStatus: (id: string, status: string) => void;
   onViewDetails: (id: string) => void;

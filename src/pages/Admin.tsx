@@ -190,7 +190,7 @@ interface Applicant {
   device_type: string | null;
 }
 
-type SortOption = 'newest' | 'score-desc' | 'score-asc' | 'starred' | 'completed-assessment';
+type SortOption = 'newest' | 'oldest' | 'score-desc' | 'score-asc' | 'starred' | 'completed-assessment';
 
 const Admin = () => {
   const { user, isAdmin, loading, signOut } = useAuth();
@@ -243,7 +243,7 @@ const Admin = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [paginatedSearchTerm, setPaginatedSearchTerm] = useState('');
   const [paginatedSearchInput, setPaginatedSearchInput] = useState('');
-  const [paginatedSortOption, setPaginatedSortOption] = useState<'newest' | 'score-desc' | 'score-asc' | 'starred'>('newest');
+  const [paginatedSortOption, setPaginatedSortOption] = useState<'newest' | 'oldest' | 'score-desc' | 'score-asc' | 'starred'>('newest');
   const [activeApplicantTab, setActiveApplicantTab] = useState<'folders' | 'search'>('folders');
   const [searchFilteredApplicants, setSearchFilteredApplicants] = useState<Applicant[]>([]);
   const [openAccordions, setOpenAccordions] = useState<string[]>([]);
@@ -463,6 +463,11 @@ const Admin = () => {
           ? bScore.score - aScore.score 
           : aScore.score - bScore.score;
         return scoreDiff;
+      }
+      
+      // Oldest first
+      if (sortOption === 'oldest') {
+        return new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime();
       }
       
       // Default: newest first
@@ -1989,6 +1994,7 @@ const Admin = () => {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="newest">Newest First</SelectItem>
+                          <SelectItem value="oldest">Oldest First</SelectItem>
                           <SelectItem value="score-desc">Score: High to Low</SelectItem>
                           <SelectItem value="score-asc">Score: Low to High</SelectItem>
                           <SelectItem value="starred">Starred First</SelectItem>
@@ -2111,6 +2117,7 @@ const Admin = () => {
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="newest">Newest First</SelectItem>
+                          <SelectItem value="oldest">Oldest First</SelectItem>
                           <SelectItem value="score-desc">Score: High to Low</SelectItem>
                           <SelectItem value="score-asc">Score: Low to High</SelectItem>
                           <SelectItem value="starred">Starred First</SelectItem>
