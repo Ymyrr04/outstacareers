@@ -279,6 +279,11 @@ export interface EmailReply {
 // Cache for email replies per applicant (forward declared for preload fn)
 const emailRepliesCache = new Map<string, { replies: EmailReply[]; timestamp: number }>();
 
+interface FetchNewRepliesOptions {
+  silent?: boolean;
+  priorityEmail?: string;
+}
+
 // Pre-load email data for a specific applicant (used by unread system)
 async function preloadApplicantEmailData(applicantId: string) {
   // Pre-load email logs if not cached
@@ -546,10 +551,10 @@ export function useEmailReplies(applicantId?: string, applicantEmail?: string) {
       setLoading(false);
       return;
     }
-    
+
     const cached = emailRepliesCache.get(applicantId);
     const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
-    
+
     if (isCacheValid) {
       setReplies(cached.replies);
       setLoading(false);
@@ -566,7 +571,7 @@ export function useEmailReplies(applicantId?: string, applicantEmail?: string) {
       setLoading(false);
       return;
     }
-    
+
     if (!silent) setLoading(true);
     const { data, error } = await supabase
       .from('email_replies')
@@ -586,73 +591,105 @@ export function useEmailReplies(applicantId?: string, applicantEmail?: string) {
 
   useEffect(() => {
     if (!applicantId) return;
-    
+
     const cached = emailRepliesCache.get(applicantId);
     const isCacheValid = cached && (Date.now() - cached.timestamp < CACHE_TTL);
-    
+
     if (!isCacheValid) {
       fetchReplies(!!cached);
     }
   }, [fetchReplies, applicantId]);
 
-  const fetchNewReplies = async () => {
+  // Realtime updates so newly stored replies appear immediately in the thread
+  useEffect(() => {
+    if (!applicantId) return;
+
+    const channel = supabase
+      .channel(`email-replies-${applicantId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'email_replies',
+          filter: `applicant_id=eq.${applicantId}`,
+        },
+        () => {
+          fetchReplies(true);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [applicantId, fetchReplies]);
+
+  const fetchNewReplies = useCallback(async (options: FetchNewRepliesOptions = {}) => {
+    const { silent = false, priorityEmail } = options;
+
     setFetching(true);
     try {
       // Use AbortController with 55s timeout (edge functions can take up to 50s)
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 55000);
-      
+      const effectivePriorityEmail = (priorityEmail ?? applicantEmail ?? '').trim().toLowerCase() || undefined;
+
       const { data, error } = await supabase.functions.invoke('fetch-email-replies', {
-        body: { priorityEmail: applicantEmail || undefined },
+        body: { priorityEmail: effectivePriorityEmail },
         // @ts-ignore - signal is supported but not in types
         signal: controller.signal,
       });
-      
+
       clearTimeout(timeoutId);
-      
+
       if (error) {
         // Check if it's a timeout/abort/network error
         const errorMsg = error.message || '';
-        const isAbortOrNetwork = errorMsg.includes('abort') || 
-          errorMsg.includes('timeout') || 
+        const isAbortOrNetwork = errorMsg.includes('abort') ||
+          errorMsg.includes('timeout') ||
           errorMsg.includes('Failed to send a request') ||
           errorMsg.includes('Failed to fetch') ||
           error.context?.message?.includes('aborted');
-        
+
         if (isAbortOrNetwork) {
-          toast({
-            title: 'Checking for replies',
-            description: 'Email sync is running in the background. New replies will appear shortly.',
-          });
+          if (!silent) {
+            toast({
+              title: 'Checking for replies',
+              description: 'Email sync is running in the background. New replies will appear shortly.',
+            });
+          }
           // Refresh local data after a delay
           setTimeout(() => fetchReplies(true), 5000);
         } else {
           throw error;
         }
       } else {
-        if (data?.repliesFound > 0) {
-          const priorityCount = data.priorityRepliesFound || 0;
-          const totalCount = data.repliesFound;
-          
-          if (priorityCount > 0) {
-            toast({
-              title: 'New replies found',
-              description: `Found ${priorityCount} new reply(s) for this applicant (${totalCount} total across all applicants)`,
-            });
+        if (!silent) {
+          if (data?.repliesFound > 0) {
+            const priorityCount = data.priorityRepliesFound || 0;
+            const totalCount = data.repliesFound;
+
+            if (priorityCount > 0) {
+              toast({
+                title: 'New replies found',
+                description: `Found ${priorityCount} new reply(s) for this applicant (${totalCount} total across all applicants)`,
+              });
+            } else {
+              toast({
+                title: 'New replies found (other applicants)',
+                description: `Found ${totalCount} new replies across other applicants. No new reply from this applicant.`,
+              });
+            }
           } else {
+            const wasProcessed = data?.priorityEmailProcessed;
             toast({
-              title: 'New replies found (other applicants)',
-              description: `Found ${totalCount} new replies across other applicants. No new reply from this applicant.`,
+              title: 'No new replies',
+              description: wasProcessed
+                ? 'This applicant has not replied yet'
+                : 'No new email replies found',
             });
           }
-        } else {
-          const wasProcessed = data?.priorityEmailProcessed;
-          toast({
-            title: 'No new replies',
-            description: wasProcessed 
-              ? 'This applicant has not replied yet' 
-              : 'No new email replies found',
-          });
         }
 
         // Always refresh local list after a successful sync run
@@ -663,22 +700,25 @@ export function useEmailReplies(applicantId?: string, applicantEmail?: string) {
       // Handle network/timeout errors gracefully
       const errorMsg = error?.message || '';
       if (error.name === 'AbortError' || errorMsg.includes('Failed to fetch') || errorMsg.includes('abort') || errorMsg.includes('Failed to send a request')) {
-        toast({
-          title: 'Checking for replies',
-          description: 'Email sync is running in the background. New replies will appear shortly.',
-        });
+        if (!silent) {
+          toast({
+            title: 'Checking for replies',
+            description: 'Email sync is running in the background. New replies will appear shortly.',
+          });
+        }
         // Refresh local data after a delay
         setTimeout(() => fetchReplies(true), 5000);
-      } else {
+      } else if (!silent) {
         toast({
           title: 'Error',
           description: 'Failed to fetch email replies: ' + errorMsg,
           variant: 'destructive',
         });
       }
+    } finally {
+      setFetching(false);
     }
-    setFetching(false);
-  };
+  }, [applicantEmail, fetchReplies, toast]);
 
   return { replies, loading, fetching, fetchReplies, fetchNewReplies };
 }

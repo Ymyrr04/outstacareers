@@ -238,6 +238,24 @@ const Admin = () => {
   const { unreadCounts, unreadApplicants, markAsRead: markMessagesAsRead, markAllAsRead, fetchUnreadCounts } = useUnreadMessageCounts();
   const { replies: allReplies, fetching: fetchingReplies, fetchNewReplies } = useEmailReplies();
   const [unreadPopoverOpen, setUnreadPopoverOpen] = useState(false);
+
+  // Background auto-sync so new candidate replies are stored before opening a thread
+  useEffect(() => {
+    const runBackgroundReplySync = async () => {
+      if (document.visibilityState !== 'visible') return;
+      await fetchNewReplies({ silent: true });
+      await fetchUnreadCounts(true);
+    };
+
+    void runBackgroundReplySync();
+    const intervalId = window.setInterval(() => {
+      void runBackgroundReplySync();
+    }, 120000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [fetchNewReplies, fetchUnreadCounts]);
   
   // Search state
   const [searchTerm, setSearchTerm] = useState('');

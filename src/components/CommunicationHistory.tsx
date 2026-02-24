@@ -129,6 +129,22 @@ export function CommunicationHistory({
       onMarkAsRead(applicantId);
     }
   }, [open, applicantId, onMarkAsRead]);
+
+  // Auto-sync replies in the background while this applicant is being viewed
+  useEffect(() => {
+    if (!open || !applicantId) return;
+
+    const syncReplies = () => {
+      void fetchNewReplies({ silent: true, priorityEmail: applicantEmail || undefined });
+    };
+
+    syncReplies();
+    const intervalId = window.setInterval(syncReplies, 90000);
+
+    return () => {
+      window.clearInterval(intervalId);
+    };
+  }, [open, applicantId, applicantEmail, fetchNewReplies]);
   const [expandedThreads, setExpandedThreads] = useState<Set<string>>(new Set());
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set());
   // Track which threads show just replies vs full thread
