@@ -297,6 +297,9 @@ const Admin = () => {
   const [draggedApplicant, setDraggedApplicant] = useState<Applicant | null>(null);
   const [dragOverFolder, setDragOverFolder] = useState<ApplicantStatusFolder | null>(null);
   
+  // Batch select state
+  const [selectedApplicants, setSelectedApplicants] = useState<Set<string>>(new Set());
+  
 // Sort state
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   
@@ -1079,6 +1082,46 @@ const Admin = () => {
       fetchApplicants();
     }
   };
+
+  // Batch status update handler
+  const handleBatchUpdateStatus = async (newStatus: ApplicantStatusOption) => {
+    if (selectedApplicants.size === 0) return;
+    const ids = Array.from(selectedApplicants);
+    const { error } = await supabase
+      .from('applicants_prescreen')
+      .update({ status: newStatus })
+      .in('id', ids);
+    if (error) {
+      toast({ title: 'Error', description: 'Failed to update statuses: ' + error.message, variant: 'destructive' });
+    } else {
+      setApplicants(prev => prev.map(a => ids.includes(a.id) ? { ...a, status: newStatus } : a));
+      toast({ title: 'Batch Update', description: `${ids.length} applicant(s) moved to "${newStatus}"` });
+      setSelectedApplicants(new Set());
+    }
+  };
+
+  const toggleSelectApplicant = (id: string) => {
+    setSelectedApplicants(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = (applicantIds: string[]) => {
+    setSelectedApplicants(prev => {
+      const allSelected = applicantIds.every(id => prev.has(id));
+      const next = new Set(prev);
+      if (allSelected) {
+        applicantIds.forEach(id => next.delete(id));
+      } else {
+        applicantIds.forEach(id => next.add(id));
+      }
+      return next;
+    });
+  };
+
   const handleUpdateApplicantStatus = async (applicantId: string, newStatus: ApplicantStatusOption) => {
     const applicant = applicants.find(a => a.id === applicantId);
     if (!applicant) return;
@@ -2143,9 +2186,32 @@ const Admin = () => {
                         </SelectContent>
                       </Select>
                     </div>
+
+                    {/* Batch action bar */}
+                    {selectedApplicants.size > 0 && (
+                      <div className="sticky top-0 z-20 flex items-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/20 backdrop-blur-sm">
+                        <Badge variant="secondary" className="bg-primary text-primary-foreground">
+                          {selectedApplicants.size} selected
+                        </Badge>
+                        <Select onValueChange={(v) => handleBatchUpdateStatus(v as ApplicantStatusOption)}>
+                          <SelectTrigger className="w-[180px] h-8 text-sm">
+                            <SelectValue placeholder="Move to status..." />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {APPLICANT_STATUS_OPTIONS.map((s) => (
+                              <SelectItem key={s} value={s}>{s}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <Button variant="ghost" size="sm" onClick={() => setSelectedApplicants(new Set())} className="text-muted-foreground">
+                          Clear selection
+                        </Button>
+                      </div>
+                    )}
                 
                     <Tabs value={activeStatusFolder} onValueChange={async (v) => {
                       setIsFolderSwitching(true);
+                      setSelectedApplicants(new Set());
                       await new Promise(resolve => setTimeout(resolve, 50));
                       setActiveStatusFolder(v as ApplicantStatusFolder);
                       setIsFolderSwitching(false);
@@ -2304,6 +2370,18 @@ const Admin = () => {
                                 </div>
                               </AccordionTrigger>
                               <AccordionContent className="px-4 pb-4">
+                                {/* Select all for this role group */}
+                                <div className="flex items-center gap-2 mb-3 pb-2 border-b border-border">
+                                  <input
+                                    type="checkbox"
+                                    checked={jobApplicants.every(a => selectedApplicants.has(a.id))}
+                                    onChange={() => toggleSelectAll(jobApplicants.map(a => a.id))}
+                                    className="w-4 h-4 rounded border-border accent-primary cursor-pointer"
+                                  />
+                                  <span className="text-sm text-muted-foreground">
+                                    Select all ({jobApplicants.length})
+                                  </span>
+                                </div>
                                 <div className="grid gap-4">
                 {jobApplicants.map((applicant) => {
                   const isNew = applicant.status === 'For Review' && !applicant.details_viewed_at;
@@ -2333,9 +2411,20 @@ const Admin = () => {
                   >
                     <CardContent className="py-4">
                       <div className="flex items-start justify-between gap-4">
-                        {/* Drag handle */}
-                        <div className="flex-shrink-0 cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors self-center">
-                          <GripVertical className="w-4 h-4" />
+                        {/* Checkbox + Drag handle */}
+                        <div className="flex items-center gap-1 flex-shrink-0 self-center">
+                          <input
+                            type="checkbox"
+                            checked={selectedApplicants.has(applicant.id)}
+                            onChange={(e) => {
+                              e.stopPropagation();
+                              toggleSelectApplicant(applicant.id);
+                            }}
+                            className="w-4 h-4 rounded border-border accent-primary cursor-pointer"
+                          />
+                          <div className="cursor-grab active:cursor-grabbing text-muted-foreground/40 hover:text-muted-foreground/70 transition-colors">
+                            <GripVertical className="w-4 h-4" />
+                          </div>
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1 flex-wrap">
