@@ -1083,7 +1083,7 @@ const Admin = () => {
     }
   };
 
-  // Batch status update handler
+  // Batch status update handler (with automated emails)
   const handleBatchUpdateStatus = async (newStatus: ApplicantStatusOption) => {
     if (selectedApplicants.size === 0) return;
     const ids = Array.from(selectedApplicants);
@@ -1093,11 +1093,69 @@ const Admin = () => {
       .in('id', ids);
     if (error) {
       toast({ title: 'Error', description: 'Failed to update statuses: ' + error.message, variant: 'destructive' });
-    } else {
-      setApplicants(prev => prev.map(a => ids.includes(a.id) ? { ...a, status: newStatus } : a));
-      toast({ title: 'Batch Update', description: `${ids.length} applicant(s) moved to "${newStatus}"` });
-      setSelectedApplicants(new Set());
+      return;
     }
+
+    setApplicants(prev => prev.map(a => ids.includes(a.id) ? { ...a, status: newStatus } : a));
+    setSelectedApplicants(new Set());
+
+    // Send automated emails for each applicant (skip interview/SIV which need manual customization)
+    const trigger = statusToTrigger[newStatus];
+    const template = trigger ? getTemplateByTrigger(trigger) : null;
+    let emailsSent = 0;
+    let emailsScheduled = 0;
+    let emailsFailed = 0;
+
+    if (template && template.is_enabled && trigger !== 'for_interview' && trigger !== 'siv') {
+      const batchApplicants = ids.map(id => applicants.find(a => a.id === id)).filter(Boolean);
+      
+      for (const applicant of batchApplicants) {
+        if (!applicant) continue;
+        const firstName = applicant.full_name.split(' ')[0];
+        const processedSubject = template.subject
+          .replace(/\{\{applicant_name\}\}/g, applicant.full_name)
+          .replace(/\{\{first_name\}\}/g, firstName)
+          .replace(/\{\{full_name\}\}/g, applicant.full_name)
+          .replace(/\{\{job_title\}\}/g, applicant.job_title);
+        const processedBody = template.body_html
+          .replace(/\{\{applicant_name\}\}/g, applicant.full_name)
+          .replace(/\{\{first_name\}\}/g, firstName)
+          .replace(/\{\{full_name\}\}/g, applicant.full_name)
+          .replace(/\{\{job_title\}\}/g, applicant.job_title);
+        
+        let scheduleFor: string | undefined;
+        if (template.delay_hours > 0) {
+          scheduleFor = addMinutes(new Date(), template.delay_hours).toISOString();
+        }
+
+        try {
+          const { data, error: emailError } = await supabase.functions.invoke('send-applicant-email', {
+            body: {
+              applicantId: applicant.id,
+              templateId: template.id,
+              subject: processedSubject,
+              bodyHtml: processedBody,
+              recipientEmail: applicant.email,
+              applicantStatusAtSend: newStatus,
+              isAutomated: true,
+              scheduleFor,
+            },
+          });
+          if (emailError) throw emailError;
+          if (data?.scheduled) emailsScheduled++;
+          else emailsSent++;
+        } catch {
+          emailsFailed++;
+        }
+      }
+    }
+
+    const parts = [`${ids.length} applicant(s) moved to "${newStatus}"`];
+    if (emailsSent > 0) parts.push(`${emailsSent} email(s) sent`);
+    if (emailsScheduled > 0) parts.push(`${emailsScheduled} email(s) scheduled`);
+    if (emailsFailed > 0) parts.push(`${emailsFailed} email(s) failed`);
+    if (trigger === 'for_interview' || trigger === 'siv') parts.push('Emails skipped (use individual status change for interview/SIV)');
+    toast({ title: 'Batch Update', description: parts.join('. ') });
   };
 
   const toggleSelectApplicant = (id: string) => {
