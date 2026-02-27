@@ -825,21 +825,37 @@ const Admin = () => {
   const fetchApplicants = useCallback(async () => {
     setApplicantsLoading(true);
     
-    // Fetch applicants
-    const { data: applicantsData, error: applicantsError } = await supabase
-      .from('applicants_prescreen')
-      .select('*')
-      .order('submitted_at', { ascending: false });
+    // Fetch ALL applicants using pagination to bypass the 1000-row default limit
+    const PAGE_SIZE = 1000;
+    let allApplicants: any[] = [];
+    let page = 0;
+    let hasMore = true;
 
-    if (applicantsError) {
-      toast({
-        title: 'Error',
-        description: 'Failed to fetch applicants',
-        variant: 'destructive',
-      });
-      setApplicantsLoading(false);
-      return;
+    while (hasMore) {
+      const from = page * PAGE_SIZE;
+      const to = from + PAGE_SIZE - 1;
+      const { data, error } = await supabase
+        .from('applicants_prescreen')
+        .select('*')
+        .order('submitted_at', { ascending: false })
+        .range(from, to);
+
+      if (error) {
+        toast({
+          title: 'Error',
+          description: 'Failed to fetch applicants',
+          variant: 'destructive',
+        });
+        setApplicantsLoading(false);
+        return;
+      }
+
+      allApplicants = allApplicants.concat(data || []);
+      hasMore = (data?.length || 0) === PAGE_SIZE;
+      page++;
     }
+
+    const applicantsData = allApplicants;
 
     // Fetch interview sessions for all applicants in chunks to avoid URL length limits
     const applicantIds = (applicantsData || []).map(a => a.id);
