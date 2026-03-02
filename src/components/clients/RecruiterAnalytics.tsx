@@ -56,12 +56,14 @@ export const RecruiterAnalytics = ({ requests, adminUsers }: RecruiterAnalyticsP
   const [startDate, setStartDate] = useState<Date>(startOfMonth(new Date()));
   const [endDate, setEndDate] = useState<Date>(endOfMonth(new Date()));
 
-  // Filter closed requests within date range
+  // Filter closed requests within date range (auto-swap if start > end)
   const filteredClosedRequests = useMemo(() => {
+    const rangeStart = startDate <= endDate ? startDate : endDate;
+    const rangeEnd = startDate <= endDate ? endDate : startDate;
     return requests.filter(r => {
       if (r.pipeline_stage !== 'closed' || !r.closed_at) return false;
       const closedDate = parseISO(r.closed_at);
-      return isWithinInterval(closedDate, { start: startDate, end: endDate });
+      return isWithinInterval(closedDate, { start: rangeStart, end: rangeEnd });
     });
   }, [requests, startDate, endDate]);
 
