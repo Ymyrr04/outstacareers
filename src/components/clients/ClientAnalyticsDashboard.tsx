@@ -417,6 +417,49 @@ export const ClientAnalyticsDashboard = () => {
     });
   }, [retentionByRoleRaw, roleSortField, roleSortDir]);
 
+  // Bilingual vs Non-Bilingual Retention
+  // Logic: NOT from Philippines = bilingual. From Philippines = check if job_title contains "bilingual"
+  const retentionByBilingual = useMemo(() => {
+    const isPH = (country: string | null) => {
+      if (!country) return true; // default to PH if unknown
+      const c = country.toLowerCase().trim();
+      return c === 'philippines' || c === 'ph' || c === 'the philippines';
+    };
+    
+    const isBilingual = (contractor: ContractorData) => {
+      if (!isPH(contractor.country)) return true; // non-PH = bilingual
+      const title = (contractor.job_title || '').toLowerCase();
+      return title.includes('bilingual');
+    };
+
+    const stats = { bilingual: { total: 0, active: 0 }, nonBilingual: { total: 0, active: 0 } };
+    
+    contractors.forEach(c => {
+      const group = isBilingual(c) ? 'bilingual' : 'nonBilingual';
+      stats[group].total += 1;
+      if (c.status === 'active') {
+        stats[group].active += 1;
+      }
+    });
+
+    return [
+      {
+        name: 'Bilingual',
+        hired: stats.bilingual.total,
+        active: stats.bilingual.active,
+        separated: stats.bilingual.total - stats.bilingual.active,
+        retention: stats.bilingual.total > 0 ? Math.round((stats.bilingual.active / stats.bilingual.total) * 100) : 0,
+      },
+      {
+        name: 'Non-Bilingual (PH)',
+        hired: stats.nonBilingual.total,
+        active: stats.nonBilingual.active,
+        separated: stats.nonBilingual.total - stats.nonBilingual.active,
+        retention: stats.nonBilingual.total > 0 ? Math.round((stats.nonBilingual.active / stats.nonBilingual.total) * 100) : 0,
+      },
+    ];
+  }, [contractors]);
+
   // 5. Contractors by Role (Job Title)
   const contractorsByRole = useMemo(() => {
     const roleMap: Record<string, number> = {};
