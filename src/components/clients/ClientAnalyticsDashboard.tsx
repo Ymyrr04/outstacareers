@@ -1064,6 +1064,53 @@ export const ClientAnalyticsDashboard = () => {
     </DraggableCard>
   );
 
+  const renderRetentionBilingualCard = () => (
+    <DraggableCard cardId="retentionBilingual">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2 pl-5">
+            <Languages className="w-4 h-4" />
+            Retention: Bilingual vs Non-Bilingual
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {retentionByBilingual.map((group) => (
+              <div key={group.name} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{group.name}</span>
+                  <span className={`text-lg font-bold ${
+                    group.retention >= 80 ? 'text-green-600' : 
+                    group.retention >= 50 ? 'text-amber-600' : 'text-red-600'
+                  }`}>
+                    {group.retention}%
+                  </span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2.5">
+                  <div 
+                    className={`h-2.5 rounded-full ${
+                      group.retention >= 80 ? 'bg-green-500' : 
+                      group.retention >= 50 ? 'bg-amber-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${group.retention}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Hired: {group.hired}</span>
+                  <span>Active: {group.active}</span>
+                  <span>Separated: {group.separated}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-4">
+            Non-PH contractors and PH contractors with "Bilingual" in title are counted as Bilingual.
+          </p>
+        </CardContent>
+      </Card>
+    </DraggableCard>
+  );
+
   const cardRenderers: Record<CardId, () => JSX.Element> = {
     industry: renderIndustryCard,
     leadsFrom: renderLeadsFromCard,
@@ -1072,6 +1119,7 @@ export const ClientAnalyticsDashboard = () => {
     country: renderCountryCard,
     monthlyHires: renderMonthlyHiresCard,
     separations: renderSeparationsCard,
+    retentionBilingual: renderRetentionBilingualCard,
     retentionCompany: renderRetentionCompanyCard,
     retentionIndustry: renderRetentionIndustryCard,
     retentionRole: renderRetentionRoleCard,
