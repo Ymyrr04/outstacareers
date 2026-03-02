@@ -3,7 +3,7 @@ import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Building2, TrendingUp, TrendingDown, Users, GripVertical, ArrowUpDown, ArrowUp, ArrowDown, Globe, UserPlus } from 'lucide-react';
+import { Loader2, Building2, TrendingUp, TrendingDown, Users, GripVertical, ArrowUpDown, ArrowUp, ArrowDown, Globe, UserPlus, Languages } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -40,14 +40,14 @@ interface ClientData {
   is_hiring: boolean | null;
 }
 
-type CardId = 'industry' | 'leadsFrom' | 'roles' | 'country' | 'monthlyHires' | 'separations' | 'retentionCompany' | 'retentionIndustry' | 'retentionRole' | 'applicationSources';
+type CardId = 'industry' | 'leadsFrom' | 'roles' | 'country' | 'monthlyHires' | 'separations' | 'retentionCompany' | 'retentionIndustry' | 'retentionRole' | 'applicationSources' | 'retentionBilingual';
 
 type SortField = 'hired' | 'active' | 'retention';
 type SortDirection = 'asc' | 'desc';
 
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16'];
 
-const DEFAULT_CARD_ORDER: CardId[] = ['industry', 'leadsFrom', 'applicationSources', 'roles', 'country', 'monthlyHires', 'separations', 'retentionCompany', 'retentionIndustry', 'retentionRole'];
+const DEFAULT_CARD_ORDER: CardId[] = ['industry', 'leadsFrom', 'applicationSources', 'roles', 'country', 'monthlyHires', 'separations', 'retentionBilingual', 'retentionCompany', 'retentionIndustry', 'retentionRole'];
 
 interface ApplicationSourceData {
   name: string;
@@ -416,6 +416,49 @@ export const ClientAnalyticsDashboard = () => {
       return (a[roleSortField] - b[roleSortField]) * multiplier;
     });
   }, [retentionByRoleRaw, roleSortField, roleSortDir]);
+
+  // Bilingual vs Non-Bilingual Retention
+  // Logic: NOT from Philippines = bilingual. From Philippines = check if job_title contains "bilingual"
+  const retentionByBilingual = useMemo(() => {
+    const isPH = (country: string | null) => {
+      if (!country) return true; // default to PH if unknown
+      const c = country.toLowerCase().trim();
+      return c === 'philippines' || c === 'ph' || c === 'the philippines';
+    };
+    
+    const isBilingual = (contractor: ContractorData) => {
+      if (!isPH(contractor.country)) return true; // non-PH = bilingual
+      const title = (contractor.job_title || '').toLowerCase();
+      return title.includes('bilingual');
+    };
+
+    const stats = { bilingual: { total: 0, active: 0 }, nonBilingual: { total: 0, active: 0 } };
+    
+    contractors.forEach(c => {
+      const group = isBilingual(c) ? 'bilingual' : 'nonBilingual';
+      stats[group].total += 1;
+      if (c.status === 'active') {
+        stats[group].active += 1;
+      }
+    });
+
+    return [
+      {
+        name: 'Bilingual',
+        hired: stats.bilingual.total,
+        active: stats.bilingual.active,
+        separated: stats.bilingual.total - stats.bilingual.active,
+        retention: stats.bilingual.total > 0 ? Math.round((stats.bilingual.active / stats.bilingual.total) * 100) : 0,
+      },
+      {
+        name: 'Non-Bilingual (PH)',
+        hired: stats.nonBilingual.total,
+        active: stats.nonBilingual.active,
+        separated: stats.nonBilingual.total - stats.nonBilingual.active,
+        retention: stats.nonBilingual.total > 0 ? Math.round((stats.nonBilingual.active / stats.nonBilingual.total) * 100) : 0,
+      },
+    ];
+  }, [contractors]);
 
   // 5. Contractors by Role (Job Title)
   const contractorsByRole = useMemo(() => {
@@ -1021,6 +1064,53 @@ export const ClientAnalyticsDashboard = () => {
     </DraggableCard>
   );
 
+  const renderRetentionBilingualCard = () => (
+    <DraggableCard cardId="retentionBilingual">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2 pl-5">
+            <Languages className="w-4 h-4" />
+            Retention: Bilingual vs Non-Bilingual
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            {retentionByBilingual.map((group) => (
+              <div key={group.name} className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">{group.name}</span>
+                  <span className={`text-lg font-bold ${
+                    group.retention >= 80 ? 'text-green-600' : 
+                    group.retention >= 50 ? 'text-amber-600' : 'text-red-600'
+                  }`}>
+                    {group.retention}%
+                  </span>
+                </div>
+                <div className="w-full bg-muted rounded-full h-2.5">
+                  <div 
+                    className={`h-2.5 rounded-full ${
+                      group.retention >= 80 ? 'bg-green-500' : 
+                      group.retention >= 50 ? 'bg-amber-500' : 'bg-red-500'
+                    }`}
+                    style={{ width: `${group.retention}%` }}
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>Hired: {group.hired}</span>
+                  <span>Active: {group.active}</span>
+                  <span>Separated: {group.separated}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-4">
+            Non-PH contractors and PH contractors with "Bilingual" in title are counted as Bilingual.
+          </p>
+        </CardContent>
+      </Card>
+    </DraggableCard>
+  );
+
   const cardRenderers: Record<CardId, () => JSX.Element> = {
     industry: renderIndustryCard,
     leadsFrom: renderLeadsFromCard,
@@ -1029,6 +1119,7 @@ export const ClientAnalyticsDashboard = () => {
     country: renderCountryCard,
     monthlyHires: renderMonthlyHiresCard,
     separations: renderSeparationsCard,
+    retentionBilingual: renderRetentionBilingualCard,
     retentionCompany: renderRetentionCompanyCard,
     retentionIndustry: renderRetentionIndustryCard,
     retentionRole: renderRetentionRoleCard,
