@@ -40,7 +40,7 @@ interface ClientData {
   is_hiring: boolean | null;
 }
 
-type CardId = 'industry' | 'leadsFrom' | 'roles' | 'country' | 'monthlyHires' | 'separations' | 'retentionCompany' | 'retentionIndustry' | 'retentionRole' | 'applicationSources';
+type CardId = 'industry' | 'leadsFrom' | 'roles' | 'country' | 'monthlyHires' | 'separations' | 'retentionCompany' | 'retentionIndustry' | 'retentionRole' | 'applicationSources' | 'retentionBilingual';
 
 type SortField = 'hired' | 'active' | 'retention';
 type SortDirection = 'asc' | 'desc';
