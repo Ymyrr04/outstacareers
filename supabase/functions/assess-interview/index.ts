@@ -354,34 +354,46 @@ serve(async (req) => {
     const textAnswers = answers.filter(a => a.section === 'text');
     const mcAnswers = answers.filter(a => a.section === 'multiple_choice');
 
-    // Check which sections have actual content
+    // Check which sections have questions added by admin
+    const hasVoiceQuestions = voiceAnswers.length > 0;
+    const hasTextQuestions = textAnswers.length > 0;
+    const hasMCQuestions = mcAnswers.length > 0;
+
+    // Check which sections have actual content (answers submitted)
     const voiceAnsweredCount = voiceAnswers.filter(a => a.voice_recording_url).length;
     const textAnsweredCount = textAnswers.filter(a => a.text_answer && a.text_answer.trim().length > 0).length;
     const mcAnsweredCount = mcAnswers.filter(a => a.selected_option_id).length;
 
-    // Determine which scores should be auto-zero
-    const hasVoiceResponses = voiceAnsweredCount > 0;
-    const hasTextResponses = textAnsweredCount > 0;
-    const hasMCResponses = mcAnsweredCount > 0;
+    // Only score sections that have questions AND answers
+    const hasVoiceResponses = hasVoiceQuestions && voiceAnsweredCount > 0;
+    const hasTextResponses = hasTextQuestions && textAnsweredCount > 0;
+    const hasMCResponses = hasMCQuestions && mcAnsweredCount > 0;
 
+    console.log(`Section questions check - Voice: ${voiceAnswers.length} questions, Text: ${textAnswers.length} questions, MC: ${mcAnswers.length} questions`);
     console.log(`Section content check - Voice: ${voiceAnsweredCount}/${voiceAnswers.length}, Text: ${textAnsweredCount}/${textAnswers.length}, MC: ${mcAnsweredCount}/${mcAnswers.length}`);
 
     // Build score override instructions for AI
     const scoreOverrides: string[] = [];
-    if (!hasVoiceResponses) {
+    if (!hasVoiceQuestions) {
+      scoreOverrides.push('- EXPERIENCE, TECHNICAL, COMMUNICATION SCORES: Must be 0 (no voice questions were configured for this interview)');
+    } else if (!hasVoiceResponses) {
       scoreOverrides.push('- EXPERIENCE SCORE: Must be 0 (no voice recordings submitted)');
       scoreOverrides.push('- TECHNICAL SCORE: Must be 0 (no voice recordings submitted)');
       scoreOverrides.push('- COMMUNICATION SCORE: Must be 0 (no voice recordings submitted)');
     }
-    if (!hasTextResponses) {
+    if (!hasTextQuestions) {
+      scoreOverrides.push('- SITUATIONAL SCORE: Must be 0 (no text questions were configured for this interview)');
+    } else if (!hasTextResponses) {
       scoreOverrides.push('- SITUATIONAL SCORE: Must be 0 (no text answers submitted)');
     }
-    if (!hasMCResponses) {
+    if (!hasMCQuestions) {
+      scoreOverrides.push('- PERSONALITY SCORE: Must be 0 (no multiple choice questions were configured for this interview)');
+    } else if (!hasMCResponses) {
       scoreOverrides.push('- PERSONALITY SCORE: Must be 0 (no multiple choice answers submitted)');
     }
 
     const scoreOverrideSection = scoreOverrides.length > 0 
-      ? `\n\nMANDATORY SCORE OVERRIDES (sections with no answers = automatic 0):\n${scoreOverrides.join('\n')}\n\nThese scores MUST be exactly 0 - do not infer from CV or other sections.`
+      ? `\n\nMANDATORY SCORE OVERRIDES (sections without questions or without answers = automatic 0):\n${scoreOverrides.join('\n')}\n\nThese scores MUST be exactly 0 - do not infer from CV or other sections. The overall score should only reflect sections that had questions AND answers.`
       : '';
 
     const systemPrompt = `You are a senior HR professional with extensive experience in candidate assessment. Your task is to provide a rigorous, objective evaluation of interview performance.
@@ -630,20 +642,28 @@ Provide your assessment. Return ONLY the JSON object.`;
       ai_assessment_details: assessmentResult.ai_assessment_details || {}
     };
 
-    // ENFORCE: Sections with no answers MUST have 0 scores (override AI if it didn't comply)
-    if (!hasVoiceResponses) {
+    // ENFORCE: Sections with no questions should be excluded entirely
+    // Sections with questions but no answers get 0
+    if (!hasVoiceQuestions) {
+      console.log('No voice questions added by admin - excluding from scoring');
+      validatedResult.experience_score = 0;
+      validatedResult.technical_score = 0;
+      validatedResult.communication_score = 0;
+    } else if (!hasVoiceResponses) {
       console.log('Enforcing 0 scores for voice section (no recordings)');
       validatedResult.experience_score = 0;
       validatedResult.technical_score = 0;
       validatedResult.communication_score = 0;
       
-      // Add concern if not already present
       if (!validatedResult.ai_concerns.some(c => c.toLowerCase().includes('voice') || c.toLowerCase().includes('recording'))) {
         validatedResult.ai_concerns.push('No voice recordings submitted for experience/technical questions');
       }
     }
     
-    if (!hasTextResponses) {
+    if (!hasTextQuestions) {
+      console.log('No text questions added by admin - excluding from scoring');
+      validatedResult.situational_score = 0;
+    } else if (!hasTextResponses) {
       console.log('Enforcing 0 score for situational section (no text answers)');
       validatedResult.situational_score = 0;
       
@@ -652,7 +672,10 @@ Provide your assessment. Return ONLY the JSON object.`;
       }
     }
     
-    if (!hasMCResponses) {
+    if (!hasMCQuestions) {
+      console.log('No MC questions added by admin - excluding from scoring');
+      validatedResult.personality_score = 0;
+    } else if (!hasMCResponses) {
       console.log('Enforcing 0 score for personality section (no MC answers)');
       validatedResult.personality_score = 0;
       
@@ -661,15 +684,36 @@ Provide your assessment. Return ONLY the JSON object.`;
       }
     }
 
-    // Recalculate overall score with enforced zeros
-    // Weight: Experience (25%) + Technical (25%) + Communication (20%) + Situational (15%) + Personality (15%)
-    validatedResult.overall_score = Math.round(
-      (validatedResult.experience_score * 0.25) +
-      (validatedResult.technical_score * 0.25) +
-      (validatedResult.communication_score * 0.20) +
-      (validatedResult.situational_score * 0.15) +
-      (validatedResult.personality_score * 0.15)
-    );
+    // Recalculate overall score with DYNAMIC weights based on which sections have questions
+    // Base weights: Experience (25%) + Technical (25%) + Communication (20%) + Situational (15%) + Personality (15%)
+    let weightExp = hasVoiceQuestions ? 0.25 : 0;
+    let weightTech = hasVoiceQuestions ? 0.25 : 0;
+    let weightComm = hasVoiceQuestions ? 0.20 : 0;
+    let weightSit = hasTextQuestions ? 0.15 : 0;
+    let weightPers = hasMCQuestions ? 0.15 : 0;
+    
+    const totalWeight = weightExp + weightTech + weightComm + weightSit + weightPers;
+    
+    if (totalWeight > 0) {
+      // Normalize weights so they sum to 1.0
+      weightExp /= totalWeight;
+      weightTech /= totalWeight;
+      weightComm /= totalWeight;
+      weightSit /= totalWeight;
+      weightPers /= totalWeight;
+      
+      validatedResult.overall_score = Math.round(
+        (validatedResult.experience_score * weightExp) +
+        (validatedResult.technical_score * weightTech) +
+        (validatedResult.communication_score * weightComm) +
+        (validatedResult.situational_score * weightSit) +
+        (validatedResult.personality_score * weightPers)
+      );
+    } else {
+      validatedResult.overall_score = 0;
+    }
+    
+    console.log(`Dynamic weight calculation - Voice: ${hasVoiceQuestions}, Text: ${hasTextQuestions}, MC: ${hasMCQuestions}, TotalWeight: ${totalWeight}`);
 
     // Update the interview session in database (supabase client already initialized above)
 
