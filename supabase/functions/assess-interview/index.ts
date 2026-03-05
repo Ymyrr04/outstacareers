@@ -636,20 +636,28 @@ Provide your assessment. Return ONLY the JSON object.`;
       ai_assessment_details: assessmentResult.ai_assessment_details || {}
     };
 
-    // ENFORCE: Sections with no answers MUST have 0 scores (override AI if it didn't comply)
-    if (!hasVoiceResponses) {
+    // ENFORCE: Sections with no questions should be excluded entirely
+    // Sections with questions but no answers get 0
+    if (!hasVoiceQuestions) {
+      console.log('No voice questions added by admin - excluding from scoring');
+      validatedResult.experience_score = 0;
+      validatedResult.technical_score = 0;
+      validatedResult.communication_score = 0;
+    } else if (!hasVoiceResponses) {
       console.log('Enforcing 0 scores for voice section (no recordings)');
       validatedResult.experience_score = 0;
       validatedResult.technical_score = 0;
       validatedResult.communication_score = 0;
       
-      // Add concern if not already present
       if (!validatedResult.ai_concerns.some(c => c.toLowerCase().includes('voice') || c.toLowerCase().includes('recording'))) {
         validatedResult.ai_concerns.push('No voice recordings submitted for experience/technical questions');
       }
     }
     
-    if (!hasTextResponses) {
+    if (!hasTextQuestions) {
+      console.log('No text questions added by admin - excluding from scoring');
+      validatedResult.situational_score = 0;
+    } else if (!hasTextResponses) {
       console.log('Enforcing 0 score for situational section (no text answers)');
       validatedResult.situational_score = 0;
       
@@ -658,7 +666,10 @@ Provide your assessment. Return ONLY the JSON object.`;
       }
     }
     
-    if (!hasMCResponses) {
+    if (!hasMCQuestions) {
+      console.log('No MC questions added by admin - excluding from scoring');
+      validatedResult.personality_score = 0;
+    } else if (!hasMCResponses) {
       console.log('Enforcing 0 score for personality section (no MC answers)');
       validatedResult.personality_score = 0;
       
@@ -667,15 +678,36 @@ Provide your assessment. Return ONLY the JSON object.`;
       }
     }
 
-    // Recalculate overall score with enforced zeros
-    // Weight: Experience (25%) + Technical (25%) + Communication (20%) + Situational (15%) + Personality (15%)
-    validatedResult.overall_score = Math.round(
-      (validatedResult.experience_score * 0.25) +
-      (validatedResult.technical_score * 0.25) +
-      (validatedResult.communication_score * 0.20) +
-      (validatedResult.situational_score * 0.15) +
-      (validatedResult.personality_score * 0.15)
-    );
+    // Recalculate overall score with DYNAMIC weights based on which sections have questions
+    // Base weights: Experience (25%) + Technical (25%) + Communication (20%) + Situational (15%) + Personality (15%)
+    let weightExp = hasVoiceQuestions ? 0.25 : 0;
+    let weightTech = hasVoiceQuestions ? 0.25 : 0;
+    let weightComm = hasVoiceQuestions ? 0.20 : 0;
+    let weightSit = hasTextQuestions ? 0.15 : 0;
+    let weightPers = hasMCQuestions ? 0.15 : 0;
+    
+    const totalWeight = weightExp + weightTech + weightComm + weightSit + weightPers;
+    
+    if (totalWeight > 0) {
+      // Normalize weights so they sum to 1.0
+      weightExp /= totalWeight;
+      weightTech /= totalWeight;
+      weightComm /= totalWeight;
+      weightSit /= totalWeight;
+      weightPers /= totalWeight;
+      
+      validatedResult.overall_score = Math.round(
+        (validatedResult.experience_score * weightExp) +
+        (validatedResult.technical_score * weightTech) +
+        (validatedResult.communication_score * weightComm) +
+        (validatedResult.situational_score * weightSit) +
+        (validatedResult.personality_score * weightPers)
+      );
+    } else {
+      validatedResult.overall_score = 0;
+    }
+    
+    console.log(`Dynamic weight calculation - Voice: ${hasVoiceQuestions}, Text: ${hasTextQuestions}, MC: ${hasMCQuestions}, TotalWeight: ${totalWeight}`);
 
     // Update the interview session in database (supabase client already initialized above)
 
