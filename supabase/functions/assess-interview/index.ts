@@ -374,20 +374,26 @@ serve(async (req) => {
 
     // Build score override instructions for AI
     const scoreOverrides: string[] = [];
-    if (!hasVoiceResponses) {
+    if (!hasVoiceQuestions) {
+      scoreOverrides.push('- EXPERIENCE, TECHNICAL, COMMUNICATION SCORES: Must be 0 (no voice questions were configured for this interview)');
+    } else if (!hasVoiceResponses) {
       scoreOverrides.push('- EXPERIENCE SCORE: Must be 0 (no voice recordings submitted)');
       scoreOverrides.push('- TECHNICAL SCORE: Must be 0 (no voice recordings submitted)');
       scoreOverrides.push('- COMMUNICATION SCORE: Must be 0 (no voice recordings submitted)');
     }
-    if (!hasTextResponses) {
+    if (!hasTextQuestions) {
+      scoreOverrides.push('- SITUATIONAL SCORE: Must be 0 (no text questions were configured for this interview)');
+    } else if (!hasTextResponses) {
       scoreOverrides.push('- SITUATIONAL SCORE: Must be 0 (no text answers submitted)');
     }
-    if (!hasMCResponses) {
+    if (!hasMCQuestions) {
+      scoreOverrides.push('- PERSONALITY SCORE: Must be 0 (no multiple choice questions were configured for this interview)');
+    } else if (!hasMCResponses) {
       scoreOverrides.push('- PERSONALITY SCORE: Must be 0 (no multiple choice answers submitted)');
     }
 
     const scoreOverrideSection = scoreOverrides.length > 0 
-      ? `\n\nMANDATORY SCORE OVERRIDES (sections with no answers = automatic 0):\n${scoreOverrides.join('\n')}\n\nThese scores MUST be exactly 0 - do not infer from CV or other sections.`
+      ? `\n\nMANDATORY SCORE OVERRIDES (sections without questions or without answers = automatic 0):\n${scoreOverrides.join('\n')}\n\nThese scores MUST be exactly 0 - do not infer from CV or other sections. The overall score should only reflect sections that had questions AND answers.`
       : '';
 
     const systemPrompt = `You are a senior HR professional with extensive experience in candidate assessment. Your task is to provide a rigorous, objective evaluation of interview performance.
