@@ -354,16 +354,22 @@ serve(async (req) => {
     const textAnswers = answers.filter(a => a.section === 'text');
     const mcAnswers = answers.filter(a => a.section === 'multiple_choice');
 
-    // Check which sections have actual content
+    // Check which sections have questions added by admin
+    const hasVoiceQuestions = voiceAnswers.length > 0;
+    const hasTextQuestions = textAnswers.length > 0;
+    const hasMCQuestions = mcAnswers.length > 0;
+
+    // Check which sections have actual content (answers submitted)
     const voiceAnsweredCount = voiceAnswers.filter(a => a.voice_recording_url).length;
     const textAnsweredCount = textAnswers.filter(a => a.text_answer && a.text_answer.trim().length > 0).length;
     const mcAnsweredCount = mcAnswers.filter(a => a.selected_option_id).length;
 
-    // Determine which scores should be auto-zero
-    const hasVoiceResponses = voiceAnsweredCount > 0;
-    const hasTextResponses = textAnsweredCount > 0;
-    const hasMCResponses = mcAnsweredCount > 0;
+    // Only score sections that have questions AND answers
+    const hasVoiceResponses = hasVoiceQuestions && voiceAnsweredCount > 0;
+    const hasTextResponses = hasTextQuestions && textAnsweredCount > 0;
+    const hasMCResponses = hasMCQuestions && mcAnsweredCount > 0;
 
+    console.log(`Section questions check - Voice: ${voiceAnswers.length} questions, Text: ${textAnswers.length} questions, MC: ${mcAnswers.length} questions`);
     console.log(`Section content check - Voice: ${voiceAnsweredCount}/${voiceAnswers.length}, Text: ${textAnsweredCount}/${textAnswers.length}, MC: ${mcAnsweredCount}/${mcAnswers.length}`);
 
     // Build score override instructions for AI
