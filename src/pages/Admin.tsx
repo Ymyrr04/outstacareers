@@ -2157,6 +2157,45 @@ const Admin = () => {
                       </Button>
                     </div>
 
+  // Auto-score unscored applicants that have CV text but no total_score
+  const autoScoringTriggered = useRef<Set<string>>(new Set());
+  useEffect(() => {
+    if (!applicants.length || applicantsLoading) return;
+    
+    const unscoredWithCv = applicants.filter(a => 
+      a.cv_text && 
+      a.cv_text.length > 50 && 
+      a.total_score === null && 
+      a.job_title &&
+      !autoScoringTriggered.current.has(a.id)
+    );
+
+    if (unscoredWithCv.length === 0) return;
+
+    console.log(`Auto-scoring ${unscoredWithCv.length} unscored applicants with CV text...`);
+    
+    // Score up to 5 at a time to avoid overloading
+    const batch = unscoredWithCv.slice(0, 5);
+    batch.forEach(applicant => {
+      autoScoringTriggered.current.add(applicant.id);
+      
+      // Find job details for scoring context
+      const job = jobs.find(j => j.id === applicant.job_id);
+      
+      supabase.functions.invoke('rescore-cv', {
+        body: { applicant_id: applicant.id }
+      }).then(({ error }) => {
+        if (error) {
+          console.error(`Auto-score failed for ${applicant.id}:`, error);
+        } else {
+          console.log(`Auto-scored applicant ${applicant.full_name}`);
+          // Refresh to show updated scores
+          fetchApplicants();
+        }
+      });
+    });
+  }, [applicants, applicantsLoading, jobs]);
+
 
                     <PaginatedSearchResults
                       searchTerm={paginatedSearchTerm}
