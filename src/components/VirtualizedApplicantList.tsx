@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Star, Eye, Trash2, GripVertical, Loader2, FileText, Download, Mail, History, Send, Phone, MessageCircle, MapPin, Clock, Check, X, RefreshCw } from 'lucide-react';
+import { Star, Eye, Trash2, GripVertical, Loader2, FileText, Download, Mail, History, Send, Phone, MessageCircle, MapPin, Clock, Check, X, RefreshCw, Briefcase } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format } from 'date-fns';
 import { ApplicantSourceBadge } from '@/components/ApplicantSourceBadge';
@@ -247,6 +247,12 @@ export const VirtualizedApplicantList = ({
                               {unreadCount} unread
                             </Badge>
                           )}
+                        </div>
+
+                        {/* Job title */}
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                          <Briefcase className="w-3 h-3" />
+                          <span className="truncate max-w-[300px] font-medium">{applicant.job_title}</span>
                         </div>
 
                         {/* Info row */}
