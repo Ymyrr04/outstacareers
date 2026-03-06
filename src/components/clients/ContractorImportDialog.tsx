@@ -738,94 +738,234 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
 
       {/* Main Import Dialog */}
       <Dialog open={open} onOpenChange={handleClose}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
           <DialogHeader>
             <DialogTitle>Import Contractors</DialogTitle>
             <DialogDescription>
-              Upload a CSV file to bulk import contractors. Contractors must be linked to existing clients and applicants.
+              Add contractors via CSV upload or manual entry.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
-            <Alert>
-              <AlertCircle className="h-4 w-4" />
-              <AlertDescription>
-                <strong>Important:</strong> The company name must match an existing client, and the email must match an existing applicant in the system.
-              </AlertDescription>
-            </Alert>
+          <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); if (v === 'manual') loadClients(); }} className="flex-1 overflow-hidden flex flex-col">
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="csv">
+                <Upload className="w-4 h-4 mr-2" />
+                CSV Upload
+              </TabsTrigger>
+              <TabsTrigger value="manual">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Manual Entry
+              </TabsTrigger>
+            </TabsList>
 
-            <Button variant="outline" onClick={downloadTemplate} className="w-full">
-              <Download className="w-4 h-4 mr-2" />
-              Download Template
-            </Button>
+            <TabsContent value="csv" className="flex-1 overflow-y-auto space-y-4 mt-4">
+              <Alert>
+                <AlertCircle className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>Important:</strong> The company name must match an existing client, and the email must match an existing applicant in the system.
+                </AlertDescription>
+              </Alert>
 
-            <div className="border-2 border-dashed rounded-lg p-6 text-center">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".csv"
-                onChange={handleFileSelect}
-                className="hidden"
-                id="contractor-csv-upload"
-              />
-              <label htmlFor="contractor-csv-upload" className="cursor-pointer">
-                <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
-                <p className="text-sm text-muted-foreground">
-                  Click to upload or drag and drop
-                </p>
-                <p className="text-xs text-muted-foreground mt-1">CSV files only</p>
-              </label>
-            </div>
+              <Button variant="outline" onClick={downloadTemplate} className="w-full">
+                <Download className="w-4 h-4 mr-2" />
+                Download Template
+              </Button>
 
-            {parsedData.length > 0 && (
-              <div className="p-3 bg-muted rounded-lg">
-                <p className="text-sm font-medium">
-                  {parsedData.length} contractor(s) ready to import
-                </p>
-                <ul className="text-xs text-muted-foreground mt-1 max-h-32 overflow-y-auto">
-                  {parsedData.slice(0, 5).map((c, i) => (
-                    <li key={i}>• {c.name} - {c.company}</li>
-                  ))}
-                  {parsedData.length > 5 && (
-                    <li>...and {parsedData.length - 5} more</li>
+              <div className="border-2 border-dashed rounded-lg p-6 text-center">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".csv"
+                  onChange={handleFileSelect}
+                  className="hidden"
+                  id="contractor-csv-upload"
+                />
+                <label htmlFor="contractor-csv-upload" className="cursor-pointer">
+                  <Upload className="w-8 h-8 mx-auto mb-2 text-muted-foreground" />
+                  <p className="text-sm text-muted-foreground">
+                    Click to upload or drag and drop
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">CSV files only</p>
+                </label>
+              </div>
+
+              {parsedData.length > 0 && (
+                <div className="p-3 bg-muted rounded-lg">
+                  <p className="text-sm font-medium">
+                    {parsedData.length} contractor(s) ready to import
+                  </p>
+                  <ul className="text-xs text-muted-foreground mt-1 max-h-32 overflow-y-auto">
+                    {parsedData.slice(0, 5).map((c, i) => (
+                      <li key={i}>• {c.name} - {c.company}</li>
+                    ))}
+                    {parsedData.length > 5 && (
+                      <li>...and {parsedData.length - 5} more</li>
+                    )}
+                  </ul>
+                </div>
+              )}
+
+              {errors.length > 0 && (
+                <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg max-h-40 overflow-y-auto">
+                  <p className="text-sm font-medium text-destructive mb-1">Import Errors:</p>
+                  <ul className="text-xs text-destructive space-y-1">
+                    {errors.map((error, i) => (
+                      <li key={i}>• {error}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div className="flex gap-2 justify-end">
+                <Button variant="outline" onClick={handleClose}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={handleImport} 
+                  disabled={parsedData.length === 0 || importing}
+                >
+                  {importing ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Importing...
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-4 h-4 mr-2" />
+                      Import {parsedData.length} Contractor(s)
+                    </>
                   )}
-                </ul>
+                </Button>
               </div>
-            )}
+            </TabsContent>
 
-            {errors.length > 0 && (
-              <div className="p-3 bg-destructive/10 border border-destructive/20 rounded-lg max-h-40 overflow-y-auto">
-                <p className="text-sm font-medium text-destructive mb-1">Import Errors:</p>
-                <ul className="text-xs text-destructive space-y-1">
-                  {errors.map((error, i) => (
-                    <li key={i}>• {error}</li>
-                  ))}
-                </ul>
+            <TabsContent value="manual" className="flex-1 overflow-y-auto mt-4">
+              <ScrollArea className="h-[50vh] pr-4">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-name">Full Name *</Label>
+                      <Input id="m-name" value={manualForm.name} onChange={e => setManualForm(p => ({ ...p, name: e.target.value }))} placeholder="John Doe" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-email">Email *</Label>
+                      <Input id="m-email" type="email" value={manualForm.email} onChange={e => setManualForm(p => ({ ...p, email: e.target.value }))} placeholder="john@example.com" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="m-company">Company *</Label>
+                    <Select value={manualForm.company} onValueChange={v => setManualForm(p => ({ ...p, company: v }))}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a client..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {clients.map(c => (
+                          <SelectItem key={c.id} value={c.company_name}>{c.company_name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-position">Position</Label>
+                      <Input id="m-position" value={manualForm.position} onChange={e => setManualForm(p => ({ ...p, position: e.target.value }))} placeholder="Virtual Assistant" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-status">Status</Label>
+                      <Select value={manualForm.status} onValueChange={v => setManualForm(p => ({ ...p, status: v }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="scheduled">Scheduled</SelectItem>
+                          <SelectItem value="paused">Paused</SelectItem>
+                          <SelectItem value="rendering">Rendering</SelectItem>
+                          <SelectItem value="terminated">Terminated</SelectItem>
+                          <SelectItem value="resigned">Resigned</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-rate">Rate ($/hr)</Label>
+                      <Input id="m-rate" type="number" value={manualForm.rate} onChange={e => setManualForm(p => ({ ...p, rate: e.target.value }))} placeholder="15" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-hours">Hours/Week</Label>
+                      <Input id="m-hours" type="number" value={manualForm.hours} onChange={e => setManualForm(p => ({ ...p, hours: e.target.value }))} placeholder="40" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-start">Start Date</Label>
+                      <Input id="m-start" type="date" value={manualForm.start_date} onChange={e => setManualForm(p => ({ ...p, start_date: e.target.value }))} />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-contact">Contact Number</Label>
+                      <Input id="m-contact" value={manualForm.contact_number} onChange={e => setManualForm(p => ({ ...p, contact_number: e.target.value }))} placeholder="+1234567890" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-emergency">Emergency Number</Label>
+                      <Input id="m-emergency" value={manualForm.emergency_number} onChange={e => setManualForm(p => ({ ...p, emergency_number: e.target.value }))} placeholder="+0987654321" />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <Label htmlFor="m-timesheet">Timesheet Link</Label>
+                    <Input id="m-timesheet" value={manualForm.timesheet_link} onChange={e => setManualForm(p => ({ ...p, timesheet_link: e.target.value }))} placeholder="https://docs.google.com/..." />
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-country">Country</Label>
+                      <Input id="m-country" value={manualForm.country} onChange={e => setManualForm(p => ({ ...p, country: e.target.value }))} placeholder="Philippines" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-source">Source</Label>
+                      <Input id="m-source" value={manualForm.source} onChange={e => setManualForm(p => ({ ...p, source: e.target.value }))} placeholder="Referral" />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="m-type">Type</Label>
+                      <Select value={manualForm.type} onValueChange={v => setManualForm(p => ({ ...p, type: v }))}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="New">New</SelectItem>
+                          <SelectItem value="Replacement">Replacement</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </ScrollArea>
+
+              <div className="flex gap-2 justify-end mt-4">
+                <Button variant="outline" onClick={handleClose}>
+                  Cancel
+                </Button>
+                <Button onClick={handleManualSubmit} disabled={manualSubmitting}>
+                  {manualSubmitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                      Adding...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Add Contractor
+                    </>
+                  )}
+                </Button>
               </div>
-            )}
-
-            <div className="flex gap-2 justify-end">
-              <Button variant="outline" onClick={handleClose}>
-                Cancel
-              </Button>
-              <Button 
-                onClick={handleImport} 
-                disabled={parsedData.length === 0 || importing}
-              >
-                {importing ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Importing...
-                  </>
-                ) : (
-                  <>
-                    <Upload className="w-4 h-4 mr-2" />
-                    Import {parsedData.length} Contractor(s)
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
+            </TabsContent>
+          </Tabs>
         </DialogContent>
       </Dialog>
     </>
