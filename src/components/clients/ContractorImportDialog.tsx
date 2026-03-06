@@ -69,6 +69,114 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
     clientMap: Record<string, string>;
     applicantMap: Record<string, { id: string; name: string }>;
   } | null>(null);
+  const [activeTab, setActiveTab] = useState<string>('csv');
+  const [manualForm, setManualForm] = useState({
+    name: '', email: '', company: '', position: '', rate: '', hours: '',
+    start_date: '', contact_number: '', emergency_number: '', timesheet_link: '',
+    country: '', source: '', status: 'active', type: 'New',
+  });
+  const [manualSubmitting, setManualSubmitting] = useState(false);
+  const [clients, setClients] = useState<{ id: string; company_name: string }[]>([]);
+  const [clientsLoaded, setClientsLoaded] = useState(false);
+
+  const loadClients = async () => {
+    if (clientsLoaded) return;
+    const { data } = await supabase.from('clients').select('id, company_name').order('company_name');
+    setClients(data || []);
+    setClientsLoaded(true);
+  };
+
+  const handleManualSubmit = async () => {
+    if (!manualForm.name || !manualForm.email || !manualForm.company) {
+      toast({ title: 'Missing fields', description: 'Name, email, and company are required.', variant: 'destructive' });
+      return;
+    }
+
+    setManualSubmitting(true);
+    try {
+      // Find client
+      const client = clients.find(c => c.company_name === manualForm.company);
+      if (!client) {
+        toast({ title: 'Client not found', description: `Company "${manualForm.company}" doesn't exist.`, variant: 'destructive' });
+        setManualSubmitting(false);
+        return;
+      }
+
+      // Find or create applicant
+      const { data: existingApplicants } = await supabase
+        .from('applicants_prescreen')
+        .select('id, full_name')
+        .ilike('email', manualForm.email)
+        .limit(1);
+
+      let applicantId: string;
+      if (existingApplicants && existingApplicants.length > 0) {
+        applicantId = existingApplicants[0].id;
+      } else {
+        const { data: newApplicant, error: createError } = await supabase
+          .from('applicants_prescreen')
+          .insert({
+            full_name: manualForm.name,
+            email: manualForm.email,
+            phone: manualForm.contact_number || null,
+            status: 'Hired',
+            job_source: manualForm.source || 'Manual Entry',
+            home_office: true, noise_canceling_headset: true, laptop_or_pc: true,
+            good_internet: true, internet_speed: 'Unknown', power_backup: true,
+            can_work_40_50: true, us_timezone_ok: true, start_availability: 'Immediately',
+            has_experience: true, currently_working: true,
+            location: manualForm.country || 'Unknown',
+            job_title: manualForm.position || 'Contractor',
+            apply_url: 'manual-entry',
+          })
+          .select('id')
+          .single();
+
+        if (createError || !newApplicant) {
+          toast({ title: 'Error', description: 'Failed to create applicant: ' + (createError?.message || 'Unknown'), variant: 'destructive' });
+          setManualSubmitting(false);
+          return;
+        }
+        applicantId = newApplicant.id;
+      }
+
+      const hourlyRate = manualForm.rate ? parseFloat(manualForm.rate) : null;
+      const hoursPerWeek = manualForm.hours ? parseFloat(manualForm.hours) : null;
+      let startDate: string | null = manualForm.start_date || null;
+
+      const { error } = await supabase.from('contractor_assignments').insert({
+        client_id: client.id,
+        applicant_id: applicantId,
+        job_title: manualForm.position || null,
+        hourly_rate: hourlyRate,
+        hours_per_week: hoursPerWeek,
+        start_date: startDate,
+        status: manualForm.status,
+        contact_number: manualForm.contact_number || null,
+        emergency_number: manualForm.emergency_number || null,
+        timesheet_link: manualForm.timesheet_link || null,
+        is_replacement: manualForm.type.toLowerCase().includes('replacement'),
+        country: manualForm.country || null,
+        source: manualForm.source || null,
+      });
+
+      if (error) {
+        toast({ title: 'Error', description: 'Failed to add contractor: ' + error.message, variant: 'destructive' });
+      } else {
+        toast({ title: 'Contractor Added', description: `${manualForm.name} has been added successfully.` });
+        onContractorsImported();
+        setManualForm({
+          name: '', email: '', company: '', position: '', rate: '', hours: '',
+          start_date: '', contact_number: '', emergency_number: '', timesheet_link: '',
+          country: '', source: '', status: 'active', type: 'New',
+        });
+      }
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setManualSubmitting(false);
+    }
+  };
 
   const downloadTemplate = () => {
     const headers = [
