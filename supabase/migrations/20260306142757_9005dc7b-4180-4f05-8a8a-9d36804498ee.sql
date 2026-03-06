@@ -1,0 +1,1 @@
+UPDATE applicants_prescreen SET status = 'Archive' WHERE status = 'Archived';
