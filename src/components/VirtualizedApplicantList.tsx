@@ -249,6 +249,12 @@ export const VirtualizedApplicantList = ({
                           )}
                         </div>
 
+                        {/* Job title */}
+                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                          <Briefcase className="w-3 h-3" />
+                          <span className="truncate max-w-[300px] font-medium">{applicant.job_title}</span>
+                        </div>
+
                         {/* Info row */}
                         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
                           <CopyableText text={applicant.email} className="flex items-center gap-1">
