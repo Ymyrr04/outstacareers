@@ -632,6 +632,7 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
     setDuplicateActions({});
     setShowDuplicateDialog(false);
     setPendingImportData(null);
+    setActiveTab('csv');
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
