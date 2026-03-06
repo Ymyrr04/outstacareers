@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Star, Eye, Trash2, GripVertical, Loader2, FileText, Download, Mail, History, Send, Phone, MessageCircle, MapPin, Clock, Check, X, RefreshCw } from 'lucide-react';
+import { Star, Eye, Trash2, GripVertical, Loader2, FileText, Download, Mail, History, Send, Phone, MessageCircle, MapPin, Clock, Check, X, RefreshCw, Briefcase } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format } from 'date-fns';
 import { ApplicantSourceBadge } from '@/components/ApplicantSourceBadge';
