@@ -1232,8 +1232,18 @@ const Admin = () => {
   };
 
   const handleUpdateApplicantStatus = async (applicantId: string, newStatus: ApplicantStatusOption) => {
-    const applicant = applicants.find(a => a.id === applicantId);
-    if (!applicant) return;
+    let applicant = applicants.find(a => a.id === applicantId);
+    
+    // If not in local state (e.g. from search view), fetch from DB
+    if (!applicant) {
+      const { data } = await supabase
+        .from('applicants_prescreen')
+        .select('*')
+        .eq('id', applicantId)
+        .single();
+      if (!data) return;
+      applicant = data as any;
+    }
 
     // If moving to Hired, open the assignment dialog first
     if (newStatus === 'Hired' && applicant.status !== 'Hired') {
