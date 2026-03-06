@@ -250,9 +250,9 @@ export const VirtualizedApplicantList = ({
                         </div>
 
                         {/* Job title */}
-                        <div className="flex items-center gap-1 text-xs text-muted-foreground mb-1">
+                        <div className="flex items-center gap-1 text-xs text-foreground mb-1">
                           <Briefcase className="w-3 h-3" />
-                          <span className="truncate max-w-[300px] font-medium">{applicant.job_title}</span>
+                          <span className="truncate max-w-[300px] font-bold">{applicant.job_title}</span>
                         </div>
 
                         {/* Info row */}
