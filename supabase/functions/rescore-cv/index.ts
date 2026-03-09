@@ -230,6 +230,14 @@ serve(async (req) => {
       });
     }
 
+    // Truncate CV text to avoid exceeding AI token limits (~4 chars per token, limit ~1M tokens)
+    // Cap at 50,000 characters which is more than enough for any CV
+    const MAX_CV_LENGTH = 50000;
+    if (cvText.length > MAX_CV_LENGTH) {
+      console.log(`CV text too long (${cvText.length} chars), truncating to ${MAX_CV_LENGTH}`);
+      cvText = cvText.substring(0, MAX_CV_LENGTH) + '\n\n[... CV text truncated due to length ...]';
+    }
+
     // Fetch job details
     let jobDescription = '';
     let qualifications: string[] = [];
