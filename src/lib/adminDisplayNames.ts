@@ -24,6 +24,7 @@ export const USER_ID_TO_EMAIL: Record<string, string> = {
   'b96366f0-e6a5-4529-9d67-bbbefae4357a': 'eduardo@outsta.io',
   '205a92f8-6af7-445b-b452-959199592b81': 'mark@outsta.io',
   'b87e8fe5-492b-4b4a-8b87-bb5f7939cd2f': 'liezl@outsta.io',
+  'f2b48ca9-e2e9-4ee3-9f73-fc612ae195c4': 'jil@outsta.io',
 };
 
 /**
