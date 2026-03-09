@@ -7,15 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Decode JWT payload without verification (signature is verified by Supabase gateway when verify_jwt=true)
-// Since we set verify_jwt=false in config.toml, we just decode the payload to get claims
 function decodeJwtPayload(token: string): Record<string, unknown> | null {
   try {
     const parts = token.split(".");
     if (parts.length !== 3) return null;
-    
-    const payloadBase64 = parts[1];
-    const payloadJson = new TextDecoder().decode(decode(payloadBase64));
+    const payloadJson = new TextDecoder().decode(decode(parts[1]));
     return JSON.parse(payloadJson);
   } catch {
     return null;
@@ -30,13 +26,11 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    
-    // Service-role client: used for privileged admin operations
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey, {
-      auth: { autoRefreshToken: false, persistSession: false }
+      auth: { autoRefreshToken: false, persistSession: false },
     });
 
-    // Verify the requesting user has authorization header
     const authHeader = req.headers.get("Authorization");
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "No authorization header" }), {
@@ -46,21 +40,15 @@ serve(async (req) => {
     }
 
     const token = authHeader.replace("Bearer ", "");
-    
-    // Decode the JWT to get user ID from claims
-    // Note: The JWT signature was already verified by Supabase when the user logged in.
-    // We trust the token structure here since it came through the client's auth flow.
     const payload = decodeJwtPayload(token);
-    
+
     if (!payload || !payload.sub) {
-      console.error("Failed to decode JWT payload");
       return new Response(JSON.stringify({ error: "Invalid token format" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Check if token is expired
     const exp = payload.exp as number;
     if (exp && Date.now() / 1000 > exp) {
       return new Response(JSON.stringify({ error: "Token expired" }), {
@@ -71,7 +59,7 @@ serve(async (req) => {
 
     const userId = payload.sub as string;
 
-    // Check if user is admin or super_admin
+    // Check if requesting user is admin
     const { data: roleData } = await supabase
       .from("user_roles")
       .select("role")
@@ -85,17 +73,20 @@ serve(async (req) => {
       });
     }
 
-    // Get all admin and super_admin user IDs
+    const isSuperAdmin = roleData.some((r) => r.role === "super_admin");
+
+    // Get all admin/super_admin roles
     const { data: adminRoles, error: rolesError } = await supabase
       .from("user_roles")
       .select("user_id, role")
       .in("role", ["admin", "super_admin"]);
 
-    if (rolesError) {
-      throw rolesError;
-    }
+    if (rolesError) throw rolesError;
 
-    // Get user details for each admin
+    const adminUserIds = new Set((adminRoles || []).map((r) => r.user_id));
+    const roleMap = new Map((adminRoles || []).map((r) => [r.user_id, r.role]));
+
+    // Get user details for admins
     const adminUsers = [];
     for (const role of adminRoles || []) {
       const { data: userData } = await supabase.auth.admin.getUserById(role.user_id);
@@ -103,11 +94,27 @@ serve(async (req) => {
         adminUsers.push({
           user_id: role.user_id,
           email: userData.user.email || role.user_id.slice(0, 8) + "...",
+          role: role.role,
         });
       }
     }
 
-    return new Response(JSON.stringify({ adminUsers }), {
+    // If super admin, also get pending users (users with auth accounts but no role)
+    let pendingUsers: Array<{ user_id: string; email: string; created_at: string }> = [];
+    if (isSuperAdmin) {
+      const { data: allUsers } = await supabase.auth.admin.listUsers({ perPage: 100 });
+      if (allUsers?.users) {
+        pendingUsers = allUsers.users
+          .filter((u) => !adminUserIds.has(u.id))
+          .map((u) => ({
+            user_id: u.id,
+            email: u.email || "unknown",
+            created_at: u.created_at,
+          }));
+      }
+    }
+
+    return new Response(JSON.stringify({ adminUsers, pendingUsers }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error: unknown) {
