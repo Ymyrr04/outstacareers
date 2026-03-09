@@ -6,6 +6,7 @@ export const EMAIL_TO_NAME: Record<string, string> = {
   'mark@outsta.io': 'Mark',
   'liezl@outsta.io': 'Liezl',
   'jil@outsta.io': 'Jil',
+  'yes@outsta.io': 'Yes',
 };
 
 // Mapping of admin emails to profile picture paths (relative imports)
@@ -25,6 +26,7 @@ export const USER_ID_TO_EMAIL: Record<string, string> = {
   '205a92f8-6af7-445b-b452-959199592b81': 'mark@outsta.io',
   'b87e8fe5-492b-4b4a-8b87-bb5f7939cd2f': 'liezl@outsta.io',
   'f2b48ca9-e2e9-4ee3-9f73-fc612ae195c4': 'jil@outsta.io',
+  '8d30c059-4263-49af-9e1f-d5645ebc381f': 'yes@outsta.io',
 };
 
 /**
