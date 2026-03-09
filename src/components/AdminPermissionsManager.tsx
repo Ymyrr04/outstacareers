@@ -95,50 +95,6 @@ export const AdminPermissionsManager = () => {
 
   return (
     <div className="space-y-6">
-      {/* Pending Users */}
-      {pendingUsers.length > 0 && (
-        <Card className="border-amber-500/30 bg-amber-50/50 dark:bg-amber-950/20">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <Clock className="h-5 w-5 text-amber-600" />
-              <CardTitle className="text-base">Pending Approval</CardTitle>
-            </div>
-            <CardDescription>
-              These users have created accounts but haven't been assigned a role yet.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {pendingUsers.map(user => (
-                <div key={user.user_id} className="flex items-center justify-between p-3 rounded-lg bg-background border">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="h-8 w-8">
-                      <AvatarFallback className="text-xs bg-amber-100 text-amber-700">
-                        {user.email.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-medium text-sm">{user.email}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Signed up {new Date(user.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <Badge variant="outline" className="text-amber-600 border-amber-300">Pending</Badge>
-                  </div>
-                  <Button
-                    size="sm"
-                    onClick={() => handleApproveUser(user.user_id, user.email)}
-                    disabled={actionLoading === user.user_id}
-                  >
-                    <UserPlus className="h-4 w-4 mr-1" />
-                    {actionLoading === user.user_id ? 'Approving...' : 'Approve as Admin'}
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Tab Permissions */}
       <Card>
