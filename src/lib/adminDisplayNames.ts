@@ -5,10 +5,7 @@ export const EMAIL_TO_NAME: Record<string, string> = {
   'eduardo@outsta.io': 'Eduardo',
   'mark@outsta.io': 'Mark',
   'liezl@outsta.io': 'Liezl',
-  
-};
-
-// Mapping of admin emails to profile picture paths (relative imports)
+  n emails to profile picture paths (relative imports)
 export const EMAIL_TO_AVATAR: Record<string, string> = {
   'czarina@outsta.io': '/src/assets/team/cza.png',
   'kristine@outsta.io': '/src/assets/team/kristine.png',
