@@ -6,6 +6,7 @@ export const EMAIL_TO_NAME: Record<string, string> = {
   'mark@outsta.io': 'Mark',
   'liezl@outsta.io': 'Liezl',
   'jil@outsta.io': 'Jil',
+  'yes@outsta.io': 'Yes',
 };
 
 // Mapping of admin emails to profile picture paths (relative imports)
