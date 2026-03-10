@@ -128,6 +128,7 @@ export const ContractorsDashboard = () => {
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [bulkEmailDialogOpen, setBulkEmailDialogOpen] = useState(false);
   const [emailRecipient, setEmailRecipient] = useState<{
     assignmentId: string;
     name: string;
