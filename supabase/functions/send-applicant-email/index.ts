@@ -105,11 +105,12 @@ const handler = async (req: Request): Promise<Response> => {
     // Auto-replace generic sign-offs with the admin's name if available
     let processedBodyHtml = bodyHtml;
     if (adminName && !isAutomated) {
-      // Replace common sign-off patterns
+      const signOff = `Best regards,<br><br>${adminName}<br>OutSta Recruitment Team`;
       processedBodyHtml = processedBodyHtml
-        .replace(/Best regards,\s*<br\s*\/?>\s*The\s+(Outsta\s+)?Recruitment\s+Team/gi, `Best regards,<br>${adminName} — OutSta Recruitment Team`)
-        .replace(/Best regards,\s*\n\s*The\s+(Outsta\s+)?Recruitment\s+Team/gi, `Best regards,\n${adminName} — OutSta Recruitment Team`)
-        .replace(/Best regards,<br>The OutSta Recruitment Team/gi, `Best regards,<br>${adminName} — OutSta Recruitment Team`);
+        .replace(/Best regards,\s*<br\s*\/?>\s*The\s+(Outsta\s+)?Recruitment\s+Team/gi, signOff)
+        .replace(/Best regards,\s*\n\s*The\s+(Outsta\s+)?Recruitment\s+Team/gi, signOff)
+        .replace(/Best regards,<br>The OutSta Recruitment Team/gi, signOff)
+        .replace(/Best regards,<br>OutSta Recruitment Team/gi, signOff);
     }
 
     // If scheduled for later, create a scheduled email entry
