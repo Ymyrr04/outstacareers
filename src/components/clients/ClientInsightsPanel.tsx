@@ -116,7 +116,47 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
 
   const totalFromSource = clientsBySource.reduce((sum, [, list]) => sum + list.length, 0);
 
-  const toggle = (section: string) => {
+  // 4. Retention rate by industry and client
+  const retentionData = useMemo(() => {
+    const clientsMap = new Map(clients.map(c => [c.id, c]));
+    const industryStats: Record<string, { active: number; total: number; clients: Record<string, { active: number; total: number }> }> = {};
+    
+    contractors.forEach(c => {
+      const client = clientsMap.get(c.client_id);
+      if (!client) return;
+      const industry = client.industry || 'Unknown';
+      if (!industryStats[industry]) industryStats[industry] = { active: 0, total: 0, clients: {} };
+      if (!industryStats[industry].clients[client.company_name]) {
+        industryStats[industry].clients[client.company_name] = { active: 0, total: 0 };
+      }
+      industryStats[industry].total++;
+      industryStats[industry].clients[client.company_name].total++;
+      if (c.status === 'active') {
+        industryStats[industry].active++;
+        industryStats[industry].clients[client.company_name].active++;
+      }
+    });
+
+    return Object.entries(industryStats)
+      .map(([industry, stats]) => ({
+        industry,
+        active: stats.active,
+        total: stats.total,
+        rate: stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0,
+        clients: Object.entries(stats.clients)
+          .map(([name, s]) => ({ name, active: s.active, total: s.total, rate: s.total > 0 ? Math.round((s.active / s.total) * 100) : 0 }))
+          .sort((a, b) => b.total - a.total),
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [clients, contractors]);
+
+  const overallRetention = useMemo(() => {
+    const totalAll = contractors.length;
+    const activeAll = contractors.filter(c => c.status === 'active').length;
+    return totalAll > 0 ? Math.round((activeAll / totalAll) * 100) : 0;
+  }, [contractors]);
+
+
     setExpandedSection(prev => prev === section ? null : section);
   };
 
