@@ -130,12 +130,12 @@ export const BulkContractorEmailDialog = ({
     try {
       const scheduledFor = getNextFridayNoon();
       
-      const { error } = await supabase.from('scheduled_contractor_emails').insert({
+      const { error } = await supabase.from('scheduled_contractor_emails' as any).insert({
         subject,
         body_html: bodyHtml,
         scheduled_for: scheduledFor.toISOString(),
         status: 'pending',
-      });
+      } as any);
 
       if (error) throw error;
 
