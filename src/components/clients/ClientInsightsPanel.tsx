@@ -3,7 +3,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building2, Briefcase, Megaphone, ChevronDown, ChevronUp, Download } from 'lucide-react';
+import { Building2, Briefcase, Megaphone, ChevronDown, ChevronUp, Download, ShieldCheck } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { type Client, type ContractorAssignment } from './ClientsDashboard';
@@ -115,6 +116,46 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
 
   const totalFromSource = clientsBySource.reduce((sum, [, list]) => sum + list.length, 0);
 
+  // 4. Retention rate by industry and client
+  const retentionData = useMemo(() => {
+    const clientsMap = new Map(clients.map(c => [c.id, c]));
+    const industryStats: Record<string, { active: number; total: number; clients: Record<string, { active: number; total: number }> }> = {};
+    
+    contractors.forEach(c => {
+      const client = clientsMap.get(c.client_id);
+      if (!client) return;
+      const industry = client.industry || 'Unknown';
+      if (!industryStats[industry]) industryStats[industry] = { active: 0, total: 0, clients: {} };
+      if (!industryStats[industry].clients[client.company_name]) {
+        industryStats[industry].clients[client.company_name] = { active: 0, total: 0 };
+      }
+      industryStats[industry].total++;
+      industryStats[industry].clients[client.company_name].total++;
+      if (c.status === 'active') {
+        industryStats[industry].active++;
+        industryStats[industry].clients[client.company_name].active++;
+      }
+    });
+
+    return Object.entries(industryStats)
+      .map(([industry, stats]) => ({
+        industry,
+        active: stats.active,
+        total: stats.total,
+        rate: stats.total > 0 ? Math.round((stats.active / stats.total) * 100) : 0,
+        clients: Object.entries(stats.clients)
+          .map(([name, s]) => ({ name, active: s.active, total: s.total, rate: s.total > 0 ? Math.round((s.active / s.total) * 100) : 0 }))
+          .sort((a, b) => b.total - a.total),
+      }))
+      .sort((a, b) => b.total - a.total);
+  }, [clients, contractors]);
+
+  const overallRetention = useMemo(() => {
+    const totalAll = contractors.length;
+    const activeAll = contractors.filter(c => c.status === 'active').length;
+    return totalAll > 0 ? Math.round((activeAll / totalAll) * 100) : 0;
+  }, [contractors]);
+
   const toggle = (section: string) => {
     setExpandedSection(prev => prev === section ? null : section);
   };
@@ -149,6 +190,18 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
       rows.push([source, companies.length.toString(), companies.join('; ')]);
     });
     rows.push([`Total`, totalFromSource.toString(), '']);
+    rows.push(['', '', '']);
+
+    // Section 4: Retention Rate
+    rows.push(['Retention Rate by Industry & Client', '', '', '']);
+    rows.push(['Industry', 'Active', 'Total', 'Rate']);
+    retentionData.forEach(ind => {
+      rows.push([ind.industry, ind.active.toString(), ind.total.toString(), `${ind.rate}%`]);
+      ind.clients.forEach(cl => {
+        rows.push([`  ${cl.name}`, cl.active.toString(), cl.total.toString(), `${cl.rate}%`]);
+      });
+    });
+    rows.push([`Overall`, contractors.filter(c => c.status === 'active').length.toString(), contractors.length.toString(), `${overallRetention}%`]);
 
     const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -160,7 +213,7 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
     URL.revokeObjectURL(url);
 
     toast({ title: 'Exported', description: 'Client insights downloaded as CSV' });
-  }, [clientOnboardedByIndustry, rolesByIndustry, clientsBySource, totalOnboarded, totalPlaced, totalFromSource, onboardedYear, placementsMonths, sourceYear, toast]);
+  }, [clientOnboardedByIndustry, rolesByIndustry, clientsBySource, retentionData, totalOnboarded, totalPlaced, totalFromSource, overallRetention, contractors, onboardedYear, placementsMonths, sourceYear, toast]);
 
   return (
     <div className="space-y-2">
@@ -170,7 +223,7 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
           Export Insights
         </Button>
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
       {/* New Clients Onboarded by Industry */}
       <Card
         className={cn(
@@ -393,6 +446,77 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
               {clientsBySource.length > 3 && (
                 <Badge variant="outline" className="text-[10px] py-0">
                   +{clientsBySource.length - 3}
+                </Badge>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Retention Rate by Industry & Client */}
+      <Card
+        className={cn(
+          "cursor-pointer transition-all hover:shadow-md",
+          expandedSection === 'retention' && "ring-2 ring-primary/40"
+        )}
+        onClick={() => toggle('retention')}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-purple-500/10 rounded-lg">
+                <ShieldCheck className="w-4 h-4 text-purple-600" />
+              </div>
+              <span className="text-sm font-medium">Retention Rate</span>
+            </div>
+            {expandedSection === 'retention' ? (
+              <ChevronUp className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            )}
+          </div>
+          <div className="flex items-baseline gap-2">
+            <p className="text-2xl font-bold">{overallRetention}%</p>
+            <span className="text-xs text-muted-foreground">
+              ({contractors.filter(c => c.status === 'active').length}/{contractors.length})
+            </span>
+          </div>
+          {expandedSection === 'retention' && retentionData.length > 0 && (
+            <div className="mt-3 pt-3 border-t space-y-3">
+              {retentionData.map(ind => (
+                <div key={ind.industry}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium">{ind.industry}</span>
+                    <span className="text-[10px] text-muted-foreground">{ind.active}/{ind.total} ({ind.rate}%)</span>
+                  </div>
+                  <Progress
+                    value={ind.rate}
+                    className={cn("h-1.5 mb-2", ind.rate >= 80 ? '[&>div]:bg-green-500' : ind.rate >= 50 ? '[&>div]:bg-amber-500' : '[&>div]:bg-red-500')}
+                  />
+                  <div className="space-y-1 ml-2">
+                    {ind.clients.map(cl => (
+                      <div key={cl.name} className="flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground truncate max-w-[60%]">{cl.name}</span>
+                        <span className={cn("text-[10px] font-medium", cl.rate >= 80 ? 'text-green-600' : cl.rate >= 50 ? 'text-amber-600' : 'text-red-600')}>
+                          {cl.active}/{cl.total} ({cl.rate}%)
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {expandedSection !== 'retention' && retentionData.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {retentionData.slice(0, 3).map(ind => (
+                <Badge key={ind.industry} variant="outline" className="text-[10px] py-0">
+                  {ind.industry} ({ind.rate}%)
+                </Badge>
+              ))}
+              {retentionData.length > 3 && (
+                <Badge variant="outline" className="text-[10px] py-0">
+                  +{retentionData.length - 3}
                 </Badge>
               )}
             </div>
