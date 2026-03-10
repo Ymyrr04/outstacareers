@@ -357,7 +357,7 @@ export const BulkContractorEmailDialog = ({
               {scheduling ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Scheduling...</>
               ) : (
-                <><CalendarClock className="w-4 h-4 mr-2" />Schedule for Friday 12 PM</>
+                <><CalendarClock className="w-4 h-4 mr-2" />Schedule for Friday 11 AM</>
               )}
             </Button>
             <Button onClick={handleSend} disabled={sending || scheduling || !subject.trim() || !bodyHtml.trim()}>
