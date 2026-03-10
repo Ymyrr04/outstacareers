@@ -98,6 +98,23 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
   const [addContactOpen, setAddContactOpen] = useState(false);
   const [addContractorOpen, setAddContractorOpen] = useState(false);
   const [addCommunicationOpen, setAddCommunicationOpen] = useState(false);
+  const [existingIndustries, setExistingIndustries] = useState<string[]>([]);
+  const [existingSources, setExistingSources] = useState<string[]>([]);
+
+  // Fetch unique industry/source values for dropdown suggestions
+  useEffect(() => {
+    if (!editing) return;
+    const fetchSuggestions = async () => {
+      const { data } = await supabase
+        .from('clients')
+        .select('industry, leads_from');
+      if (data) {
+        setExistingIndustries([...new Set(data.map(c => c.industry).filter((v): v is string => !!v && v.trim() !== ''))].sort());
+        setExistingSources([...new Set(data.map(c => c.leads_from).filter((v): v is string => !!v && v.trim() !== ''))].sort());
+      }
+    };
+    fetchSuggestions();
+  }, [editing]);
 
   const fetchClientData = async () => {
     setLoading(true);
