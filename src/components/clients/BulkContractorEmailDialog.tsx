@@ -265,7 +265,12 @@ export const BulkContractorEmailDialog = ({
               <Switch
                 id="recurring-toggle"
                 checked={recurringEnabled}
-                onCheckedChange={setRecurringEnabled}
+                onCheckedChange={(checked) => {
+                  setRecurringEnabled(checked);
+                  if (checked && recurringSchedule === 'none') {
+                    setRecurringSchedule('weekly-friday');
+                  }
+                }}
               />
             </div>
             {recurringEnabled && (
