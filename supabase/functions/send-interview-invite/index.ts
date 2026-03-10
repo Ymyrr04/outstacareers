@@ -86,7 +86,7 @@ const handler = async (req: Request): Promise<Response> => {
           <tr>
             <td style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 12px 12px 0 0; text-align: center;">
               <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Interview Invitation</h1>
-              <p style="color: #a0a0a0; margin: 10px 0 0 0; font-size: 14px;">Outsta Recruitment</p>
+              <p style="color: #a0a0a0; margin: 10px 0 0 0; font-size: 14px;">OUTSTA Talent Team</p>
             </td>
           </tr>
           <tr>
