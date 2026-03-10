@@ -53,6 +53,7 @@ export const statusToTrigger: Record<string, string> = {
   'Hired': 'hired',
   'Bench': 'bench',
   'Reject': 'reject',
+  'Talent Pool': 'talent_pool',
 };
 
 export const triggerToStatus: Record<string, string> = {
@@ -63,6 +64,7 @@ export const triggerToStatus: Record<string, string> = {
   'hired': 'Hired',
   'bench': 'Bench',
   'reject': 'Reject',
+  'talent_pool': 'Talent Pool',
   'check_availability': 'Check Availability',
   'reprofiling': 'Reprofiling',
 };
