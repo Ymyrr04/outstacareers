@@ -99,6 +99,7 @@ export const HiringRequestDetailDialog = ({
   const [addingComment, setAddingComment] = useState(false);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [industries, setIndustries] = useState<string[]>(DEFAULT_INDUSTRIES);
+  const [clients, setClients] = useState<{ id: string; company_name: string }[]>([]);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentContent, setEditingCommentContent] = useState('');
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
