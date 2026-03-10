@@ -93,7 +93,7 @@ const handler = async (req: Request): Promise<Response> => {
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 12px 12px 0 0; text-align: center;">
-              <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">Outsta Recruitment</h1>
+              <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">OUTSTA Talent Team</h1>
             </td>
           </tr>
           
@@ -108,7 +108,7 @@ const handler = async (req: Request): Promise<Response> => {
           <tr>
             <td style="background-color: #f8f9fa; padding: 25px 40px; border-radius: 0 0 12px 12px; text-align: center;">
               <p style="color: #999999; font-size: 12px; margin: 0;">
-                This email was sent by Outsta Recruitment.<br>
+                This email was sent by OUTSTA Talent Team.<br>
                 If you have any questions, please reply to this email.
               </p>
             </td>
@@ -126,7 +126,7 @@ const handler = async (req: Request): Promise<Response> => {
         const messageId = generateMessageId(domain);
 
         await client.send({
-          from: `OutSta Recruitment <${gmailUser}>`,
+          from: `OUTSTA Talent Team <${gmailUser}>`,
           to: email.recipient_email,
           subject: email.subject,
           content: "auto",

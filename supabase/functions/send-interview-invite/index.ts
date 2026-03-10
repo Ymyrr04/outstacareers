@@ -86,7 +86,7 @@ const handler = async (req: Request): Promise<Response> => {
           <tr>
             <td style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 12px 12px 0 0; text-align: center;">
               <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 600;">Interview Invitation</h1>
-              <p style="color: #a0a0a0; margin: 10px 0 0 0; font-size: 14px;">Outsta Recruitment</p>
+              <p style="color: #a0a0a0; margin: 10px 0 0 0; font-size: 14px;">OUTSTA Talent Team</p>
             </td>
           </tr>
           <tr>
@@ -146,14 +146,14 @@ const handler = async (req: Request): Promise<Response> => {
               </p>
               <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 20px 0 0 0;">
                 Best regards,<br>
-                <strong>The Outsta Recruitment Team</strong>
+                <strong>The OUTSTA Talent Team</strong>
               </p>
             </td>
           </tr>
           <tr>
             <td style="background-color: #f8f9fa; padding: 25px 40px; border-radius: 0 0 12px 12px; text-align: center;">
               <p style="color: #999999; font-size: 12px; margin: 0;">
-                This email was sent by Outsta Recruitment.<br>
+                This email was sent by OUTSTA Talent Team.<br>
                 If you have any questions, please reply to this email.
               </p>
             </td>
@@ -172,7 +172,7 @@ const handler = async (req: Request): Promise<Response> => {
     console.log("Generated Message-ID:", messageId);
 
     await client.send({
-      from: `OutSta Recruitment <${gmailUser}>`,
+      from: `OUTSTA Talent Team <${gmailUser}>`,
       to: to,
       subject: subject,
       content: "auto",
