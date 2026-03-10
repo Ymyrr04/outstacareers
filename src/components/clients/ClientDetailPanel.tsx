@@ -98,6 +98,23 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
   const [addContactOpen, setAddContactOpen] = useState(false);
   const [addContractorOpen, setAddContractorOpen] = useState(false);
   const [addCommunicationOpen, setAddCommunicationOpen] = useState(false);
+  const [existingIndustries, setExistingIndustries] = useState<string[]>([]);
+  const [existingSources, setExistingSources] = useState<string[]>([]);
+
+  // Fetch unique industry/source values for dropdown suggestions
+  useEffect(() => {
+    if (!editing) return;
+    const fetchSuggestions = async () => {
+      const { data } = await supabase
+        .from('clients')
+        .select('industry, leads_from');
+      if (data) {
+        setExistingIndustries([...new Set(data.map(c => c.industry).filter((v): v is string => !!v && v.trim() !== ''))].sort());
+        setExistingSources([...new Set(data.map(c => c.leads_from).filter((v): v is string => !!v && v.trim() !== ''))].sort());
+      }
+    };
+    fetchSuggestions();
+  }, [editing]);
 
   const fetchClientData = async () => {
     setLoading(true);
@@ -389,9 +406,16 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                 <div className="space-y-2">
                   <Label>Industry</Label>
                   <Input
+                    list="edit-industry-suggestions"
                     value={editForm.industry}
                     onChange={(e) => setEditForm({ ...editForm, industry: e.target.value })}
+                    placeholder="Select or type industry"
                   />
+                  <datalist id="edit-industry-suggestions">
+                    {existingIndustries.map((ind) => (
+                      <option key={ind} value={ind} />
+                    ))}
+                  </datalist>
                 </div>
                 <div className="space-y-2">
                   <Label>No. of Contractors</Label>
@@ -406,10 +430,16 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
               <div className="space-y-2">
                 <Label>Leads from</Label>
                 <Input
+                  list="edit-leads-from-suggestions"
                   value={editForm.leads_from}
                   onChange={(e) => setEditForm({ ...editForm, leads_from: e.target.value })}
-                  placeholder="e.g. Referral, LinkedIn"
+                  placeholder="Select or type source"
                 />
+                <datalist id="edit-leads-from-suggestions">
+                  {existingSources.map((src) => (
+                    <option key={src} value={src} />
+                  ))}
+                </datalist>
               </div>
               <div className="space-y-2">
                 <Label>Company Links (to share with candidates)</Label>
