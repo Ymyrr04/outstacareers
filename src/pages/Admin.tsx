@@ -2169,6 +2169,9 @@ const Admin = () => {
                             setPaginatedSearchTerm(query);
                           }}
                           placeholder="Search by name, email, job title, skills, CV text..."
+                          folders={APPLICANT_STATUS_FOLDERS}
+                          selectedFolders={searchFolders}
+                          onFoldersChange={setSearchFolders}
                         />
                       </div>
                       <Select value={paginatedSortOption} onValueChange={(v) => setPaginatedSortOption(v as any)}>
