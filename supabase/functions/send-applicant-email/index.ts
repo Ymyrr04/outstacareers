@@ -122,7 +122,7 @@ const handler = async (req: Request): Promise<Response> => {
             applicant_id: applicantId,
             template_id: templateId || null,
             subject,
-            body_html: bodyHtml,
+            body_html: processedBodyHtml,
             recipient_email: recipientEmail,
             scheduled_for: scheduleFor,
             status: 'pending',
