@@ -109,6 +109,52 @@ export const BulkContractorEmailDialog = ({
     }
   };
 
+  const getNextFridayNoon = (): Date => {
+    const now = new Date();
+    const day = now.getUTCDay(); // 0=Sun, 5=Fri
+    let daysUntilFriday = (5 - day + 7) % 7;
+    if (daysUntilFriday === 0) daysUntilFriday = 7; // if today is Friday, schedule next Friday
+    const friday = new Date(now);
+    friday.setUTCDate(friday.getUTCDate() + daysUntilFriday);
+    friday.setUTCHours(17, 0, 0, 0); // 12 PM EST = 17:00 UTC
+    return friday;
+  };
+
+  const handleScheduleFriday = async () => {
+    if (!subject.trim() || !bodyHtml.trim()) {
+      toast({ title: 'Missing fields', description: 'Please fill in subject and body', variant: 'destructive' });
+      return;
+    }
+
+    setScheduling(true);
+    try {
+      const scheduledFor = getNextFridayNoon();
+      
+      const { error } = await supabase.from('scheduled_contractor_emails').insert({
+        subject,
+        body_html: bodyHtml,
+        scheduled_for: scheduledFor.toISOString(),
+        status: 'pending',
+      });
+
+      if (error) throw error;
+
+      const fridayStr = scheduledFor.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+      toast({
+        title: 'Email Scheduled',
+        description: `Bulk email scheduled for ${fridayStr} at 12:00 PM EST`,
+      });
+
+      resetForm();
+      onOpenChange(false);
+      onEmailSent?.();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to schedule email', variant: 'destructive' });
+    } finally {
+      setScheduling(false);
+    }
+  };
+
   const handleSend = async () => {
     if (!subject.trim() || !bodyHtml.trim()) {
       toast({ title: 'Missing fields', description: 'Please fill in subject and body', variant: 'destructive' });
