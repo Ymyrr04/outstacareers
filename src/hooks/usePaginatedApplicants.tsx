@@ -254,7 +254,7 @@ export const usePaginatedApplicants = (options: UsePaginatedApplicantsOptions = 
     } finally {
       setLoading(false);
     }
-  }, [enabled, pageSize, status, searchTerm, sortBy, toast]);
+  }, [enabled, pageSize, status, statuses, searchTerm, sortBy, toast]);
 
   // Reset when filters change
   useEffect(() => {
