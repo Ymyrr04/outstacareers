@@ -145,7 +145,7 @@ export const BulkContractorEmailDialog = ({
       const fridayStr = scheduledFor.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
       toast({
         title: 'Email Scheduled',
-        description: `Bulk email scheduled for ${fridayStr} at 12:00 PM EST`,
+        description: `Bulk email scheduled for ${fridayStr} at 11:00 AM EST`,
       });
 
       resetForm();
