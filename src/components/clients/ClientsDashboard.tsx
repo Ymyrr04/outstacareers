@@ -11,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { AddClientDialog } from './AddClientDialog';
 import { ClientDetailPanel } from './ClientDetailPanel';
 import { ClientImportDialog } from './ClientImportDialog';
+import { ClientInsightsPanel } from './ClientInsightsPanel';
 
 export interface Client {
   id: string;
@@ -77,7 +78,8 @@ export interface ClientCommunication {
 export const ClientsDashboard = () => {
   const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
-  const [hiringRequests, setHiringRequests] = useState<{ id?: string; client_id: string | null; client_status: string; job_title: string; pipeline_stage: string; start_date: string | null }[]>([]);
+  const [hiringRequests, setHiringRequests] = useState<{ id?: string; client_id: string | null; client_status: string; job_title: string; pipeline_stage: string; start_date: string | null; industry?: string | null; closed_at?: string | null }[]>([]);
+  const [contractorData, setContractorData] = useState<{ client_id: string; start_date: string | null; status: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
@@ -93,8 +95,8 @@ export const ClientsDashboard = () => {
       const [clientsRes, contactCountsRes, contractorCountsRes, hiringRequestsRes] = await Promise.all([
         supabase.from('clients').select('*').order('company_name', { ascending: true }),
         supabase.from('client_contacts').select('client_id'),
-        supabase.from('contractor_assignments').select('client_id, status'),
-        supabase.from('client_hiring_requests').select('id, client_id, client_status, job_title, pipeline_stage, start_date'),
+        supabase.from('contractor_assignments').select('client_id, status, start_date'),
+        supabase.from('client_hiring_requests').select('id, client_id, client_status, job_title, pipeline_stage, start_date, industry, closed_at'),
       ]);
 
       if (clientsRes.error) throw clientsRes.error;
@@ -123,6 +125,7 @@ export const ClientsDashboard = () => {
       }));
 
       setClients(enrichedClients);
+      setContractorData((contractorCountsRes.data || []).map(c => ({ client_id: c.client_id, start_date: c.start_date ?? null, status: c.status ?? null })));
       setHiringRequests(hiringRequestsRes.data || []);
     } catch (err: any) {
       toast({
@@ -469,6 +472,13 @@ export const ClientsDashboard = () => {
           </CardContent>
         </Card>
       </div>
+
+      {/* Client Insights */}
+      <ClientInsightsPanel
+        clients={clients}
+        contractors={contractorData}
+        hiringRequests={hiringRequests}
+      />
 
       {/* Header with Search and Add */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
