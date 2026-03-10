@@ -265,7 +265,7 @@ export const usePaginatedApplicants = (options: UsePaginatedApplicantsOptions = 
       setHasMore(true);
       fetchPage(0);
     }
-  }, [enabled, status, searchTerm, sortBy]);
+  }, [enabled, status, statuses, searchTerm, sortBy]);
 
   // Load next page
   const loadNextPage = useCallback(() => {
