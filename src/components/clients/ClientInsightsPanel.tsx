@@ -315,11 +315,18 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
           </div>
           <p className="text-2xl font-bold">{totalFromSource}</p>
           {expandedSection === 'source' && clientsBySource.length > 0 && (
-            <div className="mt-3 pt-3 border-t space-y-2">
+            <div className="mt-3 pt-3 border-t space-y-3">
               {clientsBySource.map(([source, companyNames]) => (
-                <div key={source} className="flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground truncate flex-1">{source}</span>
-                  <Badge variant="secondary" className="text-[10px] py-0 ml-2">{companyNames.length}</Badge>
+                <div key={source}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium">{source}</span>
+                    <Badge variant="secondary" className="text-[10px] py-0 ml-2">{companyNames.length}</Badge>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {companyNames.map((name, i) => (
+                      <Badge key={i} variant="outline" className="text-[10px] py-0">{name}</Badge>
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
