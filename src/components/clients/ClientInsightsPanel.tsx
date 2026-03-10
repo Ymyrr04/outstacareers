@@ -186,12 +186,13 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
     rows.push(['', '', '']);
 
     // Section 2: Roles Filled
-    rows.push([`Roles Filled (Past ${placementsMonths} months)`, '', '']);
-    rows.push(['Industry', 'Count', 'Roles']);
+    const maxRoles = Math.max(...rolesByIndustry.map(([, roles]) => roles.length), 0);
+    rows.push([`Roles Filled (Past ${placementsMonths} months)`, '', ...Array(maxRoles).fill('')]);
+    rows.push(['Industry', 'Count', ...Array.from({ length: maxRoles }, (_, i) => `Role ${i + 1}`)]);
     rolesByIndustry.forEach(([industry, roles]) => {
-      rows.push([industry, roles.length.toString(), roles.join('; ')]);
+      rows.push([industry, roles.length.toString(), ...roles, ...Array(maxRoles - roles.length).fill('')]);
     });
-    rows.push([`Total`, totalPlaced.toString(), '']);
+    rows.push([`Total`, totalPlaced.toString(), ...Array(maxRoles).fill('')]);
     rows.push(['', '', '']);
 
     // Section 3: Client Sources
