@@ -264,6 +264,7 @@ const Admin = () => {
   const [paginatedSearchTerm, setPaginatedSearchTerm] = useState('');
   const [paginatedSearchInput, setPaginatedSearchInput] = useState('');
   const [paginatedSortOption, setPaginatedSortOption] = useState<'newest' | 'oldest' | 'score-desc' | 'score-asc' | 'starred'>('newest');
+  const [searchFolders, setSearchFolders] = useState<string[]>([...APPLICANT_STATUS_FOLDERS]);
   const [activeApplicantTab, setActiveApplicantTab] = useState<'folders' | 'search'>('folders');
   const [searchFilteredApplicants, setSearchFilteredApplicants] = useState<Applicant[]>([]);
   const [openAccordions, setOpenAccordions] = useState<string[]>([]);
