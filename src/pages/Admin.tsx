@@ -228,6 +228,9 @@ const Admin = () => {
   
   // Notes popup state
   const [notesPopup, setNotesPopup] = useState<{ id: string; name: string; notes: string } | null>(null);
+  const [notesPopupEditing, setNotesPopupEditing] = useState(false);
+  const [notesPopupValue, setNotesPopupValue] = useState('');
+  const [notesPopupSaving, setNotesPopupSaving] = useState(false);
   
   // Interview invite state
   const [interviewInviteApplicant, setInterviewInviteApplicant] = useState<{ id?: string; full_name: string; email: string; job_title: string } | null>(null);
