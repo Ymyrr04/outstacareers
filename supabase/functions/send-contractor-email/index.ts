@@ -30,8 +30,8 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const gmailUser = Deno.env.get("GMAIL_USER");
-    const gmailPassword = Deno.env.get("GMAIL_APP_PASSWORD");
+    const gmailUser = Deno.env.get("MARK_GMAIL_USER");
+    const gmailPassword = Deno.env.get("MARK_GMAIL_APP_PASSWORD");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
