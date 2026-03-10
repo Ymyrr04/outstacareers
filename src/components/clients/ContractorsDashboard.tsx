@@ -60,6 +60,7 @@ import {
 import { ContractorImportDialog } from './ContractorImportDialog';
 import { EditContractorDialog } from './EditContractorDialog';
 import { ContractorStatusDialog } from './ContractorStatusDialog';
+import { SendContractorEmailDialog } from './SendContractorEmailDialog';
 
 interface ContractorWithDetails {
   id: string;
