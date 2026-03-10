@@ -452,6 +452,77 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
           )}
         </CardContent>
       </Card>
+
+      {/* Retention Rate by Industry & Client */}
+      <Card
+        className={cn(
+          "cursor-pointer transition-all hover:shadow-md",
+          expandedSection === 'retention' && "ring-2 ring-primary/40"
+        )}
+        onClick={() => toggle('retention')}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-purple-500/10 rounded-lg">
+                <ShieldCheck className="w-4 h-4 text-purple-600" />
+              </div>
+              <span className="text-sm font-medium">Retention Rate</span>
+            </div>
+            {expandedSection === 'retention' ? (
+              <ChevronUp className="w-4 h-4 text-muted-foreground" />
+            ) : (
+              <ChevronDown className="w-4 h-4 text-muted-foreground" />
+            )}
+          </div>
+          <div className="flex items-baseline gap-2">
+            <p className="text-2xl font-bold">{overallRetention}%</p>
+            <span className="text-xs text-muted-foreground">
+              ({contractors.filter(c => c.status === 'active').length}/{contractors.length})
+            </span>
+          </div>
+          {expandedSection === 'retention' && retentionData.length > 0 && (
+            <div className="mt-3 pt-3 border-t space-y-3">
+              {retentionData.map(ind => (
+                <div key={ind.industry}>
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="text-xs font-medium">{ind.industry}</span>
+                    <span className="text-[10px] text-muted-foreground">{ind.active}/{ind.total} ({ind.rate}%)</span>
+                  </div>
+                  <Progress
+                    value={ind.rate}
+                    className={cn("h-1.5 mb-2", ind.rate >= 80 ? '[&>div]:bg-green-500' : ind.rate >= 50 ? '[&>div]:bg-amber-500' : '[&>div]:bg-red-500')}
+                  />
+                  <div className="space-y-1 ml-2">
+                    {ind.clients.map(cl => (
+                      <div key={cl.name} className="flex items-center justify-between">
+                        <span className="text-[10px] text-muted-foreground truncate max-w-[60%]">{cl.name}</span>
+                        <span className={cn("text-[10px] font-medium", cl.rate >= 80 ? 'text-green-600' : cl.rate >= 50 ? 'text-amber-600' : 'text-red-600')}>
+                          {cl.active}/{cl.total} ({cl.rate}%)
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {expandedSection !== 'retention' && retentionData.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {retentionData.slice(0, 3).map(ind => (
+                <Badge key={ind.industry} variant="outline" className="text-[10px] py-0">
+                  {ind.industry} ({ind.rate}%)
+                </Badge>
+              ))}
+              {retentionData.length > 3 && (
+                <Badge variant="outline" className="text-[10px] py-0">
+                  +{retentionData.length - 3}
+                </Badge>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
       </div>
     </div>
   );
