@@ -89,7 +89,7 @@ export const BooleanSearchBuilder = ({ onSearch, placeholder, folders, selectedF
   return (
     <div className="space-y-3">
       {/* Mode toggle */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap">
         <Button
           variant={simpleMode ? 'default' : 'outline'}
           size="sm"
@@ -106,6 +106,58 @@ export const BooleanSearchBuilder = ({ onSearch, placeholder, folders, selectedF
         >
           Advanced (Boolean)
         </Button>
+
+        {/* Folder filter dropdown */}
+        {folders && selectedFolders && onFoldersChange && (
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-7 text-xs gap-1.5">
+                <FolderOpen className="w-3.5 h-3.5" />
+                {selectedFolders.length === folders.length
+                  ? 'All Folders'
+                  : selectedFolders.length === 0
+                    ? 'No Folders'
+                    : `${selectedFolders.length} Folder${selectedFolders.length > 1 ? 's' : ''}`}
+                <ChevronDown className="w-3 h-3" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-52 p-2" align="start">
+              <div className="space-y-1">
+                {/* Select All / Deselect All */}
+                <div className="flex items-center gap-2 px-2 py-1.5 border-b mb-1">
+                  <Checkbox
+                    id="folder-all"
+                    checked={selectedFolders.length === folders.length}
+                    onCheckedChange={(checked) => {
+                      onFoldersChange(checked ? [...folders] : []);
+                    }}
+                  />
+                  <label htmlFor="folder-all" className="text-xs font-medium cursor-pointer flex-1">
+                    All Folders
+                  </label>
+                </div>
+                {folders.map((folder) => (
+                  <div key={folder} className="flex items-center gap-2 px-2 py-1">
+                    <Checkbox
+                      id={`folder-${folder}`}
+                      checked={selectedFolders.includes(folder)}
+                      onCheckedChange={(checked) => {
+                        if (checked) {
+                          onFoldersChange([...selectedFolders, folder]);
+                        } else {
+                          onFoldersChange(selectedFolders.filter(f => f !== folder));
+                        }
+                      }}
+                    />
+                    <label htmlFor={`folder-${folder}`} className="text-xs cursor-pointer flex-1">
+                      {folder}
+                    </label>
+                  </div>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+        )}
       </div>
 
       {simpleMode ? (
