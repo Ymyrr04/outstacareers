@@ -78,7 +78,8 @@ export interface ClientCommunication {
 export const ClientsDashboard = () => {
   const { toast } = useToast();
   const [clients, setClients] = useState<Client[]>([]);
-  const [hiringRequests, setHiringRequests] = useState<{ id?: string; client_id: string | null; client_status: string; job_title: string; pipeline_stage: string; start_date: string | null }[]>([]);
+  const [hiringRequests, setHiringRequests] = useState<{ id?: string; client_id: string | null; client_status: string; job_title: string; pipeline_stage: string; start_date: string | null; industry?: string | null; closed_at?: string | null }[]>([]);
+  const [contractorData, setContractorData] = useState<{ client_id: string; start_date: string | null; status: string | null }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
