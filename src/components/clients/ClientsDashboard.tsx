@@ -358,6 +358,26 @@ export const ClientsDashboard = () => {
               <div>
                 <p className="text-2xl font-bold">{totalActiveClients}</p>
                 <p className="text-sm text-muted-foreground">Total Active Clients</p>
+                <div className="flex items-center gap-1.5 mt-1">
+                  <span className="text-xs text-muted-foreground">Added:</span>
+                  <span className="text-xs font-semibold">{clientsAddedForYear}</span>
+                  <Select
+                    value={addedYearFilter.toString()}
+                    onValueChange={(v) => setAddedYearFilter(parseInt(v))}
+                  >
+                    <SelectTrigger 
+                      className="h-5 w-[60px] text-[10px] px-1.5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent onClick={(e) => e.stopPropagation()}>
+                      <SelectItem value="2024">2024</SelectItem>
+                      <SelectItem value="2025">2025</SelectItem>
+                      <SelectItem value="2026">2026</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
           </CardContent>
