@@ -94,13 +94,14 @@ export interface PaginatedApplicant {
 interface UsePaginatedApplicantsOptions {
   pageSize?: number;
   status?: string;
+  statuses?: string[];
   searchTerm?: string;
   sortBy?: 'newest' | 'oldest' | 'score-desc' | 'score-asc' | 'starred';
   enabled?: boolean;
 }
 
 export const usePaginatedApplicants = (options: UsePaginatedApplicantsOptions = {}) => {
-  const { pageSize = 50, status, searchTerm, sortBy = 'newest', enabled = true } = options;
+  const { pageSize = 50, status, statuses, searchTerm, sortBy = 'newest', enabled = true } = options;
   const { toast } = useToast();
   
   const [applicants, setApplicants] = useState<PaginatedApplicant[]>([]);
@@ -126,6 +127,8 @@ export const usePaginatedApplicants = (options: UsePaginatedApplicantsOptions = 
       // Filter by status if provided
       if (status) {
         query = query.eq('status', status);
+      } else if (statuses && statuses.length > 0) {
+        query = query.in('status', statuses);
       }
       
       // Apply search filter with Boolean operator support
@@ -251,7 +254,7 @@ export const usePaginatedApplicants = (options: UsePaginatedApplicantsOptions = 
     } finally {
       setLoading(false);
     }
-  }, [enabled, pageSize, status, searchTerm, sortBy, toast]);
+  }, [enabled, pageSize, status, statuses, searchTerm, sortBy, toast]);
 
   // Reset when filters change
   useEffect(() => {
@@ -262,7 +265,7 @@ export const usePaginatedApplicants = (options: UsePaginatedApplicantsOptions = 
       setHasMore(true);
       fetchPage(0);
     }
-  }, [enabled, status, searchTerm, sortBy]);
+  }, [enabled, status, statuses, searchTerm, sortBy]);
 
   // Load next page
   const loadNextPage = useCallback(() => {

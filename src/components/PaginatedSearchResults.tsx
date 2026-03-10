@@ -7,6 +7,7 @@ import { Search, Loader2 } from 'lucide-react';
 interface PaginatedSearchResultsProps {
   searchTerm: string;
   sortBy: 'newest' | 'oldest' | 'score-desc' | 'score-asc' | 'starred';
+  statuses?: string[];
   statusOptions: readonly string[];
   onUpdateStatus: (id: string, status: string) => void;
   onViewDetails: (id: string) => void;
@@ -32,6 +33,7 @@ interface PaginatedSearchResultsProps {
 export const PaginatedSearchResults = ({
   searchTerm,
   sortBy,
+  statuses,
   statusOptions,
   onUpdateStatus,
   onViewDetails,
@@ -63,6 +65,7 @@ export const PaginatedSearchResults = ({
   } = usePaginatedApplicants({
     searchTerm,
     sortBy,
+    statuses,
     pageSize: 50,
     enabled,
   });

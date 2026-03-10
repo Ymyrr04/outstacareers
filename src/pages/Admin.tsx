@@ -264,6 +264,7 @@ const Admin = () => {
   const [paginatedSearchTerm, setPaginatedSearchTerm] = useState('');
   const [paginatedSearchInput, setPaginatedSearchInput] = useState('');
   const [paginatedSortOption, setPaginatedSortOption] = useState<'newest' | 'oldest' | 'score-desc' | 'score-asc' | 'starred'>('newest');
+  const [searchFolders, setSearchFolders] = useState<string[]>([...APPLICANT_STATUS_FOLDERS]);
   const [activeApplicantTab, setActiveApplicantTab] = useState<'folders' | 'search'>('folders');
   const [searchFilteredApplicants, setSearchFilteredApplicants] = useState<Applicant[]>([]);
   const [openAccordions, setOpenAccordions] = useState<string[]>([]);
@@ -2168,6 +2169,9 @@ const Admin = () => {
                             setPaginatedSearchTerm(query);
                           }}
                           placeholder="Search by name, email, job title, skills, CV text..."
+                          folders={APPLICANT_STATUS_FOLDERS}
+                          selectedFolders={searchFolders}
+                          onFoldersChange={setSearchFolders}
                         />
                       </div>
                       <Select value={paginatedSortOption} onValueChange={(v) => setPaginatedSortOption(v as any)}>
@@ -2208,6 +2212,7 @@ const Admin = () => {
                     <PaginatedSearchResults
                       searchTerm={paginatedSearchTerm}
                       sortBy={paginatedSortOption}
+                      statuses={searchFolders.length === APPLICANT_STATUS_FOLDERS.length ? undefined : searchFolders}
                       statusOptions={APPLICANT_STATUS_OPTIONS}
                       onUpdateStatus={handleUpdateApplicantStatus}
                       onViewDetails={async (id) => {
