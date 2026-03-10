@@ -156,7 +156,7 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
     return totalAll > 0 ? Math.round((activeAll / totalAll) * 100) : 0;
   }, [contractors]);
 
-
+  const toggle = (section: string) => {
     setExpandedSection(prev => prev === section ? null : section);
   };
 
