@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,7 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Send, Loader2, Clock, CalendarIcon } from 'lucide-react';
+import { Send, Loader2, Clock, CalendarIcon, FileText } from 'lucide-react';
 import { RichTextToolbar } from '@/components/RichTextToolbar';
 
 interface ContractorEmailRecipient {
@@ -19,6 +19,14 @@ interface ContractorEmailRecipient {
   email: string;
   company: string;
   jobTitle: string;
+}
+
+interface EmailTemplate {
+  id: string;
+  name: string;
+  subject: string;
+  body_html: string;
+  is_default: boolean;
 }
 
 interface SendContractorEmailDialogProps {
@@ -43,7 +51,54 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
   const [isScheduled, setIsScheduled] = useState(false);
   const [scheduleDate, setScheduleDate] = useState<Date | undefined>();
   const [scheduleTime, setScheduleTime] = useState('09:00 AM');
+  const [templates, setTemplates] = useState<EmailTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+  const [loadingTemplates, setLoadingTemplates] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Load templates when dialog opens
+  useEffect(() => {
+    if (!open) return;
+    const fetchTemplates = async () => {
+      setLoadingTemplates(true);
+      try {
+        const { data, error } = await supabase
+          .from('contractor_email_templates')
+          .select('*')
+          .order('template_order');
+        if (error) throw error;
+        setTemplates((data as EmailTemplate[]) || []);
+
+        // Auto-select default template if no content yet
+        const defaultTpl = (data as EmailTemplate[])?.find(t => t.is_default);
+        if (defaultTpl && !subject && !bodyHtml) {
+          setSelectedTemplateId(defaultTpl.id);
+          setSubject(defaultTpl.subject);
+          setBodyHtml(defaultTpl.body_html);
+        }
+      } catch (err) {
+        console.error('Failed to load templates:', err);
+      } finally {
+        setLoadingTemplates(false);
+      }
+    };
+    fetchTemplates();
+  }, [open]);
+
+  const handleTemplateSelect = (templateId: string) => {
+    if (templateId === 'none') {
+      setSelectedTemplateId('');
+      setSubject('');
+      setBodyHtml('');
+      return;
+    }
+    const tpl = templates.find(t => t.id === templateId);
+    if (tpl) {
+      setSelectedTemplateId(tpl.id);
+      setSubject(tpl.subject);
+      setBodyHtml(tpl.body_html);
+    }
+  };
 
   const resetForm = () => {
     setSubject('');
@@ -51,6 +106,7 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
     setIsScheduled(false);
     setScheduleDate(undefined);
     setScheduleTime('09:00 AM');
+    setSelectedTemplateId('');
   };
 
   const applyPlaceholders = (text: string): string => {
@@ -117,7 +173,6 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
     }
   };
 
-  
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) resetForm(); onOpenChange(o); }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
@@ -134,6 +189,41 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
             <div className="bg-muted/50 rounded-lg p-3 text-sm">
               <p className="font-medium">{contractor.name}</p>
               <p className="text-muted-foreground">{contractor.email} • {contractor.company}</p>
+            </div>
+
+            {/* Template selector */}
+            <div>
+              <Label>Template</Label>
+              <Select 
+                value={selectedTemplateId || 'none'} 
+                onValueChange={handleTemplateSelect}
+                disabled={loadingTemplates}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder={loadingTemplates ? 'Loading...' : 'Select a template'}>
+                    <span className="flex items-center gap-2">
+                      <FileText className="w-3 h-3" />
+                      {selectedTemplateId 
+                        ? templates.find(t => t.id === selectedTemplateId)?.name || 'Template'
+                        : 'No template (blank)'}
+                    </span>
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">
+                    <span className="text-muted-foreground">No template (blank)</span>
+                  </SelectItem>
+                  {templates.map(t => (
+                    <SelectItem key={t.id} value={t.id}>
+                      <span className="flex items-center gap-2">
+                        <FileText className="w-3 h-3" />
+                        {t.name}
+                        {t.is_default && <span className="text-xs text-muted-foreground">(default)</span>}
+                      </span>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Placeholder help */}
