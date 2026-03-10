@@ -17,40 +17,85 @@ const handler = async (req: Request): Promise<Response> => {
     if (!supabaseUrl || !supabaseServiceKey) throw new Error("Supabase credentials not configured");
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const results: string[] = [];
 
-    // Get the default template
-    const { data: template, error: tplError } = await supabase
-      .from('contractor_email_templates')
-      .select('subject, body_html')
-      .eq('is_default', true)
-      .single();
+    // 1. Check for pending scheduled emails that are due
+    const { data: scheduledEmails, error: schedError } = await supabase
+      .from('scheduled_contractor_emails')
+      .select('*')
+      .eq('status', 'pending')
+      .lte('scheduled_for', new Date().toISOString());
 
-    if (tplError || !template) {
-      console.log("No default template found, skipping recurring email");
-      return new Response(
-        JSON.stringify({ success: true, message: "No default template found" }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
-      );
+    if (!schedError && scheduledEmails && scheduledEmails.length > 0) {
+      for (const scheduled of scheduledEmails) {
+        console.log(`Processing scheduled email: ${scheduled.id}`);
+        try {
+          const bulkResponse = await fetch(`${supabaseUrl}/functions/v1/bulk-contractor-email`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${supabaseServiceKey}`,
+            },
+            body: JSON.stringify({
+              subject: scheduled.subject,
+              bodyHtml: scheduled.body_html,
+            }),
+          });
+
+          const result = await bulkResponse.json();
+          console.log("Scheduled email result:", JSON.stringify(result));
+
+          await supabase
+            .from('scheduled_contractor_emails')
+            .update({ status: 'sent', sent_at: new Date().toISOString() })
+            .eq('id', scheduled.id);
+
+          results.push(`Scheduled email ${scheduled.id}: sent ${result.sent || 0}`);
+        } catch (err: any) {
+          await supabase
+            .from('scheduled_contractor_emails')
+            .update({ status: 'failed', error_message: err.message })
+            .eq('id', scheduled.id);
+
+          results.push(`Scheduled email ${scheduled.id}: failed - ${err.message}`);
+        }
+      }
     }
 
-    // Call the bulk email function
-    const bulkResponse = await fetch(`${supabaseUrl}/functions/v1/bulk-contractor-email`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${supabaseServiceKey}`,
-      },
-      body: JSON.stringify({
-        subject: template.subject,
-        bodyHtml: template.body_html,
-      }),
-    });
+    // 2. Check for recurring default template (Friday auto-send)
+    const now = new Date();
+    const isFriday = now.getUTCDay() === 5;
 
-    const result = await bulkResponse.json();
-    console.log("Recurring bulk email result:", JSON.stringify(result));
+    if (isFriday) {
+      const { data: template, error: tplError } = await supabase
+        .from('contractor_email_templates')
+        .select('subject, body_html')
+        .eq('is_default', true)
+        .single();
+
+      if (!tplError && template) {
+        const bulkResponse = await fetch(`${supabaseUrl}/functions/v1/bulk-contractor-email`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${supabaseServiceKey}`,
+          },
+          body: JSON.stringify({
+            subject: template.subject,
+            bodyHtml: template.body_html,
+          }),
+        });
+
+        const result = await bulkResponse.json();
+        console.log("Recurring bulk email result:", JSON.stringify(result));
+        results.push(`Recurring Friday email: sent ${result.sent || 0}`);
+      } else {
+        results.push("No default template found for recurring send");
+      }
+    }
 
     return new Response(
-      JSON.stringify(result),
+      JSON.stringify({ success: true, results }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
     );
   } catch (error: any) {
