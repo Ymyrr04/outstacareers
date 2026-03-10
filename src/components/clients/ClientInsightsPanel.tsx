@@ -190,6 +190,18 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
       rows.push([source, companies.length.toString(), companies.join('; ')]);
     });
     rows.push([`Total`, totalFromSource.toString(), '']);
+    rows.push(['', '', '']);
+
+    // Section 4: Retention Rate
+    rows.push(['Retention Rate by Industry & Client', '', '', '']);
+    rows.push(['Industry', 'Active', 'Total', 'Rate']);
+    retentionData.forEach(ind => {
+      rows.push([ind.industry, ind.active.toString(), ind.total.toString(), `${ind.rate}%`]);
+      ind.clients.forEach(cl => {
+        rows.push([`  ${cl.name}`, cl.active.toString(), cl.total.toString(), `${cl.rate}%`]);
+      });
+    });
+    rows.push([`Overall`, contractors.filter(c => c.status === 'active').length.toString(), contractors.length.toString(), `${overallRetention}%`]);
 
     const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -201,7 +213,7 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
     URL.revokeObjectURL(url);
 
     toast({ title: 'Exported', description: 'Client insights downloaded as CSV' });
-  }, [clientOnboardedByIndustry, rolesByIndustry, clientsBySource, totalOnboarded, totalPlaced, totalFromSource, onboardedYear, placementsMonths, sourceYear, toast]);
+  }, [clientOnboardedByIndustry, rolesByIndustry, clientsBySource, retentionData, totalOnboarded, totalPlaced, totalFromSource, overallRetention, contractors, onboardedYear, placementsMonths, sourceYear, toast]);
 
   return (
     <div className="space-y-2">
