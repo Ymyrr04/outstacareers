@@ -3,7 +3,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Plus, X, Search, Trash2 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Plus, X, Search, Trash2, FolderOpen, ChevronDown } from 'lucide-react';
 
 type Operator = 'AND' | 'OR' | 'NOT';
 
@@ -16,6 +18,9 @@ interface SearchRow {
 interface BooleanSearchBuilderProps {
   onSearch: (query: string) => void;
   placeholder?: string;
+  folders?: readonly string[];
+  selectedFolders?: string[];
+  onFoldersChange?: (folders: string[]) => void;
 }
 
 let rowIdCounter = 0;
