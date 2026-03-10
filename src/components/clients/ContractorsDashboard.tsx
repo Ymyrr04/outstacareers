@@ -1477,6 +1477,13 @@ export const ContractorsDashboard = () => {
         onOpenChange={setEmailDialogOpen}
         contractor={emailRecipient}
       />
+
+      {/* Bulk Email Dialog */}
+      <BulkContractorEmailDialog
+        open={bulkEmailDialogOpen}
+        onOpenChange={setBulkEmailDialogOpen}
+        activeContractorCount={activeCount}
+      />
     </div>
   );
 };
