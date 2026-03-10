@@ -64,6 +64,7 @@ const APPLICANT_STATUS_FOLDERS = [
   'Client Interview',
   'Hired',
   'Bench',
+  'Talent Pool',
   'Reject',
   'Archive'
 ] as const;
@@ -76,6 +77,7 @@ const APPLICANT_STATUS_OPTIONS = [
   'Client Interview',
   'Hired',
   'Bench',
+  'Talent Pool',
   'Reject',
   'Archive'
 ] as const;
