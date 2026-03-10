@@ -2,6 +2,32 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { crypto } from "https://deno.land/std@0.190.0/crypto/mod.ts";
+import { decode as decodeBase64Url } from "https://deno.land/std@0.190.0/encoding/base64url.ts";
+
+// Admin email to display name mapping
+const ADMIN_NAMES: Record<string, string> = {
+  'czarina@outsta.io': 'Czarina',
+  'kristine@outsta.io': 'Kristine',
+  'eduardo@outsta.io': 'Eduardo',
+  'mark@outsta.io': 'Mark',
+  'liezl@outsta.io': 'Liezl',
+  'jil@outsta.io': 'Jil',
+  'yes@outsta.io': 'Yes',
+};
+
+function getAdminNameFromJwt(authHeader: string | null): string | null {
+  if (!authHeader) return null;
+  try {
+    const token = authHeader.replace('Bearer ', '');
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(new TextDecoder().decode(decodeBase64Url(parts[1])));
+    const email = payload.email?.toLowerCase();
+    return email ? (ADMIN_NAMES[email] || null) : null;
+  } catch {
+    return null;
+  }
+}
 
 // Generate a unique Message-ID for email threading
 function generateMessageId(domain: string): string {
