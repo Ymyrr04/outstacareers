@@ -2,6 +2,32 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { crypto } from "https://deno.land/std@0.190.0/crypto/mod.ts";
+import { decode as decodeBase64Url } from "https://deno.land/std@0.190.0/encoding/base64url.ts";
+
+// Admin email to display name mapping
+const ADMIN_NAMES: Record<string, string> = {
+  'czarina@outsta.io': 'Czarina',
+  'kristine@outsta.io': 'Kristine',
+  'eduardo@outsta.io': 'Eduardo',
+  'mark@outsta.io': 'Mark',
+  'liezl@outsta.io': 'Liezl',
+  'jil@outsta.io': 'Jil',
+  'yes@outsta.io': 'Yes',
+};
+
+function getAdminNameFromJwt(authHeader: string | null): string | null {
+  if (!authHeader) return null;
+  try {
+    const token = authHeader.replace('Bearer ', '');
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(new TextDecoder().decode(decodeBase64Url(parts[1])));
+    const email = payload.email?.toLowerCase();
+    return email ? (ADMIN_NAMES[email] || null) : null;
+  } catch {
+    return null;
+  }
+}
 
 // Generate a unique Message-ID for email threading
 function generateMessageId(domain: string): string {
@@ -73,7 +99,18 @@ const handler = async (req: Request): Promise<Response> => {
       inReplyTo,
     }: SendEmailRequest = await req.json();
 
-    console.log("Processing email request for:", recipientEmail);
+    // Extract admin name from JWT for personalized sign-off
+    const adminName = getAdminNameFromJwt(req.headers.get('authorization'));
+    
+    // Auto-replace generic sign-offs with the admin's name if available
+    let processedBodyHtml = bodyHtml;
+    if (adminName && !isAutomated) {
+      // Replace common sign-off patterns
+      processedBodyHtml = processedBodyHtml
+        .replace(/Best regards,\s*<br\s*\/?>\s*The\s+(Outsta\s+)?Recruitment\s+Team/gi, `Best regards,<br>${adminName} — OutSta Recruitment Team`)
+        .replace(/Best regards,\s*\n\s*The\s+(Outsta\s+)?Recruitment\s+Team/gi, `Best regards,\n${adminName} — OutSta Recruitment Team`)
+        .replace(/Best regards,<br>The OutSta Recruitment Team/gi, `Best regards,<br>${adminName} — OutSta Recruitment Team`);
+    }
 
     // If scheduled for later, create a scheduled email entry
     if (scheduleFor) {
@@ -85,7 +122,7 @@ const handler = async (req: Request): Promise<Response> => {
             applicant_id: applicantId,
             template_id: templateId || null,
             subject,
-            body_html: bodyHtml,
+            body_html: processedBodyHtml,
             recipient_email: recipientEmail,
             scheduled_for: scheduleFor,
             status: 'pending',
@@ -134,7 +171,7 @@ const handler = async (req: Request): Promise<Response> => {
     const messageId = generateMessageId(domain);
     console.log("Generated Message-ID:", messageId);
 
-    const emailHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${subject}</title></head><body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;"><table role="presentation" style="width: 100%; border-collapse: collapse;"><tr><td align="center" style="padding: 40px 0;"><table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"><tr><td style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 50px 40px; border-radius: 12px 12px 0 0; text-align: center;"><h1 style="color: #ffffff; margin: 0; font-size: 36px; font-weight: 700; letter-spacing: 3px;">OutSta</h1><p style="color: #e2e8f0; margin: 8px 0 0 0; font-size: 16px; font-weight: 400; letter-spacing: 2px;">Recruitment Team</p></td></tr><tr><td style="padding: 40px;">${bodyHtml}</td></tr><tr><td style="background-color: #f8f9fa; padding: 25px 40px; border-radius: 0 0 12px 12px; text-align: center;"><p style="color: #999999; font-size: 12px; margin: 0;">This email was sent by OutSta Recruitment.<br>If you have any questions, please reply to this email.</p></td></tr></table></td></tr></table></body></html>`;
+    const emailHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${subject}</title></head><body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;"><table role="presentation" style="width: 100%; border-collapse: collapse;"><tr><td align="center" style="padding: 40px 0;"><table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"><tr><td style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 50px 40px; border-radius: 12px 12px 0 0; text-align: center;"><h1 style="color: #ffffff; margin: 0; font-size: 36px; font-weight: 700; letter-spacing: 3px;">OutSta</h1><p style="color: #e2e8f0; margin: 8px 0 0 0; font-size: 16px; font-weight: 400; letter-spacing: 2px;">Recruitment Team</p></td></tr><tr><td style="padding: 40px;">${processedBodyHtml}</td></tr><tr><td style="background-color: #f8f9fa; padding: 25px 40px; border-radius: 0 0 12px 12px; text-align: center;"><p style="color: #999999; font-size: 12px; margin: 0;">This email was sent by OutSta Recruitment.<br>If you have any questions, please reply to this email.</p></td></tr></table></td></tr></table></body></html>`;
 
     // Prepare email options with Message-ID header
     const emailOptions: any = {
@@ -190,7 +227,7 @@ const handler = async (req: Request): Promise<Response> => {
         applicant_id: applicantId,
         template_id: templateId || null,
         subject,
-        body_html: bodyHtml,
+        body_html: processedBodyHtml,
         recipient_email: recipientEmail,
         status: 'sent',
         sent_at: new Date().toISOString(),
