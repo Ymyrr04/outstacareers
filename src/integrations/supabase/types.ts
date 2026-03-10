@@ -639,6 +639,39 @@ export type Database = {
           },
         ]
       }
+      contractor_email_templates: {
+        Row: {
+          body_html: string
+          created_at: string
+          id: string
+          is_default: boolean
+          name: string
+          subject: string
+          template_order: number
+          updated_at: string
+        }
+        Insert: {
+          body_html: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name: string
+          subject: string
+          template_order?: number
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string
+          created_at?: string
+          id?: string
+          is_default?: boolean
+          name?: string
+          subject?: string
+          template_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       deleted_applicants: {
         Row: {
           ai_assessment_details: Json | null
