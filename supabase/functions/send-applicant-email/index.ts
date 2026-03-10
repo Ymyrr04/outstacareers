@@ -99,7 +99,18 @@ const handler = async (req: Request): Promise<Response> => {
       inReplyTo,
     }: SendEmailRequest = await req.json();
 
-    console.log("Processing email request for:", recipientEmail);
+    // Extract admin name from JWT for personalized sign-off
+    const adminName = getAdminNameFromJwt(req.headers.get('authorization'));
+    
+    // Auto-replace generic sign-offs with the admin's name if available
+    let processedBodyHtml = bodyHtml;
+    if (adminName && !isAutomated) {
+      // Replace common sign-off patterns
+      processedBodyHtml = processedBodyHtml
+        .replace(/Best regards,\s*<br\s*\/?>\s*The\s+(Outsta\s+)?Recruitment\s+Team/gi, `Best regards,<br>${adminName} — OutSta Recruitment Team`)
+        .replace(/Best regards,\s*\n\s*The\s+(Outsta\s+)?Recruitment\s+Team/gi, `Best regards,\n${adminName} — OutSta Recruitment Team`)
+        .replace(/Best regards,<br>The OutSta Recruitment Team/gi, `Best regards,<br>${adminName} — OutSta Recruitment Team`);
+    }
 
     // If scheduled for later, create a scheduled email entry
     if (scheduleFor) {
