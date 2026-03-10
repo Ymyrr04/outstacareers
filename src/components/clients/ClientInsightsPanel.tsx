@@ -207,15 +207,15 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
     rows.push(['', '', '']);
 
     // Section 4: Retention Rate
-    rows.push([`Retention Rate (${retentionYear})`, '', '', '']);
-    rows.push(['Industry', 'Active', 'Total', 'Rate']);
+    rows.push([`Retention Rate (${retentionYear})`, '', '', '', '']);
+    rows.push(['Industry', 'Client', 'Active', 'Total', 'Rate']);
     retentionData.forEach(ind => {
-      rows.push([ind.industry, ind.active.toString(), ind.total.toString(), `${ind.rate}%`]);
+      rows.push([ind.industry, '', ind.active.toString(), ind.total.toString(), `${ind.rate}%`]);
       ind.clients.forEach(cl => {
-        rows.push([`  ${cl.name}`, cl.active.toString(), cl.total.toString(), `${cl.rate}%`]);
+        rows.push(['', cl.name, cl.active.toString(), cl.total.toString(), `${cl.rate}%`]);
       });
     });
-    rows.push([`Overall`, retentionFiltered.filter(c => c.status === 'active').length.toString(), retentionFiltered.length.toString(), `${overallRetention}%`]);
+    rows.push(['Overall', '', retentionFiltered.filter(c => c.status === 'active').length.toString(), retentionFiltered.length.toString(), `${overallRetention}%`]);
 
     const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
