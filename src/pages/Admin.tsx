@@ -3630,7 +3630,7 @@ const Admin = () => {
                       if (error) throw error;
                       // Update local state
                       setNotesPopup({ ...notesPopup, notes: notesPopupValue.trim() });
-                      updateApplicant(notesPopup.id, { notes: notesPopupValue.trim() || null });
+                      setApplicants(prev => prev.map(a => a.id === notesPopup.id ? { ...a, notes: notesPopupValue.trim() || null } : a));
                       setNotesPopupEditing(false);
                       toast({ title: 'Notes saved' });
                     } catch (err: any) {
