@@ -32,6 +32,7 @@ interface PaginatedSearchResultsProps {
 export const PaginatedSearchResults = ({
   searchTerm,
   sortBy,
+  statuses,
   statusOptions,
   onUpdateStatus,
   onViewDetails,
