@@ -99,6 +99,7 @@ export const HiringRequestDetailDialog = ({
   const [addingComment, setAddingComment] = useState(false);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [industries, setIndustries] = useState<string[]>(DEFAULT_INDUSTRIES);
+  const [clients, setClients] = useState<{ id: string; company_name: string }[]>([]);
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editingCommentContent, setEditingCommentContent] = useState('');
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
@@ -122,6 +123,7 @@ export const HiringRequestDetailDialog = ({
     notes: '',
     assigned_admin_id: '',
     closed_at: '',
+    client_id: '' as string,
   });
 
   useEffect(() => {
@@ -142,14 +144,26 @@ export const HiringRequestDetailDialog = ({
         notes: request.notes || '',
         assigned_admin_id: request.assigned_admin_id || '',
         closed_at: closedAtDate,
+        client_id: request.client_id || '',
       });
       setEditingField(null);
       setHasUnsavedChanges(false);
       fetchComments(request.id);
       fetchAdminUsers();
       fetchIndustries();
+      fetchClients();
     }
   }, [request]);
+
+  const fetchClients = async () => {
+    const { data } = await supabase
+      .from('clients')
+      .select('id, company_name')
+      .order('company_name');
+    if (data) {
+      setClients(data);
+    }
+  };
 
   const fetchIndustries = async () => {
     const { data } = await supabase
@@ -411,6 +425,7 @@ export const HiringRequestDetailDialog = ({
     else if (field === 'job_title') updates.job_title = value;
     else if (field === 'notes') updates.notes = value || null;
     else if (field === 'assigned_admin_id') updates.assigned_admin_id = value || null;
+    else if (field === 'client_id') (updates as any).client_id = value || null;
 
     const success = await updateRequest(request.id, updates);
     setSaving(false);
@@ -661,6 +676,36 @@ export const HiringRequestDetailDialog = ({
                     <SelectItem value="new">New</SelectItem>
                     <SelectItem value="existing">Existing</SelectItem>
                     <SelectItem value="returning">Returning</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            {/* Client Row */}
+            <div className="flex items-center py-2 hover:bg-muted/50 rounded px-2 -mx-2">
+              <div className="flex items-center gap-2 w-32 text-muted-foreground text-sm">
+                <Building2 className="w-4 h-4" />
+                Client
+              </div>
+              <div className="flex-1">
+                <Select 
+                  value={formData.client_id || '__none__'} 
+                  onValueChange={(v) => handleFieldUpdate('client_id', v === '__none__' ? '' : v)}
+                >
+                  <SelectTrigger className="border-0 bg-transparent h-auto p-0 hover:bg-transparent focus:ring-0">
+                    {formData.client_id ? (
+                      <span className="text-sm font-medium">
+                        {clients.find(c => c.id === formData.client_id)?.company_name || request.client_name || '—'}
+                      </span>
+                    ) : (
+                      <span className="text-muted-foreground text-sm">—</span>
+                    )}
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">None</SelectItem>
+                    {clients.map(client => (
+                      <SelectItem key={client.id} value={client.id}>{client.company_name}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
