@@ -153,7 +153,7 @@ const handler = async (req: Request): Promise<Response> => {
           <tr>
             <td style="background-color: #f8f9fa; padding: 25px 40px; border-radius: 0 0 12px 12px; text-align: center;">
               <p style="color: #999999; font-size: 12px; margin: 0;">
-                This email was sent by Outsta Recruitment.<br>
+                This email was sent by OUTSTA Talent Team.<br>
                 If you have any questions, please reply to this email.
               </p>
             </td>
