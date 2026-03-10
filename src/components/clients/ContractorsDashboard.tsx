@@ -762,6 +762,14 @@ export const ContractorsDashboard = () => {
           </Popover>
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant="default" 
+            onClick={() => setBulkEmailDialogOpen(true)} 
+            disabled={activeCount === 0}
+          >
+            <Mail className="w-4 h-4 mr-2" />
+            Bulk Email ({activeCount})
+          </Button>
           <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
             <Upload className="w-4 h-4 mr-2" />
             Import
