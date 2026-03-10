@@ -123,6 +123,7 @@ export const HiringRequestDetailDialog = ({
     notes: '',
     assigned_admin_id: '',
     closed_at: '',
+    client_id: '' as string,
   });
 
   useEffect(() => {
