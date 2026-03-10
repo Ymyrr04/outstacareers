@@ -61,6 +61,7 @@ import { ContractorImportDialog } from './ContractorImportDialog';
 import { EditContractorDialog } from './EditContractorDialog';
 import { ContractorStatusDialog } from './ContractorStatusDialog';
 import { SendContractorEmailDialog } from './SendContractorEmailDialog';
+import { BulkContractorEmailDialog } from './BulkContractorEmailDialog';
 
 interface ContractorWithDetails {
   id: string;
@@ -127,6 +128,7 @@ export const ContractorsDashboard = () => {
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [bulkEmailDialogOpen, setBulkEmailDialogOpen] = useState(false);
   const [emailRecipient, setEmailRecipient] = useState<{
     assignmentId: string;
     name: string;
@@ -760,6 +762,14 @@ export const ContractorsDashboard = () => {
           </Popover>
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant="default" 
+            onClick={() => setBulkEmailDialogOpen(true)} 
+            disabled={activeCount === 0}
+          >
+            <Mail className="w-4 h-4 mr-2" />
+            Bulk Email ({activeCount})
+          </Button>
           <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
             <Upload className="w-4 h-4 mr-2" />
             Import
@@ -1466,6 +1476,13 @@ export const ContractorsDashboard = () => {
         open={emailDialogOpen}
         onOpenChange={setEmailDialogOpen}
         contractor={emailRecipient}
+      />
+
+      {/* Bulk Email Dialog */}
+      <BulkContractorEmailDialog
+        open={bulkEmailDialogOpen}
+        onOpenChange={setBulkEmailDialogOpen}
+        activeContractorCount={activeCount}
       />
     </div>
   );
