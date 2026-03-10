@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Send, Loader2, FileText, Mail, Users, RefreshCw } from 'lucide-react';
+import { Send, Loader2, FileText, Mail, Users, RefreshCw, CalendarClock } from 'lucide-react';
 import { RichTextToolbar } from '@/components/RichTextToolbar';
 
 interface EmailTemplate {
