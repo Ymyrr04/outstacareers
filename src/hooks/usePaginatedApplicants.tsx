@@ -127,6 +127,8 @@ export const usePaginatedApplicants = (options: UsePaginatedApplicantsOptions = 
       // Filter by status if provided
       if (status) {
         query = query.eq('status', status);
+      } else if (statuses && statuses.length > 0) {
+        query = query.in('status', statuses);
       }
       
       // Apply search filter with Boolean operator support
