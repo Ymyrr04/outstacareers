@@ -26,7 +26,7 @@ interface BooleanSearchBuilderProps {
 let rowIdCounter = 0;
 const nextId = () => `row-${++rowIdCounter}`;
 
-export const BooleanSearchBuilder = ({ onSearch, placeholder }: BooleanSearchBuilderProps) => {
+export const BooleanSearchBuilder = ({ onSearch, placeholder, folders, selectedFolders, onFoldersChange }: BooleanSearchBuilderProps) => {
   const [rows, setRows] = useState<SearchRow[]>([
     { id: nextId(), operator: 'AND', term: '' },
   ]);
