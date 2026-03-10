@@ -109,15 +109,20 @@ export const BulkContractorEmailDialog = ({
     }
   };
 
-  const getNextFridayNoon = (): Date => {
+  const getNextFridayNoonEST = (): Date => {
+    // Calculate next Friday at 12:00 PM EST (17:00 UTC)
     const now = new Date();
-    const day = now.getUTCDay(); // 0=Sun, 5=Fri
-    let daysUntilFriday = (5 - day + 7) % 7;
+    const currentDay = now.getDay(); // local day: 0=Sun, 5=Fri
+    let daysUntilFriday = (5 - currentDay + 7) % 7;
     if (daysUntilFriday === 0) daysUntilFriday = 7; // if today is Friday, schedule next Friday
+    // Build the date as a specific UTC time: next Friday at 17:00 UTC (12 PM EST)
     const friday = new Date(now);
-    friday.setUTCDate(friday.getUTCDate() + daysUntilFriday);
-    friday.setUTCHours(17, 0, 0, 0); // 12 PM EST = 17:00 UTC
-    return friday;
+    friday.setDate(friday.getDate() + daysUntilFriday);
+    // Set to 17:00 UTC (12 PM EST) explicitly
+    const year = friday.getFullYear();
+    const month = friday.getMonth();
+    const day = friday.getDate();
+    return new Date(Date.UTC(year, month, day, 17, 0, 0, 0));
   };
 
   const handleScheduleFriday = async () => {
@@ -128,7 +133,7 @@ export const BulkContractorEmailDialog = ({
 
     setScheduling(true);
     try {
-      const scheduledFor = getNextFridayNoon();
+      const scheduledFor = getNextFridayNoonEST();
       
       const { error } = await supabase.from('scheduled_contractor_emails' as any).insert({
         subject,
