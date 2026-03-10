@@ -97,7 +97,7 @@ const handler = async (req: Request): Promise<Response> => {
         // Wait 30 seconds between emails to avoid spam detection
         if (sentCount > 0 || errors.length > 0) {
           console.log(`Waiting 30 seconds before sending next email...`);
-          await new Promise(resolve => setTimeout(resolve, 15000));
+          await new Promise(resolve => setTimeout(resolve, 30000));
         }
 
         const messageId = generateMessageId(domain);
