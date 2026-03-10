@@ -64,14 +64,21 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
       try {
         const { data, error } = await supabase
           .from('contractor_email_templates')
-          .select('*')
+          .select('id, name, subject, body_html, is_default, template_order')
           .order('template_order');
-        if (error) throw error;
-        setTemplates((data as EmailTemplate[]) || []);
+        
+        if (error) {
+          console.error('Failed to load contractor email templates:', error);
+          return;
+        }
+        
+        const tpls = (data || []) as EmailTemplate[];
+        console.log('Loaded contractor email templates:', tpls.length);
+        setTemplates(tpls);
 
-        // Auto-select default template if no content yet
-        const defaultTpl = (data as EmailTemplate[])?.find(t => t.is_default);
-        if (defaultTpl && !subject && !bodyHtml) {
+        // Auto-select default template on first open
+        const defaultTpl = tpls.find(t => t.is_default);
+        if (defaultTpl) {
           setSelectedTemplateId(defaultTpl.id);
           setSubject(defaultTpl.subject);
           setBodyHtml(defaultTpl.body_html);
