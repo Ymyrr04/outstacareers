@@ -197,12 +197,13 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
     rows.push(['', '', '']);
 
     // Section 3: Client Sources
-    rows.push([`Client Sources (${sourceYear})`, '', '']);
-    rows.push(['Source', 'Count', 'Companies']);
+    const maxSources = Math.max(...clientsBySource.map(([, c]) => c.length), 0);
+    rows.push([`Client Sources (${sourceYear})`, '', ...Array(maxSources).fill('')]);
+    rows.push(['Source', 'Count', ...Array.from({ length: maxSources }, (_, i) => `Company ${i + 1}`)]);
     clientsBySource.forEach(([source, companies]) => {
-      rows.push([source, companies.length.toString(), companies.join('; ')]);
+      rows.push([source, companies.length.toString(), ...companies, ...Array(maxSources - companies.length).fill('')]);
     });
-    rows.push([`Total`, totalFromSource.toString(), '']);
+    rows.push([`Total`, totalFromSource.toString(), ...Array(maxSources).fill('')]);
     rows.push(['', '', '']);
 
     // Section 4: Retention Rate
