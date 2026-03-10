@@ -93,7 +93,8 @@ const handler = async (req: Request): Promise<Response> => {
           <!-- Header -->
           <tr>
             <td style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 12px 12px 0 0; text-align: center;">
-              <h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">OUTSTA Talent Team</h1>
+               <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 2px;">OutSta</h1>
+               <p style="color: #a0aec0; margin: 6px 0 0 0; font-size: 13px; font-weight: 400; letter-spacing: 1px;">Recruitment Team</p>
             </td>
           </tr>
           
@@ -108,7 +109,7 @@ const handler = async (req: Request): Promise<Response> => {
           <tr>
             <td style="background-color: #f8f9fa; padding: 25px 40px; border-radius: 0 0 12px 12px; text-align: center;">
               <p style="color: #999999; font-size: 12px; margin: 0;">
-                This email was sent by OUTSTA Talent Team.<br>
+                This email was sent by OutSta Recruitment.<br>
                 If you have any questions, please reply to this email.
               </p>
             </td>
