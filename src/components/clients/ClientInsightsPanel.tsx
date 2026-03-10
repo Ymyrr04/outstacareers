@@ -399,6 +399,7 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };
