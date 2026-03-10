@@ -177,30 +177,33 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
     const rows: string[][] = [];
     
     // Section 1: New Clients Onboarded
-    rows.push([`New Clients Onboarded (${onboardedYear})`, '', '']);
-    rows.push(['Industry', 'Count', 'Companies']);
+    const maxOnboarded = Math.max(...clientOnboardedByIndustry.map(([, c]) => c.length), 0);
+    rows.push([`New Clients Onboarded (${onboardedYear})`, '', ...Array(maxOnboarded).fill('')]);
+    rows.push(['Industry', 'Count', ...Array.from({ length: maxOnboarded }, (_, i) => `Company ${i + 1}`)]);
     clientOnboardedByIndustry.forEach(([industry, companies]) => {
-      rows.push([industry, companies.length.toString(), companies.join('; ')]);
+      rows.push([industry, companies.length.toString(), ...companies, ...Array(maxOnboarded - companies.length).fill('')]);
     });
-    rows.push([`Total`, totalOnboarded.toString(), '']);
-    rows.push(['', '', '']);
+    rows.push([`Total`, totalOnboarded.toString(), ...Array(maxOnboarded).fill('')]);
+    rows.push(['', '', ...Array(maxOnboarded).fill('')]);
 
     // Section 2: Roles Filled
-    rows.push([`Roles Filled (Past ${placementsMonths} months)`, '', '']);
-    rows.push(['Industry', 'Count', 'Roles']);
+    const maxRoles = Math.max(...rolesByIndustry.map(([, roles]) => roles.length), 0);
+    rows.push([`Roles Filled (Past ${placementsMonths} months)`, '', ...Array(maxRoles).fill('')]);
+    rows.push(['Industry', 'Count', ...Array.from({ length: maxRoles }, (_, i) => `Role ${i + 1}`)]);
     rolesByIndustry.forEach(([industry, roles]) => {
-      rows.push([industry, roles.length.toString(), roles.join('; ')]);
+      rows.push([industry, roles.length.toString(), ...roles, ...Array(maxRoles - roles.length).fill('')]);
     });
-    rows.push([`Total`, totalPlaced.toString(), '']);
+    rows.push([`Total`, totalPlaced.toString(), ...Array(maxRoles).fill('')]);
     rows.push(['', '', '']);
 
     // Section 3: Client Sources
-    rows.push([`Client Sources (${sourceYear})`, '', '']);
-    rows.push(['Source', 'Count', 'Companies']);
+    const maxSources = Math.max(...clientsBySource.map(([, c]) => c.length), 0);
+    rows.push([`Client Sources (${sourceYear})`, '', ...Array(maxSources).fill('')]);
+    rows.push(['Source', 'Count', ...Array.from({ length: maxSources }, (_, i) => `Company ${i + 1}`)]);
     clientsBySource.forEach(([source, companies]) => {
-      rows.push([source, companies.length.toString(), companies.join('; ')]);
+      rows.push([source, companies.length.toString(), ...companies, ...Array(maxSources - companies.length).fill('')]);
     });
-    rows.push([`Total`, totalFromSource.toString(), '']);
+    rows.push([`Total`, totalFromSource.toString(), ...Array(maxSources).fill('')]);
     rows.push(['', '', '']);
 
     // Section 4: Retention Rate
