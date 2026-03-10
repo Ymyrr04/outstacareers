@@ -589,6 +589,56 @@ export type Database = {
           },
         ]
       }
+      contractor_email_logs: {
+        Row: {
+          body_html: string
+          contractor_assignment_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          message_id: string | null
+          recipient_email: string
+          scheduled_for: string | null
+          sent_at: string | null
+          status: string
+          subject: string
+        }
+        Insert: {
+          body_html: string
+          contractor_assignment_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          recipient_email: string
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string
+          subject: string
+        }
+        Update: {
+          body_html?: string
+          contractor_assignment_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          message_id?: string | null
+          recipient_email?: string
+          scheduled_for?: string | null
+          sent_at?: string | null
+          status?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contractor_email_logs_contractor_assignment_id_fkey"
+            columns: ["contractor_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "contractor_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       deleted_applicants: {
         Row: {
           ai_assessment_details: Json | null

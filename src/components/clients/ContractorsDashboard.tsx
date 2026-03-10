@@ -60,6 +60,7 @@ import {
 import { ContractorImportDialog } from './ContractorImportDialog';
 import { EditContractorDialog } from './EditContractorDialog';
 import { ContractorStatusDialog } from './ContractorStatusDialog';
+import { SendContractorEmailDialog } from './SendContractorEmailDialog';
 
 interface ContractorWithDetails {
   id: string;
@@ -125,6 +126,14 @@ export const ContractorsDashboard = () => {
   const [showImportErrors, setShowImportErrors] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [emailRecipient, setEmailRecipient] = useState<{
+    assignmentId: string;
+    name: string;
+    email: string;
+    company: string;
+    jobTitle: string;
+  } | null>(null);
   const [pendingStatusChange, setPendingStatusChange] = useState<{
     contractorId: string;
     contractorName: string;
@@ -892,8 +901,31 @@ export const ContractorsDashboard = () => {
                         )}
                         {visibleColumns.email && (
                           <TableCell>
-                            <span className="text-sm" title={contractor.applicant?.email}>
-                              {contractor.applicant?.email || '—'}
+                            <span className="flex items-center gap-1 text-sm">
+                              <span title={contractor.applicant?.email}>
+                                {contractor.applicant?.email || '—'}
+                              </span>
+                              {contractor.applicant?.email && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 ml-1 text-muted-foreground hover:text-teal-600"
+                                  title="Send email"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEmailRecipient({
+                                      assignmentId: contractor.id,
+                                      name: contractor.applicant?.full_name || '',
+                                      email: contractor.applicant?.email || '',
+                                      company: contractor.client?.company_name || '',
+                                      jobTitle: contractor.job_title || '',
+                                    });
+                                    setEmailDialogOpen(true);
+                                  }}
+                                >
+                                  <Mail className="w-3 h-3" />
+                                </Button>
+                              )}
                             </span>
                           </TableCell>
                         )}
@@ -1185,8 +1217,31 @@ export const ContractorsDashboard = () => {
                           )}
                           {visibleColumns.email && (
                             <TableCell>
-                              <span className="text-sm" title={contractor.applicant?.email}>
-                                {contractor.applicant?.email || '—'}
+                              <span className="flex items-center gap-1 text-sm">
+                                <span title={contractor.applicant?.email}>
+                                  {contractor.applicant?.email || '—'}
+                                </span>
+                                {contractor.applicant?.email && (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-5 w-5 ml-1 text-muted-foreground hover:text-teal-600"
+                                    title="Send email"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      setEmailRecipient({
+                                        assignmentId: contractor.id,
+                                        name: contractor.applicant?.full_name || '',
+                                        email: contractor.applicant?.email || '',
+                                        company: contractor.client?.company_name || '',
+                                        jobTitle: contractor.job_title || '',
+                                      });
+                                      setEmailDialogOpen(true);
+                                    }}
+                                  >
+                                    <Mail className="w-3 h-3" />
+                                  </Button>
+                                )}
                               </span>
                             </TableCell>
                           )}
@@ -1405,6 +1460,13 @@ export const ContractorsDashboard = () => {
           saving={!!updatingStatusId}
         />
       )}
+
+      {/* Contractor Email Dialog */}
+      <SendContractorEmailDialog
+        open={emailDialogOpen}
+        onOpenChange={setEmailDialogOpen}
+        contractor={emailRecipient}
+      />
     </div>
   );
 };
