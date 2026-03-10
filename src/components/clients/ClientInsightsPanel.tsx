@@ -1,9 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useCallback } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Building2, Briefcase, Megaphone, ChevronDown, ChevronUp } from 'lucide-react';
+import { Building2, Briefcase, Megaphone, ChevronDown, ChevronUp, Download } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useToast } from '@/hooks/use-toast';
 import { type Client, type ContractorAssignment } from './ClientsDashboard';
 
 interface HiringRequestBasic {
@@ -117,8 +119,58 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
     setExpandedSection(prev => prev === section ? null : section);
   };
 
+  const { toast } = useToast();
+
+  const handleExport = useCallback(() => {
+    const rows: string[][] = [];
+    
+    // Section 1: New Clients Onboarded
+    rows.push([`New Clients Onboarded (${onboardedYear})`, '', '']);
+    rows.push(['Industry', 'Count', 'Companies']);
+    clientOnboardedByIndustry.forEach(([industry, companies]) => {
+      rows.push([industry, companies.length.toString(), companies.join('; ')]);
+    });
+    rows.push([`Total`, totalOnboarded.toString(), '']);
+    rows.push(['', '', '']);
+
+    // Section 2: Roles Filled
+    rows.push([`Roles Filled (Past ${placementsMonths} months)`, '', '']);
+    rows.push(['Industry', 'Count', 'Roles']);
+    rolesByIndustry.forEach(([industry, roles]) => {
+      rows.push([industry, roles.length.toString(), roles.join('; ')]);
+    });
+    rows.push([`Total`, totalPlaced.toString(), '']);
+    rows.push(['', '', '']);
+
+    // Section 3: Client Sources
+    rows.push([`Client Sources (${sourceYear})`, '', '']);
+    rows.push(['Source', 'Count', 'Companies']);
+    clientsBySource.forEach(([source, companies]) => {
+      rows.push([source, companies.length.toString(), companies.join('; ')]);
+    });
+    rows.push([`Total`, totalFromSource.toString(), '']);
+
+    const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `client-insights-${onboardedYear}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    toast({ title: 'Exported', description: 'Client insights downloaded as CSV' });
+  }, [clientOnboardedByIndustry, rolesByIndustry, clientsBySource, totalOnboarded, totalPlaced, totalFromSource, onboardedYear, placementsMonths, sourceYear, toast]);
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div className="space-y-2">
+      <div className="flex justify-end">
+        <Button variant="ghost" size="sm" onClick={handleExport} className="text-xs gap-1.5 text-muted-foreground">
+          <Download className="w-3.5 h-3.5" />
+          Export Insights
+        </Button>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {/* New Clients Onboarded by Industry */}
       <Card
         className={cn(
@@ -347,6 +399,7 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
           )}
         </CardContent>
       </Card>
+      </div>
     </div>
   );
 };
