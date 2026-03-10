@@ -480,16 +480,34 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
               </div>
               <span className="text-sm font-medium">Retention Rate</span>
             </div>
-            {expandedSection === 'retention' ? (
-              <ChevronUp className="w-4 h-4 text-muted-foreground" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
-            )}
+            <div className="flex items-center gap-2">
+              <Select
+                value={retentionYear.toString()}
+                onValueChange={(v) => setRetentionYear(parseInt(v))}
+              >
+                <SelectTrigger
+                  className="h-6 w-[60px] text-[10px] px-1.5"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent onClick={(e) => e.stopPropagation()}>
+                  <SelectItem value="2024">2024</SelectItem>
+                  <SelectItem value="2025">2025</SelectItem>
+                  <SelectItem value="2026">2026</SelectItem>
+                </SelectContent>
+              </Select>
+              {expandedSection === 'retention' ? (
+                <ChevronUp className="w-4 h-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              )}
+            </div>
           </div>
           <div className="flex items-baseline gap-2">
             <p className="text-2xl font-bold">{overallRetention}%</p>
             <span className="text-xs text-muted-foreground">
-              ({contractors.filter(c => c.status === 'active').length}/{contractors.length})
+              ({retentionFiltered.filter(c => c.status === 'active').length}/{retentionFiltered.length})
             </span>
           </div>
           {expandedSection === 'retention' && retentionData.length > 0 && (
