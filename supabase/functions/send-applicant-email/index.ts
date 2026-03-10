@@ -138,7 +138,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     // Prepare email options with Message-ID header
     const emailOptions: any = {
-      from: gmailUser,
+      from: `OutSta Recruitment <${gmailUser}>`,
       to: recipientEmail,
       subject: subject,
       content: "auto",
