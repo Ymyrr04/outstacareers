@@ -125,6 +125,7 @@ export const ClientsDashboard = () => {
       }));
 
       setClients(enrichedClients);
+      setContractorData((contractorCountsRes.data || []).map(c => ({ client_id: c.client_id, start_date: c.start_date ?? null, status: c.status ?? null })));
       setHiringRequests(hiringRequestsRes.data || []);
     } catch (err: any) {
       toast({
