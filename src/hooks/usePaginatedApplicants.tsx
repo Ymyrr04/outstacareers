@@ -101,7 +101,7 @@ interface UsePaginatedApplicantsOptions {
 }
 
 export const usePaginatedApplicants = (options: UsePaginatedApplicantsOptions = {}) => {
-  const { pageSize = 50, status, searchTerm, sortBy = 'newest', enabled = true } = options;
+  const { pageSize = 50, status, statuses, searchTerm, sortBy = 'newest', enabled = true } = options;
   const { toast } = useToast();
   
   const [applicants, setApplicants] = useState<PaginatedApplicant[]>([]);
