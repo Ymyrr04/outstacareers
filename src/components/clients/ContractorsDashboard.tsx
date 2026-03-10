@@ -1460,6 +1460,13 @@ export const ContractorsDashboard = () => {
           saving={!!updatingStatusId}
         />
       )}
+
+      {/* Contractor Email Dialog */}
+      <SendContractorEmailDialog
+        open={emailDialogOpen}
+        onOpenChange={setEmailDialogOpen}
+        contractor={emailRecipient}
+      />
     </div>
   );
 };
