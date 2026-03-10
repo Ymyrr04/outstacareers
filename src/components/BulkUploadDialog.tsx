@@ -37,6 +37,7 @@ const STATUS_OPTIONS = [
   'Client Interview',
   'Hired',
   'Bench',
+  'Talent Pool',
   'Reject',
   'Archive'
 ] as const;
