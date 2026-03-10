@@ -92,9 +92,9 @@ const handler = async (req: Request): Promise<Response> => {
         <table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);">
           <!-- Header -->
           <tr>
-            <td style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 40px; border-radius: 12px 12px 0 0; text-align: center;">
-               <h1 style="color: #ffffff; margin: 0; font-size: 28px; font-weight: 700; letter-spacing: 2px;">OutSta</h1>
-               <p style="color: #a0aec0; margin: 6px 0 0 0; font-size: 13px; font-weight: 400; letter-spacing: 1px;">Recruitment Team</p>
+            <td style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); padding: 50px 40px; border-radius: 12px 12px 0 0; text-align: center;">
+               <h1 style="color: #ffffff; margin: 0; font-size: 36px; font-weight: 700; letter-spacing: 3px;">OutSta</h1>
+               <p style="color: #e2e8f0; margin: 8px 0 0 0; font-size: 16px; font-weight: 400; letter-spacing: 2px;">Recruitment Team</p>
             </td>
           </tr>
           
