@@ -144,12 +144,14 @@ export const HiringRequestDetailDialog = ({
         notes: request.notes || '',
         assigned_admin_id: request.assigned_admin_id || '',
         closed_at: closedAtDate,
+        client_id: request.client_id || '',
       });
       setEditingField(null);
       setHasUnsavedChanges(false);
       fetchComments(request.id);
       fetchAdminUsers();
       fetchIndustries();
+      fetchClients();
     }
   }, [request]);
 
