@@ -94,6 +94,7 @@ export interface PaginatedApplicant {
 interface UsePaginatedApplicantsOptions {
   pageSize?: number;
   status?: string;
+  statuses?: string[];
   searchTerm?: string;
   sortBy?: 'newest' | 'oldest' | 'score-desc' | 'score-asc' | 'starred';
   enabled?: boolean;
