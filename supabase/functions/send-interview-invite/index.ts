@@ -146,7 +146,7 @@ const handler = async (req: Request): Promise<Response> => {
               </p>
               <p style="color: #333333; font-size: 16px; line-height: 1.6; margin: 20px 0 0 0;">
                 Best regards,<br>
-                <strong>The OUTSTA Talent Team</strong>
+                <strong>The OutSta Recruitment Team</strong>
               </p>
             </td>
           </tr>
