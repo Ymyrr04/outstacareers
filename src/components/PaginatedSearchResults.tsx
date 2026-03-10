@@ -65,6 +65,7 @@ export const PaginatedSearchResults = ({
   } = usePaginatedApplicants({
     searchTerm,
     sortBy,
+    statuses,
     pageSize: 50,
     enabled,
   });
