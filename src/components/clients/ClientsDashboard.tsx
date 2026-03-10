@@ -95,8 +95,8 @@ export const ClientsDashboard = () => {
       const [clientsRes, contactCountsRes, contractorCountsRes, hiringRequestsRes] = await Promise.all([
         supabase.from('clients').select('*').order('company_name', { ascending: true }),
         supabase.from('client_contacts').select('client_id'),
-        supabase.from('contractor_assignments').select('client_id, status'),
-        supabase.from('client_hiring_requests').select('id, client_id, client_status, job_title, pipeline_stage, start_date'),
+        supabase.from('contractor_assignments').select('client_id, status, start_date'),
+        supabase.from('client_hiring_requests').select('id, client_id, client_status, job_title, pipeline_stage, start_date, industry, closed_at'),
       ]);
 
       if (clientsRes.error) throw clientsRes.error;
