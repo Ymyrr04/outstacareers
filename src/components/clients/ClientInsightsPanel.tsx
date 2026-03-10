@@ -32,6 +32,7 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
   const [onboardedYear, setOnboardedYear] = useState<number>(currentYear);
   const [placementsMonths, setPlacementsMonths] = useState<number>(3);
   const [sourceYear, setSourceYear] = useState<number>(currentYear);
+  const [retentionYear, setRetentionYear] = useState<number>(currentYear);
 
   // 1. New clients onboarded by industry (based on earliest contractor start_date per client)
   const clientOnboardedByIndustry = useMemo(() => {
