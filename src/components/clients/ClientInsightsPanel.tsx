@@ -224,7 +224,7 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
     URL.revokeObjectURL(url);
 
     toast({ title: 'Exported', description: 'Client insights downloaded as CSV' });
-  }, [clientOnboardedByIndustry, rolesByIndustry, clientsBySource, retentionData, totalOnboarded, totalPlaced, totalFromSource, overallRetention, contractors, onboardedYear, placementsMonths, sourceYear, toast]);
+  }, [clientOnboardedByIndustry, rolesByIndustry, clientsBySource, retentionData, retentionFiltered, totalOnboarded, totalPlaced, totalFromSource, overallRetention, onboardedYear, placementsMonths, sourceYear, retentionYear, toast]);
 
   return (
     <div className="space-y-2">
