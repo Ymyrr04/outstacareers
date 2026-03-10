@@ -126,6 +126,14 @@ export const ContractorsDashboard = () => {
   const [showImportErrors, setShowImportErrors] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [emailRecipient, setEmailRecipient] = useState<{
+    assignmentId: string;
+    name: string;
+    email: string;
+    company: string;
+    jobTitle: string;
+  } | null>(null);
   const [pendingStatusChange, setPendingStatusChange] = useState<{
     contractorId: string;
     contractorName: string;
