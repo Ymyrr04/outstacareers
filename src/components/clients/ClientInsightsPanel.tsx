@@ -32,6 +32,7 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
   const [onboardedYear, setOnboardedYear] = useState<number>(currentYear);
   const [placementsMonths, setPlacementsMonths] = useState<number>(3);
   const [sourceYear, setSourceYear] = useState<number>(currentYear);
+  const [retentionYear, setRetentionYear] = useState<number>(currentYear);
 
   // 1. New clients onboarded by industry (based on earliest contractor start_date per client)
   const clientOnboardedByIndustry = useMemo(() => {
@@ -121,7 +122,13 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
     const clientsMap = new Map(clients.map(c => [c.id, c]));
     const industryStats: Record<string, { active: number; total: number; clients: Record<string, { active: number; total: number }> }> = {};
     
-    contractors.forEach(c => {
+    // Filter contractors whose start_date falls in the selected year
+    const filtered = contractors.filter(c => {
+      if (!c.start_date) return false;
+      return new Date(c.start_date).getFullYear() === retentionYear;
+    });
+
+    filtered.forEach(c => {
       const client = clientsMap.get(c.client_id);
       if (!client) return;
       const industry = client.industry || 'Unknown';
@@ -148,13 +155,17 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
           .sort((a, b) => b.total - a.total),
       }))
       .sort((a, b) => b.total - a.total);
-  }, [clients, contractors]);
+  }, [clients, contractors, retentionYear]);
+
+  const retentionFiltered = useMemo(() => {
+    return contractors.filter(c => c.start_date && new Date(c.start_date).getFullYear() === retentionYear);
+  }, [contractors, retentionYear]);
 
   const overallRetention = useMemo(() => {
-    const totalAll = contractors.length;
-    const activeAll = contractors.filter(c => c.status === 'active').length;
+    const totalAll = retentionFiltered.length;
+    const activeAll = retentionFiltered.filter(c => c.status === 'active').length;
     return totalAll > 0 ? Math.round((activeAll / totalAll) * 100) : 0;
-  }, [contractors]);
+  }, [retentionFiltered]);
 
   const toggle = (section: string) => {
     setExpandedSection(prev => prev === section ? null : section);
@@ -193,7 +204,7 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
     rows.push(['', '', '']);
 
     // Section 4: Retention Rate
-    rows.push(['Retention Rate by Industry & Client', '', '', '']);
+    rows.push([`Retention Rate (${retentionYear})`, '', '', '']);
     rows.push(['Industry', 'Active', 'Total', 'Rate']);
     retentionData.forEach(ind => {
       rows.push([ind.industry, ind.active.toString(), ind.total.toString(), `${ind.rate}%`]);
@@ -201,7 +212,7 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
         rows.push([`  ${cl.name}`, cl.active.toString(), cl.total.toString(), `${cl.rate}%`]);
       });
     });
-    rows.push([`Overall`, contractors.filter(c => c.status === 'active').length.toString(), contractors.length.toString(), `${overallRetention}%`]);
+    rows.push([`Overall`, retentionFiltered.filter(c => c.status === 'active').length.toString(), retentionFiltered.length.toString(), `${overallRetention}%`]);
 
     const csv = rows.map(r => r.map(c => `"${c.replace(/"/g, '""')}"`).join(',')).join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
@@ -213,7 +224,7 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
     URL.revokeObjectURL(url);
 
     toast({ title: 'Exported', description: 'Client insights downloaded as CSV' });
-  }, [clientOnboardedByIndustry, rolesByIndustry, clientsBySource, retentionData, totalOnboarded, totalPlaced, totalFromSource, overallRetention, contractors, onboardedYear, placementsMonths, sourceYear, toast]);
+  }, [clientOnboardedByIndustry, rolesByIndustry, clientsBySource, retentionData, retentionFiltered, totalOnboarded, totalPlaced, totalFromSource, overallRetention, onboardedYear, placementsMonths, sourceYear, retentionYear, toast]);
 
   return (
     <div className="space-y-2">
@@ -469,16 +480,34 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
               </div>
               <span className="text-sm font-medium">Retention Rate</span>
             </div>
-            {expandedSection === 'retention' ? (
-              <ChevronUp className="w-4 h-4 text-muted-foreground" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-muted-foreground" />
-            )}
+            <div className="flex items-center gap-2">
+              <Select
+                value={retentionYear.toString()}
+                onValueChange={(v) => setRetentionYear(parseInt(v))}
+              >
+                <SelectTrigger
+                  className="h-6 w-[60px] text-[10px] px-1.5"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent onClick={(e) => e.stopPropagation()}>
+                  <SelectItem value="2024">2024</SelectItem>
+                  <SelectItem value="2025">2025</SelectItem>
+                  <SelectItem value="2026">2026</SelectItem>
+                </SelectContent>
+              </Select>
+              {expandedSection === 'retention' ? (
+                <ChevronUp className="w-4 h-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              )}
+            </div>
           </div>
           <div className="flex items-baseline gap-2">
             <p className="text-2xl font-bold">{overallRetention}%</p>
             <span className="text-xs text-muted-foreground">
-              ({contractors.filter(c => c.status === 'active').length}/{contractors.length})
+              ({retentionFiltered.filter(c => c.status === 'active').length}/{retentionFiltered.length})
             </span>
           </div>
           {expandedSection === 'retention' && retentionData.length > 0 && (
