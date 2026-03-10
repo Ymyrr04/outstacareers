@@ -430,10 +430,16 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
               <div className="space-y-2">
                 <Label>Leads from</Label>
                 <Input
+                  list="edit-leads-from-suggestions"
                   value={editForm.leads_from}
                   onChange={(e) => setEditForm({ ...editForm, leads_from: e.target.value })}
-                  placeholder="e.g. Referral, LinkedIn"
+                  placeholder="Select or type source"
                 />
+                <datalist id="edit-leads-from-suggestions">
+                  {existingSources.map((src) => (
+                    <option key={src} value={src} />
+                  ))}
+                </datalist>
               </div>
               <div className="space-y-2">
                 <Label>Company Links (to share with candidates)</Label>
