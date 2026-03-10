@@ -91,7 +91,40 @@ const handler = async (req: Request): Promise<Response> => {
     const domain = gmailUser.split('@')[1] || 'outsta.io';
     const messageId = generateMessageId(domain);
 
-    const emailHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${subject}</title></head><body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f5f5f5;"><table role="presentation" style="width: 100%; border-collapse: collapse;"><tr><td align="center" style="padding: 40px 0;"><table role="presentation" style="width: 600px; max-width: 100%; border-collapse: collapse; background-color: #ffffff; border-radius: 12px; box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);"><tr><td style="background: linear-gradient(135deg, #0f766e 0%, #115e59 100%); padding: 40px; border-radius: 12px 12px 0 0; text-align: center;"><h1 style="color: #ffffff; margin: 0; font-size: 24px; font-weight: 600;">Outsta Team</h1></td></tr><tr><td style="padding: 40px;">${bodyHtml}</td></tr><tr><td style="background-color: #f8f9fa; padding: 25px 40px; border-radius: 0 0 12px 12px; text-align: center;"><p style="color: #999999; font-size: 12px; margin: 0;">This email was sent by Outsta Team.<br>If you have any questions, please reply to this email.</p></td></tr></table></td></tr></table></body></html>`;
+    const signatureHtml = `
+<br/>
+<p style="margin: 0; color: #333333; font-size: 14px;">--</p>
+<p style="margin: 4px 0 0 0; color: #333333; font-size: 14px;">Warm Regards,<br/>Mark</p>
+<br/>
+<table role="presentation" cellpadding="0" cellspacing="0" style="border-collapse: collapse; width: 420px; background-color: #1a2332; border-radius: 8px; overflow: hidden;">
+  <tr>
+    <td style="padding: 20px; vertical-align: top; width: 260px;">
+      <table role="presentation" cellpadding="0" cellspacing="0">
+        <tr>
+          <td>
+            <img src="https://outstacareers.lovable.app/outsta-logo.png" alt="OutSta" style="height: 18px; margin-bottom: 4px;" />
+            <p style="margin: 0 0 2px 0; color: #8899aa; font-size: 10px; font-family: Arial, sans-serif;">Talent Across Borders</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-top: 8px;">
+            <p style="margin: 0; color: #ffffff; font-size: 16px; font-weight: 700; font-family: Arial, sans-serif; text-transform: uppercase; letter-spacing: 1px;">MARK CHUA</p>
+            <p style="margin: 2px 0 0 0; color: #e8a020; font-size: 11px; font-weight: 600; font-family: Arial, sans-serif;">Marketing & Business Development Manager</p>
+          </td>
+        </tr>
+        <tr>
+          <td style="padding-top: 12px;">
+            <p style="margin: 0 0 4px 0; color: #cccccc; font-size: 11px; font-family: Arial, sans-serif;">📞 +639982326001</p>
+            <p style="margin: 0 0 4px 0; color: #cccccc; font-size: 11px; font-family: Arial, sans-serif;">✉️ mark@outsta.io</p>
+            <p style="margin: 0; color: #cccccc; font-size: 11px; font-family: Arial, sans-serif;">📍 3029 NE 188th St Suite 1108<br/>&nbsp;&nbsp;&nbsp;&nbsp;Aventura 33180 33180 Florida</p>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>`;
+
+    const emailHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${subject}</title></head><body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #ffffff; color: #333333; font-size: 14px; line-height: 1.6;">${bodyHtml}${signatureHtml}</body></html>`;
 
     await client.send({
       from: `Mark Chua <${gmailUser}>`,
