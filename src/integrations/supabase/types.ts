@@ -1453,6 +1453,39 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_contractor_emails: {
+        Row: {
+          body_html: string
+          created_at: string
+          error_message: string | null
+          id: string
+          scheduled_for: string
+          sent_at: string | null
+          status: string
+          subject: string
+        }
+        Insert: {
+          body_html: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          scheduled_for: string
+          sent_at?: string | null
+          status?: string
+          subject: string
+        }
+        Update: {
+          body_html?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: string
+          subject?: string
+        }
+        Relationships: []
+      }
       scheduled_emails: {
         Row: {
           applicant_id: string
