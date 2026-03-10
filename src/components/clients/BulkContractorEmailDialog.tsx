@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Send, Loader2, FileText, Mail, Users, RefreshCw } from 'lucide-react';
+import { Send, Loader2, FileText, Mail, Users, RefreshCw, CalendarClock } from 'lucide-react';
 import { RichTextToolbar } from '@/components/RichTextToolbar';
 
 interface EmailTemplate {
@@ -42,6 +42,7 @@ export const BulkContractorEmailDialog = ({
   const [subject, setSubject] = useState('');
   const [bodyHtml, setBodyHtml] = useState('');
   const [sending, setSending] = useState(false);
+  const [scheduling, setScheduling] = useState(false);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [loadingTemplates, setLoadingTemplates] = useState(false);
@@ -105,6 +106,52 @@ export const BulkContractorEmailDialog = ({
       case 'monthly-first': return '0 9 1 * *';
       case 'monthly-last': return '0 9 28-31 * *';
       default: return null;
+    }
+  };
+
+  const getNextFridayNoon = (): Date => {
+    const now = new Date();
+    const day = now.getUTCDay(); // 0=Sun, 5=Fri
+    let daysUntilFriday = (5 - day + 7) % 7;
+    if (daysUntilFriday === 0) daysUntilFriday = 7; // if today is Friday, schedule next Friday
+    const friday = new Date(now);
+    friday.setUTCDate(friday.getUTCDate() + daysUntilFriday);
+    friday.setUTCHours(17, 0, 0, 0); // 12 PM EST = 17:00 UTC
+    return friday;
+  };
+
+  const handleScheduleFriday = async () => {
+    if (!subject.trim() || !bodyHtml.trim()) {
+      toast({ title: 'Missing fields', description: 'Please fill in subject and body', variant: 'destructive' });
+      return;
+    }
+
+    setScheduling(true);
+    try {
+      const scheduledFor = getNextFridayNoon();
+      
+      const { error } = await supabase.from('scheduled_contractor_emails' as any).insert({
+        subject,
+        body_html: bodyHtml,
+        scheduled_for: scheduledFor.toISOString(),
+        status: 'pending',
+      } as any);
+
+      if (error) throw error;
+
+      const fridayStr = scheduledFor.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+      toast({
+        title: 'Email Scheduled',
+        description: `Bulk email scheduled for ${fridayStr} at 12:00 PM EST`,
+      });
+
+      resetForm();
+      onOpenChange(false);
+      onEmailSent?.();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to schedule email', variant: 'destructive' });
+    } finally {
+      setScheduling(false);
     }
   };
 
@@ -296,14 +343,25 @@ export const BulkContractorEmailDialog = ({
 
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => { resetForm(); onOpenChange(false); }} disabled={sending}>
+            <Button variant="outline" onClick={() => { resetForm(); onOpenChange(false); }} disabled={sending || scheduling}>
               Cancel
             </Button>
-            <Button onClick={handleSend} disabled={sending || !subject.trim() || !bodyHtml.trim()}>
+            <Button 
+              variant="outline"
+              onClick={handleScheduleFriday} 
+              disabled={sending || scheduling || !subject.trim() || !bodyHtml.trim()}
+            >
+              {scheduling ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Scheduling...</>
+              ) : (
+                <><CalendarClock className="w-4 h-4 mr-2" />Schedule for Friday 12 PM</>
+              )}
+            </Button>
+            <Button onClick={handleSend} disabled={sending || scheduling || !subject.trim() || !bodyHtml.trim()}>
               {sending ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending to {activeContractorCount}...</>
               ) : (
-                <><Send className="w-4 h-4 mr-2" />Send to All ({activeContractorCount})</>
+                <><Send className="w-4 h-4 mr-2" />Send Now ({activeContractorCount})</>
               )}
             </Button>
           </div>
