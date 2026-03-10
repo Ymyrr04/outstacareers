@@ -297,14 +297,25 @@ export const BulkContractorEmailDialog = ({
 
           {/* Actions */}
           <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => { resetForm(); onOpenChange(false); }} disabled={sending}>
+            <Button variant="outline" onClick={() => { resetForm(); onOpenChange(false); }} disabled={sending || scheduling}>
               Cancel
             </Button>
-            <Button onClick={handleSend} disabled={sending || !subject.trim() || !bodyHtml.trim()}>
+            <Button 
+              variant="outline"
+              onClick={handleScheduleFriday} 
+              disabled={sending || scheduling || !subject.trim() || !bodyHtml.trim()}
+            >
+              {scheduling ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Scheduling...</>
+              ) : (
+                <><CalendarClock className="w-4 h-4 mr-2" />Schedule for Friday 12 PM</>
+              )}
+            </Button>
+            <Button onClick={handleSend} disabled={sending || scheduling || !subject.trim() || !bodyHtml.trim()}>
               {sending ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending to {activeContractorCount}...</>
               ) : (
-                <><Send className="w-4 h-4 mr-2" />Send to All ({activeContractorCount})</>
+                <><Send className="w-4 h-4 mr-2" />Send Now ({activeContractorCount})</>
               )}
             </Button>
           </div>
