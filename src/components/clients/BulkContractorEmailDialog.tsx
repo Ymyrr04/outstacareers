@@ -131,7 +131,7 @@ export const BulkContractorEmailDialog = ({
 
     setScheduling(true);
     try {
-      const scheduledFor = getNextFridayNoonEST();
+      const scheduledFor = getNextFridayElevenEST();
       
       const { error } = await supabase.from('scheduled_contractor_emails' as any).insert({
         subject,
