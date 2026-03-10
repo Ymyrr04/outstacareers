@@ -94,6 +94,12 @@ const handler = async (req: Request): Promise<Response> => {
       const emailHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${personalizedSubject}</title></head><body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #ffffff; color: #333333; font-size: 14px; line-height: 1.6;">${personalizedBody}${signatureHtml}</body></html>`;
 
       try {
+        // Wait 15 seconds between emails to avoid spam detection
+        if (sentCount > 0 || errors.length > 0) {
+          console.log(`Waiting 15 seconds before sending next email...`);
+          await new Promise(resolve => setTimeout(resolve, 15000));
+        }
+
         const messageId = generateMessageId(domain);
         await client.send({
           from: `Mark Chua <${gmailUser}>`,
@@ -116,7 +122,7 @@ const handler = async (req: Request): Promise<Response> => {
         });
 
         sentCount++;
-        console.log(`Sent to: ${applicant.email}`);
+        console.log(`Sent to: ${applicant.email} (${sentCount}/${contractors.length})`);
       } catch (err: any) {
         console.error(`Failed to send to ${applicant.email}:`, err.message);
         errors.push(`${applicant.full_name} (${applicant.email}): ${err.message}`);
