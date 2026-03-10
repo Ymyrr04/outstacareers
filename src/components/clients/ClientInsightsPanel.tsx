@@ -122,7 +122,13 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
     const clientsMap = new Map(clients.map(c => [c.id, c]));
     const industryStats: Record<string, { active: number; total: number; clients: Record<string, { active: number; total: number }> }> = {};
     
-    contractors.forEach(c => {
+    // Filter contractors whose start_date falls in the selected year
+    const filtered = contractors.filter(c => {
+      if (!c.start_date) return false;
+      return new Date(c.start_date).getFullYear() === retentionYear;
+    });
+
+    filtered.forEach(c => {
       const client = clientsMap.get(c.client_id);
       if (!client) return;
       const industry = client.industry || 'Unknown';
@@ -149,13 +155,17 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
           .sort((a, b) => b.total - a.total),
       }))
       .sort((a, b) => b.total - a.total);
-  }, [clients, contractors]);
+  }, [clients, contractors, retentionYear]);
+
+  const retentionFiltered = useMemo(() => {
+    return contractors.filter(c => c.start_date && new Date(c.start_date).getFullYear() === retentionYear);
+  }, [contractors, retentionYear]);
 
   const overallRetention = useMemo(() => {
-    const totalAll = contractors.length;
-    const activeAll = contractors.filter(c => c.status === 'active').length;
+    const totalAll = retentionFiltered.length;
+    const activeAll = retentionFiltered.filter(c => c.status === 'active').length;
     return totalAll > 0 ? Math.round((activeAll / totalAll) * 100) : 0;
-  }, [contractors]);
+  }, [retentionFiltered]);
 
   const toggle = (section: string) => {
     setExpandedSection(prev => prev === section ? null : section);
