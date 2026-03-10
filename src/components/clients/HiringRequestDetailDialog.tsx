@@ -155,6 +155,16 @@ export const HiringRequestDetailDialog = ({
     }
   }, [request]);
 
+  const fetchClients = async () => {
+    const { data } = await supabase
+      .from('clients')
+      .select('id, company_name')
+      .order('company_name');
+    if (data) {
+      setClients(data);
+    }
+  };
+
   const fetchIndustries = async () => {
     const { data } = await supabase
       .from('clients')
