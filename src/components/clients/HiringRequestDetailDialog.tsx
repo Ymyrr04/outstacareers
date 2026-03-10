@@ -425,6 +425,7 @@ export const HiringRequestDetailDialog = ({
     else if (field === 'job_title') updates.job_title = value;
     else if (field === 'notes') updates.notes = value || null;
     else if (field === 'assigned_admin_id') updates.assigned_admin_id = value || null;
+    else if (field === 'client_id') (updates as any).client_id = value || null;
 
     const success = await updateRequest(request.id, updates);
     setSaving(false);
