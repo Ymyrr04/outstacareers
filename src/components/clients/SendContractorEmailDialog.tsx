@@ -183,7 +183,11 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
             {/* Body */}
             <div>
               <Label>Body</Label>
-              <RichTextToolbar onFormat={handleFormat} />
+              <RichTextToolbar 
+                value={bodyHtml} 
+                onChange={setBodyHtml} 
+                textareaRef={textareaRef as React.RefObject<HTMLTextAreaElement>} 
+              />
               <textarea
                 ref={textareaRef}
                 value={bodyHtml}
