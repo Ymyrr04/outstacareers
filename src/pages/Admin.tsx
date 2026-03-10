@@ -3594,7 +3594,7 @@ const Admin = () => {
           </DialogHeader>
           <div className="p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/30 min-h-[100px]">
             {notesPopup?.notes ? (
-              <p className="text-sm whitespace-pre-wrap">{notesPopup.notes}</p>
+              <FormattedNotes content={notesPopup.notes} />
             ) : (
               <p className="text-sm text-muted-foreground italic">No notes have been added for this applicant yet.</p>
             )}
