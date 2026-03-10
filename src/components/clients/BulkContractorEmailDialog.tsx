@@ -42,6 +42,7 @@ export const BulkContractorEmailDialog = ({
   const [subject, setSubject] = useState('');
   const [bodyHtml, setBodyHtml] = useState('');
   const [sending, setSending] = useState(false);
+  const [scheduling, setScheduling] = useState(false);
   const [templates, setTemplates] = useState<EmailTemplate[]>([]);
   const [selectedTemplateId, setSelectedTemplateId] = useState('');
   const [loadingTemplates, setLoadingTemplates] = useState(false);
