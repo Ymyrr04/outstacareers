@@ -117,32 +117,7 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
     }
   };
 
-  const handleFormat = (tag: string) => {
-    const textarea = textareaRef.current;
-    if (!textarea) return;
-    const start = textarea.selectionStart;
-    const end = textarea.selectionEnd;
-    const selected = bodyHtml.substring(start, end);
-
-    let replacement = '';
-    switch (tag) {
-      case 'bold': replacement = `<strong>${selected}</strong>`; break;
-      case 'italic': replacement = `<em>${selected}</em>`; break;
-      case 'underline': replacement = `<u>${selected}</u>`; break;
-      case 'link': {
-        const url = prompt('Enter URL:');
-        if (url) replacement = `<a href="${url}" style="color: #0f766e; text-decoration: underline;">${selected || url}</a>`;
-        else return;
-        break;
-      }
-      case 'ul': replacement = `<ul><li>${selected || 'Item'}</li></ul>`; break;
-      default: return;
-    }
-
-    const newBody = bodyHtml.substring(0, start) + replacement + bodyHtml.substring(end);
-    setBodyHtml(newBody);
-  };
-
+  
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) resetForm(); onOpenChange(o); }}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
