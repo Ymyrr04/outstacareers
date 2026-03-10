@@ -2212,6 +2212,7 @@ const Admin = () => {
                     <PaginatedSearchResults
                       searchTerm={paginatedSearchTerm}
                       sortBy={paginatedSortOption}
+                      statuses={searchFolders.length === APPLICANT_STATUS_FOLDERS.length ? undefined : searchFolders}
                       statusOptions={APPLICANT_STATUS_OPTIONS}
                       onUpdateStatus={handleUpdateApplicantStatus}
                       onViewDetails={async (id) => {
