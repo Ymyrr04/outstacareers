@@ -64,9 +64,9 @@ const APPLICANT_STATUS_FOLDERS = [
   'Client Interview',
   'Hired',
   'Bench',
-  'Talent Pool',
   'Reject',
-  'Archive'
+  'Archive',
+  'Talent Pool'
 ] as const;
 
 // Dropdown options include all statuses (For Review can be selected to move back)
@@ -77,9 +77,9 @@ const APPLICANT_STATUS_OPTIONS = [
   'Client Interview',
   'Hired',
   'Bench',
-  'Talent Pool',
   'Reject',
-  'Archive'
+  'Archive',
+  'Talent Pool'
 ] as const;
 
 type ApplicantStatusFolder = typeof APPLICANT_STATUS_FOLDERS[number];

@@ -37,9 +37,9 @@ const STATUS_OPTIONS = [
   'Client Interview',
   'Hired',
   'Bench',
-  'Talent Pool',
   'Reject',
-  'Archive'
+  'Archive',
+  'Talent Pool'
 ] as const;
 
 interface BulkUploadDialogProps {
