@@ -901,8 +901,31 @@ export const ContractorsDashboard = () => {
                         )}
                         {visibleColumns.email && (
                           <TableCell>
-                            <span className="text-sm" title={contractor.applicant?.email}>
-                              {contractor.applicant?.email || '—'}
+                            <span className="flex items-center gap-1 text-sm">
+                              <span title={contractor.applicant?.email}>
+                                {contractor.applicant?.email || '—'}
+                              </span>
+                              {contractor.applicant?.email && (
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-5 w-5 ml-1 text-muted-foreground hover:text-teal-600"
+                                  title="Send email"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setEmailRecipient({
+                                      assignmentId: contractor.id,
+                                      name: contractor.applicant?.full_name || '',
+                                      email: contractor.applicant?.email || '',
+                                      company: contractor.client?.company_name || '',
+                                      jobTitle: contractor.job_title || '',
+                                    });
+                                    setEmailDialogOpen(true);
+                                  }}
+                                >
+                                  <Mail className="w-3 h-3" />
+                                </Button>
+                              )}
                             </span>
                           </TableCell>
                         )}
