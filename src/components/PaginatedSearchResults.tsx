@@ -8,6 +8,7 @@ interface PaginatedSearchResultsProps {
   searchTerm: string;
   sortBy: 'newest' | 'oldest' | 'score-desc' | 'score-asc' | 'starred';
   statuses?: string[];
+  statusOptions: readonly string[];
   onUpdateStatus: (id: string, status: string) => void;
   onViewDetails: (id: string) => void;
   onNavigateToFolder?: (id: string, status: string) => void;
