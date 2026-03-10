@@ -171,7 +171,7 @@ serve(async (req: Request) => {
 
       try {
         await client.send({
-          from: `OutSta Recruitment <${gmailUser}>`,
+          from: `OUTSTA Talent Team <${gmailUser}>`,
           to: applicant.email,
           subject,
           html: emailHtml,
