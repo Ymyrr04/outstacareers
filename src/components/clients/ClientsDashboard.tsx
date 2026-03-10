@@ -226,6 +226,8 @@ export const ClientsDashboard = () => {
 
   // Summary stats
   const totalActiveContractors = clients.reduce((sum, c) => sum + (c.contractor_count || 0), 0);
+  const totalActiveClients = clients.filter(c => (c.contractor_count || 0) > 0).length;
+
   // Count clients added per selected year (based on created_at)
   const clientsAddedForYear = clients.filter(c => {
     const year = new Date(c.created_at).getFullYear();
