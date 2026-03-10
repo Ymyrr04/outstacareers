@@ -3595,17 +3595,69 @@ const Admin = () => {
               Notes - {notesPopup?.name}
             </DialogTitle>
           </DialogHeader>
-          <div className="p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/30 min-h-[100px]">
-            {notesPopup?.notes ? (
-              <FormattedNotes content={notesPopup.notes} />
+          {notesPopupEditing ? (
+            <NotesEditor
+              value={notesPopupValue}
+              onChange={setNotesPopupValue}
+              placeholder="Add notes about this applicant..."
+              minHeight="120px"
+            />
+          ) : (
+            <div className="p-4 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/30 min-h-[100px]">
+              {notesPopup?.notes ? (
+                <FormattedNotes content={notesPopup.notes} />
+              ) : (
+                <p className="text-sm text-muted-foreground italic">No notes have been added for this applicant yet.</p>
+              )}
+            </div>
+          )}
+          <div className="flex justify-end gap-2">
+            {notesPopupEditing ? (
+              <>
+                <Button variant="outline" onClick={() => setNotesPopupEditing(false)} disabled={notesPopupSaving}>
+                  Cancel
+                </Button>
+                <Button 
+                  onClick={async () => {
+                    if (!notesPopup) return;
+                    setNotesPopupSaving(true);
+                    try {
+                      const { error } = await supabase
+                        .from('applicants_prescreen')
+                        .update({ notes: notesPopupValue.trim() || null })
+                        .eq('id', notesPopup.id);
+                      if (error) throw error;
+                      // Update local state
+                      setNotesPopup({ ...notesPopup, notes: notesPopupValue.trim() });
+                      updateApplicant(notesPopup.id, { notes: notesPopupValue.trim() || null });
+                      setNotesPopupEditing(false);
+                      toast({ title: 'Notes saved' });
+                    } catch (err: any) {
+                      toast({ title: 'Error saving notes', description: err.message, variant: 'destructive' });
+                    } finally {
+                      setNotesPopupSaving(false);
+                    }
+                  }}
+                  disabled={notesPopupSaving}
+                >
+                  {notesPopupSaving ? <Loader2 className="w-4 h-4 mr-1 animate-spin" /> : <Save className="w-4 h-4 mr-1" />}
+                  Save
+                </Button>
+              </>
             ) : (
-              <p className="text-sm text-muted-foreground italic">No notes have been added for this applicant yet.</p>
+              <>
+                <Button variant="outline" size="sm" onClick={() => {
+                  setNotesPopupValue(notesPopup?.notes || '');
+                  setNotesPopupEditing(true);
+                }}>
+                  <Pencil className="w-4 h-4 mr-1" />
+                  Edit
+                </Button>
+                <Button variant="outline" onClick={() => { setNotesPopup(null); setNotesPopupEditing(false); }}>
+                  Close
+                </Button>
+              </>
             )}
-          </div>
-          <div className="flex justify-end">
-            <Button variant="outline" onClick={() => setNotesPopup(null)}>
-              Close
-            </Button>
           </div>
         </DialogContent>
       </Dialog>
