@@ -126,7 +126,7 @@ const handler = async (req: Request): Promise<Response> => {
         const messageId = generateMessageId(domain);
 
         await client.send({
-          from: `OutSta Recruitment <${gmailUser}>`,
+          from: `OUTSTA Talent Team <${gmailUser}>`,
           to: email.recipient_email,
           subject: email.subject,
           content: "auto",
