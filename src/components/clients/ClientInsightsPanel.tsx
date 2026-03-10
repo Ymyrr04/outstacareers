@@ -1,0 +1,338 @@
+import { useState, useMemo } from 'react';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Building2, Briefcase, Megaphone, ChevronDown, ChevronUp } from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { type Client, type ContractorAssignment } from './ClientsDashboard';
+
+interface HiringRequestBasic {
+  id?: string;
+  client_id: string | null;
+  client_status: string;
+  job_title: string;
+  pipeline_stage: string;
+  start_date: string | null;
+  industry?: string | null;
+  closed_at?: string | null;
+}
+
+interface ClientInsightsPanelProps {
+  clients: Client[];
+  contractors: { client_id: string; start_date: string | null; status: string | null }[];
+  hiringRequests: HiringRequestBasic[];
+}
+
+export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: ClientInsightsPanelProps) => {
+  const [expandedSection, setExpandedSection] = useState<string | null>(null);
+  const currentYear = new Date().getFullYear();
+  const [onboardedYear, setOnboardedYear] = useState<number>(currentYear);
+  const [placementsMonths, setPlacementsMonths] = useState<number>(3);
+  const [sourceYear, setSourceYear] = useState<number>(currentYear);
+
+  // 1. New clients onboarded by industry (based on earliest contractor start_date per client)
+  const clientOnboardedByIndustry = useMemo(() => {
+    // Find earliest contractor start_date per client
+    const earliestByClient: Record<string, string> = {};
+    contractors.forEach(c => {
+      if (!c.start_date) return;
+      if (!earliestByClient[c.client_id] || c.start_date < earliestByClient[c.client_id]) {
+        earliestByClient[c.client_id] = c.start_date;
+      }
+    });
+
+    // Filter clients whose earliest start_date falls in selected year
+    const clientsMap = new Map(clients.map(c => [c.id, c]));
+    const byIndustry: Record<string, string[]> = {};
+
+    Object.entries(earliestByClient).forEach(([clientId, startDate]) => {
+      const year = new Date(startDate).getFullYear();
+      if (year !== onboardedYear) return;
+      const client = clientsMap.get(clientId);
+      if (!client) return;
+      const industry = client.industry || 'Unknown';
+      if (!byIndustry[industry]) byIndustry[industry] = [];
+      byIndustry[industry].push(client.company_name);
+    });
+
+    return Object.entries(byIndustry)
+      .sort((a, b) => b[1].length - a[1].length);
+  }, [clients, contractors, onboardedYear]);
+
+  const totalOnboarded = clientOnboardedByIndustry.reduce((sum, [, list]) => sum + list.length, 0);
+
+  // 2. Roles filled by industry (closed hiring requests in past N months)
+  const rolesByIndustry = useMemo(() => {
+    const now = new Date();
+    const cutoff = new Date(now);
+    cutoff.setMonth(cutoff.getMonth() - placementsMonths);
+
+    const byIndustry: Record<string, string[]> = {};
+
+    hiringRequests.forEach(r => {
+      if (r.pipeline_stage !== 'closed' || !r.closed_at) return;
+      const closedDate = new Date(r.closed_at);
+      if (closedDate < cutoff || closedDate > now) return;
+      const industry = r.industry || 'Unknown';
+      if (!byIndustry[industry]) byIndustry[industry] = [];
+      byIndustry[industry].push(r.job_title);
+    });
+
+    return Object.entries(byIndustry)
+      .sort((a, b) => b[1].length - a[1].length);
+  }, [hiringRequests, placementsMonths]);
+
+  const totalPlaced = rolesByIndustry.reduce((sum, [, list]) => sum + list.length, 0);
+
+  // 3. Client source/marketing (based on earliest contractor start_date year + leads_from)
+  const clientsBySource = useMemo(() => {
+    const earliestByClient: Record<string, string> = {};
+    contractors.forEach(c => {
+      if (!c.start_date) return;
+      if (!earliestByClient[c.client_id] || c.start_date < earliestByClient[c.client_id]) {
+        earliestByClient[c.client_id] = c.start_date;
+      }
+    });
+
+    const clientsMap = new Map(clients.map(c => [c.id, c]));
+    const bySource: Record<string, string[]> = {};
+
+    Object.entries(earliestByClient).forEach(([clientId, startDate]) => {
+      const year = new Date(startDate).getFullYear();
+      if (year !== sourceYear) return;
+      const client = clientsMap.get(clientId);
+      if (!client) return;
+      const source = client.leads_from || 'Unknown';
+      if (!bySource[source]) bySource[source] = [];
+      bySource[source].push(client.company_name);
+    });
+
+    return Object.entries(bySource)
+      .sort((a, b) => b[1].length - a[1].length);
+  }, [clients, contractors, sourceYear]);
+
+  const totalFromSource = clientsBySource.reduce((sum, [, list]) => sum + list.length, 0);
+
+  const toggle = (section: string) => {
+    setExpandedSection(prev => prev === section ? null : section);
+  };
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* New Clients Onboarded by Industry */}
+      <Card
+        className={cn(
+          "cursor-pointer transition-all hover:shadow-md",
+          expandedSection === 'onboarded' && "ring-2 ring-primary/40"
+        )}
+        onClick={() => toggle('onboarded')}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-blue-500/10 rounded-lg">
+                <Building2 className="w-4 h-4 text-blue-600" />
+              </div>
+              <span className="text-sm font-medium">New Clients Onboarded</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select
+                value={onboardedYear.toString()}
+                onValueChange={(v) => setOnboardedYear(parseInt(v))}
+              >
+                <SelectTrigger
+                  className="h-6 w-[60px] text-[10px] px-1.5"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent onClick={(e) => e.stopPropagation()}>
+                  <SelectItem value="2024">2024</SelectItem>
+                  <SelectItem value="2025">2025</SelectItem>
+                  <SelectItem value="2026">2026</SelectItem>
+                </SelectContent>
+              </Select>
+              {expandedSection === 'onboarded' ? (
+                <ChevronUp className="w-4 h-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              )}
+            </div>
+          </div>
+          <p className="text-2xl font-bold">{totalOnboarded}</p>
+          {expandedSection === 'onboarded' && clientOnboardedByIndustry.length > 0 && (
+            <div className="mt-3 pt-3 border-t space-y-2">
+              {clientOnboardedByIndustry.map(([industry, companyNames]) => (
+                <div key={industry} className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground truncate flex-1">{industry}</span>
+                  <Badge variant="secondary" className="text-[10px] py-0 ml-2">{companyNames.length}</Badge>
+                </div>
+              ))}
+            </div>
+          )}
+          {expandedSection !== 'onboarded' && clientOnboardedByIndustry.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {clientOnboardedByIndustry.slice(0, 3).map(([industry, list]) => (
+                <Badge key={industry} variant="outline" className="text-[10px] py-0">
+                  {industry} ({list.length})
+                </Badge>
+              ))}
+              {clientOnboardedByIndustry.length > 3 && (
+                <Badge variant="outline" className="text-[10px] py-0">
+                  +{clientOnboardedByIndustry.length - 3}
+                </Badge>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Roles Filled by Industry */}
+      <Card
+        className={cn(
+          "cursor-pointer transition-all hover:shadow-md",
+          expandedSection === 'placements' && "ring-2 ring-primary/40"
+        )}
+        onClick={() => toggle('placements')}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-green-500/10 rounded-lg">
+                <Briefcase className="w-4 h-4 text-green-600" />
+              </div>
+              <span className="text-sm font-medium">Roles Filled</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select
+                value={placementsMonths.toString()}
+                onValueChange={(v) => setPlacementsMonths(parseInt(v))}
+              >
+                <SelectTrigger
+                  className="h-6 w-[72px] text-[10px] px-1.5"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent onClick={(e) => e.stopPropagation()}>
+                  <SelectItem value="1">1 month</SelectItem>
+                  <SelectItem value="3">3 months</SelectItem>
+                  <SelectItem value="6">6 months</SelectItem>
+                  <SelectItem value="12">12 months</SelectItem>
+                </SelectContent>
+              </Select>
+              {expandedSection === 'placements' ? (
+                <ChevronUp className="w-4 h-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              )}
+            </div>
+          </div>
+          <p className="text-2xl font-bold">{totalPlaced}</p>
+          {expandedSection === 'placements' && rolesByIndustry.length > 0 && (
+            <div className="mt-3 pt-3 border-t space-y-2">
+              {rolesByIndustry.map(([industry, roles]) => (
+                <div key={industry}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium">{industry}</span>
+                    <Badge variant="secondary" className="text-[10px] py-0">{roles.length}</Badge>
+                  </div>
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {roles.slice(0, 3).map((role, i) => (
+                      <Badge key={i} variant="outline" className="text-[10px] py-0">{role}</Badge>
+                    ))}
+                    {roles.length > 3 && (
+                      <span className="text-[10px] text-muted-foreground">+{roles.length - 3} more</span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+          {expandedSection !== 'placements' && rolesByIndustry.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {rolesByIndustry.slice(0, 3).map(([industry, list]) => (
+                <Badge key={industry} variant="outline" className="text-[10px] py-0">
+                  {industry} ({list.length})
+                </Badge>
+              ))}
+              {rolesByIndustry.length > 3 && (
+                <Badge variant="outline" className="text-[10px] py-0">
+                  +{rolesByIndustry.length - 3}
+                </Badge>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Client Source / Marketing */}
+      <Card
+        className={cn(
+          "cursor-pointer transition-all hover:shadow-md",
+          expandedSection === 'source' && "ring-2 ring-primary/40"
+        )}
+        onClick={() => toggle('source')}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-amber-500/10 rounded-lg">
+                <Megaphone className="w-4 h-4 text-amber-600" />
+              </div>
+              <span className="text-sm font-medium">Client Sources</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Select
+                value={sourceYear.toString()}
+                onValueChange={(v) => setSourceYear(parseInt(v))}
+              >
+                <SelectTrigger
+                  className="h-6 w-[60px] text-[10px] px-1.5"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent onClick={(e) => e.stopPropagation()}>
+                  <SelectItem value="2024">2024</SelectItem>
+                  <SelectItem value="2025">2025</SelectItem>
+                  <SelectItem value="2026">2026</SelectItem>
+                </SelectContent>
+              </Select>
+              {expandedSection === 'source' ? (
+                <ChevronUp className="w-4 h-4 text-muted-foreground" />
+              ) : (
+                <ChevronDown className="w-4 h-4 text-muted-foreground" />
+              )}
+            </div>
+          </div>
+          <p className="text-2xl font-bold">{totalFromSource}</p>
+          {expandedSection === 'source' && clientsBySource.length > 0 && (
+            <div className="mt-3 pt-3 border-t space-y-2">
+              {clientsBySource.map(([source, companyNames]) => (
+                <div key={source} className="flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground truncate flex-1">{source}</span>
+                  <Badge variant="secondary" className="text-[10px] py-0 ml-2">{companyNames.length}</Badge>
+                </div>
+              ))}
+            </div>
+          )}
+          {expandedSection !== 'source' && clientsBySource.length > 0 && (
+            <div className="mt-2 flex flex-wrap gap-1">
+              {clientsBySource.slice(0, 3).map(([source, list]) => (
+                <Badge key={source} variant="outline" className="text-[10px] py-0">
+                  {source} ({list.length})
+                </Badge>
+              ))}
+              {clientsBySource.length > 3 && (
+                <Badge variant="outline" className="text-[10px] py-0">
+                  +{clientsBySource.length - 3}
+                </Badge>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
