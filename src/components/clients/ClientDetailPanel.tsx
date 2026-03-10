@@ -406,9 +406,16 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                 <div className="space-y-2">
                   <Label>Industry</Label>
                   <Input
+                    list="edit-industry-suggestions"
                     value={editForm.industry}
                     onChange={(e) => setEditForm({ ...editForm, industry: e.target.value })}
+                    placeholder="Select or type industry"
                   />
+                  <datalist id="edit-industry-suggestions">
+                    {existingIndustries.map((ind) => (
+                      <option key={ind} value={ind} />
+                    ))}
+                  </datalist>
                 </div>
                 <div className="space-y-2">
                   <Label>No. of Contractors</Label>
