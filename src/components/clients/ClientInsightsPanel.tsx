@@ -177,13 +177,14 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
     const rows: string[][] = [];
     
     // Section 1: New Clients Onboarded
-    rows.push([`New Clients Onboarded (${onboardedYear})`, '', '']);
-    rows.push(['Industry', 'Count', 'Companies']);
+    const maxOnboarded = Math.max(...clientOnboardedByIndustry.map(([, c]) => c.length), 0);
+    rows.push([`New Clients Onboarded (${onboardedYear})`, '', ...Array(maxOnboarded).fill('')]);
+    rows.push(['Industry', 'Count', ...Array.from({ length: maxOnboarded }, (_, i) => `Company ${i + 1}`)]);
     clientOnboardedByIndustry.forEach(([industry, companies]) => {
-      rows.push([industry, companies.length.toString(), companies.join('; ')]);
+      rows.push([industry, companies.length.toString(), ...companies, ...Array(maxOnboarded - companies.length).fill('')]);
     });
-    rows.push([`Total`, totalOnboarded.toString(), '']);
-    rows.push(['', '', '']);
+    rows.push([`Total`, totalOnboarded.toString(), ...Array(maxOnboarded).fill('')]);
+    rows.push(['', '', ...Array(maxOnboarded).fill('')]);
 
     // Section 2: Roles Filled
     const maxRoles = Math.max(...rolesByIndustry.map(([, roles]) => roles.length), 0);
