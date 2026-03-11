@@ -532,7 +532,10 @@ export const BulkContractorEmailDialog = ({
                         size="sm"
                         className="h-7 text-xs"
                         disabled={cancellingId === email.id}
-                        onClick={() => handleReschedule(email.id)}
+                        onClick={() => {
+                          setRescheduleTargetId(email.id);
+                          setRescheduleDialogOpen(true);
+                        }}
                       >
                         <CalendarClock className="w-3 h-3 mr-1" />
                         Reschedule
