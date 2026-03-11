@@ -430,7 +430,7 @@ export function RichTextToolbar({ value, onChange, textareaRef, disabled, placeh
       )}
 
       <div className="w-px h-4 bg-border mx-1" />
-      <DateTimeInsertPopover insertAtCursor={insertAtCursor} disabled={disabled} />
+      <DateTimeInsertPopover insertAtCursor={insertAtCursor} disabled={disabled} value={value} onChange={onChange} />
       
       <span className="text-[10px] text-muted-foreground ml-auto hidden sm:block">
         Ctrl+K for link
