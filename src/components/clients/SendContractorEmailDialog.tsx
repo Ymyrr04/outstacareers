@@ -116,14 +116,16 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
     setSelectedTemplateId('');
   };
 
+  const [autoReplace, setAutoReplace] = useState(true);
+
   const applyPlaceholders = (text: string): string => {
-    if (!contractor) return text;
+    if (!contractor || !autoReplace) return text;
     const firstName = contractor.name.split(' ')[0];
     return text
-      .replace(/\{\{first_name\}\}/g, firstName)
-      .replace(/\{\{full_name\}\}/g, contractor.name)
-      .replace(/\{\{company\}\}/g, contractor.company)
-      .replace(/\{\{job_title\}\}/g, contractor.jobTitle);
+      .replace(/\{\{first_name\}\}/gi, firstName)
+      .replace(/\{\{full_name\}\}/gi, contractor.name)
+      .replace(/\{\{company\}\}/gi, contractor.company)
+      .replace(/\{\{job_title\}\}/gi, contractor.jobTitle);
   };
 
   const handleSend = async () => {
