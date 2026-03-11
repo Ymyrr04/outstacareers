@@ -98,7 +98,8 @@ const handler = async (req: Request): Promise<Response> => {
 <br/>
 <img src="https://ohxtavjababtrcrkgndq.supabase.co/storage/v1/object/public/email-assets/mark-signature.png" alt="Mark Chua - Marketing & Business Development Manager, OutSta" style="width: 420px; max-width: 100%; height: auto; border-radius: 8px;" />`;
 
-    const emailHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${subject}</title></head><body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #ffffff; color: #333333; font-size: 14px; line-height: 1.6;">${bodyHtml}${signatureHtml}</body></html>`;
+    const formattedBody = bodyHtml.replace(/\n/g, '<br>');
+    const emailHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${subject}</title></head><body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #ffffff; color: #333333; font-size: 14px; line-height: 1.6;">${formattedBody}${signatureHtml}</body></html>`;
 
     await client.send({
       from: `Mark Chua <${gmailUser}>`,
