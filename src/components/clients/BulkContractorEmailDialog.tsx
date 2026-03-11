@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { format } from 'date-fns';
+
 import { cn } from '@/lib/utils';
 import { Send, Loader2, FileText, Mail, Users, RefreshCw, CalendarClock, Clock, XCircle, CalendarIcon } from 'lucide-react';
 import { RichTextToolbar } from '@/components/RichTextToolbar';
@@ -36,6 +36,105 @@ const RECURRING_OPTIONS = [
   { value: 'monthly-first', label: '1st of every month' },
   { value: 'monthly-last', label: 'Last day of every month' },
 ];
+
+const EASTERN_TIME_ZONE = 'America/New_York';
+const WEEKDAY_INDEX: Record<string, number> = {
+  Sun: 0,
+  Mon: 1,
+  Tue: 2,
+  Wed: 3,
+  Thu: 4,
+  Fri: 5,
+  Sat: 6,
+};
+
+const EASTERN_DATETIME_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  timeZone: EASTERN_TIME_ZONE,
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  hour12: true,
+  timeZoneName: 'short',
+});
+
+const getDatePartMap = (
+  date: Date,
+  options: Intl.DateTimeFormatOptions,
+): Record<string, string> => {
+  return new Intl.DateTimeFormat('en-US', options)
+    .formatToParts(date)
+    .reduce<Record<string, string>>((acc, part) => {
+      if (part.type !== 'literal') {
+        acc[part.type] = part.value;
+      }
+      return acc;
+    }, {});
+};
+
+const getEasternParts = (date: Date) => {
+  const partMap = getDatePartMap(date, {
+    timeZone: EASTERN_TIME_ZONE,
+    weekday: 'short',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+
+  return {
+    year: Number(partMap.year),
+    month: Number(partMap.month),
+    day: Number(partMap.day),
+    hour: Number(partMap.hour),
+    weekday: WEEKDAY_INDEX[partMap.weekday] ?? 0,
+  };
+};
+
+const getTimezoneOffsetMs = (date: Date, timeZone: string): number => {
+  const partMap = getDatePartMap(date, {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+
+  const asUtc = Date.UTC(
+    Number(partMap.year),
+    Number(partMap.month) - 1,
+    Number(partMap.day),
+    Number(partMap.hour),
+    Number(partMap.minute),
+    Number(partMap.second),
+  );
+
+  return asUtc - date.getTime();
+};
+
+const buildDateAtTimezone = (
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  timeZone: string,
+): Date => {
+  const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
+  const offsetMs = getTimezoneOffsetMs(utcGuess, timeZone);
+  return new Date(utcGuess.getTime() - offsetMs);
+};
+
+const formatEasternDateTime = (isoDate: string) => {
+  return EASTERN_DATETIME_FORMATTER.format(new Date(isoDate));
+};
 
 export const BulkContractorEmailDialog = ({ 
   open, onOpenChange, activeContractorCount, onEmailSent 
@@ -115,14 +214,14 @@ export const BulkContractorEmailDialog = ({
   const handleReschedule = async (id: string) => {
     setCancellingId(id);
     try {
-      const newDate = getNextFridayElevenEST();
+      const newDate = getNextFridayElevenEastern();
       const { error } = await supabase
         .from('scheduled_contractor_emails' as any)
         .update({ scheduled_for: newDate.toISOString() } as any)
         .eq('id', id);
       if (error) throw error;
-      const fridayStr = newDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-      toast({ title: 'Rescheduled', description: `Email rescheduled to ${fridayStr} at 11:00 AM EST` });
+      const fridayStr = formatEasternDateTime(newDate.toISOString());
+      toast({ title: 'Rescheduled', description: `Email rescheduled to ${fridayStr}` });
       fetchPendingEmails();
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -165,18 +264,21 @@ export const BulkContractorEmailDialog = ({
     }
   };
 
-  const getNextFridayElevenEST = (): Date => {
-    // Calculate next Friday at 11:00 AM EST (16:00 UTC)
+  const getNextFridayElevenEastern = (): Date => {
     const now = new Date();
-    const currentDay = now.getDay();
-    let daysUntilFriday = (5 - currentDay + 7) % 7;
+    const { year, month, day, weekday } = getEasternParts(now);
+
+    let daysUntilFriday = (5 - weekday + 7) % 7;
     if (daysUntilFriday === 0) daysUntilFriday = 7;
-    const friday = new Date(now);
-    friday.setDate(friday.getDate() + daysUntilFriday);
-    const year = friday.getFullYear();
-    const month = friday.getMonth();
-    const day = friday.getDate();
-    return new Date(Date.UTC(year, month, day, 16, 0, 0, 0));
+
+    const easternCalendarDate = new Date(Date.UTC(year, month - 1, day));
+    easternCalendarDate.setUTCDate(easternCalendarDate.getUTCDate() + daysUntilFriday);
+
+    const targetYear = easternCalendarDate.getUTCFullYear();
+    const targetMonth = easternCalendarDate.getUTCMonth() + 1;
+    const targetDay = easternCalendarDate.getUTCDate();
+
+    return buildDateAtTimezone(targetYear, targetMonth, targetDay, 11, 0, EASTERN_TIME_ZONE);
   };
 
   const handleScheduleFriday = async () => {
@@ -187,7 +289,7 @@ export const BulkContractorEmailDialog = ({
 
     setScheduling(true);
     try {
-      const scheduledFor = getNextFridayElevenEST();
+      const scheduledFor = getNextFridayElevenEastern();
       
       const { error } = await supabase.from('scheduled_contractor_emails' as any).insert({
         subject,
@@ -198,10 +300,10 @@ export const BulkContractorEmailDialog = ({
 
       if (error) throw error;
 
-      const fridayStr = scheduledFor.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+      const fridayStr = formatEasternDateTime(scheduledFor.toISOString());
       toast({
         title: 'Email Scheduled',
-        description: `Bulk email scheduled for ${fridayStr} at 11:00 AM EST`,
+        description: `Bulk email scheduled for ${fridayStr}`,
       });
 
       resetForm();
@@ -414,12 +516,7 @@ export const BulkContractorEmailDialog = ({
                       <p className="font-medium truncate">{email.subject}</p>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                         <CalendarIcon className="w-3 h-3" />
-                        <span>{(() => {
-                          // Convert UTC to EST (UTC-5) for display
-                          const utcDate = new Date(email.scheduled_for);
-                          const estDate = new Date(utcDate.getTime() - 5 * 60 * 60 * 1000);
-                          return `${format(estDate, 'EEE, MMM d, yyyy h:mm a')} EST`;
-                        })()}</span>
+                        <span>{formatEasternDateTime(email.scheduled_for)}</span>
                         <Badge variant="outline" className="text-amber-600 border-amber-300 text-[10px] px-1.5 py-0">
                           Pending
                         </Badge>
