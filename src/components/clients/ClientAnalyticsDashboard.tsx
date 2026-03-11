@@ -79,6 +79,15 @@ export const ClientAnalyticsDashboard = () => {
   const [roleSortField, setRoleSortField] = useState<SortField>('hired');
   const [roleSortDir, setRoleSortDir] = useState<SortDirection>('desc');
 
+  // Sort & filter for Industry and Roles cards
+  type ListSortField = 'name' | 'value' | 'percentage';
+  const [industryListSort, setIndustryListSort] = useState<ListSortField>('value');
+  const [industryListSortDir, setIndustryListSortDir] = useState<SortDirection>('desc');
+  const [industryFilter, setIndustryFilter] = useState('');
+  const [roleListSort, setRoleListSort] = useState<ListSortField>('value');
+  const [roleListSortDir, setRoleListSortDir] = useState<SortDirection>('desc');
+  const [roleFilter, setRoleFilter] = useState('');
+
   const [hiringRequests, setHiringRequests] = useState<{ client_status: string; client_id: string | null; pipeline_stage: string; start_date: string | null }[]>([]);
   const [lostYearFilter, setLostYearFilter] = useState(2026);
 
@@ -642,19 +651,81 @@ export const ClientAnalyticsDashboard = () => {
     </div>
   );
 
+  // Helper to sort & filter list data
+  const sortAndFilterList = (
+    data: { name: string; value: number; percentage: number }[],
+    filter: string,
+    sortField: ListSortField,
+    sortDir: SortDirection
+  ) => {
+    let filtered = data;
+    if (filter.trim()) {
+      const q = filter.toLowerCase();
+      filtered = data.filter(d => d.name.toLowerCase().includes(q));
+    }
+    return [...filtered].sort((a, b) => {
+      const dir = sortDir === 'asc' ? 1 : -1;
+      if (sortField === 'name') return a.name.localeCompare(b.name) * dir;
+      return (a[sortField] - b[sortField]) * dir;
+    });
+  };
+
+  const toggleListSort = (
+    field: ListSortField,
+    current: ListSortField,
+    setField: (f: ListSortField) => void,
+    currentDir: SortDirection,
+    setDir: (d: SortDirection) => void
+  ) => {
+    if (current === field) {
+      setDir(currentDir === 'asc' ? 'desc' : 'asc');
+    } else {
+      setField(field);
+      setDir(field === 'name' ? 'asc' : 'desc');
+    }
+  };
+
+  const ListSortButton = ({ field, label, current, currentDir, onClick }: { field: ListSortField; label: string; current: ListSortField; currentDir: SortDirection; onClick: () => void }) => (
+    <button onClick={onClick} className="flex items-center text-xs text-muted-foreground hover:text-foreground transition-colors">
+      {label}
+      {current === field ? (
+        currentDir === 'asc' ? <ArrowUp className="w-3 h-3 ml-0.5" /> : <ArrowDown className="w-3 h-3 ml-0.5" />
+      ) : (
+        <ArrowUpDown className="w-3 h-3 ml-0.5 opacity-50" />
+      )}
+    </button>
+  );
+
+  const filteredIndustries = useMemo(() => sortAndFilterList(clientsByIndustry, industryFilter, industryListSort, industryListSortDir), [clientsByIndustry, industryFilter, industryListSort, industryListSortDir]);
+  const filteredRoles = useMemo(() => sortAndFilterList(contractorsByRole, roleFilter, roleListSort, roleListSortDir), [contractorsByRole, roleFilter, roleListSort, roleListSortDir]);
+
   // Individual Card Components
   const renderIndustryCard = () => (
     <DraggableCard cardId="industry">
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2 pl-5">
             <Building2 className="w-4 h-4" />
             Clients by Industry
           </CardTitle>
+          <div className="flex items-center gap-2 pl-5 pt-1">
+            <input
+              type="text"
+              placeholder="Filter industries..."
+              value={industryFilter}
+              onChange={e => setIndustryFilter(e.target.value)}
+              className="h-7 text-xs px-2 rounded border border-border bg-background text-foreground placeholder:text-muted-foreground w-full max-w-[180px] focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+            <div className="flex items-center gap-1.5 ml-auto">
+              <ListSortButton field="name" label="Name" current={industryListSort} currentDir={industryListSortDir} onClick={() => toggleListSort('name', industryListSort, setIndustryListSort, industryListSortDir, setIndustryListSortDir)} />
+              <ListSortButton field="value" label="Count" current={industryListSort} currentDir={industryListSortDir} onClick={() => toggleListSort('value', industryListSort, setIndustryListSort, industryListSortDir, setIndustryListSortDir)} />
+              <ListSortButton field="percentage" label="%" current={industryListSort} currentDir={industryListSortDir} onClick={() => toggleListSort('percentage', industryListSort, setIndustryListSort, industryListSortDir, setIndustryListSortDir)} />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-3 max-h-[300px] overflow-y-auto">
-            {clientsByIndustry.map((industry, index) => (
+            {filteredIndustries.map((industry, index) => (
               <div key={industry.name} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div 
@@ -669,8 +740,8 @@ export const ClientAnalyticsDashboard = () => {
                 </div>
               </div>
             ))}
-            {clientsByIndustry.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">No data available</p>
+            {filteredIndustries.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">{industryFilter ? 'No matches' : 'No data available'}</p>
             )}
           </div>
         </CardContent>
@@ -681,15 +752,29 @@ export const ClientAnalyticsDashboard = () => {
   const renderRolesCard = () => (
     <DraggableCard cardId="roles">
       <Card>
-        <CardHeader>
+        <CardHeader className="pb-2">
           <CardTitle className="text-base flex items-center gap-2 pl-5">
             <Users className="w-4 h-4" />
             Contractors by Role
           </CardTitle>
+          <div className="flex items-center gap-2 pl-5 pt-1">
+            <input
+              type="text"
+              placeholder="Filter roles..."
+              value={roleFilter}
+              onChange={e => setRoleFilter(e.target.value)}
+              className="h-7 text-xs px-2 rounded border border-border bg-background text-foreground placeholder:text-muted-foreground w-full max-w-[180px] focus:outline-none focus:ring-1 focus:ring-ring"
+            />
+            <div className="flex items-center gap-1.5 ml-auto">
+              <ListSortButton field="name" label="Name" current={roleListSort} currentDir={roleListSortDir} onClick={() => toggleListSort('name', roleListSort, setRoleListSort, roleListSortDir, setRoleListSortDir)} />
+              <ListSortButton field="value" label="Count" current={roleListSort} currentDir={roleListSortDir} onClick={() => toggleListSort('value', roleListSort, setRoleListSort, roleListSortDir, setRoleListSortDir)} />
+              <ListSortButton field="percentage" label="%" current={roleListSort} currentDir={roleListSortDir} onClick={() => toggleListSort('percentage', roleListSort, setRoleListSort, roleListSortDir, setRoleListSortDir)} />
+            </div>
+          </div>
         </CardHeader>
         <CardContent>
           <div className="space-y-3 max-h-[300px] overflow-y-auto">
-            {contractorsByRole.map((role, index) => (
+            {filteredRoles.map((role, index) => (
               <div key={role.name} className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div 
@@ -704,8 +789,8 @@ export const ClientAnalyticsDashboard = () => {
                 </div>
               </div>
             ))}
-            {contractorsByRole.length === 0 && (
-              <p className="text-sm text-muted-foreground text-center py-4">No data available</p>
+            {filteredRoles.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-4">{roleFilter ? 'No matches' : 'No data available'}</p>
             )}
           </div>
         </CardContent>
