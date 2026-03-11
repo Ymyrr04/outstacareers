@@ -108,7 +108,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${subject}</title></head><body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #ffffff; color: #333333; font-size: 14px; line-height: 1.6;">${formattedBody}${signatureHtml}</body></html>`;
 
     await client.send({
-      from: `Mark Chua <${gmailUser}>`,
+      from: `OutSta Mark Chua <${gmailUser}>`,
       to: recipientEmail,
       subject,
       content: "auto",

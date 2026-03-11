@@ -109,7 +109,7 @@ const handler = async (req: Request): Promise<Response> => {
 
         const messageId = generateMessageId(domain);
         await client.send({
-          from: `Mark Chua <${gmailUser}>`,
+          from: `OutSta Mark Chua <${gmailUser}>`,
           to: applicant.email,
           subject: personalizedSubject,
           content: "auto",
