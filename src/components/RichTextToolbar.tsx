@@ -10,9 +10,10 @@ interface RichTextToolbarProps {
   onChange: (value: string) => void;
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   disabled?: boolean;
+  placeholders?: string[];
 }
 
-export function RichTextToolbar({ value, onChange, textareaRef, disabled }: RichTextToolbarProps) {
+export function RichTextToolbar({ value, onChange, textareaRef, disabled, placeholders }: RichTextToolbarProps) {
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
   const [linkText, setLinkText] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
@@ -303,6 +304,44 @@ export function RichTextToolbar({ value, onChange, textareaRef, disabled }: Rich
           </div>
         </PopoverContent>
       </Popover>
+
+      {placeholders && placeholders.length > 0 && (
+        <>
+          <div className="w-px h-4 bg-border mx-1" />
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 gap-1 text-xs"
+                disabled={disabled}
+                title="Insert placeholder"
+              >
+                <span className="text-[10px]">{'{ }'}</span>
+                <span className="hidden sm:inline">Insert</span>
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-auto p-2" align="start">
+              <div className="flex flex-col gap-1">
+                <p className="text-[10px] text-muted-foreground font-medium mb-1">Click to insert</p>
+                {placeholders.map(p => (
+                  <Button
+                    key={p}
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 justify-start font-mono text-xs"
+                    onClick={() => insertAtCursor(p)}
+                  >
+                    {p}
+                  </Button>
+                ))}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </>
+      )}
       
       <span className="text-[10px] text-muted-foreground ml-auto hidden sm:block">
         Ctrl+K for link

@@ -333,6 +333,7 @@ export const ContractorEmailTemplateManager = ({ open, onOpenChange }: Contracto
                     value={formBodyHtml}
                     onChange={setFormBodyHtml}
                     textareaRef={textareaRef as React.RefObject<HTMLTextAreaElement>}
+                    placeholders={['{{first_name}}', '{{full_name}}', '{{company}}', '{{job_title}}']}
                   />
                   <textarea
                     ref={textareaRef}
