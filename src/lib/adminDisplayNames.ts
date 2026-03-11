@@ -18,6 +18,7 @@ export const EMAIL_TO_AVATAR: Record<string, string> = {
   'eduardo@outsta.io': '/src/assets/team/eduardo.png',
   'mark@outsta.io': '/src/assets/team/mark.png',
   'liezl@outsta.io': '/src/assets/team/liezl-new.png',
+  'sean@outsta.io': '/src/assets/team/sean.png',
 };
 
 // Mapping of admin user IDs (UUIDs) to emails for lookups
