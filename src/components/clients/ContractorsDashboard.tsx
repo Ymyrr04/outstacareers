@@ -1491,6 +1491,12 @@ export const ContractorsDashboard = () => {
         onOpenChange={setBulkEmailDialogOpen}
         activeContractorCount={activeCount}
       />
+
+      {/* Template Manager */}
+      <ContractorEmailTemplateManager
+        open={templateManagerOpen}
+        onOpenChange={setTemplateManagerOpen}
+      />
     </div>
   );
 };
