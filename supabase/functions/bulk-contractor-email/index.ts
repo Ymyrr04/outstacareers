@@ -91,7 +91,13 @@ const handler = async (req: Request): Promise<Response> => {
         .replace(/\{\{company\}\}/g, clientData?.company_name || '')
         .replace(/\{\{job_title\}\}/g, contractor.job_title || '');
 
-      const formattedBody = personalizedBody.replace(/\n/g, '<br>');
+      // Convert markdown-style links [text](url) to HTML <a> tags, then newlines to <br>
+      const formattedBody = personalizedBody
+        .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" style="color: #1a73e8; text-decoration: underline;">$1</a>')
+        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+        .replace(/\*(.+?)\*/g, '<em>$1</em>')
+        .replace(/__(.+?)__/g, '<u>$1</u>')
+        .replace(/\n/g, '<br>');
       const emailHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${personalizedSubject}</title></head><body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #ffffff; color: #333333; font-size: 14px; line-height: 1.6;">${formattedBody}${signatureHtml}</body></html>`;
 
       try {
