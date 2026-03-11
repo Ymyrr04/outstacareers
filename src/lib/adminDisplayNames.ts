@@ -8,6 +8,7 @@ export const EMAIL_TO_NAME: Record<string, string> = {
   'jil@outsta.io': 'Jil',
   'yes@outsta.io': 'Yes',
   'adam@outsta.io': 'Adam',
+  'sean@outsta.io': 'Sean',
 };
 
 // Mapping of admin emails to profile picture paths (relative imports)
@@ -17,6 +18,7 @@ export const EMAIL_TO_AVATAR: Record<string, string> = {
   'eduardo@outsta.io': '/src/assets/team/eduardo.png',
   'mark@outsta.io': '/src/assets/team/mark.png',
   'liezl@outsta.io': '/src/assets/team/liezl-new.png',
+  'sean@outsta.io': '/src/assets/team/sean.png',
 };
 
 // Mapping of admin user IDs (UUIDs) to emails for lookups
@@ -29,6 +31,7 @@ export const USER_ID_TO_EMAIL: Record<string, string> = {
   'f2b48ca9-e2e9-4ee3-9f73-fc612ae195c4': 'jil@outsta.io',
   '8d30c059-4263-49af-9e1f-d5645ebc381f': 'yes@outsta.io',
   '4249de7b-1a79-4166-8c9c-45ee3ae21ef0': 'adam@outsta.io',
+  '73d829ad-a6a7-48bd-8cac-2ad9a9206705': 'sean@outsta.io',
 };
 
 /**
