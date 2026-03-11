@@ -764,6 +764,10 @@ export const ContractorsDashboard = () => {
           </Popover>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setTemplateManagerOpen(true)}>
+            <FileText className="w-4 h-4 mr-2" />
+            Templates
+          </Button>
           <Button 
             variant="default" 
             onClick={() => setBulkEmailDialogOpen(true)} 
