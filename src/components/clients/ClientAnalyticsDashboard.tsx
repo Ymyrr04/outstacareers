@@ -79,6 +79,15 @@ export const ClientAnalyticsDashboard = () => {
   const [roleSortField, setRoleSortField] = useState<SortField>('hired');
   const [roleSortDir, setRoleSortDir] = useState<SortDirection>('desc');
 
+  // Sort & filter for Industry and Roles cards
+  type ListSortField = 'name' | 'value' | 'percentage';
+  const [industryListSort, setIndustryListSort] = useState<ListSortField>('value');
+  const [industryListSortDir, setIndustryListSortDir] = useState<SortDirection>('desc');
+  const [industryFilter, setIndustryFilter] = useState('');
+  const [roleListSort, setRoleListSort] = useState<ListSortField>('value');
+  const [roleListSortDir, setRoleListSortDir] = useState<SortDirection>('desc');
+  const [roleFilter, setRoleFilter] = useState('');
+
   const [hiringRequests, setHiringRequests] = useState<{ client_status: string; client_id: string | null; pipeline_stage: string; start_date: string | null }[]>([]);
   const [lostYearFilter, setLostYearFilter] = useState(2026);
 
