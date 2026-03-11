@@ -689,9 +689,9 @@ export const ClientAnalyticsDashboard = () => {
     <button onClick={onClick} className="flex items-center text-xs text-muted-foreground hover:text-foreground transition-colors">
       {label}
       {current === field ? (
-        currentDir === 'asc' ? <ArrowUp className="w-3 h-3 ml-0.5" /> : <ArrowDown className="w-3 h-3 ml-0.5" />
+        currentDir === 'asc' ? <ArrowUp className="w-3 h-3 ml-1" /> : <ArrowDown className="w-3 h-3 ml-1" />
       ) : (
-        <ArrowUpDown className="w-3 h-3 ml-0.5 opacity-50" />
+        <ArrowUpDown className="w-3 h-3 ml-1 opacity-50" />
       )}
     </button>
   );
