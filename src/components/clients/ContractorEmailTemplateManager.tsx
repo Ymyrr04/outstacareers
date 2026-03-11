@@ -42,6 +42,8 @@ export const ContractorEmailTemplateManager = ({ open, onOpenChange }: Contracto
   const [isCreating, setIsCreating] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<EmailTemplate | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const subjectRef = useRef<HTMLInputElement>(null);
+  const lastFocusedRef = useRef<'subject' | 'body'>('body');
 
   // Form state
   const [formName, setFormName] = useState('');
@@ -321,9 +323,11 @@ export const ContractorEmailTemplateManager = ({ open, onOpenChange }: Contracto
                 <div>
                   <Label>Subject Line</Label>
                   <Input
+                    ref={subjectRef}
                     value={formSubject}
                     onChange={(e) => setFormSubject(e.target.value)}
                     placeholder="Email subject..."
+                    onFocus={() => { lastFocusedRef.current = 'subject'; }}
                   />
                 </div>
 
@@ -334,11 +338,38 @@ export const ContractorEmailTemplateManager = ({ open, onOpenChange }: Contracto
                     onChange={setFormBodyHtml}
                     textareaRef={textareaRef as React.RefObject<HTMLTextAreaElement>}
                     placeholders={['{{first_name}}', '{{full_name}}', '{{company}}', '{{job_title}}']}
+                    onInsertPlaceholder={(p) => {
+                      if (lastFocusedRef.current === 'subject') {
+                        const el = subjectRef.current;
+                        if (!el) return;
+                        const start = el.selectionStart ?? formSubject.length;
+                        const end = el.selectionEnd ?? formSubject.length;
+                        const newVal = formSubject.substring(0, start) + p + formSubject.substring(end);
+                        setFormSubject(newVal);
+                        setTimeout(() => {
+                          el.focus();
+                          const pos = start + p.length;
+                          el.setSelectionRange(pos, pos);
+                        }, 0);
+                      } else {
+                        const ta = textareaRef.current;
+                        const start = ta?.selectionStart ?? formBodyHtml.length;
+                        const end = ta?.selectionEnd ?? formBodyHtml.length;
+                        const newVal = formBodyHtml.substring(0, start) + p + formBodyHtml.substring(end);
+                        setFormBodyHtml(newVal);
+                        setTimeout(() => {
+                          ta?.focus();
+                          const pos = start + p.length;
+                          ta?.setSelectionRange(pos, pos);
+                        }, 0);
+                      }
+                    }}
                   />
                   <textarea
                     ref={textareaRef}
                     value={formBodyHtml}
                     onChange={(e) => setFormBodyHtml(e.target.value)}
+                    onFocus={() => { lastFocusedRef.current = 'body'; }}
                     className="w-full min-h-[200px] p-3 border rounded-md bg-background text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-ring"
                     placeholder="Write your email template here... HTML is supported. Use {{first_name}}, {{full_name}}, {{company}}, {{job_title}} as placeholders."
                   />

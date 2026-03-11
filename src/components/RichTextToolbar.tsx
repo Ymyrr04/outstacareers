@@ -11,9 +11,10 @@ interface RichTextToolbarProps {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   disabled?: boolean;
   placeholders?: string[];
+  onInsertPlaceholder?: (placeholder: string) => void;
 }
 
-export function RichTextToolbar({ value, onChange, textareaRef, disabled, placeholders }: RichTextToolbarProps) {
+export function RichTextToolbar({ value, onChange, textareaRef, disabled, placeholders, onInsertPlaceholder }: RichTextToolbarProps) {
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
   const [linkText, setLinkText] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
@@ -332,7 +333,13 @@ export function RichTextToolbar({ value, onChange, textareaRef, disabled, placeh
                     variant="ghost"
                     size="sm"
                     className="h-7 justify-start font-mono text-xs"
-                    onClick={() => insertAtCursor(p)}
+                    onClick={() => {
+                      if (onInsertPlaceholder) {
+                        onInsertPlaceholder(p);
+                      } else {
+                        insertAtCursor(p);
+                      }
+                    }}
                   >
                     {p}
                   </Button>
