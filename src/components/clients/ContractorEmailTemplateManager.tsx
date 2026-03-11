@@ -323,9 +323,11 @@ export const ContractorEmailTemplateManager = ({ open, onOpenChange }: Contracto
                 <div>
                   <Label>Subject Line</Label>
                   <Input
+                    ref={subjectRef}
                     value={formSubject}
                     onChange={(e) => setFormSubject(e.target.value)}
                     placeholder="Email subject..."
+                    onFocus={() => { lastFocusedRef.current = 'subject'; }}
                   />
                 </div>
 
