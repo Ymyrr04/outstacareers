@@ -11,6 +11,7 @@ interface RichTextToolbarProps {
   textareaRef: React.RefObject<HTMLTextAreaElement>;
   disabled?: boolean;
   placeholders?: string[];
+  onInsertPlaceholder?: (placeholder: string) => void;
 }
 
 export function RichTextToolbar({ value, onChange, textareaRef, disabled, placeholders }: RichTextToolbarProps) {
