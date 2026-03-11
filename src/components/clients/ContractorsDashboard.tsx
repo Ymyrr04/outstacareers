@@ -33,7 +33,8 @@ import {
   RotateCcw,
   ArrowUp,
   ArrowDown,
-  ArrowUpDown
+  ArrowUpDown,
+  FileText
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -62,6 +63,7 @@ import { EditContractorDialog } from './EditContractorDialog';
 import { ContractorStatusDialog } from './ContractorStatusDialog';
 import { SendContractorEmailDialog } from './SendContractorEmailDialog';
 import { BulkContractorEmailDialog } from './BulkContractorEmailDialog';
+import { ContractorEmailTemplateManager } from './ContractorEmailTemplateManager';
 
 interface ContractorWithDetails {
   id: string;
@@ -129,6 +131,7 @@ export const ContractorsDashboard = () => {
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [bulkEmailDialogOpen, setBulkEmailDialogOpen] = useState(false);
+  const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
   const [emailRecipient, setEmailRecipient] = useState<{
     assignmentId: string;
     name: string;
@@ -762,6 +765,10 @@ export const ContractorsDashboard = () => {
           </Popover>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={() => setTemplateManagerOpen(true)}>
+            <FileText className="w-4 h-4 mr-2" />
+            Templates
+          </Button>
           <Button 
             variant="default" 
             onClick={() => setBulkEmailDialogOpen(true)} 
@@ -1483,6 +1490,12 @@ export const ContractorsDashboard = () => {
         open={bulkEmailDialogOpen}
         onOpenChange={setBulkEmailDialogOpen}
         activeContractorCount={activeCount}
+      />
+
+      {/* Template Manager */}
+      <ContractorEmailTemplateManager
+        open={templateManagerOpen}
+        onOpenChange={setTemplateManagerOpen}
       />
     </div>
   );
