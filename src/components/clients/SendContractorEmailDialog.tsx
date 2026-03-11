@@ -182,7 +182,7 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
 
   return (
     <Dialog open={open} onOpenChange={(o) => { if (!o) resetForm(); onOpenChange(o); }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-3xl max-h-[92vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Send className="w-5 h-5 text-teal-600" />
@@ -299,7 +299,7 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
                 ref={textareaRef}
                 value={bodyHtml}
                 onChange={(e) => setBodyHtml(e.target.value)}
-                className="w-full min-h-[200px] p-3 border rounded-md bg-background text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full min-h-[320px] p-3 border rounded-md bg-background text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder="Write your email content here... HTML is supported."
               />
             </div>
