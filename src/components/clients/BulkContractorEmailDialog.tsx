@@ -8,10 +8,10 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-
 import { cn } from '@/lib/utils';
 import { Send, Loader2, FileText, Mail, Users, RefreshCw, CalendarClock, Clock, XCircle, CalendarIcon } from 'lucide-react';
 import { RichTextToolbar } from '@/components/RichTextToolbar';
+import { ScheduleDateTimeDialog } from '@/components/clients/ScheduleDateTimeDialog';
 
 interface EmailTemplate {
   id: string;
@@ -152,6 +152,9 @@ export const BulkContractorEmailDialog = ({
   const [pendingEmails, setPendingEmails] = useState<any[]>([]);
   const [loadingPending, setLoadingPending] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
+  const [rescheduleTargetId, setRescheduleTargetId] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const fetchPendingEmails = async () => {
@@ -211,18 +214,20 @@ export const BulkContractorEmailDialog = ({
     }
   };
 
-  const handleReschedule = async (id: string) => {
-    setCancellingId(id);
+  const handleReschedule = async (scheduledDate: Date) => {
+    if (!rescheduleTargetId) return;
+    setCancellingId(rescheduleTargetId);
     try {
-      const newDate = getNextFridayElevenEastern();
       const { error } = await supabase
         .from('scheduled_contractor_emails' as any)
-        .update({ scheduled_for: newDate.toISOString() } as any)
-        .eq('id', id);
+        .update({ scheduled_for: scheduledDate.toISOString() } as any)
+        .eq('id', rescheduleTargetId);
       if (error) throw error;
-      const fridayStr = formatEasternDateTime(newDate.toISOString());
-      toast({ title: 'Rescheduled', description: `Email rescheduled to ${fridayStr}` });
+      const dateStr = formatEasternDateTime(scheduledDate.toISOString());
+      toast({ title: 'Rescheduled', description: `Email rescheduled to ${dateStr}` });
       fetchPendingEmails();
+      setRescheduleDialogOpen(false);
+      setRescheduleTargetId(null);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
@@ -281,7 +286,7 @@ export const BulkContractorEmailDialog = ({
     return buildDateAtTimezone(targetYear, targetMonth, targetDay, 11, 0, EASTERN_TIME_ZONE);
   };
 
-  const handleScheduleFriday = async () => {
+  const handleScheduleConfirm = async (scheduledDate: Date) => {
     if (!subject.trim() || !bodyHtml.trim()) {
       toast({ title: 'Missing fields', description: 'Please fill in subject and body', variant: 'destructive' });
       return;
@@ -289,23 +294,22 @@ export const BulkContractorEmailDialog = ({
 
     setScheduling(true);
     try {
-      const scheduledFor = getNextFridayElevenEastern();
-      
       const { error } = await supabase.from('scheduled_contractor_emails' as any).insert({
         subject,
         body_html: bodyHtml,
-        scheduled_for: scheduledFor.toISOString(),
+        scheduled_for: scheduledDate.toISOString(),
         status: 'pending',
       } as any);
 
       if (error) throw error;
 
-      const fridayStr = formatEasternDateTime(scheduledFor.toISOString());
+      const dateStr = formatEasternDateTime(scheduledDate.toISOString());
       toast({
         title: 'Email Scheduled',
-        description: `Bulk email scheduled for ${fridayStr}`,
+        description: `Bulk email scheduled for ${dateStr}`,
       });
 
+      setScheduleDialogOpen(false);
       resetForm();
       onOpenChange(false);
       onEmailSent?.();
@@ -528,7 +532,10 @@ export const BulkContractorEmailDialog = ({
                         size="sm"
                         className="h-7 text-xs"
                         disabled={cancellingId === email.id}
-                        onClick={() => handleReschedule(email.id)}
+                        onClick={() => {
+                          setRescheduleTargetId(email.id);
+                          setRescheduleDialogOpen(true);
+                        }}
                       >
                         <CalendarClock className="w-3 h-3 mr-1" />
                         Reschedule
@@ -560,14 +567,10 @@ export const BulkContractorEmailDialog = ({
             </Button>
             <Button 
               variant="outline"
-              onClick={handleScheduleFriday} 
+              onClick={() => setScheduleDialogOpen(true)} 
               disabled={sending || scheduling || !subject.trim() || !bodyHtml.trim()}
             >
-              {scheduling ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Scheduling...</>
-              ) : (
-                <><CalendarClock className="w-4 h-4 mr-2" />Schedule for Friday 11 AM</>
-              )}
+              <CalendarClock className="w-4 h-4 mr-2" />Schedule
             </Button>
             <Button onClick={handleSend} disabled={sending || scheduling || !subject.trim() || !bodyHtml.trim()}>
               {sending ? (
@@ -579,6 +582,29 @@ export const BulkContractorEmailDialog = ({
           </div>
         </div>
       </DialogContent>
+
+      {/* Schedule date/time picker */}
+      <ScheduleDateTimeDialog
+        open={scheduleDialogOpen}
+        onOpenChange={setScheduleDialogOpen}
+        onConfirm={handleScheduleConfirm}
+        title="Schedule Bulk Email"
+        defaultTime="11:00 AM"
+        loading={scheduling}
+      />
+
+      {/* Reschedule date/time picker */}
+      <ScheduleDateTimeDialog
+        open={rescheduleDialogOpen}
+        onOpenChange={(o) => {
+          setRescheduleDialogOpen(o);
+          if (!o) setRescheduleTargetId(null);
+        }}
+        onConfirm={handleReschedule}
+        title="Reschedule Email"
+        defaultTime="11:00 AM"
+        loading={!!cancellingId}
+      />
     </Dialog>
   );
 };
