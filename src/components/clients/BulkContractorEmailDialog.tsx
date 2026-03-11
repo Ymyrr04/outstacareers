@@ -37,6 +37,105 @@ const RECURRING_OPTIONS = [
   { value: 'monthly-last', label: 'Last day of every month' },
 ];
 
+const EASTERN_TIME_ZONE = 'America/New_York';
+const WEEKDAY_INDEX: Record<string, number> = {
+  Sun: 0,
+  Mon: 1,
+  Tue: 2,
+  Wed: 3,
+  Thu: 4,
+  Fri: 5,
+  Sat: 6,
+};
+
+const EASTERN_DATETIME_FORMATTER = new Intl.DateTimeFormat('en-US', {
+  timeZone: EASTERN_TIME_ZONE,
+  weekday: 'short',
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+  hour12: true,
+  timeZoneName: 'short',
+});
+
+const getDatePartMap = (
+  date: Date,
+  options: Intl.DateTimeFormatOptions,
+): Record<string, string> => {
+  return new Intl.DateTimeFormat('en-US', options)
+    .formatToParts(date)
+    .reduce<Record<string, string>>((acc, part) => {
+      if (part.type !== 'literal') {
+        acc[part.type] = part.value;
+      }
+      return acc;
+    }, {});
+};
+
+const getEasternParts = (date: Date) => {
+  const partMap = getDatePartMap(date, {
+    timeZone: EASTERN_TIME_ZONE,
+    weekday: 'short',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  });
+
+  return {
+    year: Number(partMap.year),
+    month: Number(partMap.month),
+    day: Number(partMap.day),
+    hour: Number(partMap.hour),
+    weekday: WEEKDAY_INDEX[partMap.weekday] ?? 0,
+  };
+};
+
+const getTimezoneOffsetMs = (date: Date, timeZone: string): number => {
+  const partMap = getDatePartMap(date, {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hour12: false,
+  });
+
+  const asUtc = Date.UTC(
+    Number(partMap.year),
+    Number(partMap.month) - 1,
+    Number(partMap.day),
+    Number(partMap.hour),
+    Number(partMap.minute),
+    Number(partMap.second),
+  );
+
+  return asUtc - date.getTime();
+};
+
+const buildDateAtTimezone = (
+  year: number,
+  month: number,
+  day: number,
+  hour: number,
+  minute: number,
+  timeZone: string,
+): Date => {
+  const utcGuess = new Date(Date.UTC(year, month - 1, day, hour, minute, 0));
+  const offsetMs = getTimezoneOffsetMs(utcGuess, timeZone);
+  return new Date(utcGuess.getTime() - offsetMs);
+};
+
+const formatEasternDateTime = (isoDate: string) => {
+  return EASTERN_DATETIME_FORMATTER.format(new Date(isoDate));
+};
+
 export const BulkContractorEmailDialog = ({ 
   open, onOpenChange, activeContractorCount, onEmailSent 
 }: BulkContractorEmailDialogProps) => {
