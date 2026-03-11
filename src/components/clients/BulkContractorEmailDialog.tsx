@@ -55,8 +55,23 @@ export const BulkContractorEmailDialog = ({
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
+  const fetchPendingEmails = async () => {
+    setLoadingPending(true);
+    try {
+      const { data, error } = await supabase
+        .from('scheduled_contractor_emails' as any)
+        .select('*')
+        .eq('status', 'pending')
+        .order('scheduled_for', { ascending: true });
+      if (!error) setPendingEmails((data as any[]) || []);
+    } finally {
+      setLoadingPending(false);
+    }
+  };
+
   useEffect(() => {
     if (!open) return;
+    fetchPendingEmails();
     const fetchTemplates = async () => {
       setLoadingTemplates(true);
       try {
@@ -79,6 +94,42 @@ export const BulkContractorEmailDialog = ({
     };
     fetchTemplates();
   }, [open]);
+
+  const handleCancelScheduled = async (id: string) => {
+    setCancellingId(id);
+    try {
+      const { error } = await supabase
+        .from('scheduled_contractor_emails' as any)
+        .update({ status: 'cancelled' } as any)
+        .eq('id', id);
+      if (error) throw error;
+      toast({ title: 'Cancelled', description: 'Scheduled email has been cancelled.' });
+      fetchPendingEmails();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  const handleReschedule = async (id: string) => {
+    setCancellingId(id);
+    try {
+      const newDate = getNextFridayElevenEST();
+      const { error } = await supabase
+        .from('scheduled_contractor_emails' as any)
+        .update({ scheduled_for: newDate.toISOString() } as any)
+        .eq('id', id);
+      if (error) throw error;
+      const fridayStr = newDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+      toast({ title: 'Rescheduled', description: `Email rescheduled to ${fridayStr} at 11:00 AM EST` });
+      fetchPendingEmails();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   const handleTemplateSelect = (templateId: string) => {
     if (templateId === 'none') {
