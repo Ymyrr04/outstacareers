@@ -369,6 +369,7 @@ export const ContractorEmailTemplateManager = ({ open, onOpenChange }: Contracto
                     ref={textareaRef}
                     value={formBodyHtml}
                     onChange={(e) => setFormBodyHtml(e.target.value)}
+                    onFocus={() => { lastFocusedRef.current = 'body'; }}
                     className="w-full min-h-[200px] p-3 border rounded-md bg-background text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-ring"
                     placeholder="Write your email template here... HTML is supported. Use {{first_name}}, {{full_name}}, {{company}}, {{job_title}} as placeholders."
                   />
