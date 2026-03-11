@@ -293,7 +293,7 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
                 value={bodyHtml} 
                 onChange={setBodyHtml} 
                 textareaRef={textareaRef as React.RefObject<HTMLTextAreaElement>}
-                placeholders={['{{first_name}}', '{{full_name}}', '{{company}}', '{{job_title}}']}
+                placeholders={['{{first_name}}', '{{full_name}}', '{{company}}', '{{job_title}}', '{{schedule}}']}
               />
               <textarea
                 ref={textareaRef}
