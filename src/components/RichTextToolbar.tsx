@@ -14,7 +14,7 @@ interface RichTextToolbarProps {
   onInsertPlaceholder?: (placeholder: string) => void;
 }
 
-export function RichTextToolbar({ value, onChange, textareaRef, disabled, placeholders }: RichTextToolbarProps) {
+export function RichTextToolbar({ value, onChange, textareaRef, disabled, placeholders, onInsertPlaceholder }: RichTextToolbarProps) {
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
   const [linkText, setLinkText] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
