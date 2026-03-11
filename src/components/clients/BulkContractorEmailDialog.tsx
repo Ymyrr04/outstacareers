@@ -286,7 +286,7 @@ export const BulkContractorEmailDialog = ({
     return buildDateAtTimezone(targetYear, targetMonth, targetDay, 11, 0, EASTERN_TIME_ZONE);
   };
 
-  const handleScheduleFriday = async () => {
+  const handleScheduleConfirm = async (scheduledDate: Date) => {
     if (!subject.trim() || !bodyHtml.trim()) {
       toast({ title: 'Missing fields', description: 'Please fill in subject and body', variant: 'destructive' });
       return;
@@ -294,23 +294,22 @@ export const BulkContractorEmailDialog = ({
 
     setScheduling(true);
     try {
-      const scheduledFor = getNextFridayElevenEastern();
-      
       const { error } = await supabase.from('scheduled_contractor_emails' as any).insert({
         subject,
         body_html: bodyHtml,
-        scheduled_for: scheduledFor.toISOString(),
+        scheduled_for: scheduledDate.toISOString(),
         status: 'pending',
       } as any);
 
       if (error) throw error;
 
-      const fridayStr = formatEasternDateTime(scheduledFor.toISOString());
+      const dateStr = formatEasternDateTime(scheduledDate.toISOString());
       toast({
         title: 'Email Scheduled',
-        description: `Bulk email scheduled for ${fridayStr}`,
+        description: `Bulk email scheduled for ${dateStr}`,
       });
 
+      setScheduleDialogOpen(false);
       resetForm();
       onOpenChange(false);
       onEmailSent?.();
