@@ -236,7 +236,7 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
             {/* Clickable placeholders */}
             <div className="text-xs text-muted-foreground bg-muted/30 rounded p-2 flex flex-wrap items-center gap-1.5">
               <span>Insert placeholder:</span>
-              {['{{first_name}}', '{{full_name}}', '{{company}}', '{{job_title}}'].map(p => (
+              {['{{first_name}}', '{{full_name}}', '{{company}}', '{{job_title}}', '{{schedule}}'].map(p => (
                 <button
                   key={p}
                   type="button"
@@ -293,7 +293,7 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
                 value={bodyHtml} 
                 onChange={setBodyHtml} 
                 textareaRef={textareaRef as React.RefObject<HTMLTextAreaElement>}
-                placeholders={['{{first_name}}', '{{full_name}}', '{{company}}', '{{job_title}}']}
+                placeholders={['{{first_name}}', '{{full_name}}', '{{company}}', '{{job_title}}', '{{schedule}}']}
               />
               <textarea
                 ref={textareaRef}
