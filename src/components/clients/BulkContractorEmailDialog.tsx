@@ -400,7 +400,58 @@ export const BulkContractorEmailDialog = ({
             )}
           </div>
 
-          {/* Actions */}
+          {/* Pending Scheduled Emails */}
+          {pendingEmails.length > 0 && (
+            <div className="border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-600" />
+                <span className="font-medium text-sm">Pending Scheduled Emails ({pendingEmails.length})</span>
+              </div>
+              <div className="space-y-2">
+                {pendingEmails.map((email: any) => (
+                  <div key={email.id} className="flex items-center justify-between bg-background rounded-md p-3 border text-sm">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{email.subject}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                        <CalendarIcon className="w-3 h-3" />
+                        <span>{format(new Date(email.scheduled_for), 'EEE, MMM d, yyyy h:mm a')} EST</span>
+                        <Badge variant="outline" className="text-amber-600 border-amber-300 text-[10px] px-1.5 py-0">
+                          Pending
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 ml-3">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs"
+                        disabled={cancellingId === email.id}
+                        onClick={() => handleReschedule(email.id)}
+                      >
+                        <CalendarClock className="w-3 h-3 mr-1" />
+                        Reschedule
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-destructive hover:text-destructive"
+                        disabled={cancellingId === email.id}
+                        onClick={() => handleCancelScheduled(email.id)}
+                      >
+                        {cancellingId === email.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <><XCircle className="w-3 h-3 mr-1" />Cancel</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => { resetForm(); onOpenChange(false); }} disabled={sending || scheduling}>
               Cancel
