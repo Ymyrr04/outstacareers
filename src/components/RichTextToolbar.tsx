@@ -17,7 +17,7 @@ for (let h = 0; h < 24; h++) {
   }
 }
 
-function DateTimeInsertPopover({ insertAtCursor, disabled }: { insertAtCursor: (text: string) => void; disabled?: boolean }) {
+function DateTimeInsertPopover({ insertAtCursor, disabled, value, onChange }: { insertAtCursor: (text: string) => void; disabled?: boolean; value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
   const todayStr = (() => {
     const now = new Date();
@@ -31,8 +31,15 @@ function DateTimeInsertPopover({ insertAtCursor, disabled }: { insertAtCursor: (
     const dateObj = new Date(year, month - 1, day);
     const formattedDate = format(dateObj, 'MMMM d');
     const timeLower = selectedTime.toLowerCase();
-    const text = `${formattedDate}, ${timeLower} EST.`;
-    insertAtCursor(text);
+    const newScheduleText = `${formattedDate}, ${timeLower} EST.`;
+
+    // Try to find and replace existing "Schedule: ..." line
+    const scheduleRegex = /Schedule:\s*.+?EST\./i;
+    if (scheduleRegex.test(value)) {
+      onChange(value.replace(scheduleRegex, `Schedule: ${newScheduleText}`));
+    } else {
+      insertAtCursor(`Schedule: ${newScheduleText}`);
+    }
     setOpen(false);
   };
 
@@ -423,7 +430,7 @@ export function RichTextToolbar({ value, onChange, textareaRef, disabled, placeh
       )}
 
       <div className="w-px h-4 bg-border mx-1" />
-      <DateTimeInsertPopover insertAtCursor={insertAtCursor} disabled={disabled} />
+      <DateTimeInsertPopover insertAtCursor={insertAtCursor} disabled={disabled} value={value} onChange={onChange} />
       
       <span className="text-[10px] text-muted-foreground ml-auto hidden sm:block">
         Ctrl+K for link
