@@ -62,6 +62,7 @@ import { EditContractorDialog } from './EditContractorDialog';
 import { ContractorStatusDialog } from './ContractorStatusDialog';
 import { SendContractorEmailDialog } from './SendContractorEmailDialog';
 import { BulkContractorEmailDialog } from './BulkContractorEmailDialog';
+import { ContractorEmailTemplateManager } from './ContractorEmailTemplateManager';
 
 interface ContractorWithDetails {
   id: string;
