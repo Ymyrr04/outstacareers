@@ -5,10 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Send, Loader2, FileText, Mail, Users, RefreshCw, CalendarClock } from 'lucide-react';
+import { Send, Loader2, FileText, Mail, Users, RefreshCw, CalendarClock, Clock, XCircle, CalendarIcon } from 'lucide-react';
 import { RichTextToolbar } from '@/components/RichTextToolbar';
 
 interface EmailTemplate {
@@ -48,10 +50,28 @@ export const BulkContractorEmailDialog = ({
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [recurringSchedule, setRecurringSchedule] = useState('none');
   const [recurringEnabled, setRecurringEnabled] = useState(false);
+  const [pendingEmails, setPendingEmails] = useState<any[]>([]);
+  const [loadingPending, setLoadingPending] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const fetchPendingEmails = async () => {
+    setLoadingPending(true);
+    try {
+      const { data, error } = await supabase
+        .from('scheduled_contractor_emails' as any)
+        .select('*')
+        .eq('status', 'pending')
+        .order('scheduled_for', { ascending: true });
+      if (!error) setPendingEmails((data as any[]) || []);
+    } finally {
+      setLoadingPending(false);
+    }
+  };
 
   useEffect(() => {
     if (!open) return;
+    fetchPendingEmails();
     const fetchTemplates = async () => {
       setLoadingTemplates(true);
       try {
@@ -74,6 +94,42 @@ export const BulkContractorEmailDialog = ({
     };
     fetchTemplates();
   }, [open]);
+
+  const handleCancelScheduled = async (id: string) => {
+    setCancellingId(id);
+    try {
+      const { error } = await supabase
+        .from('scheduled_contractor_emails' as any)
+        .update({ status: 'cancelled' } as any)
+        .eq('id', id);
+      if (error) throw error;
+      toast({ title: 'Cancelled', description: 'Scheduled email has been cancelled.' });
+      fetchPendingEmails();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  const handleReschedule = async (id: string) => {
+    setCancellingId(id);
+    try {
+      const newDate = getNextFridayElevenEST();
+      const { error } = await supabase
+        .from('scheduled_contractor_emails' as any)
+        .update({ scheduled_for: newDate.toISOString() } as any)
+        .eq('id', id);
+      if (error) throw error;
+      const fridayStr = newDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+      toast({ title: 'Rescheduled', description: `Email rescheduled to ${fridayStr} at 11:00 AM EST` });
+      fetchPendingEmails();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   const handleTemplateSelect = (templateId: string) => {
     if (templateId === 'none') {
@@ -344,7 +400,58 @@ export const BulkContractorEmailDialog = ({
             )}
           </div>
 
-          {/* Actions */}
+          {/* Pending Scheduled Emails */}
+          {pendingEmails.length > 0 && (
+            <div className="border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4 text-amber-600" />
+                <span className="font-medium text-sm">Pending Scheduled Emails ({pendingEmails.length})</span>
+              </div>
+              <div className="space-y-2">
+                {pendingEmails.map((email: any) => (
+                  <div key={email.id} className="flex items-center justify-between bg-background rounded-md p-3 border text-sm">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium truncate">{email.subject}</p>
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
+                        <CalendarIcon className="w-3 h-3" />
+                        <span>{format(new Date(email.scheduled_for), 'EEE, MMM d, yyyy h:mm a')} EST</span>
+                        <Badge variant="outline" className="text-amber-600 border-amber-300 text-[10px] px-1.5 py-0">
+                          Pending
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 ml-3">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs"
+                        disabled={cancellingId === email.id}
+                        onClick={() => handleReschedule(email.id)}
+                      >
+                        <CalendarClock className="w-3 h-3 mr-1" />
+                        Reschedule
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 text-xs text-destructive hover:text-destructive"
+                        disabled={cancellingId === email.id}
+                        onClick={() => handleCancelScheduled(email.id)}
+                      >
+                        {cancellingId === email.id ? (
+                          <Loader2 className="w-3 h-3 animate-spin" />
+                        ) : (
+                          <><XCircle className="w-3 h-3 mr-1" />Cancel</>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" onClick={() => { resetForm(); onOpenChange(false); }} disabled={sending || scheduling}>
               Cancel
