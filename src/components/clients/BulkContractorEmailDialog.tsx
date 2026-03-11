@@ -567,14 +567,10 @@ export const BulkContractorEmailDialog = ({
             </Button>
             <Button 
               variant="outline"
-              onClick={handleScheduleFriday} 
+              onClick={() => setScheduleDialogOpen(true)} 
               disabled={sending || scheduling || !subject.trim() || !bodyHtml.trim()}
             >
-              {scheduling ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Scheduling...</>
-              ) : (
-                <><CalendarClock className="w-4 h-4 mr-2" />Schedule for Friday 11 AM</>
-              )}
+              <CalendarClock className="w-4 h-4 mr-2" />Schedule
             </Button>
             <Button onClick={handleSend} disabled={sending || scheduling || !subject.trim() || !bodyHtml.trim()}>
               {sending ? (
@@ -586,6 +582,29 @@ export const BulkContractorEmailDialog = ({
           </div>
         </div>
       </DialogContent>
+
+      {/* Schedule date/time picker */}
+      <ScheduleDateTimeDialog
+        open={scheduleDialogOpen}
+        onOpenChange={setScheduleDialogOpen}
+        onConfirm={handleScheduleConfirm}
+        title="Schedule Bulk Email"
+        defaultTime="11:00 AM"
+        loading={scheduling}
+      />
+
+      {/* Reschedule date/time picker */}
+      <ScheduleDateTimeDialog
+        open={rescheduleDialogOpen}
+        onOpenChange={(o) => {
+          setRescheduleDialogOpen(o);
+          if (!o) setRescheduleTargetId(null);
+        }}
+        onConfirm={handleReschedule}
+        title="Reschedule Email"
+        defaultTime="11:00 AM"
+        loading={!!cancellingId}
+      />
     </Dialog>
   );
 };
