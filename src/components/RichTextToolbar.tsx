@@ -333,7 +333,13 @@ export function RichTextToolbar({ value, onChange, textareaRef, disabled, placeh
                     variant="ghost"
                     size="sm"
                     className="h-7 justify-start font-mono text-xs"
-                    onClick={() => insertAtCursor(p)}
+                    onClick={() => {
+                      if (onInsertPlaceholder) {
+                        onInsertPlaceholder(p);
+                      } else {
+                        insertAtCursor(p);
+                      }
+                    }}
                   >
                     {p}
                   </Button>
