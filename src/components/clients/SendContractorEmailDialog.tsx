@@ -116,10 +116,8 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
     setSelectedTemplateId('');
   };
 
-  const [autoReplace, setAutoReplace] = useState(true);
-
   const applyPlaceholders = (text: string): string => {
-    if (!contractor || !autoReplace) return text;
+    if (!contractor) return text;
     const firstName = contractor.name.split(' ')[0];
     return text
       .replace(/\{\{first_name\}\}/gi, firstName)
@@ -318,15 +316,6 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
                 {isScheduled ? 'Scheduled' : 'Schedule for later'}
               </Button>
 
-              <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={autoReplace}
-                  onChange={(e) => setAutoReplace(e.target.checked)}
-                  className="rounded border-input"
-                />
-                Auto-replace placeholders
-              </label>
             </div>
 
             {isScheduled && (
