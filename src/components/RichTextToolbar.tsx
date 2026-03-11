@@ -13,7 +13,7 @@ interface RichTextToolbarProps {
   placeholders?: string[];
 }
 
-export function RichTextToolbar({ value, onChange, textareaRef, disabled }: RichTextToolbarProps) {
+export function RichTextToolbar({ value, onChange, textareaRef, disabled, placeholders }: RichTextToolbarProps) {
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
   const [linkText, setLinkText] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
