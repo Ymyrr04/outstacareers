@@ -289,7 +289,7 @@ export const BulkContractorEmailDialog = ({
 
     setScheduling(true);
     try {
-      const scheduledFor = getNextFridayElevenEST();
+      const scheduledFor = getNextFridayElevenEastern();
       
       const { error } = await supabase.from('scheduled_contractor_emails' as any).insert({
         subject,
@@ -300,10 +300,10 @@ export const BulkContractorEmailDialog = ({
 
       if (error) throw error;
 
-      const fridayStr = scheduledFor.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+      const fridayStr = formatEasternDateTime(scheduledFor.toISOString());
       toast({
         title: 'Email Scheduled',
-        description: `Bulk email scheduled for ${fridayStr} at 11:00 AM EST`,
+        description: `Bulk email scheduled for ${fridayStr}`,
       });
 
       resetForm();
