@@ -42,6 +42,8 @@ export const ContractorEmailTemplateManager = ({ open, onOpenChange }: Contracto
   const [isCreating, setIsCreating] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<EmailTemplate | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const subjectRef = useRef<HTMLInputElement>(null);
+  const lastFocusedRef = useRef<'subject' | 'body'>('body');
 
   // Form state
   const [formName, setFormName] = useState('');
