@@ -299,7 +299,7 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
                 ref={textareaRef}
                 value={bodyHtml}
                 onChange={(e) => setBodyHtml(e.target.value)}
-                className="w-full min-h-[200px] p-3 border rounded-md bg-background text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-ring"
+                className="w-full min-h-[320px] p-3 border rounded-md bg-background text-sm font-mono resize-y focus:outline-none focus:ring-2 focus:ring-ring"
                 placeholder="Write your email content here... HTML is supported."
               />
             </div>
