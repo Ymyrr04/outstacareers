@@ -294,7 +294,8 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
               <RichTextToolbar 
                 value={bodyHtml} 
                 onChange={setBodyHtml} 
-                textareaRef={textareaRef as React.RefObject<HTMLTextAreaElement>} 
+                textareaRef={textareaRef as React.RefObject<HTMLTextAreaElement>}
+                placeholders={['{{first_name}}', '{{full_name}}', '{{company}}', '{{job_title}}']}
               />
               <textarea
                 ref={textareaRef}
