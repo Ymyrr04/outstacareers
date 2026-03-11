@@ -318,15 +318,6 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
                 {isScheduled ? 'Scheduled' : 'Schedule for later'}
               </Button>
 
-              <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
-                <input
-                  type="checkbox"
-                  checked={autoReplace}
-                  onChange={(e) => setAutoReplace(e.target.checked)}
-                  className="rounded border-input"
-                />
-                Auto-replace placeholders
-              </label>
             </div>
 
             {isScheduled && (
