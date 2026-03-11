@@ -235,12 +235,46 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
               </Select>
             </div>
 
-            {/* Placeholder help */}
-            <div className="text-xs text-muted-foreground bg-muted/30 rounded p-2">
-              Available placeholders: <code className="bg-muted px-1 rounded">{'{{first_name}}'}</code>{' '}
-              <code className="bg-muted px-1 rounded">{'{{full_name}}'}</code>{' '}
-              <code className="bg-muted px-1 rounded">{'{{company}}'}</code>{' '}
-              <code className="bg-muted px-1 rounded">{'{{job_title}}'}</code>
+            {/* Clickable placeholders */}
+            <div className="text-xs text-muted-foreground bg-muted/30 rounded p-2 flex flex-wrap items-center gap-1.5">
+              <span>Insert placeholder:</span>
+              {['{{first_name}}', '{{full_name}}', '{{company}}', '{{job_title}}'].map(p => (
+                <button
+                  key={p}
+                  type="button"
+                  className="bg-muted hover:bg-muted/80 px-1.5 py-0.5 rounded font-mono text-xs cursor-pointer border border-border hover:border-primary/50 transition-colors"
+                  onClick={() => {
+                    // Insert into whichever field was last focused, default to body
+                    const subjectEl = document.getElementById('contractor-email-subject') as HTMLInputElement | null;
+                    const isSubjectFocused = document.activeElement === subjectEl;
+
+                    if (isSubjectFocused && subjectEl) {
+                      const start = subjectEl.selectionStart ?? subject.length;
+                      const end = subjectEl.selectionEnd ?? subject.length;
+                      const newVal = subject.substring(0, start) + p + subject.substring(end);
+                      setSubject(newVal);
+                      setTimeout(() => {
+                        subjectEl.focus();
+                        const pos = start + p.length;
+                        subjectEl.setSelectionRange(pos, pos);
+                      }, 0);
+                    } else {
+                      const ta = textareaRef.current;
+                      const start = ta?.selectionStart ?? bodyHtml.length;
+                      const end = ta?.selectionEnd ?? bodyHtml.length;
+                      const newVal = bodyHtml.substring(0, start) + p + bodyHtml.substring(end);
+                      setBodyHtml(newVal);
+                      setTimeout(() => {
+                        ta?.focus();
+                        const pos = start + p.length;
+                        ta?.setSelectionRange(pos, pos);
+                      }, 0);
+                    }
+                  }}
+                >
+                  {p}
+                </button>
+              ))}
             </div>
 
             {/* Subject */}
