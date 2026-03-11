@@ -338,6 +338,32 @@ export const ContractorEmailTemplateManager = ({ open, onOpenChange }: Contracto
                     onChange={setFormBodyHtml}
                     textareaRef={textareaRef as React.RefObject<HTMLTextAreaElement>}
                     placeholders={['{{first_name}}', '{{full_name}}', '{{company}}', '{{job_title}}']}
+                    onInsertPlaceholder={(p) => {
+                      if (lastFocusedRef.current === 'subject') {
+                        const el = subjectRef.current;
+                        if (!el) return;
+                        const start = el.selectionStart ?? formSubject.length;
+                        const end = el.selectionEnd ?? formSubject.length;
+                        const newVal = formSubject.substring(0, start) + p + formSubject.substring(end);
+                        setFormSubject(newVal);
+                        setTimeout(() => {
+                          el.focus();
+                          const pos = start + p.length;
+                          el.setSelectionRange(pos, pos);
+                        }, 0);
+                      } else {
+                        const ta = textareaRef.current;
+                        const start = ta?.selectionStart ?? formBodyHtml.length;
+                        const end = ta?.selectionEnd ?? formBodyHtml.length;
+                        const newVal = formBodyHtml.substring(0, start) + p + formBodyHtml.substring(end);
+                        setFormBodyHtml(newVal);
+                        setTimeout(() => {
+                          ta?.focus();
+                          const pos = start + p.length;
+                          ta?.setSelectionRange(pos, pos);
+                        }, 0);
+                      }
+                    }}
                   />
                   <textarea
                     ref={textareaRef}
