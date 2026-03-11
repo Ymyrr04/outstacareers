@@ -264,18 +264,21 @@ export const BulkContractorEmailDialog = ({
     }
   };
 
-  const getNextFridayElevenEST = (): Date => {
-    // Calculate next Friday at 11:00 AM EST (16:00 UTC)
+  const getNextFridayElevenEastern = (): Date => {
     const now = new Date();
-    const currentDay = now.getDay();
-    let daysUntilFriday = (5 - currentDay + 7) % 7;
+    const { year, month, day, weekday } = getEasternParts(now);
+
+    let daysUntilFriday = (5 - weekday + 7) % 7;
     if (daysUntilFriday === 0) daysUntilFriday = 7;
-    const friday = new Date(now);
-    friday.setDate(friday.getDate() + daysUntilFriday);
-    const year = friday.getFullYear();
-    const month = friday.getMonth();
-    const day = friday.getDate();
-    return new Date(Date.UTC(year, month, day, 16, 0, 0, 0));
+
+    const easternCalendarDate = new Date(Date.UTC(year, month - 1, day));
+    easternCalendarDate.setUTCDate(easternCalendarDate.getUTCDate() + daysUntilFriday);
+
+    const targetYear = easternCalendarDate.getUTCFullYear();
+    const targetMonth = easternCalendarDate.getUTCMonth() + 1;
+    const targetDay = easternCalendarDate.getUTCDate();
+
+    return buildDateAtTimezone(targetYear, targetMonth, targetDay, 11, 0, EASTERN_TIME_ZONE);
   };
 
   const handleScheduleFriday = async () => {
