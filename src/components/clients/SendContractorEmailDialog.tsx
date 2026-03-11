@@ -116,14 +116,16 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
     setSelectedTemplateId('');
   };
 
+  const [autoReplace, setAutoReplace] = useState(true);
+
   const applyPlaceholders = (text: string): string => {
-    if (!contractor) return text;
+    if (!contractor || !autoReplace) return text;
     const firstName = contractor.name.split(' ')[0];
     return text
-      .replace(/\{\{first_name\}\}/g, firstName)
-      .replace(/\{\{full_name\}\}/g, contractor.name)
-      .replace(/\{\{company\}\}/g, contractor.company)
-      .replace(/\{\{job_title\}\}/g, contractor.jobTitle);
+      .replace(/\{\{first_name\}\}/gi, firstName)
+      .replace(/\{\{full_name\}\}/gi, contractor.name)
+      .replace(/\{\{company\}\}/gi, contractor.company)
+      .replace(/\{\{job_title\}\}/gi, contractor.jobTitle);
   };
 
   const handleSend = async () => {
@@ -269,8 +271,8 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
               />
             </div>
 
-            {/* Schedule toggle */}
-            <div className="flex items-center gap-3">
+            {/* Options row */}
+            <div className="flex items-center gap-4 flex-wrap">
               <Button
                 type="button"
                 variant={isScheduled ? 'default' : 'outline'}
@@ -280,6 +282,16 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
                 <Clock className="w-4 h-4 mr-1" />
                 {isScheduled ? 'Scheduled' : 'Schedule for later'}
               </Button>
+
+              <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
+                <input
+                  type="checkbox"
+                  checked={autoReplace}
+                  onChange={(e) => setAutoReplace(e.target.checked)}
+                  className="rounded border-input"
+                />
+                Auto-replace placeholders
+              </label>
             </div>
 
             {isScheduled && (

@@ -80,16 +80,16 @@ const handler = async (req: Request): Promise<Response> => {
 
       const firstName = applicant.full_name?.split(' ')[0] || '';
       const personalizedBody = bodyHtml
-        .replace(/\{\{first_name\}\}/g, firstName)
-        .replace(/\{\{full_name\}\}/g, applicant.full_name || '')
-        .replace(/\{\{company\}\}/g, clientData?.company_name || '')
-        .replace(/\{\{job_title\}\}/g, contractor.job_title || '');
+        .replace(/\{\{first_name\}\}/gi, firstName)
+        .replace(/\{\{full_name\}\}/gi, applicant.full_name || '')
+        .replace(/\{\{company\}\}/gi, clientData?.company_name || '')
+        .replace(/\{\{job_title\}\}/gi, contractor.job_title || '');
 
       const personalizedSubject = subject
-        .replace(/\{\{first_name\}\}/g, firstName)
-        .replace(/\{\{full_name\}\}/g, applicant.full_name || '')
-        .replace(/\{\{company\}\}/g, clientData?.company_name || '')
-        .replace(/\{\{job_title\}\}/g, contractor.job_title || '');
+        .replace(/\{\{first_name\}\}/gi, firstName)
+        .replace(/\{\{full_name\}\}/gi, applicant.full_name || '')
+        .replace(/\{\{company\}\}/gi, clientData?.company_name || '')
+        .replace(/\{\{job_title\}\}/gi, contractor.job_title || '');
 
       // Convert markdown-style links [text](url) to HTML <a> tags, then newlines to <br>
       const formattedBody = personalizedBody
