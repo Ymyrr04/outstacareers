@@ -50,6 +50,9 @@ export const BulkContractorEmailDialog = ({
   const [loadingTemplates, setLoadingTemplates] = useState(false);
   const [recurringSchedule, setRecurringSchedule] = useState('none');
   const [recurringEnabled, setRecurringEnabled] = useState(false);
+  const [pendingEmails, setPendingEmails] = useState<any[]>([]);
+  const [loadingPending, setLoadingPending] = useState(false);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
