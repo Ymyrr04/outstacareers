@@ -31,8 +31,15 @@ function DateTimeInsertPopover({ insertAtCursor, disabled, value, onChange }: { 
     const dateObj = new Date(year, month - 1, day);
     const formattedDate = format(dateObj, 'MMMM d');
     const timeLower = selectedTime.toLowerCase();
-    const text = `${formattedDate}, ${timeLower} EST.`;
-    insertAtCursor(text);
+    const newScheduleText = `${formattedDate}, ${timeLower} EST.`;
+
+    // Try to find and replace existing "Schedule: ..." line
+    const scheduleRegex = /Schedule:\s*.+?EST\./i;
+    if (scheduleRegex.test(value)) {
+      onChange(value.replace(scheduleRegex, `Schedule: ${newScheduleText}`));
+    } else {
+      insertAtCursor(`Schedule: ${newScheduleText}`);
+    }
     setOpen(false);
   };
 
