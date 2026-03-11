@@ -3,7 +3,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Bold, Italic, Underline, Link2, List, ListOrdered } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Bold, Italic, Underline, Link2, List, ListOrdered, CalendarClock } from 'lucide-react';
+import { format } from 'date-fns';
+
+const SCHEDULE_TIME_SLOTS: string[] = [];
+for (let h = 0; h < 24; h++) {
+  for (let m = 0; m < 60; m += 30) {
+    const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    const ampm = h < 12 ? 'AM' : 'PM';
+    const minStr = m === 0 ? '00' : '30';
+    SCHEDULE_TIME_SLOTS.push(`${hour12}:${minStr} ${ampm}`);
+  }
+}
 
 interface RichTextToolbarProps {
   value: string;
