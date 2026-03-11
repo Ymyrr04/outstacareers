@@ -3,7 +3,79 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Bold, Italic, Underline, Link2, List, ListOrdered } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Bold, Italic, Underline, Link2, List, ListOrdered, CalendarClock } from 'lucide-react';
+import { format } from 'date-fns';
+
+const SCHEDULE_TIME_SLOTS: string[] = [];
+for (let h = 0; h < 24; h++) {
+  for (let m = 0; m < 60; m += 30) {
+    const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+    const ampm = h < 12 ? 'AM' : 'PM';
+    const minStr = m === 0 ? '00' : '30';
+    SCHEDULE_TIME_SLOTS.push(`${hour12}:${minStr} ${ampm}`);
+  }
+}
+
+function DateTimeInsertPopover({ insertAtCursor, disabled }: { insertAtCursor: (text: string) => void; disabled?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const todayStr = (() => {
+    const now = new Date();
+    return new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York', year: 'numeric', month: '2-digit', day: '2-digit' }).format(now);
+  })();
+  const [selectedDate, setSelectedDate] = useState(todayStr);
+  const [selectedTime, setSelectedTime] = useState('10:00 AM');
+
+  const handleInsert = () => {
+    const [year, month, day] = selectedDate.split('-').map(Number);
+    const dateObj = new Date(year, month - 1, day);
+    const formattedDate = format(dateObj, 'MMMM d');
+    const timeLower = selectedTime.toLowerCase();
+    const text = `${formattedDate}, ${timeLower} EST.`;
+    insertAtCursor(text);
+    setOpen(false);
+  };
+
+  return (
+    <Popover open={open} onOpenChange={(o) => { if (o) { setSelectedDate(todayStr); setSelectedTime('10:00 AM'); } setOpen(o); }}>
+      <PopoverTrigger asChild>
+        <Button type="button" variant="ghost" size="sm" className="h-7 px-2 gap-1 text-xs" disabled={disabled} title="Insert date & time">
+          <CalendarClock className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Date/Time</span>
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-3" align="start">
+        <div className="space-y-3">
+          <p className="text-xs font-medium text-muted-foreground">Insert formatted date & time</p>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Date</Label>
+            <Input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} className="h-8 text-sm" />
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-xs">Time (EST)</Label>
+            <Select value={selectedTime} onValueChange={setSelectedTime}>
+              <SelectTrigger className="h-8 text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="max-h-[200px]">
+                {SCHEDULE_TIME_SLOTS.map((slot) => (
+                  <SelectItem key={slot} value={slot}>{slot}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="bg-muted/50 rounded p-2 text-xs text-muted-foreground">
+            Preview: <span className="font-medium text-foreground">{(() => { const [y,m,d] = selectedDate.split('-').map(Number); return format(new Date(y,m-1,d), 'MMMM d'); })()}, {selectedTime.toLowerCase()} EST.</span>
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(false)}>Cancel</Button>
+            <Button type="button" size="sm" onClick={handleInsert} disabled={!selectedDate}>Insert</Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
 
 interface RichTextToolbarProps {
   value: string;
@@ -349,6 +421,9 @@ export function RichTextToolbar({ value, onChange, textareaRef, disabled, placeh
           </Popover>
         </>
       )}
+
+      <div className="w-px h-4 bg-border mx-1" />
+      <DateTimeInsertPopover insertAtCursor={insertAtCursor} disabled={disabled} />
       
       <span className="text-[10px] text-muted-foreground ml-auto hidden sm:block">
         Ctrl+K for link
