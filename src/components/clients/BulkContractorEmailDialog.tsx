@@ -8,10 +8,10 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-
 import { cn } from '@/lib/utils';
 import { Send, Loader2, FileText, Mail, Users, RefreshCw, CalendarClock, Clock, XCircle, CalendarIcon } from 'lucide-react';
 import { RichTextToolbar } from '@/components/RichTextToolbar';
+import { ScheduleDateTimeDialog } from '@/components/clients/ScheduleDateTimeDialog';
 
 interface EmailTemplate {
   id: string;
