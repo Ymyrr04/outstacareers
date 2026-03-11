@@ -414,7 +414,12 @@ export const BulkContractorEmailDialog = ({
                       <p className="font-medium truncate">{email.subject}</p>
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1">
                         <CalendarIcon className="w-3 h-3" />
-                        <span>{format(new Date(email.scheduled_for), 'EEE, MMM d, yyyy h:mm a')} EST</span>
+                        <span>{(() => {
+                          // Convert UTC to EST (UTC-5) for display
+                          const utcDate = new Date(email.scheduled_for);
+                          const estDate = new Date(utcDate.getTime() - 5 * 60 * 60 * 1000);
+                          return `${format(estDate, 'EEE, MMM d, yyyy h:mm a')} EST`;
+                        })()}</span>
                         <Badge variant="outline" className="text-amber-600 border-amber-300 text-[10px] px-1.5 py-0">
                           Pending
                         </Badge>
