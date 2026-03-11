@@ -17,7 +17,7 @@ for (let h = 0; h < 24; h++) {
   }
 }
 
-function DateTimeInsertPopover({ insertAtCursor, disabled }: { insertAtCursor: (text: string) => void; disabled?: boolean }) {
+function DateTimeInsertPopover({ insertAtCursor, disabled, value, onChange }: { insertAtCursor: (text: string) => void; disabled?: boolean; value: string; onChange: (v: string) => void }) {
   const [open, setOpen] = useState(false);
   const todayStr = (() => {
     const now = new Date();
