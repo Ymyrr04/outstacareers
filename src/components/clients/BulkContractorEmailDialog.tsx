@@ -214,14 +214,14 @@ export const BulkContractorEmailDialog = ({
   const handleReschedule = async (id: string) => {
     setCancellingId(id);
     try {
-      const newDate = getNextFridayElevenEST();
+      const newDate = getNextFridayElevenEastern();
       const { error } = await supabase
         .from('scheduled_contractor_emails' as any)
         .update({ scheduled_for: newDate.toISOString() } as any)
         .eq('id', id);
       if (error) throw error;
-      const fridayStr = newDate.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
-      toast({ title: 'Rescheduled', description: `Email rescheduled to ${fridayStr} at 11:00 AM EST` });
+      const fridayStr = formatEasternDateTime(newDate.toISOString());
+      toast({ title: 'Rescheduled', description: `Email rescheduled to ${fridayStr}` });
       fetchPendingEmails();
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
