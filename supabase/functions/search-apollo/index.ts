@@ -65,9 +65,15 @@ serve(async (req) => {
 
     const results = (data.people || []).map((person: any) => {
       const firstName = person.first_name || person.firstName || '';
-      const lastName = person.last_name || person.lastName || '';
+      const rawLastName =
+        person.last_name ||
+        person.lastName ||
+        person.last_name_obfuscated ||
+        person.lastNameObfuscated ||
+        '';
+      const lastName = typeof rawLastName === 'string' ? rawLastName.trim() : '';
       const fallbackName = person.full_name || person.fullName || person.name || '';
-      const fullName = `${firstName} ${lastName}`.trim() || fallbackName || 'Unknown Candidate';
+      const fullName = `${firstName} ${lastName}`.trim() || fallbackName || firstName || 'Unknown Candidate';
 
       const rawLinkedIn =
         person.linkedin_url ||
