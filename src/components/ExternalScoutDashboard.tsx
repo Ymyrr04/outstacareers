@@ -1,0 +1,442 @@
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Loader2, Globe, SearchIcon, MapPin, Building2, Mail, ExternalLink,
+  ChevronDown, ChevronUp, Users, Briefcase, UserPlus, CheckCircle, AlertCircle
+} from 'lucide-react';
+import { CopyableText } from '@/components/CopyableText';
+
+interface ApolloResult {
+  id: string;
+  full_name: string;
+  first_name: string;
+  last_name: string;
+  email: string | null;
+  email_status: string | null;
+  title: string | null;
+  headline: string | null;
+  linkedin_url: string | null;
+  photo_url: string | null;
+  location: string;
+  organization: {
+    name: string;
+    website: string | null;
+    industry: string | null;
+    size: number | null;
+  } | null;
+  seniority: string | null;
+  departments: string[] | null;
+}
+
+interface SearchResponse {
+  results: ApolloResult[];
+  total: number;
+  page: number;
+  per_page: number;
+  total_pages: number;
+}
+
+const SENIORITY_OPTIONS = [
+  { value: 'entry', label: 'Entry Level' },
+  { value: 'senior', label: 'Senior' },
+  { value: 'manager', label: 'Manager' },
+  { value: 'director', label: 'Director' },
+  { value: 'vp', label: 'VP' },
+  { value: 'c_suite', label: 'C-Suite' },
+];
+
+export const ExternalScoutDashboard = () => {
+  const { toast } = useToast();
+  const [jobTitle, setJobTitle] = useState('');
+  const [location, setLocation] = useState('');
+  const [seniority, setSeniority] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [results, setResults] = useState<SearchResponse | null>(null);
+  const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
+  const [currentPage, setCurrentPage] = useState(1);
+  const [importing, setImporting] = useState<Set<string>>(new Set());
+  const [imported, setImported] = useState<Set<string>>(new Set());
+
+  const toggleExpanded = (id: string) => {
+    setExpandedCards(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const handleSearch = async (page = 1) => {
+    if (!jobTitle.trim()) {
+      toast({ title: 'Job title is required', variant: 'destructive' });
+      return;
+    }
+
+    setLoading(true);
+    if (page === 1) setResults(null);
+
+    try {
+      const { data, error } = await supabase.functions.invoke('search-apollo', {
+        body: {
+          job_title: jobTitle.trim(),
+          location: location.trim() || undefined,
+          seniority: seniority ? [seniority] : undefined,
+          per_page: 10,
+          page,
+        },
+      });
+
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      setResults(data);
+      setCurrentPage(page);
+
+      toast({
+        title: 'Search Complete',
+        description: `Found ${data.total} candidates (showing page ${page} of ${data.total_pages}).`,
+      });
+    } catch (err: any) {
+      console.error('Apollo search error:', err);
+      toast({
+        title: 'Search Failed',
+        description: err.message || 'Failed to search Apollo',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleImport = async (person: ApolloResult) => {
+    if (!person.email) {
+      toast({ title: 'No email available', description: 'Cannot import without an email address.', variant: 'destructive' });
+      return;
+    }
+
+    setImporting(prev => new Set(prev).add(person.id));
+
+    try {
+      // Check if applicant with this email already exists
+      const { data: existing } = await supabase
+        .from('applicants_prescreen')
+        .select('id, full_name')
+        .eq('email', person.email)
+        .maybeSingle();
+
+      if (existing) {
+        toast({
+          title: 'Already exists',
+          description: `${existing.full_name} is already in your database.`,
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      const { error } = await supabase.from('applicants_prescreen').insert({
+        full_name: person.full_name,
+        email: person.email,
+        location: person.location || 'Unknown',
+        job_title: person.title || jobTitle,
+        apply_url: person.linkedin_url || 'apollo-import',
+        status: 'Talent Pool',
+        home_office: false,
+        noise_canceling_headset: false,
+        laptop_or_pc: false,
+        good_internet: false,
+        internet_speed: 'Unknown',
+        power_backup: false,
+        can_work_40_50: false,
+        us_timezone_ok: false,
+        has_experience: true,
+        currently_working: true,
+        start_availability: 'TBD',
+        job_source: 'Apollo',
+        candidate_profile: [
+          person.headline,
+          person.organization ? `Currently at ${person.organization.name}` : null,
+          person.organization?.industry ? `Industry: ${person.organization.industry}` : null,
+        ].filter(Boolean).join('\n'),
+        notes: `Sourced from Apollo.io\nLinkedIn: ${person.linkedin_url || 'N/A'}\nEmail Status: ${person.email_status || 'Unknown'}`,
+      });
+
+      if (error) throw error;
+
+      setImported(prev => new Set(prev).add(person.id));
+      toast({ title: 'Imported!', description: `${person.full_name} added to Talent Pool.` });
+    } catch (err: any) {
+      console.error('Import error:', err);
+      toast({ title: 'Import failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setImporting(prev => {
+        const next = new Set(prev);
+        next.delete(person.id);
+        return next;
+      });
+    }
+  };
+
+  const getEmailStatusBadge = (status: string | null) => {
+    if (!status) return null;
+    switch (status) {
+      case 'verified':
+        return <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30 text-xs"><CheckCircle className="w-3 h-3 mr-1" />Verified</Badge>;
+      case 'guessed':
+        return <Badge className="bg-amber-500/10 text-amber-600 border-amber-500/30 text-xs"><AlertCircle className="w-3 h-3 mr-1" />Guessed</Badge>;
+      default:
+        return <Badge variant="outline" className="text-xs">{status}</Badge>;
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="p-2 rounded-lg bg-primary/10">
+          <Globe className="w-6 h-6 text-primary" />
+        </div>
+        <div>
+          <h2 className="text-2xl font-bold">External Scout</h2>
+          <p className="text-muted-foreground text-sm">
+            Search for external candidates via Apollo.io — find talent beyond your existing database
+          </p>
+        </div>
+        <Badge variant="outline" className="ml-auto text-xs">
+          Apollo.io Free Tier • 50 credits/month
+        </Badge>
+      </div>
+
+      {/* Search Form */}
+      <Card>
+        <CardContent className="pt-6 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <Label htmlFor="apollo-title" className="font-semibold">Job Title *</Label>
+              <Input
+                id="apollo-title"
+                placeholder="e.g. Virtual Assistant, Customer Service Rep"
+                value={jobTitle}
+                onChange={(e) => setJobTitle(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              />
+            </div>
+            <div>
+              <Label htmlFor="apollo-location" className="font-semibold">Location</Label>
+              <Input
+                id="apollo-location"
+                placeholder="e.g. Philippines, South Africa"
+                value={location}
+                onChange={(e) => setLocation(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+              />
+            </div>
+            <div>
+              <Label className="font-semibold">Seniority</Label>
+              <Select value={seniority} onValueChange={setSeniority}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Any level" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="any">Any level</SelectItem>
+                  {SENIORITY_OPTIONS.map(opt => (
+                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <Button onClick={() => handleSearch(1)} disabled={loading} className="w-full gap-2" size="lg">
+            {loading ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Searching Apollo...</>
+            ) : (
+              <><SearchIcon className="w-4 h-4" /> Search External Candidates</>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
+      {/* Results */}
+      {results && (
+        <div className="space-y-4">
+          {/* Stats */}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <Users className="w-4 h-4" />
+              <span>{results.total.toLocaleString()} candidates found</span>
+              <span>•</span>
+              <span>Page {results.page} of {results.total_pages}</span>
+            </div>
+          </div>
+
+          {results.results.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Users className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                <p className="text-lg font-medium">No candidates found</p>
+                <p className="text-muted-foreground text-sm mt-1">Try different search terms or broaden your filters.</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {results.results.map((person) => (
+                <Card
+                  key={person.id}
+                  className="cursor-pointer hover:shadow-md transition-shadow"
+                  onClick={() => toggleExpanded(person.id)}
+                >
+                  <CardContent className="pt-4 pb-4">
+                    {/* Main Row */}
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        {person.photo_url ? (
+                          <img
+                            src={person.photo_url}
+                            alt={person.full_name}
+                            className="w-10 h-10 rounded-full object-cover shrink-0"
+                            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+                          />
+                        ) : (
+                          <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                            <span className="text-sm font-bold text-muted-foreground">
+                              {person.first_name?.[0]}{person.last_name?.[0]}
+                            </span>
+                          </div>
+                        )}
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="font-semibold text-base">{person.full_name}</span>
+                            {person.email_status && getEmailStatusBadge(person.email_status)}
+                          </div>
+                          <p className="text-sm text-muted-foreground">{person.title || 'No title'}</p>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                            {person.location && (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3" /> {person.location}
+                              </span>
+                            )}
+                            {person.organization && (
+                              <span className="flex items-center gap-1">
+                                <Building2 className="w-3 h-3" /> {person.organization.name}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {imported.has(person.id) ? (
+                          <Badge className="bg-emerald-500/10 text-emerald-600 border-emerald-500/30">
+                            <CheckCircle className="w-3 h-3 mr-1" /> Imported
+                          </Badge>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="gap-1"
+                            disabled={importing.has(person.id) || !person.email}
+                            onClick={(e) => { e.stopPropagation(); handleImport(person); }}
+                          >
+                            {importing.has(person.id) ? (
+                              <Loader2 className="w-3 h-3 animate-spin" />
+                            ) : (
+                              <UserPlus className="w-3 h-3" />
+                            )}
+                            Import
+                          </Button>
+                        )}
+                        {expandedCards.has(person.id) ? (
+                          <ChevronUp className="w-5 h-5 text-muted-foreground" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-muted-foreground" />
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Expanded Details */}
+                    {expandedCards.has(person.id) && (
+                      <div className="mt-4 pt-4 border-t space-y-3" onClick={(e) => e.stopPropagation()}>
+                        {person.headline && (
+                          <p className="text-sm text-muted-foreground italic">{person.headline}</p>
+                        )}
+
+                        <div className="flex flex-wrap gap-4 text-sm">
+                          {person.email && <CopyableText text={person.email} />}
+                          {person.linkedin_url && (
+                            <a
+                              href={person.linkedin_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center gap-1 text-primary hover:underline"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" /> LinkedIn Profile
+                            </a>
+                          )}
+                        </div>
+
+                        {person.organization && (
+                          <div className="p-3 rounded-lg bg-muted/50">
+                            <p className="text-sm font-medium mb-1 flex items-center gap-1">
+                              <Building2 className="w-3.5 h-3.5" /> Company
+                            </p>
+                            <div className="text-sm text-muted-foreground space-y-0.5">
+                              <p className="font-medium text-foreground">{person.organization.name}</p>
+                              {person.organization.industry && <p>Industry: {person.organization.industry}</p>}
+                              {person.organization.size && <p>Size: ~{person.organization.size.toLocaleString()} employees</p>}
+                              {person.organization.website && (
+                                <a href={person.organization.website} target="_blank" rel="noopener noreferrer" className="text-primary hover:underline">
+                                  {person.organization.website}
+                                </a>
+                              )}
+                            </div>
+                          </div>
+                        )}
+
+                        <div className="flex flex-wrap gap-2">
+                          {person.seniority && <Badge variant="outline">{person.seniority}</Badge>}
+                          {person.departments?.map((dept, i) => (
+                            <Badge key={i} variant="secondary" className="text-xs">{dept}</Badge>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+
+          {/* Pagination */}
+          {results.total_pages > 1 && (
+            <div className="flex items-center justify-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage <= 1 || loading}
+                onClick={() => handleSearch(currentPage - 1)}
+              >
+                Previous
+              </Button>
+              <span className="text-sm text-muted-foreground px-2">
+                Page {currentPage} of {results.total_pages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={currentPage >= results.total_pages || loading}
+                onClick={() => handleSearch(currentPage + 1)}
+              >
+                Next
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+};

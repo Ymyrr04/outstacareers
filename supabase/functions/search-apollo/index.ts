@@ -1,0 +1,112 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
+
+const APOLLO_API_URL = 'https://api.apollo.io';
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const APOLLO_API_KEY = Deno.env.get('APOLLO_API_KEY');
+    if (!APOLLO_API_KEY) {
+      throw new Error('APOLLO_API_KEY is not configured');
+    }
+
+    const { job_title, location, skills, seniority, per_page = 10, page = 1 } = await req.json();
+
+    if (!job_title) {
+      throw new Error('job_title is required');
+    }
+
+    // Build Apollo people search request
+    const searchBody: Record<string, unknown> = {
+      api_key: APOLLO_API_KEY,
+      q_keywords: job_title,
+      page: page,
+      per_page: Math.min(per_page, 25), // Apollo free tier caps results
+    };
+
+    // Add person titles filter
+    if (job_title) {
+      searchBody.person_titles = [job_title];
+    }
+
+    // Add location filter
+    if (location) {
+      searchBody.person_locations = Array.isArray(location) ? location : [location];
+    }
+
+    // Add seniority filter
+    if (seniority && seniority.length > 0) {
+      searchBody.person_seniorities = seniority;
+    }
+
+    console.log('Apollo search request:', JSON.stringify({ ...searchBody, api_key: '[REDACTED]' }));
+
+    const response = await fetch(`${APOLLO_API_URL}/v1/mixed_people/search`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'no-cache',
+      },
+      body: JSON.stringify(searchBody),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`Apollo API error [${response.status}]:`, errorText);
+      throw new Error(`Apollo API error [${response.status}]: ${errorText}`);
+    }
+
+    const data = await response.json();
+
+    // Transform Apollo results to a cleaner format
+    const results = (data.people || []).map((person: any) => ({
+      id: person.id,
+      full_name: person.name || `${person.first_name || ''} ${person.last_name || ''}`.trim(),
+      first_name: person.first_name,
+      last_name: person.last_name,
+      email: person.email,
+      email_status: person.email_status, // verified, guessed, etc.
+      title: person.title,
+      headline: person.headline,
+      linkedin_url: person.linkedin_url,
+      photo_url: person.photo_url,
+      city: person.city,
+      state: person.state,
+      country: person.country,
+      location: [person.city, person.state, person.country].filter(Boolean).join(', '),
+      organization: person.organization ? {
+        name: person.organization.name,
+        website: person.organization.website_url,
+        industry: person.organization.industry,
+        size: person.organization.estimated_num_employees,
+      } : null,
+      seniority: person.seniority,
+      departments: person.departments,
+    }));
+
+    return new Response(JSON.stringify({
+      results,
+      total: data.pagination?.total_entries || results.length,
+      page: data.pagination?.page || page,
+      per_page: data.pagination?.per_page || per_page,
+      total_pages: data.pagination?.total_pages || 1,
+    }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  } catch (error: unknown) {
+    console.error('Apollo search error:', error);
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    return new Response(JSON.stringify({ error: errorMessage }), {
+      status: 500,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+});
