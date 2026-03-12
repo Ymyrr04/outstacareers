@@ -6,7 +6,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Loader2, Globe, SearchIcon, MapPin, Building2, Mail, ExternalLink,
   ChevronDown, ChevronUp, Users, Briefcase, UserPlus, CheckCircle, AlertCircle
@@ -56,7 +57,7 @@ export const ExternalScoutDashboard = () => {
   const { toast } = useToast();
   const [jobTitle, setJobTitle] = useState('');
   const [location, setLocation] = useState('');
-  const [seniority, setSeniority] = useState('');
+  const [seniority, setSeniority] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SearchResponse | null>(null);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
@@ -86,7 +87,7 @@ export const ExternalScoutDashboard = () => {
         body: {
           job_title: jobTitle.trim(),
           location: location.trim() || undefined,
-          seniority: seniority ? [seniority] : undefined,
+          seniority: seniority.length > 0 ? seniority : undefined,
           per_page: 10,
           page,
         },
@@ -238,17 +239,47 @@ export const ExternalScoutDashboard = () => {
             </div>
             <div>
               <Label className="font-semibold">Seniority</Label>
-              <Select value={seniority} onValueChange={setSeniority}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Any level" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="any">Any level</SelectItem>
-                  {SENIORITY_OPTIONS.map(opt => (
-                    <SelectItem key={opt.value} value={opt.value}>{opt.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="w-full justify-between font-normal mt-1">
+                    {seniority.length === 0
+                      ? 'Any level'
+                      : seniority.length === 1
+                        ? SENIORITY_OPTIONS.find(o => o.value === seniority[0])?.label || seniority[0]
+                        : `${seniority.length} selected`}
+                    <ChevronDown className="w-4 h-4 opacity-50" />
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-[200px] p-2" align="start">
+                  <div className="space-y-1">
+                    {SENIORITY_OPTIONS.map(opt => (
+                      <label key={opt.value} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+                        <Checkbox
+                          checked={seniority.includes(opt.value)}
+                          onCheckedChange={(checked) => {
+                            setSeniority(prev =>
+                              checked
+                                ? [...prev, opt.value]
+                                : prev.filter(s => s !== opt.value)
+                            );
+                          }}
+                        />
+                        {opt.label}
+                      </label>
+                    ))}
+                    {seniority.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="w-full text-xs mt-1"
+                        onClick={() => setSeniority([])}
+                      >
+                        Clear all
+                      </Button>
+                    )}
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
 
