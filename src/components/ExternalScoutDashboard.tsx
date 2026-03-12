@@ -183,6 +183,17 @@ export const ExternalScoutDashboard = () => {
     }
   };
 
+  const getLinkedInHref = (person: ApolloResult) => {
+    if (person.linkedin_url) return person.linkedin_url;
+
+    const query = [person.full_name, person.organization?.name, person.location]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    return `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(query)}`;
+  };
+
   const getEmailStatusBadge = (status: string | null) => {
     if (!status) return null;
     switch (status) {
@@ -358,15 +369,16 @@ export const ExternalScoutDashboard = () => {
                               </span>
                             )}
                             {person.linkedin_url && (
-                              <a
-                                href={person.linkedin_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-[#0A66C2] hover:underline font-medium"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <ExternalLink className="w-3 h-3" /> LinkedIn
-                              </a>
+                            <a
+                              href={getLinkedInHref(person)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                              {person.linkedin_url ? 'LinkedIn' : 'Find on LinkedIn'}
+                            </a>
                             )}
                           </div>
                         </div>
@@ -426,16 +438,15 @@ export const ExternalScoutDashboard = () => {
 
                         {/* LinkedIn & Contact */}
                         <div className="flex flex-wrap gap-3">
-                          {person.linkedin_url && (
-                            <a
-                              href={person.linkedin_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#0A66C2]/10 text-[#0A66C2] hover:bg-[#0A66C2]/20 text-sm font-medium transition-colors"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" /> View LinkedIn Profile
-                            </a>
-                          )}
+                          <a
+                            href={getLinkedInHref(person)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 text-sm font-medium transition-colors"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            {person.linkedin_url ? 'View LinkedIn Profile' : 'Find on LinkedIn'}
+                          </a>
                           {person.email && (
                             <div className="flex items-center gap-2">
                               <CopyableText text={person.email} />

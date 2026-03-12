@@ -63,30 +63,52 @@ serve(async (req) => {
 
     const data = await response.json();
 
-    const results = (data.people || []).map((person: any) => ({
-      id: person.id,
-      full_name: person.name || `${person.first_name || ''} ${person.last_name || ''}`.trim(),
-      first_name: person.first_name,
-      last_name: person.last_name,
-      email: person.email,
-      email_status: person.email_status,
-      title: person.title,
-      headline: person.headline,
-      linkedin_url: person.linkedin_url,
-      photo_url: person.photo_url,
-      city: person.city,
-      state: person.state,
-      country: person.country,
-      location: [person.city, person.state, person.country].filter(Boolean).join(', '),
-      organization: person.organization ? {
-        name: person.organization.name,
-        website: person.organization.website_url,
-        industry: person.organization.industry,
-        size: person.organization.estimated_num_employees,
-      } : null,
-      seniority: person.seniority,
-      departments: person.departments,
-    }));
+    const results = (data.people || []).map((person: any) => {
+      const firstName = person.first_name || person.firstName || '';
+      const lastName = person.last_name || person.lastName || '';
+      const fallbackName = person.full_name || person.fullName || person.name || '';
+      const fullName = `${firstName} ${lastName}`.trim() || fallbackName || 'Unknown Candidate';
+
+      const rawLinkedIn =
+        person.linkedin_url ||
+        person.linkedin_profile_url ||
+        person.linkedin ||
+        person.social_links?.linkedin ||
+        person.social_links?.linkedin_url ||
+        person.links?.linkedin ||
+        null;
+
+      const linkedin_url = typeof rawLinkedIn === 'string' && rawLinkedIn.trim()
+        ? rawLinkedIn.startsWith('http')
+          ? rawLinkedIn
+          : `https://${rawLinkedIn.replace(/^\/+/, '')}`
+        : null;
+
+      return {
+        id: person.id,
+        full_name: fullName,
+        first_name: firstName || fullName.split(' ')[0] || '',
+        last_name: lastName || null,
+        email: person.email,
+        email_status: person.email_status,
+        title: person.title,
+        headline: person.headline,
+        linkedin_url,
+        photo_url: person.photo_url,
+        city: person.city,
+        state: person.state,
+        country: person.country,
+        location: [person.city, person.state, person.country].filter(Boolean).join(', '),
+        organization: person.organization ? {
+          name: person.organization.name,
+          website: person.organization.website_url,
+          industry: person.organization.industry,
+          size: person.organization.estimated_num_employees,
+        } : null,
+        seniority: person.seniority,
+        departments: person.departments,
+      };
+    });
 
     return new Response(JSON.stringify({
       results,
