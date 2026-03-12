@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck, UserCircle } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck, UserCircle, Target } from 'lucide-react';
 import { exportJobs, exportApplicants, exportAllData } from '@/lib/exportUtils';
 import { parseBooleanSearch } from '@/lib/booleanSearchParser';
 import { useBackgroundExport } from '@/hooks/useBackgroundExport';
@@ -55,6 +55,7 @@ import { AdminPermissionsManager } from '@/components/AdminPermissionsManager';
 import { HiredAssignmentDialog } from '@/components/HiredAssignmentDialog';
 import { BooleanSearchBuilder } from '@/components/BooleanSearchBuilder';
 import { SearchApplicantExpandedView } from '@/components/SearchApplicantExpandedView';
+import { TalentScoutDashboard } from '@/components/TalentScoutDashboard';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 // Status options for applicant tracking - new pipeline order
@@ -1581,6 +1582,12 @@ const Admin = () => {
               <TabsTrigger value="analytics" className="flex items-center gap-2">
                 <Zap className="w-4 h-4" />
                 Analytics
+              </TabsTrigger>
+            )}
+            {canViewTab('talent-scout') && (
+              <TabsTrigger value="talent-scout" className="flex items-center gap-2">
+                <Target className="w-4 h-4" />
+                Talent Scout
               </TabsTrigger>
             )}
             {/* Settings tab - only for super admins (mark@outsta.io) */}
@@ -3533,6 +3540,11 @@ const Admin = () => {
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6">
             <ClientAnalyticsDashboard />
+          </TabsContent>
+
+          {/* Talent Scout Tab */}
+          <TabsContent value="talent-scout" className="space-y-6">
+            <TalentScoutDashboard />
           </TabsContent>
 
           {/* Settings/Permissions Tab - Super Admin Only */}
