@@ -424,7 +424,7 @@ export const ExternalScoutDashboard = () => {
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                   />
                 </div>
-            <div>
+                <div>
               <Label htmlFor="apollo-location" className="font-semibold">Location</Label>
               <Input
                 id="apollo-location"
