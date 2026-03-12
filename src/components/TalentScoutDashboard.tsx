@@ -135,7 +135,7 @@ export const TalentScoutDashboard = () => {
     toast({ title: 'Search history cleared' });
   };
 
-
+  const handleParseJD = async () => {
     if (!rawJD.trim()) {
       toast({ title: 'Paste a job description first', variant: 'destructive' });
       return;
