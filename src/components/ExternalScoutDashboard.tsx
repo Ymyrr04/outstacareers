@@ -365,6 +365,17 @@ export const ExternalScoutDashboard = () => {
     }
   };
 
+  const handleDeleteImport = async (id: string) => {
+    try {
+      const { error } = await supabase.from('applicants_prescreen').delete().eq('id', id);
+      if (error) throw error;
+      setApolloImports(prev => prev.filter(a => a.id !== id));
+      toast({ title: 'Removed', description: 'Candidate removed from Apollo Imports.' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -379,17 +390,26 @@ export const ExternalScoutDashboard = () => {
           </p>
         </div>
         <Badge variant="outline" className="ml-auto text-xs">
-          Apollo.io • 100 per page • up to 500 pages
+          Apollo.io • 100 per page
         </Badge>
       </div>
 
-      {/* Search Form */}
-      <Card>
-        <CardContent className="pt-6 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="apollo-title" className="font-semibold">Job Title *</Label>
-              <Input
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="search" className="gap-1.5">
+            <SearchIcon className="w-3.5 h-3.5" />
+            Search
+          </TabsTrigger>
+          <TabsTrigger value="imports" className="gap-1.5">
+            <FolderOpen className="w-3.5 h-3.5" />
+            Apollo Imports
+            {apolloImports.length > 0 && (
+              <Badge variant="secondary" className="ml-1 text-xs">{apolloImports.length}</Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="search" className="space-y-6 mt-4">
                 id="apollo-title"
                 placeholder="e.g. Virtual Assistant, Customer Service Rep"
                 value={jobTitle}
