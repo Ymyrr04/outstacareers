@@ -183,6 +183,17 @@ export const ExternalScoutDashboard = () => {
     }
   };
 
+  const getLinkedInHref = (person: ApolloResult) => {
+    if (person.linkedin_url) return person.linkedin_url;
+
+    const query = [person.full_name, person.organization?.name, person.location]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+
+    return `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(query)}`;
+  };
+
   const getEmailStatusBadge = (status: string | null) => {
     if (!status) return null;
     switch (status) {
