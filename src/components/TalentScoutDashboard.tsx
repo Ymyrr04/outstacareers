@@ -273,7 +273,73 @@ export const TalentScoutDashboard = () => {
         </div>
       </div>
 
-      {/* Quick Parse Section */}
+      {/* Search History */}
+      {cachedSearches.length > 0 && (
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center justify-between">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowHistory(!showHistory)}
+                className="gap-2 text-muted-foreground"
+              >
+                <History className="w-4 h-4" />
+                Previous Searches ({cachedSearches.length})
+                {showHistory ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </Button>
+              {showHistory && (
+                <Button variant="ghost" size="sm" onClick={clearAllCache} className="gap-1 text-xs text-muted-foreground hover:text-destructive">
+                  <Trash2 className="w-3 h-3" /> Clear All
+                </Button>
+              )}
+            </div>
+            {showHistory && (
+              <div className="mt-3 space-y-2">
+                {cachedSearches.map(cached => (
+                  <div
+                    key={cached.id}
+                    className="flex items-center justify-between p-3 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => loadCachedSearch(cached)}>
+                      <p className="font-medium text-sm truncate">{cached.job_title}</p>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                        <span>{cached.response.results.length} matches</span>
+                        <span>•</span>
+                        <span>{cached.response.total_scanned} scanned</span>
+                        <span>•</span>
+                        <span>{new Date(cached.searched_at).toLocaleDateString()} {new Date(cached.searched_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0 ml-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => loadCachedSearch(cached)}
+                        title="Load cached results"
+                      >
+                        <SearchIcon className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        onClick={() => deleteCachedSearch(cached.id)}
+                        title="Delete from history"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+
       <Card className="border-dashed border-2">
         <CardContent className="pt-6 space-y-3">
           <div className="flex items-center gap-2">
