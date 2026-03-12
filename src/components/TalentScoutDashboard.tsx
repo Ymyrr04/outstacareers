@@ -200,6 +200,32 @@ export const TalentScoutDashboard = () => {
         </div>
       </div>
 
+      {/* Quick Parse Section */}
+      <Card className="border-dashed border-2">
+        <CardContent className="pt-6 space-y-3">
+          <div className="flex items-center gap-2">
+            <FileText className="w-5 h-5 text-primary" />
+            <Label className="font-semibold text-base">Quick Parse — Paste a Job Description</Label>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Paste the full job posting below and click "Parse" to auto-fill the title, requirements, and skills.
+          </p>
+          <Textarea
+            placeholder="Paste job description here... (e.g. from a job board, email, or client brief)"
+            value={rawJD}
+            onChange={(e) => setRawJD(e.target.value)}
+            rows={6}
+          />
+          <Button onClick={handleParseJD} disabled={parsing || !rawJD.trim()} className="gap-2">
+            {parsing ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Parsing...</>
+            ) : (
+              <><Sparkles className="w-4 h-4" /> Parse &amp; Auto-Fill</>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
+
       {/* Input Form */}
       <Card>
         <CardContent className="pt-6 space-y-4">
