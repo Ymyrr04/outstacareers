@@ -713,29 +713,27 @@ export const ExternalScoutDashboard = () => {
           )}
 
           {/* Pagination */}
-          {results.total_pages > 1 && (
-            <div className="flex items-center justify-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentPage <= 1 || loading}
-                onClick={() => handleSearch(currentPage - 1)}
-              >
-                Previous
-              </Button>
-              <span className="text-sm text-muted-foreground px-2">
-                Page {currentPage} of {results.total_pages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={currentPage >= results.total_pages || loading}
-                onClick={() => handleSearch(currentPage + 1)}
-              >
-                Next
-              </Button>
-            </div>
-          )}
+          <div className="flex items-center justify-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage <= 1 || loading}
+              onClick={() => handleSearch(currentPage - 1)}
+            >
+              Previous
+            </Button>
+            <span className="text-sm text-muted-foreground px-2">
+              Page {currentPage} of {results.total_pages} ({results.total.toLocaleString()} total)
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={currentPage >= results.total_pages || loading}
+              onClick={() => handleSearch(currentPage + 1)}
+            >
+              Next
+            </Button>
+          </div>
         </div>
       )}
     </div>
