@@ -86,7 +86,7 @@ export const ExternalScoutDashboard = () => {
         body: {
           job_title: jobTitle.trim(),
           location: location.trim() || undefined,
-          seniority: seniority ? [seniority] : undefined,
+          seniority: seniority.length > 0 ? seniority : undefined,
           per_page: 10,
           page,
         },
