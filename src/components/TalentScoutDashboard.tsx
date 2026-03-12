@@ -99,10 +99,14 @@ export const TalentScoutDashboard = () => {
 
       const parsed = data.data || data;
 
-      // Extract title from first line or use parsed description
-      const firstLine = rawJD.trim().split('\n')[0].trim();
-      const possibleTitle = firstLine.length < 80 ? firstLine.replace(/^(job\s*title|position|role)\s*[:|-]\s*/i, '') : '';
-      if (possibleTitle && !jobTitle) setJobTitle(possibleTitle);
+      // Always overwrite fields with parsed data
+      if (parsed.title) {
+        setJobTitle(parsed.title);
+      } else {
+        const firstLine = rawJD.trim().split('\n')[0].trim();
+        const possibleTitle = firstLine.length < 80 ? firstLine.replace(/^(job\s*title|position|role)\s*[:|-]\s*/i, '') : '';
+        if (possibleTitle) setJobTitle(possibleTitle);
+      }
 
       if (parsed.qualifications?.length) {
         setRequirements(parsed.qualifications);
@@ -110,7 +114,7 @@ export const TalentScoutDashboard = () => {
       if (parsed.responsibilities?.length) {
         setPreferredSkills(parsed.responsibilities.slice(0, 5));
       }
-      if (parsed.description && !jobDescription) {
+      if (parsed.description) {
         setJobDescription(parsed.description);
       }
 
