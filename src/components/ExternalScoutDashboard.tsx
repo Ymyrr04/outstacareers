@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -8,10 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Loader2, Globe, SearchIcon, MapPin, Building2, Mail, ExternalLink,
   ChevronDown, ChevronUp, Users, Briefcase, UserPlus, CheckCircle, AlertCircle,
-  Filter
+  Filter, FolderOpen, Trash2, ExternalLink as LinkIcon
 } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
 
@@ -97,6 +98,33 @@ export const ExternalScoutDashboard = () => {
   const [importing, setImporting] = useState<Set<string>>(new Set());
   const [imported, setImported] = useState<Set<string>>(new Set());
   const [resolvingLinkedIn, setResolvingLinkedIn] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState('search');
+  const [apolloImports, setApolloImports] = useState<any[]>([]);
+  const [loadingImports, setLoadingImports] = useState(false);
+
+  const fetchApolloImports = useCallback(async () => {
+    setLoadingImports(true);
+    try {
+      const { data, error } = await supabase
+        .from('applicants_prescreen')
+        .select('id, full_name, email, job_title, location, status, candidate_profile, notes, created_at, job_source')
+        .eq('job_source', 'Apollo')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setApolloImports(data || []);
+    } catch (err) {
+      console.error('Error fetching Apollo imports:', err);
+    } finally {
+      setLoadingImports(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'imports') {
+      fetchApolloImports();
+    }
+  }, [activeTab, fetchApolloImports]);
 
   const toggleExpanded = (id: string) => {
     setExpandedCards(prev => {
@@ -174,19 +202,16 @@ export const ExternalScoutDashboard = () => {
   };
 
   const handleImport = async (person: ApolloResult) => {
-    if (!person.email) {
-      toast({ title: 'No email available', description: 'Cannot import without an email address.', variant: 'destructive' });
-      return;
-    }
-
     setImporting(prev => new Set(prev).add(person.id));
 
     try {
+      const emailToUse = person.email || `apollo-pending-${person.id}@unknown.com`;
+      
       // Check if applicant with this email already exists
       const { data: existing } = await supabase
         .from('applicants_prescreen')
         .select('id, full_name')
-        .eq('email', person.email)
+        .eq('email', emailToUse)
         .maybeSingle();
 
       if (existing) {
@@ -198,13 +223,16 @@ export const ExternalScoutDashboard = () => {
         return;
       }
 
+      // Clean masked name (remove asterisks pattern like "Ga***n" → keep as-is for now)
+      const cleanName = person.full_name || `${person.first_name || ''} ${person.last_name || ''}`.trim() || 'Unknown';
+
       const { error } = await supabase.from('applicants_prescreen').insert({
-        full_name: person.full_name,
-        email: person.email,
+        full_name: cleanName,
+        email: emailToUse,
         location: person.location || 'Unknown',
         job_title: person.title || jobTitle,
         apply_url: person.linkedin_url || 'apollo-import',
-        status: 'Talent Pool',
+        status: 'Apollo Import',
         home_office: false,
         noise_canceling_headset: false,
         laptop_or_pc: false,
@@ -222,13 +250,17 @@ export const ExternalScoutDashboard = () => {
           person.organization ? `Currently at ${person.organization.name}` : null,
           person.organization?.industry ? `Industry: ${person.organization.industry}` : null,
         ].filter(Boolean).join('\n'),
-        notes: `Sourced from Apollo.io\nLinkedIn: ${person.linkedin_url || 'N/A'}\nEmail Status: ${person.email_status || 'Unknown'}`,
+        notes: [
+          'Sourced from Apollo.io',
+          `LinkedIn: ${person.linkedin_url || 'N/A'}`,
+          person.email ? `Email: ${person.email} (${person.email_status || 'Unknown'})` : 'Email: Not revealed on Apollo',
+        ].join('\n'),
       });
 
       if (error) throw error;
 
       setImported(prev => new Set(prev).add(person.id));
-      toast({ title: 'Imported!', description: `${person.full_name} added to Talent Pool.` });
+      toast({ title: 'Imported!', description: `${cleanName} added to Apollo Imports.` });
     } catch (err: any) {
       console.error('Import error:', err);
       toast({ title: 'Import failed', description: err.message, variant: 'destructive' });
@@ -333,6 +365,17 @@ export const ExternalScoutDashboard = () => {
     }
   };
 
+  const handleDeleteImport = async (id: string) => {
+    try {
+      const { error } = await supabase.from('applicants_prescreen').delete().eq('id', id);
+      if (error) throw error;
+      setApolloImports(prev => prev.filter(a => a.id !== id));
+      toast({ title: 'Removed', description: 'Candidate removed from Apollo Imports.' });
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    }
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -347,25 +390,41 @@ export const ExternalScoutDashboard = () => {
           </p>
         </div>
         <Badge variant="outline" className="ml-auto text-xs">
-          Apollo.io • 100 per page • up to 500 pages
+          Apollo.io • 100 per page
         </Badge>
       </div>
 
-      {/* Search Form */}
-      <Card>
-        <CardContent className="pt-6 space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <Label htmlFor="apollo-title" className="font-semibold">Job Title *</Label>
-              <Input
-                id="apollo-title"
-                placeholder="e.g. Virtual Assistant, Customer Service Rep"
-                value={jobTitle}
-                onChange={(e) => setJobTitle(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              />
-            </div>
-            <div>
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="search" className="gap-1.5">
+            <SearchIcon className="w-3.5 h-3.5" />
+            Search
+          </TabsTrigger>
+          <TabsTrigger value="imports" className="gap-1.5">
+            <FolderOpen className="w-3.5 h-3.5" />
+            Apollo Imports
+            {apolloImports.length > 0 && (
+              <Badge variant="secondary" className="ml-1 text-xs">{apolloImports.length}</Badge>
+            )}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="search" className="space-y-6 mt-4">
+          {/* Search Form */}
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="apollo-title" className="font-semibold">Job Title *</Label>
+                  <Input
+                    id="apollo-title"
+                    placeholder="e.g. Virtual Assistant, Customer Service Rep"
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  />
+                </div>
+                <div>
               <Label htmlFor="apollo-location" className="font-semibold">Location</Label>
               <Input
                 id="apollo-location"
@@ -637,7 +696,7 @@ export const ExternalScoutDashboard = () => {
                             variant="outline"
                             size="sm"
                             className="gap-1"
-                            disabled={importing.has(person.id) || !person.email}
+                            disabled={importing.has(person.id)}
                             onClick={(e) => { e.stopPropagation(); handleImport(person); }}
                           >
                             {importing.has(person.id) ? (
@@ -759,6 +818,79 @@ export const ExternalScoutDashboard = () => {
           </div>
         </div>
       )}
+        </TabsContent>
+
+        <TabsContent value="imports" className="space-y-4 mt-4">
+          {loadingImports ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : apolloImports.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <FolderOpen className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                <p className="text-lg font-medium">No Apollo imports yet</p>
+                <p className="text-muted-foreground text-sm mt-1">
+                  Search for candidates and click Import to add them here.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Users className="w-4 h-4" />
+                <span>{apolloImports.length} imported candidate{apolloImports.length !== 1 ? 's' : ''}</span>
+              </div>
+              {apolloImports.map((person) => (
+                <Card key={person.id}>
+                  <CardContent className="pt-4 pb-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                          <span className="text-sm font-bold text-muted-foreground">
+                            {person.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="font-semibold text-base">{person.full_name}</span>
+                          <p className="text-sm text-muted-foreground">{person.job_title || 'No title'}</p>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                            {person.location && (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3" /> {person.location}
+                              </span>
+                            )}
+                            {person.email && !person.email.includes('@unknown.com') && (
+                              <CopyableText text={person.email} />
+                            )}
+                            {person.email?.includes('@unknown.com') && (
+                              <Badge variant="outline" className="text-xs">No email revealed</Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Imported {new Date(person.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge variant="secondary" className="text-xs">{person.status}</Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteImport(person.id)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
