@@ -369,15 +369,16 @@ export const ExternalScoutDashboard = () => {
                               </span>
                             )}
                             {person.linkedin_url && (
-                              <a
-                                href={person.linkedin_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1 text-[#0A66C2] hover:underline font-medium"
-                                onClick={(e) => e.stopPropagation()}
-                              >
-                                <ExternalLink className="w-3 h-3" /> LinkedIn
-                              </a>
+                            <a
+                              href={getLinkedInHref(person)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                              {person.linkedin_url ? 'LinkedIn' : 'Find on LinkedIn'}
+                            </a>
                             )}
                           </div>
                         </div>
