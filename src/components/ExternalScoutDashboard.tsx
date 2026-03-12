@@ -54,6 +54,30 @@ const SENIORITY_OPTIONS = [
   { value: 'c_suite', label: 'C-Suite' },
 ];
 
+const DEPARTMENT_OPTIONS = [
+  { value: 'engineering_technical', label: 'Engineering' },
+  { value: 'operations', label: 'Operations' },
+  { value: 'marketing', label: 'Marketing' },
+  { value: 'sales', label: 'Sales' },
+  { value: 'finance', label: 'Finance' },
+  { value: 'human_resources', label: 'Human Resources' },
+  { value: 'support', label: 'Support' },
+  { value: 'information_technology', label: 'IT' },
+  { value: 'education', label: 'Education' },
+  { value: 'media_communications', label: 'Media & Communications' },
+];
+
+const EMPLOYEE_COUNT_OPTIONS = [
+  { value: '1,10', label: '1–10' },
+  { value: '11,50', label: '11–50' },
+  { value: '51,200', label: '51–200' },
+  { value: '201,500', label: '201–500' },
+  { value: '501,1000', label: '501–1,000' },
+  { value: '1001,5000', label: '1,001–5,000' },
+  { value: '5001,10000', label: '5,001–10,000' },
+  { value: '10001,', label: '10,000+' },
+];
+
 export const ExternalScoutDashboard = () => {
   const { toast } = useToast();
   const [jobTitle, setJobTitle] = useState('');
