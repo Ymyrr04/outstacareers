@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, SearchIcon, Target, Users, MapPin, Star, FileText, Mail, Phone, CheckCircle, XCircle, Sparkles, Plus, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, SearchIcon, Target, Users, MapPin, Star, FileText, Mail, Phone, CheckCircle, XCircle, Sparkles, Plus, X, ChevronDown, ChevronUp, History, Trash2, RefreshCw } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
 
 interface ScoutResult {
@@ -40,6 +40,32 @@ interface ScoutResponse {
   error?: string;
 }
 
+interface CachedSearch {
+  id: string;
+  job_title: string;
+  searched_at: string;
+  requirements: string[];
+  preferred_skills: string[];
+  status_filter: string[];
+  max_results: number;
+  job_description: string;
+  response: ScoutResponse;
+}
+
+const CACHE_KEY = 'talent_scout_search_history';
+const MAX_CACHED_SEARCHES = 10;
+
+const loadCachedSearches = (): CachedSearch[] => {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+};
+
+const saveCachedSearches = (searches: CachedSearch[]) => {
+  localStorage.setItem(CACHE_KEY, JSON.stringify(searches.slice(0, MAX_CACHED_SEARCHES)));
+};
+
 const STATUS_OPTIONS = [
   'For Review', 'For Interview', 'SIV', 'Client Interview',
   'Hired', 'Bench', 'Reject', 'Archive', 'Talent Pool'
@@ -61,6 +87,8 @@ export const TalentScoutDashboard = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [parsing, setParsing] = useState(false);
   const [rawJD, setRawJD] = useState('');
+  const [cachedSearches, setCachedSearches] = useState<CachedSearch[]>(loadCachedSearches());
+  const [showHistory, setShowHistory] = useState(false);
 
   const addRequirement = () => setRequirements(prev => [...prev, '']);
   const removeRequirement = (idx: number) => setRequirements(prev => prev.filter((_, i) => i !== idx));
@@ -82,6 +110,29 @@ export const TalentScoutDashboard = () => {
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+  };
+  const loadCachedSearch = (cached: CachedSearch) => {
+    setJobTitle(cached.job_title);
+    setJobDescription(cached.job_description);
+    setRequirements(cached.requirements.length ? cached.requirements : ['']);
+    setPreferredSkills(cached.preferred_skills.length ? cached.preferred_skills : ['']);
+    setStatusFilter(cached.status_filter);
+    setMaxResults(cached.max_results);
+    setResults(cached.response);
+    setShowHistory(false);
+    toast({ title: 'Loaded cached results', description: `Showing saved results for "${cached.job_title}"` });
+  };
+
+  const deleteCachedSearch = (id: string) => {
+    const updated = cachedSearches.filter(c => c.id !== id);
+    setCachedSearches(updated);
+    saveCachedSearches(updated);
+  };
+
+  const clearAllCache = () => {
+    setCachedSearches([]);
+    localStorage.removeItem(CACHE_KEY);
+    toast({ title: 'Search history cleared' });
   };
 
   const handleParseJD = async () => {
@@ -164,6 +215,23 @@ export const TalentScoutDashboard = () => {
       }
 
       setResults(data);
+
+      // Cache the search
+      const cachedEntry: CachedSearch = {
+        id: crypto.randomUUID(),
+        job_title: jobTitle.trim(),
+        searched_at: new Date().toISOString(),
+        requirements: filteredReqs,
+        preferred_skills: filteredSkills,
+        status_filter: statusFilter,
+        max_results: maxResults,
+        job_description: jobDescription.trim(),
+        response: data,
+      };
+      const updated = [cachedEntry, ...cachedSearches.filter(c => c.job_title.toLowerCase() !== jobTitle.trim().toLowerCase())].slice(0, MAX_CACHED_SEARCHES);
+      setCachedSearches(updated);
+      saveCachedSearches(updated);
+
       toast({
         title: 'Scouting Complete',
         description: `Found ${data.results.length} matching candidates from ${data.total_scanned} scanned.`,
@@ -205,7 +273,73 @@ export const TalentScoutDashboard = () => {
         </div>
       </div>
 
-      {/* Quick Parse Section */}
+      {/* Search History */}
+      {cachedSearches.length > 0 && (
+        <Card>
+          <CardContent className="pt-4 pb-4">
+            <div className="flex items-center justify-between">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowHistory(!showHistory)}
+                className="gap-2 text-muted-foreground"
+              >
+                <History className="w-4 h-4" />
+                Previous Searches ({cachedSearches.length})
+                {showHistory ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </Button>
+              {showHistory && (
+                <Button variant="ghost" size="sm" onClick={clearAllCache} className="gap-1 text-xs text-muted-foreground hover:text-destructive">
+                  <Trash2 className="w-3 h-3" /> Clear All
+                </Button>
+              )}
+            </div>
+            {showHistory && (
+              <div className="mt-3 space-y-2">
+                {cachedSearches.map(cached => (
+                  <div
+                    key={cached.id}
+                    className="flex items-center justify-between p-3 rounded-lg border bg-muted/30 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex-1 min-w-0 cursor-pointer" onClick={() => loadCachedSearch(cached)}>
+                      <p className="font-medium text-sm truncate">{cached.job_title}</p>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground mt-0.5">
+                        <span>{cached.response.results.length} matches</span>
+                        <span>•</span>
+                        <span>{cached.response.total_scanned} scanned</span>
+                        <span>•</span>
+                        <span>{new Date(cached.searched_at).toLocaleDateString()} {new Date(cached.searched_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0 ml-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => loadCachedSearch(cached)}
+                        title="Load cached results"
+                      >
+                        <SearchIcon className="w-3.5 h-3.5" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                        onClick={() => deleteCachedSearch(cached.id)}
+                        title="Delete from history"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+
       <Card className="border-dashed border-2">
         <CardContent className="pt-6 space-y-3">
           <div className="flex items-center gap-2">
