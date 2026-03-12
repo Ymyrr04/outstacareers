@@ -123,7 +123,7 @@ export const ExternalScoutDashboard = () => {
           company_domain: companyDomain.trim() || undefined,
           department: department.length > 0 ? department : undefined,
           employee_count_range: employeeCountRange.length > 0 ? employeeCountRange : undefined,
-          per_page: 100,
+          per_page: APOLLO_PER_PAGE,
           page,
         },
       });
@@ -131,12 +131,33 @@ export const ExternalScoutDashboard = () => {
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
-      setResults(data);
+      if (page > 1 && Array.isArray(data.results) && data.results.length === 0) {
+        setResults(prev => (prev ? { ...prev, total_pages: currentPage } : prev));
+        toast({
+          title: 'No more candidates',
+          description: `You reached the last available Apollo page (${currentPage}).`,
+        });
+        return;
+      }
+
+      const normalizedTotalPages =
+        typeof data.total_pages === 'number' && data.total_pages > 1
+          ? data.total_pages
+          : Array.isArray(data.results) && data.results.length === APOLLO_PER_PAGE
+            ? page + 1
+            : page;
+
+      const normalizedData = {
+        ...data,
+        total_pages: normalizedTotalPages,
+      };
+
+      setResults(normalizedData);
       setCurrentPage(page);
 
       toast({
         title: 'Search Complete',
-        description: `Found ${data.total} candidates (showing page ${page} of ${data.total_pages}).`,
+        description: `Found ${data.total} candidates (showing page ${page} of ${normalizedTotalPages}).`,
       });
     } catch (err: any) {
       console.error('Apollo search error:', err);
