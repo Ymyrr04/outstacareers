@@ -88,7 +88,7 @@ export const ExternalScoutDashboard = () => {
           job_title: jobTitle.trim(),
           location: location.trim() || undefined,
           seniority: seniority.length > 0 ? seniority : undefined,
-          per_page: 10,
+          per_page: 25,
           page,
         },
       });
