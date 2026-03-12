@@ -392,24 +392,48 @@ export const ExternalScoutDashboard = () => {
                     {/* Expanded Details */}
                     {expandedCards.has(person.id) && (
                       <div className="mt-4 pt-4 border-t space-y-3" onClick={(e) => e.stopPropagation()}>
-                        {person.headline && (
-                          <p className="text-sm text-muted-foreground italic">{person.headline}</p>
-                        )}
+                        {/* Quick Summary */}
+                        <div className="p-3 rounded-lg bg-primary/5 border border-primary/10">
+                          <p className="text-sm font-medium mb-1.5 flex items-center gap-1">
+                            <Users className="w-3.5 h-3.5 text-primary" /> Candidate Summary
+                          </p>
+                          <p className="text-sm text-muted-foreground leading-relaxed">
+                            <span className="font-medium text-foreground">{person.full_name}</span>
+                            {person.title && <> is a <span className="font-medium text-foreground">{person.title}</span></>}
+                            {person.organization && <> at <span className="font-medium text-foreground">{person.organization.name}</span></>}
+                            {person.location && <>, based in <span className="font-medium text-foreground">{person.location}</span></>}
+                            {person.seniority && <> ({person.seniority} level)</>}
+                            .
+                            {person.organization?.industry && <> Works in the <span className="font-medium text-foreground">{person.organization.industry}</span> industry.</>}
+                            {person.organization?.size && <> Company has ~{person.organization.size.toLocaleString()} employees.</>}
+                            {person.departments && person.departments.length > 0 && <> Department: {person.departments.join(', ')}.</>}
+                          </p>
+                          {person.headline && (
+                            <p className="text-sm text-muted-foreground italic mt-1.5 border-t border-primary/10 pt-1.5">"{person.headline}"</p>
+                          )}
+                        </div>
 
-                        <div className="flex flex-wrap gap-4 text-sm">
-                          {person.email && <CopyableText text={person.email} />}
+                        {/* LinkedIn & Contact */}
+                        <div className="flex flex-wrap gap-3">
                           {person.linkedin_url && (
                             <a
                               href={person.linkedin_url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-1 text-primary hover:underline"
+                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#0A66C2]/10 text-[#0A66C2] hover:bg-[#0A66C2]/20 text-sm font-medium transition-colors"
                             >
-                              <ExternalLink className="w-3.5 h-3.5" /> LinkedIn Profile
+                              <ExternalLink className="w-3.5 h-3.5" /> View LinkedIn Profile
                             </a>
+                          )}
+                          {person.email && (
+                            <div className="flex items-center gap-2">
+                              <CopyableText text={person.email} />
+                              {person.email_status && getEmailStatusBadge(person.email_status)}
+                            </div>
                           )}
                         </div>
 
+                        {/* Company Details */}
                         {person.organization && (
                           <div className="p-3 rounded-lg bg-muted/50">
                             <p className="text-sm font-medium mb-1 flex items-center gap-1">
@@ -428,6 +452,7 @@ export const ExternalScoutDashboard = () => {
                           </div>
                         )}
 
+                        {/* Tags */}
                         <div className="flex flex-wrap gap-2">
                           {person.seniority && <Badge variant="outline">{person.seniority}</Badge>}
                           {person.departments?.map((dept, i) => (
