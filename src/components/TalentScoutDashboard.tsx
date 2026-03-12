@@ -192,6 +192,23 @@ export const TalentScoutDashboard = () => {
       }
 
       setResults(data);
+
+      // Cache the search
+      const cachedEntry: CachedSearch = {
+        id: crypto.randomUUID(),
+        job_title: jobTitle.trim(),
+        searched_at: new Date().toISOString(),
+        requirements: filteredReqs,
+        preferred_skills: filteredSkills,
+        status_filter: statusFilter,
+        max_results: maxResults,
+        job_description: jobDescription.trim(),
+        response: data,
+      };
+      const updated = [cachedEntry, ...cachedSearches.filter(c => c.job_title.toLowerCase() !== jobTitle.trim().toLowerCase())].slice(0, MAX_CACHED_SEARCHES);
+      setCachedSearches(updated);
+      saveCachedSearches(updated);
+
       toast({
         title: 'Scouting Complete',
         description: `Found ${data.results.length} matching candidates from ${data.total_scanned} scanned.`,
