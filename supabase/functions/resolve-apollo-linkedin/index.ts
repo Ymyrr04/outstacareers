@@ -24,7 +24,7 @@ const normalizeLinkedInUrl = (value: unknown): string | null => {
   if (!trimmed) return null;
 
   if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
-    return trimmed;
+    return trimmed.replace(/^http:\/\//i, 'https://');
   }
 
   if (trimmed.startsWith('//')) {
