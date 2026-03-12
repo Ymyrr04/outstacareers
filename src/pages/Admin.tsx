@@ -3554,7 +3554,11 @@ const Admin = () => {
             <TalentScoutDashboard />
           </TabsContent>
 
-          {/* Settings/Permissions Tab - Super Admin Only */}
+          {/* External Scout Tab */}
+          <TabsContent value="external-scout" className="space-y-6">
+            <ExternalScoutDashboard />
+          </TabsContent>
+
           <TabsContent value="settings" className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
