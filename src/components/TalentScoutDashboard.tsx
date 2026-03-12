@@ -40,6 +40,32 @@ interface ScoutResponse {
   error?: string;
 }
 
+interface CachedSearch {
+  id: string;
+  job_title: string;
+  searched_at: string;
+  requirements: string[];
+  preferred_skills: string[];
+  status_filter: string[];
+  max_results: number;
+  job_description: string;
+  response: ScoutResponse;
+}
+
+const CACHE_KEY = 'talent_scout_search_history';
+const MAX_CACHED_SEARCHES = 10;
+
+const loadCachedSearches = (): CachedSearch[] => {
+  try {
+    const raw = localStorage.getItem(CACHE_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch { return []; }
+};
+
+const saveCachedSearches = (searches: CachedSearch[]) => {
+  localStorage.setItem(CACHE_KEY, JSON.stringify(searches.slice(0, MAX_CACHED_SEARCHES)));
+};
+
 const STATUS_OPTIONS = [
   'For Review', 'For Interview', 'SIV', 'Client Interview',
   'Hired', 'Bench', 'Reject', 'Archive', 'Talent Pool'
