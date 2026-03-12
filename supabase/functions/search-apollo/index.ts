@@ -2,14 +2,14 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version',
 };
 
 const APOLLO_API_URL = 'https://api.apollo.io';
 
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
@@ -24,36 +24,33 @@ serve(async (req) => {
       throw new Error('job_title is required');
     }
 
-    // Build Apollo people search request
+    // Build Apollo people search request body (no api_key in body)
     const searchBody: Record<string, unknown> = {
-      api_key: APOLLO_API_KEY,
       q_keywords: job_title,
       page: page,
-      per_page: Math.min(per_page, 25), // Apollo free tier caps results
+      per_page: Math.min(per_page, 25),
     };
 
-    // Add person titles filter
     if (job_title) {
       searchBody.person_titles = [job_title];
     }
 
-    // Add location filter
     if (location) {
       searchBody.person_locations = Array.isArray(location) ? location : [location];
     }
 
-    // Add seniority filter
     if (seniority && seniority.length > 0) {
       searchBody.person_seniorities = seniority;
     }
 
-    console.log('Apollo search request:', JSON.stringify({ ...searchBody, api_key: '[REDACTED]' }));
+    console.log('Apollo search request:', JSON.stringify(searchBody));
 
     const response = await fetch(`${APOLLO_API_URL}/v1/mixed_people/search`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Cache-Control': 'no-cache',
+        'X-Api-Key': APOLLO_API_KEY,
       },
       body: JSON.stringify(searchBody),
     });
@@ -66,14 +63,13 @@ serve(async (req) => {
 
     const data = await response.json();
 
-    // Transform Apollo results to a cleaner format
     const results = (data.people || []).map((person: any) => ({
       id: person.id,
       full_name: person.name || `${person.first_name || ''} ${person.last_name || ''}`.trim(),
       first_name: person.first_name,
       last_name: person.last_name,
       email: person.email,
-      email_status: person.email_status, // verified, guessed, etc.
+      email_status: person.email_status,
       title: person.title,
       headline: person.headline,
       linkedin_url: person.linkedin_url,
