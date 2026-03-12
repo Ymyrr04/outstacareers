@@ -3541,6 +3541,11 @@ const Admin = () => {
             <ClientAnalyticsDashboard />
           </TabsContent>
 
+          {/* Talent Scout Tab */}
+          <TabsContent value="talent-scout" className="space-y-6">
+            <TalentScoutDashboard />
+          </TabsContent>
+
           {/* Settings/Permissions Tab - Super Admin Only */}
           <TabsContent value="settings" className="space-y-6">
             <div className="flex items-center justify-between">
