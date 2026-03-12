@@ -398,6 +398,124 @@ export const ExternalScoutDashboard = () => {
             </div>
           </div>
 
+          {/* Advanced Filters Toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-muted-foreground"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+          >
+            <Filter className="w-3.5 h-3.5" />
+            {showAdvanced ? 'Hide' : 'Show'} Advanced Filters
+            {(industry || companyDomain || department.length > 0 || employeeCountRange.length > 0) && (
+              <Badge variant="secondary" className="text-xs ml-1">Active</Badge>
+            )}
+          </Button>
+
+          {/* Advanced Filters */}
+          {showAdvanced && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-lg border bg-muted/30">
+              <div>
+                <Label htmlFor="apollo-industry" className="font-semibold text-sm">Industry</Label>
+                <Input
+                  id="apollo-industry"
+                  placeholder="e.g. Construction, IT"
+                  value={industry}
+                  onChange={(e) => setIndustry(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
+              <div>
+                <Label htmlFor="apollo-company" className="font-semibold text-sm">Company Domain</Label>
+                <Input
+                  id="apollo-company"
+                  placeholder="e.g. microsoft.com"
+                  value={companyDomain}
+                  onChange={(e) => setCompanyDomain(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
+              <div>
+                <Label className="font-semibold text-sm">Department</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between font-normal mt-1 h-9">
+                      {department.length === 0
+                        ? 'Any department'
+                        : department.length === 1
+                          ? DEPARTMENT_OPTIONS.find(o => o.value === department[0])?.label || department[0]
+                          : `${department.length} selected`}
+                      <ChevronDown className="w-4 h-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[220px] p-2" align="start">
+                    <div className="space-y-1 max-h-[250px] overflow-y-auto">
+                      {DEPARTMENT_OPTIONS.map(opt => (
+                        <label key={opt.value} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+                          <Checkbox
+                            checked={department.includes(opt.value)}
+                            onCheckedChange={(checked) => {
+                              setDepartment(prev =>
+                                checked
+                                  ? [...prev, opt.value]
+                                  : prev.filter(d => d !== opt.value)
+                              );
+                            }}
+                          />
+                          {opt.label}
+                        </label>
+                      ))}
+                      {department.length > 0 && (
+                        <Button variant="ghost" size="sm" className="w-full text-xs mt-1" onClick={() => setDepartment([])}>
+                          Clear all
+                        </Button>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <Label className="font-semibold text-sm">Company Size</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between font-normal mt-1 h-9">
+                      {employeeCountRange.length === 0
+                        ? 'Any size'
+                        : employeeCountRange.length === 1
+                          ? EMPLOYEE_COUNT_OPTIONS.find(o => o.value === employeeCountRange[0])?.label || employeeCountRange[0]
+                          : `${employeeCountRange.length} selected`}
+                      <ChevronDown className="w-4 h-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[200px] p-2" align="start">
+                    <div className="space-y-1">
+                      {EMPLOYEE_COUNT_OPTIONS.map(opt => (
+                        <label key={opt.value} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+                          <Checkbox
+                            checked={employeeCountRange.includes(opt.value)}
+                            onCheckedChange={(checked) => {
+                              setEmployeeCountRange(prev =>
+                                checked
+                                  ? [...prev, opt.value]
+                                  : prev.filter(r => r !== opt.value)
+                              );
+                            }}
+                          />
+                          {opt.label}
+                        </label>
+                      ))}
+                      {employeeCountRange.length > 0 && (
+                        <Button variant="ghost" size="sm" className="w-full text-xs mt-1" onClick={() => setEmployeeCountRange([])}>
+                          Clear all
+                        </Button>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          )}
+
           <Button onClick={() => handleSearch(1)} disabled={loading} className="w-full gap-2" size="lg">
             {loading ? (
               <><Loader2 className="w-4 h-4 animate-spin" /> Searching Apollo...</>
