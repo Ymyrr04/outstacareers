@@ -67,7 +67,7 @@ const DEPARTMENT_OPTIONS = [
   { value: 'media_communications', label: 'Media & Communications' },
 ];
 
-const APOLLO_PER_PAGE = 100;
+const EMPLOYEE_COUNT_OPTIONS = [
   { value: '1,10', label: '1–10' },
   { value: '11,50', label: '11–50' },
   { value: '51,200', label: '51–200' },
@@ -77,6 +77,8 @@ const APOLLO_PER_PAGE = 100;
   { value: '5001,10000', label: '5,001–10,000' },
   { value: '10001,', label: '10,000+' },
 ];
+
+const APOLLO_PER_PAGE = 100;
 
 export const ExternalScoutDashboard = () => {
   const { toast } = useToast();
