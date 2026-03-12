@@ -324,7 +324,7 @@ export const ExternalScoutDashboard = () => {
           </p>
         </div>
         <Badge variant="outline" className="ml-auto text-xs">
-          Apollo.io Free Tier • 50 credits/month
+          Apollo.io • 100 per page • up to 500 pages
         </Badge>
       </div>
 
