@@ -438,16 +438,15 @@ export const ExternalScoutDashboard = () => {
 
                         {/* LinkedIn & Contact */}
                         <div className="flex flex-wrap gap-3">
-                          {person.linkedin_url && (
-                            <a
-                              href={person.linkedin_url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-[#0A66C2]/10 text-[#0A66C2] hover:bg-[#0A66C2]/20 text-sm font-medium transition-colors"
-                            >
-                              <ExternalLink className="w-3.5 h-3.5" /> View LinkedIn Profile
-                            </a>
-                          )}
+                          <a
+                            href={getLinkedInHref(person)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 text-sm font-medium transition-colors"
+                          >
+                            <ExternalLink className="w-3.5 h-3.5" />
+                            {person.linkedin_url ? 'View LinkedIn Profile' : 'Find on LinkedIn'}
+                          </a>
                           {person.email && (
                             <div className="flex items-center gap-2">
                               <CopyableText text={person.email} />
