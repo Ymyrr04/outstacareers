@@ -6,6 +6,7 @@ const corsHeaders = {
 };
 
 interface ParsedJobDescription {
+  title: string;
   description: string;
   qualifications: string[];
   responsibilities: string[];
@@ -40,9 +41,10 @@ Deno.serve(async (req) => {
     const systemPrompt = `You are a job description parser. Your task is to analyze job postings and extract structured information.
 
 Given a job description text, you must extract and return a JSON object with these fields:
-1. "description": A concise general description of the role (2-4 sentences max). This should describe what the role is about, not list duties.
-2. "qualifications": An array of individual qualification items (skills, experience, education requirements). Each should be a single, concise point.
-3. "responsibilities": An array of individual responsibility items (duties, tasks, what the person will do). Each should be a single, concise point.
+1. "title": The job title extracted from the posting (e.g. "MEP Engineer", "Virtual Assistant"). If not explicitly stated, infer from context.
+2. "description": A concise general description of the role (2-4 sentences max). This should describe what the role is about, not list duties.
+3. "qualifications": An array of individual qualification items (skills, experience, education requirements). Each should be a single, concise point.
+4. "responsibilities": An array of individual responsibility items (duties, tasks, what the person will do). Each should be a single, concise point.
 
 Rules:
 - Keep each qualification/responsibility as a single, clear bullet point
