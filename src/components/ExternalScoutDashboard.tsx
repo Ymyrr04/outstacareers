@@ -83,6 +83,11 @@ export const ExternalScoutDashboard = () => {
   const [jobTitle, setJobTitle] = useState('');
   const [location, setLocation] = useState('');
   const [seniority, setSeniority] = useState<string[]>([]);
+  const [industry, setIndustry] = useState('');
+  const [companyDomain, setCompanyDomain] = useState('');
+  const [department, setDepartment] = useState<string[]>([]);
+  const [employeeCountRange, setEmployeeCountRange] = useState<string[]>([]);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SearchResponse | null>(null);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
