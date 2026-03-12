@@ -111,8 +111,31 @@ export const TalentScoutDashboard = () => {
       return next;
     });
   };
+  const loadCachedSearch = (cached: CachedSearch) => {
+    setJobTitle(cached.job_title);
+    setJobDescription(cached.job_description);
+    setRequirements(cached.requirements.length ? cached.requirements : ['']);
+    setPreferredSkills(cached.preferred_skills.length ? cached.preferred_skills : ['']);
+    setStatusFilter(cached.status_filter);
+    setMaxResults(cached.max_results);
+    setResults(cached.response);
+    setShowHistory(false);
+    toast({ title: 'Loaded cached results', description: `Showing saved results for "${cached.job_title}"` });
+  };
 
-  const handleParseJD = async () => {
+  const deleteCachedSearch = (id: string) => {
+    const updated = cachedSearches.filter(c => c.id !== id);
+    setCachedSearches(updated);
+    saveCachedSearches(updated);
+  };
+
+  const clearAllCache = () => {
+    setCachedSearches([]);
+    localStorage.removeItem(CACHE_KEY);
+    toast({ title: 'Search history cleared' });
+  };
+
+
     if (!rawJD.trim()) {
       toast({ title: 'Paste a job description first', variant: 'destructive' });
       return;
