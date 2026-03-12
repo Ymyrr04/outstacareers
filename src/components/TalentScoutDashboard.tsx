@@ -59,6 +59,8 @@ export const TalentScoutDashboard = () => {
   const [results, setResults] = useState<ScoutResponse | null>(null);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
   const [showFilters, setShowFilters] = useState(false);
+  const [parsing, setParsing] = useState(false);
+  const [rawJD, setRawJD] = useState('');
 
   const addRequirement = () => setRequirements(prev => [...prev, '']);
   const removeRequirement = (idx: number) => setRequirements(prev => prev.filter((_, i) => i !== idx));
@@ -80,6 +82,44 @@ export const TalentScoutDashboard = () => {
       next.has(id) ? next.delete(id) : next.add(id);
       return next;
     });
+  };
+
+  const handleParseJD = async () => {
+    if (!rawJD.trim()) {
+      toast({ title: 'Paste a job description first', variant: 'destructive' });
+      return;
+    }
+    setParsing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('parse-job-description', {
+        body: { content: rawJD.trim() }
+      });
+      if (error) throw error;
+      if (data.error) throw new Error(data.error);
+
+      // Extract title from first line or use parsed description
+      const firstLine = rawJD.trim().split('\n')[0].trim();
+      const possibleTitle = firstLine.length < 80 ? firstLine.replace(/^(job\s*title|position|role)\s*[:|-]\s*/i, '') : '';
+      if (possibleTitle && !jobTitle) setJobTitle(possibleTitle);
+
+      if (data.qualifications?.length) {
+        setRequirements(data.qualifications);
+      }
+      if (data.responsibilities?.length) {
+        // Use responsibilities as preferred skills context
+        setPreferredSkills(data.responsibilities.slice(0, 5));
+      }
+      if (data.description && !jobDescription) {
+        setJobDescription(data.description);
+      }
+
+      toast({ title: 'Parsed!', description: `Extracted ${data.qualifications?.length || 0} requirements and ${data.responsibilities?.length || 0} responsibilities.` });
+    } catch (err: any) {
+      console.error('Parse error:', err);
+      toast({ title: 'Parse failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setParsing(false);
+    }
   };
 
   const handleScout = async () => {
@@ -159,6 +199,32 @@ export const TalentScoutDashboard = () => {
           </p>
         </div>
       </div>
+
+      {/* Quick Parse Section */}
+      <Card className="border-dashed border-2">
+        <CardContent className="pt-6 space-y-3">
+          <div className="flex items-center gap-2">
+            <FileText className="w-5 h-5 text-primary" />
+            <Label className="font-semibold text-base">Quick Parse — Paste a Job Description</Label>
+          </div>
+          <p className="text-sm text-muted-foreground">
+            Paste the full job posting below and click "Parse" to auto-fill the title, requirements, and skills.
+          </p>
+          <Textarea
+            placeholder="Paste job description here... (e.g. from a job board, email, or client brief)"
+            value={rawJD}
+            onChange={(e) => setRawJD(e.target.value)}
+            rows={6}
+          />
+          <Button onClick={handleParseJD} disabled={parsing || !rawJD.trim()} className="gap-2">
+            {parsing ? (
+              <><Loader2 className="w-4 h-4 animate-spin" /> Parsing...</>
+            ) : (
+              <><Sparkles className="w-4 h-4" /> Parse &amp; Auto-Fill</>
+            )}
+          </Button>
+        </CardContent>
+      </Card>
 
       {/* Input Form */}
       <Card>
