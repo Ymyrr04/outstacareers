@@ -18,7 +18,7 @@ serve(async (req) => {
       throw new Error('APOLLO_API_KEY is not configured');
     }
 
-    const { job_title, location, skills, seniority, per_page = 10, page = 1 } = await req.json();
+    const { job_title, location, skills, seniority, industry, company_domain, department, employee_count_range, per_page = 10, page = 1 } = await req.json();
 
     if (!job_title) {
       throw new Error('job_title is required');
@@ -41,6 +41,24 @@ serve(async (req) => {
 
     if (seniority && seniority.length > 0) {
       searchBody.person_seniorities = seniority;
+    }
+
+    if (department && department.length > 0) {
+      searchBody.person_departments = Array.isArray(department) ? department : [department];
+    }
+
+    if (company_domain) {
+      const domains = Array.isArray(company_domain) ? company_domain : [company_domain];
+      searchBody.q_organization_domains_list = domains.map((d: string) => d.trim().replace(/^https?:\/\//, '').replace(/^www\./, '').replace(/\/.*$/, ''));
+    }
+
+    if (employee_count_range && employee_count_range.length > 0) {
+      searchBody.organization_num_employees_ranges = employee_count_range;
+    }
+
+    // Industry is passed as keywords addition since Apollo uses tag IDs for industry filtering
+    if (industry) {
+      searchBody.q_keywords = `${job_title} ${industry}`.trim();
     }
 
     console.log('Apollo search request:', JSON.stringify(searchBody));

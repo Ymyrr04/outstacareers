@@ -10,7 +10,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Loader2, Globe, SearchIcon, MapPin, Building2, Mail, ExternalLink,
-  ChevronDown, ChevronUp, Users, Briefcase, UserPlus, CheckCircle, AlertCircle
+  ChevronDown, ChevronUp, Users, Briefcase, UserPlus, CheckCircle, AlertCircle,
+  Filter
 } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
 
@@ -53,11 +54,40 @@ const SENIORITY_OPTIONS = [
   { value: 'c_suite', label: 'C-Suite' },
 ];
 
+const DEPARTMENT_OPTIONS = [
+  { value: 'engineering_technical', label: 'Engineering' },
+  { value: 'operations', label: 'Operations' },
+  { value: 'marketing', label: 'Marketing' },
+  { value: 'sales', label: 'Sales' },
+  { value: 'finance', label: 'Finance' },
+  { value: 'human_resources', label: 'Human Resources' },
+  { value: 'support', label: 'Support' },
+  { value: 'information_technology', label: 'IT' },
+  { value: 'education', label: 'Education' },
+  { value: 'media_communications', label: 'Media & Communications' },
+];
+
+const EMPLOYEE_COUNT_OPTIONS = [
+  { value: '1,10', label: '1–10' },
+  { value: '11,50', label: '11–50' },
+  { value: '51,200', label: '51–200' },
+  { value: '201,500', label: '201–500' },
+  { value: '501,1000', label: '501–1,000' },
+  { value: '1001,5000', label: '1,001–5,000' },
+  { value: '5001,10000', label: '5,001–10,000' },
+  { value: '10001,', label: '10,000+' },
+];
+
 export const ExternalScoutDashboard = () => {
   const { toast } = useToast();
   const [jobTitle, setJobTitle] = useState('');
   const [location, setLocation] = useState('');
   const [seniority, setSeniority] = useState<string[]>([]);
+  const [industry, setIndustry] = useState('');
+  const [companyDomain, setCompanyDomain] = useState('');
+  const [department, setDepartment] = useState<string[]>([]);
+  const [employeeCountRange, setEmployeeCountRange] = useState<string[]>([]);
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SearchResponse | null>(null);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
@@ -89,6 +119,10 @@ export const ExternalScoutDashboard = () => {
           job_title: jobTitle.trim(),
           location: location.trim() || undefined,
           seniority: seniority.length > 0 ? seniority : undefined,
+          industry: industry.trim() || undefined,
+          company_domain: companyDomain.trim() || undefined,
+          department: department.length > 0 ? department : undefined,
+          employee_count_range: employeeCountRange.length > 0 ? employeeCountRange : undefined,
           per_page: 25,
           page,
         },
@@ -363,6 +397,124 @@ export const ExternalScoutDashboard = () => {
               </Popover>
             </div>
           </div>
+
+          {/* Advanced Filters Toggle */}
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-1.5 text-muted-foreground"
+            onClick={() => setShowAdvanced(!showAdvanced)}
+          >
+            <Filter className="w-3.5 h-3.5" />
+            {showAdvanced ? 'Hide' : 'Show'} Advanced Filters
+            {(industry || companyDomain || department.length > 0 || employeeCountRange.length > 0) && (
+              <Badge variant="secondary" className="text-xs ml-1">Active</Badge>
+            )}
+          </Button>
+
+          {/* Advanced Filters */}
+          {showAdvanced && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 p-4 rounded-lg border bg-muted/30">
+              <div>
+                <Label htmlFor="apollo-industry" className="font-semibold text-sm">Industry</Label>
+                <Input
+                  id="apollo-industry"
+                  placeholder="e.g. Construction, IT"
+                  value={industry}
+                  onChange={(e) => setIndustry(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
+              <div>
+                <Label htmlFor="apollo-company" className="font-semibold text-sm">Company Domain</Label>
+                <Input
+                  id="apollo-company"
+                  placeholder="e.g. microsoft.com"
+                  value={companyDomain}
+                  onChange={(e) => setCompanyDomain(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
+              <div>
+                <Label className="font-semibold text-sm">Department</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between font-normal mt-1 h-9">
+                      {department.length === 0
+                        ? 'Any department'
+                        : department.length === 1
+                          ? DEPARTMENT_OPTIONS.find(o => o.value === department[0])?.label || department[0]
+                          : `${department.length} selected`}
+                      <ChevronDown className="w-4 h-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[220px] p-2" align="start">
+                    <div className="space-y-1 max-h-[250px] overflow-y-auto">
+                      {DEPARTMENT_OPTIONS.map(opt => (
+                        <label key={opt.value} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+                          <Checkbox
+                            checked={department.includes(opt.value)}
+                            onCheckedChange={(checked) => {
+                              setDepartment(prev =>
+                                checked
+                                  ? [...prev, opt.value]
+                                  : prev.filter(d => d !== opt.value)
+                              );
+                            }}
+                          />
+                          {opt.label}
+                        </label>
+                      ))}
+                      {department.length > 0 && (
+                        <Button variant="ghost" size="sm" className="w-full text-xs mt-1" onClick={() => setDepartment([])}>
+                          Clear all
+                        </Button>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div>
+                <Label className="font-semibold text-sm">Company Size</Label>
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="w-full justify-between font-normal mt-1 h-9">
+                      {employeeCountRange.length === 0
+                        ? 'Any size'
+                        : employeeCountRange.length === 1
+                          ? EMPLOYEE_COUNT_OPTIONS.find(o => o.value === employeeCountRange[0])?.label || employeeCountRange[0]
+                          : `${employeeCountRange.length} selected`}
+                      <ChevronDown className="w-4 h-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-[200px] p-2" align="start">
+                    <div className="space-y-1">
+                      {EMPLOYEE_COUNT_OPTIONS.map(opt => (
+                        <label key={opt.value} className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer text-sm">
+                          <Checkbox
+                            checked={employeeCountRange.includes(opt.value)}
+                            onCheckedChange={(checked) => {
+                              setEmployeeCountRange(prev =>
+                                checked
+                                  ? [...prev, opt.value]
+                                  : prev.filter(r => r !== opt.value)
+                              );
+                            }}
+                          />
+                          {opt.label}
+                        </label>
+                      ))}
+                      {employeeCountRange.length > 0 && (
+                        <Button variant="ghost" size="sm" className="w-full text-xs mt-1" onClick={() => setEmployeeCountRange([])}>
+                          Clear all
+                        </Button>
+                      )}
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+            </div>
+          )}
 
           <Button onClick={() => handleSearch(1)} disabled={loading} className="w-full gap-2" size="lg">
             {loading ? (
