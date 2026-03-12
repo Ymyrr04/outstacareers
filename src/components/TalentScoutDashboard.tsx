@@ -97,23 +97,24 @@ export const TalentScoutDashboard = () => {
       if (error) throw error;
       if (data.error) throw new Error(data.error);
 
+      const parsed = data.data || data;
+
       // Extract title from first line or use parsed description
       const firstLine = rawJD.trim().split('\n')[0].trim();
       const possibleTitle = firstLine.length < 80 ? firstLine.replace(/^(job\s*title|position|role)\s*[:|-]\s*/i, '') : '';
       if (possibleTitle && !jobTitle) setJobTitle(possibleTitle);
 
-      if (data.qualifications?.length) {
-        setRequirements(data.qualifications);
+      if (parsed.qualifications?.length) {
+        setRequirements(parsed.qualifications);
       }
-      if (data.responsibilities?.length) {
-        // Use responsibilities as preferred skills context
-        setPreferredSkills(data.responsibilities.slice(0, 5));
+      if (parsed.responsibilities?.length) {
+        setPreferredSkills(parsed.responsibilities.slice(0, 5));
       }
-      if (data.description && !jobDescription) {
-        setJobDescription(data.description);
+      if (parsed.description && !jobDescription) {
+        setJobDescription(parsed.description);
       }
 
-      toast({ title: 'Parsed!', description: `Extracted ${data.qualifications?.length || 0} requirements and ${data.responsibilities?.length || 0} responsibilities.` });
+      toast({ title: 'Parsed!', description: `Extracted ${parsed.qualifications?.length || 0} requirements and ${parsed.responsibilities?.length || 0} responsibilities.` });
     } catch (err: any) {
       console.error('Parse error:', err);
       toast({ title: 'Parse failed', description: err.message, variant: 'destructive' });
