@@ -410,13 +410,20 @@ export const ExternalScoutDashboard = () => {
         </TabsList>
 
         <TabsContent value="search" className="space-y-6 mt-4">
-                id="apollo-title"
-                placeholder="e.g. Virtual Assistant, Customer Service Rep"
-                value={jobTitle}
-                onChange={(e) => setJobTitle(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-              />
-            </div>
+          {/* Search Form */}
+          <Card>
+            <CardContent className="pt-6 space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <Label htmlFor="apollo-title" className="font-semibold">Job Title *</Label>
+                  <Input
+                    id="apollo-title"
+                    placeholder="e.g. Virtual Assistant, Customer Service Rep"
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                  />
+                </div>
             <div>
               <Label htmlFor="apollo-location" className="font-semibold">Location</Label>
               <Input
