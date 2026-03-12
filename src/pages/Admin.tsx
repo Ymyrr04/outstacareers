@@ -1591,6 +1591,12 @@ const Admin = () => {
                 Talent Scout
               </TabsTrigger>
             )}
+            {canViewTab('external-scout') && (
+              <TabsTrigger value="external-scout" className="flex items-center gap-2">
+                <Globe className="w-4 h-4" />
+                External Scout
+              </TabsTrigger>
+            )}
             {/* Settings tab - only for super admins (mark@outsta.io) */}
             {user?.email?.toLowerCase() === 'mark@outsta.io' && (
               <TabsTrigger value="settings" className="flex items-center gap-2">
