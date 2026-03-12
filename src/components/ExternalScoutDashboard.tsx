@@ -186,7 +186,7 @@ export const ExternalScoutDashboard = () => {
   const getLinkedInHref = (person: ApolloResult) => {
     if (person.linkedin_url) return person.linkedin_url;
 
-    const query = [person.full_name, person.organization?.name, person.location]
+    const query = [person.full_name, person.title]
       .filter(Boolean)
       .join(' ')
       .trim();
