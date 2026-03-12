@@ -123,7 +123,7 @@ export const ExternalScoutDashboard = () => {
           company_domain: companyDomain.trim() || undefined,
           department: department.length > 0 ? department : undefined,
           employee_count_range: employeeCountRange.length > 0 ? employeeCountRange : undefined,
-          per_page: 25,
+          per_page: 100,
           page,
         },
       });
@@ -324,7 +324,7 @@ export const ExternalScoutDashboard = () => {
           </p>
         </div>
         <Badge variant="outline" className="ml-auto text-xs">
-          Apollo.io Free Tier • 50 credits/month
+          Apollo.io • 100 per page • up to 500 pages
         </Badge>
       </div>
 

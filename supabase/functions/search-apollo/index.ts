@@ -28,7 +28,7 @@ serve(async (req) => {
     const searchBody: Record<string, unknown> = {
       q_keywords: job_title,
       page: page,
-      per_page: Math.min(per_page, 25),
+      per_page: Math.min(per_page, 100),
     };
 
     if (job_title) {
