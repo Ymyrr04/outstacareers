@@ -6,6 +6,7 @@ const corsHeaders = {
 };
 
 interface ParsedJobDescription {
+  title: string;
   description: string;
   qualifications: string[];
   responsibilities: string[];
