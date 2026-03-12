@@ -195,6 +195,75 @@ export const ExternalScoutDashboard = () => {
     return `https://www.linkedin.com/search/results/people/?keywords=${encodeURIComponent(query)}`;
   };
 
+  const handleLinkedInClick = async (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    person: ApolloResult,
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    if (person.linkedin_url) {
+      window.open(person.linkedin_url, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    setResolvingLinkedIn(prev => new Set(prev).add(person.id));
+
+    try {
+      const { data, error } = await supabase.functions.invoke('resolve-apollo-linkedin', {
+        body: {
+          person_id: person.id,
+          full_name: person.full_name,
+          first_name: person.first_name,
+          last_name: person.last_name,
+          title: person.title,
+          organization_name: person.organization?.name,
+          organization_website: person.organization?.website,
+        },
+      });
+
+      if (error) throw error;
+
+      const exactLinkedIn = typeof data?.linkedin_url === 'string' ? data.linkedin_url : null;
+
+      if (exactLinkedIn) {
+        setResults(prev => prev
+          ? {
+              ...prev,
+              results: prev.results.map(candidate =>
+                candidate.id === person.id
+                  ? { ...candidate, linkedin_url: exactLinkedIn }
+                  : candidate
+              ),
+            }
+          : prev
+        );
+
+        window.open(exactLinkedIn, '_blank', 'noopener,noreferrer');
+        return;
+      }
+
+      window.open(getLinkedInHref(person), '_blank', 'noopener,noreferrer');
+      toast({
+        title: 'Exact profile unavailable',
+        description: 'Opened LinkedIn search as fallback.',
+      });
+    } catch (err) {
+      console.error('Resolve LinkedIn error:', err);
+      window.open(getLinkedInHref(person), '_blank', 'noopener,noreferrer');
+      toast({
+        title: 'Using LinkedIn search fallback',
+        description: 'Could not fetch the exact profile from Apollo.',
+      });
+    } finally {
+      setResolvingLinkedIn(prev => {
+        const next = new Set(prev);
+        next.delete(person.id);
+        return next;
+      });
+    }
+  };
+
   const getEmailStatusBadge = (status: string | null) => {
     if (!status) return null;
     switch (status) {
