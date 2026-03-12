@@ -866,6 +866,16 @@ export const ExternalScoutDashboard = () => {
                             {person.email?.includes('@unknown.com') && (
                               <Badge variant="outline" className="text-xs">No email revealed</Badge>
                             )}
+                            {person.apply_url && person.apply_url !== 'apollo-import' && (
+                              <a
+                                href={person.apply_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1 text-primary hover:underline text-xs font-medium"
+                              >
+                                <ExternalLink className="w-3 h-3" /> LinkedIn
+                              </a>
+                            )}
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
                             Imported {new Date(person.created_at).toLocaleDateString()}
