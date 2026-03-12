@@ -818,6 +818,79 @@ export const ExternalScoutDashboard = () => {
           </div>
         </div>
       )}
+        </TabsContent>
+
+        <TabsContent value="imports" className="space-y-4 mt-4">
+          {loadingImports ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : apolloImports.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <FolderOpen className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                <p className="text-lg font-medium">No Apollo imports yet</p>
+                <p className="text-muted-foreground text-sm mt-1">
+                  Search for candidates and click Import to add them here.
+                </p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Users className="w-4 h-4" />
+                <span>{apolloImports.length} imported candidate{apolloImports.length !== 1 ? 's' : ''}</span>
+              </div>
+              {apolloImports.map((person) => (
+                <Card key={person.id}>
+                  <CardContent className="pt-4 pb-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="flex items-start gap-3 flex-1 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                          <span className="text-sm font-bold text-muted-foreground">
+                            {person.full_name?.split(' ').map((n: string) => n[0]).join('').slice(0, 2)}
+                          </span>
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <span className="font-semibold text-base">{person.full_name}</span>
+                          <p className="text-sm text-muted-foreground">{person.job_title || 'No title'}</p>
+                          <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
+                            {person.location && (
+                              <span className="flex items-center gap-1">
+                                <MapPin className="w-3 h-3" /> {person.location}
+                              </span>
+                            )}
+                            {person.email && !person.email.includes('@unknown.com') && (
+                              <CopyableText text={person.email} />
+                            )}
+                            {person.email?.includes('@unknown.com') && (
+                              <Badge variant="outline" className="text-xs">No email revealed</Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Imported {new Date(person.created_at).toLocaleDateString()}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <Badge variant="secondary" className="text-xs">{person.status}</Badge>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="text-destructive hover:text-destructive"
+                          onClick={() => handleDeleteImport(person.id)}
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };
