@@ -64,6 +64,7 @@ export const ExternalScoutDashboard = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [importing, setImporting] = useState<Set<string>>(new Set());
   const [imported, setImported] = useState<Set<string>>(new Set());
+  const [resolvingLinkedIn, setResolvingLinkedIn] = useState<Set<string>>(new Set());
 
   const toggleExpanded = (id: string) => {
     setExpandedCards(prev => {
