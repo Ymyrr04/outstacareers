@@ -11,6 +11,7 @@ export const TAB_IDS = [
   'contractors',
   'analytics',
   'talent-scout',
+  'external-scout',
 ] as const;
 
 export type TabId = typeof TAB_IDS[number];
@@ -24,6 +25,7 @@ export const TAB_LABELS: Record<TabId, string> = {
   'contractors': 'Contractors',
   'analytics': 'Analytics',
   'talent-scout': 'Talent Scout',
+  'external-scout': 'External Scout',
 };
 
 interface TabPermission {
