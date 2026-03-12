@@ -1583,6 +1583,12 @@ const Admin = () => {
                 Analytics
               </TabsTrigger>
             )}
+            {canViewTab('talent-scout') && (
+              <TabsTrigger value="talent-scout" className="flex items-center gap-2">
+                <Target className="w-4 h-4" />
+                Talent Scout
+              </TabsTrigger>
+            )}
             {/* Settings tab - only for super admins (mark@outsta.io) */}
             {user?.email?.toLowerCase() === 'mark@outsta.io' && (
               <TabsTrigger value="settings" className="flex items-center gap-2">
