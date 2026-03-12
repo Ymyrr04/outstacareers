@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, SearchIcon, Target, Users, MapPin, Star, FileText, Mail, Phone, CheckCircle, XCircle, Sparkles, Plus, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, SearchIcon, Target, Users, MapPin, Star, FileText, Mail, Phone, CheckCircle, XCircle, Sparkles, Plus, X, ChevronDown, ChevronUp, History, Trash2, RefreshCw } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
 
 interface ScoutResult {
