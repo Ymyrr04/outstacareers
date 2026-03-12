@@ -408,16 +408,8 @@ export const TalentScoutDashboard = () => {
 
                         {/* Contact Info */}
                         <div className="flex flex-wrap gap-4 text-sm">
-                          <CopyableText
-                            text={result.email}
-                            icon={<Mail className="w-3.5 h-3.5" />}
-                          />
-                          {result.phone && (
-                            <CopyableText
-                              text={result.phone}
-                              icon={<Phone className="w-3.5 h-3.5" />}
-                            />
-                          )}
+                          <CopyableText text={result.email} />
+                          {result.phone && <CopyableText text={result.phone} />}
                         </div>
 
                         {/* Matched / Missing Requirements */}
