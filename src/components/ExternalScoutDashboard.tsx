@@ -641,7 +641,7 @@ export const ExternalScoutDashboard = () => {
                             variant="outline"
                             size="sm"
                             className="gap-1"
-                            disabled={importing.has(person.id) || !person.email}
+                            disabled={importing.has(person.id)}
                             onClick={(e) => { e.stopPropagation(); handleImport(person); }}
                           >
                             {importing.has(person.id) ? (
