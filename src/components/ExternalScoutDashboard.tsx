@@ -438,18 +438,17 @@ export const ExternalScoutDashboard = () => {
                                 <Building2 className="w-3 h-3" /> {person.organization.name}
                               </span>
                             )}
-                            {person.linkedin_url && (
                             <a
                               href={getLinkedInHref(person)}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1 text-primary hover:underline font-medium"
-                              onClick={(e) => e.stopPropagation()}
+                              className={`inline-flex items-center gap-1 text-primary hover:underline font-medium ${resolvingLinkedIn.has(person.id) ? 'opacity-60 pointer-events-none' : ''}`}
+                              onClick={(e) => handleLinkedInClick(e, person)}
                             >
-                              <ExternalLink className="w-3 h-3" />
-                              {person.linkedin_url ? 'LinkedIn' : 'Find on LinkedIn'}
+                              {resolvingLinkedIn.has(person.id)
+                                ? <><Loader2 className="w-3 h-3 animate-spin" /> Finding profile...</>
+                                : <><ExternalLink className="w-3 h-3" /> {person.linkedin_url ? 'LinkedIn' : 'Find on LinkedIn'}</>}
                             </a>
-                            )}
                           </div>
                         </div>
                       </div>
