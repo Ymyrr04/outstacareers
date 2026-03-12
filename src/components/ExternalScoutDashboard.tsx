@@ -10,7 +10,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import {
   Loader2, Globe, SearchIcon, MapPin, Building2, Mail, ExternalLink,
-  ChevronDown, ChevronUp, Users, Briefcase, UserPlus, CheckCircle, AlertCircle
+  ChevronDown, ChevronUp, Users, Briefcase, UserPlus, CheckCircle, AlertCircle,
+  Filter
 } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
 
