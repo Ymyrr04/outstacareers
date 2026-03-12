@@ -56,7 +56,7 @@ export const ExternalScoutDashboard = () => {
   const { toast } = useToast();
   const [jobTitle, setJobTitle] = useState('');
   const [location, setLocation] = useState('');
-  const [seniority, setSeniority] = useState('');
+  const [seniority, setSeniority] = useState<string[]>([]);
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState<SearchResponse | null>(null);
   const [expandedCards, setExpandedCards] = useState<Set<string>>(new Set());
