@@ -67,7 +67,7 @@ const DEPARTMENT_OPTIONS = [
   { value: 'media_communications', label: 'Media & Communications' },
 ];
 
-const EMPLOYEE_COUNT_OPTIONS = [
+const APOLLO_PER_PAGE = 100;
   { value: '1,10', label: '1–10' },
   { value: '11,50', label: '11–50' },
   { value: '51,200', label: '51–200' },
