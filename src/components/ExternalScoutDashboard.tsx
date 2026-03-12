@@ -98,6 +98,33 @@ export const ExternalScoutDashboard = () => {
   const [importing, setImporting] = useState<Set<string>>(new Set());
   const [imported, setImported] = useState<Set<string>>(new Set());
   const [resolvingLinkedIn, setResolvingLinkedIn] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState('search');
+  const [apolloImports, setApolloImports] = useState<any[]>([]);
+  const [loadingImports, setLoadingImports] = useState(false);
+
+  const fetchApolloImports = useCallback(async () => {
+    setLoadingImports(true);
+    try {
+      const { data, error } = await supabase
+        .from('applicants_prescreen')
+        .select('id, full_name, email, job_title, location, status, candidate_profile, notes, created_at, job_source')
+        .eq('job_source', 'Apollo')
+        .order('created_at', { ascending: false });
+      
+      if (error) throw error;
+      setApolloImports(data || []);
+    } catch (err) {
+      console.error('Error fetching Apollo imports:', err);
+    } finally {
+      setLoadingImports(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (activeTab === 'imports') {
+      fetchApolloImports();
+    }
+  }, [activeTab, fetchApolloImports]);
 
   const toggleExpanded = (id: string) => {
     setExpandedCards(prev => {
