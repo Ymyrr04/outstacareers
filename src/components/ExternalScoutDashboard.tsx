@@ -511,10 +511,12 @@ export const ExternalScoutDashboard = () => {
                             href={getLinkedInHref(person)}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 text-sm font-medium transition-colors"
+                            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-primary/10 text-primary hover:bg-primary/20 text-sm font-medium transition-colors ${resolvingLinkedIn.has(person.id) ? 'opacity-60 pointer-events-none' : ''}`}
+                            onClick={(e) => handleLinkedInClick(e, person)}
                           >
-                            <ExternalLink className="w-3.5 h-3.5" />
-                            {person.linkedin_url ? 'View LinkedIn Profile' : 'Find on LinkedIn'}
+                            {resolvingLinkedIn.has(person.id)
+                              ? <><Loader2 className="w-3.5 h-3.5 animate-spin" /> Finding exact profile...</>
+                              : <><ExternalLink className="w-3.5 h-3.5" /> {person.linkedin_url ? 'View LinkedIn Profile' : 'Find on LinkedIn'}</>}
                           </a>
                           {person.email && (
                             <div className="flex items-center gap-2">
