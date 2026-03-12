@@ -55,6 +55,7 @@ import { AdminPermissionsManager } from '@/components/AdminPermissionsManager';
 import { HiredAssignmentDialog } from '@/components/HiredAssignmentDialog';
 import { BooleanSearchBuilder } from '@/components/BooleanSearchBuilder';
 import { SearchApplicantExpandedView } from '@/components/SearchApplicantExpandedView';
+import { TalentScoutDashboard } from '@/components/TalentScoutDashboard';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 // Status options for applicant tracking - new pipeline order
