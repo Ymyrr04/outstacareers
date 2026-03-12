@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -8,10 +8,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Loader2, Globe, SearchIcon, MapPin, Building2, Mail, ExternalLink,
   ChevronDown, ChevronUp, Users, Briefcase, UserPlus, CheckCircle, AlertCircle,
-  Filter
+  Filter, FolderOpen, Trash2, ExternalLink as LinkIcon
 } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
 
