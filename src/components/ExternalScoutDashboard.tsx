@@ -389,9 +389,6 @@ export const ExternalScoutDashboard = () => {
             Search for external candidates via Apollo.io — find talent beyond your existing database
           </p>
         </div>
-        <Badge variant="outline" className="ml-auto text-xs">
-          Apollo.io • 100 per page
-        </Badge>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -402,7 +399,7 @@ export const ExternalScoutDashboard = () => {
           </TabsTrigger>
           <TabsTrigger value="imports" className="gap-1.5">
             <FolderOpen className="w-3.5 h-3.5" />
-            Apollo Imports
+            Imports
             {apolloImports.length > 0 && (
               <Badge variant="secondary" className="ml-1 text-xs">{apolloImports.length}</Badge>
             )}
