@@ -174,19 +174,16 @@ export const ExternalScoutDashboard = () => {
   };
 
   const handleImport = async (person: ApolloResult) => {
-    if (!person.email) {
-      toast({ title: 'No email available', description: 'Cannot import without an email address.', variant: 'destructive' });
-      return;
-    }
-
     setImporting(prev => new Set(prev).add(person.id));
 
     try {
+      const emailToUse = person.email || `apollo-pending-${person.id}@unknown.com`;
+      
       // Check if applicant with this email already exists
       const { data: existing } = await supabase
         .from('applicants_prescreen')
         .select('id, full_name')
-        .eq('email', person.email)
+        .eq('email', emailToUse)
         .maybeSingle();
 
       if (existing) {
@@ -198,13 +195,16 @@ export const ExternalScoutDashboard = () => {
         return;
       }
 
+      // Clean masked name (remove asterisks pattern like "Ga***n" → keep as-is for now)
+      const cleanName = person.full_name || `${person.first_name || ''} ${person.last_name || ''}`.trim() || 'Unknown';
+
       const { error } = await supabase.from('applicants_prescreen').insert({
-        full_name: person.full_name,
-        email: person.email,
+        full_name: cleanName,
+        email: emailToUse,
         location: person.location || 'Unknown',
         job_title: person.title || jobTitle,
         apply_url: person.linkedin_url || 'apollo-import',
-        status: 'Talent Pool',
+        status: 'Apollo Import',
         home_office: false,
         noise_canceling_headset: false,
         laptop_or_pc: false,
@@ -222,13 +222,17 @@ export const ExternalScoutDashboard = () => {
           person.organization ? `Currently at ${person.organization.name}` : null,
           person.organization?.industry ? `Industry: ${person.organization.industry}` : null,
         ].filter(Boolean).join('\n'),
-        notes: `Sourced from Apollo.io\nLinkedIn: ${person.linkedin_url || 'N/A'}\nEmail Status: ${person.email_status || 'Unknown'}`,
+        notes: [
+          'Sourced from Apollo.io',
+          `LinkedIn: ${person.linkedin_url || 'N/A'}`,
+          person.email ? `Email: ${person.email} (${person.email_status || 'Unknown'})` : 'Email: Not revealed on Apollo',
+        ].join('\n'),
       });
 
       if (error) throw error;
 
       setImported(prev => new Set(prev).add(person.id));
-      toast({ title: 'Imported!', description: `${person.full_name} added to Talent Pool.` });
+      toast({ title: 'Imported!', description: `${cleanName} added to Apollo Imports.` });
     } catch (err: any) {
       console.error('Import error:', err);
       toast({ title: 'Import failed', description: err.message, variant: 'destructive' });
