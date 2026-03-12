@@ -399,7 +399,7 @@ export const ExternalScoutDashboard = () => {
           </TabsTrigger>
           <TabsTrigger value="imports" className="gap-1.5">
             <FolderOpen className="w-3.5 h-3.5" />
-            Apollo Imports
+            Imports
             {apolloImports.length > 0 && (
               <Badge variant="secondary" className="ml-1 text-xs">{apolloImports.length}</Badge>
             )}
