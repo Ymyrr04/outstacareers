@@ -273,8 +273,8 @@ export const ClientsDashboard = () => {
 
   // Export clients to CSV
   const handleExport = async () => {
+    // ... keep existing code
     try {
-      // Fetch all clients with contacts for export
       const { data: clientsData } = await supabase
         .from('clients')
         .select('*')
@@ -285,7 +285,6 @@ export const ClientsDashboard = () => {
         .select('*')
         .eq('is_primary', true);
 
-      // Build contacts map
       const contactsMap: Record<string, typeof contactsData[0]> = {};
       contactsData?.forEach(c => {
         if (!contactsMap[c.client_id]) {
@@ -293,18 +292,11 @@ export const ClientsDashboard = () => {
         }
       });
 
-      // Build CSV - matching the required fields
       const headers = [
-        'Business Name',
-        'First Name',
-        'Last Name',
-        'Email Address',
-        'Contact Information',
-        'No. of Contractors',
-        'Leads from',
+        'Business Name', 'First Name', 'Last Name', 'Email Address',
+        'Contact Information', 'No. of Contractors', 'Leads from',
         'Add links about the company to be shared with candidate(s)',
-        '4% Yearly increase',
-        'Industry'
+        '4% Yearly increase', 'Industry'
       ];
 
       const rows = (clientsData || []).map(client => {
@@ -332,16 +324,78 @@ export const ClientsDashboard = () => {
       a.click();
       URL.revokeObjectURL(url);
 
-      toast({
-        title: 'Success',
-        description: `Exported ${clientsData?.length || 0} clients`,
-      });
+      toast({ title: 'Success', description: `Exported ${clientsData?.length || 0} clients` });
     } catch (err: any) {
-      toast({
-        title: 'Error',
-        description: 'Failed to export clients: ' + err.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to export clients: ' + err.message, variant: 'destructive' });
+    }
+  };
+
+  const toggleSelectClient = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredClients.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredClients.map(c => c.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    const confirmed = window.confirm(`Are you sure you want to delete ${selectedIds.size} client(s)? This will also archive them to the deleted clients table.`);
+    if (!confirmed) return;
+
+    setBulkDeleting(true);
+    try {
+      const idsArray = Array.from(selectedIds);
+      const clientsToDelete = clients.filter(c => idsArray.includes(c.id));
+
+      // Archive to deleted_clients
+      const archiveRows = clientsToDelete.map(c => ({
+        original_id: c.id,
+        company_name: c.company_name,
+        industry: c.industry,
+        website: c.website,
+        address: c.address,
+        notes: c.notes,
+        leads_from: c.leads_from,
+        company_links: c.company_links,
+        yearly_increase: c.yearly_increase,
+        contractor_count: c.contractor_count,
+        is_hiring: c.is_hiring,
+        created_at: c.created_at,
+      }));
+
+      const { error: archiveError } = await supabase
+        .from('deleted_clients')
+        .insert(archiveRows);
+
+      if (archiveError) throw archiveError;
+
+      // Delete from clients table
+      const { error: deleteError } = await supabase
+        .from('clients')
+        .delete()
+        .in('id', idsArray);
+
+      if (deleteError) throw deleteError;
+
+      toast({ title: 'Deleted', description: `${idsArray.length} client(s) deleted successfully.` });
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+      fetchClients();
+    } catch (err: any) {
+      toast({ title: 'Error', description: 'Failed to delete clients: ' + err.message, variant: 'destructive' });
+    } finally {
+      setBulkDeleting(false);
     }
   };
 
