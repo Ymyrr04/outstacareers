@@ -85,7 +85,7 @@ export const ClientsDashboard = () => {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'lost' | 'newHiring' | 'existingHiring'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'lost' | 'newHiring' | 'existingHiring' | 'inactive'>('all');
   const [lostYearFilter, setLostYearFilter] = useState<number>(2026);
   const [addedYearFilter, setAddedYearFilter] = useState<number>(2026);
 
@@ -217,12 +217,14 @@ export const ClientsDashboard = () => {
     const hasActiveContractors = (client.contractor_count || 0) > 0;
     const isActivelyHiring = clientsWithActiveHiringRequests.has(client.id);
     const isInLostStage = clientsInLostStages.has(client.id);
+    const isInactive = !hasActiveContractors && !isActivelyHiring;
     const matchesStatusFilter = 
       statusFilter === 'all' ||
       (statusFilter === 'active' && hasActiveContractors) ||
       (statusFilter === 'lost' && isInLostStage) ||
       (statusFilter === 'newHiring' && isActivelyHiring && !hasActiveContractors) ||
-      (statusFilter === 'existingHiring' && isActivelyHiring && hasActiveContractors);
+      (statusFilter === 'existingHiring' && isActivelyHiring && hasActiveContractors) ||
+      (statusFilter === 'inactive' && isInactive);
     
     return matchesSearch && matchesStatusFilter;
   });
@@ -246,6 +248,9 @@ export const ClientsDashboard = () => {
   ).length;
   
   const clientsLost = clientsInLostStages.size;
+  const inactiveClients = clients.filter(c => 
+    (c.contractor_count || 0) === 0 && !clientsWithActiveHiringRequests.has(c.id)
+  ).length;
   
   // Count open hiring requests per client (in active stages only)
   const hiringRequestCountByClient = hiringRequests
@@ -467,6 +472,22 @@ export const ClientsDashboard = () => {
                   )}
                 </div>
                 <p className="text-sm text-muted-foreground">Existing Client (Hiring)</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'inactive' ? 'ring-2 ring-gray-500' : ''}`}
+          onClick={() => setStatusFilter(statusFilter === 'inactive' ? 'all' : 'inactive')}
+        >
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-muted rounded-lg">
+                <Building2 className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{inactiveClients}</p>
+                <p className="text-sm text-muted-foreground">Inactive Clients</p>
               </div>
             </div>
           </CardContent>
