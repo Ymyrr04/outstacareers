@@ -89,6 +89,9 @@ export const ClientsDashboard = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'lost' | 'newHiring' | 'existingHiring' | 'inactive'>('all');
   const [lostYearFilter, setLostYearFilter] = useState<number>(2026);
   const [addedYearFilter, setAddedYearFilter] = useState<number>(2026);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
 
   const fetchClients = useCallback(async () => {
     try {
