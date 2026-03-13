@@ -83,8 +83,7 @@ const handler = async (req: Request): Promise<Response> => {
 </body>
 </html>`;
     } else {
-      // Use ASCII-only subject to avoid MIME-encoded text showing in Gmail
-      subject = `[OutSta Update] You've been assigned: ${requestTitle} - ${clientName} (${timeRef})`;
+      subject = `You've been assigned: ${requestTitle} - ${clientName} (${timeRef})`;
       bodyHtml = `
 <!DOCTYPE html>
 <html>
