@@ -6,7 +6,7 @@ import { crypto } from "https://deno.land/std@0.190.0/crypto/mod.ts";
 function generateMessageId(domain: string): string {
   const timestamp = Date.now();
   const randomBytes = crypto.getRandomValues(new Uint8Array(8));
-  const randomHex = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+  const randomHex = Array.from(randomBytes).map((b) => b.toString(16).padStart(2, "0")).join("");
   return `<${timestamp}.${randomHex}@${domain}>`;
 }
 
@@ -19,7 +19,10 @@ interface BulkEmailRequest {
   subject: string;
   bodyHtml: string;
   scheduledEmailId?: string;
+  maxBatchSize?: number;
 }
+
+const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
@@ -36,31 +39,110 @@ const handler = async (req: Request): Promise<Response> => {
     if (!supabaseUrl || !supabaseServiceKey) throw new Error("Supabase credentials not configured");
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { subject, bodyHtml, scheduledEmailId }: BulkEmailRequest = await req.json();
+    const { subject, bodyHtml, scheduledEmailId, maxBatchSize }: BulkEmailRequest = await req.json();
 
-    // Fetch all active contractors with their applicant details
     const { data: contractors, error: fetchError } = await supabase
-      .from('contractor_assignments')
-      .select('id, job_title, applicant:applicants_prescreen(full_name, email), client:clients(company_name)')
-      .eq('status', 'active');
+      .from("contractor_assignments")
+      .select("id, job_title, applicant:applicants_prescreen(full_name, email), client:clients(company_name)")
+      .eq("status", "active")
+      .order("id", { ascending: true });
 
     if (fetchError) throw new Error("Failed to fetch contractors: " + fetchError.message);
     if (!contractors || contractors.length === 0) {
+      if (scheduledEmailId) {
+        await supabase
+          .from("scheduled_contractor_emails")
+          .update({
+            total_items: 0,
+            processed_items: 0,
+            status: "sent",
+            sent_at: new Date().toISOString(),
+            error_message: null,
+          })
+          .eq("id", scheduledEmailId);
+      }
+
       return new Response(
-        JSON.stringify({ success: true, sent: 0, message: "No active contractors found" }),
-        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+        JSON.stringify({
+          success: true,
+          completed: true,
+          sent: 0,
+          failed: 0,
+          remaining_items: 0,
+          total_items: 0,
+          processed_items: 0,
+          message: "No active contractors found",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
 
-    console.log(`Sending bulk email to ${contractors.length} active contractors`);
+    const totalItems = contractors.length;
+    const defaultBatchSize = Number(Deno.env.get("BULK_EMAIL_BATCH_SIZE") || "6");
+    const batchSize = Math.max(
+      1,
+      Math.min(totalItems, Number.isFinite(maxBatchSize as number) ? Number(maxBatchSize) : defaultBatchSize),
+    );
 
-    // Update total_items on scheduled email record for progress tracking
+    let processedItems = 0;
+
     if (scheduledEmailId) {
-      await supabase
-        .from('scheduled_contractor_emails')
-        .update({ total_items: contractors.length, processed_items: 0 })
-        .eq('id', scheduledEmailId);
+      const { data: scheduledRow, error: scheduledFetchError } = await supabase
+        .from("scheduled_contractor_emails")
+        .select("id, processed_items, total_items, status")
+        .eq("id", scheduledEmailId)
+        .single();
+
+      if (scheduledFetchError) {
+        throw new Error(`Failed to load scheduled email tracking: ${scheduledFetchError.message}`);
+      }
+
+      processedItems = Math.max(0, Number(scheduledRow?.processed_items || 0));
+
+      if (Number(scheduledRow?.total_items || 0) !== totalItems) {
+        await supabase
+          .from("scheduled_contractor_emails")
+          .update({ total_items: totalItems })
+          .eq("id", scheduledEmailId);
+      }
     }
+
+    if (processedItems >= totalItems) {
+      if (scheduledEmailId) {
+        await supabase
+          .from("scheduled_contractor_emails")
+          .update({
+            status: "sent",
+            sent_at: new Date().toISOString(),
+            processed_items: totalItems,
+            total_items: totalItems,
+            error_message: null,
+          })
+          .eq("id", scheduledEmailId);
+      }
+
+      return new Response(
+        JSON.stringify({
+          success: true,
+          completed: true,
+          sent: 0,
+          failed: 0,
+          skipped: 0,
+          processed_items: totalItems,
+          total_items: totalItems,
+          remaining_items: 0,
+          message: "Batch already completed",
+        }),
+        { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
+    }
+
+    const endIndexExclusive = Math.min(processedItems + batchSize, totalItems);
+    const contractorsToProcess = contractors.slice(processedItems, endIndexExclusive);
+
+    console.log(
+      `Processing chunk ${processedItems + 1}-${endIndexExclusive} of ${totalItems} (scheduledEmailId=${scheduledEmailId || "none"})`,
+    );
 
     const client = new SMTPClient({
       connection: {
@@ -71,124 +153,164 @@ const handler = async (req: Request): Promise<Response> => {
       },
     });
 
-    const domain = gmailUser.split('@')[1] || 'outsta.io';
+    const domain = gmailUser.split("@")[1] || "outsta.io";
+    const signatureUrl = `${supabaseUrl}/storage/v1/object/public/email-assets/mark-signature.png`;
     const signatureHtml = `
 <br/>
 <p style="margin: 0; color: #333333; font-size: 14px;">--</p>
 <p style="margin: 4px 0 0 0; color: #333333; font-size: 14px;">Warm Regards,<br/>Mark</p>
 <br/>
-<img src="https://ohxtavjababtrcrkgndq.supabase.co/storage/v1/object/public/email-assets/mark-signature.png" alt="Mark Chua - Marketing & Business Development Manager, OutSta" style="width: 420px; max-width: 100%; height: auto; border-radius: 8px;" />`;
+<img src="${signatureUrl}" alt="Mark Chua - Marketing & Business Development Manager, OutSta" style="width: 420px; max-width: 100%; height: auto; border-radius: 8px;" />`;
 
     let sentCount = 0;
+    let skippedCount = 0;
     const errors: string[] = [];
 
-    for (const contractor of contractors) {
-      const applicant = contractor.applicant as any;
-      const clientData = contractor.client as any;
-      if (!applicant?.email) continue;
+    try {
+      for (let i = 0; i < contractorsToProcess.length; i++) {
+        const contractor = contractorsToProcess[i];
+        const applicant = contractor.applicant as { full_name?: string; email?: string } | null;
+        const clientData = contractor.client as { company_name?: string } | null;
 
-      const firstName = applicant.full_name?.split(' ')[0] || '';
-      const personalizedBody = bodyHtml
-        .replace(/\{\{first_name\}\}/gi, firstName)
-        .replace(/\{\{full_name\}\}/gi, applicant.full_name || '')
-        .replace(/\{\{company\}\}/gi, clientData?.company_name || '')
-        .replace(/\{\{job_title\}\}/gi, contractor.job_title || '');
-
-      const personalizedSubject = subject
-        .replace(/\{\{first_name\}\}/gi, firstName)
-        .replace(/\{\{full_name\}\}/gi, applicant.full_name || '')
-        .replace(/\{\{company\}\}/gi, clientData?.company_name || '')
-        .replace(/\{\{job_title\}\}/gi, contractor.job_title || '');
-
-      // Convert markdown-style links [text](url) to HTML <a> tags, then newlines to <br>
-      const formattedBody = personalizedBody
-        .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" style="color: #1a73e8; text-decoration: underline;">$1</a>')
-        .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-        .replace(/\*(.+?)\*/g, '<em>$1</em>')
-        .replace(/__(.+?)__/g, '<u>$1</u>')
-        .replace(/\n/g, '<br>');
-      const emailHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${personalizedSubject}</title></head><body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #ffffff; color: #333333; font-size: 14px; line-height: 1.6;">${formattedBody}${signatureHtml}</body></html>`;
-
-      try {
-        // Wait 30 seconds between emails to avoid spam detection
-        if (sentCount > 0 || errors.length > 0) {
-          console.log(`Waiting 30 seconds before sending next email...`);
-          await new Promise(resolve => setTimeout(resolve, 30000));
+        if (i > 0) {
+          console.log("Waiting 30 seconds before sending next email...");
+          await wait(30000);
         }
 
-        const messageId = generateMessageId(domain);
-        await client.send({
-          from: `OutSta Mark Chua <${gmailUser}>`,
-          to: applicant.email,
-          subject: personalizedSubject,
-          content: "auto",
-          html: emailHtml,
-          headers: { "Message-ID": messageId },
-        });
+        processedItems += 1;
 
-        // Log sent email
-        await supabase.from('contractor_email_logs').insert({
-          contractor_assignment_id: contractor.id,
-          subject: personalizedSubject,
-          body_html: personalizedBody,
-          recipient_email: applicant.email,
-          status: 'sent',
-          sent_at: new Date().toISOString(),
-          message_id: messageId,
-        });
-
-        sentCount++;
-        console.log(`Sent to: ${applicant.email} (${sentCount}/${contractors.length})`);
-
-        // Update progress on scheduled email record
-        if (scheduledEmailId) {
-          await supabase
-            .from('scheduled_contractor_emails')
-            .update({ processed_items: sentCount + errors.length })
-            .eq('id', scheduledEmailId);
+        if (!applicant?.email) {
+          skippedCount += 1;
+          if (scheduledEmailId) {
+            await supabase
+              .from("scheduled_contractor_emails")
+              .update({ processed_items: processedItems })
+              .eq("id", scheduledEmailId);
+          }
+          continue;
         }
-      } catch (err: any) {
-        console.error(`Failed to send to ${applicant.email}:`, err.message);
-        errors.push(`${applicant.full_name} (${applicant.email}): ${err.message}`);
 
-        await supabase.from('contractor_email_logs').insert({
-          contractor_assignment_id: contractor.id,
-          subject: personalizedSubject,
-          body_html: personalizedBody,
-          recipient_email: applicant.email,
-          status: 'failed',
-          error_message: err.message,
-        });
+        const firstName = applicant.full_name?.split(" ")[0] || "";
+        const personalizedBody = bodyHtml
+          .replace(/\{\{first_name\}\}/gi, firstName)
+          .replace(/\{\{full_name\}\}/gi, applicant.full_name || "")
+          .replace(/\{\{company\}\}/gi, clientData?.company_name || "")
+          .replace(/\{\{job_title\}\}/gi, contractor.job_title || "");
 
-        // Update progress on scheduled email record for failures too
+        const personalizedSubject = subject
+          .replace(/\{\{first_name\}\}/gi, firstName)
+          .replace(/\{\{full_name\}\}/gi, applicant.full_name || "")
+          .replace(/\{\{company\}\}/gi, clientData?.company_name || "")
+          .replace(/\{\{job_title\}\}/gi, contractor.job_title || "");
+
+        const formattedBody = personalizedBody
+          .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" style="color: #1a73e8; text-decoration: underline;">$1</a>')
+          .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+          .replace(/\*(.+?)\*/g, "<em>$1</em>")
+          .replace(/__(.+?)__/g, "<u>$1</u>")
+          .replace(/\n/g, "<br>");
+
+        const emailHtml = `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>${personalizedSubject}</title></head><body style="margin: 0; padding: 20px; font-family: Arial, sans-serif; background-color: #ffffff; color: #333333; font-size: 14px; line-height: 1.6;">${formattedBody}${signatureHtml}</body></html>`;
+
+        try {
+          const messageId = generateMessageId(domain);
+
+          await client.send({
+            from: `OutSta Mark Chua <${gmailUser}>`,
+            to: applicant.email,
+            subject: personalizedSubject,
+            content: "auto",
+            html: emailHtml,
+            headers: { "Message-ID": messageId },
+          });
+
+          await supabase.from("contractor_email_logs").insert({
+            contractor_assignment_id: contractor.id,
+            subject: personalizedSubject,
+            body_html: personalizedBody,
+            recipient_email: applicant.email,
+            status: "sent",
+            sent_at: new Date().toISOString(),
+            message_id: messageId,
+          });
+
+          sentCount++;
+          console.log(`Sent to: ${applicant.email} (${processedItems}/${totalItems})`);
+        } catch (err: any) {
+          console.error(`Failed to send to ${applicant.email}:`, err.message);
+          errors.push(`${applicant.full_name || "Unknown"} (${applicant.email}): ${err.message}`);
+
+          await supabase.from("contractor_email_logs").insert({
+            contractor_assignment_id: contractor.id,
+            subject: personalizedSubject,
+            body_html: personalizedBody,
+            recipient_email: applicant.email,
+            status: "failed",
+            error_message: err.message,
+          });
+        }
+
         if (scheduledEmailId) {
           await supabase
-            .from('scheduled_contractor_emails')
-            .update({ processed_items: sentCount + errors.length })
-            .eq('id', scheduledEmailId);
+            .from("scheduled_contractor_emails")
+            .update({ processed_items: processedItems })
+            .eq("id", scheduledEmailId);
         }
       }
+    } finally {
+      await client.close();
     }
 
-    await client.close();
+    const completed = processedItems >= totalItems;
+    const remainingItems = Math.max(0, totalItems - processedItems);
 
-    console.log(`Bulk email complete: ${sentCount} sent, ${errors.length} failed`);
+    if (scheduledEmailId) {
+      await supabase
+        .from("scheduled_contractor_emails")
+        .update(
+          completed
+            ? {
+                status: "sent",
+                sent_at: new Date().toISOString(),
+                processed_items: processedItems,
+                total_items: totalItems,
+                error_message: null,
+              }
+            : {
+                status: "processing",
+                processed_items: processedItems,
+                total_items: totalItems,
+              },
+        )
+        .eq("id", scheduledEmailId);
+    }
+
+    console.log(
+      `Chunk complete: ${sentCount} sent, ${errors.length} failed, ${skippedCount} skipped. Completed=${completed}, processed=${processedItems}/${totalItems}`,
+    );
 
     return new Response(
-      JSON.stringify({ 
-        success: true, 
-        sent: sentCount, 
+      JSON.stringify({
+        success: true,
+        completed,
+        sent: sentCount,
         failed: errors.length,
+        skipped: skippedCount,
         errors: errors.length > 0 ? errors : undefined,
-        message: `Sent ${sentCount} of ${contractors.length} emails` 
+        processed_items: processedItems,
+        total_items: totalItems,
+        remaining_items: remainingItems,
+        message: completed
+          ? `Sent ${processedItems} of ${totalItems} contractors`
+          : `Processed ${processedItems} of ${totalItems}. ${remainingItems} remaining.`,
       }),
-      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
     );
   } catch (error: any) {
     console.error("Bulk email error:", error);
     return new Response(
       JSON.stringify({ error: error.message }),
-      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } }
+      { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } },
     );
   }
 };
