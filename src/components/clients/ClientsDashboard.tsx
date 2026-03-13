@@ -217,12 +217,14 @@ export const ClientsDashboard = () => {
     const hasActiveContractors = (client.contractor_count || 0) > 0;
     const isActivelyHiring = clientsWithActiveHiringRequests.has(client.id);
     const isInLostStage = clientsInLostStages.has(client.id);
+    const isInactive = !hasActiveContractors && !isActivelyHiring;
     const matchesStatusFilter = 
       statusFilter === 'all' ||
       (statusFilter === 'active' && hasActiveContractors) ||
       (statusFilter === 'lost' && isInLostStage) ||
       (statusFilter === 'newHiring' && isActivelyHiring && !hasActiveContractors) ||
-      (statusFilter === 'existingHiring' && isActivelyHiring && hasActiveContractors);
+      (statusFilter === 'existingHiring' && isActivelyHiring && hasActiveContractors) ||
+      (statusFilter === 'inactive' && isInactive);
     
     return matchesSearch && matchesStatusFilter;
   });
