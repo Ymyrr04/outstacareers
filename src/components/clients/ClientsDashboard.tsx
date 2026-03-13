@@ -248,6 +248,9 @@ export const ClientsDashboard = () => {
   ).length;
   
   const clientsLost = clientsInLostStages.size;
+  const inactiveClients = clients.filter(c => 
+    (c.contractor_count || 0) === 0 && !clientsWithActiveHiringRequests.has(c.id)
+  ).length;
   
   // Count open hiring requests per client (in active stages only)
   const hiringRequestCountByClient = hiringRequests
