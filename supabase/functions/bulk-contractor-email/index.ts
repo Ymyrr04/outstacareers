@@ -79,10 +79,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     const totalItems = contractors.length;
     const defaultBatchSize = Number(Deno.env.get("BULK_EMAIL_BATCH_SIZE") || "6");
-    const batchSize = Math.max(
-      1,
-      Math.min(totalItems, Number.isFinite(maxBatchSize as number) ? Number(maxBatchSize) : defaultBatchSize),
-    );
+    const batchSize = scheduledEmailId
+      ? Math.max(
+          1,
+          Math.min(totalItems, Number.isFinite(maxBatchSize as number) ? Number(maxBatchSize) : defaultBatchSize),
+        )
+      : totalItems;
 
     let processedItems = 0;
 
