@@ -321,10 +321,14 @@ export const HiringRequestDetailDialog = ({
       toast.error('Failed to delete comment');
     } else {
       fetchComments(request.id);
-      // Update comment count
+      // Sync comment count from actual database records
+      const { count } = await supabase
+        .from('hiring_request_comments')
+        .select('*', { count: 'exact', head: true })
+        .eq('request_id', request.id);
       await supabase
         .from('client_hiring_requests')
-        .update({ comment_count: Math.max((request.comment_count || 1) - 1, 0) })
+        .update({ comment_count: count || 0 })
         .eq('id', request.id);
       onUpdated?.();
       toast.success('Comment deleted');
