@@ -571,6 +571,17 @@ export const ClientsDashboard = () => {
           />
         </div>
         <div className="flex gap-2">
+          <Button
+            variant={selectionMode ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              setSelectionMode(!selectionMode);
+              if (selectionMode) setSelectedIds(new Set());
+            }}
+          >
+            <CheckSquare className="w-4 h-4 mr-2" />
+            {selectionMode ? 'Cancel' : 'Select'}
+          </Button>
           <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
             <Upload className="w-4 h-4 mr-2" />
             Import
