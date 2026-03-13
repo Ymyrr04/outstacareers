@@ -50,9 +50,11 @@ const handler = async (req: Request): Promise<Response> => {
 
     let subject: string;
     let bodyHtml: string;
+    // Add short time reference to prevent Gmail from threading all notifications together
+    const timeRef = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     if (type === 'mention') {
-      subject = `💬 ${senderName} mentioned you in ${requestTitle} – ${clientName}`;
+      subject = `💬 ${senderName} mentioned you in ${requestTitle} – ${clientName} (${timeRef})`;
       // Strip HTML tags for plain preview, keep it brief
       const plainComment = (commentContent || '').replace(/<[^>]*>/g, '').substring(0, 200);
       bodyHtml = `
