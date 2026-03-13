@@ -476,6 +476,22 @@ export const ClientsDashboard = () => {
             </div>
           </CardContent>
         </Card>
+        <Card 
+          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'inactive' ? 'ring-2 ring-gray-500' : ''}`}
+          onClick={() => setStatusFilter(statusFilter === 'inactive' ? 'all' : 'inactive')}
+        >
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-muted rounded-lg">
+                <Building2 className="w-5 h-5 text-muted-foreground" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold">{inactiveClients}</p>
+                <p className="text-sm text-muted-foreground">Inactive Clients</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
       {/* Client Insights */}
