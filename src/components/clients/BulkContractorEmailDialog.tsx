@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Send, Loader2, FileText, Mail, Users, RefreshCw, CalendarClock, Clock, XCircle, CalendarIcon } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { RichTextToolbar } from '@/components/RichTextToolbar';
 import { ScheduleDateTimeDialog } from '@/components/clients/ScheduleDateTimeDialog';
 
