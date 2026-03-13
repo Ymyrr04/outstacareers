@@ -131,14 +131,14 @@ const handler = async (req: Request): Promise<Response> => {
     const utcHour = now.getUTCHours();
 
     if (isFriday && utcHour === 17) {
-      // Guard: only send once per day — check if we already created a scheduled record today
+      // Guard: only send once per day — check if ANY recurring record was created today
       const todayStart = new Date(now);
       todayStart.setUTCHours(0, 0, 0, 0);
       const { data: alreadySent } = await supabase
         .from("scheduled_contractor_emails")
         .select("id")
         .gte("created_at", todayStart.toISOString())
-        .eq("subject", "recurring-friday-auto")
+        .like("subject", "%recurring-friday-auto%")
         .limit(1);
 
       if (alreadySent && alreadySent.length > 0) {
@@ -151,17 +151,24 @@ const handler = async (req: Request): Promise<Response> => {
           .single();
 
         if (!tplError && template) {
-          // Create a tracking record to prevent duplicate sends
-          await supabase.from("scheduled_contractor_emails").insert({
-            subject: "recurring-friday-auto",
-            body_html: template.body_html,
-            scheduled_for: nowIso,
-            status: "processing",
-          });
+          // Create a tracking record with a recognizable subject to prevent duplicate sends
+          const { data: trackingRecord } = await supabase
+            .from("scheduled_contractor_emails")
+            .insert({
+              subject: "recurring-friday-auto",
+              body_html: template.body_html,
+              scheduled_for: nowIso,
+              status: "processing",
+            })
+            .select("id")
+            .single();
+
+          const scheduledEmailId = trackingRecord?.id;
 
           const result = await invokeBulkContractorEmail(supabaseUrl, supabaseServiceKey, {
             subject: template.subject,
             bodyHtml: template.body_html,
+            scheduledEmailId,
           });
 
           results.push(`Recurring Friday email: sent ${Number(result.sent || 0)}`);
