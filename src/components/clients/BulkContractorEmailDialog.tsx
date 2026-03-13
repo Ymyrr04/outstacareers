@@ -525,6 +525,35 @@ export const BulkContractorEmailDialog = ({
             )}
           </div>
 
+          {/* Processing Emails with Progress Bar */}
+          {processingEmails.length > 0 && (
+            <div className="border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                <span className="font-medium text-sm">Sending in Progress</span>
+              </div>
+              <div className="space-y-3">
+                {processingEmails.map((email: any) => {
+                  const total = email.total_items || 0;
+                  const processed = email.processed_items || 0;
+                  const percentage = total > 0 ? Math.round((processed / total) * 100) : 0;
+                  return (
+                    <div key={email.id} className="bg-background rounded-md p-3 border text-sm space-y-2">
+                      <p className="font-medium truncate">{email.subject}</p>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{processed} of {total} contractors sent</span>
+                          <span>{percentage}%</span>
+                        </div>
+                        <Progress value={percentage} className="h-2" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
           {/* Pending Scheduled Emails */}
           {pendingEmails.length > 0 && (
             <div className="border border-amber-200 dark:border-amber-800 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg p-4 space-y-3">
