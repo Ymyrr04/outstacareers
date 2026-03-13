@@ -62,11 +62,13 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // 2. Check for recurring default template (Friday auto-send)
+    // 2. Check for recurring default template (Friday auto-send at ~5pm UTC / 1pm EDT)
     const now = new Date();
     const isFriday = now.getUTCDay() === 5;
+    const utcHour = now.getUTCHours();
 
-    if (isFriday) {
+    // Only send recurring Friday email once, around 5pm UTC (1pm EDT)
+    if (isFriday && utcHour === 17) {
       const { data: template, error: tplError } = await supabase
         .from('contractor_email_templates')
         .select('subject, body_html')
