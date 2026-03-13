@@ -1459,30 +1459,36 @@ export type Database = {
           created_at: string
           error_message: string | null
           id: string
+          processed_items: number | null
           scheduled_for: string
           sent_at: string | null
           status: string
           subject: string
+          total_items: number | null
         }
         Insert: {
           body_html: string
           created_at?: string
           error_message?: string | null
           id?: string
+          processed_items?: number | null
           scheduled_for: string
           sent_at?: string | null
           status?: string
           subject: string
+          total_items?: number | null
         }
         Update: {
           body_html?: string
           created_at?: string
           error_message?: string | null
           id?: string
+          processed_items?: number | null
           scheduled_for?: string
           sent_at?: string | null
           status?: string
           subject?: string
+          total_items?: number | null
         }
         Relationships: []
       }
