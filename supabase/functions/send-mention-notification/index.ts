@@ -83,7 +83,7 @@ const handler = async (req: Request): Promise<Response> => {
 </body>
 </html>`;
     } else {
-      subject = `📋 You've been assigned: ${requestTitle} – ${clientName}`;
+      subject = `📋 You've been assigned: ${requestTitle} – ${clientName} (${timeRef})`;
       bodyHtml = `
 <!DOCTYPE html>
 <html>
@@ -108,19 +108,12 @@ const handler = async (req: Request): Promise<Response> => {
 </html>`;
     }
 
-    // Generate unique Message-ID to prevent Gmail from threading notifications together
-    const uniqueId = crypto.randomUUID();
-    const domain = gmailUser.split('@')[1] || 'outsta.io';
-
     await client.send({
       from: `OutSta Update <${gmailUser}>`,
       to: recipientEmail,
       subject,
       content: "auto",
       html: bodyHtml,
-      headers: {
-        "Message-ID": `<${uniqueId}@${domain}>`,
-      },
     });
 
     await client.close();
