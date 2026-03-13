@@ -373,23 +373,21 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                     {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
                     Save
                   </Button>
-                  <Button variant="outline" onClick={() => setEditing(false)}>Cancel</Button>
+                  <Button variant="ghost" onClick={() => setEditing(false)}>Cancel</Button>
                 </>
               ) : (
                 <>
-                  <Button variant="outline" onClick={() => setEditing(true)}>
+                  <Button variant="outline" size="sm" onClick={() => setEditing(true)}>
                     <Edit2 className="w-4 h-4 mr-2" />
                     Edit
                   </Button>
-                  <Button variant="destructive" onClick={handleDelete} disabled={deleting}>
+                  <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
                     {deleting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Trash2 className="w-4 h-4 mr-2" />}
                     Delete
                   </Button>
                 </>
               )}
             </div>
-            
-            {/* Hiring Toggle */}
             {!editing && (
               <HiringToggle 
                 clientId={client.id} 
@@ -399,114 +397,140 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
             )}
           </div>
 
-          {/* Edit Form */}
-          {editing && (
-            <div className="grid gap-4 p-4 border rounded-lg bg-muted/30">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label>Industry</Label>
+          {/* Company Information Section */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 border-b pb-2">
+              <Building2 className="w-4 h-4" />
+              Company Information
+            </h3>
+            {editing ? (
+              <div className="grid gap-3">
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">Industry</Label>
+                    <Input
+                      list="edit-industry-suggestions"
+                      value={editForm.industry}
+                      onChange={(e) => setEditForm({ ...editForm, industry: e.target.value })}
+                      placeholder="Select or type industry"
+                      className="h-9"
+                    />
+                    <datalist id="edit-industry-suggestions">
+                      {existingIndustries.map((ind) => (
+                        <option key={ind} value={ind} />
+                      ))}
+                    </datalist>
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs text-muted-foreground">No. of Contractors</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      value={editForm.contractor_count}
+                      onChange={(e) => setEditForm({ ...editForm, contractor_count: parseInt(e.target.value) || 0 })}
+                      className="h-9"
+                    />
+                  </div>
+                </div>
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Leads from</Label>
                   <Input
-                    list="edit-industry-suggestions"
-                    value={editForm.industry}
-                    onChange={(e) => setEditForm({ ...editForm, industry: e.target.value })}
-                    placeholder="Select or type industry"
+                    list="edit-leads-from-suggestions"
+                    value={editForm.leads_from}
+                    onChange={(e) => setEditForm({ ...editForm, leads_from: e.target.value })}
+                    placeholder="Select or type source"
+                    className="h-9"
                   />
-                  <datalist id="edit-industry-suggestions">
-                    {existingIndustries.map((ind) => (
-                      <option key={ind} value={ind} />
+                  <datalist id="edit-leads-from-suggestions">
+                    {existingSources.map((src) => (
+                      <option key={src} value={src} />
                     ))}
                   </datalist>
                 </div>
-                <div className="space-y-2">
-                  <Label>No. of Contractors</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    value={editForm.contractor_count}
-                    onChange={(e) => setEditForm({ ...editForm, contractor_count: parseInt(e.target.value) || 0 })}
+                <div className="space-y-1">
+                  <Label className="text-xs text-muted-foreground">Company Links (to share with candidates)</Label>
+                  <Textarea
+                    value={editForm.company_links}
+                    onChange={(e) => setEditForm({ ...editForm, company_links: e.target.value })}
+                    rows={2}
                   />
                 </div>
+                <div className="flex gap-6">
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="is_hiring_edit"
+                      checked={editForm.is_hiring}
+                      onCheckedChange={(checked) => setEditForm({ ...editForm, is_hiring: !!checked })}
+                    />
+                    <Label htmlFor="is_hiring_edit" className="text-sm font-normal">Currently Hiring</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="yearly_increase_edit"
+                      checked={editForm.yearly_increase}
+                      onCheckedChange={(checked) => setEditForm({ ...editForm, yearly_increase: !!checked })}
+                    />
+                    <Label htmlFor="yearly_increase_edit" className="text-sm font-normal">4% Yearly Increase</Label>
+                  </div>
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label>Leads from</Label>
-                <Input
-                  list="edit-leads-from-suggestions"
-                  value={editForm.leads_from}
-                  onChange={(e) => setEditForm({ ...editForm, leads_from: e.target.value })}
-                  placeholder="Select or type source"
-                />
-                <datalist id="edit-leads-from-suggestions">
-                  {existingSources.map((src) => (
-                    <option key={src} value={src} />
-                  ))}
-                </datalist>
+            ) : (
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <span className="text-xs text-muted-foreground">Industry</span>
+                  <p className="font-medium">{client.industry || '—'}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">No. of Contractors</span>
+                  <p className="font-medium">{client.contractor_count ?? 0}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">Leads from</span>
+                  <p className="font-medium">{client.leads_from || '—'}</p>
+                </div>
+                <div>
+                  <span className="text-xs text-muted-foreground">Flags</span>
+                  <div className="flex gap-2 mt-0.5">
+                    {client.is_hiring && (
+                      <Badge variant="outline" className="text-xs text-green-600 border-green-300">Hiring</Badge>
+                    )}
+                    {client.yearly_increase && (
+                      <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
+                        <TrendingUp className="w-3 h-3 mr-1" />4%
+                      </Badge>
+                    )}
+                    {!client.is_hiring && !client.yearly_increase && <span className="text-muted-foreground">—</span>}
+                  </div>
+                </div>
+                {client.company_links && (
+                  <div className="col-span-2">
+                    <span className="text-xs text-muted-foreground">Company Links</span>
+                    <p className="font-medium break-all">{client.company_links}</p>
+                  </div>
+                )}
               </div>
-              <div className="space-y-2">
-                <Label>Company Links (to share with candidates)</Label>
-                <Textarea
-                  value={editForm.company_links}
-                  onChange={(e) => setEditForm({ ...editForm, company_links: e.target.value })}
-                  rows={2}
-                />
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="is_hiring_edit"
-                  checked={editForm.is_hiring}
-                  onCheckedChange={(checked) => setEditForm({ ...editForm, is_hiring: !!checked })}
-                />
-                <Label htmlFor="is_hiring_edit" className="text-sm font-normal">
-                  Currently Hiring
-                </Label>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Checkbox
-                  id="yearly_increase_edit"
-                  checked={editForm.yearly_increase}
-                  onCheckedChange={(checked) => setEditForm({ ...editForm, yearly_increase: !!checked })}
-                />
-                <Label htmlFor="yearly_increase_edit" className="text-sm font-normal">
-                  4% Yearly Increase
-                </Label>
-              </div>
-              <div className="space-y-2">
-                <Label>Notes</Label>
-                <Textarea
-                  value={editForm.notes}
-                  onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
-                  rows={3}
-                />
-              </div>
-            </div>
-          )}
+            )}
+          </div>
 
-          {/* Info Cards */}
-          {!editing && (
-            <div className="grid grid-cols-2 gap-4 text-sm">
-              {client.industry && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Briefcase className="w-4 h-4" />
-                  <span>{client.industry}</span>
-                </div>
-              )}
-              {client.leads_from && (
-                <div className="flex items-center gap-2 text-muted-foreground">
-                  <Globe className="w-4 h-4" />
-                  <span>From: {client.leads_from}</span>
-                </div>
-              )}
-              <div className="flex items-center gap-2 text-muted-foreground">
-                <Hash className="w-4 h-4" />
-                <span>{client.contractor_count} Contractor{client.contractor_count !== 1 ? 's' : ''}</span>
-              </div>
-              {client.company_links && (
-                <div className="flex items-start gap-2 text-muted-foreground col-span-2">
-                  <Link className="w-4 h-4 mt-0.5" />
-                  <span className="break-all">{client.company_links}</span>
-                </div>
-              )}
-            </div>
-          )}
+          {/* Notes Section */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-foreground flex items-center gap-2 border-b pb-2">
+              <FileText className="w-4 h-4" />
+              Notes
+            </h3>
+            {editing ? (
+              <Textarea
+                value={editForm.notes}
+                onChange={(e) => setEditForm({ ...editForm, notes: e.target.value })}
+                rows={3}
+                placeholder="Add notes..."
+              />
+            ) : (
+              <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                {client.notes || 'No notes yet'}
+              </p>
+            )}
+          </div>
 
           {/* Tabs */}
           <Tabs defaultValue="contacts" className="space-y-4">
@@ -615,7 +639,6 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                 <p className="text-center text-muted-foreground py-6">No contractors assigned</p>
               ) : (
                 <>
-                  {/* Active Contractors */}
                   {activeContractors.length > 0 && (
                     <div className="space-y-2">
                       <h4 className="text-sm font-medium text-foreground flex items-center gap-2">
@@ -675,7 +698,6 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                     </div>
                   )}
 
-                  {/* Previous Contractors */}
                   {previousContractors.length > 0 && (
                     <div className="space-y-2">
                       <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2 mt-4">
@@ -788,21 +810,6 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
               )}
             </TabsContent>
           </Tabs>
-
-          {/* Notes */}
-          {!editing && client.notes && (
-            <Card>
-              <CardHeader className="py-3">
-                <CardTitle className="text-sm flex items-center gap-2">
-                  <FileText className="w-4 h-4" />
-                  Notes
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="py-2">
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">{client.notes}</p>
-              </CardContent>
-            </Card>
-          )}
         </div>
 
         {/* Dialogs */}
