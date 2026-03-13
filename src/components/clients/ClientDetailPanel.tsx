@@ -280,6 +280,47 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
     toast({ title: 'Primary contact updated' });
   };
 
+  const startEditingContact = (contact: ClientContact) => {
+    setEditingContactId(contact.id);
+    setContactEditForm({
+      full_name: contact.full_name,
+      first_name: contact.first_name || '',
+      last_name: contact.last_name || '',
+      email: contact.email || '',
+      phone: contact.phone || '',
+      role: contact.role || '',
+      notes: contact.notes || '',
+    });
+  };
+
+  const handleSaveContact = async () => {
+    if (!editingContactId) return;
+    setSavingContact(true);
+    try {
+      const fullName = [contactEditForm.first_name.trim(), contactEditForm.last_name.trim()].filter(Boolean).join(' ') || contactEditForm.full_name.trim();
+      const { error } = await supabase
+        .from('client_contacts')
+        .update({
+          first_name: contactEditForm.first_name.trim() || null,
+          last_name: contactEditForm.last_name.trim() || null,
+          full_name: fullName,
+          email: contactEditForm.email.trim() || null,
+          phone: contactEditForm.phone.trim() || null,
+          role: contactEditForm.role.trim() || null,
+          notes: contactEditForm.notes.trim() || null,
+        })
+        .eq('id', editingContactId);
+      if (error) throw error;
+      toast({ title: 'Contact updated' });
+      setEditingContactId(null);
+      fetchClientData();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setSavingContact(false);
+    }
+  };
+
   const getContactDisplayName = (contact: ClientContact) => {
     if (contact.first_name || contact.last_name) {
       return [contact.first_name, contact.last_name].filter(Boolean).join(' ');
