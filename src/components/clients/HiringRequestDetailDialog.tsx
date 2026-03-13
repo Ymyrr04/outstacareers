@@ -226,7 +226,7 @@ export const HiringRequestDetailDialog = ({
     if (error) {
       toast.error('Failed to add comment');
     } else {
-      // Check for @mentions and send Slack notifications
+      // Check for @mentions and send email + Slack notifications
       const mentionPattern = /@(\w+)/g;
       const plainText = newComment.replace(/<[^>]*>/g, '');
       const mentions = plainText.match(mentionPattern);
@@ -240,7 +240,23 @@ export const HiringRequestDetailDialog = ({
             return displayName === mentionedName;
           });
           
-          if (mentionedAdmin) {
+          if (mentionedAdmin && mentionedAdmin.email !== user.email) {
+            // Send email notification
+            supabase.functions.invoke('send-mention-notification', {
+              body: {
+                type: 'mention',
+                recipientEmail: mentionedAdmin.email,
+                recipientName: getAdminDisplayName(mentionedAdmin.email),
+                senderName: getAdminDisplayName(user.email),
+                requestTitle: request.job_title,
+                clientName: request.client_name || 'Unknown Client',
+                commentContent: newComment,
+              },
+            }).then(({ error: emailError }) => {
+              if (emailError) console.error('Mention email notification failed:', emailError);
+            });
+
+            // Also send Slack notification
             notifyMention({
               mentionedEmail: mentionedAdmin.email,
               mentionedByEmail: user.email || '',

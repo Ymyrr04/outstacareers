@@ -68,3 +68,6 @@ verify_jwt = false
 
 [functions.send-slack-notification]
 verify_jwt = true
+
+[functions.send-mention-notification]
+verify_jwt = true
