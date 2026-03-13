@@ -480,7 +480,7 @@ const JobsSection = () => {
             variant="default" 
             size="lg"
             className="text-lg px-8 py-6"
-            onClick={() => window.open('https://docs.google.com/forms/d/e/1FAIpQLScTA302hqdCmDBphLwsRdHm2wH0U5dxnzu28JQWaJ8_dB9aeQ/viewform?usp=header', '_blank')}
+            onClick={() => navigate('/talent-pool')}
           >
             Join our Talent Pool here
           </Button>
