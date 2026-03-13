@@ -387,18 +387,39 @@ export const BulkContractorEmailDialog = ({
         },
         body: JSON.stringify({ subject, bodyHtml, scheduledEmailId }),
       }).then(async (res) => {
-        const data = await res.json();
-        // Mark as sent when done
-        await supabase
-          .from('scheduled_contractor_emails' as any)
-          .update({ status: 'sent', sent_at: new Date().toISOString() } as any)
-          .eq('id', scheduledEmailId);
-        
-        fetchPendingEmails();
-        onEmailSent?.();
+        const rawText = await res.text();
+        let data: any = {};
+        if (rawText) {
+          try {
+            data = JSON.parse(rawText);
+          } catch {
+            data = { rawText };
+          }
+        }
 
-        if (data?.errors?.length) {
-          toast({ title: 'Some emails failed', description: `${data.errors.length} email(s) failed`, variant: 'destructive' });
+        if (!res.ok) {
+          throw new Error((data as any)?.error || `Bulk email failed (${res.status})`);
+        }
+
+        const isCompleted = Boolean((data as any)?.completed);
+
+        if (isCompleted) {
+          await supabase
+            .from('scheduled_contractor_emails' as any)
+            .update({ status: 'sent', sent_at: new Date().toISOString(), error_message: null } as any)
+            .eq('id', scheduledEmailId);
+          onEmailSent?.();
+        } else {
+          await supabase
+            .from('scheduled_contractor_emails' as any)
+            .update({ status: 'processing', error_message: null } as any)
+            .eq('id', scheduledEmailId);
+        }
+
+        fetchPendingEmails();
+
+        if ((data as any)?.errors?.length) {
+          toast({ title: 'Some emails failed', description: `${(data as any).errors.length} email(s) failed`, variant: 'destructive' });
         }
       }).catch((err) => {
         console.error('Bulk email background error:', err);
