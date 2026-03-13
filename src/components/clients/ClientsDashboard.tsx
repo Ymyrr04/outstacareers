@@ -5,7 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
-import { Building2, Users, Search, Plus, Loader2, Globe, Download, Upload, TrendingUp, UserPlus, Briefcase, ChevronDown } from 'lucide-react';
+import { Building2, Users, Search, Plus, Loader2, Globe, Download, Upload, TrendingUp, UserPlus, Briefcase, ChevronDown, Trash2, CheckSquare, Square } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { AddClientDialog } from './AddClientDialog';
@@ -88,6 +89,9 @@ export const ClientsDashboard = () => {
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'lost' | 'newHiring' | 'existingHiring' | 'inactive'>('all');
   const [lostYearFilter, setLostYearFilter] = useState<number>(2026);
   const [addedYearFilter, setAddedYearFilter] = useState<number>(2026);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
 
   const fetchClients = useCallback(async () => {
     try {
@@ -269,8 +273,8 @@ export const ClientsDashboard = () => {
 
   // Export clients to CSV
   const handleExport = async () => {
+    // ... keep existing code
     try {
-      // Fetch all clients with contacts for export
       const { data: clientsData } = await supabase
         .from('clients')
         .select('*')
@@ -281,7 +285,6 @@ export const ClientsDashboard = () => {
         .select('*')
         .eq('is_primary', true);
 
-      // Build contacts map
       const contactsMap: Record<string, typeof contactsData[0]> = {};
       contactsData?.forEach(c => {
         if (!contactsMap[c.client_id]) {
@@ -289,18 +292,11 @@ export const ClientsDashboard = () => {
         }
       });
 
-      // Build CSV - matching the required fields
       const headers = [
-        'Business Name',
-        'First Name',
-        'Last Name',
-        'Email Address',
-        'Contact Information',
-        'No. of Contractors',
-        'Leads from',
+        'Business Name', 'First Name', 'Last Name', 'Email Address',
+        'Contact Information', 'No. of Contractors', 'Leads from',
         'Add links about the company to be shared with candidate(s)',
-        '4% Yearly increase',
-        'Industry'
+        '4% Yearly increase', 'Industry'
       ];
 
       const rows = (clientsData || []).map(client => {
@@ -328,16 +324,78 @@ export const ClientsDashboard = () => {
       a.click();
       URL.revokeObjectURL(url);
 
-      toast({
-        title: 'Success',
-        description: `Exported ${clientsData?.length || 0} clients`,
-      });
+      toast({ title: 'Success', description: `Exported ${clientsData?.length || 0} clients` });
     } catch (err: any) {
-      toast({
-        title: 'Error',
-        description: 'Failed to export clients: ' + err.message,
-        variant: 'destructive',
-      });
+      toast({ title: 'Error', description: 'Failed to export clients: ' + err.message, variant: 'destructive' });
+    }
+  };
+
+  const toggleSelectClient = (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredClients.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredClients.map(c => c.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedIds.size === 0) return;
+    const confirmed = window.confirm(`Are you sure you want to delete ${selectedIds.size} client(s)? This will also archive them to the deleted clients table.`);
+    if (!confirmed) return;
+
+    setBulkDeleting(true);
+    try {
+      const idsArray = Array.from(selectedIds);
+      const clientsToDelete = clients.filter(c => idsArray.includes(c.id));
+
+      // Archive to deleted_clients
+      const archiveRows = clientsToDelete.map(c => ({
+        original_id: c.id,
+        company_name: c.company_name,
+        industry: c.industry,
+        website: c.website,
+        address: c.address,
+        notes: c.notes,
+        leads_from: c.leads_from,
+        company_links: c.company_links,
+        yearly_increase: c.yearly_increase,
+        contractor_count: c.contractor_count,
+        is_hiring: c.is_hiring,
+        created_at: c.created_at,
+      }));
+
+      const { error: archiveError } = await supabase
+        .from('deleted_clients')
+        .insert(archiveRows);
+
+      if (archiveError) throw archiveError;
+
+      // Delete from clients table
+      const { error: deleteError } = await supabase
+        .from('clients')
+        .delete()
+        .in('id', idsArray);
+
+      if (deleteError) throw deleteError;
+
+      toast({ title: 'Deleted', description: `${idsArray.length} client(s) deleted successfully.` });
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+      fetchClients();
+    } catch (err: any) {
+      toast({ title: 'Error', description: 'Failed to delete clients: ' + err.message, variant: 'destructive' });
+    } finally {
+      setBulkDeleting(false);
     }
   };
 
@@ -513,6 +571,17 @@ export const ClientsDashboard = () => {
           />
         </div>
         <div className="flex gap-2">
+          <Button
+            variant={selectionMode ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => {
+              setSelectionMode(!selectionMode);
+              if (selectionMode) setSelectedIds(new Set());
+            }}
+          >
+            <CheckSquare className="w-4 h-4 mr-2" />
+            {selectionMode ? 'Cancel' : 'Select'}
+          </Button>
           <Button variant="outline" onClick={() => setImportDialogOpen(true)}>
             <Upload className="w-4 h-4 mr-2" />
             Import
@@ -527,6 +596,42 @@ export const ClientsDashboard = () => {
           </Button>
         </div>
       </div>
+
+      {/* Bulk Action Bar */}
+      {selectionMode && selectedIds.size > 0 && (
+        <div className="sticky top-0 z-10 bg-background border rounded-lg p-3 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+            <Checkbox
+              checked={selectedIds.size === filteredClients.length}
+              onCheckedChange={toggleSelectAll}
+            />
+            <span className="text-sm font-medium">{selectedIds.size} selected</span>
+          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleBulkDelete}
+            disabled={bulkDeleting}
+          >
+            {bulkDeleting ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Deleting...</>
+            ) : (
+              <><Trash2 className="w-4 h-4 mr-2" />Delete ({selectedIds.size})</>
+            )}
+          </Button>
+        </div>
+      )}
+
+      {/* Select All row when in selection mode */}
+      {selectionMode && selectedIds.size === 0 && (
+        <div className="flex items-center gap-3 px-4 py-2 text-sm text-muted-foreground">
+          <Checkbox
+            checked={false}
+            onCheckedChange={toggleSelectAll}
+          />
+          <span>Select all ({filteredClients.length})</span>
+        </div>
+      )}
 
       {/* Client List */}
       {filteredClients.length === 0 ? (
@@ -544,12 +649,19 @@ export const ClientsDashboard = () => {
           {filteredClients.map(client => (
             <Card 
               key={client.id} 
-              className="cursor-pointer hover:bg-accent/50 transition-colors"
-              onClick={() => setSelectedClient(client)}
+              className={`cursor-pointer hover:bg-accent/50 transition-colors ${selectedIds.has(client.id) ? 'ring-2 ring-primary' : ''}`}
+              onClick={() => selectionMode ? toggleSelectClient(client.id) : setSelectedClient(client)}
             >
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
+                    {selectionMode && (
+                      <Checkbox
+                        checked={selectedIds.has(client.id)}
+                        onCheckedChange={() => toggleSelectClient(client.id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    )}
                     <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                       <Building2 className="w-5 h-5 text-primary" />
                     </div>
