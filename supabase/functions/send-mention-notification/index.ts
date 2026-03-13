@@ -54,8 +54,7 @@ const handler = async (req: Request): Promise<Response> => {
     const timeRef = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
 
     if (type === 'mention') {
-      // Use ASCII-only subject to avoid MIME-encoded text showing in Gmail
-      subject = `[OutSta Update] ${senderName} mentioned you in ${requestTitle} - ${clientName} (${timeRef})`;
+      subject = `${senderName} mentioned you in ${requestTitle} - ${clientName} (${timeRef})`;
       // Strip HTML tags for plain preview, keep it brief
       const plainComment = (commentContent || '').replace(/<[^>]*>/g, '').substring(0, 200);
       bodyHtml = `
