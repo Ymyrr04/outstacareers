@@ -18,6 +18,7 @@ const corsHeaders = {
 interface BulkEmailRequest {
   subject: string;
   bodyHtml: string;
+  scheduledEmailId?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
