@@ -98,6 +98,11 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
   const [addContactOpen, setAddContactOpen] = useState(false);
   const [addContractorOpen, setAddContractorOpen] = useState(false);
   const [addCommunicationOpen, setAddCommunicationOpen] = useState(false);
+  const [editingContactId, setEditingContactId] = useState<string | null>(null);
+  const [contactEditForm, setContactEditForm] = useState<{
+    full_name: string; first_name: string; last_name: string; email: string; phone: string; role: string; notes: string;
+  }>({ full_name: '', first_name: '', last_name: '', email: '', phone: '', role: '', notes: '' });
+  const [savingContact, setSavingContact] = useState(false);
   const [existingIndustries, setExistingIndustries] = useState<string[]>([]);
   const [existingSources, setExistingSources] = useState<string[]>([]);
 
