@@ -85,7 +85,7 @@ export const ClientsDashboard = () => {
   const [selectedClient, setSelectedClient] = useState<Client | null>(null);
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
-  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'lost' | 'newHiring' | 'existingHiring'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'lost' | 'newHiring' | 'existingHiring' | 'inactive'>('all');
   const [lostYearFilter, setLostYearFilter] = useState<number>(2026);
   const [addedYearFilter, setAddedYearFilter] = useState<number>(2026);
 
