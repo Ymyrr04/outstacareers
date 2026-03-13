@@ -281,9 +281,14 @@ export const HiringRequestDetailDialog = ({
       setNewComment('');
       fetchComments(request.id);
       // Update comment count on request
+      // Sync comment count from actual database records
+      const { count } = await supabase
+        .from('hiring_request_comments')
+        .select('*', { count: 'exact', head: true })
+        .eq('request_id', request.id);
       await supabase
         .from('client_hiring_requests')
-        .update({ comment_count: (request.comment_count || 0) + 1 })
+        .update({ comment_count: count || 0 })
         .eq('id', request.id);
       onUpdated?.();
     }
