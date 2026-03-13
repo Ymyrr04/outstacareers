@@ -597,6 +597,42 @@ export const ClientsDashboard = () => {
         </div>
       </div>
 
+      {/* Bulk Action Bar */}
+      {selectionMode && selectedIds.size > 0 && (
+        <div className="sticky top-0 z-10 bg-background border rounded-lg p-3 flex items-center justify-between shadow-sm">
+          <div className="flex items-center gap-3">
+            <Checkbox
+              checked={selectedIds.size === filteredClients.length}
+              onCheckedChange={toggleSelectAll}
+            />
+            <span className="text-sm font-medium">{selectedIds.size} selected</span>
+          </div>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={handleBulkDelete}
+            disabled={bulkDeleting}
+          >
+            {bulkDeleting ? (
+              <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Deleting...</>
+            ) : (
+              <><Trash2 className="w-4 h-4 mr-2" />Delete ({selectedIds.size})</>
+            )}
+          </Button>
+        </div>
+      )}
+
+      {/* Select All row when in selection mode */}
+      {selectionMode && selectedIds.size === 0 && (
+        <div className="flex items-center gap-3 px-4 py-2 text-sm text-muted-foreground">
+          <Checkbox
+            checked={false}
+            onCheckedChange={toggleSelectAll}
+          />
+          <span>Select all ({filteredClients.length})</span>
+        </div>
+      )}
+
       {/* Client List */}
       {filteredClients.length === 0 ? (
         <Card>
@@ -613,12 +649,19 @@ export const ClientsDashboard = () => {
           {filteredClients.map(client => (
             <Card 
               key={client.id} 
-              className="cursor-pointer hover:bg-accent/50 transition-colors"
-              onClick={() => setSelectedClient(client)}
+              className={`cursor-pointer hover:bg-accent/50 transition-colors ${selectedIds.has(client.id) ? 'ring-2 ring-primary' : ''}`}
+              onClick={() => selectionMode ? toggleSelectClient(client.id) : setSelectedClient(client)}
             >
               <CardContent className="py-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
+                    {selectionMode && (
+                      <Checkbox
+                        checked={selectedIds.has(client.id)}
+                        onCheckedChange={() => toggleSelectClient(client.id)}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    )}
                     <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
                       <Building2 className="w-5 h-5 text-primary" />
                     </div>
