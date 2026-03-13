@@ -463,6 +463,25 @@ export const HiringRequestDetailDialog = ({
           changedByEmail: user?.email || '',
         });
       }
+
+      // Send email notification when task is assigned to someone
+      if (field === 'assigned_admin_id' && value) {
+        const assignedAdmin = adminUsers.find(a => a.user_id === value);
+        if (assignedAdmin && assignedAdmin.email !== user?.email) {
+          supabase.functions.invoke('send-mention-notification', {
+            body: {
+              type: 'assignment',
+              recipientEmail: assignedAdmin.email,
+              recipientName: getAdminDisplayName(assignedAdmin.email),
+              senderName: getAdminDisplayName(user?.email),
+              requestTitle: request.job_title,
+              clientName: request.client_name || 'Unknown Client',
+            },
+          }).then(({ error: emailError }) => {
+            if (emailError) console.error('Assignment email notification failed:', emailError);
+          });
+        }
+      }
       
       setFormData(prev => ({ ...prev, [field]: value }));
       onUpdated?.();
