@@ -347,19 +347,44 @@ export const BulkContractorEmailDialog = ({
 
     setSending(true);
     try {
-      // Send immediately
+      // Create a tracking record marked as 'processing' immediately
+      const { data: trackingRecord, error: trackingError } = await supabase
+        .from('scheduled_contractor_emails' as any)
+        .insert({
+          subject,
+          body_html: bodyHtml,
+          scheduled_for: new Date().toISOString(),
+          status: 'processing',
+        } as any)
+        .select('id')
+        .single();
+
+      if (trackingError) throw trackingError;
+      const scheduledEmailId = (trackingRecord as any)?.id;
+
+      // Start refreshing to show progress bar
+      fetchPendingEmails();
+
+      // Send via edge function with tracking ID
       const { data, error } = await supabase.functions.invoke('bulk-contractor-email', {
-        body: { subject, bodyHtml },
+        body: { subject, bodyHtml, scheduledEmailId },
       });
 
       if (error) throw error;
       if (data?.error) throw new Error(data.error);
 
+      // Mark as sent
+      if (scheduledEmailId) {
+        await supabase
+          .from('scheduled_contractor_emails' as any)
+          .update({ status: 'sent', sent_at: new Date().toISOString() } as any)
+          .eq('id', scheduledEmailId);
+      }
+
       // Set up recurring if enabled
       if (recurringEnabled && recurringSchedule !== 'none') {
         const cronExpr = getCronExpression(recurringSchedule);
         if (cronExpr) {
-          // Store the recurring config
           const { error: configError } = await supabase
             .from('contractor_email_templates')
             .update({ 
@@ -392,7 +417,7 @@ export const BulkContractorEmailDialog = ({
       }
 
       resetForm();
-      onOpenChange(false);
+      fetchPendingEmails();
       onEmailSent?.();
     } catch (err: any) {
       toast({ title: 'Error', description: err.message || 'Failed to send bulk email', variant: 'destructive' });
