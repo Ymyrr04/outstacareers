@@ -159,6 +159,14 @@ const handler = async (req: Request): Promise<Response> => {
           status: 'failed',
           error_message: err.message,
         });
+
+        // Update progress on scheduled email record for failures too
+        if (scheduledEmailId) {
+          await supabase
+            .from('scheduled_contractor_emails')
+            .update({ processed_items: sentCount + errors.length })
+            .eq('id', scheduledEmailId);
+        }
       }
     }
 
