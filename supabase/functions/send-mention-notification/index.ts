@@ -50,8 +50,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     let subject: string;
     let bodyHtml: string;
-    // Add short time reference to prevent Gmail from threading all notifications together
-    const timeRef = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    // Add short time reference (EST) to prevent Gmail from threading all notifications together
+    const timeRef = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true, timeZone: 'America/New_York' });
 
     if (type === 'mention') {
       subject = `${senderName} mentioned you in ${requestTitle} - ${clientName} (${timeRef})`;
