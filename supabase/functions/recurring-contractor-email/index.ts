@@ -46,6 +46,7 @@ const handler = async (req: Request): Promise<Response> => {
             body: JSON.stringify({
               subject: scheduled.subject,
               bodyHtml: scheduled.body_html,
+              scheduledEmailId: scheduled.id,
             }),
           });
 

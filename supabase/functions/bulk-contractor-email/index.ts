@@ -18,6 +18,7 @@ const corsHeaders = {
 interface BulkEmailRequest {
   subject: string;
   bodyHtml: string;
+  scheduledEmailId?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -35,7 +36,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (!supabaseUrl || !supabaseServiceKey) throw new Error("Supabase credentials not configured");
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { subject, bodyHtml }: BulkEmailRequest = await req.json();
+    const { subject, bodyHtml, scheduledEmailId }: BulkEmailRequest = await req.json();
 
     // Fetch all active contractors with their applicant details
     const { data: contractors, error: fetchError } = await supabase
@@ -52,6 +53,14 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     console.log(`Sending bulk email to ${contractors.length} active contractors`);
+
+    // Update total_items on scheduled email record for progress tracking
+    if (scheduledEmailId) {
+      await supabase
+        .from('scheduled_contractor_emails')
+        .update({ total_items: contractors.length, processed_items: 0 })
+        .eq('id', scheduledEmailId);
+    }
 
     const client = new SMTPClient({
       connection: {
@@ -130,6 +139,14 @@ const handler = async (req: Request): Promise<Response> => {
 
         sentCount++;
         console.log(`Sent to: ${applicant.email} (${sentCount}/${contractors.length})`);
+
+        // Update progress on scheduled email record
+        if (scheduledEmailId) {
+          await supabase
+            .from('scheduled_contractor_emails')
+            .update({ processed_items: sentCount + errors.length })
+            .eq('id', scheduledEmailId);
+        }
       } catch (err: any) {
         console.error(`Failed to send to ${applicant.email}:`, err.message);
         errors.push(`${applicant.full_name} (${applicant.email}): ${err.message}`);
@@ -142,6 +159,14 @@ const handler = async (req: Request): Promise<Response> => {
           status: 'failed',
           error_message: err.message,
         });
+
+        // Update progress on scheduled email record for failures too
+        if (scheduledEmailId) {
+          await supabase
+            .from('scheduled_contractor_emails')
+            .update({ processed_items: sentCount + errors.length })
+            .eq('id', scheduledEmailId);
+        }
       }
     }
 

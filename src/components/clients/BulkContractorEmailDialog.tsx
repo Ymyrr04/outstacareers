@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { Send, Loader2, FileText, Mail, Users, RefreshCw, CalendarClock, Clock, XCircle, CalendarIcon } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { RichTextToolbar } from '@/components/RichTextToolbar';
 import { ScheduleDateTimeDialog } from '@/components/clients/ScheduleDateTimeDialog';
 
@@ -150,6 +151,7 @@ export const BulkContractorEmailDialog = ({
   const [recurringSchedule, setRecurringSchedule] = useState('none');
   const [recurringEnabled, setRecurringEnabled] = useState(false);
   const [pendingEmails, setPendingEmails] = useState<any[]>([]);
+  const [processingEmails, setProcessingEmails] = useState<any[]>([]);
   const [loadingPending, setLoadingPending] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
@@ -157,19 +159,27 @@ export const BulkContractorEmailDialog = ({
   const [rescheduleTargetId, setRescheduleTargetId] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const fetchPendingEmails = async () => {
+  const fetchPendingEmails = useCallback(async () => {
     setLoadingPending(true);
     try {
-      const { data, error } = await supabase
-        .from('scheduled_contractor_emails' as any)
-        .select('*')
-        .eq('status', 'pending')
-        .order('scheduled_for', { ascending: true });
-      if (!error) setPendingEmails((data as any[]) || []);
+      const [pendingRes, processingRes] = await Promise.all([
+        supabase
+          .from('scheduled_contractor_emails' as any)
+          .select('*')
+          .eq('status', 'pending')
+          .order('scheduled_for', { ascending: true }),
+        supabase
+          .from('scheduled_contractor_emails' as any)
+          .select('*')
+          .eq('status', 'processing')
+          .order('scheduled_for', { ascending: true }),
+      ]);
+      if (!pendingRes.error) setPendingEmails((pendingRes.data as any[]) || []);
+      if (!processingRes.error) setProcessingEmails((processingRes.data as any[]) || []);
     } finally {
       setLoadingPending(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -195,7 +205,16 @@ export const BulkContractorEmailDialog = ({
       }
     };
     fetchTemplates();
-  }, [open]);
+  }, [open, fetchPendingEmails]);
+
+  // Auto-refresh progress for processing emails every 10 seconds
+  useEffect(() => {
+    if (!open || processingEmails.length === 0) return;
+    const interval = setInterval(() => {
+      fetchPendingEmails();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [open, processingEmails.length, fetchPendingEmails]);
 
   const handleCancelScheduled = async (id: string) => {
     setCancellingId(id);
@@ -505,6 +524,35 @@ export const BulkContractorEmailDialog = ({
               </div>
             )}
           </div>
+
+          {/* Processing Emails with Progress Bar */}
+          {processingEmails.length > 0 && (
+            <div className="border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                <span className="font-medium text-sm">Sending in Progress</span>
+              </div>
+              <div className="space-y-3">
+                {processingEmails.map((email: any) => {
+                  const total = email.total_items || 0;
+                  const processed = email.processed_items || 0;
+                  const percentage = total > 0 ? Math.round((processed / total) * 100) : 0;
+                  return (
+                    <div key={email.id} className="bg-background rounded-md p-3 border text-sm space-y-2">
+                      <p className="font-medium truncate">{email.subject}</p>
+                      <div className="space-y-1">
+                        <div className="flex items-center justify-between text-xs text-muted-foreground">
+                          <span>{processed} of {total} contractors sent</span>
+                          <span>{percentage}%</span>
+                        </div>
+                        <Progress value={percentage} className="h-2" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Pending Scheduled Emails */}
           {pendingEmails.length > 0 && (
