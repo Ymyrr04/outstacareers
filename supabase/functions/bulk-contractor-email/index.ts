@@ -36,7 +36,7 @@ const handler = async (req: Request): Promise<Response> => {
     if (!supabaseUrl || !supabaseServiceKey) throw new Error("Supabase credentials not configured");
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { subject, bodyHtml }: BulkEmailRequest = await req.json();
+    const { subject, bodyHtml, scheduledEmailId }: BulkEmailRequest = await req.json();
 
     // Fetch all active contractors with their applicant details
     const { data: contractors, error: fetchError } = await supabase
