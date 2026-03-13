@@ -17,6 +17,7 @@ import ApplyJob from "./pages/ApplyJob";
 import ResumeInterview from "./pages/ResumeInterview";
 import ImageEditor from "./pages/ImageEditor";
 import CalendlyCallback from "./pages/CalendlyCallback";
+import TalentPool from "./pages/TalentPool";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
