@@ -30,6 +30,13 @@ const handler = async (req: Request): Promise<Response> => {
       for (const scheduled of scheduledEmails) {
         console.log(`Processing scheduled email: ${scheduled.id}`);
         try {
+          // Mark as processing IMMEDIATELY to prevent duplicate sends from subsequent cron runs
+          await supabase
+            .from('scheduled_contractor_emails')
+            .update({ status: 'processing' })
+            .eq('id', scheduled.id)
+            .eq('status', 'pending');
+
           const bulkResponse = await fetch(`${supabaseUrl}/functions/v1/bulk-contractor-email`, {
             method: 'POST',
             headers: {
