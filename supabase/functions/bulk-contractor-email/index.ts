@@ -139,6 +139,14 @@ const handler = async (req: Request): Promise<Response> => {
 
         sentCount++;
         console.log(`Sent to: ${applicant.email} (${sentCount}/${contractors.length})`);
+
+        // Update progress on scheduled email record
+        if (scheduledEmailId) {
+          await supabase
+            .from('scheduled_contractor_emails')
+            .update({ processed_items: sentCount + errors.length })
+            .eq('id', scheduledEmailId);
+        }
       } catch (err: any) {
         console.error(`Failed to send to ${applicant.email}:`, err.message);
         errors.push(`${applicant.full_name} (${applicant.email}): ${err.message}`);
