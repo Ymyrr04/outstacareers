@@ -388,7 +388,14 @@ export const BulkContractorEmailDialog = ({
         body: JSON.stringify({ subject, bodyHtml, scheduledEmailId }),
       }).then(async (res) => {
         const rawText = await res.text();
-        const data = rawText ? JSON.parse(rawText) : {};
+        let data: any = {};
+        if (rawText) {
+          try {
+            data = JSON.parse(rawText);
+          } catch {
+            data = { rawText };
+          }
+        }
 
         if (!res.ok) {
           throw new Error((data as any)?.error || `Bulk email failed (${res.status})`);
