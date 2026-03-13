@@ -232,41 +232,50 @@ export const HiringRequestDetailDialog = ({
       const mentions = plainText.match(mentionPattern);
       
       if (mentions) {
-        // Find admin users whose names match the mentions
-        for (const mention of mentions) {
-          const mentionedName = mention.substring(1).toLowerCase();
-          const mentionedAdmin = adminUsers.find(admin => {
+        // Deduplicate mentions (in case someone is mentioned twice)
+        const uniqueMentionNames = [...new Set(mentions.map(m => m.substring(1).toLowerCase()))];
+        
+        // Resolve all mentioned admins
+        const mentionedAdmins = uniqueMentionNames
+          .map(mentionedName => adminUsers.find(admin => {
             const displayName = getAdminDisplayName(admin.email, '').toLowerCase();
             return displayName === mentionedName;
-          });
-          
-          if (mentionedAdmin && mentionedAdmin.email !== user.email) {
-            // Send email notification
-            supabase.functions.invoke('send-mention-notification', {
-              body: {
-                type: 'mention',
-                recipientEmail: mentionedAdmin.email,
-                recipientName: getAdminDisplayName(mentionedAdmin.email),
-                senderName: getAdminDisplayName(user.email),
-                requestTitle: request.job_title,
-                clientName: request.client_name || 'Unknown Client',
-                commentContent: newComment,
-              },
-            }).then(({ error: emailError }) => {
-              if (emailError) console.error('Mention email notification failed:', emailError);
-            });
+          }))
+          .filter((admin): admin is NonNullable<typeof admin> => 
+            !!admin && admin.email !== user.email
+          );
 
-            // Also send Slack notification
-            notifyMention({
-              mentionedEmail: mentionedAdmin.email,
-              mentionedByEmail: user.email || '',
-              commentContent: newComment,
-              requestId: request.id,
+        // Send all email notifications in parallel
+        const emailPromises = mentionedAdmins.map(mentionedAdmin =>
+          supabase.functions.invoke('send-mention-notification', {
+            body: {
+              type: 'mention',
+              recipientEmail: mentionedAdmin.email,
+              recipientName: getAdminDisplayName(mentionedAdmin.email),
+              senderName: getAdminDisplayName(user.email),
               requestTitle: request.job_title,
               clientName: request.client_name || 'Unknown Client',
-            });
-          }
-        }
+              commentContent: newComment,
+            },
+          }).then(({ error: emailError }) => {
+            if (emailError) console.error(`Mention email to ${mentionedAdmin.email} failed:`, emailError);
+          })
+        );
+
+        // Send all Slack notifications
+        mentionedAdmins.forEach(mentionedAdmin => {
+          notifyMention({
+            mentionedEmail: mentionedAdmin.email,
+            mentionedByEmail: user.email || '',
+            commentContent: newComment,
+            requestId: request.id,
+            requestTitle: request.job_title,
+            clientName: request.client_name || 'Unknown Client',
+          });
+        });
+
+        // Wait for all email notifications to complete
+        await Promise.all(emailPromises);
       }
       
       setNewComment('');
