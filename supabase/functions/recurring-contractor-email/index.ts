@@ -131,21 +131,43 @@ const handler = async (req: Request): Promise<Response> => {
     const utcHour = now.getUTCHours();
 
     if (isFriday && utcHour === 17) {
-      const { data: template, error: tplError } = await supabase
-        .from("contractor_email_templates")
-        .select("subject, body_html")
-        .eq("is_default", true)
-        .single();
+      // Guard: only send once per day — check if we already created a scheduled record today
+      const todayStart = new Date(now);
+      todayStart.setUTCHours(0, 0, 0, 0);
+      const { data: alreadySent } = await supabase
+        .from("scheduled_contractor_emails")
+        .select("id")
+        .gte("created_at", todayStart.toISOString())
+        .eq("subject", "recurring-friday-auto")
+        .limit(1);
 
-      if (!tplError && template) {
-        const result = await invokeBulkContractorEmail(supabaseUrl, supabaseServiceKey, {
-          subject: template.subject,
-          bodyHtml: template.body_html,
-        });
-
-        results.push(`Recurring Friday email: sent ${Number(result.sent || 0)}`);
+      if (alreadySent && alreadySent.length > 0) {
+        results.push("Recurring Friday email: already sent today, skipping");
       } else {
-        results.push("No default template found for recurring send");
+        const { data: template, error: tplError } = await supabase
+          .from("contractor_email_templates")
+          .select("subject, body_html")
+          .eq("is_default", true)
+          .single();
+
+        if (!tplError && template) {
+          // Create a tracking record to prevent duplicate sends
+          await supabase.from("scheduled_contractor_emails").insert({
+            subject: "recurring-friday-auto",
+            body_html: template.body_html,
+            scheduled_for: nowIso,
+            status: "processing",
+          });
+
+          const result = await invokeBulkContractorEmail(supabaseUrl, supabaseServiceKey, {
+            subject: template.subject,
+            bodyHtml: template.body_html,
+          });
+
+          results.push(`Recurring Friday email: sent ${Number(result.sent || 0)}`);
+        } else {
+          results.push("No default template found for recurring send");
+        }
       }
     }
 
