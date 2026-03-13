@@ -362,63 +362,60 @@ export const BulkContractorEmailDialog = ({
       if (trackingError) throw trackingError;
       const scheduledEmailId = (trackingRecord as any)?.id;
 
-      // Start refreshing to show progress bar
-      fetchPendingEmails();
-
-      // Send via edge function with tracking ID
-      const { data, error } = await supabase.functions.invoke('bulk-contractor-email', {
-        body: { subject, bodyHtml, scheduledEmailId },
-      });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      // Mark as sent
-      if (scheduledEmailId) {
-        await supabase
-          .from('scheduled_contractor_emails' as any)
-          .update({ status: 'sent', sent_at: new Date().toISOString() } as any)
-          .eq('id', scheduledEmailId);
-      }
-
       // Set up recurring if enabled
       if (recurringEnabled && recurringSchedule !== 'none') {
         const cronExpr = getCronExpression(recurringSchedule);
         if (cronExpr) {
-          const { error: configError } = await supabase
+          await supabase
             .from('contractor_email_templates')
-            .update({ 
-              is_default: true,
-            })
+            .update({ is_default: true })
             .eq('id', selectedTemplateId);
-          
-          if (configError) {
-            console.error('Failed to save recurring config:', configError);
-          }
         }
-
-        toast({
-          title: 'Bulk Email Sent & Recurring Set',
-          description: `${data?.message}. Recurring: ${RECURRING_OPTIONS.find(o => o.value === recurringSchedule)?.label}`,
-        });
-      } else {
-        toast({
-          title: 'Bulk Email Sent',
-          description: data?.message || `Emails sent to active contractors`,
-        });
       }
 
-      if (data?.errors?.length) {
-        toast({
-          title: 'Some emails failed',
-          description: `${data.errors.length} email(s) failed to send`,
-          variant: 'destructive',
-        });
-      }
+      // Fire-and-forget: invoke bulk send in background (don't await)
+      const projectId = import.meta.env.VITE_SUPABASE_PROJECT_ID;
+      const anonKey = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY;
+      const session = (await supabase.auth.getSession()).data.session;
+      
+      fetch(`https://${projectId}.supabase.co/functions/v1/bulk-contractor-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session?.access_token || anonKey}`,
+          'apikey': anonKey,
+        },
+        body: JSON.stringify({ subject, bodyHtml, scheduledEmailId }),
+      }).then(async (res) => {
+        const data = await res.json();
+        // Mark as sent when done
+        await supabase
+          .from('scheduled_contractor_emails' as any)
+          .update({ status: 'sent', sent_at: new Date().toISOString() } as any)
+          .eq('id', scheduledEmailId);
+        
+        fetchPendingEmails();
+        onEmailSent?.();
+
+        if (data?.errors?.length) {
+          toast({ title: 'Some emails failed', description: `${data.errors.length} email(s) failed`, variant: 'destructive' });
+        }
+      }).catch((err) => {
+        console.error('Bulk email background error:', err);
+        supabase
+          .from('scheduled_contractor_emails' as any)
+          .update({ status: 'failed', error_message: err.message } as any)
+          .eq('id', scheduledEmailId);
+      });
+
+      toast({
+        title: 'Sending Started',
+        description: `Sending to ${activeContractorCount} contractors. Track progress below.`,
+      });
 
       resetForm();
-      fetchPendingEmails();
-      onEmailSent?.();
+      // Refresh to show the progress bar
+      setTimeout(() => fetchPendingEmails(), 1000);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message || 'Failed to send bulk email', variant: 'destructive' });
     } finally {
