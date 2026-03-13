@@ -151,6 +151,7 @@ export const BulkContractorEmailDialog = ({
   const [recurringSchedule, setRecurringSchedule] = useState('none');
   const [recurringEnabled, setRecurringEnabled] = useState(false);
   const [pendingEmails, setPendingEmails] = useState<any[]>([]);
+  const [processingEmails, setProcessingEmails] = useState<any[]>([]);
   const [loadingPending, setLoadingPending] = useState(false);
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
@@ -158,19 +159,27 @@ export const BulkContractorEmailDialog = ({
   const [rescheduleTargetId, setRescheduleTargetId] = useState<string | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  const fetchPendingEmails = async () => {
+  const fetchPendingEmails = useCallback(async () => {
     setLoadingPending(true);
     try {
-      const { data, error } = await supabase
-        .from('scheduled_contractor_emails' as any)
-        .select('*')
-        .eq('status', 'pending')
-        .order('scheduled_for', { ascending: true });
-      if (!error) setPendingEmails((data as any[]) || []);
+      const [pendingRes, processingRes] = await Promise.all([
+        supabase
+          .from('scheduled_contractor_emails' as any)
+          .select('*')
+          .eq('status', 'pending')
+          .order('scheduled_for', { ascending: true }),
+        supabase
+          .from('scheduled_contractor_emails' as any)
+          .select('*')
+          .eq('status', 'processing')
+          .order('scheduled_for', { ascending: true }),
+      ]);
+      if (!pendingRes.error) setPendingEmails((pendingRes.data as any[]) || []);
+      if (!processingRes.error) setProcessingEmails((processingRes.data as any[]) || []);
     } finally {
       setLoadingPending(false);
     }
-  };
+  }, []);
 
   useEffect(() => {
     if (!open) return;
@@ -196,7 +205,16 @@ export const BulkContractorEmailDialog = ({
       }
     };
     fetchTemplates();
-  }, [open]);
+  }, [open, fetchPendingEmails]);
+
+  // Auto-refresh progress for processing emails every 10 seconds
+  useEffect(() => {
+    if (!open || processingEmails.length === 0) return;
+    const interval = setInterval(() => {
+      fetchPendingEmails();
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [open, processingEmails.length, fetchPendingEmails]);
 
   const handleCancelScheduled = async (id: string) => {
     setCancellingId(id);
