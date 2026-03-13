@@ -17,6 +17,7 @@ import ApplyJob from "./pages/ApplyJob";
 import ResumeInterview from "./pages/ResumeInterview";
 import ImageEditor from "./pages/ImageEditor";
 import CalendlyCallback from "./pages/CalendlyCallback";
+import TalentPool from "./pages/TalentPool";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -42,6 +43,7 @@ const App = () => (
                 <Route path="/interview/:sessionId" element={<ResumeInterview />} />
                 <Route path="/image-editor" element={<ImageEditor />} />
                 <Route path="/auth/calendly/callback" element={<CalendlyCallback />} />
+                <Route path="/talent-pool" element={<TalentPool />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
