@@ -54,6 +54,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     console.log(`Sending bulk email to ${contractors.length} active contractors`);
 
+    // Update total_items on scheduled email record for progress tracking
+    if (scheduledEmailId) {
+      await supabase
+        .from('scheduled_contractor_emails')
+        .update({ total_items: contractors.length, processed_items: 0 })
+        .eq('id', scheduledEmailId);
+    }
+
     const client = new SMTPClient({
       connection: {
         hostname: "smtp.gmail.com",
