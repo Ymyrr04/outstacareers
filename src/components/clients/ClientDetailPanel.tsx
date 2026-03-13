@@ -612,58 +612,124 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                 <div className="space-y-2">
                   {contacts.map(contact => (
                     <Card key={contact.id} className="p-3">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-3">
-                          <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
-                            <User className="w-4 h-4" />
+                      {editingContactId === contact.id ? (
+                        <div className="space-y-3">
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">First Name</Label>
+                              <Input
+                                value={contactEditForm.first_name}
+                                onChange={(e) => setContactEditForm({ ...contactEditForm, first_name: e.target.value })}
+                                className="h-8 text-sm"
+                              />
+                            </div>
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Last Name</Label>
+                              <Input
+                                value={contactEditForm.last_name}
+                                onChange={(e) => setContactEditForm({ ...contactEditForm, last_name: e.target.value })}
+                                className="h-8 text-sm"
+                              />
+                            </div>
                           </div>
-                          <div>
-                            <div className="flex items-center gap-2">
-                              <span className="font-medium">{getContactDisplayName(contact)}</span>
-                              {contact.is_primary && (
-                                <Badge variant="outline" className="text-xs">
-                                  <Star className="w-3 h-3 mr-1 fill-amber-400 text-amber-400" />
-                                  Primary
-                                </Badge>
-                              )}
+                          <div className="grid grid-cols-2 gap-2">
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Email</Label>
+                              <Input
+                                value={contactEditForm.email}
+                                onChange={(e) => setContactEditForm({ ...contactEditForm, email: e.target.value })}
+                                className="h-8 text-sm"
+                                type="email"
+                              />
                             </div>
-                            {contact.role && <p className="text-sm text-muted-foreground">{contact.role}</p>}
-                            <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
-                              {contact.email && (
-                                <span className="flex items-center gap-1">
-                                  <Mail className="w-3 h-3" />
-                                  {contact.email}
-                                </span>
-                              )}
-                              {contact.phone && (
-                                <span className="flex items-center gap-1">
-                                  <Phone className="w-3 h-3" />
-                                  {contact.phone}
-                                </span>
-                              )}
+                            <div className="space-y-1">
+                              <Label className="text-xs text-muted-foreground">Phone</Label>
+                              <Input
+                                value={contactEditForm.phone}
+                                onChange={(e) => setContactEditForm({ ...contactEditForm, phone: e.target.value })}
+                                className="h-8 text-sm"
+                              />
                             </div>
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-xs text-muted-foreground">Role</Label>
+                            <Input
+                              value={contactEditForm.role}
+                              onChange={(e) => setContactEditForm({ ...contactEditForm, role: e.target.value })}
+                              className="h-8 text-sm"
+                              placeholder="e.g. HR Manager"
+                            />
+                          </div>
+                          <div className="flex gap-2 justify-end">
+                            <Button variant="ghost" size="sm" onClick={() => setEditingContactId(null)}>Cancel</Button>
+                            <Button size="sm" onClick={handleSaveContact} disabled={savingContact}>
+                              {savingContact && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
+                              Save
+                            </Button>
                           </div>
                         </div>
-                        <div className="flex gap-1">
-                          {!contact.is_primary && (
+                      ) : (
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start gap-3 cursor-pointer" onClick={() => startEditingContact(contact)}>
+                            <div className="w-8 h-8 bg-muted rounded-full flex items-center justify-center">
+                              <User className="w-4 h-4" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium">{getContactDisplayName(contact)}</span>
+                                {contact.is_primary && (
+                                  <Badge variant="outline" className="text-xs">
+                                    <Star className="w-3 h-3 mr-1 fill-amber-400 text-amber-400" />
+                                    Primary
+                                  </Badge>
+                                )}
+                              </div>
+                              {contact.role && <p className="text-sm text-muted-foreground">{contact.role}</p>}
+                              <div className="flex items-center gap-3 mt-1 text-sm text-muted-foreground">
+                                {contact.email && (
+                                  <span className="flex items-center gap-1">
+                                    <Mail className="w-3 h-3" />
+                                    {contact.email}
+                                  </span>
+                                )}
+                                {contact.phone && (
+                                  <span className="flex items-center gap-1">
+                                    <Phone className="w-3 h-3" />
+                                    {contact.phone}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex gap-1">
                             <Button 
                               variant="ghost" 
                               size="sm"
-                              onClick={() => handleSetPrimaryContact(contact.id)}
-                              title="Set as primary"
+                              onClick={() => startEditingContact(contact)}
+                              title="Edit contact"
                             >
-                              <Star className="w-4 h-4" />
+                              <Edit2 className="w-4 h-4" />
                             </Button>
-                          )}
-                          <Button 
-                            variant="ghost" 
-                            size="sm"
-                            onClick={() => handleDeleteContact(contact.id)}
-                          >
-                            <Trash2 className="w-4 h-4 text-destructive" />
-                          </Button>
+                            {!contact.is_primary && (
+                              <Button 
+                                variant="ghost" 
+                                size="sm"
+                                onClick={() => handleSetPrimaryContact(contact.id)}
+                                title="Set as primary"
+                              >
+                                <Star className="w-4 h-4" />
+                              </Button>
+                            )}
+                            <Button 
+                              variant="ghost" 
+                              size="sm"
+                              onClick={() => handleDeleteContact(contact.id)}
+                            >
+                              <Trash2 className="w-4 h-4 text-destructive" />
+                            </Button>
+                          </div>
                         </div>
-                      </div>
+                      )}
                     </Card>
                   ))}
                 </div>
