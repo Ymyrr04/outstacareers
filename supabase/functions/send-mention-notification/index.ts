@@ -107,7 +107,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     await client.send({
-      from: `OutSta Notifications <${gmailUser}>`,
+      from: `OutSta Update <${gmailUser}>`,
       to: recipientEmail,
       subject,
       content: "auto",
