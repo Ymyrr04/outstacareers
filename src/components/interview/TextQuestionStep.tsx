@@ -90,6 +90,7 @@ export function TextQuestionStep({
             ⚠️ Pasting is not allowed. Please type your answer. ({pasteAttempts} attempt{pasteAttempts > 1 ? 's' : ''} detected)
           </p>
         )}
+      </div>
 
       {/* Submit Button */}
       <Button
