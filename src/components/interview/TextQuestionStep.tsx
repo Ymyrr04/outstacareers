@@ -84,7 +84,12 @@ export function TextQuestionStep({
             {answer.length} characters
           </span>
         </div>
-      </div>
+
+        {pasteAttempts > 0 && (
+          <p className="text-sm text-destructive font-medium">
+            ⚠️ Pasting is not allowed. Please type your answer. ({pasteAttempts} attempt{pasteAttempts > 1 ? 's' : ''} detected)
+          </p>
+        )}
 
       {/* Submit Button */}
       <Button
