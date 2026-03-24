@@ -25,6 +25,7 @@ export function TextQuestionStep({
   const [answer, setAnswer] = useState("");
   const [pasteDetected, setPasteDetected] = useState(false);
   const [pastedContent, setPastedContent] = useState<string | null>(null);
+  const [pasteAttempts, setPasteAttempts] = useState(0);
 
   const handleSubmit = () => {
     if (answer.trim().length >= 50) {
