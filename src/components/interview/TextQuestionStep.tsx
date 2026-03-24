@@ -36,11 +36,12 @@ export function TextQuestionStep({
   };
 
   const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
     const text = e.clipboardData.getData('text');
     if (text) {
       setPasteDetected(true);
-      // Accumulate pasted content if user pastes multiple times
       setPastedContent(prev => prev ? `${prev}\n---\n${text}` : text);
+      setPasteAttempts(prev => prev + 1);
     }
   };
 
