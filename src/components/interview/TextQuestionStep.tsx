@@ -25,6 +25,7 @@ export function TextQuestionStep({
   const [answer, setAnswer] = useState("");
   const [pasteDetected, setPasteDetected] = useState(false);
   const [pastedContent, setPastedContent] = useState<string | null>(null);
+  const [pasteAttempts, setPasteAttempts] = useState(0);
 
   const handleSubmit = () => {
     if (answer.trim().length >= 50) {
@@ -36,11 +37,12 @@ export function TextQuestionStep({
   };
 
   const handlePaste = (e: React.ClipboardEvent) => {
+    e.preventDefault();
     const text = e.clipboardData.getData('text');
     if (text) {
       setPasteDetected(true);
-      // Accumulate pasted content if user pastes multiple times
       setPastedContent(prev => prev ? `${prev}\n---\n${text}` : text);
+      setPasteAttempts(prev => prev + 1);
     }
   };
 
@@ -82,6 +84,12 @@ export function TextQuestionStep({
             {answer.length} characters
           </span>
         </div>
+
+        {pasteAttempts > 0 && (
+          <p className="text-sm text-destructive font-medium">
+            ⚠️ Pasting is not allowed. Please type your answer. ({pasteAttempts} attempt{pasteAttempts > 1 ? 's' : ''} detected)
+          </p>
+        )}
       </div>
 
       {/* Submit Button */}
