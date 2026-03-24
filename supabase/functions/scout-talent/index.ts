@@ -10,6 +10,7 @@ interface ScoutRequest {
   job_title: string;
   job_description: string;
   requirements: string[];
+  must_have_requirements: string[];
   preferred_skills: string[];
   status_filter: string[];
   max_results: number;
@@ -28,7 +29,6 @@ serve(async (req) => {
       });
     }
 
-    // Verify admin
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseKey = Deno.env.get('SUPABASE_ANON_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseKey, {
@@ -49,7 +49,7 @@ serve(async (req) => {
       });
     }
 
-    const { job_title, job_description, requirements, preferred_skills, status_filter, max_results = 20 }: ScoutRequest = await req.json();
+    const { job_title, job_description, requirements, must_have_requirements = [], preferred_skills, status_filter, max_results = 20 }: ScoutRequest = await req.json();
 
     if (!job_title || (!job_description && requirements.length === 0)) {
       return new Response(JSON.stringify({ error: 'Job title and description/requirements are required' }), {
@@ -57,18 +57,20 @@ serve(async (req) => {
       });
     }
 
-    // PASS 1: Keyword pre-filter using extracted_skills, extracted_tools, and cv_text
-    // Build search keywords from requirements and preferred skills
-    const allKeywords = [...(requirements || []), ...(preferred_skills || [])];
+    // Build search keywords
+    const allKeywords = [...(requirements || []), ...(must_have_requirements || []), ...(preferred_skills || [])];
     const searchTerms = allKeywords
       .flatMap(kw => kw.toLowerCase().split(/[,;/&]+/).map(s => s.trim()))
       .filter(s => s.length > 2);
 
-    // Use service role for full access
+    // Must-have terms for hard filtering
+    const mustHaveTerms = (must_have_requirements || [])
+      .flatMap(kw => kw.toLowerCase().split(/[,;/&]+/).map(s => s.trim()))
+      .filter(s => s.length > 2);
+
     const serviceRole = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const adminSupabase = createClient(supabaseUrl, serviceRole);
 
-    // Fetch candidates with cv_text, filtering by status
     let query = adminSupabase
       .from('applicants_prescreen')
       .select('id, full_name, email, job_title, location, cv_text, extracted_skills, extracted_tools, years_of_experience, total_score, ranking_status, ai_summary, status, cv_file_url, phone, whatsapp, is_starred')
@@ -78,7 +80,7 @@ serve(async (req) => {
       query = query.in('status', status_filter);
     }
 
-    // Fetch in batches to handle large datasets
+    // Fetch in batches
     const BATCH_SIZE = 1000;
     let allCandidates: any[] = [];
     let offset = 0;
@@ -86,10 +88,7 @@ serve(async (req) => {
 
     while (hasMore) {
       const { data, error } = await query.range(offset, offset + BATCH_SIZE - 1);
-      if (error) {
-        console.error('Error fetching candidates:', error);
-        break;
-      }
+      if (error) { console.error('Error fetching candidates:', error); break; }
       if (data && data.length > 0) {
         allCandidates = [...allCandidates, ...data];
         offset += BATCH_SIZE;
@@ -101,7 +100,7 @@ serve(async (req) => {
 
     console.log(`Total candidates with CV text: ${allCandidates.length}`);
 
-    // Score candidates by keyword matches (Pass 1)
+    // Score candidates by keyword matches
     const scoredCandidates = allCandidates.map(candidate => {
       let keywordScore = 0;
       const matchedTerms: string[] = [];
@@ -109,13 +108,28 @@ serve(async (req) => {
       const skills = (candidate.extracted_skills || []).map((s: string) => s.toLowerCase());
       const tools = (candidate.extracted_tools || []).map((t: string) => t.toLowerCase());
 
+      // Check must-have requirements (use word boundary matching)
+      let mustHaveMatched = 0;
+      const mustHaveResults: { term: string; found: boolean }[] = [];
+      for (const term of mustHaveTerms) {
+        const inSkills = skills.some((s: string) => s.includes(term) || term.includes(s));
+        const inTools = tools.some((t: string) => t.includes(term) || term.includes(t));
+        const inCv = cvTextLower.includes(term);
+        const found = inSkills || inTools || inCv;
+        mustHaveResults.push({ term, found });
+        if (found) mustHaveMatched++;
+      }
+
+      // If must-haves exist and candidate misses ANY, disqualify
+      const passedMustHave = mustHaveTerms.length === 0 || mustHaveMatched === mustHaveTerms.length;
+
       for (const term of searchTerms) {
         const inSkills = skills.some((s: string) => s.includes(term) || term.includes(s));
         const inTools = tools.some((t: string) => t.includes(term) || term.includes(t));
         const inCv = cvTextLower.includes(term);
 
         if (inSkills || inTools) {
-          keywordScore += 3; // Higher weight for extracted metadata
+          keywordScore += 3;
           matchedTerms.push(term);
         } else if (inCv) {
           keywordScore += 1;
@@ -123,7 +137,7 @@ serve(async (req) => {
         }
       }
 
-      // Also check job title relevance
+      // Job title relevance
       const titleWords = job_title.toLowerCase().split(/\s+/);
       for (const word of titleWords) {
         if (word.length > 3 && cvTextLower.includes(word)) {
@@ -131,55 +145,42 @@ serve(async (req) => {
         }
       }
 
-      return { ...candidate, keywordScore, matchedTerms: [...new Set(matchedTerms)] };
+      return { ...candidate, keywordScore, matchedTerms: [...new Set(matchedTerms)], passedMustHave, mustHaveResults };
     });
 
-    // Sort by keyword score and take top candidates for AI evaluation
-    scoredCandidates.sort((a, b) => b.keywordScore - a.keywordScore);
-    const shortlisted = scoredCandidates.filter(c => c.keywordScore > 0).slice(0, Math.min(max_results * 2, 50));
+    // Filter: must pass must-haves, then sort by keyword score
+    const passedCandidates = scoredCandidates.filter(c => c.passedMustHave && c.keywordScore > 0);
+    const failedMustHaveCount = scoredCandidates.filter(c => !c.passedMustHave).length;
 
-    console.log(`Shortlisted ${shortlisted.length} candidates for AI evaluation`);
+    passedCandidates.sort((a, b) => b.keywordScore - a.keywordScore);
+    const shortlisted = passedCandidates.slice(0, Math.min(max_results * 2, 50));
+
+    console.log(`Shortlisted ${shortlisted.length} candidates (${failedMustHaveCount} failed must-haves)`);
 
     if (shortlisted.length === 0) {
       return new Response(JSON.stringify({
         results: [],
         total_scanned: allCandidates.length,
         shortlisted_count: 0,
-        message: 'No candidates matched the requirements based on keyword analysis.'
+        failed_must_have_count: failedMustHaveCount,
+        message: failedMustHaveCount > 0
+          ? `No candidates matched. ${failedMustHaveCount} were disqualified for missing must-have requirements.`
+          : 'No candidates matched the requirements based on keyword analysis.'
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // PASS 2: AI evaluation of shortlisted candidates
+    // PASS 2: AI evaluation
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
     if (!LOVABLE_API_KEY) {
-      // Return keyword-only results if no AI key
       return new Response(JSON.stringify({
-        results: shortlisted.slice(0, max_results).map(c => ({
-          id: c.id,
-          full_name: c.full_name,
-          email: c.email,
-          phone: c.phone,
-          whatsapp: c.whatsapp,
-          job_title: c.job_title,
-          location: c.location,
-          status: c.status,
-          years_of_experience: c.years_of_experience,
-          existing_score: c.total_score,
-          cv_file_url: c.cv_file_url,
-          is_starred: c.is_starred,
-          match_score: Math.min(100, Math.round(c.keywordScore * 10)),
-          matched_requirements: c.matchedTerms,
-          missing_requirements: searchTerms.filter((t: string) => !c.matchedTerms.includes(t)),
-          ai_reasoning: 'AI evaluation unavailable - showing keyword match results only.',
-          match_tier: c.keywordScore >= 8 ? 'Strong Match' : c.keywordScore >= 4 ? 'Partial Match' : 'Low Match'
-        })),
+        results: shortlisted.slice(0, max_results).map(c => buildKeywordResult(c, searchTerms)),
         total_scanned: allCandidates.length,
         shortlisted_count: shortlisted.length,
+        failed_must_have_count: failedMustHaveCount,
         ai_evaluated: false
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
-    // Prepare candidate summaries for AI (truncate CV text to save tokens)
     const candidateSummaries = shortlisted.map(c => ({
       id: c.id,
       name: c.full_name,
@@ -192,6 +193,10 @@ serve(async (req) => {
       keyword_matches: c.matchedTerms.join(', ')
     }));
 
+    const mustHaveSection = must_have_requirements.length > 0
+      ? `\n\nMUST-HAVE REQUIREMENTS (these are non-negotiable — candidates have already been pre-filtered):\n${must_have_requirements.map((r, i) => `${i + 1}. ${r}`).join('\n')}`
+      : '';
+
     const systemPrompt = `You are an expert talent scout. Evaluate candidates against a job description and rank them by fit.
 
 Return ONLY valid JSON array. Each element must have:
@@ -201,19 +206,36 @@ Return ONLY valid JSON array. Each element must have:
   "match_tier": "Strong Match" | "Partial Match" | "Low Match",
   "matched_requirements": ["<requirement met>"],
   "missing_requirements": ["<requirement not met>"],
-  "reasoning": "<2-3 sentence explanation of fit>"
+  "reasoning": "<2-3 sentence explanation of fit>",
+  "score_breakdown": {
+    "experience_relevance": <0-35>,
+    "skills_match": <0-30>,
+    "tools_match": <0-20>,
+    "industry_fit": <0-10>,
+    "overall_potential": <0-5>
+  }
 }
 
-SCORING:
-- 80-100: Strong Match - meets most/all key requirements
-- 50-79: Partial Match - meets some requirements, transferable skills
-- 0-49: Low Match - significant gaps
+SCORE BREAKDOWN (total = 100):
+- experience_relevance (0-35): How closely their work history aligns with the role
+- skills_match (0-30): How many required/preferred skills they possess
+- tools_match (0-20): How many required tools/software they know
+- industry_fit (0-10): Whether they've worked in a similar industry
+- overall_potential (0-5): General impression of growth potential and adaptability
 
-Sort the array by match_score descending. Only include candidates scoring >= 30.`;
+match_score = sum of all breakdown scores
+
+TIERS:
+- 80-100: Strong Match
+- 50-79: Partial Match
+- 0-49: Low Match
+
+Sort by match_score descending. Only include candidates scoring >= 30.`;
 
     const userPrompt = `JOB: ${job_title}
 
 DESCRIPTION: ${job_description || 'Not provided'}
+${mustHaveSection}
 
 REQUIREMENTS:
 ${requirements.map((r, i) => `${i + 1}. ${r}`).join('\n')}
@@ -224,7 +246,7 @@ ${preferred_skills.map((s, i) => `${i + 1}. ${s}`).join('\n')}
 CANDIDATES TO EVALUATE:
 ${JSON.stringify(candidateSummaries, null, 1)}
 
-Return the JSON array ranking these candidates.`;
+Return the JSON array ranking these candidates with score_breakdown.`;
 
     console.log('Calling AI for talent scouting evaluation...');
 
@@ -258,27 +280,16 @@ Return the JSON array ranking these candidates.`;
         });
       }
 
-      // Fallback to keyword results
       return new Response(JSON.stringify({
-        results: shortlisted.slice(0, max_results).map(c => ({
-          id: c.id, full_name: c.full_name, email: c.email, phone: c.phone, whatsapp: c.whatsapp,
-          job_title: c.job_title, location: c.location, status: c.status,
-          years_of_experience: c.years_of_experience, existing_score: c.total_score,
-          cv_file_url: c.cv_file_url, is_starred: c.is_starred,
-          match_score: Math.min(100, Math.round(c.keywordScore * 10)),
-          matched_requirements: c.matchedTerms,
-          missing_requirements: searchTerms.filter((t: string) => !c.matchedTerms.includes(t)),
-          ai_reasoning: 'AI evaluation failed - showing keyword match results.',
-          match_tier: c.keywordScore >= 8 ? 'Strong Match' : c.keywordScore >= 4 ? 'Partial Match' : 'Low Match'
-        })),
-        total_scanned: allCandidates.length, shortlisted_count: shortlisted.length, ai_evaluated: false
+        results: shortlisted.slice(0, max_results).map(c => buildKeywordResult(c, searchTerms)),
+        total_scanned: allCandidates.length, shortlisted_count: shortlisted.length,
+        failed_must_have_count: failedMustHaveCount, ai_evaluated: false
       }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     const aiData = await aiResponse.json();
     let content = aiData.choices?.[0]?.message?.content || '';
 
-    // Parse JSON
     let jsonContent = content.trim();
     if (jsonContent.startsWith('```json')) jsonContent = jsonContent.slice(7);
     else if (jsonContent.startsWith('```')) jsonContent = jsonContent.slice(3);
@@ -293,7 +304,6 @@ Return the JSON array ranking these candidates.`;
       aiResults = [];
     }
 
-    // Merge AI results with candidate data
     const finalResults = aiResults
       .slice(0, max_results)
       .map((aiResult: any) => {
@@ -317,6 +327,7 @@ Return the JSON array ranking these candidates.`;
           matched_requirements: aiResult.matched_requirements || [],
           missing_requirements: aiResult.missing_requirements || [],
           ai_reasoning: aiResult.reasoning || '',
+          score_breakdown: aiResult.score_breakdown || null,
         };
       })
       .filter(Boolean);
@@ -327,6 +338,7 @@ Return the JSON array ranking these candidates.`;
       results: finalResults,
       total_scanned: allCandidates.length,
       shortlisted_count: shortlisted.length,
+      failed_must_have_count: failedMustHaveCount,
       ai_evaluated: true
     }), { headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
 
@@ -337,3 +349,18 @@ Return the JSON array ranking these candidates.`;
     });
   }
 });
+
+function buildKeywordResult(c: any, searchTerms: string[]) {
+  return {
+    id: c.id, full_name: c.full_name, email: c.email, phone: c.phone, whatsapp: c.whatsapp,
+    job_title: c.job_title, location: c.location, status: c.status,
+    years_of_experience: c.years_of_experience, existing_score: c.total_score,
+    cv_file_url: c.cv_file_url, is_starred: c.is_starred,
+    match_score: Math.min(100, Math.round(c.keywordScore * 10)),
+    matched_requirements: c.matchedTerms,
+    missing_requirements: searchTerms.filter((t: string) => !c.matchedTerms.includes(t)),
+    ai_reasoning: 'AI evaluation unavailable - showing keyword match results only.',
+    match_tier: c.keywordScore >= 8 ? 'Strong Match' : c.keywordScore >= 4 ? 'Partial Match' : 'Low Match',
+    score_breakdown: null,
+  };
+}

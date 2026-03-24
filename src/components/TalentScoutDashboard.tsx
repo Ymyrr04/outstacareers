@@ -1,15 +1,24 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Loader2, SearchIcon, Target, Users, MapPin, Star, FileText, Mail, Phone, CheckCircle, XCircle, Sparkles, Plus, X, ChevronDown, ChevronUp, History, Trash2, RefreshCw } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
+import { Loader2, SearchIcon, Target, Users, MapPin, Star, FileText, CheckCircle, XCircle, Sparkles, Plus, X, ChevronDown, ChevronUp, History, Trash2, ShieldAlert, BarChart3 } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
+
+interface ScoreBreakdown {
+  experience_relevance: number;
+  skills_match: number;
+  tools_match: number;
+  industry_fit: number;
+  overall_potential: number;
+}
 
 interface ScoutResult {
   id: string;
@@ -29,12 +38,14 @@ interface ScoutResult {
   matched_requirements: string[];
   missing_requirements: string[];
   ai_reasoning: string;
+  score_breakdown: ScoreBreakdown | null;
 }
 
 interface ScoutResponse {
   results: ScoutResult[];
   total_scanned: number;
   shortlisted_count: number;
+  failed_must_have_count?: number;
   ai_evaluated: boolean;
   message?: string;
   error?: string;
@@ -45,6 +56,7 @@ interface CachedSearch {
   job_title: string;
   searched_at: string;
   requirements: string[];
+  must_have_requirements: string[];
   preferred_skills: string[];
   status_filter: string[];
   max_results: number;
@@ -73,11 +85,20 @@ const STATUS_OPTIONS = [
 
 const DEFAULT_STATUSES = ['For Review', 'For Interview', 'SIV', 'Bench', 'Talent Pool'];
 
+const SCORE_CATEGORIES = [
+  { key: 'experience_relevance', label: 'Experience Relevance', max: 35, color: 'bg-blue-500' },
+  { key: 'skills_match', label: 'Skills Match', max: 30, color: 'bg-emerald-500' },
+  { key: 'tools_match', label: 'Tools Match', max: 20, color: 'bg-violet-500' },
+  { key: 'industry_fit', label: 'Industry Fit', max: 10, color: 'bg-amber-500' },
+  { key: 'overall_potential', label: 'Overall Potential', max: 5, color: 'bg-pink-500' },
+] as const;
+
 export const TalentScoutDashboard = () => {
   const { toast } = useToast();
   const [jobTitle, setJobTitle] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [requirements, setRequirements] = useState<string[]>(['']);
+  const [mustHaveRequirements, setMustHaveRequirements] = useState<string[]>([]);
   const [preferredSkills, setPreferredSkills] = useState<string[]>(['']);
   const [statusFilter, setStatusFilter] = useState<string[]>(DEFAULT_STATUSES);
   const [maxResults, setMaxResults] = useState(20);
@@ -93,6 +114,10 @@ export const TalentScoutDashboard = () => {
   const addRequirement = () => setRequirements(prev => [...prev, '']);
   const removeRequirement = (idx: number) => setRequirements(prev => prev.filter((_, i) => i !== idx));
   const updateRequirement = (idx: number, val: string) => setRequirements(prev => prev.map((r, i) => i === idx ? val : r));
+
+  const addMustHave = () => setMustHaveRequirements(prev => [...prev, '']);
+  const removeMustHave = (idx: number) => setMustHaveRequirements(prev => prev.filter((_, i) => i !== idx));
+  const updateMustHave = (idx: number, val: string) => setMustHaveRequirements(prev => prev.map((r, i) => i === idx ? val : r));
 
   const addSkill = () => setPreferredSkills(prev => [...prev, '']);
   const removeSkill = (idx: number) => setPreferredSkills(prev => prev.filter((_, i) => i !== idx));
@@ -111,10 +136,12 @@ export const TalentScoutDashboard = () => {
       return next;
     });
   };
+
   const loadCachedSearch = (cached: CachedSearch) => {
     setJobTitle(cached.job_title);
     setJobDescription(cached.job_description);
     setRequirements(cached.requirements.length ? cached.requirements : ['']);
+    setMustHaveRequirements(cached.must_have_requirements || []);
     setPreferredSkills(cached.preferred_skills.length ? cached.preferred_skills : ['']);
     setStatusFilter(cached.status_filter);
     setMaxResults(cached.max_results);
@@ -150,7 +177,6 @@ export const TalentScoutDashboard = () => {
 
       const parsed = data.data || data;
 
-      // Always overwrite fields with parsed data
       if (parsed.title) {
         setJobTitle(parsed.title);
       } else {
@@ -185,9 +211,10 @@ export const TalentScoutDashboard = () => {
     }
 
     const filteredReqs = requirements.filter(r => r.trim());
+    const filteredMustHaves = mustHaveRequirements.filter(r => r.trim());
     const filteredSkills = preferredSkills.filter(s => s.trim());
 
-    if (filteredReqs.length === 0 && !jobDescription.trim()) {
+    if (filteredReqs.length === 0 && filteredMustHaves.length === 0 && !jobDescription.trim()) {
       toast({ title: 'Add requirements or a job description', variant: 'destructive' });
       return;
     }
@@ -201,6 +228,7 @@ export const TalentScoutDashboard = () => {
           job_title: jobTitle.trim(),
           job_description: jobDescription.trim(),
           requirements: filteredReqs,
+          must_have_requirements: filteredMustHaves,
           preferred_skills: filteredSkills,
           status_filter: statusFilter,
           max_results: maxResults,
@@ -216,12 +244,12 @@ export const TalentScoutDashboard = () => {
 
       setResults(data);
 
-      // Cache the search
       const cachedEntry: CachedSearch = {
         id: crypto.randomUUID(),
         job_title: jobTitle.trim(),
         searched_at: new Date().toISOString(),
         requirements: filteredReqs,
+        must_have_requirements: filteredMustHaves,
         preferred_skills: filteredSkills,
         status_filter: statusFilter,
         max_results: maxResults,
@@ -312,22 +340,10 @@ export const TalentScoutDashboard = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0 ml-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => loadCachedSearch(cached)}
-                        title="Load cached results"
-                      >
+                      <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => loadCachedSearch(cached)} title="Load cached results">
                         <SearchIcon className="w-3.5 h-3.5" />
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        onClick={() => deleteCachedSearch(cached.id)}
-                        title="Delete from history"
-                      >
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={() => deleteCachedSearch(cached.id)} title="Delete from history">
                         <X className="w-3.5 h-3.5" />
                       </Button>
                     </div>
@@ -339,7 +355,7 @@ export const TalentScoutDashboard = () => {
         </Card>
       )}
 
-
+      {/* Quick Parse */}
       <Card className="border-dashed border-2">
         <CardContent className="pt-6 space-y-3">
           <div className="flex items-center gap-2">
@@ -389,8 +405,38 @@ export const TalentScoutDashboard = () => {
             />
           </div>
 
+          {/* Must-Have Requirements */}
+          <div className="p-4 border-2 border-red-500/20 rounded-lg bg-red-500/5">
+            <div className="flex items-center gap-2 mb-2">
+              <ShieldAlert className="w-5 h-5 text-red-500" />
+              <Label className="font-semibold text-red-600 dark:text-red-400">Must-Have Requirements</Label>
+            </div>
+            <p className="text-xs text-muted-foreground mb-3">
+              Candidates missing ANY of these will be automatically disqualified. Use for non-negotiable requirements.
+            </p>
+            <div className="space-y-2">
+              {mustHaveRequirements.map((req, idx) => (
+                <div key={idx} className="flex gap-2">
+                  <Input
+                    placeholder={`e.g. Salesforce experience, Spanish fluency`}
+                    value={req}
+                    onChange={(e) => updateMustHave(idx, e.target.value)}
+                    className="border-red-500/20 focus-visible:ring-red-500/30"
+                  />
+                  <Button variant="ghost" size="icon" onClick={() => removeMustHave(idx)} className="text-red-500 hover:text-red-600">
+                    <X className="w-4 h-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button variant="outline" size="sm" onClick={addMustHave} className="gap-1 border-red-500/20 text-red-600 hover:bg-red-500/5">
+                <Plus className="w-3 h-3" /> Add Must-Have
+              </Button>
+            </div>
+          </div>
+
           <div>
             <Label className="font-semibold">Key Requirements</Label>
+            <p className="text-xs text-muted-foreground mb-1">Important but not deal-breakers — candidates will be scored on these.</p>
             <div className="space-y-2 mt-1">
               {requirements.map((req, idx) => (
                 <div key={idx} className="flex gap-2">
@@ -499,7 +545,7 @@ export const TalentScoutDashboard = () => {
         <div className="space-y-4">
           {/* Stats */}
           <div className="flex flex-wrap gap-4">
-            <Card className="flex-1 min-w-[150px]">
+            <Card className="flex-1 min-w-[130px]">
               <CardContent className="pt-4 pb-4 flex items-center gap-3">
                 <Users className="w-5 h-5 text-muted-foreground" />
                 <div>
@@ -508,7 +554,18 @@ export const TalentScoutDashboard = () => {
                 </div>
               </CardContent>
             </Card>
-            <Card className="flex-1 min-w-[150px]">
+            {(results.failed_must_have_count ?? 0) > 0 && (
+              <Card className="flex-1 min-w-[130px] border-red-500/20">
+                <CardContent className="pt-4 pb-4 flex items-center gap-3">
+                  <ShieldAlert className="w-5 h-5 text-red-500" />
+                  <div>
+                    <p className="text-2xl font-bold text-red-500">{results.failed_must_have_count}</p>
+                    <p className="text-xs text-muted-foreground">Disqualified</p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+            <Card className="flex-1 min-w-[130px]">
               <CardContent className="pt-4 pb-4 flex items-center gap-3">
                 <SearchIcon className="w-5 h-5 text-muted-foreground" />
                 <div>
@@ -517,7 +574,7 @@ export const TalentScoutDashboard = () => {
                 </div>
               </CardContent>
             </Card>
-            <Card className="flex-1 min-w-[150px]">
+            <Card className="flex-1 min-w-[130px]">
               <CardContent className="pt-4 pb-4 flex items-center gap-3">
                 <Target className="w-5 h-5 text-muted-foreground" />
                 <div>
@@ -526,7 +583,7 @@ export const TalentScoutDashboard = () => {
                 </div>
               </CardContent>
             </Card>
-            <Card className="flex-1 min-w-[150px]">
+            <Card className="flex-1 min-w-[130px]">
               <CardContent className="pt-4 pb-4 flex items-center gap-3">
                 <Sparkles className="w-5 h-5 text-muted-foreground" />
                 <div>
@@ -608,6 +665,41 @@ export const TalentScoutDashboard = () => {
                               <Sparkles className="w-3.5 h-3.5" /> AI Assessment
                             </p>
                             <p className="text-sm text-muted-foreground">{result.ai_reasoning}</p>
+                          </div>
+                        )}
+
+                        {/* Score Breakdown */}
+                        {result.score_breakdown && (
+                          <div className="p-4 rounded-lg border bg-muted/20">
+                            <p className="text-sm font-semibold mb-3 flex items-center gap-1.5">
+                              <BarChart3 className="w-4 h-4 text-primary" /> Score Breakdown
+                            </p>
+                            <div className="space-y-3">
+                              {SCORE_CATEGORIES.map(cat => {
+                                const value = result.score_breakdown![cat.key as keyof ScoreBreakdown] || 0;
+                                const percentage = (value / cat.max) * 100;
+                                return (
+                                  <div key={cat.key}>
+                                    <div className="flex items-center justify-between text-xs mb-1">
+                                      <span className="text-muted-foreground">{cat.label}</span>
+                                      <span className="font-semibold">{value}/{cat.max}</span>
+                                    </div>
+                                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full rounded-full transition-all ${cat.color}`}
+                                        style={{ width: `${Math.min(100, percentage)}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                              <div className="pt-2 border-t mt-2 flex items-center justify-between text-sm">
+                                <span className="font-medium">Total Score</span>
+                                <span className={`font-bold text-lg ${getScoreColor(result.match_score)}`}>
+                                  {result.match_score}/100
+                                </span>
+                              </div>
+                            </div>
                           </div>
                         )}
 
