@@ -789,6 +789,28 @@ export const TalentScoutDashboard = () => {
           )}
         </div>
       )}
+      <AlertDialog open={showRejectConfirm} onOpenChange={setShowRejectConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              Include Rejected Candidates?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You have <strong>"Reject"</strong> included in your status filter. Scanning rejected candidates may return lower-quality matches and increase processing time. Do you want to proceed?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowRejectConfirm(false)}>Cancel</AlertDialogCancel>
+            <Button variant="outline" onClick={handleScoutWithoutReject}>
+              Skip Rejected
+            </Button>
+            <AlertDialogAction onClick={handleScoutWithReject}>
+              Include Rejected
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
