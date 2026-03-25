@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -9,8 +9,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Loader2, SearchIcon, Target, Users, MapPin, Star, FileText, CheckCircle, XCircle, Sparkles, Plus, X, ChevronDown, ChevronUp, History, Trash2, ShieldAlert, BarChart3, AlertTriangle } from 'lucide-react';
+import { Loader2, SearchIcon, Target, Users, MapPin, Star, FileText, CheckCircle, XCircle, Sparkles, Plus, X, ChevronDown, ChevronUp, History, Trash2, ShieldAlert, BarChart3, AlertTriangle, Briefcase } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
 
 interface ScoreBreakdown {
