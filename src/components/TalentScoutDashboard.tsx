@@ -9,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, SearchIcon, Target, Users, MapPin, Star, FileText, CheckCircle, XCircle, Sparkles, Plus, X, ChevronDown, ChevronUp, History, Trash2, ShieldAlert, BarChart3 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Loader2, SearchIcon, Target, Users, MapPin, Star, FileText, CheckCircle, XCircle, Sparkles, Plus, X, ChevronDown, ChevronUp, History, Trash2, ShieldAlert, BarChart3, AlertTriangle } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
 
 interface ScoreBreakdown {
@@ -80,10 +81,10 @@ const saveCachedSearches = (searches: CachedSearch[]) => {
 
 const STATUS_OPTIONS = [
   'For Review', 'For Interview', 'SIV', 'Client Interview',
-  'Hired', 'Bench', 'Reject', 'Archive', 'Talent Pool'
+  'Hired', 'Bench', 'Reject', 'Archive', 'Archived', 'Talent Pool'
 ];
 
-const DEFAULT_STATUSES = ['For Review', 'For Interview', 'SIV', 'Bench', 'Talent Pool'];
+const DEFAULT_STATUSES = ['For Review', 'For Interview', 'SIV', 'Bench', 'Talent Pool', 'Archive', 'Archived'];
 
 const SCORE_CATEGORIES = [
   { key: 'experience_relevance', label: 'Experience Relevance', max: 35, color: 'bg-blue-500' },
