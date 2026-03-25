@@ -113,6 +113,34 @@ export const TalentScoutDashboard = () => {
   const [cachedSearches, setCachedSearches] = useState<CachedSearch[]>(loadCachedSearches());
   const [showHistory, setShowHistory] = useState(false);
   const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+  const [postedJobs, setPostedJobs] = useState<{ id: string; title: string; description: string | null; qualifications: string[] | null; responsibilities: string[] | null }[]>([]);
+
+  // Fetch posted jobs on mount
+  useEffect(() => {
+    const fetchJobs = async () => {
+      const { data } = await supabase
+        .from('jobs')
+        .select('id, title, description, qualifications, responsibilities')
+        .eq('is_active', true)
+        .order('title', { ascending: true });
+      if (data) setPostedJobs(data);
+    };
+    fetchJobs();
+  }, []);
+
+  const handleJobSelect = (jobId: string) => {
+    if (jobId === 'none') return;
+    const job = postedJobs.find(j => j.id === jobId);
+    if (!job) return;
+    setJobTitle(job.title);
+    if (job.description) setJobDescription(job.description);
+    const reqs = [
+      ...(job.qualifications || []),
+      ...(job.responsibilities || []),
+    ].filter(Boolean);
+    if (reqs.length > 0) setRequirements(reqs);
+    toast({ title: 'Job loaded', description: `Auto-filled from "${job.title}"` });
+  };
 
   const addRequirement = () => setRequirements(prev => [...prev, '']);
   const removeRequirement = (idx: number) => setRequirements(prev => prev.filter((_, i) => i !== idx));
