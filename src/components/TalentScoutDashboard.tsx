@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
@@ -9,8 +9,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Loader2, SearchIcon, Target, Users, MapPin, Star, FileText, CheckCircle, XCircle, Sparkles, Plus, X, ChevronDown, ChevronUp, History, Trash2, ShieldAlert, BarChart3, AlertTriangle } from 'lucide-react';
+import { Loader2, SearchIcon, Target, Users, MapPin, Star, FileText, CheckCircle, XCircle, Sparkles, Plus, X, ChevronDown, ChevronUp, History, Trash2, ShieldAlert, BarChart3, AlertTriangle, Briefcase } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
 
 interface ScoreBreakdown {
@@ -112,6 +113,34 @@ export const TalentScoutDashboard = () => {
   const [cachedSearches, setCachedSearches] = useState<CachedSearch[]>(loadCachedSearches());
   const [showHistory, setShowHistory] = useState(false);
   const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+  const [postedJobs, setPostedJobs] = useState<{ id: string; title: string; description: string | null; qualifications: string[] | null; responsibilities: string[] | null }[]>([]);
+
+  // Fetch posted jobs on mount
+  useEffect(() => {
+    const fetchJobs = async () => {
+      const { data } = await supabase
+        .from('jobs')
+        .select('id, title, description, qualifications, responsibilities')
+        .eq('is_active', true)
+        .order('title', { ascending: true });
+      if (data) setPostedJobs(data);
+    };
+    fetchJobs();
+  }, []);
+
+  const handleJobSelect = (jobId: string) => {
+    if (jobId === 'none') return;
+    const job = postedJobs.find(j => j.id === jobId);
+    if (!job) return;
+    setJobTitle(job.title);
+    if (job.description) setJobDescription(job.description);
+    const reqs = [
+      ...(job.qualifications || []),
+      ...(job.responsibilities || []),
+    ].filter(Boolean);
+    if (reqs.length > 0) setRequirements(reqs);
+    toast({ title: 'Job loaded', description: `Auto-filled from "${job.title}"` });
+  };
 
   const addRequirement = () => setRequirements(prev => [...prev, '']);
   const removeRequirement = (idx: number) => setRequirements(prev => prev.filter((_, i) => i !== idx));
@@ -412,6 +441,26 @@ export const TalentScoutDashboard = () => {
       {/* Input Form */}
       <Card>
         <CardContent className="pt-6 space-y-4">
+          {/* Quick-fill from posted jobs */}
+          {postedJobs.length > 0 && (
+            <div>
+              <Label className="font-semibold flex items-center gap-2">
+                <Briefcase className="w-4 h-4" />
+                Load from Posted Jobs
+              </Label>
+              <Select onValueChange={handleJobSelect}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select a job to auto-fill..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {postedJobs.map(job => (
+                    <SelectItem key={job.id} value={job.id}>{job.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div>
             <Label htmlFor="scout-title" className="font-semibold">Job Title *</Label>
             <Input
