@@ -9,7 +9,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
-import { Loader2, SearchIcon, Target, Users, MapPin, Star, FileText, CheckCircle, XCircle, Sparkles, Plus, X, ChevronDown, ChevronUp, History, Trash2, ShieldAlert, BarChart3 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { Loader2, SearchIcon, Target, Users, MapPin, Star, FileText, CheckCircle, XCircle, Sparkles, Plus, X, ChevronDown, ChevronUp, History, Trash2, ShieldAlert, BarChart3, AlertTriangle } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
 
 interface ScoreBreakdown {
@@ -80,10 +81,10 @@ const saveCachedSearches = (searches: CachedSearch[]) => {
 
 const STATUS_OPTIONS = [
   'For Review', 'For Interview', 'SIV', 'Client Interview',
-  'Hired', 'Bench', 'Reject', 'Archive', 'Talent Pool'
+  'Hired', 'Bench', 'Reject', 'Archive', 'Archived', 'Talent Pool'
 ];
 
-const DEFAULT_STATUSES = ['For Review', 'For Interview', 'SIV', 'Bench', 'Talent Pool'];
+const DEFAULT_STATUSES = ['For Review', 'For Interview', 'SIV', 'Bench', 'Talent Pool', 'Archive', 'Archived'];
 
 const SCORE_CATEGORIES = [
   { key: 'experience_relevance', label: 'Experience Relevance', max: 35, color: 'bg-blue-500' },
@@ -110,6 +111,7 @@ export const TalentScoutDashboard = () => {
   const [rawJD, setRawJD] = useState('');
   const [cachedSearches, setCachedSearches] = useState<CachedSearch[]>(loadCachedSearches());
   const [showHistory, setShowHistory] = useState(false);
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
 
   const addRequirement = () => setRequirements(prev => [...prev, '']);
   const removeRequirement = (idx: number) => setRequirements(prev => prev.filter((_, i) => i !== idx));
@@ -204,7 +206,7 @@ export const TalentScoutDashboard = () => {
     }
   };
 
-  const handleScout = async () => {
+  const initiateScout = () => {
     if (!jobTitle.trim()) {
       toast({ title: 'Job title required', variant: 'destructive' });
       return;
@@ -212,12 +214,38 @@ export const TalentScoutDashboard = () => {
 
     const filteredReqs = requirements.filter(r => r.trim());
     const filteredMustHaves = mustHaveRequirements.filter(r => r.trim());
-    const filteredSkills = preferredSkills.filter(s => s.trim());
 
     if (filteredReqs.length === 0 && filteredMustHaves.length === 0 && !jobDescription.trim()) {
       toast({ title: 'Add requirements or a job description', variant: 'destructive' });
       return;
     }
+
+    // If Reject is in the filter, show confirmation dialog
+    if (statusFilter.includes('Reject')) {
+      setShowRejectConfirm(true);
+      return;
+    }
+
+    handleScout();
+  };
+
+  const handleScoutWithoutReject = () => {
+    setShowRejectConfirm(false);
+    const filteredStatuses = statusFilter.filter(s => s !== 'Reject');
+    setStatusFilter(filteredStatuses);
+    // Run scout with filtered statuses directly
+    handleScout(filteredStatuses);
+  };
+
+  const handleScoutWithReject = () => {
+    setShowRejectConfirm(false);
+    handleScout();
+  };
+
+  const handleScout = async (overrideStatuses?: string[]) => {
+    const filteredReqs = requirements.filter(r => r.trim());
+    const filteredMustHaves = mustHaveRequirements.filter(r => r.trim());
+    const filteredSkills = preferredSkills.filter(s => s.trim());
 
     setLoading(true);
     setResults(null);
@@ -230,7 +258,7 @@ export const TalentScoutDashboard = () => {
           requirements: filteredReqs,
           must_have_requirements: filteredMustHaves,
           preferred_skills: filteredSkills,
-          status_filter: statusFilter,
+          status_filter: overrideStatuses || statusFilter,
           max_results: maxResults,
         }
       });
@@ -524,7 +552,7 @@ export const TalentScoutDashboard = () => {
             )}
           </div>
 
-          <Button onClick={handleScout} disabled={loading} className="w-full gap-2" size="lg">
+          <Button onClick={initiateScout} disabled={loading} className="w-full gap-2" size="lg">
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
@@ -761,6 +789,28 @@ export const TalentScoutDashboard = () => {
           )}
         </div>
       )}
+      <AlertDialog open={showRejectConfirm} onOpenChange={setShowRejectConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-amber-500" />
+              Include Rejected Candidates?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              You have <strong>"Reject"</strong> included in your status filter. Scanning rejected candidates may return lower-quality matches and increase processing time. Do you want to proceed?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowRejectConfirm(false)}>Cancel</AlertDialogCancel>
+            <Button variant="outline" onClick={handleScoutWithoutReject}>
+              Skip Rejected
+            </Button>
+            <AlertDialogAction onClick={handleScoutWithReject}>
+              Include Rejected
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
