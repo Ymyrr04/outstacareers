@@ -258,7 +258,7 @@ export const TalentScoutDashboard = () => {
           requirements: filteredReqs,
           must_have_requirements: filteredMustHaves,
           preferred_skills: filteredSkills,
-          status_filter: statusFilter,
+          status_filter: overrideStatuses || statusFilter,
           max_results: maxResults,
         }
       });
@@ -552,7 +552,7 @@ export const TalentScoutDashboard = () => {
             )}
           </div>
 
-          <Button onClick={handleScout} disabled={loading} className="w-full gap-2" size="lg">
+          <Button onClick={initiateScout} disabled={loading} className="w-full gap-2" size="lg">
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
