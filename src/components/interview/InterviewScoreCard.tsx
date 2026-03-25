@@ -5,7 +5,6 @@ import {
   Code, 
   MessageSquare, 
   Lightbulb, 
-  Users,
   TrendingUp,
   AlertTriangle,
   CheckCircle2
