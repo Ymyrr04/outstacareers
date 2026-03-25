@@ -26,22 +26,9 @@ interface TextQuestion {
   question_context: string;
 }
 
-interface MultipleChoiceOption {
-  id: string;
-  label: string;
-  value: string;
-}
-
-interface MultipleChoiceQuestion {
-  question_text: string;
-  question_context: string;
-  options: MultipleChoiceOption[];
-}
-
 interface QuestionsResponse {
   voice_questions: VoiceQuestion[];
   text_questions: TextQuestion[];
-  multiple_choice_questions: MultipleChoiceQuestion[];
   has_custom_questions?: boolean;
   no_ai_mode?: boolean;
   no_ai_reason?: string;
@@ -107,48 +94,24 @@ serve(async (req) => {
       }
     }
 
-    // Check if AI is available
-    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-    let aiAvailable = !!LOVABLE_API_KEY;
-    let noAiReason = '';
-
-    // If we have custom questions, try to generate AI personality questions
-    // If we don't have custom questions, try to generate all questions with AI
-    if (hasCustomQuestions && aiAvailable) {
-      // We have custom voice/text questions, just try to generate personality questions
-      const personalityResult = await generatePersonalityQuestionsWithFallback(job_title, applicant_name);
-      
+    // If we have custom questions, use them directly
+    if (hasCustomQuestions) {
+      console.log(`Using custom questions: ${customVoiceQuestions.length} voice, ${customTextQuestions.length} text`);
       return new Response(
         JSON.stringify({
           voice_questions: customVoiceQuestions,
           text_questions: customTextQuestions,
-          multiple_choice_questions: personalityResult.questions,
           has_custom_questions: true,
-          no_ai_mode: personalityResult.no_ai_mode,
-          no_ai_reason: personalityResult.no_ai_reason
+          no_ai_mode: false
         }),
         { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // No custom questions - need to check if we have AI available
-    if (!aiAvailable) {
-      // No AI, check if we have custom questions to fall back to
-      if (hasCustomQuestions && (customVoiceQuestions.length > 0 || customTextQuestions.length > 0)) {
-        console.log('No AI available, using custom questions only');
-        return new Response(
-          JSON.stringify({
-            voice_questions: customVoiceQuestions,
-            text_questions: customTextQuestions,
-            multiple_choice_questions: getDefaultPersonalityQuestions(),
-            has_custom_questions: true,
-            no_ai_mode: true,
-            no_ai_reason: 'AI service not configured'
-          }),
-          { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
-      }
+    // Check if AI is available
+    const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
+    if (!LOVABLE_API_KEY) {
       // No AI and no custom questions - return error with guidance
       return new Response(
         JSON.stringify({ 
@@ -160,7 +123,7 @@ serve(async (req) => {
       );
     }
 
-    // Try to generate questions with AI
+    // Generate questions with AI: 3 voice + 1 text
     const systemPrompt = `You are a senior HR interviewer with expertise in behavioral and competency-based interviewing. Your task is to generate highly relevant, probing interview questions that genuinely assess a candidate's fit for the role.
 
 CRITICAL PRINCIPLES:
@@ -176,9 +139,9 @@ CRITICAL PRINCIPLES:
 - When referencing CV content, use phrases like "You mentioned..." or "Your CV shows..." to ground questions in actual content
 - If the job requires skills not in the CV, ask if they have that experience rather than assuming they do
 
-Generate THREE types of questions:
+Generate TWO types of questions:
 
-1. VOICE QUESTIONS (5 questions) - Experience & Technical depth assessment:
+1. VOICE QUESTIONS (3 questions) - Experience, Technical & Communication assessment:
    FOCUS ON:
    - STAR-format questions (Situation, Task, Action, Result) about ACTUAL experiences mentioned in CV
    - Technical proficiency with tools/platforms ONLY if mentioned in CV
@@ -193,13 +156,12 @@ Generate THREE types of questions:
    ✓ Directly relates to a key job requirement
    ✓ Should take 60-90 seconds to answer well
 
-2. TEXT QUESTIONS (5 questions) - Situational judgment and problem-solving:
+2. TEXT QUESTION (1 question) - Situational judgment and problem-solving:
    FOCUS ON:
-   - Realistic scenarios that could happen in this specific role
+   - A realistic scenario that could happen in this specific role
    - Multi-factor problems requiring prioritization
    - Stakeholder management challenges
    - Time-pressure decision making
-   - Ethical dilemmas relevant to the industry
    
    SCENARIO QUALITY CHECKLIST:
    ✓ Specific to this role/industry, not generic workplace situations
@@ -208,25 +170,10 @@ Generate THREE types of questions:
    ✓ Includes enough context for a thoughtful response
    ✓ Answer should require 3-5 sentences minimum
 
-3. MULTIPLE CHOICE QUESTIONS (5 questions) - Personality, work style, and cultural fit:
-   FOCUS ON:
-   - Remote work discipline and communication style
-   - Handling feedback and continuous improvement
-   - Time management and prioritization approach
-   - Conflict resolution and team dynamics
-   - Self-awareness and professional growth
-   
-   OPTION QUALITY CHECKLIST:
-   ✓ All 4 options are plausible - no trick answers
-   ✓ Options reveal different work style preferences
-   ✓ Designed to assess fit, not "right vs wrong"
-   ✓ Each option should be something a reasonable person might choose
-
 FORMATTING REQUIREMENTS:
 - Use the candidate's first name naturally in 1-2 questions
 - Voice questions: Direct, clear, and specific - grounded in actual CV content
-- Text scenarios: 2-4 sentences of context, then a clear question
-- MC questions: Clear question with exactly 4 distinct options
+- Text scenario: 2-4 sentences of context, then a clear question
 
 Return ONLY valid JSON with this structure:
 {
@@ -235,18 +182,6 @@ Return ONLY valid JSON with this structure:
   ],
   "text_questions": [
     {"question_text": "<scenario + question>", "question_context": "<skill being assessed>"}
-  ],
-  "multiple_choice_questions": [
-    {
-      "question_text": "<question>",
-      "question_context": "<trait being assessed>",
-      "options": [
-        {"id": "a", "label": "Option A text", "value": "a"},
-        {"id": "b", "label": "Option B text", "value": "b"},
-        {"id": "c", "label": "Option C text", "value": "c"},
-        {"id": "d", "label": "Option D text", "value": "d"}
-      ]
-    }
   ]
 }`;
     const userPrompt = `Generate interview questions for this candidate:
@@ -266,9 +201,9 @@ ${responsibilities?.length ? responsibilities.map((r, i) => `${i + 1}. ${r}`).jo
 CANDIDATE'S CV:
 ${cv_text}
 
-Generate personalized interview questions based on this information. Return ONLY the JSON object.`;
+Generate 3 voice questions and 1 text question based on this information. Return ONLY the JSON object.`;
 
-    console.log('Generating interview questions with AI...');
+    console.log('Generating interview questions with AI (3 voice + 1 text)...');
 
     const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
       method: 'POST',
@@ -291,27 +226,9 @@ Generate personalized interview questions based on this information. Return ONLY
       console.error('AI API error:', response.status, errorText);
       
       if (response.status === 429 || response.status === 402) {
-        noAiReason = response.status === 402 ? 'AI credits exhausted' : 'Rate limit exceeded';
-        console.log(`${noAiReason}, checking for fallback options...`);
+        const noAiReason = response.status === 402 ? 'AI credits exhausted' : 'Rate limit exceeded';
+        console.log(`${noAiReason}, no custom questions available`);
         
-        // Check if we have custom questions to fall back to
-        if (hasCustomQuestions && (customVoiceQuestions.length > 0 || customTextQuestions.length > 0)) {
-          console.log('Falling back to custom questions only');
-          return new Response(
-            JSON.stringify({
-              voice_questions: customVoiceQuestions,
-              text_questions: customTextQuestions,
-              multiple_choice_questions: getDefaultPersonalityQuestions(),
-              has_custom_questions: true,
-              no_ai_mode: true,
-              no_ai_reason: noAiReason
-            }),
-            { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-          );
-        }
-
-        // No custom questions - return 200 with no_questions flag so frontend can handle gracefully
-        // (returning 402/429 would cause supabase.functions.invoke to throw before we can read data)
         return new Response(
           JSON.stringify({ 
             no_questions: true,
@@ -365,24 +282,18 @@ Generate personalized interview questions based on this information. Return ONLY
       );
     }
 
-    // Validate structure
+    // Validate structure - enforce 3 voice + 1 text
     const validatedResult: QuestionsResponse = {
       voice_questions: Array.isArray(questionsResult.voice_questions) 
-        ? questionsResult.voice_questions.slice(0, 6) 
+        ? questionsResult.voice_questions.slice(0, 3) 
         : [],
       text_questions: Array.isArray(questionsResult.text_questions) 
-        ? questionsResult.text_questions.slice(0, 6) 
-        : [],
-      multiple_choice_questions: Array.isArray(questionsResult.multiple_choice_questions) 
-        ? questionsResult.multiple_choice_questions.slice(0, 6).map(q => ({
-            ...q,
-            options: Array.isArray(q.options) ? q.options.slice(0, 4) : []
-          }))
+        ? questionsResult.text_questions.slice(0, 1) 
         : [],
       no_ai_mode: false
     };
 
-    console.log('Generated questions successfully');
+    console.log(`Generated questions: ${validatedResult.voice_questions.length} voice, ${validatedResult.text_questions.length} text`);
 
     return new Response(
       JSON.stringify(validatedResult),
@@ -397,139 +308,3 @@ Generate personalized interview questions based on this information. Return ONLY
     );
   }
 });
-
-// Helper function to generate personality questions with AI, with fallback
-async function generatePersonalityQuestionsWithFallback(
-  jobTitle: string, 
-  applicantName: string
-): Promise<{ questions: MultipleChoiceQuestion[], no_ai_mode: boolean, no_ai_reason?: string }> {
-  const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
-  if (!LOVABLE_API_KEY) {
-    console.log('No AI key, using default personality questions');
-    return { 
-      questions: getDefaultPersonalityQuestions(), 
-      no_ai_mode: true, 
-      no_ai_reason: 'AI service not configured' 
-    };
-  }
-
-  try {
-    const response = await fetch('https://ai.gateway.lovable.dev/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${LOVABLE_API_KEY}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        model: 'google/gemini-3-flash-preview',
-        messages: [
-          { 
-            role: 'system', 
-            content: `Generate 5 personality assessment multiple choice questions for a job interview.
-Each question should have exactly 4 options testing communication style, teamwork, reliability, or professionalism.
-Return ONLY valid JSON array with this structure:
-[{"question_text": "<question>", "question_context": "<trait being assessed>", "options": [{"id": "a", "label": "...", "value": "a"}, {"id": "b", "label": "...", "value": "b"}, {"id": "c", "label": "...", "value": "c"}, {"id": "d", "label": "...", "value": "d"}]}]` 
-          },
-          { role: 'user', content: `Generate personality questions for a ${jobTitle} role. Candidate name: ${applicantName}` }
-        ],
-      }),
-    });
-
-    if (!response.ok) {
-      const status = response.status;
-      console.log(`AI API error for personality questions: ${status}`);
-      
-      if (status === 402 || status === 429) {
-        return { 
-          questions: getDefaultPersonalityQuestions(), 
-          no_ai_mode: true, 
-          no_ai_reason: status === 402 ? 'AI credits exhausted' : 'Rate limit exceeded'
-        };
-      }
-      
-      return { 
-        questions: getDefaultPersonalityQuestions(), 
-        no_ai_mode: true, 
-        no_ai_reason: 'AI service unavailable'
-      };
-    }
-
-    const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
-    
-    if (!content) {
-      return { questions: getDefaultPersonalityQuestions(), no_ai_mode: false };
-    }
-
-    let jsonContent = content.trim();
-    if (jsonContent.startsWith('```json')) jsonContent = jsonContent.slice(7);
-    else if (jsonContent.startsWith('```')) jsonContent = jsonContent.slice(3);
-    if (jsonContent.endsWith('```')) jsonContent = jsonContent.slice(0, -3);
-    jsonContent = jsonContent.trim();
-
-    const parsed = JSON.parse(jsonContent);
-    return { 
-      questions: Array.isArray(parsed) ? parsed.slice(0, 6) : getDefaultPersonalityQuestions(), 
-      no_ai_mode: false 
-    };
-  } catch (error) {
-    console.error('Error generating personality questions:', error);
-    return { questions: getDefaultPersonalityQuestions(), no_ai_mode: false };
-  }
-}
-
-// Fallback personality questions
-function getDefaultPersonalityQuestions(): MultipleChoiceQuestion[] {
-  return [
-    {
-      question_text: "How do you typically handle a situation where you disagree with a team member's approach?",
-      question_context: "Conflict resolution and teamwork",
-      options: [
-        { id: "a", label: "I immediately voice my disagreement to ensure my perspective is heard", value: "a" },
-        { id: "b", label: "I try to understand their perspective first, then share my thoughts constructively", value: "b" },
-        { id: "c", label: "I usually go along with their approach to avoid conflict", value: "c" },
-        { id: "d", label: "I escalate to a manager to get a third-party opinion", value: "d" }
-      ]
-    },
-    {
-      question_text: "When given a task with an unclear deadline, what do you typically do?",
-      question_context: "Communication and initiative",
-      options: [
-        { id: "a", label: "Ask for clarification on the expected timeline immediately", value: "a" },
-        { id: "b", label: "Set my own reasonable deadline and communicate it to the team", value: "b" },
-        { id: "c", label: "Start working and complete it when I can", value: "c" },
-        { id: "d", label: "Wait until someone follows up about it", value: "d" }
-      ]
-    },
-    {
-      question_text: "How do you prefer to receive feedback on your work?",
-      question_context: "Growth mindset and adaptability",
-      options: [
-        { id: "a", label: "Direct and immediate, even if critical", value: "a" },
-        { id: "b", label: "Regular scheduled check-ins with constructive suggestions", value: "b" },
-        { id: "c", label: "Written feedback I can review on my own time", value: "c" },
-        { id: "d", label: "Only when there's a significant issue to address", value: "d" }
-      ]
-    },
-    {
-      question_text: "When you're overloaded with tasks, how do you prioritize?",
-      question_context: "Time management and prioritization",
-      options: [
-        { id: "a", label: "Focus on the most urgent deadlines first", value: "a" },
-        { id: "b", label: "Communicate with stakeholders to reset expectations", value: "b" },
-        { id: "c", label: "Work longer hours to complete everything", value: "c" },
-        { id: "d", label: "Delegate or ask for help from teammates", value: "d" }
-      ]
-    },
-    {
-      question_text: "What motivates you most in your work?",
-      question_context: "Motivation and career values",
-      options: [
-        { id: "a", label: "Learning new skills and professional growth", value: "a" },
-        { id: "b", label: "Recognition and appreciation from the team", value: "b" },
-        { id: "c", label: "Achieving goals and seeing measurable results", value: "c" },
-        { id: "d", label: "Having a good work-life balance", value: "d" }
-      ]
-    }
-  ];
-}
