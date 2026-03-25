@@ -441,6 +441,26 @@ export const TalentScoutDashboard = () => {
       {/* Input Form */}
       <Card>
         <CardContent className="pt-6 space-y-4">
+          {/* Quick-fill from posted jobs */}
+          {postedJobs.length > 0 && (
+            <div>
+              <Label className="font-semibold flex items-center gap-2">
+                <Briefcase className="w-4 h-4" />
+                Load from Posted Jobs
+              </Label>
+              <Select onValueChange={handleJobSelect}>
+                <SelectTrigger className="mt-1">
+                  <SelectValue placeholder="Select a job to auto-fill..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {postedJobs.map(job => (
+                    <SelectItem key={job.id} value={job.id}>{job.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div>
             <Label htmlFor="scout-title" className="font-semibold">Job Title *</Label>
             <Input
