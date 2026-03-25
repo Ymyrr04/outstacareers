@@ -206,7 +206,7 @@ export const TalentScoutDashboard = () => {
     }
   };
 
-  const handleScout = async () => {
+  const initiateScout = () => {
     if (!jobTitle.trim()) {
       toast({ title: 'Job title required', variant: 'destructive' });
       return;
@@ -214,12 +214,38 @@ export const TalentScoutDashboard = () => {
 
     const filteredReqs = requirements.filter(r => r.trim());
     const filteredMustHaves = mustHaveRequirements.filter(r => r.trim());
-    const filteredSkills = preferredSkills.filter(s => s.trim());
 
     if (filteredReqs.length === 0 && filteredMustHaves.length === 0 && !jobDescription.trim()) {
       toast({ title: 'Add requirements or a job description', variant: 'destructive' });
       return;
     }
+
+    // If Reject is in the filter, show confirmation dialog
+    if (statusFilter.includes('Reject')) {
+      setShowRejectConfirm(true);
+      return;
+    }
+
+    handleScout();
+  };
+
+  const handleScoutWithoutReject = () => {
+    setShowRejectConfirm(false);
+    const filteredStatuses = statusFilter.filter(s => s !== 'Reject');
+    setStatusFilter(filteredStatuses);
+    // Run scout with filtered statuses directly
+    handleScout(filteredStatuses);
+  };
+
+  const handleScoutWithReject = () => {
+    setShowRejectConfirm(false);
+    handleScout();
+  };
+
+  const handleScout = async (overrideStatuses?: string[]) => {
+    const filteredReqs = requirements.filter(r => r.trim());
+    const filteredMustHaves = mustHaveRequirements.filter(r => r.trim());
+    const filteredSkills = preferredSkills.filter(s => s.trim());
 
     setLoading(true);
     setResults(null);
