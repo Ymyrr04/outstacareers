@@ -111,6 +111,7 @@ export const TalentScoutDashboard = () => {
   const [rawJD, setRawJD] = useState('');
   const [cachedSearches, setCachedSearches] = useState<CachedSearch[]>(loadCachedSearches());
   const [showHistory, setShowHistory] = useState(false);
+  const [showRejectConfirm, setShowRejectConfirm] = useState(false);
 
   const addRequirement = () => setRequirements(prev => [...prev, '']);
   const removeRequirement = (idx: number) => setRequirements(prev => prev.filter((_, i) => i !== idx));
