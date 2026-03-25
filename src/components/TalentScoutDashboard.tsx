@@ -509,6 +509,19 @@ export const TalentScoutDashboard = () => {
             </div>
           </div>
 
+          {/* Include Rejected toggle - visible by default */}
+          <div className="flex items-center gap-3 p-3 border rounded-lg border-amber-500/30 bg-amber-500/5">
+            <Checkbox
+              id="include-reject"
+              checked={statusFilter.includes('Reject')}
+              onCheckedChange={() => toggleStatus('Reject')}
+            />
+            <label htmlFor="include-reject" className="flex items-center gap-2 text-sm cursor-pointer">
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              <span>Include rejected candidates in search</span>
+            </label>
+          </div>
+
           {/* Filters Toggle */}
           <div>
             <Button
@@ -526,7 +539,7 @@ export const TalentScoutDashboard = () => {
                 <div>
                   <Label className="text-sm font-medium">Search in statuses:</Label>
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {STATUS_OPTIONS.map(status => (
+                    {STATUS_OPTIONS.filter(s => s !== 'Reject').map(status => (
                       <label key={status} className="flex items-center gap-1.5 text-sm cursor-pointer">
                         <Checkbox
                           checked={statusFilter.includes(status)}
