@@ -59,7 +59,6 @@ export function InterviewScoreCard({ session }: InterviewScoreCardProps) {
     { label: 'Technical', score: session.technical_score, icon: Code },
     { label: 'Communication', score: session.communication_score, icon: MessageSquare },
     { label: 'Situational', score: session.situational_score, icon: Lightbulb },
-    { label: 'Personality', score: session.personality_score, icon: Users },
   ];
 
   return (
