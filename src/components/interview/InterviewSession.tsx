@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Loader2, Mic, FileText, CheckSquare, Clock, ArrowRight, CheckCircle, AlertTriangle } from "lucide-react";
+import { Loader2, Mic, FileText, Clock, ArrowRight, CheckCircle, AlertTriangle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { VoiceQuestionStep } from "./VoiceQuestionStep";
 import { TextQuestionStep } from "./TextQuestionStep";
-import { MultipleChoiceStep } from "./MultipleChoiceStep";
 
 interface InterviewSessionProps {
   sessionId: string;
@@ -33,34 +32,19 @@ interface TextQuestion {
   question_context: string;
 }
 
-interface MultipleChoiceOption {
-  id: string;
-  label: string;
-  value: string;
-}
-
-interface MultipleChoiceQuestion {
-  id: string;
-  question_text: string;
-  question_context: string;
-  options: MultipleChoiceOption[];
-}
-
 interface Answer {
   question_id: string;
   question_text: string;
   question_context: string;
-  section: 'voice' | 'text' | 'multiple_choice';
+  section: 'voice' | 'text';
   voice_recording_url?: string;
   voice_duration_seconds?: number;
   text_answer?: string;
-  selected_option_id?: string;
-  options?: MultipleChoiceOption[];
   paste_detected?: boolean;
   pasted_content?: string | null;
 }
 
-type InterviewStep = 'loading' | 'voice' | 'text' | 'multiple_choice' | 'submitting' | 'complete' | 'no_questions' | 'error';
+type InterviewStep = 'loading' | 'voice' | 'text' | 'submitting' | 'complete' | 'no_questions' | 'error';
 
 export function InterviewSession({
   sessionId,
@@ -77,7 +61,6 @@ export function InterviewSession({
   const [currentStep, setCurrentStep] = useState<InterviewStep>('loading');
   const [voiceQuestions, setVoiceQuestions] = useState<VoiceQuestion[]>([]);
   const [textQuestions, setTextQuestions] = useState<TextQuestion[]>([]);
-  const [mcQuestions, setMcQuestions] = useState<MultipleChoiceQuestion[]>([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Answer[]>([]);
   const [isGenerating, setIsGenerating] = useState(true);
@@ -86,7 +69,7 @@ export function InterviewSession({
   const [noAiReason, setNoAiReason] = useState<string | null>(null);
 
   // Calculate progress
-  const totalQuestions = voiceQuestions.length + textQuestions.length + mcQuestions.length;
+  const totalQuestions = voiceQuestions.length + textQuestions.length;
   const answeredQuestions = answers.length;
   const progress = totalQuestions > 0 ? (answeredQuestions / totalQuestions) * 100 : 0;
 
@@ -94,7 +77,6 @@ export function InterviewSession({
   const getCurrentQuestions = () => {
     if (currentStep === 'voice') return voiceQuestions;
     if (currentStep === 'text') return textQuestions;
-    if (currentStep === 'multiple_choice') return mcQuestions;
     return [];
   };
 
@@ -122,7 +104,7 @@ export function InterviewSession({
       }
 
       if (existingQuestions && existingQuestions.length > 0) {
-        // Questions already exist - load them instead of regenerating
+        // Questions already exist - load them (filter out any legacy MC questions)
         const voiceQs = existingQuestions
           .filter(q => q.section === 'voice')
           .map(q => ({
@@ -137,18 +119,9 @@ export function InterviewSession({
             question_text: q.question_text,
             question_context: q.question_context || ''
           }));
-        const mcQs = existingQuestions
-          .filter(q => q.section === 'multiple_choice')
-          .map(q => ({
-            id: q.id,
-            question_text: q.question_text,
-            question_context: q.question_context || '',
-            options: (q.options as unknown as MultipleChoiceOption[]) || []
-          }));
 
         setVoiceQuestions(voiceQs);
         setTextQuestions(textQs);
-        setMcQuestions(mcQs);
 
         // Check for existing answers to resume from correct position
         const { data: existingAnswers } = await supabase
@@ -162,64 +135,26 @@ export function InterviewSession({
         let startStep: InterviewStep = 'voice';
         let startIndex = 0;
 
-        // Check voice questions
         const unansweredVoice = voiceQs.findIndex(q => !answeredQuestionIds.has(q.id));
         if (unansweredVoice !== -1) {
           startStep = 'voice';
           startIndex = unansweredVoice;
         } else if (voiceQs.length > 0) {
-          // All voice answered, check text
           const unansweredText = textQs.findIndex(q => !answeredQuestionIds.has(q.id));
           if (unansweredText !== -1) {
             startStep = 'text';
             startIndex = unansweredText;
-          } else if (textQs.length > 0) {
-            // All text answered, check MC
-            const unansweredMc = mcQs.findIndex(q => !answeredQuestionIds.has(q.id));
-            if (unansweredMc !== -1) {
-              startStep = 'multiple_choice';
-              startIndex = unansweredMc;
-            } else {
-              // All questions answered - should be complete
-              setCurrentStep('complete');
-              setIsGenerating(false);
-              return;
-            }
           } else {
-            // No text questions, check MC
-            const unansweredMc = mcQs.findIndex(q => !answeredQuestionIds.has(q.id));
-            if (unansweredMc !== -1) {
-              startStep = 'multiple_choice';
-              startIndex = unansweredMc;
-            } else {
-              setCurrentStep('complete');
-              setIsGenerating(false);
-              return;
-            }
+            setCurrentStep('complete');
+            setIsGenerating(false);
+            return;
           }
         } else {
-          // No voice questions, start with text or MC
           if (textQs.length > 0) {
             const unansweredText = textQs.findIndex(q => !answeredQuestionIds.has(q.id));
             if (unansweredText !== -1) {
               startStep = 'text';
               startIndex = unansweredText;
-            } else {
-              const unansweredMc = mcQs.findIndex(q => !answeredQuestionIds.has(q.id));
-              if (unansweredMc !== -1) {
-                startStep = 'multiple_choice';
-                startIndex = unansweredMc;
-              } else {
-                setCurrentStep('complete');
-                setIsGenerating(false);
-                return;
-              }
-            }
-          } else if (mcQs.length > 0) {
-            const unansweredMc = mcQs.findIndex(q => !answeredQuestionIds.has(q.id));
-            if (unansweredMc !== -1) {
-              startStep = 'multiple_choice';
-              startIndex = unansweredMc;
             } else {
               setCurrentStep('complete');
               setIsGenerating(false);
@@ -238,7 +173,6 @@ export function InterviewSession({
       await generateQuestions();
     } catch (err) {
       console.error('Error in loadOrGenerateQuestions:', err);
-      // Fall back to generating new questions
       await generateQuestions();
     }
   };
@@ -262,7 +196,6 @@ export function InterviewSession({
 
       if (fnError) throw fnError;
       
-      // Handle case where no questions are available
       if (data?.no_questions) {
         setError(data.message || 'No interview questions available.');
         setCurrentStep('no_questions');
@@ -271,7 +204,6 @@ export function InterviewSession({
       
       if (data?.error) throw new Error(data.error);
 
-      // Check if we're in no-AI mode
       if (data?.no_ai_mode) {
         setNoAiMode(true);
         setNoAiReason(data.no_ai_reason || 'AI not available');
@@ -290,17 +222,11 @@ export function InterviewSession({
         ...q,
         id: `text-${i}`
       }));
-      const mcQs = (data.multiple_choice_questions || []).map((q: any, i: number) => ({
-        ...q,
-        id: `mc-${i}`
-      }));
 
       setVoiceQuestions(voiceQs);
       setTextQuestions(textQs);
-      setMcQuestions(mcQs);
 
-      // Check if we have any questions at all
-      if (voiceQs.length === 0 && textQs.length === 0 && mcQs.length === 0) {
+      if (voiceQs.length === 0 && textQs.length === 0) {
         setError('No interview questions available for this position.');
         setCurrentStep('no_questions');
         return;
@@ -321,14 +247,6 @@ export function InterviewSession({
           question_order: i + 1,
           question_text: q.question_text,
           question_context: q.question_context
-        })),
-        ...mcQs.map((q: MultipleChoiceQuestion, i: number) => ({
-          session_id: sessionId,
-          section: 'multiple_choice',
-          question_order: i + 1,
-          question_text: q.question_text,
-          question_context: q.question_context,
-          options: q.options
         }))
       ];
 
@@ -341,37 +259,27 @@ export function InterviewSession({
         if (insertError) {
           console.error('Failed to save questions:', insertError);
         } else if (insertedQuestions) {
-          // Update local questions with actual database IDs
           const voiceDbQuestions = insertedQuestions.filter(q => q.section === 'voice').sort((a, b) => a.question_order - b.question_order);
           const textDbQuestions = insertedQuestions.filter(q => q.section === 'text').sort((a, b) => a.question_order - b.question_order);
-          const mcDbQuestions = insertedQuestions.filter(q => q.section === 'multiple_choice').sort((a, b) => a.question_order - b.question_order);
 
-          setVoiceQuestions(voiceDbQuestions.map((q, i) => ({
+          setVoiceQuestions(voiceDbQuestions.map(q => ({
             id: q.id,
             question_text: q.question_text,
             question_context: q.question_context || ''
           })));
-          setTextQuestions(textDbQuestions.map((q, i) => ({
+          setTextQuestions(textDbQuestions.map(q => ({
             id: q.id,
             question_text: q.question_text,
             question_context: q.question_context || ''
-          })));
-          setMcQuestions(mcDbQuestions.map((q, i) => ({
-            id: q.id,
-            question_text: q.question_text,
-            question_context: q.question_context || '',
-            options: (q.options as unknown as MultipleChoiceOption[]) || []
           })));
         }
       }
 
-      // Determine first step based on available questions
+      // Determine first step
       if (voiceQs.length > 0) {
         setCurrentStep('voice');
       } else if (textQs.length > 0) {
         setCurrentStep('text');
-      } else if (mcQs.length > 0) {
-        setCurrentStep('multiple_choice');
       }
       setCurrentQuestionIndex(0);
     } catch (err) {
@@ -379,7 +287,6 @@ export function InterviewSession({
       const errorMessage = err instanceof Error ? err.message : 'Failed to generate questions';
       setError(errorMessage);
       
-      // Check if it's a credit-related error
       if (errorMessage.includes('credit') || errorMessage.includes('rate limit')) {
         toast({
           title: "Interview Unavailable",
@@ -398,7 +305,6 @@ export function InterviewSession({
     }
   };
 
-  // Helper to save answer immediately to database
   const saveAnswerToDb = async (answer: Answer) => {
     try {
       const { error: answerError } = await supabase
@@ -409,7 +315,7 @@ export function InterviewSession({
           voice_recording_url: answer.voice_recording_url || null,
           voice_duration_seconds: answer.voice_duration_seconds || null,
           text_answer: answer.text_answer || null,
-          selected_option_id: answer.selected_option_id || null,
+          selected_option_id: null,
           paste_detected: answer.paste_detected || false,
           pasted_content: answer.pasted_content || null
         });
@@ -438,7 +344,6 @@ export function InterviewSession({
       voice_duration_seconds: durationSeconds
     };
 
-    // Save immediately to database to prevent data loss
     await saveAnswerToDb(answer);
     setAnswers(prev => [...prev, answer]);
     moveToNextQuestion();
@@ -457,25 +362,6 @@ export function InterviewSession({
       pasted_content: pastedContent
     };
 
-    // Save immediately to database to prevent data loss
-    await saveAnswerToDb(answer);
-    setAnswers(prev => [...prev, answer]);
-    moveToNextQuestion();
-  };
-
-  const handleMcAnswer = async (selectedOptionId: string) => {
-    if (!currentQuestion || !('options' in currentQuestion)) return;
-
-    const answer: Answer = {
-      question_id: currentQuestion.id,
-      question_text: currentQuestion.question_text,
-      question_context: currentQuestion.question_context,
-      section: 'multiple_choice',
-      selected_option_id: selectedOptionId,
-      options: (currentQuestion as MultipleChoiceQuestion).options
-    };
-
-    // Save immediately to database to prevent data loss
     await saveAnswerToDb(answer);
     setAnswers(prev => [...prev, answer]);
     moveToNextQuestion();
@@ -491,9 +377,6 @@ export function InterviewSession({
       if (currentStep === 'voice' && textQuestions.length > 0) {
         setCurrentStep('text');
         setCurrentQuestionIndex(0);
-      } else if ((currentStep === 'voice' || currentStep === 'text') && mcQuestions.length > 0) {
-        setCurrentStep('multiple_choice');
-        setCurrentQuestionIndex(0);
       } else {
         // All sections complete
         submitInterview();
@@ -505,11 +388,8 @@ export function InterviewSession({
     setCurrentStep('submitting');
 
     try {
-      // Answers are already saved to database incrementally after each question
-      // Just trigger the AI assessment now
       console.log(`Submitting interview with ${answers.length} answers (already saved to DB)`);
 
-      // Trigger AI assessment (or skip if in no-AI mode)
       const { data, error: assessError } = await supabase.functions.invoke('assess-interview', {
         body: {
           session_id: sessionId,
@@ -526,7 +406,6 @@ export function InterviewSession({
 
       if (assessError) throw assessError;
       
-      // Handle manual review mode
       if (data?.manual_review) {
         console.log('Interview completed in manual review mode');
       }
@@ -541,7 +420,6 @@ export function InterviewSession({
     } catch (err) {
       console.error('Error submitting interview:', err);
       
-      // Even if AI assessment fails, the answers are saved, so complete the interview
       toast({
         title: "Interview Submitted",
         description: "Your responses have been saved. Our team will review them manually.",
@@ -556,32 +434,28 @@ export function InterviewSession({
 
   const getSectionLabel = () => {
     if (currentStep === 'voice') return 'Experience & Technical';
-    if (currentStep === 'text') return 'Situational Scenarios';
-    if (currentStep === 'multiple_choice') return 'Work Style Assessment';
+    if (currentStep === 'text') return 'Situational Scenario';
     return '';
   };
 
   const getSectionDescription = () => {
     if (currentStep === 'voice') return 'Answer verbally about your experience. Aim for 60-90 seconds per question.';
-    if (currentStep === 'text') return 'Describe how you would handle these workplace scenarios.';
-    if (currentStep === 'multiple_choice') return 'Select the option that best describes your approach.';
+    if (currentStep === 'text') return 'Describe how you would handle this workplace scenario. Type your answer — pasting is not allowed.';
     return '';
   };
 
   const getSectionIcon = () => {
     if (currentStep === 'voice') return <Mic className="w-5 h-5" />;
     if (currentStep === 'text') return <FileText className="w-5 h-5" />;
-    if (currentStep === 'multiple_choice') return <CheckSquare className="w-5 h-5" />;
     return null;
   };
 
   const getEstimatedTime = () => {
     const remainingVoice = currentStep === 'voice' ? voiceQuestions.length - currentQuestionIndex : 0;
     const remainingText = currentStep === 'text' ? textQuestions.length - currentQuestionIndex : (currentStep === 'voice' ? textQuestions.length : 0);
-    const remainingMc = currentStep === 'multiple_choice' ? mcQuestions.length - currentQuestionIndex : (currentStep !== 'complete' ? mcQuestions.length : 0);
     
-    // Voice: ~1.5 min, Text: ~2 min, MC: ~0.5 min
-    const minutes = Math.ceil(remainingVoice * 1.5 + remainingText * 2 + remainingMc * 0.5);
+    // Voice: ~1.5 min, Text: ~2 min
+    const minutes = Math.ceil(remainingVoice * 1.5 + remainingText * 2);
     return minutes;
   };
 
@@ -600,18 +474,14 @@ export function InterviewSession({
         <div className="flex items-center justify-center gap-6 pt-4 text-xs text-muted-foreground">
           <div className="flex items-center gap-1.5">
             <Mic className="w-4 h-4" />
-            <span>5 Voice</span>
+            <span>3 Voice</span>
           </div>
           <div className="flex items-center gap-1.5">
             <FileText className="w-4 h-4" />
-            <span>5 Written</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <CheckSquare className="w-4 h-4" />
-            <span>5 Choice</span>
+            <span>1 Written</span>
           </div>
         </div>
-        <p className="text-xs text-muted-foreground">Estimated time: 15-20 minutes</p>
+        <p className="text-xs text-muted-foreground">Estimated time: 7-10 minutes</p>
       </div>
     );
   }
@@ -699,20 +569,12 @@ export function InterviewSession({
             <span className={`px-3 py-1.5 rounded ${currentStep === 'voice' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
               1. Voice
             </span>
-            {(textQuestions.length > 0 || mcQuestions.length > 0) && <ArrowRight className="w-5 h-5 text-muted-foreground" />}
+            {textQuestions.length > 0 && <ArrowRight className="w-5 h-5 text-muted-foreground" />}
           </>
         )}
         {textQuestions.length > 0 && (
-          <>
-            <span className={`px-3 py-1.5 rounded ${currentStep === 'text' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-              {voiceQuestions.length > 0 ? '2' : '1'}. Text
-            </span>
-            {mcQuestions.length > 0 && <ArrowRight className="w-5 h-5 text-muted-foreground" />}
-          </>
-        )}
-        {mcQuestions.length > 0 && (
-          <span className={`px-3 py-1.5 rounded ${currentStep === 'multiple_choice' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
-            {voiceQuestions.length > 0 && textQuestions.length > 0 ? '3' : voiceQuestions.length > 0 || textQuestions.length > 0 ? '2' : '1'}. Personality
+          <span className={`px-3 py-1.5 rounded ${currentStep === 'text' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'}`}>
+            {voiceQuestions.length > 0 ? '2' : '1'}. Text
           </span>
         )}
       </div>
@@ -734,15 +596,6 @@ export function InterviewSession({
             questionNumber={currentQuestionIndex + 1}
             totalQuestions={textQuestions.length}
             onAnswer={handleTextAnswer}
-          />
-        )}
-
-        {currentStep === 'multiple_choice' && currentQuestion && (
-          <MultipleChoiceStep
-            question={currentQuestion as MultipleChoiceQuestion}
-            questionNumber={currentQuestionIndex + 1}
-            totalQuestions={mcQuestions.length}
-            onAnswer={handleMcAnswer}
           />
         )}
       </div>

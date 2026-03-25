@@ -24,7 +24,6 @@ async function notifyAssignedAdmin(
   console.log(`[Background] Notifying admin ${adminUserId} about completed interview`);
   
   try {
-    // Get admin email using Supabase admin API
     const { data: userData, error: userError } = await supabase.auth.admin.getUserById(adminUserId);
     
     if (userError || !userData?.user?.email) {
@@ -43,7 +42,6 @@ async function notifyAssignedAdmin(
       return;
     }
 
-    // Import SMTP client dynamically
     const { SMTPClient } = await import("https://deno.land/x/denomailer@1.6.0/mod.ts");
 
     const client = new SMTPClient({
@@ -102,7 +100,6 @@ async function notifyAssignedAdmin(
 
     await client.close();
 
-    // Mark notification as sent in interview_sessions
     await supabase
       .from('interview_sessions')
       .update({ admin_notified_at: new Date().toISOString() })
@@ -114,14 +111,12 @@ async function notifyAssignedAdmin(
   }
 }
 
-// Helper to fetch applicant/job info and trigger admin notification
 async function triggerAdminNotification(
   supabase: SupabaseClient,
   sessionId: string,
   interviewStatus: string
 ) {
   try {
-    // Get session with applicant and job info
     const { data: session, error: sessionError } = await supabase
       .from('interview_sessions')
       .select('applicant_id, job_id')
@@ -133,7 +128,6 @@ async function triggerAdminNotification(
       return;
     }
 
-    // Get applicant details
     const { data: applicant, error: applicantError } = await supabase
       .from('applicants_prescreen')
       .select('full_name, email, job_title')
@@ -145,7 +139,6 @@ async function triggerAdminNotification(
       return;
     }
 
-    // Get job and assigned admin
     if (!session.job_id) {
       console.log('[Notify] No job_id on session, skipping admin notification');
       return;
@@ -162,7 +155,6 @@ async function triggerAdminNotification(
       return;
     }
 
-    // Trigger the notification in background
     console.log(`[Notify] Triggering admin notification for session ${sessionId}`);
     EdgeRuntime.waitUntil(
       notifyAssignedAdmin(
@@ -209,7 +201,6 @@ interface AssessmentResponse {
   technical_score: number;
   communication_score: number;
   situational_score: number;
-  personality_score: number;
   overall_score: number;
   ai_summary: string;
   ai_strengths: string[];
@@ -242,17 +233,15 @@ serve(async (req) => {
       );
     }
 
-    // Validate that answers have actual content (not just question metadata)
+    // Validate that answers have actual content
     const hasVoiceContent = answers.some(a => a.section === 'voice' && a.voice_recording_url);
     const hasTextContent = answers.some(a => a.section === 'text' && a.text_answer && a.text_answer.trim().length > 0);
-    const hasMCContent = answers.some(a => a.section === 'multiple_choice' && a.selected_option_id);
     
-    const hasAnyContent = hasVoiceContent || hasTextContent || hasMCContent;
+    const hasAnyContent = hasVoiceContent || hasTextContent;
     
     if (!hasAnyContent) {
       console.log('No actual answer content found - marking for manual review');
       
-      // Initialize Supabase client for updating session
       const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
       const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
       const supabase = createClient(supabaseUrl, supabaseServiceKey);
@@ -270,7 +259,6 @@ serve(async (req) => {
         console.error('Error updating session for manual review:', updateError);
       }
 
-      // Trigger admin notification
       await triggerAdminNotification(supabase, session_id, 'completed_manual_review');
 
       return new Response(
@@ -284,12 +272,10 @@ serve(async (req) => {
       );
     }
 
-    // Initialize Supabase client for updating session
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // If skip_ai_assessment is true, mark interview as completed with manual review required
     if (skip_ai_assessment) {
       console.log('Skipping AI assessment - marking for manual review');
       
@@ -310,7 +296,6 @@ serve(async (req) => {
         );
       }
 
-      // Trigger admin notification for completed manual review
       await triggerAdminNotification(supabase, session_id, 'completed_manual_review');
 
       return new Response(
@@ -327,7 +312,7 @@ serve(async (req) => {
     if (!LOVABLE_API_KEY) {
       console.log('No API key - marking for manual review');
       
-      const { error: updateError } = await supabase
+      await supabase
         .from('interview_sessions')
         .update({
           status: 'completed_manual_review',
@@ -336,7 +321,6 @@ serve(async (req) => {
         })
         .eq('id', session_id);
 
-      // Trigger admin notification
       await triggerAdminNotification(supabase, session_id, 'completed_manual_review');
 
       return new Response(
@@ -352,44 +336,33 @@ serve(async (req) => {
     // Format answers for AI assessment
     const voiceAnswers = answers.filter(a => a.section === 'voice');
     const textAnswers = answers.filter(a => a.section === 'text');
-    const mcAnswers = answers.filter(a => a.section === 'multiple_choice');
 
-    // Check which sections have questions added by admin
+    // Check which sections have questions and actual content
     const hasVoiceQuestions = voiceAnswers.length > 0;
     const hasTextQuestions = textAnswers.length > 0;
-    const hasMCQuestions = mcAnswers.length > 0;
 
-    // Check which sections have actual content (answers submitted)
     const voiceAnsweredCount = voiceAnswers.filter(a => a.voice_recording_url).length;
     const textAnsweredCount = textAnswers.filter(a => a.text_answer && a.text_answer.trim().length > 0).length;
-    const mcAnsweredCount = mcAnswers.filter(a => a.selected_option_id).length;
 
-    // Only score sections that have questions AND answers
     const hasVoiceResponses = hasVoiceQuestions && voiceAnsweredCount > 0;
     const hasTextResponses = hasTextQuestions && textAnsweredCount > 0;
-    const hasMCResponses = hasMCQuestions && mcAnsweredCount > 0;
 
-    console.log(`Section questions check - Voice: ${voiceAnswers.length} questions, Text: ${textAnswers.length} questions, MC: ${mcAnswers.length} questions`);
-    console.log(`Section content check - Voice: ${voiceAnsweredCount}/${voiceAnswers.length}, Text: ${textAnsweredCount}/${textAnswers.length}, MC: ${mcAnsweredCount}/${mcAnswers.length}`);
+    console.log(`Section questions check - Voice: ${voiceAnswers.length} questions, Text: ${textAnswers.length} questions`);
+    console.log(`Section content check - Voice: ${voiceAnsweredCount}/${voiceAnswers.length}, Text: ${textAnsweredCount}/${textAnswers.length}`);
 
     // Build score override instructions for AI
     const scoreOverrides: string[] = [];
     if (!hasVoiceQuestions) {
-      scoreOverrides.push('- EXPERIENCE, TECHNICAL, COMMUNICATION SCORES: Must be 0 (no voice questions were configured for this interview)');
+      scoreOverrides.push('- EXPERIENCE, TECHNICAL, COMMUNICATION SCORES: Must be 0 (no voice questions were configured)');
     } else if (!hasVoiceResponses) {
       scoreOverrides.push('- EXPERIENCE SCORE: Must be 0 (no voice recordings submitted)');
       scoreOverrides.push('- TECHNICAL SCORE: Must be 0 (no voice recordings submitted)');
       scoreOverrides.push('- COMMUNICATION SCORE: Must be 0 (no voice recordings submitted)');
     }
     if (!hasTextQuestions) {
-      scoreOverrides.push('- SITUATIONAL SCORE: Must be 0 (no text questions were configured for this interview)');
+      scoreOverrides.push('- SITUATIONAL SCORE: Must be 0 (no text questions were configured)');
     } else if (!hasTextResponses) {
       scoreOverrides.push('- SITUATIONAL SCORE: Must be 0 (no text answers submitted)');
-    }
-    if (!hasMCQuestions) {
-      scoreOverrides.push('- PERSONALITY SCORE: Must be 0 (no multiple choice questions were configured for this interview)');
-    } else if (!hasMCResponses) {
-      scoreOverrides.push('- PERSONALITY SCORE: Must be 0 (no multiple choice answers submitted)');
     }
 
     const scoreOverrideSection = scoreOverrides.length > 0 
@@ -397,6 +370,8 @@ serve(async (req) => {
       : '';
 
     const systemPrompt = `You are a senior HR professional with extensive experience in candidate assessment. Your task is to provide a rigorous, objective evaluation of interview performance.
+
+INTERVIEW FORMAT: This interview consists of 3 voice questions (experience, technical & communication) and 1 text question (situational judgment).
 
 SCORING FRAMEWORK (each dimension 0-100):
 
@@ -436,17 +411,8 @@ SCORING FRAMEWORK (each dimension 0-100):
    - 0-29: Did not answer, one-word responses, or completely off-topic
    - **0: MANDATORY if no text answers were submitted**
 
-5. PERSONALITY SCORE (Multiple Choice):
-   - Based on pattern of selections indicating work style fit
-   - 90-100: Selections indicate high professionalism, adaptability, team fit
-   - 70-89: Generally positive work style indicators
-   - 50-69: Mixed signals, some concerns about fit
-   - 30-49: Selections raise significant fit concerns
-   - 0-29: Red flags in work style/attitude
-   - **0: MANDATORY if no multiple choice answers were submitted**
-
 OVERALL SCORE CALCULATION:
-- Weight: Experience (25%) + Technical (25%) + Communication (20%) + Situational (15%) + Personality (15%)
+- Weight: Experience (30%) + Technical (30%) + Communication (25%) + Situational (15%)
 - Round to nearest integer
 ${scoreOverrideSection}
 
@@ -464,7 +430,6 @@ Return ONLY valid JSON with this structure:
   "technical_score": <0-100>,
   "communication_score": <0-100>,
   "situational_score": <0-100>,
-  "personality_score": <0-100>,
   "overall_score": <0-100, weighted average>,
   "ai_summary": "<2-3 sentence overall assessment>",
   "ai_strengths": ["<strength 1>", "<strength 2>", "<strength 3>"],
@@ -480,11 +445,6 @@ Return ONLY valid JSON with this structure:
       "answered_count": <number>,
       "quality_rating": "<poor|fair|good|excellent|none>",
       "key_insights": ["<insight from their answers>"]
-    },
-    "personality_profile": {
-      "work_style": "<description>",
-      "team_fit": "<assessment>",
-      "notable_traits": ["<trait>"]
     }
   }
 }`;
@@ -502,14 +462,6 @@ Context: ${a.question_context}
 Answer: ${a.text_answer || 'Not answered'}`
     ).join('\n\n');
 
-    const mcAnswersFormatted = mcAnswers.map((a, i) => {
-      const selectedOption = a.options?.find(o => o.id === a.selected_option_id);
-      return `Q${i + 1}: ${a.question_text}
-Context: ${a.question_context}
-Options: ${a.options?.map(o => `${o.id}) ${o.label}`).join(' | ')}
-Selected: ${selectedOption ? `${selectedOption.id}) ${selectedOption.label}` : 'Not answered'}`;
-    }).join('\n\n');
-
     const userPrompt = `Assess this candidate's interview performance:
 
 CANDIDATE: ${applicant_name}
@@ -523,14 +475,11 @@ ${qualifications?.length ? qualifications.map((q, i) => `${i + 1}. ${q}`).join('
 CV SUMMARY:
 ${cv_text.substring(0, 2000)}${cv_text.length > 2000 ? '...' : ''}
 
-=== VOICE INTERVIEW ANSWERS (Experience & Technical) ===
+=== VOICE INTERVIEW ANSWERS (Experience, Technical & Communication) ===
 ${voiceAnswersFormatted || 'No voice answers recorded'}
 
-=== TEXT ANSWERS (Situational Questions) ===
-${textAnswersFormatted || 'No text answers provided'}
-
-=== MULTIPLE CHOICE ANSWERS (Personality & Interpersonal) ===
-${mcAnswersFormatted || 'No multiple choice answers'}
+=== TEXT ANSWER (Situational Question) ===
+${textAnswersFormatted || 'No text answer provided'}
 
 Provide your assessment. Return ONLY the JSON object.`;
 
@@ -555,12 +504,11 @@ Provide your assessment. Return ONLY the JSON object.`;
       const errorText = await response.text();
       console.error('AI API error:', response.status, errorText);
       
-      // For credit exhaustion or rate limits, fall back to manual review instead of failing
       if (response.status === 429 || response.status === 402) {
         const reason = response.status === 402 ? 'AI credits exhausted' : 'Rate limit exceeded';
         console.log(`${reason} - falling back to manual review`);
         
-        const { error: updateError } = await supabase
+        await supabase
           .from('interview_sessions')
           .update({
             status: 'completed_manual_review',
@@ -569,11 +517,6 @@ Provide your assessment. Return ONLY the JSON object.`;
           })
           .eq('id', session_id);
 
-        if (updateError) {
-          console.error('Error updating session for manual review:', updateError);
-        }
-
-        // Trigger admin notification for rate-limited/credit-exhausted case
         await triggerAdminNotification(supabase, session_id, 'completed_manual_review');
 
         return new Response(
@@ -634,7 +577,6 @@ Provide your assessment. Return ONLY the JSON object.`;
       technical_score: Math.max(0, Math.min(100, assessmentResult.technical_score || 0)),
       communication_score: Math.max(0, Math.min(100, assessmentResult.communication_score || 0)),
       situational_score: Math.max(0, Math.min(100, assessmentResult.situational_score || 0)),
-      personality_score: Math.max(0, Math.min(100, assessmentResult.personality_score || 0)),
       overall_score: Math.max(0, Math.min(100, assessmentResult.overall_score || 0)),
       ai_summary: assessmentResult.ai_summary || 'Assessment completed.',
       ai_strengths: Array.isArray(assessmentResult.ai_strengths) ? assessmentResult.ai_strengths : [],
@@ -642,10 +584,9 @@ Provide your assessment. Return ONLY the JSON object.`;
       ai_assessment_details: assessmentResult.ai_assessment_details || {}
     };
 
-    // ENFORCE: Sections with no questions should be excluded entirely
-    // Sections with questions but no answers get 0
+    // ENFORCE: Sections with no questions or no answers get 0
     if (!hasVoiceQuestions) {
-      console.log('No voice questions added by admin - excluding from scoring');
+      console.log('No voice questions - excluding from scoring');
       validatedResult.experience_score = 0;
       validatedResult.technical_score = 0;
       validatedResult.communication_score = 0;
@@ -661,7 +602,7 @@ Provide your assessment. Return ONLY the JSON object.`;
     }
     
     if (!hasTextQuestions) {
-      console.log('No text questions added by admin - excluding from scoring');
+      console.log('No text questions - excluding from scoring');
       validatedResult.situational_score = 0;
     } else if (!hasTextResponses) {
       console.log('Enforcing 0 score for situational section (no text answers)');
@@ -671,28 +612,15 @@ Provide your assessment. Return ONLY the JSON object.`;
         validatedResult.ai_concerns.push('No text answers submitted for situational questions');
       }
     }
-    
-    if (!hasMCQuestions) {
-      console.log('No MC questions added by admin - excluding from scoring');
-      validatedResult.personality_score = 0;
-    } else if (!hasMCResponses) {
-      console.log('Enforcing 0 score for personality section (no MC answers)');
-      validatedResult.personality_score = 0;
-      
-      if (!validatedResult.ai_concerns.some(c => c.toLowerCase().includes('multiple choice') || c.toLowerCase().includes('personality'))) {
-        validatedResult.ai_concerns.push('No multiple choice answers submitted for personality assessment');
-      }
-    }
 
-    // Recalculate overall score with DYNAMIC weights based on which sections have questions
-    // Base weights: Experience (25%) + Technical (25%) + Communication (20%) + Situational (15%) + Personality (15%)
-    let weightExp = hasVoiceQuestions ? 0.25 : 0;
-    let weightTech = hasVoiceQuestions ? 0.25 : 0;
-    let weightComm = hasVoiceQuestions ? 0.20 : 0;
+    // Recalculate overall score with dynamic weights
+    // Base weights: Experience (30%) + Technical (30%) + Communication (25%) + Situational (15%)
+    let weightExp = hasVoiceQuestions ? 0.30 : 0;
+    let weightTech = hasVoiceQuestions ? 0.30 : 0;
+    let weightComm = hasVoiceQuestions ? 0.25 : 0;
     let weightSit = hasTextQuestions ? 0.15 : 0;
-    let weightPers = hasMCQuestions ? 0.15 : 0;
     
-    const totalWeight = weightExp + weightTech + weightComm + weightSit + weightPers;
+    const totalWeight = weightExp + weightTech + weightComm + weightSit;
     
     if (totalWeight > 0) {
       // Normalize weights so they sum to 1.0
@@ -700,23 +628,20 @@ Provide your assessment. Return ONLY the JSON object.`;
       weightTech /= totalWeight;
       weightComm /= totalWeight;
       weightSit /= totalWeight;
-      weightPers /= totalWeight;
       
       validatedResult.overall_score = Math.round(
         (validatedResult.experience_score * weightExp) +
         (validatedResult.technical_score * weightTech) +
         (validatedResult.communication_score * weightComm) +
-        (validatedResult.situational_score * weightSit) +
-        (validatedResult.personality_score * weightPers)
+        (validatedResult.situational_score * weightSit)
       );
     } else {
       validatedResult.overall_score = 0;
     }
     
-    console.log(`Dynamic weight calculation - Voice: ${hasVoiceQuestions}, Text: ${hasTextQuestions}, MC: ${hasMCQuestions}, TotalWeight: ${totalWeight}`);
+    console.log(`Dynamic weight calculation - Voice: ${hasVoiceQuestions}, Text: ${hasTextQuestions}, TotalWeight: ${totalWeight}`);
 
-    // Update the interview session in database (supabase client already initialized above)
-
+    // Update the interview session - personality_score set to 0 since MC is removed
     const { error: updateError } = await supabase
       .from('interview_sessions')
       .update({
@@ -726,7 +651,7 @@ Provide your assessment. Return ONLY the JSON object.`;
         technical_score: validatedResult.technical_score,
         communication_score: validatedResult.communication_score,
         situational_score: validatedResult.situational_score,
-        personality_score: validatedResult.personality_score,
+        personality_score: 0,
         overall_score: validatedResult.overall_score,
         ai_summary: validatedResult.ai_summary,
         ai_strengths: validatedResult.ai_strengths,
@@ -737,10 +662,8 @@ Provide your assessment. Return ONLY the JSON object.`;
 
     if (updateError) {
       console.error('Failed to update interview session:', updateError);
-      // Continue anyway - the assessment was successful
     }
 
-    // Trigger admin notification for completed interview
     await triggerAdminNotification(supabase, session_id, 'completed');
 
     console.log('Interview assessment completed:', validatedResult);
