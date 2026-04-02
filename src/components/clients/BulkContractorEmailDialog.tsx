@@ -330,16 +330,6 @@ export const BulkContractorEmailDialog = ({
     setFilteredCount(activeContractorCount);
   };
 
-  const getCronExpression = (schedule: string): string | null => {
-    switch (schedule) {
-      case 'weekly-friday': return '0 9 * * 5'; // Every Friday at 9 AM UTC
-      case 'weekly-monday': return '0 9 * * 1';
-      case 'biweekly-friday': return '0 9 1-7,15-21 * 5'; // Approx biweekly
-      case 'monthly-first': return '0 9 1 * *';
-      case 'monthly-last': return '0 9 28-31 * *';
-      default: return null;
-    }
-  };
 
   const getNextFridayElevenEastern = (): Date => {
     const now = new Date();
@@ -418,13 +408,26 @@ export const BulkContractorEmailDialog = ({
       const scheduledEmailId = (trackingRecord as any)?.id;
 
       // Set up recurring if enabled
-      if (recurringEnabled && recurringSchedule !== 'none') {
-        const cronExpr = getCronExpression(recurringSchedule);
-        if (cronExpr) {
+      if (recurringEnabled && recurringSchedule !== 'none' && selectedTemplateId) {
+        // Check if a schedule already exists for this template+client combo
+        const clientFilter = selectedClientId !== 'all' ? selectedClientId : null;
+        const { data: existing } = await supabase
+          .from('recurring_contractor_email_schedules' as any)
+          .select('id')
+          .eq('template_id', selectedTemplateId)
+          .eq('frequency', recurringSchedule)
+          .is('client_id', clientFilter as any)
+          .limit(1);
+
+        if (!existing || existing.length === 0) {
           await supabase
-            .from('contractor_email_templates')
-            .update({ is_default: true })
-            .eq('id', selectedTemplateId);
+            .from('recurring_contractor_email_schedules' as any)
+            .insert({
+              template_id: selectedTemplateId,
+              client_id: clientFilter,
+              frequency: recurringSchedule,
+              is_enabled: true,
+            } as any);
         }
       }
 
