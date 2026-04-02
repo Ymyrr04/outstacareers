@@ -371,6 +371,7 @@ export const BulkContractorEmailDialog = ({
         body_html: bodyHtml,
         scheduled_for: scheduledDate.toISOString(),
         status: 'pending',
+        client_id: selectedClientId !== 'all' ? selectedClientId : null,
       } as any);
 
       if (error) throw error;
