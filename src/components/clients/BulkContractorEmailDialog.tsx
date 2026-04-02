@@ -191,9 +191,40 @@ export const BulkContractorEmailDialog = ({
     }
   }, []);
 
+  const fetchClients = useCallback(async () => {
+    setLoadingClients(true);
+    try {
+      const { data: assignments, error } = await supabase
+        .from('contractor_assignments')
+        .select('client_id, client:clients(id, company_name)')
+        .eq('status', 'active');
+      if (error || !assignments) return;
+
+      const countMap = new Map<string, { company_name: string; count: number }>();
+      for (const a of assignments) {
+        const c = a.client as any;
+        if (!c?.id) continue;
+        const existing = countMap.get(c.id);
+        if (existing) {
+          existing.count++;
+        } else {
+          countMap.set(c.id, { company_name: c.company_name, count: 1 });
+        }
+      }
+
+      const options: ClientOption[] = Array.from(countMap.entries())
+        .map(([id, v]) => ({ id, company_name: v.company_name, contractor_count: v.count }))
+        .sort((a, b) => a.company_name.localeCompare(b.company_name));
+      setClients(options);
+    } finally {
+      setLoadingClients(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     fetchPendingEmails();
+    fetchClients();
     const fetchTemplates = async () => {
       setLoadingTemplates(true);
       try {
@@ -215,7 +246,7 @@ export const BulkContractorEmailDialog = ({
       }
     };
     fetchTemplates();
-  }, [open, fetchPendingEmails]);
+  }, [open, fetchPendingEmails, fetchClients]);
 
   // Auto-refresh progress for processing emails every 10 seconds
   useEffect(() => {
