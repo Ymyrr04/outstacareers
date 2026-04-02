@@ -482,9 +482,12 @@ export const BulkContractorEmailDialog = ({
           .eq('id', scheduledEmailId);
       });
 
+      const companyLabel = selectedClientId !== 'all' 
+        ? clients.find(c => c.id === selectedClientId)?.company_name || 'selected company'
+        : 'all companies';
       toast({
         title: 'Sending Started',
-        description: `Sending to ${activeContractorCount} contractors. Track progress below.`,
+        description: `Sending to ${filteredCount} contractors (${companyLabel}). Track progress below.`,
       });
 
       resetForm();
