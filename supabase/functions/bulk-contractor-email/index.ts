@@ -40,13 +40,19 @@ const handler = async (req: Request): Promise<Response> => {
     if (!supabaseUrl || !supabaseServiceKey) throw new Error("Supabase credentials not configured");
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { subject, bodyHtml, scheduledEmailId, maxBatchSize }: BulkEmailRequest = await req.json();
+    const { subject, bodyHtml, scheduledEmailId, maxBatchSize, clientId }: BulkEmailRequest = await req.json();
 
-    const { data: contractors, error: fetchError } = await supabase
+    let contractorQuery = supabase
       .from("contractor_assignments")
       .select("id, job_title, applicant:applicants_prescreen(full_name, email), client:clients(company_name)")
       .eq("status", "active")
       .order("id", { ascending: true });
+
+    if (clientId) {
+      contractorQuery = contractorQuery.eq("client_id", clientId);
+    }
+
+    const { data: contractors, error: fetchError } = await contractorQuery;
 
     if (fetchError) throw new Error("Failed to fetch contractors: " + fetchError.message);
     if (!contractors || contractors.length === 0) {
