@@ -395,17 +395,45 @@ const handler = async (req: Request): Promise<Response> => {
       existingReplies?.map((r: { gmail_message_id: string }) => r.gmail_message_id) || []
     );
 
-    // Build processing list: put priority email first, then the rest
+    // Get current rotation offset
+    const { data: fetchState } = await supabase
+      .from("email_fetch_state")
+      .select("current_offset")
+      .eq("id", 1)
+      .single();
+    
+    let currentOffset = fetchState?.current_offset || 0;
     const allEmails = [...uniqueEmails];
+    const totalEmails = allEmails.length;
+    
+    // If offset is beyond our list, wrap around
+    if (currentOffset >= totalEmails) {
+      currentOffset = 0;
+    }
+
+    // Build processing list with rotation
     let emailsToProcess: string[];
     if (priorityEmail && uniqueEmails.has(priorityEmail)) {
-      // Move priority email to front
-      emailsToProcess = [priorityEmail, ...allEmails.filter(e => e !== priorityEmail)].slice(0, BATCH_SIZE);
+      // Priority email always first, then rotated batch (excluding priority)
+      const remainingEmails = allEmails.filter(e => e !== priorityEmail);
+      const rotatedBatch = [
+        ...remainingEmails.slice(currentOffset > 0 ? currentOffset - 1 : 0),
+        ...remainingEmails.slice(0, currentOffset > 0 ? currentOffset - 1 : 0)
+      ].slice(0, BATCH_SIZE - 1);
+      emailsToProcess = [priorityEmail, ...rotatedBatch];
       console.log(`Priority email ${priorityEmail} will be processed first`);
     } else {
-      emailsToProcess = allEmails.slice(0, BATCH_SIZE);
+      // Rotated batch: start from offset, wrap around
+      emailsToProcess = [
+        ...allEmails.slice(currentOffset),
+        ...allEmails.slice(0, currentOffset)
+      ].slice(0, BATCH_SIZE);
     }
-    console.log(`Processing batch of ${emailsToProcess.length} emails (out of ${uniqueEmails.size} total)`);
+    
+    // Calculate next offset for the following run
+    const nextOffset = (currentOffset + BATCH_SIZE) % totalEmails;
+    
+    console.log(`Processing batch of ${emailsToProcess.length} emails starting at offset ${currentOffset} (out of ${totalEmails} total, next offset: ${nextOffset})`);
 
     // Connect to Gmail via IMAP with retry support
     let client = new SimpleIMAPClient();
@@ -585,6 +613,13 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
+    // Save the next offset for rotation
+    await supabase
+      .from("email_fetch_state")
+      .update({ current_offset: nextOffset, last_run_at: new Date().toISOString(), updated_at: new Date().toISOString() })
+      .eq("id", 1);
+    console.log(`Updated rotation offset to ${nextOffset}`);
+
     // Count replies for the priority email specifically
     let priorityRepliesFound = 0;
     if (priorityEmail) {
@@ -595,13 +630,15 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(
       JSON.stringify({ 
         success: true, 
-        message: `Processed ${processedCount}/${emailsToProcess.length} emails. Found ${newReplies.length} new replies, synced ${readSyncCount} read statuses`,
+        message: `Processed ${processedCount}/${emailsToProcess.length} emails (offset ${currentOffset}→${nextOffset}). Found ${newReplies.length} new replies, synced ${readSyncCount} read statuses`,
         repliesFound: newReplies.length,
         priorityRepliesFound,
         priorityEmailProcessed: priorityEmail ? emailsToProcess.includes(priorityEmail) : false,
         readStatusSynced: readSyncCount,
         processedEmails: processedCount,
-        totalEmails: uniqueEmails.size,
+        totalEmails,
+        currentOffset,
+        nextOffset,
         runtimeMs: runtime
       }),
       { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } }
