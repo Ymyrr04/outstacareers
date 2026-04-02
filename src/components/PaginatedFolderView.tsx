@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { format } from 'date-fns';
 import { ApplicantSourceBadge } from '@/components/ApplicantSourceBadge';
+import { ApplicationHistoryBadge } from '@/components/ApplicationHistoryBadge';
 import { CopyableText } from '@/components/CopyableText';
 
 interface PaginatedFolderViewProps {
