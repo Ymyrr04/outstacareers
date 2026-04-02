@@ -1474,6 +1474,57 @@ export type Database = {
         }
         Relationships: []
       }
+      recurring_contractor_email_schedules: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          frequency: string
+          id: string
+          is_enabled: boolean
+          last_sent_at: string | null
+          next_run_at: string | null
+          template_id: string
+          updated_at: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          frequency: string
+          id?: string
+          is_enabled?: boolean
+          last_sent_at?: string | null
+          next_run_at?: string | null
+          template_id: string
+          updated_at?: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          frequency?: string
+          id?: string
+          is_enabled?: boolean
+          last_sent_at?: string | null
+          next_run_at?: string | null
+          template_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "recurring_contractor_email_schedules_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "recurring_contractor_email_schedules_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "contractor_email_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scheduled_contractor_emails: {
         Row: {
           body_html: string
