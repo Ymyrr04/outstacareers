@@ -64,6 +64,7 @@ import { ContractorStatusDialog } from './ContractorStatusDialog';
 import { SendContractorEmailDialog } from './SendContractorEmailDialog';
 import { BulkContractorEmailDialog } from './BulkContractorEmailDialog';
 import { ContractorEmailTemplateManager } from './ContractorEmailTemplateManager';
+import { RecurringSchedulesManager } from './RecurringSchedulesManager';
 
 interface ContractorWithDetails {
   id: string;
