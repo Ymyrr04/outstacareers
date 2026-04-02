@@ -41,6 +41,7 @@ import { CandidateProfileSection } from '@/components/CandidateProfileSection';
 import { RoleHistorySection } from '@/components/RoleHistorySection';
 import { ApplicationHistorySection } from '@/components/ApplicationHistorySection';
 import { ApplicantSourceBadge } from '@/components/ApplicantSourceBadge';
+import { ApplicationHistoryBadge } from '@/components/ApplicationHistoryBadge';
 import { CopyableText } from '@/components/CopyableText';
 import { ApplicantNotesEditor, type ApplicantNotesEditorRef } from '@/components/ApplicantNotesEditor';
 import { NotesEditor } from '@/components/NotesEditor';
@@ -2643,6 +2644,7 @@ const Admin = () => {
                               }
                               return null;
                             })()}
+                            <ApplicationHistoryBadge email={applicant.email} currentId={applicant.id} />
                           </div>
                           <CopyableText text={applicant.email} className="text-sm text-muted-foreground hover:underline" />
                           <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
