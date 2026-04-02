@@ -1,0 +1,1 @@
+ALTER TABLE public.scheduled_contractor_emails ADD COLUMN client_id uuid REFERENCES public.clients(id) ON DELETE SET NULL DEFAULT NULL;
