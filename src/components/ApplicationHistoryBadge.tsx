@@ -8,6 +8,7 @@ import { useApplicationHistory } from '@/hooks/useApplicationHistory';
 interface ApplicationHistoryBadgeProps {
   email: string;
   currentId: string;
+  phone?: string | null;
 }
 
 const statusColor = (status: string) => {
