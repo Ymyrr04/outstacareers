@@ -41,6 +41,7 @@ import { CandidateProfileSection } from '@/components/CandidateProfileSection';
 import { RoleHistorySection } from '@/components/RoleHistorySection';
 import { ApplicationHistorySection } from '@/components/ApplicationHistorySection';
 import { ApplicantSourceBadge } from '@/components/ApplicantSourceBadge';
+import { ApplicationHistoryBadge } from '@/components/ApplicationHistoryBadge';
 import { CopyableText } from '@/components/CopyableText';
 import { ApplicantNotesEditor, type ApplicantNotesEditorRef } from '@/components/ApplicantNotesEditor';
 import { NotesEditor } from '@/components/NotesEditor';
