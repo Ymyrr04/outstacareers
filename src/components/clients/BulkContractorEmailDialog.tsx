@@ -310,12 +310,24 @@ export const BulkContractorEmailDialog = ({
     }
   };
 
+  const handleClientSelect = (value: string) => {
+    setSelectedClientId(value);
+    if (value === 'all') {
+      setFilteredCount(activeContractorCount);
+    } else {
+      const client = clients.find(c => c.id === value);
+      setFilteredCount(client?.contractor_count || 0);
+    }
+  };
+
   const resetForm = () => {
     setSubject('');
     setBodyHtml('');
     setSelectedTemplateId('');
     setRecurringSchedule('none');
     setRecurringEnabled(false);
+    setSelectedClientId('all');
+    setFilteredCount(activeContractorCount);
   };
 
   const getCronExpression = (schedule: string): string | null => {
