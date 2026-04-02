@@ -163,6 +163,10 @@ export const BulkContractorEmailDialog = ({
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
   const [rescheduleTargetId, setRescheduleTargetId] = useState<string | null>(null);
+  const [clients, setClients] = useState<ClientOption[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string>('all');
+  const [filteredCount, setFilteredCount] = useState(activeContractorCount);
+  const [loadingClients, setLoadingClients] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const fetchPendingEmails = useCallback(async () => {
