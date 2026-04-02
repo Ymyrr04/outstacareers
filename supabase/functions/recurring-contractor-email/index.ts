@@ -88,6 +88,7 @@ const handler = async (req: Request): Promise<Response> => {
             subject: scheduled.subject,
             bodyHtml: scheduled.body_html,
             scheduledEmailId: scheduled.id,
+            clientId: scheduled.client_id || undefined,
           });
 
           const completed = Boolean(result.completed);
