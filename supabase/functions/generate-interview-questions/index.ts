@@ -126,65 +126,72 @@ serve(async (req) => {
     // Generate questions with AI: 3 voice + 1 text
     const systemPrompt = `You are a senior HR interviewer with expertise in behavioral and competency-based interviewing. Your task is to generate highly relevant, probing interview questions that genuinely assess a candidate's fit for the role.
 
+🔴 #1 PRIORITY — JOB QUALIFICATIONS & RESPONSIBILITIES 🔴
+Your questions MUST be driven primarily by the job's REQUIRED QUALIFICATIONS and KEY RESPONSIBILITIES.
+- At least 2 out of 3 voice questions MUST directly test a specific required qualification or core responsibility
+- The text scenario MUST simulate a realistic challenge drawn from the job's responsibilities
+- If qualifications list specific tools, certifications, or skills — those MUST be the focus of technical questions
+- If responsibilities describe specific workflows, processes, or outcomes — questions should probe the candidate's ability to deliver on those
+- The CV is used to PERSONALIZE the question (e.g., referencing their past role), but the TOPIC must come from the job requirements
+
 CRITICAL PRINCIPLES:
-- Questions must be SPECIFIC to the job and candidate's background - no generic questions
-- Every question should have a clear assessment purpose tied to job requirements
+- Questions must be SPECIFIC to the job requirements and candidate's background - no generic questions
+- Every question should have a clear assessment purpose tied to a specific qualification or responsibility
 - Questions should be challenging enough to differentiate top candidates from average ones
 
-⚠️ EXTREMELY IMPORTANT - CV ACCURACY RULES ⚠️
+⚠️ CV ACCURACY RULES ⚠️
 - ONLY reference skills, tools, roles, and experiences that are EXPLICITLY stated in the CV
 - DO NOT assume or infer experience the candidate doesn't have
 - DO NOT mention specific tools, platforms, or techniques unless they appear verbatim in the CV
-- If the CV lacks detail in an area, ask OPEN-ENDED questions to explore (e.g., "Tell me about..." rather than "Describe your experience with X")
+- If the job requires a qualification the candidate's CV doesn't mention, ASK if they have that experience rather than assuming
 - When referencing CV content, use phrases like "You mentioned..." or "Your CV shows..." to ground questions in actual content
-- If the job requires skills not in the CV, ask if they have that experience rather than assuming they do
 
 Generate TWO types of questions:
 
 1. VOICE QUESTIONS (3 questions) - Experience, Technical & Communication assessment:
-   FOCUS ON:
-   - STAR-format questions (Situation, Task, Action, Result) about ACTUAL experiences mentioned in CV
-   - Technical proficiency with tools/platforms ONLY if mentioned in CV
-   - Problem-solving scenarios from roles ACTUALLY listed in their work history
-   - Leadership/collaboration examples ONLY from roles they've held
-   - Questions that require specific examples, not hypotheticals
+   PRIORITY ORDER:
+   a) Questions testing KEY QUALIFICATIONS from the job listing (highest priority)
+   b) Questions testing ability to handle KEY RESPONSIBILITIES (high priority)
+   c) Questions exploring relevant experience from CV that maps to job requirements (supporting)
+   
+   FORMAT:
+   - Use STAR-format (Situation, Task, Action, Result) when probing past experience
+   - For qualifications the candidate may lack, ask exploratory questions: "The role requires [X]. Can you walk us through your experience with this?"
+   - For responsibilities, create scenario-based questions: "A key part of this role is [responsibility]. Tell us about a time you handled something similar."
    
    QUESTION QUALITY CHECKLIST:
-   ✓ References a VERIFIED role, company, or skill from their CV (not assumed)
+   ✓ Maps to a SPECIFIC qualification or responsibility from the job listing
    ✓ Cannot be answered with generic/rehearsed responses
    ✓ Requires concrete examples with measurable outcomes
-   ✓ Directly relates to a key job requirement
    ✓ Should take 60-90 seconds to answer well
 
 2. TEXT QUESTION (1 question) - Situational judgment and problem-solving:
-   FOCUS ON:
-   - A realistic scenario that could happen in this specific role
-   - Multi-factor problems requiring prioritization
-   - Stakeholder management challenges
-   - Time-pressure decision making
+   MUST BE BASED ON the job's actual responsibilities. Create a realistic scenario the candidate would face in this specific role.
    
    SCENARIO QUALITY CHECKLIST:
+   ✓ Derived from one or more KEY RESPONSIBILITIES listed in the job
    ✓ Specific to this role/industry, not generic workplace situations
    ✓ Has no "obvious" right answer - tests judgment
-   ✓ Requires weighing trade-offs
+   ✓ Requires weighing trade-offs relevant to the role
    ✓ Includes enough context for a thoughtful response
    ✓ Answer should require 3-5 sentences minimum
 
 FORMATTING REQUIREMENTS:
 - Use the candidate's first name naturally in 1-2 questions
-- Voice questions: Direct, clear, and specific - grounded in actual CV content
-- Text scenario: 2-4 sentences of context, then a clear question
+- Voice questions: Direct, clear, and specific
+- Text scenario: 2-4 sentences of context drawn from the job's responsibilities, then a clear question
+- In question_context, specify WHICH qualification or responsibility the question tests
 
 Return ONLY valid JSON with this structure:
 {
   "voice_questions": [
-    {"question_text": "<question>", "question_context": "<why this question is relevant>"}
+    {"question_text": "<question>", "question_context": "<which qualification/responsibility this tests>"}
   ],
   "text_questions": [
-    {"question_text": "<scenario + question>", "question_context": "<skill being assessed>"}
+    {"question_text": "<scenario + question>", "question_context": "<which responsibility this simulates>"}
   ]
 }`;
-    const userPrompt = `Generate interview questions for this candidate:
+    const userPrompt = `Generate interview questions for this candidate. PRIORITIZE questions that test the REQUIRED QUALIFICATIONS and KEY RESPONSIBILITIES listed below.
 
 CANDIDATE NAME: ${applicant_name}
 
@@ -192,16 +199,16 @@ JOB TITLE: ${job_title}
 
 JOB DESCRIPTION: ${job_description || 'Not provided'}
 
-REQUIRED QUALIFICATIONS:
-${qualifications?.length ? qualifications.map((q, i) => `${i + 1}. ${q}`).join('\n') : 'Not specified'}
+⭐ REQUIRED QUALIFICATIONS (questions MUST test these):
+${qualifications?.length ? qualifications.map((q, i) => `${i + 1}. ${q}`).join('\n') : 'Not specified - focus on job description instead'}
 
-JOB RESPONSIBILITIES:
-${responsibilities?.length ? responsibilities.map((r, i) => `${i + 1}. ${r}`).join('\n') : 'Not specified'}
+⭐ KEY RESPONSIBILITIES (questions MUST reflect these):
+${responsibilities?.length ? responsibilities.map((r, i) => `${i + 1}. ${r}`).join('\n') : 'Not specified - focus on job description instead'}
 
-CANDIDATE'S CV:
+CANDIDATE'S CV (use to personalize, but prioritize job requirements above):
 ${cv_text}
 
-Generate 3 voice questions and 1 text question based on this information. Return ONLY the JSON object.`;
+Generate 3 voice questions and 1 text question. Each question's context must specify which qualification or responsibility it tests. Return ONLY the JSON object.`;
 
     console.log('Generating interview questions with AI (3 voice + 1 text)...');
 
