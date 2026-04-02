@@ -882,6 +882,27 @@ export type Database = {
         }
         Relationships: []
       }
+      email_fetch_state: {
+        Row: {
+          current_offset: number
+          id: number
+          last_run_at: string | null
+          updated_at: string
+        }
+        Insert: {
+          current_offset?: number
+          id?: number
+          last_run_at?: string | null
+          updated_at?: string
+        }
+        Update: {
+          current_offset?: number
+          id?: number
+          last_run_at?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       email_logs: {
         Row: {
           applicant_id: string
