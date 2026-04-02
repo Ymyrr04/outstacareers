@@ -10,6 +10,7 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 import { format } from 'date-fns';
 import { ApplicantSourceBadge } from '@/components/ApplicantSourceBadge';
 import { CopyableText } from '@/components/CopyableText';
+import { ApplicationHistoryBadge } from '@/components/ApplicationHistoryBadge';
 import type { PaginatedApplicant } from '@/hooks/usePaginatedApplicants';
 
 interface VirtualizedApplicantListProps {
@@ -247,6 +248,7 @@ export const VirtualizedApplicantList = ({
                               {unreadCount} unread
                             </Badge>
                           )}
+                          <ApplicationHistoryBadge email={applicant.email} currentId={applicant.id} />
                         </div>
 
                         {/* Job title */}

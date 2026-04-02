@@ -39,6 +39,7 @@ import { CheckAvailabilityButton } from '@/components/CheckAvailabilityButton';
 import { ReprofilingDialog } from '@/components/ReprofilingDialog';
 import { CandidateProfileSection } from '@/components/CandidateProfileSection';
 import { RoleHistorySection } from '@/components/RoleHistorySection';
+import { ApplicationHistorySection } from '@/components/ApplicationHistorySection';
 import { ApplicantSourceBadge } from '@/components/ApplicantSourceBadge';
 import { CopyableText } from '@/components/CopyableText';
 import { ApplicantNotesEditor, type ApplicantNotesEditorRef } from '@/components/ApplicantNotesEditor';
@@ -3413,6 +3414,9 @@ const Admin = () => {
                               originalJobTitle={applicant.original_job_title}
                               reprofiledAt={applicant.reprofiled_at}
                             />
+                            <div className="mt-3">
+                              <ApplicationHistorySection email={applicant.email} currentId={applicant.id} />
+                            </div>
                           </div>
 
                           {/* Check Availability for Bench applicants */}
