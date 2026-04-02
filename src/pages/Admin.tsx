@@ -39,6 +39,7 @@ import { CheckAvailabilityButton } from '@/components/CheckAvailabilityButton';
 import { ReprofilingDialog } from '@/components/ReprofilingDialog';
 import { CandidateProfileSection } from '@/components/CandidateProfileSection';
 import { RoleHistorySection } from '@/components/RoleHistorySection';
+import { ApplicationHistorySection } from '@/components/ApplicationHistorySection';
 import { ApplicantSourceBadge } from '@/components/ApplicantSourceBadge';
 import { CopyableText } from '@/components/CopyableText';
 import { ApplicantNotesEditor, type ApplicantNotesEditorRef } from '@/components/ApplicantNotesEditor';
