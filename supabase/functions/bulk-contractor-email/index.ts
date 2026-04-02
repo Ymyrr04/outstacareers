@@ -20,6 +20,7 @@ interface BulkEmailRequest {
   bodyHtml: string;
   scheduledEmailId?: string;
   maxBatchSize?: number;
+  clientId?: string;
 }
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
