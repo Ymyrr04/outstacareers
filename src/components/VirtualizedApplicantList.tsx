@@ -248,6 +248,7 @@ export const VirtualizedApplicantList = ({
                               {unreadCount} unread
                             </Badge>
                           )}
+                          <ApplicationHistoryBadge email={applicant.email} currentId={applicant.id} />
                         </div>
 
                         {/* Job title */}
