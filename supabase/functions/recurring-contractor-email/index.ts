@@ -42,6 +42,35 @@ const invokeBulkContractorEmail = async (
   return json;
 };
 
+const FREQUENCY_CONFIG: Record<string, { checkMatch: (now: Date) => boolean }> = {
+  "weekly-friday": {
+    checkMatch: (now) => now.getUTCDay() === 5,
+  },
+  "weekly-monday": {
+    checkMatch: (now) => now.getUTCDay() === 1,
+  },
+  "biweekly-friday": {
+    checkMatch: (now) => {
+      if (now.getUTCDay() !== 5) return false;
+      // Use ISO week number to determine odd/even weeks
+      const startOfYear = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
+      const dayOfYear = Math.floor((now.getTime() - startOfYear.getTime()) / 86400000);
+      const weekNumber = Math.ceil((dayOfYear + startOfYear.getUTCDay() + 1) / 7);
+      return weekNumber % 2 === 0;
+    },
+  },
+  "monthly-first": {
+    checkMatch: (now) => now.getUTCDate() === 1,
+  },
+  "monthly-last": {
+    checkMatch: (now) => {
+      const tomorrow = new Date(now);
+      tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
+      return tomorrow.getUTCDate() === 1;
+    },
+  },
+};
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -127,54 +156,70 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    // 2. Check for recurring default template (Friday auto-send at ~5pm UTC / 1pm EDT)
-    const isFriday = now.getUTCDay() === 5;
+    // 2. Check recurring schedules from the database table
     const utcHour = now.getUTCHours();
+    // Only process recurring at a specific hour window (17 UTC / 1 PM EDT)
+    if (utcHour === 17) {
+      const { data: recurringSchedules, error: recurringError } = await supabase
+        .from("recurring_contractor_email_schedules")
+        .select("*, template:contractor_email_templates(subject, body_html, name)")
+        .eq("is_enabled", true);
 
-    if (isFriday && utcHour === 17) {
-      // Guard: only send once per day — check if ANY recurring record was created today
-      const todayStart = new Date(now);
-      todayStart.setUTCHours(0, 0, 0, 0);
-      const { data: alreadySent } = await supabase
-        .from("scheduled_contractor_emails")
-        .select("id")
-        .gte("created_at", todayStart.toISOString())
-        .like("subject", "%recurring-friday-auto%")
-        .limit(1);
+      if (!recurringError && recurringSchedules && recurringSchedules.length > 0) {
+        for (const schedule of recurringSchedules) {
+          const config = FREQUENCY_CONFIG[schedule.frequency];
+          if (!config || !config.checkMatch(now)) {
+            continue;
+          }
 
-      if (alreadySent && alreadySent.length > 0) {
-        results.push("Recurring Friday email: already sent today, skipping");
-      } else {
-        const { data: template, error: tplError } = await supabase
-          .from("contractor_email_templates")
-          .select("subject, body_html")
-          .eq("is_default", true)
-          .single();
+          // Guard: check if already sent today
+          const todayStart = new Date(now);
+          todayStart.setUTCHours(0, 0, 0, 0);
 
-        if (!tplError && template) {
-          // Create a tracking record with a recognizable subject to prevent duplicate sends
-          const { data: trackingRecord } = await supabase
-            .from("scheduled_contractor_emails")
-            .insert({
-              subject: "recurring-friday-auto",
-              body_html: template.body_html,
-              scheduled_for: nowIso,
-              status: "processing",
-            })
-            .select("id")
-            .single();
+          if (schedule.last_sent_at && new Date(schedule.last_sent_at) >= todayStart) {
+            results.push(`Recurring "${schedule.template?.name}": already sent today, skipping`);
+            continue;
+          }
 
-          const scheduledEmailId = trackingRecord?.id;
+          const template = schedule.template;
+          if (!template) {
+            results.push(`Recurring schedule ${schedule.id}: template not found, skipping`);
+            continue;
+          }
 
-          const result = await invokeBulkContractorEmail(supabaseUrl, supabaseServiceKey, {
-            subject: template.subject,
-            bodyHtml: template.body_html,
-            scheduledEmailId,
-          });
+          try {
+            // Create a tracking record
+            const { data: trackingRecord } = await supabase
+              .from("scheduled_contractor_emails")
+              .insert({
+                subject: template.subject,
+                body_html: template.body_html,
+                scheduled_for: nowIso,
+                status: "processing",
+                client_id: schedule.client_id || null,
+              })
+              .select("id")
+              .single();
 
-          results.push(`Recurring Friday email: sent ${Number(result.sent || 0)}`);
-        } else {
-          results.push("No default template found for recurring send");
+            const scheduledEmailId = trackingRecord?.id;
+
+            const result = await invokeBulkContractorEmail(supabaseUrl, supabaseServiceKey, {
+              subject: template.subject,
+              bodyHtml: template.body_html,
+              scheduledEmailId,
+              clientId: schedule.client_id || undefined,
+            });
+
+            // Update last_sent_at on the recurring schedule
+            await supabase
+              .from("recurring_contractor_email_schedules")
+              .update({ last_sent_at: nowIso })
+              .eq("id", schedule.id);
+
+            results.push(`Recurring "${template.name}" (${schedule.frequency}): sent ${Number(result.sent || 0)}`);
+          } catch (err: any) {
+            results.push(`Recurring "${template.name}": failed - ${err.message}`);
+          }
         }
       }
     }
