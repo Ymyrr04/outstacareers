@@ -3417,7 +3417,7 @@ const Admin = () => {
                               reprofiledAt={applicant.reprofiled_at}
                             />
                             <div className="mt-3">
-                              <ApplicationHistorySection email={applicant.email} currentId={applicant.id} />
+                              <ApplicationHistorySection email={applicant.email} currentId={applicant.id} phone={applicant.phone} />
                             </div>
                           </div>
 
