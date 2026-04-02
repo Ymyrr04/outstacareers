@@ -6,6 +6,7 @@ import { Star, Check, X, RefreshCw, Loader2, Download, Mic, Phone, Mail, Message
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
 import { CandidateProfileSection } from '@/components/CandidateProfileSection';
 import { RoleHistorySection } from '@/components/RoleHistorySection';
+import { ApplicationHistorySection } from '@/components/ApplicationHistorySection';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { CVImagePreview } from '@/components/CVImagePreview';
 import type { PaginatedApplicant } from '@/hooks/usePaginatedApplicants';
