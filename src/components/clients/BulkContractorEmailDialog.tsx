@@ -754,9 +754,9 @@ export const BulkContractorEmailDialog = ({
             </Button>
             <Button onClick={handleSend} disabled={sending || scheduling || !subject.trim() || !bodyHtml.trim()}>
               {sending ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending to {activeContractorCount}...</>
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending to {filteredCount}...</>
               ) : (
-                <><Send className="w-4 h-4 mr-2" />Send Now ({activeContractorCount})</>
+                <><Send className="w-4 h-4 mr-2" />Send Now ({filteredCount})</>
               )}
             </Button>
           </div>
