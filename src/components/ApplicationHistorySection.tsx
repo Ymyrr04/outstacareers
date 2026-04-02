@@ -6,6 +6,7 @@ import { useApplicationHistory } from '@/hooks/useApplicationHistory';
 interface ApplicationHistorySectionProps {
   email: string;
   currentId: string;
+  phone?: string | null;
 }
 
 const statusColor = (status: string) => {
