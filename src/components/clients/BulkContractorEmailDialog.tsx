@@ -418,13 +418,26 @@ export const BulkContractorEmailDialog = ({
       const scheduledEmailId = (trackingRecord as any)?.id;
 
       // Set up recurring if enabled
-      if (recurringEnabled && recurringSchedule !== 'none') {
-        const cronExpr = getCronExpression(recurringSchedule);
-        if (cronExpr) {
+      if (recurringEnabled && recurringSchedule !== 'none' && selectedTemplateId) {
+        // Check if a schedule already exists for this template+client combo
+        const clientFilter = selectedClientId !== 'all' ? selectedClientId : null;
+        const { data: existing } = await supabase
+          .from('recurring_contractor_email_schedules' as any)
+          .select('id')
+          .eq('template_id', selectedTemplateId)
+          .eq('frequency', recurringSchedule)
+          .is('client_id', clientFilter as any)
+          .limit(1);
+
+        if (!existing || existing.length === 0) {
           await supabase
-            .from('contractor_email_templates')
-            .update({ is_default: true })
-            .eq('id', selectedTemplateId);
+            .from('recurring_contractor_email_schedules' as any)
+            .insert({
+              template_id: selectedTemplateId,
+              client_id: clientFilter,
+              frequency: recurringSchedule,
+              is_enabled: true,
+            } as any);
         }
       }
 
