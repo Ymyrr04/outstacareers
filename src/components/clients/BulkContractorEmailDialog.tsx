@@ -330,16 +330,6 @@ export const BulkContractorEmailDialog = ({
     setFilteredCount(activeContractorCount);
   };
 
-  const getCronExpression = (schedule: string): string | null => {
-    switch (schedule) {
-      case 'weekly-friday': return '0 9 * * 5'; // Every Friday at 9 AM UTC
-      case 'weekly-monday': return '0 9 * * 1';
-      case 'biweekly-friday': return '0 9 1-7,15-21 * 5'; // Approx biweekly
-      case 'monthly-first': return '0 9 1 * *';
-      case 'monthly-last': return '0 9 28-31 * *';
-      default: return null;
-    }
-  };
 
   const getNextFridayElevenEastern = (): Date => {
     const now = new Date();
