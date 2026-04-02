@@ -3414,6 +3414,9 @@ const Admin = () => {
                               originalJobTitle={applicant.original_job_title}
                               reprofiledAt={applicant.reprofiled_at}
                             />
+                            <div className="mt-3">
+                              <ApplicationHistorySection email={applicant.email} currentId={applicant.id} />
+                            </div>
                           </div>
 
                           {/* Check Availability for Bench applicants */}
