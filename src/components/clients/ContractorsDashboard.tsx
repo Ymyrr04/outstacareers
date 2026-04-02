@@ -789,6 +789,9 @@ export const ContractorsDashboard = () => {
         </div>
       </div>
 
+      {/* Recurring Schedules */}
+      <RecurringSchedulesManager />
+
       {/* Contractors Table - Active Section */}
       {activeContractors.length === 0 && separatedContractors.length === 0 ? (
         <Card>
