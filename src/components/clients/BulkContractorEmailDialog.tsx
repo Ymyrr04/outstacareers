@@ -503,16 +503,49 @@ export const BulkContractorEmailDialog = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mail className="w-5 h-5 text-teal-600" />
-            Bulk Email to All Active Contractors
+            Bulk Email to Active Contractors
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Company selector */}
+          <div>
+            <Label>Send To</Label>
+            <Select value={selectedClientId} onValueChange={handleClientSelect} disabled={loadingClients}>
+              <SelectTrigger>
+                <SelectValue placeholder={loadingClients ? 'Loading...' : 'Select company'}>
+                  <span className="flex items-center gap-2">
+                    <Building2 className="w-3 h-3" />
+                    {selectedClientId === 'all'
+                      ? `All Companies (${activeContractorCount})`
+                      : `${clients.find(c => c.id === selectedClientId)?.company_name || 'Company'} (${filteredCount})`}
+                  </span>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <span className="flex items-center gap-2">
+                    <Users className="w-3 h-3" />
+                    All Companies ({activeContractorCount} contractors)
+                  </span>
+                </SelectItem>
+                {clients.map(c => (
+                  <SelectItem key={c.id} value={c.id}>
+                    <span className="flex items-center gap-2">
+                      <Building2 className="w-3 h-3" />
+                      {c.company_name} ({c.contractor_count})
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Recipient info */}
           <div className="bg-muted/50 rounded-lg p-3 text-sm flex items-center gap-2">
             <Users className="w-4 h-4 text-muted-foreground" />
             <span>
-              This will send to <strong>{activeContractorCount}</strong> active contractor{activeContractorCount !== 1 ? 's' : ''}.
+              This will send to <strong>{filteredCount}</strong> active contractor{filteredCount !== 1 ? 's' : ''}.
               Placeholders like <code className="bg-muted px-1 rounded text-xs">{'{{first_name}}'}</code> will be personalized for each.
             </span>
           </div>
