@@ -1477,6 +1477,7 @@ export type Database = {
       scheduled_contractor_emails: {
         Row: {
           body_html: string
+          client_id: string | null
           created_at: string
           error_message: string | null
           id: string
@@ -1489,6 +1490,7 @@ export type Database = {
         }
         Insert: {
           body_html: string
+          client_id?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
@@ -1501,6 +1503,7 @@ export type Database = {
         }
         Update: {
           body_html?: string
+          client_id?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
@@ -1511,7 +1514,15 @@ export type Database = {
           subject?: string
           total_items?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_contractor_emails_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       scheduled_emails: {
         Row: {

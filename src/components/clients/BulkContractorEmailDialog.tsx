@@ -9,10 +9,16 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Send, Loader2, FileText, Mail, Users, RefreshCw, CalendarClock, Clock, XCircle, CalendarIcon } from 'lucide-react';
+import { Send, Loader2, FileText, Mail, Users, RefreshCw, CalendarClock, Clock, XCircle, CalendarIcon, Building2 } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { RichTextToolbar } from '@/components/RichTextToolbar';
 import { ScheduleDateTimeDialog } from '@/components/clients/ScheduleDateTimeDialog';
+
+interface ClientOption {
+  id: string;
+  company_name: string;
+  contractor_count: number;
+}
 
 interface EmailTemplate {
   id: string;
@@ -157,6 +163,10 @@ export const BulkContractorEmailDialog = ({
   const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
   const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
   const [rescheduleTargetId, setRescheduleTargetId] = useState<string | null>(null);
+  const [clients, setClients] = useState<ClientOption[]>([]);
+  const [selectedClientId, setSelectedClientId] = useState<string>('all');
+  const [filteredCount, setFilteredCount] = useState(activeContractorCount);
+  const [loadingClients, setLoadingClients] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   const fetchPendingEmails = useCallback(async () => {
@@ -181,9 +191,40 @@ export const BulkContractorEmailDialog = ({
     }
   }, []);
 
+  const fetchClients = useCallback(async () => {
+    setLoadingClients(true);
+    try {
+      const { data: assignments, error } = await supabase
+        .from('contractor_assignments')
+        .select('client_id, client:clients(id, company_name)')
+        .eq('status', 'active');
+      if (error || !assignments) return;
+
+      const countMap = new Map<string, { company_name: string; count: number }>();
+      for (const a of assignments) {
+        const c = a.client as any;
+        if (!c?.id) continue;
+        const existing = countMap.get(c.id);
+        if (existing) {
+          existing.count++;
+        } else {
+          countMap.set(c.id, { company_name: c.company_name, count: 1 });
+        }
+      }
+
+      const options: ClientOption[] = Array.from(countMap.entries())
+        .map(([id, v]) => ({ id, company_name: v.company_name, contractor_count: v.count }))
+        .sort((a, b) => a.company_name.localeCompare(b.company_name));
+      setClients(options);
+    } finally {
+      setLoadingClients(false);
+    }
+  }, []);
+
   useEffect(() => {
     if (!open) return;
     fetchPendingEmails();
+    fetchClients();
     const fetchTemplates = async () => {
       setLoadingTemplates(true);
       try {
@@ -205,7 +246,7 @@ export const BulkContractorEmailDialog = ({
       }
     };
     fetchTemplates();
-  }, [open, fetchPendingEmails]);
+  }, [open, fetchPendingEmails, fetchClients]);
 
   // Auto-refresh progress for processing emails every 10 seconds
   useEffect(() => {
@@ -269,12 +310,24 @@ export const BulkContractorEmailDialog = ({
     }
   };
 
+  const handleClientSelect = (value: string) => {
+    setSelectedClientId(value);
+    if (value === 'all') {
+      setFilteredCount(activeContractorCount);
+    } else {
+      const client = clients.find(c => c.id === value);
+      setFilteredCount(client?.contractor_count || 0);
+    }
+  };
+
   const resetForm = () => {
     setSubject('');
     setBodyHtml('');
     setSelectedTemplateId('');
     setRecurringSchedule('none');
     setRecurringEnabled(false);
+    setSelectedClientId('all');
+    setFilteredCount(activeContractorCount);
   };
 
   const getCronExpression = (schedule: string): string | null => {
@@ -318,6 +371,7 @@ export const BulkContractorEmailDialog = ({
         body_html: bodyHtml,
         scheduled_for: scheduledDate.toISOString(),
         status: 'pending',
+        client_id: selectedClientId !== 'all' ? selectedClientId : null,
       } as any);
 
       if (error) throw error;
@@ -355,6 +409,7 @@ export const BulkContractorEmailDialog = ({
           body_html: bodyHtml,
           scheduled_for: new Date().toISOString(),
           status: 'processing',
+          client_id: selectedClientId !== 'all' ? selectedClientId : null,
         } as any)
         .select('id')
         .single();
@@ -385,7 +440,7 @@ export const BulkContractorEmailDialog = ({
           'Authorization': `Bearer ${session?.access_token || anonKey}`,
           'apikey': anonKey,
         },
-        body: JSON.stringify({ subject, bodyHtml, scheduledEmailId }),
+        body: JSON.stringify({ subject, bodyHtml, scheduledEmailId, clientId: selectedClientId !== 'all' ? selectedClientId : undefined }),
       }).then(async (res) => {
         const rawText = await res.text();
         let data: any = {};
@@ -429,9 +484,12 @@ export const BulkContractorEmailDialog = ({
           .eq('id', scheduledEmailId);
       });
 
+      const companyLabel = selectedClientId !== 'all' 
+        ? clients.find(c => c.id === selectedClientId)?.company_name || 'selected company'
+        : 'all companies';
       toast({
         title: 'Sending Started',
-        description: `Sending to ${activeContractorCount} contractors. Track progress below.`,
+        description: `Sending to ${filteredCount} contractors (${companyLabel}). Track progress below.`,
       });
 
       resetForm();
@@ -450,16 +508,49 @@ export const BulkContractorEmailDialog = ({
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <Mail className="w-5 h-5 text-teal-600" />
-            Bulk Email to All Active Contractors
+            Bulk Email to Active Contractors
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
+          {/* Company selector */}
+          <div>
+            <Label>Send To</Label>
+            <Select value={selectedClientId} onValueChange={handleClientSelect} disabled={loadingClients}>
+              <SelectTrigger>
+                <SelectValue placeholder={loadingClients ? 'Loading...' : 'Select company'}>
+                  <span className="flex items-center gap-2">
+                    <Building2 className="w-3 h-3" />
+                    {selectedClientId === 'all'
+                      ? `All Companies (${activeContractorCount})`
+                      : `${clients.find(c => c.id === selectedClientId)?.company_name || 'Company'} (${filteredCount})`}
+                  </span>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <span className="flex items-center gap-2">
+                    <Users className="w-3 h-3" />
+                    All Companies ({activeContractorCount} contractors)
+                  </span>
+                </SelectItem>
+                {clients.map(c => (
+                  <SelectItem key={c.id} value={c.id}>
+                    <span className="flex items-center gap-2">
+                      <Building2 className="w-3 h-3" />
+                      {c.company_name} ({c.contractor_count})
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Recipient info */}
           <div className="bg-muted/50 rounded-lg p-3 text-sm flex items-center gap-2">
             <Users className="w-4 h-4 text-muted-foreground" />
             <span>
-              This will send to <strong>{activeContractorCount}</strong> active contractor{activeContractorCount !== 1 ? 's' : ''}.
+              This will send to <strong>{filteredCount}</strong> active contractor{filteredCount !== 1 ? 's' : ''}.
               Placeholders like <code className="bg-muted px-1 rounded text-xs">{'{{first_name}}'}</code> will be personalized for each.
             </span>
           </div>
@@ -665,9 +756,9 @@ export const BulkContractorEmailDialog = ({
             </Button>
             <Button onClick={handleSend} disabled={sending || scheduling || !subject.trim() || !bodyHtml.trim()}>
               {sending ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending to {activeContractorCount}...</>
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Sending to {filteredCount}...</>
               ) : (
-                <><Send className="w-4 h-4 mr-2" />Send Now ({activeContractorCount})</>
+                <><Send className="w-4 h-4 mr-2" />Send Now ({filteredCount})</>
               )}
             </Button>
           </div>
