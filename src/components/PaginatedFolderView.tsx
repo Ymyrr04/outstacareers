@@ -270,6 +270,7 @@ export const PaginatedFolderView = ({
                               {unreadCount} unread
                             </Badge>
                           )}
+                          <ApplicationHistoryBadge email={applicant.email} currentId={applicant.id} />
                         </div>
 
                         {/* Info row */}
