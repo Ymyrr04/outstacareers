@@ -2644,7 +2644,7 @@ const Admin = () => {
                               }
                               return null;
                             })()}
-                            <ApplicationHistoryBadge email={applicant.email} currentId={applicant.id} />
+                            <ApplicationHistoryBadge email={applicant.email} currentId={applicant.id} phone={applicant.phone} />
                           </div>
                           <CopyableText text={applicant.email} className="text-sm text-muted-foreground hover:underline" />
                           <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
