@@ -8,6 +8,7 @@ import { useApplicationHistory } from '@/hooks/useApplicationHistory';
 interface ApplicationHistoryBadgeProps {
   email: string;
   currentId: string;
+  phone?: string | null;
 }
 
 const statusColor = (status: string) => {
@@ -21,8 +22,8 @@ const statusColor = (status: string) => {
   }
 };
 
-export function ApplicationHistoryBadge({ email, currentId }: ApplicationHistoryBadgeProps) {
-  const { otherApplications, totalApplications } = useApplicationHistory(email, currentId);
+export function ApplicationHistoryBadge({ email, currentId, phone }: ApplicationHistoryBadgeProps) {
+  const { otherApplications, totalApplications } = useApplicationHistory(email, currentId, phone);
   const [open, setOpen] = useState(false);
 
   if (otherApplications.length === 0) return null;

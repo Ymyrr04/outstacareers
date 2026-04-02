@@ -6,6 +6,7 @@ import { useApplicationHistory } from '@/hooks/useApplicationHistory';
 interface ApplicationHistorySectionProps {
   email: string;
   currentId: string;
+  phone?: string | null;
 }
 
 const statusColor = (status: string) => {
@@ -19,8 +20,8 @@ const statusColor = (status: string) => {
   }
 };
 
-export function ApplicationHistorySection({ email, currentId }: ApplicationHistorySectionProps) {
-  const { otherApplications, loading } = useApplicationHistory(email, currentId);
+export function ApplicationHistorySection({ email, currentId, phone }: ApplicationHistorySectionProps) {
+  const { otherApplications, loading } = useApplicationHistory(email, currentId, phone);
 
   if (loading || otherApplications.length === 0) return null;
 

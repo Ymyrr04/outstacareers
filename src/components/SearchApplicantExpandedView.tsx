@@ -280,7 +280,7 @@ export const SearchApplicantExpandedView = ({
           originalJobTitle={applicant.original_job_title}
           reprofiledAt={applicant.reprofiled_at}
         />
-        <ApplicationHistorySection email={applicant.email} currentId={applicant.id} />
+        <ApplicationHistorySection email={applicant.email} currentId={applicant.id} phone={applicant.phone} />
       </div>
 
       {/* CV Preview */}
