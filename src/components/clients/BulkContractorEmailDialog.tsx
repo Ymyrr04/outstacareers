@@ -282,6 +282,68 @@ export const BulkContractorEmailDialog = ({
     }
   };
 
+  const handlePauseBatch = async (id: string) => {
+    setCancellingId(id);
+    try {
+      const { error } = await supabase
+        .from('scheduled_contractor_emails' as any)
+        .update({ status: 'paused' } as any)
+        .eq('id', id);
+      if (error) throw error;
+      toast({ title: 'Paused', description: 'Email batch has been paused. You can resume anytime.' });
+      fetchPendingEmails();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  const handleResumeBatch = async (id: string) => {
+    setCancellingId(id);
+    try {
+      // Set status back to processing
+      const { error } = await supabase
+        .from('scheduled_contractor_emails' as any)
+        .update({ status: 'processing' } as any)
+        .eq('id', id);
+      if (error) throw error;
+
+      // Re-trigger the edge function to continue from where it left off
+      const { data: emailData } = await supabase
+        .from('scheduled_contractor_emails' as any)
+        .select('subject, body_html, client_id')
+        .eq('id', id)
+        .single();
+
+      if (emailData) {
+        const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-contractor-email`;
+        fetch(fnUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            subject: (emailData as any).subject,
+            bodyHtml: (emailData as any).body_html,
+            scheduledEmailId: id,
+            maxBatchSize: 5,
+            clientId: (emailData as any).client_id || undefined,
+          }),
+        }).catch(console.error);
+      }
+
+      toast({ title: 'Resumed', description: 'Email batch is resuming.' });
+      fetchPendingEmails();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
   const handleReschedule = async (scheduledDate: Date) => {
     if (!rescheduleTargetId) return;
     setCancellingId(rescheduleTargetId);
