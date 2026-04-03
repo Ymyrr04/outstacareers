@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Send, Loader2, FileText, Mail, Users, RefreshCw, CalendarClock, Clock, XCircle, CalendarIcon, Building2 } from 'lucide-react';
+import { Send, Loader2, FileText, Mail, Users, RefreshCw, CalendarClock, Clock, XCircle, CalendarIcon, Building2, Pause, Play } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { RichTextToolbar } from '@/components/RichTextToolbar';
 import { ScheduleDateTimeDialog } from '@/components/clients/ScheduleDateTimeDialog';
