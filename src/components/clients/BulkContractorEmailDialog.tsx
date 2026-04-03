@@ -732,27 +732,76 @@ export const BulkContractorEmailDialog = ({
             )}
           </div>
 
-          {/* Processing Emails with Progress Bar */}
+          {/* Processing / Paused Emails with Progress Bar */}
           {processingEmails.length > 0 && (
             <div className="border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg p-4 space-y-3">
               <div className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
-                <span className="font-medium text-sm">Sending in Progress</span>
+                {processingEmails.some((e: any) => e.status === 'processing') ? (
+                  <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                ) : (
+                  <Pause className="w-4 h-4 text-amber-600" />
+                )}
+                <span className="font-medium text-sm">
+                  {processingEmails.every((e: any) => e.status === 'paused') ? 'Paused' : 'Sending in Progress'}
+                </span>
               </div>
               <div className="space-y-3">
                 {processingEmails.map((email: any) => {
                   const total = email.total_items || 0;
                   const processed = email.processed_items || 0;
                   const percentage = total > 0 ? Math.round((processed / total) * 100) : 0;
+                  const isPaused = email.status === 'paused';
                   return (
                     <div key={email.id} className="bg-background rounded-md p-3 border text-sm space-y-2">
-                      <p className="font-medium truncate">{email.subject}</p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium truncate flex-1">{email.subject}</p>
+                        {isPaused && (
+                          <Badge variant="outline" className="text-amber-600 border-amber-300 text-[10px] px-1.5 py-0 ml-2">
+                            Paused
+                          </Badge>
+                        )}
+                      </div>
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
                           <span>{processed} of {total} contractors sent</span>
                           <span>{percentage}%</span>
                         </div>
                         <Progress value={percentage} className="h-2" />
+                      </div>
+                      <div className="flex items-center gap-1 justify-end">
+                        {isPaused ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-green-600 hover:text-green-700"
+                            disabled={cancellingId === email.id}
+                            onClick={() => handleResumeBatch(email.id)}
+                          >
+                            {cancellingId === email.id ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Play className="w-3 h-3 mr-1" />}
+                            Resume
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-amber-600 hover:text-amber-700"
+                            disabled={cancellingId === email.id}
+                            onClick={() => handlePauseBatch(email.id)}
+                          >
+                            {cancellingId === email.id ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Pause className="w-3 h-3 mr-1" />}
+                            Pause
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs text-destructive hover:text-destructive"
+                          disabled={cancellingId === email.id}
+                          onClick={() => handleCancelScheduled(email.id)}
+                        >
+                          <XCircle className="w-3 h-3 mr-1" />
+                          Stop
+                        </Button>
                       </div>
                     </div>
                   );
