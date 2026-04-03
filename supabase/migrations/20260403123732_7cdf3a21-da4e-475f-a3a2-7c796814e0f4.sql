@@ -1,0 +1,1 @@
+UPDATE scheduled_contractor_emails SET status = 'failed', error_message = 'Stopped - empty body from re-trigger' WHERE id = 'dde80801-8d7c-47a4-97f1-0fd5f138ef66';
