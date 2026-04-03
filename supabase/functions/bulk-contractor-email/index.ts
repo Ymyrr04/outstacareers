@@ -274,6 +274,31 @@ const handler = async (req: Request): Promise<Response> => {
     const remainingItems = Math.max(0, totalItems - processedItems);
 
     if (scheduledEmailId) {
+      // Re-check status to see if admin cancelled
+      const { data: currentStatus } = await supabase
+        .from("scheduled_contractor_emails")
+        .select("status")
+        .eq("id", scheduledEmailId)
+        .single();
+
+      if (currentStatus?.status === 'failed' || currentStatus?.status === 'cancelled') {
+        console.log(`Batch was cancelled/stopped by admin. Halting.`);
+        return new Response(
+          JSON.stringify({
+            success: true,
+            completed: true,
+            sent: sentCount,
+            failed: errors.length,
+            skipped: skippedCount,
+            processed_items: processedItems,
+            total_items: totalItems,
+            remaining_items: remainingItems,
+            message: "Batch was cancelled by admin",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
+        );
+      }
+
       await supabase
         .from("scheduled_contractor_emails")
         .update(
@@ -297,6 +322,32 @@ const handler = async (req: Request): Promise<Response> => {
     console.log(
       `Chunk complete: ${sentCount} sent, ${errors.length} failed, ${skippedCount} skipped. Completed=${completed}, processed=${processedItems}/${totalItems}`,
     );
+
+    // Self-invoke for the next batch if not completed
+    if (!completed && scheduledEmailId) {
+      console.log(`Self-invoking for next batch (processed=${processedItems}, total=${totalItems})`);
+      const selfUrl = `${supabaseUrl}/functions/v1/bulk-contractor-email`;
+      const serviceKey = supabaseServiceKey;
+      
+      // Fire and forget - don't await to avoid chaining timeouts
+      fetch(selfUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${serviceKey}`,
+          "apikey": serviceKey,
+        },
+        body: JSON.stringify({
+          subject,
+          bodyHtml,
+          scheduledEmailId,
+          maxBatchSize: batchSize,
+          clientId: clientId || undefined,
+        }),
+      }).catch((err) => {
+        console.error("Self-invoke failed:", err.message);
+      });
+    }
 
     return new Response(
       JSON.stringify({
