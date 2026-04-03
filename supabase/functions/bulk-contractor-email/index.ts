@@ -125,6 +125,24 @@ const handler = async (req: Request): Promise<Response> => {
         throw new Error(`Failed to load scheduled email tracking: ${scheduledFetchError.message}`);
       }
 
+      // If paused, halt immediately without processing
+      if (scheduledRow?.status === 'paused') {
+        console.log(`Batch ${scheduledEmailId} is paused. Halting.`);
+        return new Response(
+          JSON.stringify({
+            success: true,
+            completed: false,
+            sent: 0,
+            failed: 0,
+            processed_items: Number(scheduledRow?.processed_items || 0),
+            total_items: totalItems,
+            remaining_items: totalItems - Number(scheduledRow?.processed_items || 0),
+            message: "Batch is paused",
+          }),
+          { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } },
+        );
+      }
+
       processedItems = Math.max(0, Number(scheduledRow?.processed_items || 0));
 
       if (Number(scheduledRow?.total_items || 0) !== totalItems) {
@@ -300,8 +318,8 @@ const handler = async (req: Request): Promise<Response> => {
         .eq("id", scheduledEmailId)
         .single();
 
-      if (currentStatus?.status === 'failed' || currentStatus?.status === 'cancelled') {
-        console.log(`Batch was cancelled/stopped by admin. Halting.`);
+      if (currentStatus?.status === 'failed' || currentStatus?.status === 'cancelled' || currentStatus?.status === 'paused') {
+        console.log(`Batch was ${currentStatus?.status} by admin. Halting.`);
         return new Response(
           JSON.stringify({
             success: true,

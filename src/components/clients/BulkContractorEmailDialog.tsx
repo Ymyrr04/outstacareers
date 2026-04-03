@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Send, Loader2, FileText, Mail, Users, RefreshCw, CalendarClock, Clock, XCircle, CalendarIcon, Building2 } from 'lucide-react';
+import { Send, Loader2, FileText, Mail, Users, RefreshCw, CalendarClock, Clock, XCircle, CalendarIcon, Building2, Pause, Play } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { RichTextToolbar } from '@/components/RichTextToolbar';
 import { ScheduleDateTimeDialog } from '@/components/clients/ScheduleDateTimeDialog';
@@ -172,7 +172,7 @@ export const BulkContractorEmailDialog = ({
   const fetchPendingEmails = useCallback(async () => {
     setLoadingPending(true);
     try {
-      const [pendingRes, processingRes] = await Promise.all([
+      const [pendingRes, processingRes, pausedRes] = await Promise.all([
         supabase
           .from('scheduled_contractor_emails' as any)
           .select('*')
@@ -183,9 +183,17 @@ export const BulkContractorEmailDialog = ({
           .select('*')
           .eq('status', 'processing')
           .order('scheduled_for', { ascending: true }),
+        supabase
+          .from('scheduled_contractor_emails' as any)
+          .select('*')
+          .eq('status', 'paused')
+          .order('scheduled_for', { ascending: true }),
       ]);
       if (!pendingRes.error) setPendingEmails((pendingRes.data as any[]) || []);
-      if (!processingRes.error) setProcessingEmails((processingRes.data as any[]) || []);
+      // Combine processing and paused into processingEmails for display
+      const processing = (processingRes.data as any[]) || [];
+      const paused = (pausedRes.data as any[]) || [];
+      setProcessingEmails([...processing, ...paused]);
     } finally {
       setLoadingPending(false);
     }
@@ -266,6 +274,68 @@ export const BulkContractorEmailDialog = ({
         .eq('id', id);
       if (error) throw error;
       toast({ title: 'Cancelled', description: 'Scheduled email has been cancelled.' });
+      fetchPendingEmails();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  const handlePauseBatch = async (id: string) => {
+    setCancellingId(id);
+    try {
+      const { error } = await supabase
+        .from('scheduled_contractor_emails' as any)
+        .update({ status: 'paused' } as any)
+        .eq('id', id);
+      if (error) throw error;
+      toast({ title: 'Paused', description: 'Email batch has been paused. You can resume anytime.' });
+      fetchPendingEmails();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setCancellingId(null);
+    }
+  };
+
+  const handleResumeBatch = async (id: string) => {
+    setCancellingId(id);
+    try {
+      // Set status back to processing
+      const { error } = await supabase
+        .from('scheduled_contractor_emails' as any)
+        .update({ status: 'processing' } as any)
+        .eq('id', id);
+      if (error) throw error;
+
+      // Re-trigger the edge function to continue from where it left off
+      const { data: emailData } = await supabase
+        .from('scheduled_contractor_emails' as any)
+        .select('subject, body_html, client_id')
+        .eq('id', id)
+        .single();
+
+      if (emailData) {
+        const fnUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/bulk-contractor-email`;
+        fetch(fnUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+            'apikey': import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          },
+          body: JSON.stringify({
+            subject: (emailData as any).subject,
+            bodyHtml: (emailData as any).body_html,
+            scheduledEmailId: id,
+            maxBatchSize: 5,
+            clientId: (emailData as any).client_id || undefined,
+          }),
+        }).catch(console.error);
+      }
+
+      toast({ title: 'Resumed', description: 'Email batch is resuming.' });
       fetchPendingEmails();
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -662,27 +732,76 @@ export const BulkContractorEmailDialog = ({
             )}
           </div>
 
-          {/* Processing Emails with Progress Bar */}
+          {/* Processing / Paused Emails with Progress Bar */}
           {processingEmails.length > 0 && (
             <div className="border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg p-4 space-y-3">
               <div className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
-                <span className="font-medium text-sm">Sending in Progress</span>
+                {processingEmails.some((e: any) => e.status === 'processing') ? (
+                  <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                ) : (
+                  <Pause className="w-4 h-4 text-amber-600" />
+                )}
+                <span className="font-medium text-sm">
+                  {processingEmails.every((e: any) => e.status === 'paused') ? 'Paused' : 'Sending in Progress'}
+                </span>
               </div>
               <div className="space-y-3">
                 {processingEmails.map((email: any) => {
                   const total = email.total_items || 0;
                   const processed = email.processed_items || 0;
                   const percentage = total > 0 ? Math.round((processed / total) * 100) : 0;
+                  const isPaused = email.status === 'paused';
                   return (
                     <div key={email.id} className="bg-background rounded-md p-3 border text-sm space-y-2">
-                      <p className="font-medium truncate">{email.subject}</p>
+                      <div className="flex items-center justify-between">
+                        <p className="font-medium truncate flex-1">{email.subject}</p>
+                        {isPaused && (
+                          <Badge variant="outline" className="text-amber-600 border-amber-300 text-[10px] px-1.5 py-0 ml-2">
+                            Paused
+                          </Badge>
+                        )}
+                      </div>
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
                           <span>{processed} of {total} contractors sent</span>
                           <span>{percentage}%</span>
                         </div>
                         <Progress value={percentage} className="h-2" />
+                      </div>
+                      <div className="flex items-center gap-1 justify-end">
+                        {isPaused ? (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-green-600 hover:text-green-700"
+                            disabled={cancellingId === email.id}
+                            onClick={() => handleResumeBatch(email.id)}
+                          >
+                            {cancellingId === email.id ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Play className="w-3 h-3 mr-1" />}
+                            Resume
+                          </Button>
+                        ) : (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 text-xs text-amber-600 hover:text-amber-700"
+                            disabled={cancellingId === email.id}
+                            onClick={() => handlePauseBatch(email.id)}
+                          >
+                            {cancellingId === email.id ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Pause className="w-3 h-3 mr-1" />}
+                            Pause
+                          </Button>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-xs text-destructive hover:text-destructive"
+                          disabled={cancellingId === email.id}
+                          onClick={() => handleCancelScheduled(email.id)}
+                        >
+                          <XCircle className="w-3 h-3 mr-1" />
+                          Stop
+                        </Button>
                       </div>
                     </div>
                   );
