@@ -172,7 +172,7 @@ export const BulkContractorEmailDialog = ({
   const fetchPendingEmails = useCallback(async () => {
     setLoadingPending(true);
     try {
-      const [pendingRes, processingRes] = await Promise.all([
+      const [pendingRes, processingRes, pausedRes] = await Promise.all([
         supabase
           .from('scheduled_contractor_emails' as any)
           .select('*')
@@ -183,9 +183,17 @@ export const BulkContractorEmailDialog = ({
           .select('*')
           .eq('status', 'processing')
           .order('scheduled_for', { ascending: true }),
+        supabase
+          .from('scheduled_contractor_emails' as any)
+          .select('*')
+          .eq('status', 'paused')
+          .order('scheduled_for', { ascending: true }),
       ]);
       if (!pendingRes.error) setPendingEmails((pendingRes.data as any[]) || []);
-      if (!processingRes.error) setProcessingEmails((processingRes.data as any[]) || []);
+      // Combine processing and paused into processingEmails for display
+      const processing = (processingRes.data as any[]) || [];
+      const paused = (pausedRes.data as any[]) || [];
+      setProcessingEmails([...processing, ...paused]);
     } finally {
       setLoadingPending(false);
     }
