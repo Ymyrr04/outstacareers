@@ -318,8 +318,8 @@ const handler = async (req: Request): Promise<Response> => {
         .eq("id", scheduledEmailId)
         .single();
 
-      if (currentStatus?.status === 'failed' || currentStatus?.status === 'cancelled') {
-        console.log(`Batch was cancelled/stopped by admin. Halting.`);
+      if (currentStatus?.status === 'failed' || currentStatus?.status === 'cancelled' || currentStatus?.status === 'paused') {
+        console.log(`Batch was ${currentStatus?.status} by admin. Halting.`);
         return new Response(
           JSON.stringify({
             success: true,
