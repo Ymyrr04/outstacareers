@@ -1,16 +1,17 @@
 import { useState, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { useContractorPipeline, type ContractorPipelineTracking } from '@/hooks/useContractorPipeline';
+import { useContractorPipeline, type ContractorPipelineTracking, type ContractorPipelineStage } from '@/hooks/useContractorPipeline';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Search, X, RefreshCw, Calendar, Building2, User, Clock } from 'lucide-react';
+import { Search, X, RefreshCw, Calendar, Building2, User, Clock, Mail } from 'lucide-react';
 import { differenceInDays, differenceInWeeks, format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { StageEmailTemplateDialog } from './StageEmailTemplateDialog';
 
 export const PostHirePipelineKanban = () => {
   const { stages, tracking, loading, moveToStage, fetchAll } = useContractorPipeline();
