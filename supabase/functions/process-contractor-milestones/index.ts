@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Processed: ${advancedCount} advanced, ${emailsSent} emails sent, ${newAssignments.length} new entries`,
+        message: `Processed: ${advancedCount} advanced, ${newAssignments.length} new entries`,
         details: results,
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
