@@ -131,9 +131,26 @@ export const PostHirePipelineKanban = () => {
                     <span className="text-sm">{stage.emoji}</span>
                     <span className="text-xs font-semibold truncate">{stage.name}</span>
                   </div>
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
-                    {stageTracking.length}
-                  </Badge>
+                  <div className="flex items-center gap-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => setEditingStage(stage)}
+                          className={`p-0.5 rounded hover:bg-background transition-colors ${
+                            stage.checkin_email_subject ? 'text-primary' : 'text-muted-foreground/50'
+                          }`}
+                        >
+                          <Mail className="w-3 h-3" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {stage.checkin_email_subject ? 'Edit email template' : 'Add email template'}
+                      </TooltipContent>
+                    </Tooltip>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
+                      {stageTracking.length}
+                    </Badge>
+                  </div>
                 </div>
 
                 {/* Column Content */}
