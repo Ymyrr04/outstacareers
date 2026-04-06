@@ -78,7 +78,6 @@ Deno.serve(async (req) => {
     // 4. Auto-advance contractors based on days elapsed
     const today = new Date();
     let advancedCount = 0;
-    let emailsSent = 0;
 
     for (const item of (tracked || []) as any[]) {
       const contractor = item.contractor;
