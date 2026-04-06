@@ -338,7 +338,7 @@ const Admin = () => {
   const [manualTabLoading, setManualTabLoading] = useState(false);
   
   // Heavy tabs that need loading indicator
-  const heavyTabs = ['applicants', 'recruiter-dash', 'pipeline', 'contractors'];
+  const heavyTabs = ['applicants', 'recruiter-dash', 'pipeline', 'post-hire', 'contractors'];
   
   // Show loading screen for heavy tabs - show immediately, hide after content renders
   useEffect(() => {
