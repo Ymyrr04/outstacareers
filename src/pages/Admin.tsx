@@ -1570,6 +1570,12 @@ const Admin = () => {
                 Pipeline
               </TabsTrigger>
             )}
+            {canViewTab('post-hire') && (
+              <TabsTrigger value="post-hire" className="flex items-center gap-2">
+                <Target className="w-4 h-4" />
+                Post-Hire
+              </TabsTrigger>
+            )}
             {canViewTab('clients') && (
               <TabsTrigger value="clients" className="flex items-center gap-2">
                 <Building2 className="w-4 h-4" />
