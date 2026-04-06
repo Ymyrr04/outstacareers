@@ -69,7 +69,7 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
     if (!stage || !contractor || !open) return;
 
     const placeholders: Record<string, string> = {
-      contractor_first_name: contractor.contractorFirstName,
+      contractor_first_name: toProperCase(contractor.contractorFirstName),
       client_first_name: '',
       job_title: contractor.jobTitle || 'Contractor',
       weeks_elapsed: String(contractor.weeksElapsed),
