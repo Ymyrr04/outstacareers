@@ -733,6 +733,8 @@ export type Database = {
         Row: {
           checkin_email_body: string | null
           checkin_email_subject: string | null
+          contractor_email_body: string | null
+          contractor_email_subject: string | null
           created_at: string
           email_recipient: string
           emoji: string | null
@@ -747,6 +749,8 @@ export type Database = {
         Insert: {
           checkin_email_body?: string | null
           checkin_email_subject?: string | null
+          contractor_email_body?: string | null
+          contractor_email_subject?: string | null
           created_at?: string
           email_recipient?: string
           emoji?: string | null
@@ -761,6 +765,8 @@ export type Database = {
         Update: {
           checkin_email_body?: string | null
           checkin_email_subject?: string | null
+          contractor_email_body?: string | null
+          contractor_email_subject?: string | null
           created_at?: string
           email_recipient?: string
           emoji?: string | null
