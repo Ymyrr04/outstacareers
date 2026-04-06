@@ -173,6 +173,8 @@ export const PostHirePipelineKanban = () => {
                             index={index}
                             daysElapsed={getDaysElapsed(item.contractor?.start_date)}
                             weeksElapsed={getWeeksElapsed(item.contractor?.start_date)}
+                            onSendEmail={() => setEmailTarget({ item, stage })}
+                            hasEmailTemplate={!!(stage.checkin_email_subject || stage.contractor_email_subject)}
                           />
                         ))}
                         {provided.placeholder}
