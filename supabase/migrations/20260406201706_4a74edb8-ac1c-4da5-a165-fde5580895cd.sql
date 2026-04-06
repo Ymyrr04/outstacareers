@@ -1,0 +1,1 @@
+ALTER TABLE public.contractor_pipeline_stages ADD COLUMN email_recipient text NOT NULL DEFAULT 'client';

@@ -734,6 +734,7 @@ export type Database = {
           checkin_email_body: string | null
           checkin_email_subject: string | null
           created_at: string
+          email_recipient: string
           emoji: string | null
           id: string
           is_system: boolean
@@ -747,6 +748,7 @@ export type Database = {
           checkin_email_body?: string | null
           checkin_email_subject?: string | null
           created_at?: string
+          email_recipient?: string
           emoji?: string | null
           id?: string
           is_system?: boolean
@@ -760,6 +762,7 @@ export type Database = {
           checkin_email_body?: string | null
           checkin_email_subject?: string | null
           created_at?: string
+          email_recipient?: string
           emoji?: string | null
           id?: string
           is_system?: boolean
