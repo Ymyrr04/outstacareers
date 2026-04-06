@@ -42,6 +42,10 @@ const PLACEHOLDERS = [
   { key: '{{weeks_elapsed}}', label: 'Weeks Elapsed' },
 ];
 
+function toProperCase(str: string): string {
+  return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
+}
+
 function replacePlaceholders(template: string, data: Record<string, string>): string {
   let result = template;
   for (const [key, value] of Object.entries(data)) {
@@ -65,7 +69,7 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
     if (!stage || !contractor || !open) return;
 
     const placeholders: Record<string, string> = {
-      contractor_first_name: contractor.contractorFirstName,
+      contractor_first_name: toProperCase(contractor.contractorFirstName),
       client_first_name: '',
       job_title: contractor.jobTitle || 'Contractor',
       weeks_elapsed: String(contractor.weeksElapsed),
