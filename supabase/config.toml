@@ -71,3 +71,6 @@ verify_jwt = true
 
 [functions.send-mention-notification]
 verify_jwt = true
+
+[functions.process-contractor-milestones]
+verify_jwt = false
