@@ -1,21 +1,23 @@
 import { useState, useMemo } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { useContractorPipeline, type ContractorPipelineTracking } from '@/hooks/useContractorPipeline';
+import { useContractorPipeline, type ContractorPipelineTracking, type ContractorPipelineStage } from '@/hooks/useContractorPipeline';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Search, X, RefreshCw, Calendar, Building2, User, Clock } from 'lucide-react';
+import { Search, X, RefreshCw, Calendar, Building2, User, Clock, Mail } from 'lucide-react';
 import { differenceInDays, differenceInWeeks, format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { StageEmailTemplateDialog } from './StageEmailTemplateDialog';
 
 export const PostHirePipelineKanban = () => {
   const { stages, tracking, loading, moveToStage, fetchAll } = useContractorPipeline();
   const [searchQuery, setSearchQuery] = useState('');
   const [processingMilestones, setProcessingMilestones] = useState(false);
+  const [editingStage, setEditingStage] = useState<ContractorPipelineStage | null>(null);
   const { toast } = useToast();
 
   const filteredTracking = useMemo(() => {
@@ -129,9 +131,26 @@ export const PostHirePipelineKanban = () => {
                     <span className="text-sm">{stage.emoji}</span>
                     <span className="text-xs font-semibold truncate">{stage.name}</span>
                   </div>
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
-                    {stageTracking.length}
-                  </Badge>
+                  <div className="flex items-center gap-1">
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => setEditingStage(stage)}
+                          className={`p-0.5 rounded hover:bg-background transition-colors ${
+                            stage.checkin_email_subject ? 'text-primary' : 'text-muted-foreground/50'
+                          }`}
+                        >
+                          <Mail className="w-3 h-3" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {stage.checkin_email_subject ? 'Edit email template' : 'Add email template'}
+                      </TooltipContent>
+                    </Tooltip>
+                    <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
+                      {stageTracking.length}
+                    </Badge>
+                  </div>
                 </div>
 
                 {/* Column Content */}
@@ -169,6 +188,13 @@ export const PostHirePipelineKanban = () => {
           })}
         </div>
       </DragDropContext>
+
+      <StageEmailTemplateDialog
+        open={!!editingStage}
+        onOpenChange={(open) => !open && setEditingStage(null)}
+        stage={editingStage}
+        onSaved={fetchAll}
+      />
     </div>
   );
 };
