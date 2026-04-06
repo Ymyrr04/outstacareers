@@ -17,6 +17,7 @@ export const PostHirePipelineKanban = () => {
   const { stages, tracking, loading, moveToStage, fetchAll } = useContractorPipeline();
   const [searchQuery, setSearchQuery] = useState('');
   const [processingMilestones, setProcessingMilestones] = useState(false);
+  const [editingStage, setEditingStage] = useState<ContractorPipelineStage | null>(null);
   const { toast } = useToast();
 
   const filteredTracking = useMemo(() => {
