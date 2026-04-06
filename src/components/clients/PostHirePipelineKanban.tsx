@@ -199,6 +199,22 @@ export const PostHirePipelineKanban = () => {
         stage={editingStage}
         onSaved={fetchAll}
       />
+
+      <SendCheckinEmailDialog
+        open={!!emailTarget}
+        onOpenChange={(open) => !open && setEmailTarget(null)}
+        contractor={emailTarget ? {
+          assignmentId: emailTarget.item.contractor?.id || '',
+          contractorName: emailTarget.item.contractor?.applicant?.full_name || 'Unknown',
+          contractorFirstName: (emailTarget.item.contractor?.applicant?.full_name || 'Unknown').split(' ')[0],
+          contractorEmail: emailTarget.item.contractor?.applicant?.email || '',
+          clientId: emailTarget.item.contractor?.client_id || '',
+          clientName: emailTarget.item.contractor?.client?.company_name || '',
+          jobTitle: emailTarget.item.contractor?.job_title || '',
+          weeksElapsed: getWeeksElapsed(emailTarget.item.contractor?.start_date),
+        } : null}
+        stage={emailTarget?.stage || null}
+      />
     </div>
   );
 };
