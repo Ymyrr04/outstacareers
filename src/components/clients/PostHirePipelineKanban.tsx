@@ -224,9 +224,11 @@ interface ContractorCardProps {
   index: number;
   daysElapsed: number;
   weeksElapsed: number;
+  onSendEmail: () => void;
+  hasEmailTemplate: boolean;
 }
 
-const ContractorCard = ({ item, index, daysElapsed, weeksElapsed }: ContractorCardProps) => {
+const ContractorCard = ({ item, index, daysElapsed, weeksElapsed, onSendEmail, hasEmailTemplate }: ContractorCardProps) => {
   const name = item.contractor?.applicant?.full_name || 'Unknown';
   const company = item.contractor?.client?.company_name || 'Unassigned';
   const jobTitle = item.contractor?.job_title || 'No title';
