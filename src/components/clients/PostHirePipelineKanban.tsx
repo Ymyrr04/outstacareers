@@ -1,0 +1,244 @@
+import { useState, useMemo } from 'react';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { useContractorPipeline, type ContractorPipelineTracking } from '@/hooks/useContractorPipeline';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Search, X, RefreshCw, Calendar, Building2, User, Clock } from 'lucide-react';
+import { differenceInDays, differenceInWeeks, format } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { useToast } from '@/hooks/use-toast';
+
+export const PostHirePipelineKanban = () => {
+  const { stages, tracking, loading, moveToStage, fetchAll } = useContractorPipeline();
+  const [searchQuery, setSearchQuery] = useState('');
+  const [processingMilestones, setProcessingMilestones] = useState(false);
+  const { toast } = useToast();
+
+  const filteredTracking = useMemo(() => {
+    if (!searchQuery.trim()) return tracking;
+    const q = searchQuery.toLowerCase();
+    return tracking.filter(t => {
+      const name = t.contractor?.applicant?.full_name?.toLowerCase() || '';
+      const company = t.contractor?.client?.company_name?.toLowerCase() || '';
+      const title = t.contractor?.job_title?.toLowerCase() || '';
+      return name.includes(q) || company.includes(q) || title.includes(q);
+    });
+  }, [tracking, searchQuery]);
+
+  const getTrackingForStage = (stageId: string) => 
+    filteredTracking.filter(t => t.current_stage_id === stageId);
+
+  const getWeeksElapsed = (startDate: string | null | undefined) => {
+    if (!startDate) return 0;
+    return differenceInWeeks(new Date(), new Date(startDate));
+  };
+
+  const getDaysElapsed = (startDate: string | null | undefined) => {
+    if (!startDate) return 0;
+    return differenceInDays(new Date(), new Date(startDate));
+  };
+
+  const handleDragEnd = async (result: DropResult) => {
+    if (!result.destination) return;
+    const trackingId = result.draggableId;
+    const newStageId = result.destination.droppableId;
+    if (result.source.droppableId === newStageId) return;
+    await moveToStage(trackingId, newStageId);
+  };
+
+  const handleProcessMilestones = async () => {
+    setProcessingMilestones(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('process-contractor-milestones');
+      if (error) throw error;
+      toast({ 
+        title: 'Milestones processed', 
+        description: data?.message || 'Contractors updated successfully' 
+      });
+      fetchAll();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setProcessingMilestones(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex gap-4 p-4 overflow-x-auto">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="min-w-[280px]">
+            <Skeleton className="h-8 w-full mb-2" />
+            <Skeleton className="h-24 w-full mb-2" />
+            <Skeleton className="h-24 w-full" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      {/* Header */}
+      <div className="flex items-center gap-3 px-4 py-2">
+        <div className="relative flex-1 max-w-xs">
+          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+          <Input
+            placeholder="Search by name, company, or role..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-8 h-8 text-xs"
+          />
+          {searchQuery && (
+            <button onClick={() => setSearchQuery('')} className="absolute right-2 top-1/2 -translate-y-1/2">
+              <X className="w-3 h-3 text-muted-foreground" />
+            </button>
+          )}
+        </div>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleProcessMilestones}
+              disabled={processingMilestones}
+              className="h-8 text-xs"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 mr-1.5 ${processingMilestones ? 'animate-spin' : ''}`} />
+              Process Milestones
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Auto-advance contractors and send check-in emails</TooltipContent>
+        </Tooltip>
+      </div>
+
+      {/* Kanban Board */}
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <div className="flex gap-3 px-4 pb-4 overflow-x-auto flex-1">
+          {stages.map(stage => {
+            const stageTracking = getTrackingForStage(stage.id);
+            return (
+              <div key={stage.id} className="min-w-[270px] max-w-[270px] flex flex-col">
+                {/* Column Header */}
+                <div className="flex items-center justify-between px-2 py-1.5 mb-2 rounded-md bg-muted/50">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-sm">{stage.emoji}</span>
+                    <span className="text-xs font-semibold truncate">{stage.name}</span>
+                  </div>
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
+                    {stageTracking.length}
+                  </Badge>
+                </div>
+
+                {/* Column Content */}
+                <Droppable droppableId={stage.id}>
+                  {(provided, snapshot) => (
+                    <ScrollArea className="flex-1 max-h-[calc(100vh-260px)]">
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.droppableProps}
+                        className={`min-h-[60px] space-y-2 p-1 rounded-md transition-colors ${
+                          snapshot.isDraggingOver ? 'bg-primary/5 border border-dashed border-primary/30' : ''
+                        }`}
+                      >
+                        {stageTracking.map((item, index) => (
+                          <ContractorCard 
+                            key={item.id} 
+                            item={item} 
+                            index={index}
+                            daysElapsed={getDaysElapsed(item.contractor?.start_date)}
+                            weeksElapsed={getWeeksElapsed(item.contractor?.start_date)}
+                          />
+                        ))}
+                        {provided.placeholder}
+                        {stageTracking.length === 0 && (
+                          <div className="text-center py-6 text-[11px] text-muted-foreground">
+                            No contractors
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  )}
+                </Droppable>
+              </div>
+            );
+          })}
+        </div>
+      </DragDropContext>
+    </div>
+  );
+};
+
+interface ContractorCardProps {
+  item: ContractorPipelineTracking;
+  index: number;
+  daysElapsed: number;
+  weeksElapsed: number;
+}
+
+const ContractorCard = ({ item, index, daysElapsed, weeksElapsed }: ContractorCardProps) => {
+  const name = item.contractor?.applicant?.full_name || 'Unknown';
+  const company = item.contractor?.client?.company_name || 'Unassigned';
+  const jobTitle = item.contractor?.job_title || 'No title';
+  const startDate = item.contractor?.start_date;
+
+  return (
+    <Draggable draggableId={item.id} index={index}>
+      {(provided, snapshot) => (
+        <div
+          ref={provided.innerRef}
+          {...provided.draggableProps}
+          {...provided.dragHandleProps}
+          className={`rounded-lg border bg-card p-2.5 shadow-sm transition-shadow cursor-grab active:cursor-grabbing ${
+            snapshot.isDragging ? 'shadow-lg ring-2 ring-primary/20' : 'hover:shadow-md'
+          }`}
+        >
+          {/* Name & Company */}
+          <div className="flex items-start justify-between gap-1 mb-1.5">
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold truncate">{name}</p>
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <Building2 className="w-3 h-3 flex-shrink-0" />
+                <span className="truncate">{company}</span>
+              </div>
+            </div>
+            <Badge variant="outline" className="text-[9px] px-1 py-0 h-4 flex-shrink-0">
+              {weeksElapsed}w
+            </Badge>
+          </div>
+
+          {/* Job Title */}
+          <div className="flex items-center gap-1 text-[10px] text-muted-foreground mb-1.5">
+            <User className="w-3 h-3 flex-shrink-0" />
+            <span className="truncate">{jobTitle}</span>
+          </div>
+
+          {/* Bottom row */}
+          <div className="flex items-center justify-between">
+            {startDate && (
+              <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+                <Calendar className="w-2.5 h-2.5" />
+                <span>{format(new Date(startDate), 'MMM d, yyyy')}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+              <Clock className="w-2.5 h-2.5" />
+              <span>{daysElapsed}d elapsed</span>
+            </div>
+          </div>
+
+          {/* Auto/manual badge */}
+          {!item.auto_moved && (
+            <Badge variant="secondary" className="text-[8px] px-1 py-0 mt-1.5">
+              Manually moved
+            </Badge>
+          )}
+        </div>
+      )}
+    </Draggable>
+  );
+};

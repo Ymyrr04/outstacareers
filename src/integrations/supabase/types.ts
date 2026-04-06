@@ -589,6 +589,63 @@ export type Database = {
           },
         ]
       }
+      contractor_checkin_emails: {
+        Row: {
+          body_html: string
+          contractor_assignment_id: string
+          created_at: string
+          error_message: string | null
+          id: string
+          recipient_email: string
+          recipient_name: string | null
+          sent_at: string | null
+          stage_id: string
+          status: string
+          subject: string
+        }
+        Insert: {
+          body_html: string
+          contractor_assignment_id: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          recipient_email: string
+          recipient_name?: string | null
+          sent_at?: string | null
+          stage_id: string
+          status?: string
+          subject: string
+        }
+        Update: {
+          body_html?: string
+          contractor_assignment_id?: string
+          created_at?: string
+          error_message?: string | null
+          id?: string
+          recipient_email?: string
+          recipient_name?: string | null
+          sent_at?: string | null
+          stage_id?: string
+          status?: string
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contractor_checkin_emails_contractor_assignment_id_fkey"
+            columns: ["contractor_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "contractor_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contractor_checkin_emails_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "contractor_pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contractor_email_logs: {
         Row: {
           body_html: string
@@ -671,6 +728,96 @@ export type Database = {
           updated_at?: string
         }
         Relationships: []
+      }
+      contractor_pipeline_stages: {
+        Row: {
+          checkin_email_body: string | null
+          checkin_email_subject: string | null
+          created_at: string
+          emoji: string | null
+          id: string
+          is_system: boolean
+          name: string
+          slug: string
+          stage_order: number
+          trigger_days: number
+          updated_at: string
+        }
+        Insert: {
+          checkin_email_body?: string | null
+          checkin_email_subject?: string | null
+          created_at?: string
+          emoji?: string | null
+          id?: string
+          is_system?: boolean
+          name: string
+          slug: string
+          stage_order?: number
+          trigger_days?: number
+          updated_at?: string
+        }
+        Update: {
+          checkin_email_body?: string | null
+          checkin_email_subject?: string | null
+          created_at?: string
+          emoji?: string | null
+          id?: string
+          is_system?: boolean
+          name?: string
+          slug?: string
+          stage_order?: number
+          trigger_days?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      contractor_pipeline_tracking: {
+        Row: {
+          auto_moved: boolean
+          contractor_assignment_id: string
+          created_at: string
+          current_stage_id: string
+          id: string
+          moved_at: string
+          notes: string | null
+          updated_at: string
+        }
+        Insert: {
+          auto_moved?: boolean
+          contractor_assignment_id: string
+          created_at?: string
+          current_stage_id: string
+          id?: string
+          moved_at?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Update: {
+          auto_moved?: boolean
+          contractor_assignment_id?: string
+          created_at?: string
+          current_stage_id?: string
+          id?: string
+          moved_at?: string
+          notes?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contractor_pipeline_tracking_contractor_assignment_id_fkey"
+            columns: ["contractor_assignment_id"]
+            isOneToOne: true
+            referencedRelation: "contractor_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contractor_pipeline_tracking_current_stage_id_fkey"
+            columns: ["current_stage_id"]
+            isOneToOne: false
+            referencedRelation: "contractor_pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deleted_applicants: {
         Row: {

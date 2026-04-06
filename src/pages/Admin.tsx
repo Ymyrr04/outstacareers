@@ -20,6 +20,7 @@ import { useBackgroundExport } from '@/hooks/useBackgroundExport';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useEmailReplies } from '@/hooks/useEmailTemplates';
 import { ClientsDashboard, ContractorsDashboard, ClientAnalyticsDashboard, HiringPipelineKanban } from '@/components/clients';
+import { PostHirePipelineKanban } from '@/components/clients/PostHirePipelineKanban';
 import { generateJobUrl } from '@/lib/slugify';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
 import { Input } from '@/components/ui/input';
@@ -337,7 +338,7 @@ const Admin = () => {
   const [manualTabLoading, setManualTabLoading] = useState(false);
   
   // Heavy tabs that need loading indicator
-  const heavyTabs = ['applicants', 'recruiter-dash', 'pipeline', 'contractors'];
+  const heavyTabs = ['applicants', 'recruiter-dash', 'pipeline', 'post-hire', 'contractors'];
   
   // Show loading screen for heavy tabs - show immediately, hide after content renders
   useEffect(() => {
@@ -1567,6 +1568,12 @@ const Admin = () => {
               <TabsTrigger value="pipeline" className="flex items-center gap-2">
                 <Kanban className="w-4 h-4" />
                 Pipeline
+              </TabsTrigger>
+            )}
+            {canViewTab('post-hire') && (
+              <TabsTrigger value="post-hire" className="flex items-center gap-2">
+                <Target className="w-4 h-4" />
+                Post-Hire
               </TabsTrigger>
             )}
             {canViewTab('clients') && (
@@ -3538,6 +3545,15 @@ const Admin = () => {
               <p className="text-[11px] text-muted-foreground">Track client hiring requests through the recruitment pipeline</p>
             </div>
             <HiringPipelineKanban />
+          </TabsContent>
+
+          {/* Post-Hire Pipeline Tab */}
+          <TabsContent value="post-hire" className="space-y-1">
+            <div className="px-4 pt-1">
+              <h2 className="text-sm font-semibold">Post-Hire Pipeline</h2>
+              <p className="text-[11px] text-muted-foreground">Track contractor milestones and send client check-in emails</p>
+            </div>
+            <PostHirePipelineKanban />
           </TabsContent>
 
           {/* Clients Tab */}
