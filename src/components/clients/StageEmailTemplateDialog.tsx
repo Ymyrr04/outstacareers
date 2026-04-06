@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
@@ -18,6 +19,8 @@ interface StageEmailTemplateDialogProps {
     emoji: string | null;
     checkin_email_subject: string | null;
     checkin_email_body: string | null;
+    contractor_email_subject?: string | null;
+    contractor_email_body?: string | null;
     email_recipient?: string;
   } | null;
   onSaved: () => void;
@@ -30,20 +33,39 @@ const PLACEHOLDERS = [
   { key: '{{weeks_elapsed}}', label: 'Weeks Elapsed' },
 ];
 
+// Convert literal \n to real newlines for display in textarea
+const unescapeNewlines = (str: string) => str.replace(/\\n/g, '\n');
+// Convert real newlines to \n for storage (keep as real newlines)
+const normalizeBody = (str: string) => str;
+
 export const StageEmailTemplateDialog = ({ open, onOpenChange, stage, onSaved }: StageEmailTemplateDialogProps) => {
-  const [subject, setSubject] = useState('');
-  const [body, setBody] = useState('');
   const [recipient, setRecipient] = useState('client');
+  const [clientSubject, setClientSubject] = useState('');
+  const [clientBody, setClientBody] = useState('');
+  const [contractorSubject, setContractorSubject] = useState('');
+  const [contractorBody, setContractorBody] = useState('');
   const [saving, setSaving] = useState(false);
+  const [activeTab, setActiveTab] = useState('client');
   const { toast } = useToast();
 
   useEffect(() => {
     if (stage) {
-      setSubject(stage.checkin_email_subject || '');
-      setBody(stage.checkin_email_body || '');
       setRecipient((stage as any).email_recipient || 'client');
+      setClientSubject(stage.checkin_email_subject || '');
+      setClientBody(unescapeNewlines(stage.checkin_email_body || ''));
+      setContractorSubject((stage as any).contractor_email_subject || '');
+      setContractorBody(unescapeNewlines((stage as any).contractor_email_body || ''));
     }
   }, [stage]);
+
+  const showClientTab = recipient === 'client' || recipient === 'both';
+  const showContractorTab = recipient === 'contractor' || recipient === 'both';
+
+  // Auto-switch tab if current tab is hidden
+  useEffect(() => {
+    if (!showClientTab && activeTab === 'client') setActiveTab('contractor');
+    if (!showContractorTab && activeTab === 'contractor') setActiveTab('client');
+  }, [recipient, showClientTab, showContractorTab, activeTab]);
 
   const handleSave = async () => {
     if (!stage) return;
@@ -51,8 +73,10 @@ export const StageEmailTemplateDialog = ({ open, onOpenChange, stage, onSaved }:
     const { error } = await supabase
       .from('contractor_pipeline_stages')
       .update({
-        checkin_email_subject: subject || null,
-        checkin_email_body: body || null,
+        checkin_email_subject: clientSubject || null,
+        checkin_email_body: clientBody || null,
+        contractor_email_subject: contractorSubject || null,
+        contractor_email_body: contractorBody || null,
         email_recipient: recipient,
       } as any)
       .eq('id', stage.id);
@@ -67,20 +91,59 @@ export const StageEmailTemplateDialog = ({ open, onOpenChange, stage, onSaved }:
     }
   };
 
-  const insertPlaceholder = (placeholder: string, target: 'subject' | 'body') => {
-    if (target === 'subject') {
-      setSubject(prev => prev + placeholder);
-    } else {
-      setBody(prev => prev + placeholder);
-    }
-  };
+  const renderTemplateFields = (
+    subject: string,
+    setSubject: (v: string) => void,
+    body: string,
+    setBody: (v: string) => void,
+    label: string,
+  ) => (
+    <div className="space-y-3">
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium">Available placeholders</Label>
+        <div className="flex flex-wrap gap-1.5">
+          {PLACEHOLDERS.map(p => (
+            <Badge
+              key={p.key}
+              variant="outline"
+              className="text-[10px] cursor-pointer hover:bg-primary/10 transition-colors"
+              onClick={() => setBody(body + p.key)}
+            >
+              {p.key}
+            </Badge>
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium">{label} — Subject</Label>
+        <Input
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+          placeholder="e.g. Week 1 Check-in: How is {{contractor_name}} doing?"
+          className="text-sm"
+        />
+      </div>
+
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium">{label} — Body</Label>
+        <Textarea
+          value={body}
+          onChange={(e) => setBody(e.target.value)}
+          placeholder="Write your check-in email here... Use line breaks for formatting."
+          rows={8}
+          className="text-sm"
+        />
+      </div>
+    </div>
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {stage?.emoji} {stage?.name} — Email Template
+            {stage?.emoji} {stage?.name} — Email Templates
           </DialogTitle>
         </DialogHeader>
 
@@ -100,45 +163,25 @@ export const StageEmailTemplateDialog = ({ open, onOpenChange, stage, onSaved }:
             </Select>
           </div>
 
-          {/* Placeholders */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Available placeholders</Label>
-            <div className="flex flex-wrap gap-1.5">
-              {PLACEHOLDERS.map(p => (
-                <Badge
-                  key={p.key}
-                  variant="outline"
-                  className="text-[10px] cursor-pointer hover:bg-primary/10 transition-colors"
-                  onClick={() => insertPlaceholder(p.key, 'body')}
-                >
-                  {p.key}
-                </Badge>
-              ))}
-            </div>
-          </div>
-
-          {/* Subject */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Subject</Label>
-            <Input
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              placeholder="e.g. Week 1 Check-in: How is {{contractor_name}} doing?"
-              className="text-sm"
-            />
-          </div>
-
-          {/* Body */}
-          <div className="space-y-1.5">
-            <Label className="text-xs font-medium">Email body</Label>
-            <Textarea
-              value={body}
-              onChange={(e) => setBody(e.target.value)}
-              placeholder="Write your check-in email here..."
-              rows={8}
-              className="text-sm"
-            />
-          </div>
+          {/* Templates */}
+          {recipient === 'both' ? (
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList className="w-full">
+                <TabsTrigger value="client" className="flex-1 text-xs">Client Template</TabsTrigger>
+                <TabsTrigger value="contractor" className="flex-1 text-xs">Contractor Template</TabsTrigger>
+              </TabsList>
+              <TabsContent value="client" className="mt-3">
+                {renderTemplateFields(clientSubject, setClientSubject, clientBody, setClientBody, 'Client email')}
+              </TabsContent>
+              <TabsContent value="contractor" className="mt-3">
+                {renderTemplateFields(contractorSubject, setContractorSubject, contractorBody, setContractorBody, 'Contractor email')}
+              </TabsContent>
+            </Tabs>
+          ) : showClientTab ? (
+            renderTemplateFields(clientSubject, setClientSubject, clientBody, setClientBody, 'Client email')
+          ) : (
+            renderTemplateFields(contractorSubject, setContractorSubject, contractorBody, setContractorBody, 'Contractor email')
+          )}
 
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="outline" size="sm" onClick={() => onOpenChange(false)}>Cancel</Button>
