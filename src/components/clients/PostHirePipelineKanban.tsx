@@ -294,12 +294,6 @@ const ContractorCard = ({ item, index, daysElapsed, weeksElapsed, onSendEmail, h
             )}
           </div>
 
-          {/* Auto/manual badge */}
-          {!item.auto_moved && (
-            <Badge variant="secondary" className="text-[8px] px-1 py-0 mt-1.5">
-              Manually moved
-            </Badge>
-          )}
         </div>
       )}
     </Draggable>
