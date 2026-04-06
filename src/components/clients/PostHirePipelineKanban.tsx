@@ -7,11 +7,12 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Search, X, RefreshCw, Calendar, Building2, User, Clock, Mail } from 'lucide-react';
+import { Search, X, RefreshCw, Calendar, Building2, User, Clock, Mail, Send } from 'lucide-react';
 import { differenceInDays, differenceInWeeks, format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { StageEmailTemplateDialog } from './StageEmailTemplateDialog';
+import { SendCheckinEmailDialog } from './SendCheckinEmailDialog';
 
 export const PostHirePipelineKanban = () => {
   const { stages, tracking, loading, moveToStage, fetchAll } = useContractorPipeline();
