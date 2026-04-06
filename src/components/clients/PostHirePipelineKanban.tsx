@@ -7,17 +7,19 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Search, X, RefreshCw, Calendar, Building2, User, Clock, Mail } from 'lucide-react';
+import { Search, X, RefreshCw, Calendar, Building2, User, Clock, Mail, Send } from 'lucide-react';
 import { differenceInDays, differenceInWeeks, format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { StageEmailTemplateDialog } from './StageEmailTemplateDialog';
+import { SendCheckinEmailDialog } from './SendCheckinEmailDialog';
 
 export const PostHirePipelineKanban = () => {
   const { stages, tracking, loading, moveToStage, fetchAll } = useContractorPipeline();
   const [searchQuery, setSearchQuery] = useState('');
   const [processingMilestones, setProcessingMilestones] = useState(false);
   const [editingStage, setEditingStage] = useState<ContractorPipelineStage | null>(null);
+  const [emailTarget, setEmailTarget] = useState<{ item: ContractorPipelineTracking; stage: ContractorPipelineStage } | null>(null);
   const { toast } = useToast();
 
   const filteredTracking = useMemo(() => {
@@ -171,6 +173,8 @@ export const PostHirePipelineKanban = () => {
                             index={index}
                             daysElapsed={getDaysElapsed(item.contractor?.start_date)}
                             weeksElapsed={getWeeksElapsed(item.contractor?.start_date)}
+                            onSendEmail={() => setEmailTarget({ item, stage })}
+                            hasEmailTemplate={!!(stage.checkin_email_subject || stage.contractor_email_subject)}
                           />
                         ))}
                         {provided.placeholder}
@@ -195,6 +199,22 @@ export const PostHirePipelineKanban = () => {
         stage={editingStage}
         onSaved={fetchAll}
       />
+
+      <SendCheckinEmailDialog
+        open={!!emailTarget}
+        onOpenChange={(open) => !open && setEmailTarget(null)}
+        contractor={emailTarget ? {
+          assignmentId: emailTarget.item.contractor?.id || '',
+          contractorName: emailTarget.item.contractor?.applicant?.full_name || 'Unknown',
+          contractorFirstName: (emailTarget.item.contractor?.applicant?.full_name || 'Unknown').split(' ')[0],
+          contractorEmail: emailTarget.item.contractor?.applicant?.email || '',
+          clientId: emailTarget.item.contractor?.client_id || '',
+          clientName: emailTarget.item.contractor?.client?.company_name || '',
+          jobTitle: emailTarget.item.contractor?.job_title || '',
+          weeksElapsed: getWeeksElapsed(emailTarget.item.contractor?.start_date),
+        } : null}
+        stage={emailTarget?.stage || null}
+      />
     </div>
   );
 };
@@ -204,9 +224,11 @@ interface ContractorCardProps {
   index: number;
   daysElapsed: number;
   weeksElapsed: number;
+  onSendEmail: () => void;
+  hasEmailTemplate: boolean;
 }
 
-const ContractorCard = ({ item, index, daysElapsed, weeksElapsed }: ContractorCardProps) => {
+const ContractorCard = ({ item, index, daysElapsed, weeksElapsed, onSendEmail, hasEmailTemplate }: ContractorCardProps) => {
   const name = item.contractor?.applicant?.full_name || 'Unknown';
   const company = item.contractor?.client?.company_name || 'Unassigned';
   const jobTitle = item.contractor?.job_title || 'No title';
@@ -245,16 +267,31 @@ const ContractorCard = ({ item, index, daysElapsed, weeksElapsed }: ContractorCa
 
           {/* Bottom row */}
           <div className="flex items-center justify-between">
-            {startDate && (
+            <div className="flex items-center gap-2">
+              {startDate && (
+                <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+                  <Calendar className="w-2.5 h-2.5" />
+                  <span>{format(new Date(startDate), 'MMM d, yyyy')}</span>
+                </div>
+              )}
               <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
-                <Calendar className="w-2.5 h-2.5" />
-                <span>{format(new Date(startDate), 'MMM d, yyyy')}</span>
+                <Clock className="w-2.5 h-2.5" />
+                <span>{daysElapsed}d</span>
               </div>
-            )}
-            <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
-              <Clock className="w-2.5 h-2.5" />
-              <span>{daysElapsed}d elapsed</span>
             </div>
+            {hasEmailTemplate && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onSendEmail(); }}
+                    className="p-1 rounded hover:bg-primary/10 text-primary transition-colors"
+                  >
+                    <Send className="w-3 h-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Send check-in email</TooltipContent>
+              </Tooltip>
+            )}
           </div>
 
           {/* Auto/manual badge */}
