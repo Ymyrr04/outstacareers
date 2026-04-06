@@ -27,8 +27,8 @@ interface StageEmailTemplateDialogProps {
 }
 
 const PLACEHOLDERS = [
-  { key: '{{contractor_name}}', label: 'Contractor Name' },
-  { key: '{{client_name}}', label: 'Client Contact Name' },
+  { key: '{{contractor_first_name}}', label: 'Contractor First Name' },
+  { key: '{{client_first_name}}', label: 'Client First Name' },
   { key: '{{job_title}}', label: 'Job Title' },
   { key: '{{weeks_elapsed}}', label: 'Weeks Elapsed' },
 ];
