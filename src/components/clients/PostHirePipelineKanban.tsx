@@ -267,16 +267,31 @@ const ContractorCard = ({ item, index, daysElapsed, weeksElapsed, onSendEmail, h
 
           {/* Bottom row */}
           <div className="flex items-center justify-between">
-            {startDate && (
+            <div className="flex items-center gap-2">
+              {startDate && (
+                <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
+                  <Calendar className="w-2.5 h-2.5" />
+                  <span>{format(new Date(startDate), 'MMM d, yyyy')}</span>
+                </div>
+              )}
               <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
-                <Calendar className="w-2.5 h-2.5" />
-                <span>{format(new Date(startDate), 'MMM d, yyyy')}</span>
+                <Clock className="w-2.5 h-2.5" />
+                <span>{daysElapsed}d</span>
               </div>
-            )}
-            <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
-              <Clock className="w-2.5 h-2.5" />
-              <span>{daysElapsed}d elapsed</span>
             </div>
+            {hasEmailTemplate && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); onSendEmail(); }}
+                    className="p-1 rounded hover:bg-primary/10 text-primary transition-colors"
+                  >
+                    <Send className="w-3 h-3" />
+                  </button>
+                </TooltipTrigger>
+                <TooltipContent>Send check-in email</TooltipContent>
+              </Tooltip>
+            )}
           </div>
 
           {/* Auto/manual badge */}
