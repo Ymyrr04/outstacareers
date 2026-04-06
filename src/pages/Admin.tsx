@@ -3547,6 +3547,15 @@ const Admin = () => {
             <HiringPipelineKanban />
           </TabsContent>
 
+          {/* Post-Hire Pipeline Tab */}
+          <TabsContent value="post-hire" className="space-y-1">
+            <div className="px-4 pt-1">
+              <h2 className="text-sm font-semibold">Post-Hire Pipeline</h2>
+              <p className="text-[11px] text-muted-foreground">Track contractor milestones and send client check-in emails</p>
+            </div>
+            <PostHirePipelineKanban />
+          </TabsContent>
+
           {/* Clients Tab */}
           <TabsContent value="clients" className="space-y-6">
             <ClientsDashboard />
