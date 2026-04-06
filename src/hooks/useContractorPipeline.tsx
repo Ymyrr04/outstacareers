@@ -12,6 +12,9 @@ export interface ContractorPipelineStage {
   is_system: boolean;
   checkin_email_subject: string | null;
   checkin_email_body: string | null;
+  contractor_email_subject: string | null;
+  contractor_email_body: string | null;
+  email_recipient: string;
   created_at: string;
   updated_at: string;
 }

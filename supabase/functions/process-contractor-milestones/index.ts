@@ -141,9 +141,15 @@ Deno.serve(async (req) => {
         advancedCount++;
         results.push(`${name} → ${targetStage.name}`);
 
-        // Send check-in email if stage has email config
-        if (targetStage.checkin_email_subject && targetStage.checkin_email_body) {
-          // Check if email already sent for this stage
+        // Send check-in emails based on recipient setting and separate templates
+        const emailRecipient = (targetStage as any).email_recipient || 'client';
+        const hasClientTemplate = targetStage.checkin_email_subject && targetStage.checkin_email_body;
+        const hasContractorTemplate = (targetStage as any).contractor_email_subject && (targetStage as any).contractor_email_body;
+
+        const shouldSendClient = (emailRecipient === 'client' || emailRecipient === 'both') && hasClientTemplate;
+        const shouldSendContractor = (emailRecipient === 'contractor' || emailRecipient === 'both') && hasContractorTemplate;
+
+        if (shouldSendClient || shouldSendContractor) {
           const { data: existingEmail } = await supabase
             .from('contractor_checkin_emails')
             .select('id')
@@ -152,43 +158,43 @@ Deno.serve(async (req) => {
             .limit(1);
 
           if (!existingEmail || existingEmail.length === 0) {
-            const emailRecipient = (targetStage as any).email_recipient || 'client';
-            const recipients: { email: string; name: string }[] = [];
+            const sendTargets: { email: string; recipientName: string; subject: string; body: string }[] = [];
+            const basePlaceholders = {
+              contractor_name: name,
+              job_title: contractor.job_title || 'Contractor',
+              weeks_elapsed: String(Math.floor(daysElapsed / 7)),
+            };
 
-            // Get client primary contact
-            if (emailRecipient === 'client' || emailRecipient === 'both') {
+            if (shouldSendClient) {
               const { data: contacts } = await supabase
                 .from('client_contacts')
                 .select('email, full_name')
                 .eq('client_id', contractor.client_id)
                 .eq('is_primary', true)
                 .limit(1);
-
-              const primaryContact = contacts?.[0];
-              if (primaryContact?.email) {
-                recipients.push({ email: primaryContact.email, name: primaryContact.full_name || client?.company_name || 'Client' });
+              const pc = contacts?.[0];
+              if (pc?.email) {
+                const ph = { ...basePlaceholders, client_name: pc.full_name || client?.company_name || 'Client' };
+                sendTargets.push({
+                  email: pc.email,
+                  recipientName: pc.full_name || 'Client',
+                  subject: replacePlaceholders(targetStage.checkin_email_subject!, ph),
+                  body: replacePlaceholders(targetStage.checkin_email_body!, ph),
+                });
               }
             }
 
-            // Get contractor email
-            if (emailRecipient === 'contractor' || emailRecipient === 'both') {
-              const contractorEmail = applicant?.email;
-              if (contractorEmail) {
-                recipients.push({ email: contractorEmail, name: name });
-              }
+            if (shouldSendContractor && applicant?.email) {
+              const ph = { ...basePlaceholders, client_name: client?.company_name || 'Client' };
+              sendTargets.push({
+                email: applicant.email,
+                recipientName: name,
+                subject: replacePlaceholders((targetStage as any).contractor_email_subject!, ph),
+                body: replacePlaceholders((targetStage as any).contractor_email_body!, ph),
+              });
             }
 
-            for (const recipientInfo of recipients) {
-              const placeholders = {
-                contractor_name: name,
-                client_name: recipientInfo.name,
-                job_title: contractor.job_title || 'Contractor',
-                weeks_elapsed: String(Math.floor(daysElapsed / 7)),
-              };
-
-              const subject = replacePlaceholders(targetStage.checkin_email_subject, placeholders);
-              const body = replacePlaceholders(targetStage.checkin_email_body, placeholders);
-
+            for (const tgt of sendTargets) {
               try {
                 const gmailUser = Deno.env.get("MARK_GMAIL_USER");
                 const gmailPassword = Deno.env.get("MARK_GMAIL_APP_PASSWORD");
@@ -213,7 +219,8 @@ Deno.serve(async (req) => {
 <br/>
 <img src="https://ohxtavjababtrcrkgndq.supabase.co/storage/v1/object/public/email-assets/mark-signature.png" alt="Mark Chua" style="width: 420px; max-width: 100%; height: auto; border-radius: 8px;" />`;
 
-                  const formattedBody = body
+                  const formattedBody = tgt.body
+                    .replace(/\\n/g, '<br>')
                     .replace(/\n/g, '<br>')
                     .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 
@@ -221,8 +228,8 @@ Deno.serve(async (req) => {
 
                   await smtpClient.send({
                     from: `OutSta Mark Chua <${gmailUser}>`,
-                    to: recipientInfo.email,
-                    subject,
+                    to: tgt.email,
+                    subject: tgt.subject,
                     content: "auto",
                     html: emailHtml,
                     headers: { "Message-ID": messageId },
@@ -233,26 +240,26 @@ Deno.serve(async (req) => {
                   await supabase.from('contractor_checkin_emails').insert({
                     contractor_assignment_id: contractor.id,
                     stage_id: targetStage.id,
-                    recipient_email: recipientInfo.email,
-                    recipient_name: recipientInfo.name,
-                    subject,
-                    body_html: body,
+                    recipient_email: tgt.email,
+                    recipient_name: tgt.recipientName,
+                    subject: tgt.subject,
+                    body_html: tgt.body,
                     status: 'sent',
                     sent_at: new Date().toISOString(),
                   });
 
                   emailsSent++;
-                  results.push(`✉️ Check-in email sent to ${recipientInfo.email} for ${name}`);
+                  results.push(`✉️ Email sent to ${tgt.email} for ${name}`);
                 }
               } catch (emailError: any) {
                 console.error(`Error sending check-in email for ${name}:`, emailError);
                 await supabase.from('contractor_checkin_emails').insert({
                   contractor_assignment_id: contractor.id,
                   stage_id: targetStage.id,
-                  recipient_email: recipientInfo.email,
-                  recipient_name: recipientInfo.name,
-                  subject,
-                  body_html: body,
+                  recipient_email: tgt.email,
+                  recipient_name: tgt.recipientName,
+                  subject: tgt.subject,
+                  body_html: tgt.body,
                   status: 'failed',
                   error_message: emailError.message,
                 });
