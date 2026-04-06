@@ -5,21 +5,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-function generateMessageId(domain: string): string {
-  const timestamp = Date.now();
-  const randomBytes = crypto.getRandomValues(new Uint8Array(8));
-  const randomHex = Array.from(randomBytes).map(b => b.toString(16).padStart(2, '0')).join('');
-  return `<${timestamp}.${randomHex}@${domain}>`;
-}
-
-function replacePlaceholders(template: string, data: Record<string, string>): string {
-  let result = template;
-  for (const [key, value] of Object.entries(data)) {
-    result = result.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), value);
-  }
-  return result;
-}
-
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
