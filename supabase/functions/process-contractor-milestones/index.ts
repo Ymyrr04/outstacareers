@@ -152,19 +152,36 @@ Deno.serve(async (req) => {
             .limit(1);
 
           if (!existingEmail || existingEmail.length === 0) {
-            // Get client primary contact email
-            const { data: contacts } = await supabase
-              .from('client_contacts')
-              .select('email, full_name')
-              .eq('client_id', contractor.client_id)
-              .eq('is_primary', true)
-              .limit(1);
+            const emailRecipient = (targetStage as any).email_recipient || 'client';
+            const recipients: { email: string; name: string }[] = [];
 
-            const primaryContact = contacts?.[0];
-            if (primaryContact?.email) {
+            // Get client primary contact
+            if (emailRecipient === 'client' || emailRecipient === 'both') {
+              const { data: contacts } = await supabase
+                .from('client_contacts')
+                .select('email, full_name')
+                .eq('client_id', contractor.client_id)
+                .eq('is_primary', true)
+                .limit(1);
+
+              const primaryContact = contacts?.[0];
+              if (primaryContact?.email) {
+                recipients.push({ email: primaryContact.email, name: primaryContact.full_name || client?.company_name || 'Client' });
+              }
+            }
+
+            // Get contractor email
+            if (emailRecipient === 'contractor' || emailRecipient === 'both') {
+              const contractorEmail = applicant?.email;
+              if (contractorEmail) {
+                recipients.push({ email: contractorEmail, name: name });
+              }
+            }
+
+            for (const recipientInfo of recipients) {
               const placeholders = {
                 contractor_name: name,
-                client_name: primaryContact.full_name || client?.company_name || 'Client',
+                client_name: recipientInfo.name,
                 job_title: contractor.job_title || 'Contractor',
                 weeks_elapsed: String(Math.floor(daysElapsed / 7)),
               };
@@ -172,7 +189,6 @@ Deno.serve(async (req) => {
               const subject = replacePlaceholders(targetStage.checkin_email_subject, placeholders);
               const body = replacePlaceholders(targetStage.checkin_email_body, placeholders);
 
-              // Try to send email
               try {
                 const gmailUser = Deno.env.get("MARK_GMAIL_USER");
                 const gmailPassword = Deno.env.get("MARK_GMAIL_APP_PASSWORD");
@@ -205,7 +221,7 @@ Deno.serve(async (req) => {
 
                   await smtpClient.send({
                     from: `OutSta Mark Chua <${gmailUser}>`,
-                    to: primaryContact.email,
+                    to: recipientInfo.email,
                     subject,
                     content: "auto",
                     html: emailHtml,
@@ -214,12 +230,11 @@ Deno.serve(async (req) => {
 
                   await smtpClient.close();
 
-                  // Log the email
                   await supabase.from('contractor_checkin_emails').insert({
                     contractor_assignment_id: contractor.id,
                     stage_id: targetStage.id,
-                    recipient_email: primaryContact.email,
-                    recipient_name: primaryContact.full_name,
+                    recipient_email: recipientInfo.email,
+                    recipient_name: recipientInfo.name,
                     subject,
                     body_html: body,
                     status: 'sent',
@@ -227,15 +242,15 @@ Deno.serve(async (req) => {
                   });
 
                   emailsSent++;
-                  results.push(`✉️ Check-in email sent to ${primaryContact.email} for ${name}`);
+                  results.push(`✉️ Check-in email sent to ${recipientInfo.email} for ${name}`);
                 }
               } catch (emailError: any) {
                 console.error(`Error sending check-in email for ${name}:`, emailError);
                 await supabase.from('contractor_checkin_emails').insert({
                   contractor_assignment_id: contractor.id,
                   stage_id: targetStage.id,
-                  recipient_email: primaryContact.email,
-                  recipient_name: primaryContact.full_name,
+                  recipient_email: recipientInfo.email,
+                  recipient_name: recipientInfo.name,
                   subject,
                   body_html: body,
                   status: 'failed',

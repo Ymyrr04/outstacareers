@@ -188,6 +188,13 @@ export const PostHirePipelineKanban = () => {
           })}
         </div>
       </DragDropContext>
+
+      <StageEmailTemplateDialog
+        open={!!editingStage}
+        onOpenChange={(open) => !open && setEditingStage(null)}
+        stage={editingStage}
+        onSaved={fetchAll}
+      />
     </div>
   );
 };
