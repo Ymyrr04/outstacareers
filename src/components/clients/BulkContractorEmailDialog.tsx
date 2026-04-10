@@ -732,7 +732,7 @@ export const BulkContractorEmailDialog = ({
             )}
           </div>
 
-          {/* Processing / Paused Emails with Progress Bar */}
+          {/* Processing / Paused / Stuck Emails with Progress Bar */}
           {processingEmails.length > 0 && (
             <div className="border border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-950/20 rounded-lg p-4 space-y-3">
               <div className="flex items-center gap-2">
@@ -751,15 +751,30 @@ export const BulkContractorEmailDialog = ({
                   const processed = email.processed_items || 0;
                   const percentage = total > 0 ? Math.round((processed / total) * 100) : 0;
                   const isPaused = email.status === 'paused';
+                  
+                  // Detect stuck: status is 'processing' but no progress in last 5 minutes
+                  const lastActivity = email.updated_at || email.created_at;
+                  const minutesSinceActivity = lastActivity 
+                    ? Math.floor((Date.now() - new Date(lastActivity).getTime()) / 60000) 
+                    : 0;
+                  const isStuck = email.status === 'processing' && minutesSinceActivity >= 5 && processed < total;
+
                   return (
                     <div key={email.id} className="bg-background rounded-md p-3 border text-sm space-y-2">
                       <div className="flex items-center justify-between">
                         <p className="font-medium truncate flex-1">{email.subject}</p>
-                        {isPaused && (
-                          <Badge variant="outline" className="text-amber-600 border-amber-300 text-[10px] px-1.5 py-0 ml-2">
-                            Paused
-                          </Badge>
-                        )}
+                        <div className="flex items-center gap-1 ml-2">
+                          {isPaused && (
+                            <Badge variant="outline" className="text-amber-600 border-amber-300 text-[10px] px-1.5 py-0">
+                              Paused
+                            </Badge>
+                          )}
+                          {isStuck && (
+                            <Badge variant="outline" className="text-red-600 border-red-300 text-[10px] px-1.5 py-0">
+                              Stuck — no activity for {minutesSinceActivity}m
+                            </Badge>
+                          )}
+                        </div>
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
@@ -769,7 +784,7 @@ export const BulkContractorEmailDialog = ({
                         <Progress value={percentage} className="h-2" />
                       </div>
                       <div className="flex items-center gap-1 justify-end">
-                        {isPaused ? (
+                        {(isPaused || isStuck) ? (
                           <Button
                             variant="ghost"
                             size="sm"
@@ -778,7 +793,7 @@ export const BulkContractorEmailDialog = ({
                             onClick={() => handleResumeBatch(email.id)}
                           >
                             {cancellingId === email.id ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <Play className="w-3 h-3 mr-1" />}
-                            Resume
+                            {isStuck ? 'Resume (Continue where left off)' : 'Resume'}
                           </Button>
                         ) : (
                           <Button
