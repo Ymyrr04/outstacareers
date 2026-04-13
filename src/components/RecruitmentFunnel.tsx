@@ -17,6 +17,7 @@ const FUNNEL_STAGES = [
   'Bench',
   'Reject',
   'Talent Pool',
+  'Apollo Import',
   'Archive',
 ] as const;
 
@@ -29,6 +30,7 @@ const STAGE_COLORS: Record<string, string> = {
   'Bench': 'bg-amber-500',
   'Reject': 'bg-red-400',
   'Talent Pool': 'bg-teal-500',
+  'Apollo Import': 'bg-orange-500',
   'Archive': 'bg-gray-400',
 };
 
