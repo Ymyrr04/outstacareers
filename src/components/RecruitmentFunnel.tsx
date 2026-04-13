@@ -16,10 +16,9 @@ const FUNNEL_STAGES = [
   'Hired',
   'Bench',
   'Reject',
-  'Talent Pool',
-  'Apollo Import',
-  'Archive',
 ] as const;
+
+const RECRUITMENT_STATUSES = new Set(FUNNEL_STAGES);
 
 const STAGE_COLORS: Record<string, string> = {
   'For Review': 'bg-blue-500',
@@ -29,9 +28,6 @@ const STAGE_COLORS: Record<string, string> = {
   'Hired': 'bg-emerald-500',
   'Bench': 'bg-amber-500',
   'Reject': 'bg-red-400',
-  'Talent Pool': 'bg-teal-500',
-  'Apollo Import': 'bg-orange-500',
-  'Archive': 'bg-gray-400',
 };
 
 interface RoleFunnelData {
@@ -91,6 +87,7 @@ export const RecruitmentFunnel = () => {
   const roleFunnels = useMemo(() => {
     const map: Record<string, Record<string, number>> = {};
     for (const a of applicants) {
+      if (!RECRUITMENT_STATUSES.has(a.status as any)) continue;
       const title = a.job_title || 'Unknown';
       if (!map[title]) map[title] = {};
       map[title][a.status] = (map[title][a.status] || 0) + 1;
