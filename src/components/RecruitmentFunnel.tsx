@@ -59,13 +59,13 @@ export const RecruitmentFunnel = () => {
     const fetchAll = async () => {
       setLoading(true);
       // Fetch applicants
-      let all: { job_title: string; status: string }[] = [];
+      let all: { job_title: string; status: string; pre_archive_status: string | null }[] = [];
       let from = 0;
       const batchSize = 1000;
       while (true) {
         const { data } = await supabase
           .from('applicants_prescreen')
-          .select('job_title, status')
+          .select('job_title, status, pre_archive_status')
           .range(from, from + batchSize - 1);
         if (!data || data.length === 0) break;
         all = all.concat(data);
