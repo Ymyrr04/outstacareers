@@ -3578,7 +3578,11 @@ const Admin = () => {
             <ClientAnalyticsDashboard />
           </TabsContent>
 
-          {/* Talent Scout Tab */}
+          {/* Funnel Tab */}
+          <TabsContent value="funnel" className="space-y-6">
+            <RecruitmentFunnel />
+          </TabsContent>
+
           <TabsContent value="talent-scout" className="space-y-6">
             <TalentScoutDashboard />
           </TabsContent>
