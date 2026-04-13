@@ -91,14 +91,9 @@ export const RecruitmentFunnel = () => {
   const roleFunnels = useMemo(() => {
     const map: Record<string, Record<string, number>> = {};
     for (const a of applicants) {
-      // For archived applicants, use their pre-archive status to reflect their actual pipeline position
-      const effectiveStatus = a.status === 'Archive' || a.status === 'Archived'
-        ? (a.pre_archive_status || a.status)
-        : a.status;
-      if (!RECRUITMENT_STATUSES.has(effectiveStatus as any)) continue;
       const title = a.job_title || 'Unknown';
       if (!map[title]) map[title] = {};
-      map[title][effectiveStatus] = (map[title][effectiveStatus] || 0) + 1;
+      map[title][a.status] = (map[title][a.status] || 0) + 1;
     }
 
     let results: RoleFunnelData[] = Object.entries(map)
@@ -106,12 +101,7 @@ export const RecruitmentFunnel = () => {
         jobTitle,
         total: Object.values(stages).reduce((s, v) => s + v, 0),
         stages,
-      }))
-      .filter(r => {
-        // Exclude roles where 100% of applicants are only in 'Hired'
-        const stageKeys = Object.keys(r.stages);
-        return !(stageKeys.length === 1 && stageKeys[0] === 'Hired');
-      });
+      }));
 
     if (searchTerm) {
       results = results.filter(r =>
