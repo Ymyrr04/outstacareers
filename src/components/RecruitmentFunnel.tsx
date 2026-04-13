@@ -87,6 +87,7 @@ export const RecruitmentFunnel = () => {
   const roleFunnels = useMemo(() => {
     const map: Record<string, Record<string, number>> = {};
     for (const a of applicants) {
+      if (!RECRUITMENT_STATUSES.has(a.status as any)) continue;
       const title = a.job_title || 'Unknown';
       if (!map[title]) map[title] = {};
       map[title][a.status] = (map[title][a.status] || 0) + 1;
