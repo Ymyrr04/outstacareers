@@ -60,6 +60,7 @@ import { BooleanSearchBuilder } from '@/components/BooleanSearchBuilder';
 import { SearchApplicantExpandedView } from '@/components/SearchApplicantExpandedView';
 import { TalentScoutDashboard } from '@/components/TalentScoutDashboard';
 import { ExternalScoutDashboard } from '@/components/ExternalScoutDashboard';
+import { RecruitmentFunnel } from '@/components/RecruitmentFunnel';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 // Status options for applicant tracking - new pipeline order
@@ -1598,6 +1599,12 @@ const Admin = () => {
               <TabsTrigger value="talent-scout" className="flex items-center gap-2">
                 <Target className="w-4 h-4" />
                 Talent Scout
+              </TabsTrigger>
+            )}
+            {canViewTab('funnel') && (
+              <TabsTrigger value="funnel" className="flex items-center gap-2">
+                <TrendingDown className="w-4 h-4" />
+                Funnel
               </TabsTrigger>
             )}
             {canViewTab('external-scout') && (
