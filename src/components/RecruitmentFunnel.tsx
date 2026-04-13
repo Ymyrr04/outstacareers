@@ -17,9 +17,9 @@ const FUNNEL_STAGES = [
   'Bench',
   'Reject',
   'Talent Pool',
-  'Apollo Import',
-  'Archive',
 ] as const;
+
+const RECRUITMENT_STATUSES = new Set(FUNNEL_STAGES);
 
 const STAGE_COLORS: Record<string, string> = {
   'For Review': 'bg-blue-500',
@@ -30,8 +30,6 @@ const STAGE_COLORS: Record<string, string> = {
   'Bench': 'bg-amber-500',
   'Reject': 'bg-red-400',
   'Talent Pool': 'bg-teal-500',
-  'Apollo Import': 'bg-orange-500',
-  'Archive': 'bg-gray-400',
 };
 
 interface RoleFunnelData {
@@ -51,7 +49,7 @@ interface ImportLog {
 }
 
 export const RecruitmentFunnel = () => {
-  const [applicants, setApplicants] = useState<{ job_title: string; status: string }[]>([]);
+  const [applicants, setApplicants] = useState<{ job_title: string; status: string; pre_archive_status: string | null }[]>([]);
   const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -61,13 +59,13 @@ export const RecruitmentFunnel = () => {
     const fetchAll = async () => {
       setLoading(true);
       // Fetch applicants
-      let all: { job_title: string; status: string }[] = [];
+      let all: { job_title: string; status: string; pre_archive_status: string | null }[] = [];
       let from = 0;
       const batchSize = 1000;
       while (true) {
         const { data } = await supabase
           .from('applicants_prescreen')
-          .select('job_title, status')
+          .select('job_title, status, pre_archive_status')
           .range(from, from + batchSize - 1);
         if (!data || data.length === 0) break;
         all = all.concat(data);
@@ -91,9 +89,14 @@ export const RecruitmentFunnel = () => {
   const roleFunnels = useMemo(() => {
     const map: Record<string, Record<string, number>> = {};
     for (const a of applicants) {
+      // For archived applicants, use their pre-archive status to reflect their actual pipeline position
+      const effectiveStatus = a.status === 'Archive' || a.status === 'Archived'
+        ? (a.pre_archive_status || a.status)
+        : a.status;
+      if (!RECRUITMENT_STATUSES.has(effectiveStatus as any)) continue;
       const title = a.job_title || 'Unknown';
       if (!map[title]) map[title] = {};
-      map[title][a.status] = (map[title][a.status] || 0) + 1;
+      map[title][effectiveStatus] = (map[title][effectiveStatus] || 0) + 1;
     }
 
     let results: RoleFunnelData[] = Object.entries(map)
@@ -101,7 +104,12 @@ export const RecruitmentFunnel = () => {
         jobTitle,
         total: Object.values(stages).reduce((s, v) => s + v, 0),
         stages,
-      }));
+      }))
+      .filter(r => {
+        // Exclude roles where 100% of applicants are only in 'Hired'
+        const stageKeys = Object.keys(r.stages);
+        return !(stageKeys.length === 1 && stageKeys[0] === 'Hired');
+      });
 
     if (searchTerm) {
       results = results.filter(r =>
