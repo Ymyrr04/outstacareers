@@ -89,10 +89,14 @@ export const RecruitmentFunnel = () => {
   const roleFunnels = useMemo(() => {
     const map: Record<string, Record<string, number>> = {};
     for (const a of applicants) {
-      if (!RECRUITMENT_STATUSES.has(a.status as any)) continue;
+      // For archived applicants, use their pre-archive status to reflect their actual pipeline position
+      const effectiveStatus = a.status === 'Archive' || a.status === 'Archived'
+        ? (a.pre_archive_status || a.status)
+        : a.status;
+      if (!RECRUITMENT_STATUSES.has(effectiveStatus as any)) continue;
       const title = a.job_title || 'Unknown';
       if (!map[title]) map[title] = {};
-      map[title][a.status] = (map[title][a.status] || 0) + 1;
+      map[title][effectiveStatus] = (map[title][effectiveStatus] || 0) + 1;
     }
 
     let results: RoleFunnelData[] = Object.entries(map)
