@@ -470,9 +470,14 @@ export const ContractorsDashboard = () => {
   const separatedContractors = filteredContractors
     .filter(c => ['terminated', 'resigned', 'rendering'].includes(c.status?.toLowerCase()))
     .sort((a, b) => {
-      // Sort by status_changed_at descending (most recent first)
-      const dateA = a.status_changed_at ? new Date(a.status_changed_at).getTime() : 0;
-      const dateB = b.status_changed_at ? new Date(b.status_changed_at).getTime() : 0;
+      // Rendering (pending) always at the top
+      const aIsRendering = a.status?.toLowerCase() === 'rendering' ? 1 : 0;
+      const bIsRendering = b.status?.toLowerCase() === 'rendering' ? 1 : 0;
+      if (aIsRendering !== bIsRendering) return bIsRendering - aIsRendering;
+      
+      // Then sort by end_date descending (most recent first)
+      const dateA = a.end_date ? new Date(a.end_date).getTime() : 0;
+      const dateB = b.end_date ? new Date(b.end_date).getTime() : 0;
       return dateB - dateA;
     });
 
