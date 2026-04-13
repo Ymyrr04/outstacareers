@@ -16,10 +16,9 @@ const FUNNEL_STAGES = [
   'Hired',
   'Bench',
   'Reject',
-  'Talent Pool',
-  'Apollo Import',
-  'Archive',
 ] as const;
+
+const RECRUITMENT_STATUSES = new Set(FUNNEL_STAGES);
 
 const STAGE_COLORS: Record<string, string> = {
   'For Review': 'bg-blue-500',
