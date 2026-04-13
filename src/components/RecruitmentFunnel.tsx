@@ -16,6 +16,7 @@ const FUNNEL_STAGES = [
   'Hired',
   'Bench',
   'Reject',
+  'Talent Pool',
 ] as const;
 
 const RECRUITMENT_STATUSES = new Set(FUNNEL_STAGES);
