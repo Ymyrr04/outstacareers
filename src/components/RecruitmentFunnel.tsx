@@ -93,11 +93,17 @@ export const RecruitmentFunnel = () => {
       map[title][a.status] = (map[title][a.status] || 0) + 1;
     }
 
-    let results: RoleFunnelData[] = Object.entries(map).map(([jobTitle, stages]) => ({
-      jobTitle,
-      total: Object.values(stages).reduce((s, v) => s + v, 0),
-      stages,
-    }));
+    let results: RoleFunnelData[] = Object.entries(map)
+      .map(([jobTitle, stages]) => ({
+        jobTitle,
+        total: Object.values(stages).reduce((s, v) => s + v, 0),
+        stages,
+      }))
+      .filter(r => {
+        // Exclude roles where 100% of applicants are only in 'Hired'
+        const stageKeys = Object.keys(r.stages);
+        return !(stageKeys.length === 1 && stageKeys[0] === 'Hired');
+      });
 
     if (searchTerm) {
       results = results.filter(r =>
