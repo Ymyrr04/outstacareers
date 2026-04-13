@@ -60,6 +60,7 @@ export const RecruitmentFunnel = () => {
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
+      // Fetch applicants
       let all: { job_title: string; status: string }[] = [];
       let from = 0;
       const batchSize = 1000;
@@ -74,6 +75,14 @@ export const RecruitmentFunnel = () => {
         from += batchSize;
       }
       setApplicants(all);
+
+      // Fetch import logs
+      const { data: logs } = await supabase
+        .from('contractor_import_logs')
+        .select('*')
+        .order('created_at', { ascending: false });
+      setImportLogs((logs as ImportLog[]) || []);
+
       setLoading(false);
     };
     fetchAll();
