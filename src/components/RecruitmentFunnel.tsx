@@ -1,11 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { format } from 'date-fns';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Filter, TrendingDown, Users } from 'lucide-react';
+import { Search, TrendingDown, Upload, CheckCircle, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const FUNNEL_STAGES = [
@@ -40,8 +40,19 @@ interface RoleFunnelData {
   stages: Record<string, number>;
 }
 
+interface ImportLog {
+  id: string;
+  total_records: number;
+  success_count: number;
+  error_count: number;
+  source_filename: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
 export const RecruitmentFunnel = () => {
   const [applicants, setApplicants] = useState<{ job_title: string; status: string }[]>([]);
+  const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'total' | 'name'>('total');
@@ -49,6 +60,7 @@ export const RecruitmentFunnel = () => {
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
+      // Fetch applicants
       let all: { job_title: string; status: string }[] = [];
       let from = 0;
       const batchSize = 1000;
@@ -63,6 +75,14 @@ export const RecruitmentFunnel = () => {
         from += batchSize;
       }
       setApplicants(all);
+
+      // Fetch import logs
+      const { data: logs } = await supabase
+        .from('contractor_import_logs')
+        .select('*')
+        .order('created_at', { ascending: false });
+      setImportLogs((logs as ImportLog[]) || []);
+
       setLoading(false);
     };
     fetchAll();
@@ -154,6 +174,56 @@ export const RecruitmentFunnel = () => {
         ))}
         {roleFunnels.length === 0 && (
           <p className="text-sm text-muted-foreground text-center py-8">No roles found</p>
+        )}
+      </div>
+
+      {/* Import History */}
+      <div className="mt-8 space-y-3">
+        <div className="flex items-center gap-2">
+          <Upload className="w-5 h-5 text-primary" />
+          <h2 className="text-lg font-semibold">Contractor Import History</h2>
+          <Badge variant="secondary">{importLogs.length} imports</Badge>
+        </div>
+
+        {importLogs.length === 0 ? (
+          <p className="text-sm text-muted-foreground text-center py-6">No import batches recorded yet. Future CSV imports will be tracked here.</p>
+        ) : (
+          <div className="space-y-2">
+            {importLogs.map((log) => (
+              <Card key={log.id}>
+                <CardContent className="p-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="text-sm font-medium">
+                        {format(new Date(log.created_at), 'MMM d, yyyy h:mm a')}
+                      </div>
+                      {log.source_filename && (
+                        <span className="text-xs text-muted-foreground">{log.source_filename}</span>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1">
+                        <CheckCircle className="w-3.5 h-3.5 text-emerald-500" />
+                        <span className="text-sm font-medium">{log.success_count}</span>
+                      </div>
+                      {log.error_count > 0 && (
+                        <div className="flex items-center gap-1">
+                          <XCircle className="w-3.5 h-3.5 text-red-400" />
+                          <span className="text-sm font-medium">{log.error_count}</span>
+                        </div>
+                      )}
+                      <Badge variant="outline" className="text-[10px]">
+                        {log.total_records} total
+                      </Badge>
+                    </div>
+                  </div>
+                  {log.notes && (
+                    <p className="text-xs text-muted-foreground mt-1">{log.notes}</p>
+                  )}
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         )}
       </div>
     </div>

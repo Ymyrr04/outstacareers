@@ -559,6 +559,19 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
 
       setErrors(importErrors);
 
+      // Log import batch to contractor_import_logs
+      if (successCount > 0 || importErrors.length > 0) {
+        const { data: { user } } = await supabase.auth.getUser();
+        await supabase.from('contractor_import_logs').insert({
+          imported_by: user?.id || null,
+          total_records: parsedData.length,
+          success_count: successCount,
+          error_count: importErrors.length,
+          source_filename: null,
+          notes: skippedCount > 0 ? `${skippedCount} skipped (duplicates)` : null,
+        });
+      }
+
       // Report import results
       onImportComplete?.({
         successCount,
