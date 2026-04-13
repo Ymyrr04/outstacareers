@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck, UserCircle, Target, Globe } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck, UserCircle, Target, Globe, TrendingDown } from 'lucide-react';
 import { exportJobs, exportApplicants, exportAllData } from '@/lib/exportUtils';
 import { parseBooleanSearch } from '@/lib/booleanSearchParser';
 import { useBackgroundExport } from '@/hooks/useBackgroundExport';
@@ -60,6 +60,7 @@ import { BooleanSearchBuilder } from '@/components/BooleanSearchBuilder';
 import { SearchApplicantExpandedView } from '@/components/SearchApplicantExpandedView';
 import { TalentScoutDashboard } from '@/components/TalentScoutDashboard';
 import { ExternalScoutDashboard } from '@/components/ExternalScoutDashboard';
+import { RecruitmentFunnel } from '@/components/RecruitmentFunnel';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 // Status options for applicant tracking - new pipeline order
@@ -1598,6 +1599,12 @@ const Admin = () => {
               <TabsTrigger value="talent-scout" className="flex items-center gap-2">
                 <Target className="w-4 h-4" />
                 Talent Scout
+              </TabsTrigger>
+            )}
+            {canViewTab('funnel') && (
+              <TabsTrigger value="funnel" className="flex items-center gap-2">
+                <TrendingDown className="w-4 h-4" />
+                Funnel
               </TabsTrigger>
             )}
             {canViewTab('external-scout') && (
@@ -3571,7 +3578,11 @@ const Admin = () => {
             <ClientAnalyticsDashboard />
           </TabsContent>
 
-          {/* Talent Scout Tab */}
+          {/* Funnel Tab */}
+          <TabsContent value="funnel" className="space-y-6">
+            <RecruitmentFunnel />
+          </TabsContent>
+
           <TabsContent value="talent-scout" className="space-y-6">
             <TalentScoutDashboard />
           </TabsContent>
