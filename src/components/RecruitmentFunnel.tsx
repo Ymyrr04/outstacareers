@@ -40,8 +40,19 @@ interface RoleFunnelData {
   stages: Record<string, number>;
 }
 
+interface ImportLog {
+  id: string;
+  total_records: number;
+  success_count: number;
+  error_count: number;
+  source_filename: string | null;
+  notes: string | null;
+  created_at: string;
+}
+
 export const RecruitmentFunnel = () => {
   const [applicants, setApplicants] = useState<{ job_title: string; status: string }[]>([]);
+  const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'total' | 'name'>('total');
