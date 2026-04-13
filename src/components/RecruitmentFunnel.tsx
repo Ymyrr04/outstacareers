@@ -49,7 +49,7 @@ interface ImportLog {
 }
 
 export const RecruitmentFunnel = () => {
-  const [applicants, setApplicants] = useState<{ job_title: string; status: string }[]>([]);
+  const [applicants, setApplicants] = useState<{ job_title: string; status: string; pre_archive_status: string | null }[]>([]);
   const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
