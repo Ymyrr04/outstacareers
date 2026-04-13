@@ -16,6 +16,7 @@ const FUNNEL_STAGES = [
   'Hired',
   'Bench',
   'Reject',
+  'Talent Pool',
 ] as const;
 
 const RECRUITMENT_STATUSES = new Set(FUNNEL_STAGES);
@@ -28,6 +29,7 @@ const STAGE_COLORS: Record<string, string> = {
   'Hired': 'bg-emerald-500',
   'Bench': 'bg-amber-500',
   'Reject': 'bg-red-400',
+  'Talent Pool': 'bg-teal-500',
 };
 
 interface RoleFunnelData {
