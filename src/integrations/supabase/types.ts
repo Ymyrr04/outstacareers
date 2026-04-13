@@ -729,6 +729,39 @@ export type Database = {
         }
         Relationships: []
       }
+      contractor_import_logs: {
+        Row: {
+          created_at: string
+          error_count: number
+          id: string
+          imported_by: string | null
+          notes: string | null
+          source_filename: string | null
+          success_count: number
+          total_records: number
+        }
+        Insert: {
+          created_at?: string
+          error_count?: number
+          id?: string
+          imported_by?: string | null
+          notes?: string | null
+          source_filename?: string | null
+          success_count?: number
+          total_records?: number
+        }
+        Update: {
+          created_at?: string
+          error_count?: number
+          id?: string
+          imported_by?: string | null
+          notes?: string | null
+          source_filename?: string | null
+          success_count?: number
+          total_records?: number
+        }
+        Relationships: []
+      }
       contractor_pipeline_stages: {
         Row: {
           checkin_email_body: string | null
