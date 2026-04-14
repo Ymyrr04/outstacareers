@@ -29,6 +29,19 @@ function getAdminNameFromJwt(authHeader: string | null): string | null {
   }
 }
 
+function getAdminEmailFromJwt(authHeader: string | null): string | null {
+  if (!authHeader) return null;
+  try {
+    const token = authHeader.replace('Bearer ', '');
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(new TextDecoder().decode(decodeBase64Url(parts[1])));
+    return payload.email?.toLowerCase() || null;
+  } catch {
+    return null;
+  }
+}
+
 // Generate a unique Message-ID for email threading
 function generateMessageId(domain: string): string {
   const timestamp = Date.now();
@@ -69,18 +82,25 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const gmailUser = Deno.env.get("GMAIL_USER");
-    const gmailPassword = Deno.env.get("GMAIL_APP_PASSWORD");
+    const defaultGmailUser = Deno.env.get("GMAIL_USER");
+    const defaultGmailPassword = Deno.env.get("GMAIL_APP_PASSWORD");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!gmailUser || !gmailPassword) {
+    if (!defaultGmailUser || !defaultGmailPassword) {
       throw new Error("Gmail credentials not configured");
     }
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error("Supabase credentials not configured");
     }
+
+    // Admin-specific Gmail credentials mapping
+    const ADMIN_GMAIL_CREDENTIALS: Record<string, { userEnv: string; passEnv: string }> = {
+      'mark@outsta.io': { userEnv: 'MARK_GMAIL_USER', passEnv: 'MARK_GMAIL_APP_PASSWORD' },
+      'kristine@outsta.io': { userEnv: 'KRISTINE_GMAIL_USER', passEnv: 'KRISTINE_GMAIL_APP_PASSWORD' },
+      'czarina@outsta.io': { userEnv: 'CZARINA_GMAIL_USER', passEnv: 'CZARINA_GMAIL_APP_PASSWORD' },
+    };
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
@@ -99,8 +119,25 @@ const handler = async (req: Request): Promise<Response> => {
       inReplyTo,
     }: SendEmailRequest = await req.json();
 
-    // Extract admin name from JWT for personalized sign-off
+    // Extract admin name and email from JWT for personalized sign-off and sender selection
     const adminName = getAdminNameFromJwt(req.headers.get('authorization'));
+    const adminEmail = getAdminEmailFromJwt(req.headers.get('authorization'));
+    
+    // Select sender credentials: use admin-specific if available, otherwise default
+    let gmailUser = defaultGmailUser;
+    let gmailPassword = defaultGmailPassword;
+    if (adminEmail && !isAutomated) {
+      const creds = ADMIN_GMAIL_CREDENTIALS[adminEmail];
+      if (creds) {
+        const specificUser = Deno.env.get(creds.userEnv);
+        const specificPass = Deno.env.get(creds.passEnv);
+        if (specificUser && specificPass) {
+          gmailUser = specificUser;
+          gmailPassword = specificPass;
+          console.log(`Using ${adminEmail}'s own Gmail credentials for sending`);
+        }
+      }
+    }
     
     // Auto-replace generic sign-offs with the admin's name if available
     let processedBodyHtml = bodyHtml;
