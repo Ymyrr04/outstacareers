@@ -532,7 +532,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
                     </div>
                   </div>
 
-                  <ScrollArea className="flex-1 max-h-[720px]">
+                  <div className="flex-1 max-h-[720px] overflow-y-auto">
                     <div className="p-2 space-y-2">
                       {stageCandidates.length === 0 ? (
                         <p className={cn(
@@ -562,7 +562,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
                         ))
                       )}
                     </div>
-                  </ScrollArea>
+                  </div>
                 </div>
               );
             })}
