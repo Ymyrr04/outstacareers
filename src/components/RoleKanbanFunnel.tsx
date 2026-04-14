@@ -208,12 +208,6 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
       return;
     }
 
-    await supabase.from('applicant_status_history').insert({
-      applicant_id: candidate.id,
-      from_status: candidate.status,
-      to_status: newStage,
-    });
-
     toast.success(`Moved ${candidate.full_name} to ${newStage}`);
     fetchCandidates(selectedRole);
   }, [selectedRole, fetchCandidates]);
@@ -227,11 +221,6 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
         .eq('id', hiredCandidate.id);
 
       if (!error) {
-        await supabase.from('applicant_status_history').insert({
-          applicant_id: hiredCandidate.id,
-          from_status: hiredCandidate.status,
-          to_status: 'Hired',
-        });
         toast.success(`${hiredCandidate.full_name} moved to Hired`);
       }
       fetchCandidates(selectedRole);
