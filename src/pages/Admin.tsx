@@ -3580,7 +3580,20 @@ const Admin = () => {
 
           {/* Funnel Tab */}
           <TabsContent value="funnel" className="space-y-6">
-            <RecruitmentFunnel />
+            <RecruitmentFunnel onNavigateToApplicant={async (applicantId, status) => {
+              handleMainTabChange('applicants');
+              setActiveApplicantTab('folders');
+              setActiveStatusFolder(status as ApplicantStatusFolder);
+              await new Promise(resolve => setTimeout(resolve, 150));
+              setExpandingApplicantId(applicantId);
+              await new Promise(resolve => setTimeout(resolve, 50));
+              setExpandedApplicant(applicantId);
+              setExpandingApplicantId(null);
+              await supabase
+                .from('applicants_prescreen')
+                .update({ details_viewed_at: new Date().toISOString() })
+                .eq('id', applicantId);
+            }} />
           </TabsContent>
 
           <TabsContent value="talent-scout" className="space-y-6">
