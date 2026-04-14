@@ -1014,6 +1014,9 @@ export default function ApplicantSearchResults({
                       No notes yet. Click "Add Note" to add observations about this applicant.
                     </p>
                   )}
+
+                  {/* Structured Notes from applicant_notes table */}
+                  <ApplicantNotesSection applicantId={applicant.id} />
                 </div>
 
                 {/* CV and Vocaroo Links */}
