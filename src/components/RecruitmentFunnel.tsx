@@ -333,14 +333,33 @@ export const RecruitmentFunnel = () => {
                 Clear
               </button>
             )}
-            <div className="relative">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <div className="relative group">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
               <Input
                 placeholder="Search roles..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-8 h-8 w-52 text-sm"
               />
+              {searchTerm && (() => {
+                const query = searchTerm.toLowerCase();
+                const allRoleNames = Array.from(new Set(applicants.map(a => a.job_title).filter(Boolean))).sort();
+                const suggestions = allRoleNames.filter(r => r.toLowerCase().includes(query));
+                if (suggestions.length === 0 || (suggestions.length === 1 && suggestions[0].toLowerCase() === query)) return null;
+                return (
+                  <div className="absolute top-full left-0 mt-1 w-72 max-h-48 overflow-y-auto bg-popover border border-border rounded-md shadow-lg z-50">
+                    {suggestions.slice(0, 10).map((role) => (
+                      <button
+                        key={role}
+                        className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent truncate"
+                        onClick={() => setSearchTerm(role)}
+                      >
+                        {role}
+                      </button>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
 
             <Select value={jobStatusFilter} onValueChange={(value) => setJobStatusFilter(value as 'active' | 'inactive' | 'all')}>
