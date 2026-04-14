@@ -259,10 +259,26 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
-              placeholder="Search candidate..."
+              placeholder="Search candidate across roles..."
               value={candidateSearch}
-              onChange={(e) => setCandidateSearch(e.target.value)}
-              className="pl-8 h-9 w-[220px] text-sm"
+              onChange={(e) => {
+                const val = e.target.value;
+                setCandidateSearch(val);
+                if (candidateSearchTimer.current) clearTimeout(candidateSearchTimer.current);
+                if (val.trim().length >= 2) {
+                  candidateSearchTimer.current = setTimeout(async () => {
+                    const { data } = await supabase
+                      .from('applicants_prescreen')
+                      .select('job_title')
+                      .ilike('full_name', `%${val.trim()}%`)
+                      .limit(1);
+                    if (data && data.length > 0 && data[0].job_title !== selectedRole) {
+                      setSelectedRole(data[0].job_title);
+                    }
+                  }, 400);
+                }
+              }}
+              className="pl-8 h-9 w-[260px] text-sm"
             />
           </div>
         </div>
