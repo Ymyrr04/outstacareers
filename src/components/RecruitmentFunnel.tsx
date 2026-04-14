@@ -319,11 +319,7 @@ export const RecruitmentFunnel = () => {
         </CollapsibleContent>
       </Collapsible>
 
-      {/* Per-role Kanban pipeline */}
-      <RoleKanbanFunnel roles={roleFunnels.map(r => r.jobTitle)} />
-
       
     </div>
   );
 };
-
