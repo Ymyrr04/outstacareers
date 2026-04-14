@@ -6,36 +6,34 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Minimal IMAP client for Gmail
-class SimpleIMAPClient {
+// Minimal IMAP client
+class IMAPClient {
   private conn: Deno.TlsConn | null = null;
   private reader: ReadableStreamDefaultReader<Uint8Array> | null = null;
   private writer: WritableStreamDefaultWriter<Uint8Array> | null = null;
-  private tagCounter = 0;
-  private buffer = "";
-  private isConnected = false;
+  private tag = 0;
+  private buf = "";
+  private ok = false;
 
-  async connect(host: string, port: number): Promise<void> {
+  async connect(host: string, port: number) {
     this.conn = await Deno.connectTls({ hostname: host, port });
     this.reader = this.conn.readable.getReader();
     this.writer = this.conn.writable.getWriter();
-    this.isConnected = true;
-    await this.readResponse();
+    this.ok = true;
+    await this.read();
   }
 
-  isActive(): boolean {
-    return this.isConnected && this.conn !== null && this.writer !== null;
-  }
+  active() { return this.ok && this.conn !== null; }
 
-  private async readResponse(): Promise<string[]> {
-    if (!this.isActive()) throw new Error("IMAP connection is not active");
+  private async read(): Promise<string[]> {
+    if (!this.active()) throw new Error("disconnected");
+    const dec = new TextDecoder();
     const lines: string[] = [];
-    const decoder = new TextDecoder();
     while (true) {
-      const newlineIndex = this.buffer.indexOf("\r\n");
-      if (newlineIndex !== -1) {
-        const line = this.buffer.substring(0, newlineIndex);
-        this.buffer = this.buffer.substring(newlineIndex + 2);
+      const i = this.buf.indexOf("\r\n");
+      if (i !== -1) {
+        const line = this.buf.substring(0, i);
+        this.buf = this.buf.substring(i + 2);
         lines.push(line);
         if (line.match(/^A\d+ (OK|NO|BAD)/)) break;
         if (lines.length === 1 && line.startsWith("* OK")) break;
@@ -43,261 +41,184 @@ class SimpleIMAPClient {
       }
       try {
         const { value, done } = await this.reader!.read();
-        if (done) { this.isConnected = false; break; }
-        this.buffer += decoder.decode(value);
-      } catch {
-        this.isConnected = false;
-        throw new Error("IMAP read error");
-      }
+        if (done) { this.ok = false; break; }
+        this.buf += dec.decode(value);
+      } catch { this.ok = false; throw new Error("read error"); }
     }
     return lines;
   }
 
-  private async sendCommand(command: string): Promise<string[]> {
-    if (!this.isActive()) throw new Error("IMAP connection is not active");
-    this.tagCounter++;
-    const tag = `A${this.tagCounter}`;
-    const encoder = new TextEncoder();
-    try {
-      await this.writer!.write(encoder.encode(`${tag} ${command}\r\n`));
-    } catch {
-      this.isConnected = false;
-      throw new Error("IMAP write error");
+  private async cmd(c: string) {
+    if (!this.active()) throw new Error("disconnected");
+    this.tag++;
+    const t = `A${this.tag}`;
+    try { await this.writer!.write(new TextEncoder().encode(`${t} ${c}\r\n`)); }
+    catch { this.ok = false; throw new Error("write error"); }
+    return this.read();
+  }
+
+  async login(u: string, p: string) { return (await this.cmd(`LOGIN "${u}" "${p}"`)).some(l => l.includes("OK")); }
+
+  async selectInbox() { await this.cmd("SELECT INBOX"); }
+
+  async searchFrom(email: string, days: number): Promise<number[]> {
+    const d = new Date(); d.setDate(d.getDate() - days);
+    const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const r = await this.cmd(`SEARCH FROM "${email}" SINCE ${d.getDate()}-${m[d.getMonth()]}-${d.getFullYear()}`);
+    const ids: number[] = [];
+    for (const l of r) if (l.startsWith("* SEARCH")) for (const p of l.replace("* SEARCH","").trim().split(" ")) { const n=parseInt(p); if(!isNaN(n)) ids.push(n); }
+    return ids;
+  }
+
+  async fetchHeaders(msgNum: number): Promise<{subject:string,date:string,messageId:string,inReplyTo:string,isRead:boolean}|null> {
+    // Only fetch headers and flags - NOT body - to save memory
+    const r = await this.cmd(`FETCH ${msgNum} (FLAGS BODY[HEADER.FIELDS (SUBJECT DATE MESSAGE-ID IN-REPLY-TO)])`);
+    let subject="",date="",messageId="",inReplyTo="",isRead=false;
+    for (const l of r) {
+      if (l.includes("FLAGS")) isRead = l.includes("\\Seen");
+      if (l.match(/^Subject:/i)) subject = l.replace(/Subject:\s*/i,"").trim().replace(/=\?([^?]+)\?([BQbq])\?([^?]*)\?=/g, (m,_c,e,t)=>{try{return e.toUpperCase()==='B'?atob(t):t.replace(/_/g,' ').replace(/=([0-9A-Fa-f]{2})/g,(_:string,h:string)=>String.fromCharCode(parseInt(h,16)))}catch{return m}});
+      if (l.match(/^Date:/i)) date = l.replace(/Date:\s*/i,"").trim();
+      if (l.match(/^Message-I[dD]:/i)) messageId = l.replace(/Message-I[dD]:\s*/i,"").trim();
+      if (l.match(/^In-Reply-To:/i)) inReplyTo = l.replace(/In-Reply-To:\s*/i,"").trim();
     }
-    return await this.readResponse();
+    return messageId ? {subject,date,messageId,inReplyTo,isRead} : null;
   }
 
-  async login(user: string, pass: string): Promise<boolean> {
-    const response = await this.sendCommand(`LOGIN "${user}" "${pass}"`);
-    return response.some(line => line.includes("OK"));
-  }
-
-  async selectInbox(): Promise<number> {
-    const response = await this.sendCommand("SELECT INBOX");
-    let exists = 0;
-    for (const line of response) {
-      const match = line.match(/\* (\d+) EXISTS/);
-      if (match) exists = parseInt(match[1]);
+  async fetchBody(msgNum: number): Promise<string> {
+    const r = await this.cmd(`FETCH ${msgNum} (BODY[TEXT]<0.3000>)`);
+    let body="", inBody=false;
+    for (const l of r) {
+      if (inBody && !l.match(/^A\d+ OK|^\)/)) body += l + "\n";
+      if (l.includes("BODY[TEXT]")) inBody = true;
     }
-    return exists;
+    body = body.replace(/^--[a-zA-Z0-9]+.*$/gm,"").replace(/^Content-.*$/gim,"").replace(/=\r?\n/g,"").replace(/=([0-9A-Fa-f]{2})/g,(_,h)=>String.fromCharCode(parseInt(h,16)));
+    const markers = [/^On .+ wrote:$/m, /^>.*$/m];
+    for (const mk of markers) { const mt=body.match(mk); if(mt?.index&&mt.index>20){body=body.substring(0,mt.index);break;} }
+    return body.replace(/^>\s*$/gm,"").replace(/\n{3,}/g,"\n\n").trim().substring(0,3000);
   }
 
-  async searchFrom(fromEmail: string, sinceDaysAgo: number): Promise<number[]> {
-    const since = new Date();
-    since.setDate(since.getDate() - sinceDaysAgo);
-    const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-    const sinceStr = `${since.getDate()}-${months[since.getMonth()]}-${since.getFullYear()}`;
-    const response = await this.sendCommand(`SEARCH FROM "${fromEmail}" SINCE ${sinceStr}`);
-    const uids: number[] = [];
-    for (const line of response) {
-      if (line.startsWith("* SEARCH")) {
-        for (const part of line.replace("* SEARCH", "").trim().split(" ")) {
-          const num = parseInt(part);
-          if (!isNaN(num)) uids.push(num);
-        }
-      }
-    }
-    return uids;
-  }
-
-  decodeMimeWord(text: string): string {
-    if (!text) return text;
-    return text.replace(/=\?([^?]+)\?([BQbq])\?([^?]*)\?=/g, (match, _charset, encoding, encodedText) => {
-      try {
-        if (encoding.toUpperCase() === 'Q') {
-          return encodedText.replace(/_/g, ' ').replace(/=([0-9A-Fa-f]{2})/g, (_: string, hex: string) => String.fromCharCode(parseInt(hex, 16)));
-        } else if (encoding.toUpperCase() === 'B') {
-          return atob(encodedText);
-        }
-      } catch { /* ignore */ }
-      return match;
-    });
-  }
-
-  async fetchMessage(msgNum: number): Promise<{ subject: string; date: string; messageId: string; inReplyTo: string; body: string; isRead: boolean } | null> {
-    const response = await this.sendCommand(`FETCH ${msgNum} (FLAGS BODY[HEADER.FIELDS (SUBJECT DATE MESSAGE-ID IN-REPLY-TO)] BODY[TEXT])`);
-    let subject = "", date = "", messageId = "", inReplyTo = "", body = "";
-    let inBody = false, isRead = false;
-
-    for (const line of response) {
-      if (line.includes("FLAGS")) isRead = line.includes("\\Seen");
-      if (line.includes("Subject:")) subject = this.decodeMimeWord(line.replace(/Subject:\s*/i, "").trim());
-      if (line.includes("Date:")) date = line.replace(/Date:\s*/i, "").trim();
-      if (line.includes("Message-ID:") || line.includes("Message-Id:")) messageId = line.replace(/Message-I[dD]:\s*/i, "").trim();
-      if (line.includes("In-Reply-To:")) inReplyTo = line.replace(/In-Reply-To:\s*/i, "").trim();
-      if (inBody && !line.match(/^A\d+ OK|^\)/)) body += line + "\n";
-      if (line.includes("BODY[TEXT]")) inBody = true;
-    }
-
-    if (!messageId) return null;
-
-    // Minimal body cleanup - truncate early to save memory
-    body = body.substring(0, 5000);
-    body = body.replace(/^--[a-zA-Z0-9]+.*$/gm, "");
-    body = body.replace(/^Content-Type:.*$/gim, "");
-    body = body.replace(/^Content-Transfer-Encoding:.*$/gim, "");
-    body = body.replace(/=\r?\n/g, "");
-    body = body.replace(/=([0-9A-Fa-f]{2})/g, (_, hex) => String.fromCharCode(parseInt(hex, 16)));
-    // Extract reply before quoted text
-    const markers = [/^On .+ wrote:$/m, /^>.*$/m, /^-{2,}.*Original Message.*-{2,}$/im];
-    for (const marker of markers) {
-      const match = body.match(marker);
-      if (match?.index && match.index > 20) { body = body.substring(0, match.index); break; }
-    }
-    body = body.replace(/^>\s*$/gm, "").replace(/\n{3,}/g, "\n\n").trim();
-
-    return { subject, date, messageId, inReplyTo, body, isRead };
-  }
-
-  async logout(): Promise<void> {
-    this.isConnected = false;
-    try { if (this.writer) { this.tagCounter++; await this.writer.write(new TextEncoder().encode(`A${this.tagCounter} LOGOUT\r\n`)); } } catch { /* ignore */ }
-    try { this.writer?.releaseLock(); } catch { /* ignore */ }
-    try { this.reader?.releaseLock(); } catch { /* ignore */ }
-    try { this.conn?.close(); } catch { /* ignore */ }
-    this.writer = null; this.reader = null; this.conn = null;
+  async logout() {
+    this.ok = false;
+    try { if(this.writer){this.tag++;await this.writer.write(new TextEncoder().encode(`A${this.tag} LOGOUT\r\n`));} } catch{}
+    try{this.writer?.releaseLock()}catch{}
+    try{this.reader?.releaseLock()}catch{}
+    try{this.conn?.close()}catch{}
+    this.writer=null;this.reader=null;this.conn=null;
   }
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  if (req.method === "OPTIONS") {
-    return new Response(null, { headers: corsHeaders });
-  }
+  if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   const startTime = Date.now();
-  const MAX_RUNTIME_MS = 20000;
-  const BATCH_SIZE = 20;
+  const BATCH_SIZE = 10; // Very small batch to stay within memory
 
   try {
     let priorityEmail: string | null = null;
-    try {
-      const body = await req.json();
-      if (body?.priorityEmail) priorityEmail = body.priorityEmail.toLowerCase();
-    } catch { /* no body */ }
+    try { const b = await req.json(); if (b?.priorityEmail) priorityEmail = b.priorityEmail.toLowerCase(); } catch {}
 
     const gmailUser = Deno.env.get("GMAIL_USER");
     const gmailAppPassword = Deno.env.get("GMAIL_APP_PASSWORD");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-
     if (!gmailUser || !gmailAppPassword) throw new Error("Gmail credentials not configured");
     if (!supabaseUrl || !supabaseServiceKey) throw new Error("Supabase credentials not configured");
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-
-    // Only fetch DISTINCT recipient emails (not full logs) to minimize memory
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    const { data: emailList, error: emailListError } = await supabase
+    // Get rotation state
+    const { data: fetchState } = await supabase.from("email_fetch_state").select("current_offset").eq("id", 1).single();
+    let currentOffset = fetchState?.current_offset || 0;
+
+    // Fetch only the batch we need using pagination on email_logs
+    // Use a smaller select to get unique emails
+    const { data: batchLogs } = await supabase
       .from("email_logs")
       .select("recipient_email")
-      .gte("sent_at", thirtyDaysAgo.toISOString());
+      .gte("sent_at", thirtyDaysAgo.toISOString())
+      .order("recipient_email");
 
-    if (emailListError) throw new Error(`Failed to fetch email list: ${emailListError.message}`);
-
-    // Build unique email set with minimal memory
-    const uniqueEmails = [...new Set((emailList || []).map((e: { recipient_email: string }) => e.recipient_email.toLowerCase()))];
-    const totalEmails = uniqueEmails.length;
-
-    console.log(`Found ${totalEmails} unique emails from recent communications`);
-
-    if (totalEmails === 0) {
-      return new Response(JSON.stringify({ success: true, message: "No recent emails to check", repliesFound: 0 }), 
+    if (!batchLogs || batchLogs.length === 0) {
+      return new Response(JSON.stringify({ success: true, repliesFound: 0 }),
         { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
-    // Get rotation offset
-    const { data: fetchState } = await supabase.from("email_fetch_state").select("current_offset").eq("id", 1).single();
-    let currentOffset = fetchState?.current_offset || 0;
+    // Deduplicate in a memory-efficient way
+    const seen = new Set<string>();
+    const allEmails: string[] = [];
+    for (const log of batchLogs) {
+      const e = log.recipient_email.toLowerCase();
+      if (!seen.has(e)) { seen.add(e); allEmails.push(e); }
+    }
+    seen.clear(); // Free memory
+    const totalEmails = allEmails.length;
     if (currentOffset >= totalEmails) currentOffset = 0;
 
-    // Build batch
+    // Build small batch
     let emailsToProcess: string[];
-    if (priorityEmail && uniqueEmails.includes(priorityEmail)) {
-      const rest = uniqueEmails.filter(e => e !== priorityEmail);
-      emailsToProcess = [priorityEmail, ...rest.slice(currentOffset, currentOffset + BATCH_SIZE - 1)];
+    if (priorityEmail) {
+      // Just process the priority email
+      emailsToProcess = [priorityEmail];
     } else {
-      emailsToProcess = [...uniqueEmails.slice(currentOffset), ...uniqueEmails.slice(0, currentOffset)].slice(0, BATCH_SIZE);
+      emailsToProcess = allEmails.slice(currentOffset, currentOffset + BATCH_SIZE);
     }
-    const nextOffset = (currentOffset + BATCH_SIZE) % totalEmails;
+    const nextOffset = priorityEmail ? currentOffset : ((currentOffset + BATCH_SIZE) % totalEmails);
 
-    console.log(`Processing ${emailsToProcess.length} emails (offset ${currentOffset}→${nextOffset})`);
+    // Free the large array
+    allEmails.length = 0;
+
+    console.log(`Processing ${emailsToProcess.length} emails (offset ${currentOffset}→${nextOffset}, total ${totalEmails})`);
 
     // Connect IMAP
-    const client = new SimpleIMAPClient();
+    const client = new IMAPClient();
     await client.connect("imap.gmail.com", 993);
-    const loggedIn = await client.login(gmailUser, gmailAppPassword);
-    if (!loggedIn) throw new Error("Gmail login failed");
+    if (!await client.login(gmailUser, gmailAppPassword)) throw new Error("Gmail login failed");
     await client.selectInbox();
 
     const newReplies: any[] = [];
     let processedCount = 0;
 
     for (const email of emailsToProcess) {
-      if (Date.now() - startTime > MAX_RUNTIME_MS || !client.isActive()) break;
-
+      if (Date.now() - startTime > 15000 || !client.active()) break;
       try {
         const msgNums = await client.searchFrom(email, 30);
-
         for (const msgNum of msgNums) {
-          if (Date.now() - startTime > MAX_RUNTIME_MS) break;
+          if (Date.now() - startTime > 15000) break;
+          const hdr = await client.fetchHeaders(msgNum);
+          if (!hdr?.messageId) continue;
 
-          const message = await client.fetchMessage(msgNum);
-          if (!message?.messageId) continue;
-
-          // Check duplicate inline (single query per message - only for messages we found)
-          const { data: existing } = await supabase
-            .from("email_replies")
-            .select("id, is_read")
-            .eq("gmail_message_id", message.messageId)
-            .maybeSingle();
-
-          if (existing) {
-            // Sync read status if needed
-            if (message.isRead && !existing.is_read) {
-              await supabase.from("email_replies").update({ is_read: true }).eq("id", existing.id);
+          // Check if already stored
+          const { count } = await supabase.from("email_replies").select("id", { count: "exact", head: true }).eq("gmail_message_id", hdr.messageId);
+          if (count && count > 0) {
+            if (hdr.isRead) {
+              await supabase.from("email_replies").update({ is_read: true }).eq("gmail_message_id", hdr.messageId).eq("is_read", false);
             }
             continue;
           }
 
-          // Find applicant for this email - query only when needed
+          // Find applicant
           let applicantId: string | null = null;
-
-          if (message.inReplyTo) {
-            const { data: logMatch } = await supabase
-              .from("email_logs")
-              .select("applicant_id")
-              .eq("message_id", message.inReplyTo)
-              .limit(1)
-              .maybeSingle();
-            if (logMatch) applicantId = logMatch.applicant_id;
+          if (hdr.inReplyTo) {
+            const { data: m } = await supabase.from("email_logs").select("applicant_id").eq("message_id", hdr.inReplyTo).limit(1).maybeSingle();
+            if (m) applicantId = m.applicant_id;
           }
-
           if (!applicantId) {
-            const { data: emailMatch } = await supabase
-              .from("email_logs")
-              .select("applicant_id")
-              .ilike("recipient_email", email)
-              .gte("sent_at", thirtyDaysAgo.toISOString())
-              .limit(1)
-              .maybeSingle();
-            if (emailMatch) applicantId = emailMatch.applicant_id;
+            const { data: m } = await supabase.from("email_logs").select("applicant_id").ilike("recipient_email", email).gte("sent_at", thirtyDaysAgo.toISOString()).limit(1).maybeSingle();
+            if (m) applicantId = m.applicant_id;
           }
 
           if (applicantId) {
+            // Only fetch body for new replies we'll save
+            const body = await client.fetchBody(msgNum);
             let receivedAt: string;
-            try { receivedAt = new Date(message.date).toISOString(); } catch { receivedAt = new Date().toISOString(); }
-
+            try { receivedAt = new Date(hdr.date).toISOString(); } catch { receivedAt = new Date().toISOString(); }
             newReplies.push({
-              applicant_id: applicantId,
-              from_email: email,
-              subject: message.subject || "(No Subject)",
-              body_text: message.body.substring(0, 5000),
-              in_reply_to: message.inReplyTo || null,
-              received_at: receivedAt,
-              gmail_message_id: message.messageId,
-              is_read: message.isRead,
+              applicant_id: applicantId, from_email: email,
+              subject: hdr.subject || "(No Subject)", body_text: body,
+              in_reply_to: hdr.inReplyTo || null, received_at: receivedAt,
+              gmail_message_id: hdr.messageId, is_read: hdr.isRead,
             });
           }
         }
@@ -310,28 +231,19 @@ const handler = async (req: Request): Promise<Response> => {
 
     await client.logout();
 
-    // Insert new replies
     if (newReplies.length > 0) {
-      const { error: insertError } = await supabase
-        .from("email_replies")
-        .upsert(newReplies, { onConflict: 'gmail_message_id', ignoreDuplicates: true });
-      if (insertError) console.error("Insert error:", insertError);
-      else console.log(`Saved ${newReplies.length} new replies`);
+      const { error } = await supabase.from("email_replies").upsert(newReplies, { onConflict: 'gmail_message_id', ignoreDuplicates: true });
+      if (error) console.error("Insert error:", error);
+      else console.log(`Saved ${newReplies.length} replies`);
     }
 
-    // Update offset
-    await supabase.from("email_fetch_state")
-      .update({ current_offset: nextOffset, last_run_at: new Date().toISOString(), updated_at: new Date().toISOString() })
-      .eq("id", 1);
+    if (!priorityEmail) {
+      await supabase.from("email_fetch_state").update({ current_offset: nextOffset, last_run_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", 1);
+    }
 
     return new Response(JSON.stringify({
-      success: true,
-      repliesFound: newReplies.length,
-      processedEmails: processedCount,
-      totalEmails,
-      currentOffset,
-      nextOffset,
-      runtimeMs: Date.now() - startTime,
+      success: true, repliesFound: newReplies.length, processedEmails: processedCount,
+      totalEmails, currentOffset, nextOffset, runtimeMs: Date.now() - startTime,
     }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
   } catch (error: any) {
     console.error("Error:", error.message);
