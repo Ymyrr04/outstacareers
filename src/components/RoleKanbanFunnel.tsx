@@ -460,7 +460,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
       ) : !selectedRole ? (
         <p className="py-8 text-center text-sm text-muted-foreground">Select a role to view its pipeline.</p>
       ) : (
-        <ScrollArea className="w-full">
+        <div className="w-full overflow-x-auto">
           <div className="flex gap-3 pb-4 min-w-max">
             {FUNNEL_STAGES.map((stage) => {
               const colors = STAGE_COLORS[stage];
@@ -567,8 +567,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
               );
             })}
           </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+        </div>
       )}
 
       {hiredCandidate && (
