@@ -1,11 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Button } from '@/components/ui/button';
-import { Users, MapPin, Mail, ChevronsUpDown, Check } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Users, MapPin, Mail, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const FUNNEL_STAGES = [
