@@ -353,7 +353,7 @@ const AnalyticsDashboard = () => {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ source, percentage }) => percentage > 5 ? `${source}: ${percentage}%` : ''}
+                      label={(props: any) => props.percentage > 5 ? `${props.source}: ${props.percentage}%` : ''}
                       outerRadius={100}
                       fill="#8884d8"
                       dataKey="count"
@@ -436,7 +436,7 @@ const AnalyticsDashboard = () => {
                       cx="50%"
                       cy="50%"
                       labelLine={false}
-                      label={({ source, percentage }) => percentage > 5 ? `${source}: ${percentage}%` : ''}
+                      label={(props: any) => props.percentage > 5 ? `${props.source}: ${props.percentage}%` : ''}
                       outerRadius={100}
                       fill="#8884d8"
                       dataKey="count"
