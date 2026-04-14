@@ -348,7 +348,7 @@ export const RecruitmentFunnel = () => {
                 const suggestions = allRoleNames.filter(r => r.toLowerCase().includes(query));
                 if (suggestions.length === 0) return null;
                 return (
-                  <div className="absolute top-full left-0 mt-1 w-72 max-h-72 overflow-y-auto bg-popover border border-border rounded-md shadow-lg z-50">
+                  <div className="absolute top-full right-0 mt-1 w-96 max-h-72 overflow-y-auto bg-popover border border-border rounded-md shadow-lg z-50">
                     {suggestions.slice(0, 10).map((role) => (
                       <button
                         key={role}
