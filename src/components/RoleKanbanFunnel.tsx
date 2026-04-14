@@ -254,6 +254,17 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
             </div>
           )}
         </div>
+
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search candidate..."
+              value={candidateSearch}
+              onChange={(e) => setCandidateSearch(e.target.value)}
+              className="pl-8 h-9 w-[220px] text-sm"
+            />
+          </div>
+        </div>
       </div>
 
       {loading ? (
