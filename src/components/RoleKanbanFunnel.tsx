@@ -27,6 +27,7 @@ import { CVImagePreview } from '@/components/CVImagePreview';
 import { CopyableText } from '@/components/CopyableText';
 import { InterviewNotesDialog } from '@/components/InterviewNotesDialog';
 import { CandidateProfileDialog } from '@/components/CandidateProfileDialog';
+import { HiredAssignmentDialog } from '@/components/HiredAssignmentDialog';
 
 const FUNNEL_STAGES = [
   'For Review',
