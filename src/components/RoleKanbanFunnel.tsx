@@ -566,6 +566,21 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
       )}
+
+      {hiredCandidate && (
+        <HiredAssignmentDialog
+          applicantId={hiredCandidate.id}
+          applicantName={hiredCandidate.full_name}
+          applicantEmail={hiredCandidate.email}
+          jobTitle={hiredCandidate.job_title}
+          previousStatus={hiredCandidate.status}
+          open={showHiredDialog}
+          onOpenChange={(open) => {
+            if (!open) handleHiredComplete();
+          }}
+          onComplete={handleHiredComplete}
+        />
+      )}
     </div>
   );
 };
