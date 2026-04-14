@@ -14,7 +14,7 @@ import {
   ContextMenuSubContent,
 } from '@/components/ui/context-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle } from 'lucide-react';
+import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -28,6 +28,7 @@ import { CopyableText } from '@/components/CopyableText';
 import { InterviewNotesDialog } from '@/components/InterviewNotesDialog';
 import { CandidateProfileDialog } from '@/components/CandidateProfileDialog';
 import { HiredAssignmentDialog } from '@/components/HiredAssignmentDialog';
+import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 
 const FUNNEL_STAGES = [
   'For Review',
@@ -624,6 +625,26 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
   const [showCvPreview, setShowCvPreview] = useState(false);
   const [showInterviewResults, setShowInterviewResults] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showActivity, setShowActivity] = useState(false);
+  const [activityHistory, setActivityHistory] = useState<Array<{ from_status: string | null; to_status: string; changed_by: string | null; created_at: string }>>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
+
+  const fetchActivity = useCallback(async () => {
+    setActivityLoading(true);
+    const { data, error } = await supabase
+      .from('applicant_status_history')
+      .select('from_status, to_status, changed_by, created_at')
+      .eq('applicant_id', candidate.id)
+      .order('created_at', { ascending: false });
+    if (!error) {
+      setActivityHistory(data || []);
+    }
+    setActivityLoading(false);
+  }, [candidate.id]);
+
+  useEffect(() => {
+    if (showActivity) fetchActivity();
+  }, [showActivity, fetchActivity]);
 
   return (
     <>
@@ -756,6 +777,11 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
             Profile
           </ContextMenuItem>
 
+          <ContextMenuItem onClick={() => setShowActivity(true)}>
+            <Activity className="w-4 h-4 mr-2" />
+            Activity
+          </ContextMenuItem>
+
           {candidate.cv_file_url && (
             <ContextMenuItem onClick={() => setShowCvPreview(true)}>
               <FileText className="w-4 h-4 mr-2" />
@@ -858,6 +884,49 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
         applicantId={candidate.id}
         applicantName={candidate.full_name}
       />
+
+      <Dialog open={showActivity} onOpenChange={setShowActivity}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Activity className="w-4 h-4" />
+              Activity — {candidate.full_name}
+            </DialogTitle>
+          </DialogHeader>
+          {activityLoading ? (
+            <div className="py-8 text-center text-muted-foreground text-sm">Loading...</div>
+          ) : activityHistory.length === 0 ? (
+            <div className="py-8 text-center text-muted-foreground text-sm">No activity recorded</div>
+          ) : (
+            <div className="max-h-[400px] overflow-y-auto space-y-3">
+              {activityHistory.map((entry, idx) => {
+                const date = new Date(entry.created_at);
+                const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                const formattedTime = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                const adminName = getAdminDisplayName(entry.changed_by, 'System');
+                return (
+                  <div key={idx} className="flex gap-3 text-sm">
+                    <div className="flex flex-col items-center">
+                      <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
+                      {idx < activityHistory.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
+                    </div>
+                    <div className="pb-3">
+                      <p className="text-foreground">
+                        <span className="font-medium">{adminName}</span>
+                        {' moved from '}
+                        <span className="font-medium">{entry.from_status || '—'}</span>
+                        {' → '}
+                        <span className="font-medium">{entry.to_status}</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{formattedDate} at {formattedTime}</p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
