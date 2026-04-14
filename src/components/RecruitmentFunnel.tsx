@@ -130,9 +130,20 @@ export const RecruitmentFunnel = () => {
   }, []);
 
   const roleFunnels = useMemo(() => {
+    // Resolve date range (auto-swap if reversed)
+    let effectiveFrom = dateFrom;
+    let effectiveTo = dateTo;
+    if (effectiveFrom && effectiveTo && effectiveFrom > effectiveTo) {
+      [effectiveFrom, effectiveTo] = [effectiveTo, effectiveFrom];
+    }
+
     const map: Record<string, Record<string, number>> = {};
 
     for (const applicant of applicants) {
+      // Date range filter on submitted_at
+      if (effectiveFrom && applicant.submitted_at < effectiveFrom) continue;
+      if (effectiveTo && applicant.submitted_at < effectiveTo + 'T23:59:59' === false && applicant.submitted_at > effectiveTo + 'T23:59:59.999Z') continue;
+
       const effectiveStatus = applicant.status === 'Archive' || applicant.status === 'Archived'
         ? (applicant.pre_archive_status || applicant.status)
         : applicant.status;
