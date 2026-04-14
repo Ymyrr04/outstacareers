@@ -51,6 +51,7 @@ interface Candidate {
   pre_archive_status: string | null;
   submitted_at: string;
   total_score: number | null;
+  interview_overall_score: number | null;
 }
 
 interface RoleKanbanFunnelProps {
@@ -73,7 +74,33 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
       .select('id, full_name, email, location, status, pre_archive_status, submitted_at, total_score')
       .eq('job_title', role)
       .order('total_score', { ascending: false, nullsFirst: false });
-    setCandidates(data || []);
+
+    const applicantIds = (data || []).map(a => a.id);
+    let interviewScores: Record<string, number> = {};
+    
+    if (applicantIds.length > 0) {
+      // Fetch in batches of 100 to avoid URL length limits
+      for (let i = 0; i < applicantIds.length; i += 100) {
+        const batch = applicantIds.slice(i, i + 100);
+        const { data: sessions } = await supabase
+          .from('interview_sessions')
+          .select('applicant_id, overall_score')
+          .in('applicant_id', batch)
+          .in('status', ['completed', 'completed_manual_review'])
+          .order('created_at', { ascending: false });
+        
+        for (const s of sessions || []) {
+          if (s.overall_score != null && !(s.applicant_id in interviewScores)) {
+            interviewScores[s.applicant_id] = s.overall_score;
+          }
+        }
+      }
+    }
+
+    setCandidates((data || []).map(a => ({
+      ...a,
+      interview_overall_score: interviewScores[a.id] ?? null,
+    })));
     setLoading(false);
   }, []);
 
