@@ -624,6 +624,7 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
       .from('applicant_status_history')
       .select('from_status, to_status, changed_by, created_at')
       .eq('applicant_id', candidate.id)
+      .not('changed_by', 'is', null)
       .order('created_at', { ascending: false });
     if (!error) {
       setActivityHistory(data || []);
