@@ -801,6 +801,13 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
         applicantId={candidate.id}
         applicantName={candidate.full_name}
       />
+
+      <CandidateProfileDialog
+        open={showProfile}
+        onOpenChange={setShowProfile}
+        applicantId={candidate.id}
+        applicantName={candidate.full_name}
+      />
     </>
   );
 };
