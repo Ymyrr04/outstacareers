@@ -777,6 +777,11 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
             Profile
           </ContextMenuItem>
 
+          <ContextMenuItem onClick={() => setShowActivity(true)}>
+            <Activity className="w-4 h-4 mr-2" />
+            Activity
+          </ContextMenuItem>
+
           {candidate.cv_file_url && (
             <ContextMenuItem onClick={() => setShowCvPreview(true)}>
               <FileText className="w-4 h-4 mr-2" />
