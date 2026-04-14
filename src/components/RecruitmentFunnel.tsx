@@ -310,6 +310,29 @@ export const RecruitmentFunnel = () => {
 
           {/* Search & Sort */}
           <div className="flex items-center gap-2 flex-wrap justify-end">
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="h-8 w-[140px] text-sm"
+              placeholder="From"
+            />
+            <span className="text-xs text-muted-foreground">to</span>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="h-8 w-[140px] text-sm"
+              placeholder="To"
+            />
+            {(dateFrom || dateTo) && (
+              <button
+                onClick={() => { setDateFrom(''); setDateTo(''); }}
+                className="text-xs text-muted-foreground hover:text-foreground underline"
+              >
+                Clear
+              </button>
+            )}
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
