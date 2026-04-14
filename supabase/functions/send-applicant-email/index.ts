@@ -106,8 +106,25 @@ const handler = async (req: Request): Promise<Response> => {
       inReplyTo,
     }: SendEmailRequest = await req.json();
 
-    // Extract admin name from JWT for personalized sign-off
+    // Extract admin name and email from JWT for personalized sign-off and sender selection
     const adminName = getAdminNameFromJwt(req.headers.get('authorization'));
+    const adminEmail = getAdminEmailFromJwt(req.headers.get('authorization'));
+    
+    // Select sender credentials: use admin-specific if available, otherwise default
+    let gmailUser = defaultGmailUser;
+    let gmailPassword = defaultGmailPassword;
+    if (adminEmail && !isAutomated) {
+      const creds = ADMIN_GMAIL_CREDENTIALS[adminEmail];
+      if (creds) {
+        const specificUser = Deno.env.get(creds.userEnv);
+        const specificPass = Deno.env.get(creds.passEnv);
+        if (specificUser && specificPass) {
+          gmailUser = specificUser;
+          gmailPassword = specificPass;
+          console.log(`Using ${adminEmail}'s own Gmail credentials for sending`);
+        }
+      }
+    }
     
     // Auto-replace generic sign-offs with the admin's name if available
     let processedBodyHtml = bodyHtml;
