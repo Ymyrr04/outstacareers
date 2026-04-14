@@ -233,7 +233,7 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
                 <div
                   key={stage}
                   className={cn(
-                    'flex flex-col w-[220px] shrink-0 rounded-lg border border-border/60 overflow-hidden',
+                    'flex flex-col w-[248px] shrink-0 rounded-lg border border-border/60 overflow-hidden',
                     colors.bg
                   )}
                 >
