@@ -328,7 +328,7 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
                   {candidate.full_name}
                 </p>
               </div>
-              <div className="pl-3.5">
+              <div className="pl-3.5 flex items-center gap-1.5 flex-wrap">
                 <span 
                   className={cn(
                     "inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded",
@@ -341,8 +341,13 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
                       : "bg-muted text-muted-foreground"
                   )}
                 >
-                  Score: {candidate.total_score ?? '–'}
+                  CV: {candidate.total_score ?? '–'}
                 </span>
+                {candidate.interview_overall_score != null && (
+                  <span className="inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400">
+                    IV: {candidate.interview_overall_score}
+                  </span>
+                )}
               </div>
             </div>
 
