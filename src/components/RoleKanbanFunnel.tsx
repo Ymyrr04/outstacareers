@@ -62,6 +62,23 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(false);
 
+  const fetchCandidates = useCallback(async (role: string) => {
+    if (!role) return;
+    setLoading(true);
+    const { data } = await supabase
+      .from('applicants_prescreen')
+      .select('id, full_name, email, location, status, pre_archive_status, submitted_at, total_score')
+      .eq('job_title', role)
+      .order('total_score', { ascending: false, nullsFirst: false });
+    setCandidates(data || []);
+    setLoading(false);
+  }, []);
+  const [roleSearch, setRoleSearch] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [loading, setLoading] = useState(false);
+
   useEffect(() => {
     if (!selectedRole) return;
 
