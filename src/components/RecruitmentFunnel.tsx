@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Search, TrendingDown, Upload, CheckCircle, XCircle } from 'lucide-react';
+import { Search, TrendingDown, Upload, CheckCircle, XCircle, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const FUNNEL_STAGES = [
