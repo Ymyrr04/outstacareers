@@ -358,6 +358,44 @@ export type Database = {
         }
         Relationships: []
       }
+      candidate_additional_profiles: {
+        Row: {
+          applicant_id: string
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          applicant_id: string
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          applicant_id?: string
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "candidate_additional_profiles_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "applicants_prescreen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_communications: {
         Row: {
           client_id: string
