@@ -56,6 +56,8 @@ export const RecruitmentFunnel = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'pipeline' | 'name' | 'total'>('pipeline');
+  const [jobStatusFilter, setJobStatusFilter] = useState<'active' | 'inactive' | 'all'>('all');
+  const [activeJobTitles, setActiveJobTitles] = useState<Set<string> | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
@@ -114,6 +116,17 @@ export const RecruitmentFunnel = () => {
     fetchAll();
   }, []);
 
+  // Fetch active job titles for filtering
+  useEffect(() => {
+    const fetchJobs = async () => {
+      const { data } = await supabase.from('jobs').select('title, is_active');
+      if (data) {
+        setActiveJobTitles(new Set(data.filter(j => j.is_active).map(j => j.title)));
+      }
+    };
+    fetchJobs();
+  }, []);
+
   const roleFunnels = useMemo(() => {
     const map: Record<string, Record<string, number>> = {};
 
@@ -152,6 +165,11 @@ export const RecruitmentFunnel = () => {
       .filter((role) => {
         const stageKeys = Object.keys(role.stages);
         return !(stageKeys.length === 1 && stageKeys[0] === 'Hired');
+      })
+      .filter((role) => {
+        if (jobStatusFilter === 'all' || !activeJobTitles) return true;
+        const isActive = activeJobTitles.has(role.jobTitle);
+        return jobStatusFilter === 'active' ? isActive : !isActive;
       });
 
     if (searchTerm) {
@@ -169,7 +187,7 @@ export const RecruitmentFunnel = () => {
     });
 
     return results;
-  }, [applicants, historyData, searchTerm, sortBy]);
+  }, [applicants, historyData, searchTerm, sortBy, jobStatusFilter, activeJobTitles]);
 
   const stageTotals = useMemo(
     () =>
@@ -288,6 +306,17 @@ export const RecruitmentFunnel = () => {
                 className="pl-8 h-8 w-52 text-sm"
               />
             </div>
+
+            <Select value={jobStatusFilter} onValueChange={(value) => setJobStatusFilter(value as 'active' | 'inactive' | 'all')}>
+              <SelectTrigger className="h-8 w-[130px] text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Jobs</SelectItem>
+                <SelectItem value="active">Active Jobs</SelectItem>
+                <SelectItem value="inactive">Archived Jobs</SelectItem>
+              </SelectContent>
+            </Select>
 
             <Select value={sortBy} onValueChange={(value) => setSortBy(value as 'pipeline' | 'name' | 'total')}>
               <SelectTrigger className="h-8 w-[150px] text-sm">
