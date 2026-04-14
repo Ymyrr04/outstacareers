@@ -58,15 +58,22 @@ export const FunnelBarChart = ({ stageTotals, stages }: FunnelBarChartProps) => 
             <CartesianGrid strokeDasharray="3 3" className="stroke-border/40" />
             <XAxis
               dataKey="stage"
-              tick={{ fontSize: 11 }}
-              className="fill-muted-foreground"
+              tick={{ fontSize: 12, fontWeight: 500, fill: 'hsl(var(--foreground))' }}
+              axisLine={{ stroke: 'hsl(var(--border))' }}
+              tickLine={{ stroke: 'hsl(var(--border))' }}
             />
-            <YAxis yAxisId="left" tick={{ fontSize: 11 }} className="fill-muted-foreground" />
+            <YAxis
+              yAxisId="left"
+              tick={{ fontSize: 12, fontWeight: 500, fill: 'hsl(var(--foreground))' }}
+              axisLine={{ stroke: 'hsl(var(--border))' }}
+              tickLine={{ stroke: 'hsl(var(--border))' }}
+            />
             <YAxis
               yAxisId="right"
               orientation="right"
-              tick={{ fontSize: 11 }}
-              className="fill-muted-foreground"
+              tick={{ fontSize: 12, fontWeight: 500, fill: 'hsl(var(--foreground))' }}
+              axisLine={{ stroke: 'hsl(var(--border))' }}
+              tickLine={{ stroke: 'hsl(var(--border))' }}
               domain={[0, 100]}
               ticks={[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]}
               tickFormatter={(v) => `${v}%`}
