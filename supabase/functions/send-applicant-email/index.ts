@@ -126,18 +126,24 @@ const handler = async (req: Request): Promise<Response> => {
     const adminName = getAdminNameFromJwt(req.headers.get('authorization'));
     const adminEmail = getAdminEmailFromJwt(req.headers.get('authorization'));
     
-    // Select sender credentials: use admin-specific if available, otherwise default
+    // Select sender credentials: use sendAsEmail override, then admin-specific if available, otherwise default
     let gmailUser = defaultGmailUser;
     let gmailPassword = defaultGmailPassword;
-    if (adminEmail && !isAutomated) {
-      const creds = ADMIN_GMAIL_CREDENTIALS[adminEmail];
+    let senderAdminName = adminName;
+    
+    // Determine which admin email to use for credentials
+    const effectiveAdminEmail = (!isAutomated && sendAsEmail) ? sendAsEmail.toLowerCase() : adminEmail;
+    
+    if (effectiveAdminEmail && !isAutomated) {
+      const creds = ADMIN_GMAIL_CREDENTIALS[effectiveAdminEmail];
       if (creds) {
         const specificUser = Deno.env.get(creds.userEnv);
         const specificPass = Deno.env.get(creds.passEnv);
         if (specificUser && specificPass) {
           gmailUser = specificUser;
           gmailPassword = specificPass;
-          console.log(`Using ${adminEmail}'s own Gmail credentials for sending`);
+          senderAdminName = ADMIN_NAMES[effectiveAdminEmail] || null;
+          console.log(`Using ${effectiveAdminEmail}'s Gmail credentials for sending`);
         }
       }
     }
