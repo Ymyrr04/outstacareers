@@ -344,7 +344,7 @@ export const RecruitmentFunnel = () => {
               />
               {searchTerm && !searchSelected && (() => {
                 const query = searchTerm.toLowerCase();
-                const allRoleNames = Array.from(new Set(applicants.map(a => a.job_title).filter(Boolean))).sort();
+                const allRoleNames = Array.from(new Set(applicants.map(a => a.job_title?.trim()).filter(Boolean))).sort();
                 const suggestions = allRoleNames.filter(r => r.toLowerCase().includes(query));
                 if (suggestions.length === 0) return null;
                 return (
