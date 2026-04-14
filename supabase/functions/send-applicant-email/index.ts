@@ -69,18 +69,25 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const gmailUser = Deno.env.get("GMAIL_USER");
-    const gmailPassword = Deno.env.get("GMAIL_APP_PASSWORD");
+    const defaultGmailUser = Deno.env.get("GMAIL_USER");
+    const defaultGmailPassword = Deno.env.get("GMAIL_APP_PASSWORD");
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
-    if (!gmailUser || !gmailPassword) {
+    if (!defaultGmailUser || !defaultGmailPassword) {
       throw new Error("Gmail credentials not configured");
     }
 
     if (!supabaseUrl || !supabaseServiceKey) {
       throw new Error("Supabase credentials not configured");
     }
+
+    // Admin-specific Gmail credentials mapping
+    const ADMIN_GMAIL_CREDENTIALS: Record<string, { userEnv: string; passEnv: string }> = {
+      'mark@outsta.io': { userEnv: 'MARK_GMAIL_USER', passEnv: 'MARK_GMAIL_APP_PASSWORD' },
+      'kristine@outsta.io': { userEnv: 'KRISTINE_GMAIL_USER', passEnv: 'KRISTINE_GMAIL_APP_PASSWORD' },
+      'czarina@outsta.io': { userEnv: 'CZARINA_GMAIL_USER', passEnv: 'CZARINA_GMAIL_APP_PASSWORD' },
+    };
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
