@@ -221,11 +221,6 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
         .eq('id', hiredCandidate.id);
 
       if (!error) {
-        await supabase.from('applicant_status_history').insert({
-          applicant_id: hiredCandidate.id,
-          from_status: hiredCandidate.status,
-          to_status: 'Hired',
-        });
         toast.success(`${hiredCandidate.full_name} moved to Hired`);
       }
       fetchCandidates(selectedRole);
