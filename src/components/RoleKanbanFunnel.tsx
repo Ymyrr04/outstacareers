@@ -338,7 +338,7 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
 
           <ContextMenuItem onClick={() => setShowInterview(true)}>
             <ClipboardList className="w-4 h-4 mr-2" />
-            Show interview results
+            View details
           </ContextMenuItem>
 
           <ContextMenuItem onClick={() => onCopyEmail(candidate.email)}>
