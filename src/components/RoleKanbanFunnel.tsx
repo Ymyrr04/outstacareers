@@ -233,7 +233,7 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
                 <div
                   key={stage}
                   className={cn(
-                    'flex flex-col w-[220px] shrink-0 rounded-lg border border-border/60 overflow-hidden',
+                    'flex flex-col w-[248px] shrink-0 rounded-lg border border-border/60 overflow-hidden',
                     colors.bg
                   )}
                 >
@@ -294,25 +294,29 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <div className="bg-card rounded-md p-2.5 shadow-sm border border-border/50 hover:shadow-md transition-shadow space-y-1.5 cursor-context-menu">
-            <div className="flex items-center gap-1.5">
-              <div className={cn('w-2 h-2 rounded-full shrink-0', dotColor)} />
-              <p className="text-xs font-semibold truncate flex-1 min-w-0" title={candidate.full_name}>
-                {candidate.full_name}
-              </p>
-              <span 
-                className={cn(
-                  "text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0",
-                  candidate.total_score != null && candidate.total_score >= 70
-                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
-                    : candidate.total_score != null && candidate.total_score >= 40
-                    ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
-                    : candidate.total_score != null
-                    ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400"
-                    : "bg-muted text-muted-foreground"
-                )}
-              >
-                {candidate.total_score ?? '–'}
-              </span>
+            <div className="space-y-1">
+              <div className="flex items-start gap-1.5">
+                <div className={cn('w-2 h-2 rounded-full mt-1 shrink-0', dotColor)} />
+                <p className="text-xs font-semibold leading-tight flex-1 min-w-0" title={candidate.full_name}>
+                  {candidate.full_name}
+                </p>
+              </div>
+              <div className="pl-3.5">
+                <span 
+                  className={cn(
+                    "inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded",
+                    candidate.total_score != null && candidate.total_score >= 70
+                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
+                      : candidate.total_score != null && candidate.total_score >= 40
+                      ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
+                      : candidate.total_score != null
+                      ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400"
+                      : "bg-muted text-muted-foreground"
+                  )}
+                >
+                  Score: {candidate.total_score ?? '–'}
+                </span>
+              </div>
             </div>
 
             <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
