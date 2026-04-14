@@ -569,15 +569,18 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
 
       {hiredCandidate && (
         <HiredAssignmentDialog
-          applicantId={hiredCandidate.id}
-          applicantName={hiredCandidate.full_name}
-          applicantEmail={hiredCandidate.email}
-          jobTitle={hiredCandidate.job_title}
-          previousStatus={hiredCandidate.status}
           open={showHiredDialog}
           onOpenChange={(open) => {
             if (!open) handleHiredComplete();
           }}
+          applicant={hiredCandidate ? {
+            id: hiredCandidate.id,
+            full_name: hiredCandidate.full_name,
+            email: hiredCandidate.email,
+            phone: hiredCandidate.phone || null,
+            location: hiredCandidate.location,
+            job_title: hiredCandidate.job_title,
+          } : null}
           onComplete={handleHiredComplete}
         />
       )}
