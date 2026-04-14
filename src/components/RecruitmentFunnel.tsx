@@ -310,6 +310,7 @@ export const RecruitmentFunnel = () => {
                     <TableHead className="sticky left-0 z-20 min-w-[260px] bg-muted/40">
                       Role
                     </TableHead>
+                    <TableHead className="min-w-[72px] text-center sticky left-[260px] z-20 bg-muted/40">Total</TableHead>
                     {FUNNEL_STAGES.map((stage) => {
                       const totals = stageTotals[stage] || { current: 0, historical: 0 };
                       const rate = conversionRates[stage];
@@ -341,7 +342,6 @@ export const RecruitmentFunnel = () => {
                         </TableHead>
                       );
                     })}
-                    <TableHead className="min-w-[96px] text-center">Total</TableHead>
                   </TableRow>
                 </TableHeader>
 
@@ -352,6 +352,10 @@ export const RecruitmentFunnel = () => {
                         <div className="max-w-[240px] truncate" title={role.jobTitle}>
                           {role.jobTitle}
                         </div>
+                      </TableCell>
+
+                      <TableCell className="text-center sticky left-[260px] z-10 bg-background">
+                        <Badge variant="secondary">{role.total}</Badge>
                       </TableCell>
 
                       {FUNNEL_STAGES.map((stage) => {
@@ -382,10 +386,6 @@ export const RecruitmentFunnel = () => {
                           </TableCell>
                         );
                       })}
-
-                      <TableCell className="text-center">
-                        <Badge variant="secondary">{role.total}</Badge>
-                      </TableCell>
                     </TableRow>
                   ))}
 
