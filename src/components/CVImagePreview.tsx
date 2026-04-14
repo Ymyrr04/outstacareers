@@ -27,6 +27,11 @@ export const CVImagePreview = ({ pdfUrl, fileName }: CVImagePreviewProps) => {
   // Extract the file path from the storage URL
   const extractFilePath = (url: string): string | null => {
     try {
+      // Handle relative paths directly (e.g. "applications/1234.pdf")
+      if (!url.startsWith('http') && !url.startsWith('blob:')) {
+        return url;
+      }
+
       // URL format: https://<project>.supabase.co/storage/v1/object/public/cv-uploads/<path>
       // or: https://<project>.supabase.co/storage/v1/object/sign/cv-uploads/<path>?token=...
       const match = url.match(/\/storage\/v1\/object\/(?:public|sign)\/cv-uploads\/(.+?)(?:\?|$)/);
