@@ -94,10 +94,13 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
 
     const applicantIds = (data || []).map(a => a.id);
     let interviewScores: Record<string, number> = {};
+    let stageEnteredMap: Record<string, string> = {};
     
     if (applicantIds.length > 0) {
       for (let i = 0; i < applicantIds.length; i += 100) {
         const batch = applicantIds.slice(i, i + 100);
+        
+        // Fetch interview scores
         const { data: sessions } = await supabase
           .from('interview_sessions')
           .select('applicant_id, overall_score')
@@ -110,6 +113,19 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
             interviewScores[s.applicant_id] = s.overall_score;
           }
         }
+
+        // Fetch latest status history entry (when they entered current stage)
+        const { data: history } = await supabase
+          .from('applicant_status_history')
+          .select('applicant_id, created_at')
+          .in('applicant_id', batch)
+          .order('created_at', { ascending: false });
+        
+        for (const h of history || []) {
+          if (!(h.applicant_id in stageEnteredMap)) {
+            stageEnteredMap[h.applicant_id] = h.created_at;
+          }
+        }
       }
     }
 
@@ -117,6 +133,7 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
       ...a,
       is_starred: a.is_starred ?? false,
       interview_overall_score: interviewScores[a.id] ?? null,
+      stage_entered_at: stageEnteredMap[a.id] || a.submitted_at,
     })));
     setLoading(false);
   }, []);
