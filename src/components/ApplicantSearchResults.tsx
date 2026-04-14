@@ -42,6 +42,7 @@ import {
 } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
 import { ApplicantNotesEditor, type ApplicantNotesEditorRef } from '@/components/ApplicantNotesEditor';
+import { ApplicantNotesSection } from '@/components/ApplicantNotesSection';
 import { FormattedNotes } from '@/components/FormattedNotes';
 
 interface ToolMatch {
