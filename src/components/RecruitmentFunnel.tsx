@@ -17,6 +17,8 @@ import {
 import { Search, TrendingDown, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RoleKanbanFunnel } from '@/components/RoleKanbanFunnel';
+import { FunnelKPICards } from '@/components/funnel/FunnelKPICards';
+import { FunnelBarChart } from '@/components/funnel/FunnelBarChart';
 
 const FUNNEL_STAGES = [
   'For Review',
@@ -38,8 +40,15 @@ interface RoleFunnelData {
   historicalStages: Record<string, number>;
 }
 
-
-
+// Returns a heatmap background color based on intensity (0-1)
+function getHeatmapColor(count: number, maxCount: number): string {
+  if (count === 0 || maxCount === 0) return '';
+  const intensity = count / maxCount;
+  if (intensity > 0.7) return 'bg-primary/25';
+  if (intensity > 0.4) return 'bg-primary/15';
+  if (intensity > 0.15) return 'bg-primary/8';
+  return '';
+}
 
 export const RecruitmentFunnel = () => {
   const [applicants, setApplicants] = useState<{ job_title: string; status: string; pre_archive_status: string | null }[]>([]);
@@ -53,7 +62,6 @@ export const RecruitmentFunnel = () => {
     const fetchAll = async () => {
       setLoading(true);
 
-      // Fetch current applicants
       let all: { job_title: string; status: string; pre_archive_status: string | null }[] = [];
       let from = 0;
       const batchSize = 1000;
@@ -69,7 +77,6 @@ export const RecruitmentFunnel = () => {
       }
       setApplicants(all);
 
-      // Fetch historical pass-through counts (applicant_id + to_status joined with job_title)
       let histAll: { applicant_id: string; to_status: string; job_title: string }[] = [];
       from = 0;
       while (true) {
@@ -89,7 +96,6 @@ export const RecruitmentFunnel = () => {
         from += batchSize;
       }
 
-      // Aggregate: count distinct applicants per job_title + to_status
       const histMap: Record<string, Set<string>> = {};
       for (const h of histAll) {
         const key = `${h.job_title}|||${h.to_status}`;
@@ -123,7 +129,6 @@ export const RecruitmentFunnel = () => {
       map[title][effectiveStatus] = (map[title][effectiveStatus] || 0) + 1;
     }
 
-    // Build historical map: role -> stage -> count
     const histMap: Record<string, Record<string, number>> = {};
     for (const h of historyData) {
       if (!RECRUITMENT_STATUSES.has(h.to_status as (typeof FUNNEL_STAGES)[number])) continue;
@@ -131,7 +136,6 @@ export const RecruitmentFunnel = () => {
       histMap[h.job_title][h.to_status] = (histMap[h.job_title][h.to_status] || 0) + h.applicant_count;
     }
 
-    // Merge all role names from both sources
     const allRoles = new Set([...Object.keys(map), ...Object.keys(histMap)]);
 
     let results: RoleFunnelData[] = Array.from(allRoles)
@@ -179,7 +183,60 @@ export const RecruitmentFunnel = () => {
     [roleFunnels]
   );
 
+  // Compute max count per stage for heatmap coloring
+  const stageMaxCounts = useMemo(() => {
+    const maxes: Record<string, number> = {};
+    for (const stage of FUNNEL_STAGES) {
+      let max = 0;
+      for (const role of roleFunnels) {
+        const c = role.stages[stage] || 0;
+        if (c > max) max = c;
+      }
+      maxes[stage] = max;
+    }
+    return maxes;
+  }, [roleFunnels]);
+
   const grandTotal = useMemo(() => applicants.length, [applicants]);
+
+  // KPI computations
+  const kpiData = useMemo(() => {
+    const totalActive = roleFunnels.reduce((s, r) => s + r.total, 0);
+    const totalHired = stageTotals['Hired']?.current || 0;
+    const totalForReview = stageTotals['For Review']?.historical || stageTotals['For Review']?.current || 1;
+    const overallConversionRate = totalForReview > 0 ? (totalHired / totalForReview) * 100 : 0;
+
+    // Find bottleneck: stage with highest current count excluding Reject/Talent Pool/Hired
+    const actionableStages = ['For Review', 'For Interview', 'SIV', 'Client Interview', 'Bench'] as const;
+    let bottleneckStage = '';
+    let bottleneckCount = 0;
+    for (const stage of actionableStages) {
+      const c = stageTotals[stage]?.current || 0;
+      if (c > bottleneckCount) {
+        bottleneckCount = c;
+        bottleneckStage = stage;
+      }
+    }
+
+    return { totalActive, overallConversionRate, bottleneckStage, avgDaysInPipeline: 0 };
+  }, [roleFunnels, stageTotals]);
+
+  // Conversion rates between sequential stages
+  const conversionRates = useMemo(() => {
+    const rates: Record<string, number | null> = {};
+    for (let i = 0; i < FUNNEL_STAGES.length; i++) {
+      const stage = FUNNEL_STAGES[i];
+      if (i === 0) {
+        rates[stage] = null; // no previous stage
+        continue;
+      }
+      const prevStage = FUNNEL_STAGES[i - 1];
+      const prevCount = stageTotals[prevStage]?.historical || stageTotals[prevStage]?.current || 0;
+      const curCount = stageTotals[stage]?.historical || stageTotals[stage]?.current || 0;
+      rates[stage] = prevCount > 0 ? (curCount / prevCount) * 100 : null;
+    }
+    return rates;
+  }, [stageTotals]);
 
   if (loading) {
     return (
@@ -191,7 +248,6 @@ export const RecruitmentFunnel = () => {
 
   return (
     <div className="space-y-4">
-      {/* Per-role Kanban pipeline — default at top */}
       <RoleKanbanFunnel roles={roleFunnels.map(r => r.jobTitle)} />
 
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -210,7 +266,19 @@ export const RecruitmentFunnel = () => {
           </button>
         </CollapsibleTrigger>
 
-        <CollapsibleContent className="mt-4 space-y-3">
+        <CollapsibleContent className="mt-4 space-y-4">
+          {/* KPI Cards */}
+          <FunnelKPICards
+            totalActive={kpiData.totalActive}
+            overallConversionRate={kpiData.overallConversionRate}
+            bottleneckStage={kpiData.bottleneckStage}
+            avgDaysInPipeline={kpiData.avgDaysInPipeline}
+          />
+
+          {/* Funnel Bar Chart */}
+          <FunnelBarChart stageTotals={stageTotals} stages={FUNNEL_STAGES} />
+
+          {/* Search & Sort */}
           <div className="flex items-center gap-2 flex-wrap justify-end">
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
@@ -234,6 +302,7 @@ export const RecruitmentFunnel = () => {
             </Select>
           </div>
 
+          {/* Table with heatmap + conversion rates */}
           <Card>
             <CardContent className="p-0">
               <Table className="min-w-[1180px]">
@@ -244,9 +313,10 @@ export const RecruitmentFunnel = () => {
                     </TableHead>
                     {FUNNEL_STAGES.map((stage) => {
                       const totals = stageTotals[stage] || { current: 0, historical: 0 };
+                      const rate = conversionRates[stage];
                       return (
                         <TableHead key={stage} className="min-w-[120px] text-center">
-                          <div className="flex flex-col items-center gap-1 py-1">
+                          <div className="flex flex-col items-center gap-0.5 py-1">
                             <span className="text-xs font-semibold text-foreground">{stage}</span>
                             <div className="flex items-center gap-1">
                               <Badge variant="secondary" className="text-[10px]">
@@ -258,6 +328,16 @@ export const RecruitmentFunnel = () => {
                                 </Badge>
                               )}
                             </div>
+                            {rate !== null && (
+                              <span className={cn(
+                                'text-[9px] font-medium',
+                                rate >= 50 ? 'text-emerald-600 dark:text-emerald-400' :
+                                rate >= 20 ? 'text-amber-600 dark:text-amber-400' :
+                                'text-destructive'
+                              )}>
+                                ← {rate.toFixed(0)}%
+                              </span>
+                            )}
                           </div>
                         </TableHead>
                       );
@@ -278,15 +358,17 @@ export const RecruitmentFunnel = () => {
                       {FUNNEL_STAGES.map((stage) => {
                         const currentCount = role.stages[stage] || 0;
                         const historicalCount = role.historicalStages[stage] || 0;
+                        const heatmapBg = getHeatmapColor(currentCount, stageMaxCounts[stage]);
 
                         return (
                           <TableCell key={stage} className="text-center">
                             <div className="mx-auto flex flex-col items-center gap-0.5">
                               <div
                                 className={cn(
-                                  'flex h-8 w-14 items-center justify-center rounded-md border text-sm font-semibold',
+                                  'flex h-8 w-14 items-center justify-center rounded-md border text-sm font-semibold transition-colors',
+                                  heatmapBg,
                                   currentCount > 0
-                                    ? 'border-border bg-accent/10 text-foreground'
+                                    ? 'border-border text-foreground'
                                     : 'border-border/60 bg-muted/40 text-muted-foreground'
                                 )}
                               >
