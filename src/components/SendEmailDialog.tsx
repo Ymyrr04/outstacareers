@@ -422,17 +422,13 @@ export function SendEmailDialog({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="default">
-                  {currentAdminEmail 
-                    ? `${EMAIL_TO_NAME[currentAdminEmail] || currentAdminEmail} (default)`
-                    : 'Default (recruitment@outsta.io)'}
+                  Recruitment (recruitment@outsta.io)
                 </SelectItem>
-                {ADMIN_SENDERS
-                  .filter(a => a.email !== currentAdminEmail)
-                  .map((admin) => (
-                    <SelectItem key={admin.email} value={admin.email}>
-                      {admin.name} ({admin.email})
-                    </SelectItem>
-                  ))}
+                {ADMIN_SENDERS.map((admin) => (
+                  <SelectItem key={admin.email} value={admin.email}>
+                    {admin.name} ({admin.email})
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
