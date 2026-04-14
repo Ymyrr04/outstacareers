@@ -205,6 +205,8 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
           )}
         </div>
 
+        <div className="flex items-center gap-2">
+
         <div className="relative" ref={dropdownRef}>
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
