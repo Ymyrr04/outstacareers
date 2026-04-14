@@ -327,14 +327,14 @@ export const RecruitmentFunnel = () => {
                                 </Badge>
                               )}
                             </div>
-                            {rate !== null && (
+                            {rate !== null && rate > 0 && (
                               <span className={cn(
                                 'text-[9px] font-medium',
-                                rate >= 50 ? 'text-emerald-600 dark:text-emerald-400' :
-                                rate >= 20 ? 'text-amber-600 dark:text-amber-400' :
-                                'text-destructive'
-                              )}>
-                                ← {rate.toFixed(0)}%
+                                rate >= 30 ? 'text-foreground' :
+                                rate >= 5 ? 'text-muted-foreground' :
+                                'text-muted-foreground/60'
+                              )} title="% of total pipeline">
+                                {rate.toFixed(1)}%
                               </span>
                             )}
                           </div>
