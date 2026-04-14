@@ -13,9 +13,11 @@ import {
   ContextMenuSubTrigger,
   ContextMenuSubContent,
 } from '@/components/ui/context-menu';
-import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, StarOff } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, ClipboardList } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
 
 const FUNNEL_STAGES = [
   'For Review',
@@ -282,63 +284,83 @@ interface CandidateCardProps {
   onCopyEmail: (email: string) => void;
 }
 
-const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail }: CandidateCardProps) => (
-  <ContextMenu>
-    <ContextMenuTrigger asChild>
-      <div className="bg-card rounded-md p-2.5 shadow-sm border border-border/50 hover:shadow-md transition-shadow space-y-1.5 cursor-context-menu">
-        <div className="flex items-start gap-2">
-          <div className={cn('w-2 h-2 rounded-full mt-1.5 shrink-0', dotColor)} />
-          <div className="min-w-0 flex-1">
-            <p className="text-xs font-semibold truncate leading-tight" title={candidate.full_name}>
-              {candidate.full_name}
-            </p>
+const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail }: CandidateCardProps) => {
+  const [showInterview, setShowInterview] = useState(false);
+
+  return (
+    <>
+      <ContextMenu>
+        <ContextMenuTrigger asChild>
+          <div className="bg-card rounded-md p-2.5 shadow-sm border border-border/50 hover:shadow-md transition-shadow space-y-1.5 cursor-context-menu">
+            <div className="flex items-start gap-2">
+              <div className={cn('w-2 h-2 rounded-full mt-1.5 shrink-0', dotColor)} />
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-semibold truncate leading-tight" title={candidate.full_name}>
+                  {candidate.full_name}
+                </p>
+              </div>
+              {candidate.total_score != null && (
+                <Badge variant="outline" className="text-[9px] shrink-0 h-4 px-1">
+                  {candidate.total_score}
+                </Badge>
+              )}
+            </div>
+
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <MapPin className="w-2.5 h-2.5 shrink-0" />
+              <span className="truncate">{candidate.location || 'N/A'}</span>
+            </div>
+
+            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+              <Mail className="w-2.5 h-2.5 shrink-0" />
+              <span className="truncate">{candidate.email}</span>
+            </div>
           </div>
-          {candidate.total_score != null && (
-            <Badge variant="outline" className="text-[9px] shrink-0 h-4 px-1">
-              {candidate.total_score}
-            </Badge>
-          )}
-        </div>
+        </ContextMenuTrigger>
 
-        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-          <MapPin className="w-2.5 h-2.5 shrink-0" />
-          <span className="truncate">{candidate.location || 'N/A'}</span>
-        </div>
+        <ContextMenuContent className="w-52">
+          <ContextMenuSub>
+            <ContextMenuSubTrigger>
+              <ArrowRight className="w-4 h-4 mr-2" />
+              Move to stage
+            </ContextMenuSubTrigger>
+            <ContextMenuSubContent className="w-44">
+              {FUNNEL_STAGES.filter((s) => s !== currentStage).map((stage) => (
+                <ContextMenuItem key={stage} onClick={() => onMoveToStage(candidate, stage)}>
+                  <div className={cn('w-2 h-2 rounded-full mr-2', STAGE_COLORS[stage]?.dot)} />
+                  {stage}
+                </ContextMenuItem>
+              ))}
+            </ContextMenuSubContent>
+          </ContextMenuSub>
 
-        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-          <Mail className="w-2.5 h-2.5 shrink-0" />
-          <span className="truncate">{candidate.email}</span>
-        </div>
-      </div>
-    </ContextMenuTrigger>
+          <ContextMenuSeparator />
 
-    <ContextMenuContent className="w-52">
-      <ContextMenuSub>
-        <ContextMenuSubTrigger>
-          <ArrowRight className="w-4 h-4 mr-2" />
-          Move to stage
-        </ContextMenuSubTrigger>
-        <ContextMenuSubContent className="w-44">
-          {FUNNEL_STAGES.filter((s) => s !== currentStage).map((stage) => (
-            <ContextMenuItem key={stage} onClick={() => onMoveToStage(candidate, stage)}>
-              <div className={cn('w-2 h-2 rounded-full mr-2', STAGE_COLORS[stage]?.dot)} />
-              {stage}
-            </ContextMenuItem>
-          ))}
-        </ContextMenuSubContent>
-      </ContextMenuSub>
+          <ContextMenuItem onClick={() => setShowInterview(true)}>
+            <ClipboardList className="w-4 h-4 mr-2" />
+            Show interview results
+          </ContextMenuItem>
 
-      <ContextMenuSeparator />
+          <ContextMenuItem onClick={() => onCopyEmail(candidate.email)}>
+            <Copy className="w-4 h-4 mr-2" />
+            Copy email
+          </ContextMenuItem>
 
-      <ContextMenuItem onClick={() => onCopyEmail(candidate.email)}>
-        <Copy className="w-4 h-4 mr-2" />
-        Copy email
-      </ContextMenuItem>
+          <ContextMenuItem onClick={() => onToggleStar(candidate)}>
+            <Star className="w-4 h-4 mr-2" />
+            Toggle star
+          </ContextMenuItem>
+        </ContextMenuContent>
+      </ContextMenu>
 
-      <ContextMenuItem onClick={() => onToggleStar(candidate)}>
-        <Star className="w-4 h-4 mr-2" />
-        Toggle star
-      </ContextMenuItem>
-    </ContextMenuContent>
-  </ContextMenu>
-);
+      <Dialog open={showInterview} onOpenChange={setShowInterview}>
+        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Interview Results — {candidate.full_name}</DialogTitle>
+          </DialogHeader>
+          <InterviewResultsFetcher applicantId={candidate.id} cachedSession={null} />
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+};
