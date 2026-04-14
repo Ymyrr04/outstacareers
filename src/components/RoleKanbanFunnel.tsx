@@ -559,10 +559,12 @@ interface CandidateCardProps {
 
 const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd }: CandidateCardProps) => {
   const [showDetails, setShowDetails] = useState(false);
+  const [showDetailsTab, setShowDetailsTab] = useState<string | undefined>(undefined);
   const [showSendEmail, setShowSendEmail] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showCvPreview, setShowCvPreview] = useState(false);
+  const [showInterviewResults, setShowInterviewResults] = useState(false);
 
   return (
     <>
