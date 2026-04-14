@@ -38,15 +38,8 @@ interface RoleFunnelData {
   historicalStages: Record<string, number>;
 }
 
-interface ImportLog {
-  id: string;
-  total_records: number;
-  success_count: number;
-  error_count: number;
-  source_filename: string | null;
-  notes: string | null;
-  created_at: string;
-}
+
+
 
 export const RecruitmentFunnel = () => {
   const [applicants, setApplicants] = useState<{ job_title: string; status: string; pre_archive_status: string | null }[]>([]);
@@ -334,57 +327,3 @@ export const RecruitmentFunnel = () => {
   );
 };
 
-const ImportHistory = ({ importLogs }: { importLogs: ImportLog[] }) => (
-  <div className="mt-8 space-y-3">
-    <div className="flex items-center gap-2">
-      <Upload className="w-5 h-5 text-primary" />
-      <h2 className="text-lg font-semibold">Contractor Import History</h2>
-      <Badge variant="secondary">{importLogs.length} imports</Badge>
-    </div>
-
-    {importLogs.length === 0 ? (
-      <p className="py-6 text-center text-sm text-muted-foreground">No import batches recorded yet.</p>
-    ) : (
-      <div className="space-y-2">
-        {importLogs.map((log) => (
-          <Card key={log.id}>
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="text-sm font-medium">
-                    {format(new Date(log.created_at), 'MMM d, yyyy h:mm a')}
-                  </div>
-                  {log.source_filename && (
-                    <span className="text-xs text-muted-foreground">{log.source_filename}</span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1">
-                    <CheckCircle className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm font-medium">{log.success_count}</span>
-                  </div>
-
-                  {log.error_count > 0 && (
-                    <div className="flex items-center gap-1">
-                      <XCircle className="w-3.5 h-3.5 text-destructive" />
-                      <span className="text-sm font-medium">{log.error_count}</span>
-                    </div>
-                  )}
-
-                  <Badge variant="outline" className="text-[10px]">
-                    {log.total_records} total
-                  </Badge>
-                </div>
-              </div>
-
-              {log.notes && (
-                <p className="mt-1 text-xs text-muted-foreground">{log.notes}</p>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    )}
-  </div>
-);
