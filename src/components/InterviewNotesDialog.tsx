@@ -117,7 +117,7 @@ export function InterviewNotesDialog({ open, onOpenChange, applicantId, applican
               <div className="space-y-3">
                 {notes && notes !== '<p></p>' ? (
                   <div className="bg-muted/30 rounded-lg p-4 border">
-                    <FormattedNotes notes={notes} />
+                    <FormattedNotes content={notes} />
                   </div>
                 ) : (
                   <div className="text-center py-8 text-muted-foreground">
