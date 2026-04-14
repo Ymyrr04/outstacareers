@@ -190,6 +190,13 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   }, []);
 
   const handleMoveToStage = useCallback(async (candidate: Candidate, newStage: string) => {
+    // Intercept "Hired" to show assignment dialog
+    if (newStage === 'Hired') {
+      setHiredCandidate(candidate);
+      setShowHiredDialog(true);
+      return;
+    }
+
     const { error } = await supabase
       .from('applicants_prescreen')
       .update({ status: newStage })
@@ -209,6 +216,14 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
     toast.success(`Moved ${candidate.full_name} to ${newStage}`);
     fetchCandidates(selectedRole);
   }, [selectedRole, fetchCandidates]);
+
+  const handleHiredComplete = useCallback(async () => {
+    if (hiredCandidate) {
+      fetchCandidates(selectedRole);
+    }
+    setShowHiredDialog(false);
+    setHiredCandidate(null);
+  }, [hiredCandidate, selectedRole, fetchCandidates]);
 
   const handleToggleStar = useCallback(async (candidate: Candidate) => {
     const newVal = !candidate.is_starred;
