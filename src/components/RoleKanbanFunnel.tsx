@@ -792,7 +792,7 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
             <DialogTitle>Interview Notes — {candidate.full_name}</DialogTitle>
           </DialogHeader>
           {showInterviewResults && (
-            <InterviewResultsFetcher applicantId={candidate.id} />
+            <InterviewResultsFetcher applicantId={candidate.id} cachedSession={null} />
           )}
         </DialogContent>
       </Dialog>
