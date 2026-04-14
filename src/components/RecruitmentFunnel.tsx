@@ -352,35 +352,55 @@ export const RecruitmentFunnel = () => {
                 Clear
               </button>
             )}
-            <div className="relative group">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
-              <Input
-                placeholder="Search roles..."
-                value={searchTerm}
-                onChange={(e) => { setSearchTerm(e.target.value); setSearchSelected(false); }}
-                className="pl-8 h-8 w-52 text-sm"
-              />
-              {searchTerm && !searchSelected && (() => {
-                const query = searchTerm.toLowerCase().trim();
-                const allRoleNames = Array.from(new Set(applicants.map(a => a.job_title?.trim()).filter(Boolean))).sort();
-                // Hide if exact match exists
-                if (allRoleNames.some(r => r.toLowerCase() === query)) return null;
-                const suggestions = allRoleNames.filter(r => r.toLowerCase().includes(query));
-                if (suggestions.length === 0) return null;
-                return (
-                  <div className="absolute top-full right-0 mt-1 w-96 max-h-72 overflow-y-auto bg-popover border border-border rounded-md shadow-lg z-50">
-                    {suggestions.slice(0, 10).map((role) => (
-                      <button
-                        key={role}
-                        className="w-full text-left px-3 py-1.5 text-sm hover:bg-accent truncate"
-                        onClick={() => { setSearchTerm(role); setSearchSelected(true); }}
-                      >
-                        {role}
-                      </button>
-                    ))}
+            <div className="relative" ref={searchDropdownRef}>
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground z-10" />
+                <Input
+                  placeholder="Search & select role..."
+                  value={searchDropdownOpen ? roleSearchQuery : searchTerm}
+                  onChange={(e) => {
+                    setRoleSearchQuery(e.target.value);
+                    setSearchDropdownOpen(true);
+                  }}
+                  onFocus={() => {
+                    setSearchDropdownOpen(true);
+                    setRoleSearchQuery('');
+                  }}
+                  className="pl-8 h-8 w-[280px] text-sm"
+                />
+                {searchTerm && (
+                  <button
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+                    onClick={() => { setSearchTerm(''); setRoleSearchQuery(''); }}
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              {searchDropdownOpen && (
+                <div className="absolute z-50 mt-1 w-[280px] rounded-md border bg-popover shadow-md overflow-hidden">
+                  <div className="max-h-[300px] overflow-y-auto p-1">
+                    {allRoleNames
+                      .filter((r) => r.toLowerCase().includes(roleSearchQuery.toLowerCase()))
+                      .map((role) => (
+                        <button
+                          key={role}
+                          className={cn(
+                            'w-full text-left px-3 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors',
+                            searchTerm === role && 'bg-accent/50 font-medium'
+                          )}
+                          onClick={() => {
+                            setSearchTerm(role);
+                            setSearchDropdownOpen(false);
+                            setRoleSearchQuery('');
+                          }}
+                        >
+                          {role}
+                        </button>
+                      ))}
                   </div>
-                );
-              })()}
+                </div>
+              )}
             </div>
 
             <Select value={jobStatusFilter} onValueChange={(value) => setJobStatusFilter(value as 'active' | 'inactive' | 'all')}>
