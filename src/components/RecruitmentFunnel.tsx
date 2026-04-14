@@ -41,11 +41,7 @@ interface RoleFunnelData {
 
 
 
-interface RecruitmentFunnelProps {
-  onNavigateToApplicant?: (applicantId: string, status: string) => void;
-}
-
-export const RecruitmentFunnel = ({ onNavigateToApplicant }: RecruitmentFunnelProps = {}) => {
+export const RecruitmentFunnel = () => {
   const [applicants, setApplicants] = useState<{ job_title: string; status: string; pre_archive_status: string | null }[]>([]);
   const [historyData, setHistoryData] = useState<{ job_title: string; to_status: string; applicant_count: number }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -196,7 +192,7 @@ export const RecruitmentFunnel = ({ onNavigateToApplicant }: RecruitmentFunnelPr
   return (
     <div className="space-y-4">
       {/* Per-role Kanban pipeline — default at top */}
-      <RoleKanbanFunnel roles={roleFunnels.map(r => r.jobTitle)} onNavigateToApplicant={onNavigateToApplicant} />
+      <RoleKanbanFunnel roles={roleFunnels.map(r => r.jobTitle)} />
 
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>

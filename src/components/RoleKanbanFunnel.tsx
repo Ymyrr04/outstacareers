@@ -18,6 +18,7 @@ import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, ClipboardList, Eye
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
+import { CandidateDetailDialog } from '@/components/CandidateDetailDialog';
 
 const FUNNEL_STAGES = [
   'For Review',
@@ -54,10 +55,9 @@ interface Candidate {
 
 interface RoleKanbanFunnelProps {
   roles: string[];
-  onNavigateToApplicant?: (applicantId: string, status: string) => void;
 }
 
-export const RoleKanbanFunnel = ({ roles, onNavigateToApplicant }: RoleKanbanFunnelProps) => {
+export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
   const [selectedRole, setSelectedRole] = useState<string>(roles[0] || '');
   const [roleSearch, setRoleSearch] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -260,7 +260,6 @@ export const RoleKanbanFunnel = ({ roles, onNavigateToApplicant }: RoleKanbanFun
                             onMoveToStage={handleMoveToStage}
                             onToggleStar={handleToggleStar}
                             onCopyEmail={handleCopyEmail}
-                            onNavigateToApplicant={onNavigateToApplicant}
                           />
                         ))
                       )}
@@ -284,11 +283,11 @@ interface CandidateCardProps {
   onMoveToStage: (candidate: Candidate, stage: string) => void;
   onToggleStar: (candidate: Candidate) => void;
   onCopyEmail: (email: string) => void;
-  onNavigateToApplicant?: (applicantId: string, status: string) => void;
 }
 
-const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onNavigateToApplicant }: CandidateCardProps) => {
+const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail }: CandidateCardProps) => {
   const [showInterview, setShowInterview] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
 
   return (
     <>
@@ -339,7 +338,7 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
 
           <ContextMenuSeparator />
 
-          <ContextMenuItem onClick={() => onNavigateToApplicant?.(candidate.id, candidate.status)}>
+          <ContextMenuItem onClick={() => setShowDetails(true)}>
             <Eye className="w-4 h-4 mr-2" />
             View details
           </ContextMenuItem>
@@ -369,6 +368,12 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
           <InterviewResultsFetcher applicantId={candidate.id} cachedSession={null} />
         </DialogContent>
       </Dialog>
+
+      <CandidateDetailDialog
+        open={showDetails}
+        onOpenChange={setShowDetails}
+        applicantId={candidate.id}
+      />
     </>
   );
 };
