@@ -26,6 +26,7 @@ import { InterviewInviteDialog } from '@/components/InterviewInviteDialog';
 import { CVImagePreview } from '@/components/CVImagePreview';
 import { CopyableText } from '@/components/CopyableText';
 import { InterviewNotesDialog } from '@/components/InterviewNotesDialog';
+import { CandidateProfileDialog } from '@/components/CandidateProfileDialog';
 
 const FUNNEL_STAGES = [
   'For Review',
@@ -572,6 +573,7 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
   const [showInvite, setShowInvite] = useState(false);
   const [showCvPreview, setShowCvPreview] = useState(false);
   const [showInterviewResults, setShowInterviewResults] = useState(false);
+  const [showProfile, setShowProfile] = useState(false);
 
   return (
     <>
@@ -699,7 +701,7 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
             Interview notes
           </ContextMenuItem>
 
-          <ContextMenuItem onClick={() => { setShowDetailsTab('profile'); setShowDetails(true); }}>
+          <ContextMenuItem onClick={() => setShowProfile(true)}>
             <UserCircle className="w-4 h-4 mr-2" />
             Profile
           </ContextMenuItem>
@@ -796,6 +798,13 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
       <InterviewNotesDialog
         open={showInterviewResults}
         onOpenChange={setShowInterviewResults}
+        applicantId={candidate.id}
+        applicantName={candidate.full_name}
+      />
+
+      <CandidateProfileDialog
+        open={showProfile}
+        onOpenChange={setShowProfile}
         applicantId={candidate.id}
         applicantName={candidate.full_name}
       />
