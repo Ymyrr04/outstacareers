@@ -94,7 +94,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
         .select('title')
         .eq('is_active', true)
         .order('title');
-      setActiveRoles((data || []).map(j => j.title));
+      setActiveRoles((data || []).map(j => j.title).filter(t => t && !/^\$?\d+(\.\d+)?$/.test(t.trim())));
     };
     fetchActiveJobs();
   }, []);

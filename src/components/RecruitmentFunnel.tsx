@@ -144,7 +144,9 @@ export const RecruitmentFunnel = () => {
   }, []);
 
   const allRoleNames = useMemo(() =>
-    Array.from(new Set(applicants.map(a => a.job_title?.trim()).filter(Boolean))).sort(),
+    Array.from(new Set(applicants.map(a => a.job_title?.trim()).filter(Boolean)))
+      .filter(t => !/^\$?\d+(\.\d+)?$/.test(t))
+      .sort(),
     [applicants]
   );
 
