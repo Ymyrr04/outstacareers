@@ -13,7 +13,7 @@ import {
   ContextMenuSubTrigger,
   ContextMenuSubContent,
 } from '@/components/ui/context-menu';
-import { Users, MapPin, Mail, Search, ArrowRight, Copy, ExternalLink, Star } from 'lucide-react';
+import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, StarOff } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
@@ -73,29 +73,10 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
     setCandidates(data || []);
     setLoading(false);
   }, []);
-  const [roleSearch, setRoleSearch] = useState('');
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef<HTMLDivElement>(null);
-  const [candidates, setCandidates] = useState<Candidate[]>([]);
-  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (!selectedRole) return;
-
-    const fetchCandidates = async () => {
-      setLoading(true);
-      const { data } = await supabase
-        .from('applicants_prescreen')
-        .select('id, full_name, email, location, status, pre_archive_status, submitted_at, total_score')
-        .eq('job_title', selectedRole)
-        .order('total_score', { ascending: false, nullsFirst: false });
-
-      setCandidates(data || []);
-      setLoading(false);
-    };
-
-    fetchCandidates();
-  }, [selectedRole]);
+    if (selectedRole) fetchCandidates(selectedRole);
+  }, [selectedRole, fetchCandidates]);
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -106,6 +87,46 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
     };
     document.addEventListener('mousedown', handleClick);
     return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
+  const handleMoveToStage = useCallback(async (candidate: Candidate, newStage: string) => {
+    const { error } = await supabase
+      .from('applicants_prescreen')
+      .update({ status: newStage })
+      .eq('id', candidate.id);
+
+    if (error) {
+      toast.error('Failed to move candidate');
+      return;
+    }
+
+    // Log status change
+    await supabase.from('applicant_status_history').insert({
+      applicant_id: candidate.id,
+      from_status: candidate.status,
+      to_status: newStage,
+    });
+
+    toast.success(`Moved ${candidate.full_name} to ${newStage}`);
+    fetchCandidates(selectedRole);
+  }, [selectedRole, fetchCandidates]);
+
+  const handleToggleStar = useCallback(async (candidate: Candidate) => {
+    const { data } = await supabase
+      .from('applicants_prescreen')
+      .select('is_starred')
+      .eq('id', candidate.id)
+      .single();
+
+    const newVal = !(data?.is_starred);
+    await supabase.from('applicants_prescreen').update({ is_starred: newVal }).eq('id', candidate.id);
+    toast.success(newVal ? 'Starred' : 'Unstarred');
+    fetchCandidates(selectedRole);
+  }, [selectedRole, fetchCandidates]);
+
+  const handleCopyEmail = useCallback((email: string) => {
+    navigator.clipboard.writeText(email);
+    toast.success('Email copied to clipboard');
   }, []);
 
   const stageGroups = useMemo(() => {
@@ -213,7 +234,6 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
                     colors.bg
                   )}
                 >
-                  {/* Column header */}
                   <div className={cn('px-3 py-2.5 flex items-center justify-between', colors.header)}>
                     <span className="text-sm font-semibold text-white">{stage}</span>
                     <span className="text-xs font-bold text-white/90 bg-white/20 rounded-full px-2 py-0.5">
@@ -221,7 +241,6 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
                     </span>
                   </div>
 
-                  {/* Candidate cards */}
                   <ScrollArea className="flex-1 max-h-[420px]">
                     <div className="p-2 space-y-2">
                       {stageCandidates.length === 0 ? (
@@ -230,7 +249,15 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
                         </p>
                       ) : (
                         stageCandidates.map((candidate) => (
-                          <CandidateCard key={candidate.id} candidate={candidate} dotColor={colors.dot} />
+                          <CandidateCard
+                            key={candidate.id}
+                            candidate={candidate}
+                            dotColor={colors.dot}
+                            currentStage={stage}
+                            onMoveToStage={handleMoveToStage}
+                            onToggleStar={handleToggleStar}
+                            onCopyEmail={handleCopyEmail}
+                          />
                         ))
                       )}
                     </div>
@@ -246,30 +273,72 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
   );
 };
 
-const CandidateCard = ({ candidate, dotColor }: { candidate: Candidate; dotColor: string }) => (
-  <div className="bg-card rounded-md p-2.5 shadow-sm border border-border/50 hover:shadow-md transition-shadow space-y-1.5">
-    <div className="flex items-start gap-2">
-      <div className={cn('w-2 h-2 rounded-full mt-1.5 shrink-0', dotColor)} />
-      <div className="min-w-0 flex-1">
-        <p className="text-xs font-semibold truncate leading-tight" title={candidate.full_name}>
-          {candidate.full_name}
-        </p>
+interface CandidateCardProps {
+  candidate: Candidate;
+  dotColor: string;
+  currentStage: string;
+  onMoveToStage: (candidate: Candidate, stage: string) => void;
+  onToggleStar: (candidate: Candidate) => void;
+  onCopyEmail: (email: string) => void;
+}
+
+const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail }: CandidateCardProps) => (
+  <ContextMenu>
+    <ContextMenuTrigger asChild>
+      <div className="bg-card rounded-md p-2.5 shadow-sm border border-border/50 hover:shadow-md transition-shadow space-y-1.5 cursor-context-menu">
+        <div className="flex items-start gap-2">
+          <div className={cn('w-2 h-2 rounded-full mt-1.5 shrink-0', dotColor)} />
+          <div className="min-w-0 flex-1">
+            <p className="text-xs font-semibold truncate leading-tight" title={candidate.full_name}>
+              {candidate.full_name}
+            </p>
+          </div>
+          {candidate.total_score != null && (
+            <Badge variant="outline" className="text-[9px] shrink-0 h-4 px-1">
+              {candidate.total_score}
+            </Badge>
+          )}
+        </div>
+
+        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          <MapPin className="w-2.5 h-2.5 shrink-0" />
+          <span className="truncate">{candidate.location || 'N/A'}</span>
+        </div>
+
+        <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+          <Mail className="w-2.5 h-2.5 shrink-0" />
+          <span className="truncate">{candidate.email}</span>
+        </div>
       </div>
-      {candidate.total_score != null && (
-        <Badge variant="outline" className="text-[9px] shrink-0 h-4 px-1">
-          {candidate.total_score}
-        </Badge>
-      )}
-    </div>
+    </ContextMenuTrigger>
 
-    <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-      <MapPin className="w-2.5 h-2.5 shrink-0" />
-      <span className="truncate">{candidate.location || 'N/A'}</span>
-    </div>
+    <ContextMenuContent className="w-52">
+      <ContextMenuSub>
+        <ContextMenuSubTrigger>
+          <ArrowRight className="w-4 h-4 mr-2" />
+          Move to stage
+        </ContextMenuSubTrigger>
+        <ContextMenuSubContent className="w-44">
+          {FUNNEL_STAGES.filter((s) => s !== currentStage).map((stage) => (
+            <ContextMenuItem key={stage} onClick={() => onMoveToStage(candidate, stage)}>
+              <div className={cn('w-2 h-2 rounded-full mr-2', STAGE_COLORS[stage]?.dot)} />
+              {stage}
+            </ContextMenuItem>
+          ))}
+        </ContextMenuSubContent>
+      </ContextMenuSub>
 
-    <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-      <Mail className="w-2.5 h-2.5 shrink-0" />
-      <span className="truncate">{candidate.email}</span>
-    </div>
-  </div>
+      <ContextMenuSeparator />
+
+      <ContextMenuItem onClick={() => onCopyEmail(candidate.email)}>
+        <Copy className="w-4 h-4 mr-2" />
+        Copy email
+      </ContextMenuItem>
+
+      <ContextMenuItem onClick={() => onToggleStar(candidate)}>
+        <Star className="w-4 h-4 mr-2" />
+        Toggle star
+      </ContextMenuItem>
+    </ContextMenuContent>
+  </ContextMenu>
 );
