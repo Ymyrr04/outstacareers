@@ -197,6 +197,7 @@ export function SendEmailDialog({
       setCcEmails('');
       setBccEmails('');
       setShowCcBcc(false);
+      setSendAsEmail('default');
       
       if (preselectedTemplate && templates.length > 0) {
         // Use setTimeout to ensure templates are loaded
