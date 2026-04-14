@@ -71,7 +71,8 @@ interface RoleKanbanFunnelProps {
 }
 
 export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
-  const [selectedRole, setSelectedRole] = useState<string>(roles[0] || '');
+  const [activeJobTitles, setActiveJobTitles] = useState<Set<string> | null>(null);
+  const [selectedRole, setSelectedRole] = useState<string>('');
   const [roleSearch, setRoleSearch] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -82,6 +83,30 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
   const [draggedCandidate, setDraggedCandidate] = useState<Candidate | null>(null);
   const [dropTargetStage, setDropTargetStage] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState<'score-desc' | 'score-asc' | 'name-asc' | 'name-desc' | 'newest' | 'oldest'>('score-desc');
+
+  // Fetch active job titles once
+  useEffect(() => {
+    const fetchActiveJobs = async () => {
+      const { data } = await supabase
+        .from('jobs')
+        .select('title')
+        .eq('is_active', true);
+      setActiveJobTitles(new Set((data || []).map(j => j.title)));
+    };
+    fetchActiveJobs();
+  }, []);
+
+  const filteredRoles = useMemo(() => {
+    if (!activeJobTitles) return [];
+    return roles.filter(r => activeJobTitles.has(r));
+  }, [roles, activeJobTitles]);
+
+  // Set initial selected role when filtered roles are ready
+  useEffect(() => {
+    if (filteredRoles.length > 0 && (!selectedRole || !filteredRoles.includes(selectedRole))) {
+      setSelectedRole(filteredRoles[0]);
+    }
+  }, [filteredRoles]);
 
   const fetchCandidates = useCallback(async (role: string) => {
     if (!role) return;
@@ -342,7 +367,7 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
             <div className="absolute z-50 mt-1 w-[320px] rounded-md border bg-popover shadow-md overflow-hidden">
               <ScrollArea className="max-h-[300px] overflow-y-auto">
                 <div className="p-1">
-                  {roles
+                  {filteredRoles
                     .filter((r) => r.toLowerCase().includes(roleSearch.toLowerCase()))
                     .sort((a, b) => a.localeCompare(b))
                     .map((role) => (
@@ -361,7 +386,7 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
                         {role}
                       </button>
                     ))}
-                  {roles.filter((r) => r.toLowerCase().includes(roleSearch.toLowerCase())).length === 0 && (
+                  {filteredRoles.filter((r) => r.toLowerCase().includes(roleSearch.toLowerCase())).length === 0 && (
                     <p className="px-3 py-2 text-sm text-muted-foreground">No roles found.</p>
                   )}
                 </div>
