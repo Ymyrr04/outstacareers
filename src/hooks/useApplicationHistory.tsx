@@ -30,7 +30,7 @@ async function fetchHistory(email: string, phone?: string | null): Promise<Other
       query = supabase
         .from('applicants_prescreen')
         .select('id, job_title, status, submitted_at, total_score, job_id')
-        .or(`email.eq.${email},phone.eq.${phone}`)
+        .or(`email.eq."${email}",phone.eq."${phone}"`)
         .order('submitted_at', { ascending: false });
     } else {
       query = supabase
