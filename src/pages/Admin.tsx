@@ -1559,12 +1559,6 @@ const Admin = () => {
                 })()}
               </TabsTrigger>
             )}
-            {canViewTab('recruiter-dash') && (
-              <TabsTrigger value="my-applicants" className="flex items-center gap-2">
-                <ClipboardList className="w-4 h-4" />
-                Recruiter Dash
-              </TabsTrigger>
-            )}
             {canViewTab('pipeline') && (
               <TabsTrigger value="pipeline" className="flex items-center gap-2">
                 <Kanban className="w-4 h-4" />
@@ -1631,9 +1625,6 @@ const Admin = () => {
             </div>
           )}
 
-          <TabsContent value="my-applicants" className="space-y-6">
-            <MyApplicantsDashboard />
-          </TabsContent>
 
           <TabsContent value="jobs" className="space-y-6">
             <div className="flex items-center justify-between">
