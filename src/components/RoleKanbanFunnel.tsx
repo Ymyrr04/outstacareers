@@ -77,6 +77,8 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
   const [loading, setLoading] = useState(false);
   const [candidateSearch, setCandidateSearch] = useState('');
   const candidateSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [draggedCandidate, setDraggedCandidate] = useState<Candidate | null>(null);
+  const [dropTargetStage, setDropTargetStage] = useState<string | null>(null);
 
   const fetchCandidates = useCallback(async (role: string) => {
     if (!role) return;
@@ -377,9 +379,31 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
                 <div
                   key={stage}
                   className={cn(
-                    'flex flex-col w-[248px] shrink-0 rounded-lg border border-border/60 overflow-hidden',
+                    'flex flex-col w-[248px] shrink-0 rounded-lg border-2 overflow-hidden transition-all duration-150',
+                    dropTargetStage === stage && draggedCandidate
+                      ? 'border-primary ring-2 ring-primary/30 scale-[1.02]'
+                      : 'border-border/60',
                     colors.bg
                   )}
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    e.dataTransfer.dropEffect = 'move';
+                    setDropTargetStage(stage);
+                  }}
+                  onDragLeave={(e) => {
+                    // Only clear if leaving the column entirely
+                    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                      setDropTargetStage(null);
+                    }
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setDropTargetStage(null);
+                    if (draggedCandidate && draggedCandidate.status !== stage) {
+                      handleMoveToStage(draggedCandidate, stage);
+                    }
+                    setDraggedCandidate(null);
+                  }}
                 >
                   <div className={cn('px-3 py-2.5 flex items-center justify-between', colors.header)}>
                     <span className="text-sm font-semibold text-white">{stage}</span>
@@ -391,8 +415,11 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
                   <ScrollArea className="flex-1 max-h-[420px]">
                     <div className="p-2 space-y-2">
                       {stageCandidates.length === 0 ? (
-                        <p className="text-[11px] text-muted-foreground text-center py-6">
-                          No candidates
+                        <p className={cn(
+                          "text-[11px] text-muted-foreground text-center py-6",
+                          dropTargetStage === stage && draggedCandidate && "text-primary font-medium"
+                        )}>
+                          {dropTargetStage === stage && draggedCandidate ? 'Drop here' : 'No candidates'}
                         </p>
                       ) : (
                         stageCandidates.map((candidate) => (
@@ -405,6 +432,12 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
                             onToggleStar={handleToggleStar}
                             onCopyEmail={handleCopyEmail}
                             onDelete={handleDelete}
+                            isDragging={draggedCandidate?.id === candidate.id}
+                            onDragStart={() => setDraggedCandidate(candidate)}
+                            onDragEnd={() => {
+                              setDraggedCandidate(null);
+                              setDropTargetStage(null);
+                            }}
                           />
                         ))
                       )}
@@ -429,9 +462,12 @@ interface CandidateCardProps {
   onToggleStar: (candidate: Candidate) => void;
   onCopyEmail: (email: string) => void;
   onDelete: (candidate: Candidate) => void;
+  isDragging?: boolean;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
 }
 
-const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete }: CandidateCardProps) => {
+const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd }: CandidateCardProps) => {
   const [showDetails, setShowDetails] = useState(false);
   const [showSendEmail, setShowSendEmail] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -442,7 +478,19 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
     <>
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <div className="bg-card rounded-md p-2.5 shadow-sm border border-border/50 hover:shadow-md transition-shadow space-y-1.5 cursor-context-menu">
+          <div
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('text/plain', candidate.id);
+              onDragStart?.();
+            }}
+            onDragEnd={() => onDragEnd?.()}
+            className={cn(
+              "bg-card rounded-md p-2.5 shadow-sm border border-border/50 hover:shadow-md transition-all space-y-1.5 cursor-grab active:cursor-grabbing",
+              isDragging && "opacity-40 scale-95 shadow-lg"
+            )}
+          >
             <div className="space-y-1">
               <div className="flex items-start gap-1.5">
                 <div className={cn('w-2 h-2 rounded-full mt-1 shrink-0', dotColor)} />
