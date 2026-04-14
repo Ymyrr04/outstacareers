@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Search, TrendingDown, Upload, CheckCircle, XCircle, ChevronDown } from 'lucide-react';
+import { Search, TrendingDown, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RoleKanbanFunnel } from '@/components/RoleKanbanFunnel';
 
