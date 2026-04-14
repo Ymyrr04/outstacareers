@@ -412,8 +412,21 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
                 setDropdownOpen(true);
                 setRoleSearch('');
               }}
-              className="pl-8 h-9 w-[320px] text-sm"
+              className="pl-8 h-9 w-[320px] text-sm pr-8"
             />
+            {selectedRole && !dropdownOpen && (
+              <button
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedRole('');
+                  setRoleSearch('');
+                  setDropdownOpen(true);
+                }}
+              >
+                ✕
+              </button>
+            )}
           </div>
           {dropdownOpen && (
             <div className="absolute z-50 mt-1 w-[320px] rounded-md border bg-popover shadow-md overflow-hidden">
