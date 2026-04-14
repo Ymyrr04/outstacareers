@@ -51,7 +51,7 @@ function getHeatmapColor(count: number, maxCount: number): string {
 }
 
 export const RecruitmentFunnel = () => {
-  const [applicants, setApplicants] = useState<{ job_title: string; status: string; pre_archive_status: string | null }[]>([]);
+  const [applicants, setApplicants] = useState<{ job_title: string; status: string; pre_archive_status: string | null; submitted_at: string }[]>([]);
   const [historyData, setHistoryData] = useState<{ job_title: string; to_status: string; applicant_count: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,18 +59,20 @@ export const RecruitmentFunnel = () => {
   const [jobStatusFilter, setJobStatusFilter] = useState<'active' | 'inactive' | 'all'>('all');
   const [activeJobTitles, setActiveJobTitles] = useState<Set<string> | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
 
-      let all: { job_title: string; status: string; pre_archive_status: string | null }[] = [];
+      let all: { job_title: string; status: string; pre_archive_status: string | null; submitted_at: string }[] = [];
       let from = 0;
       const batchSize = 1000;
       while (true) {
         const { data } = await supabase
           .from('applicants_prescreen')
-          .select('job_title, status, pre_archive_status')
+          .select('job_title, status, pre_archive_status, submitted_at')
           .range(from, from + batchSize - 1);
         if (!data || data.length === 0) break;
         all = all.concat(data);
