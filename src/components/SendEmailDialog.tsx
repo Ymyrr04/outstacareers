@@ -155,6 +155,25 @@ export function SendEmailDialog({
   // Attachments state
   const [attachments, setAttachments] = useState<EmailAttachment[]>([]);
 
+  // Admins with configured Gmail credentials (for "Send as" dropdown)
+  const ADMIN_SENDERS = [
+    { email: 'mark@outsta.io', name: 'Mark' },
+    { email: 'kristine@outsta.io', name: 'Kristine' },
+    { email: 'czarina@outsta.io', name: 'Czarina' },
+    { email: 'jil@outsta.io', name: 'Jil' },
+  ];
+
+  // Fetch current admin email on mount
+  useEffect(() => {
+    const fetchAdminEmail = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        setCurrentAdminEmail(user.email.toLowerCase());
+      }
+    };
+    fetchAdminEmail();
+  }, []);
+
   // Fetch fresh templates when dialog opens
   useEffect(() => {
     if (open) {
