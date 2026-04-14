@@ -116,6 +116,17 @@ export const RecruitmentFunnel = () => {
     fetchAll();
   }, []);
 
+  // Fetch active job titles for filtering
+  useEffect(() => {
+    const fetchJobs = async () => {
+      const { data } = await supabase.from('jobs').select('title, is_active');
+      if (data) {
+        setActiveJobTitles(new Set(data.filter(j => j.is_active).map(j => j.title)));
+      }
+    };
+    fetchJobs();
+  }, []);
+
   const roleFunnels = useMemo(() => {
     const map: Record<string, Record<string, number>> = {};
 
