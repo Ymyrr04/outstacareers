@@ -355,6 +355,7 @@ export function SendEmailDialog({
           applicantStatusAtSend: applicant.status,
           isAutomated: false,
           scheduleFor: scheduleDateTime,
+          sendAsEmail: sendAsEmail !== 'default' ? sendAsEmail : undefined,
           cc: ccEmails.trim() ? parseEmails(ccEmails) : undefined,
           bcc: bccEmails.trim() ? parseEmails(bccEmails) : undefined,
           attachments: attachments.length > 0 ? attachments.map(({ filename, content, contentType }) => ({
