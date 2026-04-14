@@ -188,12 +188,12 @@ export const RecruitmentFunnel = () => {
                       roles.map(({ role, count }) => (
                         <div
                           key={role}
-                          className="bg-card rounded-md p-2 shadow-sm border border-border/50 hover:shadow-md transition-shadow"
+                          className="bg-card rounded-md p-2 shadow-sm border border-border/50 hover:shadow-md transition-shadow h-[52px] flex flex-col justify-center"
                         >
                           <p className="text-xs font-medium truncate leading-tight" title={role}>
                             {role}
                           </p>
-                          <p className={cn('text-lg font-bold mt-0.5', colors.text)}>{count}</p>
+                          <p className={cn('text-lg font-bold', colors.text)}>{count}</p>
                         </div>
                       ))
                     )}
