@@ -362,25 +362,33 @@ export const RecruitmentFunnel = () => {
                   value={searchDropdownOpen ? roleSearchQuery : searchTerm}
                   onChange={(e) => {
                     setRoleSearchQuery(e.target.value);
-                    setSearchDropdownOpen(true);
+                    if (!searchDropdownOpen) setSearchDropdownOpen(true);
                   }}
                   onFocus={() => {
                     setSearchDropdownOpen(true);
                     setRoleSearchQuery('');
                   }}
-                  className="pl-8 h-8 w-[280px] text-sm"
+                  className="pl-8 h-8 w-[280px] text-sm pr-8"
                 />
-                {searchTerm && (
+                {(searchTerm || roleSearchQuery) && (
                   <button
-                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
-                    onClick={() => { setSearchTerm(''); setRoleSearchQuery(''); }}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs z-10"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => { 
+                      setSearchTerm(''); 
+                      setRoleSearchQuery(''); 
+                      setSearchDropdownOpen(false);
+                    }}
                   >
                     ✕
                   </button>
                 )}
               </div>
               {searchDropdownOpen && (
-                <div className="absolute z-50 mt-1 w-[280px] rounded-md border bg-popover shadow-md overflow-hidden">
+                <div 
+                  className="absolute z-50 mt-1 w-[280px] rounded-md border bg-popover shadow-md overflow-hidden"
+                  onMouseDown={(e) => e.preventDefault()}
+                >
                   <div className="max-h-[300px] overflow-y-auto p-1">
                     {allRoleNames
                       .filter((r) => r.toLowerCase().includes(roleSearchQuery.toLowerCase()))
@@ -391,9 +399,8 @@ export const RecruitmentFunnel = () => {
                             'w-full text-left px-3 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors',
                             searchTerm === role && 'bg-accent/50 font-medium'
                           )}
-                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => {
-                            setSearchTerm(prev => prev === role ? '' : role);
+                            setSearchTerm(role);
                             setSearchDropdownOpen(false);
                             setRoleSearchQuery('');
                           }}
@@ -401,6 +408,9 @@ export const RecruitmentFunnel = () => {
                           {role}
                         </button>
                       ))}
+                    {allRoleNames.filter((r) => r.toLowerCase().includes(roleSearchQuery.toLowerCase())).length === 0 && (
+                      <p className="px-3 py-2 text-sm text-muted-foreground">No roles found</p>
+                    )}
                   </div>
                 </div>
               )}
