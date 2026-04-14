@@ -28,6 +28,7 @@ import { CopyableText } from '@/components/CopyableText';
 import { InterviewNotesDialog } from '@/components/InterviewNotesDialog';
 import { CandidateProfileDialog } from '@/components/CandidateProfileDialog';
 import { HiredAssignmentDialog } from '@/components/HiredAssignmentDialog';
+import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 
 const FUNNEL_STAGES = [
   'For Review',
