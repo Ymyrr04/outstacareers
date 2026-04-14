@@ -69,9 +69,10 @@ interface Candidate {
 
 interface RoleKanbanFunnelProps {
   roles?: string[];
+  onRoleSelect?: (role: string) => void;
 }
 
-export const RoleKanbanFunnel = (_props: RoleKanbanFunnelProps) => {
+export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunnelProps) => {
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [roleSearch, setRoleSearch] = useState('');
