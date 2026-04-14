@@ -246,16 +246,26 @@ export const RecruitmentFunnel = () => {
                     <TableHead className="sticky left-0 z-20 min-w-[260px] bg-muted/40">
                       Role
                     </TableHead>
-                    {FUNNEL_STAGES.map((stage) => (
-                      <TableHead key={stage} className="min-w-[120px] text-center">
-                        <div className="flex flex-col items-center gap-1 py-1">
-                          <span className="text-xs font-semibold text-foreground">{stage}</span>
-                          <Badge variant="secondary" className="text-[10px]">
-                            {stageTotals[stage] || 0}
-                          </Badge>
-                        </div>
-                      </TableHead>
-                    ))}
+                    {FUNNEL_STAGES.map((stage) => {
+                      const totals = stageTotals[stage] || { current: 0, historical: 0 };
+                      return (
+                        <TableHead key={stage} className="min-w-[120px] text-center">
+                          <div className="flex flex-col items-center gap-1 py-1">
+                            <span className="text-xs font-semibold text-foreground">{stage}</span>
+                            <div className="flex items-center gap-1">
+                              <Badge variant="secondary" className="text-[10px]">
+                                {totals.current}
+                              </Badge>
+                              {totals.historical > 0 && (
+                                <Badge variant="outline" className="text-[9px] text-muted-foreground" title="Historical pass-through">
+                                  ↗{totals.historical}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </TableHead>
+                      );
+                    })}
                     <TableHead className="min-w-[96px] text-center">Total</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -270,20 +280,27 @@ export const RecruitmentFunnel = () => {
                       </TableCell>
 
                       {FUNNEL_STAGES.map((stage) => {
-                        const count = role.stages[stage] || 0;
-                        const hasApplicants = count > 0;
+                        const currentCount = role.stages[stage] || 0;
+                        const historicalCount = role.historicalStages[stage] || 0;
 
                         return (
                           <TableCell key={stage} className="text-center">
-                            <div
-                              className={cn(
-                                'mx-auto flex h-10 w-16 items-center justify-center rounded-md border text-sm font-semibold transition-colors',
-                                hasApplicants
-                                  ? 'border-border bg-accent/10 text-foreground'
-                                  : 'border-border/60 bg-muted/40 text-muted-foreground'
+                            <div className="mx-auto flex flex-col items-center gap-0.5">
+                              <div
+                                className={cn(
+                                  'flex h-8 w-14 items-center justify-center rounded-md border text-sm font-semibold',
+                                  currentCount > 0
+                                    ? 'border-border bg-accent/10 text-foreground'
+                                    : 'border-border/60 bg-muted/40 text-muted-foreground'
+                                )}
+                              >
+                                {currentCount}
+                              </div>
+                              {historicalCount > 0 && (
+                                <span className="text-[9px] text-muted-foreground" title="Passed through this stage historically">
+                                  ↗{historicalCount}
+                                </span>
                               )}
-                            >
-                              {count}
                             </div>
                           </TableCell>
                         );
