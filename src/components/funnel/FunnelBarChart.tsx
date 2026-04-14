@@ -68,6 +68,7 @@ export const FunnelBarChart = ({ stageTotals, stages }: FunnelBarChartProps) => 
               tick={{ fontSize: 11 }}
               className="fill-muted-foreground"
               domain={[0, 100]}
+              ticks={[0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]}
               tickFormatter={(v) => `${v}%`}
             />
             <Tooltip
