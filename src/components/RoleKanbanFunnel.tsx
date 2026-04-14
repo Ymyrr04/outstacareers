@@ -91,6 +91,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   const [hiredCandidate, setHiredCandidate] = useState<Candidate | null>(null);
   const [showHiredDialog, setShowHiredDialog] = useState(false);
 
+  const updateCandidateStageInState = useCallback((candidateId: string, newStage: string) => {
+    const movedAt = new Date().toISOString();
+    setCandidates(prev => prev.map(candidate => (
+      candidate.id === candidateId
+        ? { ...candidate, status: newStage, stage_entered_at: movedAt }
+        : candidate
+    )));
+  }, []);
+
   // Fetch active job titles independently
   useEffect(() => {
     const fetchActiveJobs = async () => {
@@ -198,36 +207,42 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
       return;
     }
 
+    const previousStage = candidate.status;
+    updateCandidateStageInState(candidate.id, newStage);
+
     const { error } = await supabase
       .from('applicants_prescreen')
       .update({ status: newStage })
       .eq('id', candidate.id);
 
     if (error) {
+      updateCandidateStageInState(candidate.id, previousStage);
       toast.error('Failed to move candidate');
       return;
     }
 
     toast.success(`Moved ${candidate.full_name} to ${newStage}`);
-    fetchCandidates(selectedRole);
-  }, [selectedRole, fetchCandidates]);
+  }, [updateCandidateStageInState]);
 
   const handleHiredComplete = useCallback(async () => {
     if (hiredCandidate) {
+      updateCandidateStageInState(hiredCandidate.id, 'Hired');
+
       // Update status to Hired
       const { error } = await supabase
         .from('applicants_prescreen')
         .update({ status: 'Hired' })
         .eq('id', hiredCandidate.id);
 
-      if (!error) {
+      if (error) {
+        updateCandidateStageInState(hiredCandidate.id, hiredCandidate.status);
+      } else {
         toast.success(`${hiredCandidate.full_name} moved to Hired`);
       }
-      fetchCandidates(selectedRole);
     }
     setShowHiredDialog(false);
     setHiredCandidate(null);
-  }, [hiredCandidate, selectedRole, fetchCandidates]);
+  }, [hiredCandidate, updateCandidateStageInState]);
 
   const handleToggleStar = useCallback(async (candidate: Candidate) => {
     const newVal = !candidate.is_starred;
