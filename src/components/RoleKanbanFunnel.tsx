@@ -65,6 +65,7 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(false);
+  const [candidateSearch, setCandidateSearch] = useState('');
 
   const fetchCandidates = useCallback(async (role: string) => {
     if (!role) return;
@@ -159,13 +160,23 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
     toast.success('Email copied to clipboard');
   }, []);
 
+  const filteredCandidates = useMemo(() => {
+    if (!candidateSearch.trim()) return candidates;
+    const term = candidateSearch.toLowerCase();
+    return candidates.filter(c =>
+      c.full_name.toLowerCase().includes(term) ||
+      c.email.toLowerCase().includes(term) ||
+      (c.location && c.location.toLowerCase().includes(term))
+    );
+  }, [candidates, candidateSearch]);
+
   const stageGroups = useMemo(() => {
     const groups: Record<string, Candidate[]> = {};
     for (const stage of FUNNEL_STAGES) {
       groups[stage] = [];
     }
 
-    for (const candidate of candidates) {
+    for (const candidate of filteredCandidates) {
       const effectiveStatus = candidate.status === 'Archive' || candidate.status === 'Archived'
         ? (candidate.pre_archive_status || candidate.status)
         : candidate.status;
@@ -176,7 +187,7 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
     }
 
     return groups;
-  }, [candidates]);
+  }, [filteredCandidates]);
 
   const totalInPipeline = useMemo(
     () => Object.values(stageGroups).reduce((sum, arr) => sum + arr.length, 0),
@@ -193,6 +204,8 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
             <Badge variant="secondary">{totalInPipeline} candidates</Badge>
           )}
         </div>
+
+        <div className="flex items-center gap-2">
 
         <div className="relative" ref={dropdownRef}>
           <div className="relative">
@@ -240,6 +253,17 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
               </ScrollArea>
             </div>
           )}
+        </div>
+
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search candidate..."
+              value={candidateSearch}
+              onChange={(e) => setCandidateSearch(e.target.value)}
+              className="pl-8 h-9 w-[220px] text-sm"
+            />
+          </div>
         </div>
       </div>
 
