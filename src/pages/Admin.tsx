@@ -1559,6 +1559,12 @@ const Admin = () => {
                 })()}
               </TabsTrigger>
             )}
+            {canViewTab('funnel') && (
+              <TabsTrigger value="funnel" className="flex items-center gap-2">
+                <TrendingDown className="w-4 h-4" />
+                Funnel
+              </TabsTrigger>
+            )}
             {canViewTab('pipeline') && (
               <TabsTrigger value="pipeline" className="flex items-center gap-2">
                 <Kanban className="w-4 h-4" />
@@ -1593,12 +1599,6 @@ const Admin = () => {
               <TabsTrigger value="talent-scout" className="flex items-center gap-2">
                 <Target className="w-4 h-4" />
                 Talent Scout
-              </TabsTrigger>
-            )}
-            {canViewTab('funnel') && (
-              <TabsTrigger value="funnel" className="flex items-center gap-2">
-                <TrendingDown className="w-4 h-4" />
-                Funnel
               </TabsTrigger>
             )}
             {canViewTab('external-scout') && (

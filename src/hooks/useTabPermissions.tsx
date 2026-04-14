@@ -6,12 +6,12 @@ export const TAB_IDS = [
   'jobs',
   'applicants', 
   'recruiter-dash',
+  'funnel',
   'pipeline',
   'post-hire',
   'clients',
   'contractors',
   'analytics',
-  'funnel',
   'talent-scout',
   'external-scout',
 ] as const;
