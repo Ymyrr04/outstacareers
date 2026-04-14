@@ -199,7 +199,7 @@ export const RecruitmentFunnel = () => {
           <button className="flex items-center justify-between gap-3 w-full flex-wrap cursor-pointer group">
             <div className="flex items-center gap-2 flex-wrap">
               <TrendingDown className="w-5 h-5 text-primary" />
-              <h2 className="text-lg font-semibold">Recruitment Funnel</h2>
+              <h2 className="text-lg font-semibold">Recruitment Funnel Historical Data</h2>
               <Badge variant="secondary">{grandTotal} total applicants</Badge>
               <Badge variant="outline">{roleFunnels.length} roles</Badge>
             </div>
