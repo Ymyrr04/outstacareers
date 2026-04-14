@@ -29,6 +29,19 @@ function getAdminNameFromJwt(authHeader: string | null): string | null {
   }
 }
 
+function getAdminEmailFromJwt(authHeader: string | null): string | null {
+  if (!authHeader) return null;
+  try {
+    const token = authHeader.replace('Bearer ', '');
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(new TextDecoder().decode(decodeBase64Url(parts[1])));
+    return payload.email?.toLowerCase() || null;
+  } catch {
+    return null;
+  }
+}
+
 // Generate a unique Message-ID for email threading
 function generateMessageId(domain: string): string {
   const timestamp = Date.now();
