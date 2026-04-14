@@ -226,8 +226,8 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
             />
           </div>
           {dropdownOpen && (
-            <div className="absolute z-50 mt-1 w-[320px] rounded-md border bg-popover shadow-md">
-              <ScrollArea className="max-h-[250px]">
+            <div className="absolute z-50 mt-1 w-[320px] rounded-md border bg-popover shadow-md overflow-hidden">
+              <ScrollArea className="max-h-[300px] overflow-y-auto">
                 <div className="p-1">
                   {roles
                     .filter((r) => r.toLowerCase().includes(roleSearch.toLowerCase()))
