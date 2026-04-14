@@ -191,6 +191,9 @@ export const RecruitmentFunnel = () => {
 
   return (
     <div className="space-y-4">
+      {/* Per-role Kanban pipeline — default at top */}
+      <RoleKanbanFunnel roles={roleFunnels.map(r => r.jobTitle)} />
+
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>
           <button className="flex items-center justify-between gap-3 w-full flex-wrap cursor-pointer group">
@@ -318,8 +321,6 @@ export const RecruitmentFunnel = () => {
           </Card>
         </CollapsibleContent>
       </Collapsible>
-
-      
     </div>
   );
 };
