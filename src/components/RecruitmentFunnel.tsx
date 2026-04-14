@@ -391,8 +391,9 @@ export const RecruitmentFunnel = () => {
                             'w-full text-left px-3 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors',
                             searchTerm === role && 'bg-accent/50 font-medium'
                           )}
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => {
-                            setSearchTerm(role);
+                            setSearchTerm(prev => prev === role ? '' : role);
                             setSearchDropdownOpen(false);
                             setRoleSearchQuery('');
                           }}
