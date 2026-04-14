@@ -367,7 +367,7 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
             <div className="absolute z-50 mt-1 w-[320px] rounded-md border bg-popover shadow-md overflow-hidden">
               <ScrollArea className="max-h-[300px] overflow-y-auto">
                 <div className="p-1">
-                  {roles
+                  {filteredRoles
                     .filter((r) => r.toLowerCase().includes(roleSearch.toLowerCase()))
                     .sort((a, b) => a.localeCompare(b))
                     .map((role) => (
