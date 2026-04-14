@@ -87,7 +87,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   const candidateSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [draggedCandidate, setDraggedCandidate] = useState<Candidate | null>(null);
   const [dropTargetStage, setDropTargetStage] = useState<string | null>(null);
-  const [sortOption, setSortOption] = useState<'score-desc' | 'score-asc' | 'name-asc' | 'name-desc' | 'newest' | 'oldest'>('score-desc');
+  const [sortOption, setSortOption] = useState<'score-desc' | 'score-asc' | 'name-asc' | 'name-desc' | 'newest' | 'oldest' | 'assessed'>('score-desc');
   const [hiredCandidate, setHiredCandidate] = useState<Candidate | null>(null);
   const [showHiredDialog, setShowHiredDialog] = useState(false);
 
@@ -363,6 +363,12 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
         case 'name-desc': return b.full_name.localeCompare(a.full_name);
         case 'newest': return new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime();
         case 'oldest': return new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime();
+        case 'assessed': {
+          const aHas = a.interview_overall_score !== null ? 1 : 0;
+          const bHas = b.interview_overall_score !== null ? 1 : 0;
+          if (bHas !== aHas) return bHas - aHas;
+          return (b.interview_overall_score ?? -1) - (a.interview_overall_score ?? -1);
+        }
         default: return 0;
       }
     };
@@ -538,6 +544,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
                           </DropdownMenuItem>
                           <DropdownMenuItem onClick={() => setSortOption('oldest')} className={cn(sortOption === 'oldest' && 'bg-accent')}>
                             <Clock className="mr-2 h-4 w-4" /> Oldest First
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => setSortOption('assessed')} className={cn(sortOption === 'assessed' && 'bg-accent')}>
+                            <ClipboardList className="mr-2 h-4 w-4" /> Completed Assessment
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
