@@ -87,6 +87,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   const [draggedCandidate, setDraggedCandidate] = useState<Candidate | null>(null);
   const [dropTargetStage, setDropTargetStage] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState<'score-desc' | 'score-asc' | 'name-asc' | 'name-desc' | 'newest' | 'oldest'>('score-desc');
+  const [hiredCandidate, setHiredCandidate] = useState<Candidate | null>(null);
+  const [showHiredDialog, setShowHiredDialog] = useState(false);
 
   // Fetch active job titles independently
   useEffect(() => {
