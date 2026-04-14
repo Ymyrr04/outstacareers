@@ -25,6 +25,7 @@ import { CommunicationHistory } from '@/components/CommunicationHistory';
 import { InterviewInviteDialog } from '@/components/InterviewInviteDialog';
 import { CVImagePreview } from '@/components/CVImagePreview';
 import { CopyableText } from '@/components/CopyableText';
+import { InterviewNotesDialog } from '@/components/InterviewNotesDialog';
 
 const FUNNEL_STAGES = [
   'For Review',
