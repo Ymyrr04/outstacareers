@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/table';
 import { Search, TrendingDown, Upload, CheckCircle, XCircle, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { RoleKanbanFunnel } from '@/components/RoleKanbanFunnel';
 
 const FUNNEL_STAGES = [
   'For Review',
@@ -263,6 +264,9 @@ export const RecruitmentFunnel = () => {
           </Card>
         </CollapsibleContent>
       </Collapsible>
+
+      {/* Per-role Kanban pipeline */}
+      <RoleKanbanFunnel roles={roleFunnels.map(r => r.jobTitle)} />
 
       <ImportHistory importLogs={importLogs} />
     </div>

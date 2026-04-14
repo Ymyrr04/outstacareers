@@ -1,0 +1,198 @@
+import { useState, useEffect, useMemo } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { Users, MapPin, Mail } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const FUNNEL_STAGES = [
+  'For Review',
+  'For Interview',
+  'SIV',
+  'Client Interview',
+  'Hired',
+  'Bench',
+  'Reject',
+  'Talent Pool',
+] as const;
+
+const STAGE_COLORS: Record<string, { bg: string; header: string; dot: string }> = {
+  'For Review': { bg: 'bg-blue-50 dark:bg-blue-950/20', header: 'bg-blue-500', dot: 'bg-blue-400' },
+  'For Interview': { bg: 'bg-indigo-50 dark:bg-indigo-950/20', header: 'bg-indigo-500', dot: 'bg-indigo-400' },
+  'SIV': { bg: 'bg-violet-50 dark:bg-violet-950/20', header: 'bg-violet-500', dot: 'bg-violet-400' },
+  'Client Interview': { bg: 'bg-purple-50 dark:bg-purple-950/20', header: 'bg-purple-500', dot: 'bg-purple-400' },
+  'Hired': { bg: 'bg-emerald-50 dark:bg-emerald-950/20', header: 'bg-emerald-500', dot: 'bg-emerald-400' },
+  'Bench': { bg: 'bg-amber-50 dark:bg-amber-950/20', header: 'bg-amber-500', dot: 'bg-amber-400' },
+  'Reject': { bg: 'bg-red-50 dark:bg-red-950/20', header: 'bg-red-400', dot: 'bg-red-400' },
+  'Talent Pool': { bg: 'bg-teal-50 dark:bg-teal-950/20', header: 'bg-teal-500', dot: 'bg-teal-400' },
+};
+
+interface Candidate {
+  id: string;
+  full_name: string;
+  email: string;
+  location: string;
+  status: string;
+  pre_archive_status: string | null;
+  submitted_at: string;
+  total_score: number | null;
+}
+
+interface RoleKanbanFunnelProps {
+  roles: string[];
+}
+
+export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
+  const [selectedRole, setSelectedRole] = useState<string>(roles[0] || '');
+  const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!selectedRole) return;
+
+    const fetchCandidates = async () => {
+      setLoading(true);
+      const { data } = await supabase
+        .from('applicants_prescreen')
+        .select('id, full_name, email, location, status, pre_archive_status, submitted_at, total_score')
+        .eq('job_title', selectedRole)
+        .order('total_score', { ascending: false, nullsFirst: false });
+
+      setCandidates(data || []);
+      setLoading(false);
+    };
+
+    fetchCandidates();
+  }, [selectedRole]);
+
+  const stageGroups = useMemo(() => {
+    const groups: Record<string, Candidate[]> = {};
+    for (const stage of FUNNEL_STAGES) {
+      groups[stage] = [];
+    }
+
+    for (const candidate of candidates) {
+      const effectiveStatus = candidate.status === 'Archive' || candidate.status === 'Archived'
+        ? (candidate.pre_archive_status || candidate.status)
+        : candidate.status;
+
+      if (groups[effectiveStatus]) {
+        groups[effectiveStatus].push(candidate);
+      }
+    }
+
+    return groups;
+  }, [candidates]);
+
+  const totalInPipeline = useMemo(
+    () => Object.values(stageGroups).reduce((sum, arr) => sum + arr.length, 0),
+    [stageGroups]
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between gap-3 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Users className="w-5 h-5 text-primary" />
+          <h2 className="text-lg font-semibold">Role Pipeline</h2>
+          {selectedRole && (
+            <Badge variant="secondary">{totalInPipeline} candidates</Badge>
+          )}
+        </div>
+
+        <Select value={selectedRole} onValueChange={setSelectedRole}>
+          <SelectTrigger className="h-9 w-[320px] text-sm">
+            <SelectValue placeholder="Select a role..." />
+          </SelectTrigger>
+          <SelectContent className="max-h-[300px]">
+            {roles.map((role) => (
+              <SelectItem key={role} value={role}>
+                {role}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="h-8 w-8 animate-spin rounded-full border-b-2 border-primary" />
+        </div>
+      ) : !selectedRole ? (
+        <p className="py-8 text-center text-sm text-muted-foreground">Select a role to view its pipeline.</p>
+      ) : (
+        <ScrollArea className="w-full">
+          <div className="flex gap-3 pb-4 min-w-max">
+            {FUNNEL_STAGES.map((stage) => {
+              const colors = STAGE_COLORS[stage];
+              const stageCandidates = stageGroups[stage];
+
+              return (
+                <div
+                  key={stage}
+                  className={cn(
+                    'flex flex-col w-[220px] shrink-0 rounded-lg border border-border/60 overflow-hidden',
+                    colors.bg
+                  )}
+                >
+                  {/* Column header */}
+                  <div className={cn('px-3 py-2.5 flex items-center justify-between', colors.header)}>
+                    <span className="text-sm font-semibold text-white">{stage}</span>
+                    <span className="text-xs font-bold text-white/90 bg-white/20 rounded-full px-2 py-0.5">
+                      {stageCandidates.length}
+                    </span>
+                  </div>
+
+                  {/* Candidate cards */}
+                  <ScrollArea className="flex-1 max-h-[420px]">
+                    <div className="p-2 space-y-2">
+                      {stageCandidates.length === 0 ? (
+                        <p className="text-[11px] text-muted-foreground text-center py-6">
+                          No candidates
+                        </p>
+                      ) : (
+                        stageCandidates.map((candidate) => (
+                          <CandidateCard key={candidate.id} candidate={candidate} dotColor={colors.dot} />
+                        ))
+                      )}
+                    </div>
+                  </ScrollArea>
+                </div>
+              );
+            })}
+          </div>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+      )}
+    </div>
+  );
+};
+
+const CandidateCard = ({ candidate, dotColor }: { candidate: Candidate; dotColor: string }) => (
+  <div className="bg-card rounded-md p-2.5 shadow-sm border border-border/50 hover:shadow-md transition-shadow space-y-1.5">
+    <div className="flex items-start gap-2">
+      <div className={cn('w-2 h-2 rounded-full mt-1.5 shrink-0', dotColor)} />
+      <div className="min-w-0 flex-1">
+        <p className="text-xs font-semibold truncate leading-tight" title={candidate.full_name}>
+          {candidate.full_name}
+        </p>
+      </div>
+      {candidate.total_score != null && (
+        <Badge variant="outline" className="text-[9px] shrink-0 h-4 px-1">
+          {candidate.total_score}
+        </Badge>
+      )}
+    </div>
+
+    <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+      <MapPin className="w-2.5 h-2.5 shrink-0" />
+      <span className="truncate">{candidate.location || 'N/A'}</span>
+    </div>
+
+    <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+      <Mail className="w-2.5 h-2.5 shrink-0" />
+      <span className="truncate">{candidate.email}</span>
+    </div>
+  </div>
+);
