@@ -785,6 +785,17 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
           </DialogContent>
         </Dialog>
       )}
+
+      <Dialog open={showInterviewResults} onOpenChange={setShowInterviewResults}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Interview Notes — {candidate.full_name}</DialogTitle>
+          </DialogHeader>
+          {showInterviewResults && (
+            <InterviewResultsFetcher applicantId={candidate.id} applicantName={candidate.full_name} />
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
