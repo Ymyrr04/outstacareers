@@ -502,7 +502,7 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
                     </div>
                   </div>
 
-                  <ScrollArea className="flex-1 max-h-[420px]">
+                  <ScrollArea className="flex-1 max-h-[720px]">
                     <div className="p-2 space-y-2">
                       {stageCandidates.length === 0 ? (
                         <p className={cn(
