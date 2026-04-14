@@ -14,7 +14,7 @@ import {
   ContextMenuSubContent,
 } from '@/components/ui/context-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock } from 'lucide-react';
+import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -559,10 +559,12 @@ interface CandidateCardProps {
 
 const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd }: CandidateCardProps) => {
   const [showDetails, setShowDetails] = useState(false);
+  const [showDetailsTab, setShowDetailsTab] = useState<string | undefined>(undefined); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [showSendEmail, setShowSendEmail] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
   const [showCvPreview, setShowCvPreview] = useState(false);
+  const [showInterviewResults, setShowInterviewResults] = useState(false);
 
   return (
     <>
@@ -685,6 +687,16 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
             Send interview invite
           </ContextMenuItem>
 
+          <ContextMenuItem onClick={() => setShowInterviewResults(true)}>
+            <ClipboardList className="w-4 h-4 mr-2" />
+            Interview notes
+          </ContextMenuItem>
+
+          <ContextMenuItem onClick={() => { setShowDetailsTab('profile'); setShowDetails(true); }}>
+            <UserCircle className="w-4 h-4 mr-2" />
+            Profile
+          </ContextMenuItem>
+
           {candidate.cv_file_url && (
             <ContextMenuItem onClick={() => setShowCvPreview(true)}>
               <FileText className="w-4 h-4 mr-2" />
@@ -728,7 +740,7 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
 
       <CandidateDetailDialog
         open={showDetails}
-        onOpenChange={setShowDetails}
+        onOpenChange={(open) => { setShowDetails(open); if (!open) setShowDetailsTab(undefined); }}
         applicantId={candidate.id}
       />
 
@@ -773,6 +785,17 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
           </DialogContent>
         </Dialog>
       )}
+
+      <Dialog open={showInterviewResults} onOpenChange={setShowInterviewResults}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Interview Notes — {candidate.full_name}</DialogTitle>
+          </DialogHeader>
+          {showInterviewResults && (
+            <InterviewResultsFetcher applicantId={candidate.id} cachedSession={null} />
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 };
