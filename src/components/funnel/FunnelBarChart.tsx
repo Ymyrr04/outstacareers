@@ -19,19 +19,19 @@ interface FunnelBarChartProps {
 
 export const FunnelBarChart = ({ stageTotals, stages }: FunnelBarChartProps) => {
   const chartData = useMemo(() => {
-    const firstStageCount = stageTotals[stages[0]]?.historical || stageTotals[stages[0]]?.current || 1;
+    const totalPipeline = stages.reduce((sum, s) => sum + (stageTotals[s]?.current || 0), 0) || 1;
 
     return stages.map((stage) => {
       const t = stageTotals[stage] || { current: 0, historical: 0 };
-      const passThrough = t.historical > 0 ? t.historical : t.current;
-      const conversionFromStart = ((passThrough / firstStageCount) * 100);
+      // Show % of total pipeline (distribution), not misleading stage-to-stage conversion
+      const pctOfTotal = (t.current / totalPipeline) * 100;
 
       return {
         stage: stage.length > 12 ? stage.slice(0, 11) + '…' : stage,
         fullStage: stage,
         current: t.current,
         historical: t.historical,
-        conversion: Math.round(conversionFromStart),
+        distribution: Math.round(pctOfTotal),
       };
     });
   }, [stageTotals, stages]);
@@ -49,7 +49,7 @@ export const FunnelBarChart = ({ stageTotals, stages }: FunnelBarChartProps) => 
               <span className="w-2.5 h-2.5 rounded-sm bg-primary/30 inline-block" /> Historical
             </span>
             <span className="flex items-center gap-1.5">
-              <span className="w-6 h-0.5 bg-amber-500 inline-block rounded" /> Conversion %
+              <span className="w-6 h-0.5 bg-amber-500 inline-block rounded" /> Distribution %
             </span>
           </div>
         </div>
@@ -79,9 +79,9 @@ export const FunnelBarChart = ({ stageTotals, stages }: FunnelBarChartProps) => 
                     <p className="font-semibold mb-1">{d.fullStage}</p>
                     <p>Current: <span className="font-bold">{d.current}</span></p>
                     {d.historical > 0 && (
-                      <p>Historical: <span className="font-bold">{d.historical}</span></p>
+                      <p>Historical pass-through: <span className="font-bold">{d.historical}</span></p>
                     )}
-                    <p>Conversion: <span className="font-bold">{d.conversion}%</span></p>
+                    <p>% of pipeline: <span className="font-bold">{d.distribution}%</span></p>
                   </div>
                 );
               }}
@@ -91,7 +91,7 @@ export const FunnelBarChart = ({ stageTotals, stages }: FunnelBarChartProps) => 
             <Line
               yAxisId="right"
               type="monotone"
-              dataKey="conversion"
+              dataKey="distribution"
               stroke="hsl(38, 92%, 50%)"
               strokeWidth={2}
               dot={{ r: 3, fill: 'hsl(38, 92%, 50%)' }}
