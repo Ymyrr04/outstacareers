@@ -301,11 +301,21 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
                   {candidate.full_name}
                 </p>
               </div>
-              {candidate.total_score != null && (
-                <Badge variant="outline" className="text-[9px] shrink-0 h-4 px-1">
-                  {candidate.total_score}
-                </Badge>
-              )}
+              <Badge 
+                variant="outline" 
+                className={cn(
+                  "text-[10px] shrink-0 h-5 px-1.5 font-mono font-bold",
+                  candidate.total_score != null && candidate.total_score >= 70
+                    ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400"
+                    : candidate.total_score != null && candidate.total_score >= 40
+                    ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
+                    : candidate.total_score != null
+                    ? "border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-400"
+                    : ""
+                )}
+              >
+                {candidate.total_score != null ? candidate.total_score : '—'}
+              </Badge>
             </div>
 
             <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
