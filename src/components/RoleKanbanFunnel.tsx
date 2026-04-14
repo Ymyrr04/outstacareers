@@ -687,6 +687,16 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
             Send interview invite
           </ContextMenuItem>
 
+          <ContextMenuItem onClick={() => setShowInterviewResults(true)}>
+            <ClipboardList className="w-4 h-4 mr-2" />
+            Interview notes
+          </ContextMenuItem>
+
+          <ContextMenuItem onClick={() => { setShowDetailsTab('profile'); setShowDetails(true); }}>
+            <UserCircle className="w-4 h-4 mr-2" />
+            Profile
+          </ContextMenuItem>
+
           {candidate.cv_file_url && (
             <ContextMenuItem onClick={() => setShowCvPreview(true)}>
               <FileText className="w-4 h-4 mr-2" />
