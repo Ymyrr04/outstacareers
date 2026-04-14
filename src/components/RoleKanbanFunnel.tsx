@@ -104,18 +104,37 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
           )}
         </div>
 
-        <Select value={selectedRole} onValueChange={setSelectedRole}>
-          <SelectTrigger className="h-9 w-[320px] text-sm">
-            <SelectValue placeholder="Select a role..." />
-          </SelectTrigger>
-          <SelectContent className="max-h-[300px]">
-            {roles.map((role) => (
-              <SelectItem key={role} value={role}>
-                {role}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover open={comboOpen} onOpenChange={setComboOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" role="combobox" aria-expanded={comboOpen} className="h-9 w-[320px] justify-between text-sm font-normal">
+              {selectedRole || 'Select a role...'}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[320px] p-0">
+            <Command>
+              <CommandInput placeholder="Search roles..." />
+              <CommandList>
+                <CommandEmpty>No role found.</CommandEmpty>
+                <CommandGroup>
+                  {roles.map((role) => (
+                    <CommandItem
+                      key={role}
+                      value={role}
+                      onSelect={() => {
+                        setSelectedRole(role);
+                        setComboOpen(false);
+                      }}
+                    >
+                      <Check className={cn('mr-2 h-4 w-4', selectedRole === role ? 'opacity-100' : 'opacity-0')} />
+                      {role}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {loading ? (
