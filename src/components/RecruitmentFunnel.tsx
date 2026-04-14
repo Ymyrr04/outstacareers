@@ -203,10 +203,10 @@ export const RecruitmentFunnel = () => {
   const kpiData = useMemo(() => {
     const totalActive = roleFunnels.reduce((s, r) => s + r.total, 0);
     const totalHired = stageTotals['Hired']?.current || 0;
-    const totalForReview = stageTotals['For Review']?.historical || stageTotals['For Review']?.current || 1;
-    const overallConversionRate = totalForReview > 0 ? (totalHired / totalForReview) * 100 : 0;
+    // Hire rate = hired / total in all pipeline stages (not just For Review)
+    const overallConversionRate = totalActive > 0 ? (totalHired / totalActive) * 100 : 0;
 
-    // Find bottleneck: stage with highest current count excluding Reject/Talent Pool/Hired
+    // Find bottleneck: stage with highest current count excluding end-states (Reject/Talent Pool/Hired)
     const actionableStages = ['For Review', 'For Interview', 'SIV', 'Client Interview', 'Bench'] as const;
     let bottleneckStage = '';
     let bottleneckCount = 0;
@@ -221,22 +221,21 @@ export const RecruitmentFunnel = () => {
     return { totalActive, overallConversionRate, bottleneckStage, avgDaysInPipeline: 0 };
   }, [roleFunnels, stageTotals]);
 
-  // Conversion rates between sequential stages
+  // Conversion rates: % of total pipeline in each stage (distribution view)
+  // Since historical flow data is sparse (status_history trigger was added recently),
+  // we show each stage as a % of the total pipeline to show distribution honestly.
+  const totalPipeline = useMemo(() => {
+    return FUNNEL_STAGES.reduce((sum, stage) => sum + (stageTotals[stage]?.current || 0), 0);
+  }, [stageTotals]);
+
   const conversionRates = useMemo(() => {
     const rates: Record<string, number | null> = {};
-    for (let i = 0; i < FUNNEL_STAGES.length; i++) {
-      const stage = FUNNEL_STAGES[i];
-      if (i === 0) {
-        rates[stage] = null; // no previous stage
-        continue;
-      }
-      const prevStage = FUNNEL_STAGES[i - 1];
-      const prevCount = stageTotals[prevStage]?.historical || stageTotals[prevStage]?.current || 0;
-      const curCount = stageTotals[stage]?.historical || stageTotals[stage]?.current || 0;
-      rates[stage] = prevCount > 0 ? (curCount / prevCount) * 100 : null;
+    for (const stage of FUNNEL_STAGES) {
+      const count = stageTotals[stage]?.current || 0;
+      rates[stage] = totalPipeline > 0 ? (count / totalPipeline) * 100 : null;
     }
     return rates;
-  }, [stageTotals]);
+  }, [stageTotals, totalPipeline]);
 
   if (loading) {
     return (
