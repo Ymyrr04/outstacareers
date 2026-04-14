@@ -343,8 +343,10 @@ export const RecruitmentFunnel = () => {
                 className="pl-8 h-8 w-52 text-sm"
               />
               {searchTerm && !searchSelected && (() => {
-                const query = searchTerm.toLowerCase();
+                const query = searchTerm.toLowerCase().trim();
                 const allRoleNames = Array.from(new Set(applicants.map(a => a.job_title?.trim()).filter(Boolean))).sort();
+                // Hide if exact match exists
+                if (allRoleNames.some(r => r.toLowerCase() === query)) return null;
                 const suggestions = allRoleNames.filter(r => r.toLowerCase().includes(query));
                 if (suggestions.length === 0) return null;
                 return (
