@@ -219,6 +219,20 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
 
   const handleHiredComplete = useCallback(async () => {
     if (hiredCandidate) {
+      // Update status to Hired
+      const { error } = await supabase
+        .from('applicants_prescreen')
+        .update({ status: 'Hired' })
+        .eq('id', hiredCandidate.id);
+
+      if (!error) {
+        await supabase.from('applicant_status_history').insert({
+          applicant_id: hiredCandidate.id,
+          from_status: hiredCandidate.status,
+          to_status: 'Hired',
+        });
+        toast.success(`${hiredCandidate.full_name} moved to Hired`);
+      }
       fetchCandidates(selectedRole);
     }
     setShowHiredDialog(false);
