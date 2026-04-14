@@ -462,9 +462,12 @@ interface CandidateCardProps {
   onToggleStar: (candidate: Candidate) => void;
   onCopyEmail: (email: string) => void;
   onDelete: (candidate: Candidate) => void;
+  isDragging?: boolean;
+  onDragStart?: () => void;
+  onDragEnd?: () => void;
 }
 
-const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete }: CandidateCardProps) => {
+const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd }: CandidateCardProps) => {
   const [showDetails, setShowDetails] = useState(false);
   const [showSendEmail, setShowSendEmail] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -475,7 +478,19 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
     <>
       <ContextMenu>
         <ContextMenuTrigger asChild>
-          <div className="bg-card rounded-md p-2.5 shadow-sm border border-border/50 hover:shadow-md transition-shadow space-y-1.5 cursor-context-menu">
+          <div
+            draggable
+            onDragStart={(e) => {
+              e.dataTransfer.effectAllowed = 'move';
+              e.dataTransfer.setData('text/plain', candidate.id);
+              onDragStart?.();
+            }}
+            onDragEnd={() => onDragEnd?.()}
+            className={cn(
+              "bg-card rounded-md p-2.5 shadow-sm border border-border/50 hover:shadow-md transition-all space-y-1.5 cursor-grab active:cursor-grabbing",
+              isDragging && "opacity-40 scale-95 shadow-lg"
+            )}
+          >
             <div className="space-y-1">
               <div className="flex items-start gap-1.5">
                 <div className={cn('w-2 h-2 rounded-full mt-1 shrink-0', dotColor)} />
