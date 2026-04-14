@@ -3570,7 +3570,7 @@ const Admin = () => {
           </TabsContent>
 
           {/* Funnel Tab */}
-          <TabsContent value="funnel" className="space-y-6">
+          <TabsContent value="funnel" className="space-y-6" keepMounted>
             <RecruitmentFunnel />
           </TabsContent>
 
