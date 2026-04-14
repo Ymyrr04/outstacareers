@@ -35,6 +35,7 @@ interface RoleFunnelData {
   jobTitle: string;
   total: number;
   stages: Record<string, number>;
+  historicalStages: Record<string, number>;
 }
 
 interface ImportLog {
