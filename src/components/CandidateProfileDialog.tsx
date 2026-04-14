@@ -53,28 +53,6 @@ export function CandidateProfileDialog({ open, onOpenChange, applicantId, applic
     }
   }, [open, fetchData]);
 
-  const handleCopyProfile = () => {
-    // Combine main profile + additional profiles
-    const parts: string[] = [];
-    if (candidateProfile) {
-      const tmp = document.createElement('div');
-      tmp.innerHTML = candidateProfile;
-      parts.push(tmp.innerText || tmp.textContent || '');
-    }
-    additionalProfiles.forEach((p) => {
-      const tmp = document.createElement('div');
-      tmp.innerHTML = p.content;
-      const text = tmp.innerText || tmp.textContent || '';
-      parts.push(p.title ? `--- ${p.title} ---\n${text}` : text);
-    });
-    if (parts.length === 0) {
-      toast.error('No profile content to copy');
-      return;
-    }
-    navigator.clipboard.writeText(parts.join('\n\n'));
-    toast.success('Profile copied to clipboard');
-  };
-
   const handleAddProfile = async () => {
     if (!newContent || newContent === '<p></p>') {
       toast.error('Profile content cannot be empty');
