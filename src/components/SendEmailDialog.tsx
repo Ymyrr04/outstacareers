@@ -161,6 +161,7 @@ export function SendEmailDialog({
     { email: 'mark@outsta.io', name: 'Mark' },
     { email: 'kristine@outsta.io', name: 'Kristine' },
     { email: 'czarina@outsta.io', name: 'Czarina' },
+    { email: 'eduardo@outsta.io', name: 'Eduardo' },
     { email: 'jil@outsta.io', name: 'Jil' },
   ];
 
