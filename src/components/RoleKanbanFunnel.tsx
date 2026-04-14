@@ -69,6 +69,17 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
     fetchCandidates();
   }, [selectedRole]);
 
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
+
   const stageGroups = useMemo(() => {
     const groups: Record<string, Candidate[]> = {};
     for (const stage of FUNNEL_STAGES) {
