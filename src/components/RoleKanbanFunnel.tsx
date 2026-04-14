@@ -742,7 +742,6 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
         open={showDetails}
         onOpenChange={(open) => { setShowDetails(open); if (!open) setShowDetailsTab(undefined); }}
         applicantId={candidate.id}
-        initialTab={showDetailsTab}
       />
 
       <SendEmailDialog
