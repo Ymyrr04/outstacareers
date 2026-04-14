@@ -69,11 +69,12 @@ interface SendEmailRequest {
   recipientEmail: string;
   applicantStatusAtSend?: string;
   isAutomated: boolean;
-  scheduleFor?: string; // ISO date string for scheduled emails
+  scheduleFor?: string;
   attachments?: Attachment[];
-  cc?: string[]; // CC email addresses
-  bcc?: string[]; // BCC email addresses
-  inReplyTo?: string; // Message-ID of the email being replied to (for threading)
+  cc?: string[];
+  bcc?: string[];
+  inReplyTo?: string;
+  sendAsEmail?: string; // Override sender to a specific admin's credentials
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -118,32 +119,39 @@ const handler = async (req: Request): Promise<Response> => {
       cc,
       bcc,
       inReplyTo,
+      sendAsEmail,
     }: SendEmailRequest = await req.json();
 
     // Extract admin name and email from JWT for personalized sign-off and sender selection
     const adminName = getAdminNameFromJwt(req.headers.get('authorization'));
     const adminEmail = getAdminEmailFromJwt(req.headers.get('authorization'));
     
-    // Select sender credentials: use admin-specific if available, otherwise default
+    // Select sender credentials: use sendAsEmail override, then admin-specific if available, otherwise default
     let gmailUser = defaultGmailUser;
     let gmailPassword = defaultGmailPassword;
-    if (adminEmail && !isAutomated) {
-      const creds = ADMIN_GMAIL_CREDENTIALS[adminEmail];
+    let senderAdminName = adminName;
+    
+    // Determine which admin email to use for credentials
+    const effectiveAdminEmail = (!isAutomated && sendAsEmail) ? sendAsEmail.toLowerCase() : adminEmail;
+    
+    if (effectiveAdminEmail && !isAutomated) {
+      const creds = ADMIN_GMAIL_CREDENTIALS[effectiveAdminEmail];
       if (creds) {
         const specificUser = Deno.env.get(creds.userEnv);
         const specificPass = Deno.env.get(creds.passEnv);
         if (specificUser && specificPass) {
           gmailUser = specificUser;
           gmailPassword = specificPass;
-          console.log(`Using ${adminEmail}'s own Gmail credentials for sending`);
+          senderAdminName = ADMIN_NAMES[effectiveAdminEmail] || null;
+          console.log(`Using ${effectiveAdminEmail}'s Gmail credentials for sending`);
         }
       }
     }
     
     // Auto-replace generic sign-offs with the admin's name if available
     let processedBodyHtml = bodyHtml;
-    if (adminName && !isAutomated) {
-      const signOff = `Best regards,<br><br>${adminName}<br>OutSta Recruitment Team`;
+    if (senderAdminName && !isAutomated) {
+      const signOff = `Best regards,<br><br>${senderAdminName}<br>OutSta Recruitment Team`;
       processedBodyHtml = processedBodyHtml
         .replace(/Best regards,\s*<br\s*\/?>\s*The\s+(Outsta\s+)?Recruitment\s+Team/gi, signOff)
         .replace(/Best regards,\s*\n\s*The\s+(Outsta\s+)?Recruitment\s+Team/gi, signOff)

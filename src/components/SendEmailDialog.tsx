@@ -16,6 +16,7 @@ import {
   Send, Loader2, Clock, CalendarIcon, AlertTriangle, User, Paperclip, X, FileImage, File
 } from 'lucide-react';
 import { RichTextToolbar } from './RichTextToolbar';
+import { EMAIL_TO_NAME } from '@/lib/adminDisplayNames';
 
 interface EmailAttachment {
   filename: string;
@@ -136,6 +137,8 @@ export function SendEmailDialog({
   const [bodyText, setBodyText] = useState('');
   const [sending, setSending] = useState(false);
   const [templateError, setTemplateError] = useState(false);
+  const [sendAsEmail, setSendAsEmail] = useState('default');
+  const [currentAdminEmail, setCurrentAdminEmail] = useState<string | null>(null);
   
   // CC and BCC fields
   const [ccEmails, setCcEmails] = useState('');
@@ -152,6 +155,25 @@ export function SendEmailDialog({
   
   // Attachments state
   const [attachments, setAttachments] = useState<EmailAttachment[]>([]);
+
+  // Admins with configured Gmail credentials (for "Send as" dropdown)
+  const ADMIN_SENDERS = [
+    { email: 'mark@outsta.io', name: 'Mark' },
+    { email: 'kristine@outsta.io', name: 'Kristine' },
+    { email: 'czarina@outsta.io', name: 'Czarina' },
+    { email: 'jil@outsta.io', name: 'Jil' },
+  ];
+
+  // Fetch current admin email on mount
+  useEffect(() => {
+    const fetchAdminEmail = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user?.email) {
+        setCurrentAdminEmail(user.email.toLowerCase());
+      }
+    };
+    fetchAdminEmail();
+  }, []);
 
   // Fetch fresh templates when dialog opens
   useEffect(() => {
@@ -176,6 +198,7 @@ export function SendEmailDialog({
       setCcEmails('');
       setBccEmails('');
       setShowCcBcc(false);
+      setSendAsEmail('default');
       
       if (preselectedTemplate && templates.length > 0) {
         // Use setTimeout to ensure templates are loaded
@@ -333,6 +356,7 @@ export function SendEmailDialog({
           applicantStatusAtSend: applicant.status,
           isAutomated: false,
           scheduleFor: scheduleDateTime,
+          sendAsEmail: sendAsEmail !== 'default' ? sendAsEmail : undefined,
           cc: ccEmails.trim() ? parseEmails(ccEmails) : undefined,
           bcc: bccEmails.trim() ? parseEmails(bccEmails) : undefined,
           attachments: attachments.length > 0 ? attachments.map(({ filename, content, contentType }) => ({
@@ -389,6 +413,30 @@ export function SendEmailDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-auto space-y-4 py-2">
+          {/* Send As */}
+          <div className="space-y-1.5">
+            <Label className="text-sm">Send as</Label>
+            <Select value={sendAsEmail} onValueChange={setSendAsEmail}>
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Select sender..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">
+                  {currentAdminEmail 
+                    ? `${EMAIL_TO_NAME[currentAdminEmail] || currentAdminEmail} (default)`
+                    : 'Default (recruitment@outsta.io)'}
+                </SelectItem>
+                {ADMIN_SENDERS
+                  .filter(a => a.email !== currentAdminEmail)
+                  .map((admin) => (
+                    <SelectItem key={admin.email} value={admin.email}>
+                      {admin.name} ({admin.email})
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Template */}
           <div className="space-y-1.5">
             <Label className="text-sm">Template</Label>
