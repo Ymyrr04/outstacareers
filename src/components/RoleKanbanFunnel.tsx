@@ -110,6 +110,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
     }
   }, [filteredRoles]);
 
+  // Notify parent when selected role changes
+  useEffect(() => {
+    if (selectedRole) _onRoleSelect?.(selectedRole);
+  }, [selectedRole, _onRoleSelect]);
+
   const fetchCandidates = useCallback(async (role: string) => {
     if (!role) return;
     setLoading(true);
