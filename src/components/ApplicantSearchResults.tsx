@@ -42,6 +42,7 @@ import {
 } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
 import { ApplicantNotesEditor, type ApplicantNotesEditorRef } from '@/components/ApplicantNotesEditor';
+import { ApplicantNotesSection } from '@/components/ApplicantNotesSection';
 import { FormattedNotes } from '@/components/FormattedNotes';
 
 interface ToolMatch {
@@ -1014,6 +1015,9 @@ export default function ApplicantSearchResults({
                       No notes yet. Click "Add Note" to add observations about this applicant.
                     </p>
                   )}
+
+                  {/* Structured Notes from applicant_notes table */}
+                  <ApplicantNotesSection applicantId={applicant.id} />
                 </div>
 
                 {/* CV and Vocaroo Links */}

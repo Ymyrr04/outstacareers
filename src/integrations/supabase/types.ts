@@ -85,6 +85,41 @@ export type Database = {
           },
         ]
       }
+      applicant_notes: {
+        Row: {
+          applicant_id: string
+          content: string
+          created_at: string
+          created_by: string | null
+          id: string
+          updated_at: string
+        }
+        Insert: {
+          applicant_id: string
+          content: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Update: {
+          applicant_id?: string
+          content?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applicant_notes_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "applicants_prescreen"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       applicant_status_history: {
         Row: {
           applicant_id: string
