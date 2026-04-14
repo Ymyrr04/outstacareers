@@ -136,6 +136,8 @@ export function SendEmailDialog({
   const [bodyText, setBodyText] = useState('');
   const [sending, setSending] = useState(false);
   const [templateError, setTemplateError] = useState(false);
+  const [sendAsEmail, setSendAsEmail] = useState('default');
+  const [currentAdminEmail, setCurrentAdminEmail] = useState<string | null>(null);
   
   // CC and BCC fields
   const [ccEmails, setCcEmails] = useState('');
