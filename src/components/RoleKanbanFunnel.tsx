@@ -14,11 +14,16 @@ import {
   ContextMenuSubContent,
 } from '@/components/ui/context-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, ClipboardList, Eye } from 'lucide-react';
+import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
 import { CandidateDetailDialog } from '@/components/CandidateDetailDialog';
+import { SendEmailDialog } from '@/components/SendEmailDialog';
+import { CommunicationHistory } from '@/components/CommunicationHistory';
+import { InterviewInviteDialog } from '@/components/InterviewInviteDialog';
+import { CVImagePreview } from '@/components/CVImagePreview';
+import { CopyableText } from '@/components/CopyableText';
 
 const FUNNEL_STAGES = [
   'For Review',
@@ -46,12 +51,17 @@ interface Candidate {
   id: string;
   full_name: string;
   email: string;
+  phone: string | null;
   location: string;
   status: string;
   pre_archive_status: string | null;
   submitted_at: string;
   total_score: number | null;
   interview_overall_score: number | null;
+  job_title: string;
+  job_id: string | null;
+  cv_file_url: string | null;
+  is_starred: boolean;
 }
 
 interface RoleKanbanFunnelProps {
@@ -73,7 +83,7 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
     setLoading(true);
     const { data } = await supabase
       .from('applicants_prescreen')
-      .select('id, full_name, email, location, status, pre_archive_status, submitted_at, total_score')
+      .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred')
       .eq('job_title', role)
       .order('total_score', { ascending: false, nullsFirst: false });
 
@@ -81,7 +91,6 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
     let interviewScores: Record<string, number> = {};
     
     if (applicantIds.length > 0) {
-      // Fetch in batches of 100 to avoid URL length limits
       for (let i = 0; i < applicantIds.length; i += 100) {
         const batch = applicantIds.slice(i, i + 100);
         const { data: sessions } = await supabase
@@ -101,6 +110,7 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
 
     setCandidates((data || []).map(a => ({
       ...a,
+      is_starred: a.is_starred ?? false,
       interview_overall_score: interviewScores[a.id] ?? null,
     })));
     setLoading(false);
@@ -132,7 +142,6 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
       return;
     }
 
-    // Log status change
     await supabase.from('applicant_status_history').insert({
       applicant_id: candidate.id,
       from_status: candidate.status,
@@ -144,21 +153,87 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
   }, [selectedRole, fetchCandidates]);
 
   const handleToggleStar = useCallback(async (candidate: Candidate) => {
-    const { data } = await supabase
-      .from('applicants_prescreen')
-      .select('is_starred')
-      .eq('id', candidate.id)
-      .single();
-
-    const newVal = !(data?.is_starred);
+    const newVal = !candidate.is_starred;
     await supabase.from('applicants_prescreen').update({ is_starred: newVal }).eq('id', candidate.id);
+    setCandidates(prev => prev.map(c => c.id === candidate.id ? { ...c, is_starred: newVal } : c));
     toast.success(newVal ? 'Starred' : 'Unstarred');
-    fetchCandidates(selectedRole);
-  }, [selectedRole, fetchCandidates]);
+  }, []);
 
   const handleCopyEmail = useCallback((email: string) => {
     navigator.clipboard.writeText(email);
     toast.success('Email copied to clipboard');
+  }, []);
+
+  const handleDelete = useCallback(async (candidate: Candidate) => {
+    // Soft delete: move to deleted_applicants
+    const { data: applicantData } = await supabase
+      .from('applicants_prescreen')
+      .select('*')
+      .eq('id', candidate.id)
+      .single();
+
+    if (!applicantData) {
+      toast.error('Could not find applicant');
+      return;
+    }
+
+    const { error: insertError } = await supabase.from('deleted_applicants').insert({
+      original_id: applicantData.id,
+      full_name: applicantData.full_name,
+      email: applicantData.email,
+      phone: applicantData.phone,
+      whatsapp: applicantData.whatsapp,
+      location: applicantData.location,
+      job_title: applicantData.job_title,
+      job_id: applicantData.job_id,
+      status: applicantData.status,
+      cv_file_url: applicantData.cv_file_url,
+      cv_text: applicantData.cv_text,
+      voice_recording_url: applicantData.voice_recording_url,
+      vocaroo_link: applicantData.vocaroo_link,
+      notes: applicantData.notes,
+      candidate_profile: applicantData.candidate_profile,
+      total_score: applicantData.total_score,
+      role_experience_score: applicantData.role_experience_score,
+      skills_tools_score: applicantData.skills_tools_score,
+      availability_setup_score: applicantData.availability_setup_score,
+      bonus_red_flag_score: applicantData.bonus_red_flag_score,
+      ranking_status: applicantData.ranking_status,
+      ai_summary: applicantData.ai_summary,
+      ai_assessment_details: applicantData.ai_assessment_details,
+      extracted_skills: applicantData.extracted_skills,
+      extracted_tools: applicantData.extracted_tools,
+      years_of_experience: applicantData.years_of_experience,
+      submitted_at: applicantData.submitted_at,
+      created_at: applicantData.created_at,
+      job_source: applicantData.job_source,
+      original_job_id: applicantData.original_job_id,
+      original_job_title: applicantData.original_job_title,
+      reprofiled_at: applicantData.reprofiled_at,
+      device_type: applicantData.device_type,
+      is_starred: applicantData.is_starred,
+      apply_url: applicantData.apply_url,
+      home_office: applicantData.home_office,
+      noise_canceling_headset: applicantData.noise_canceling_headset,
+      laptop_or_pc: applicantData.laptop_or_pc,
+      good_internet: applicantData.good_internet,
+      internet_speed: applicantData.internet_speed,
+      power_backup: applicantData.power_backup,
+      can_work_40_50: applicantData.can_work_40_50,
+      us_timezone_ok: applicantData.us_timezone_ok,
+      start_availability: applicantData.start_availability,
+      has_experience: applicantData.has_experience,
+      currently_working: applicantData.currently_working,
+    });
+
+    if (insertError) {
+      toast.error('Failed to delete applicant');
+      return;
+    }
+
+    await supabase.from('applicants_prescreen').delete().eq('id', candidate.id);
+    setCandidates(prev => prev.filter(c => c.id !== candidate.id));
+    toast.success(`Deleted ${candidate.full_name}`);
   }, []);
 
   const filteredCandidates = useMemo(() => {
@@ -329,6 +404,7 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
                             onMoveToStage={handleMoveToStage}
                             onToggleStar={handleToggleStar}
                             onCopyEmail={handleCopyEmail}
+                            onDelete={handleDelete}
                           />
                         ))
                       )}
@@ -352,11 +428,15 @@ interface CandidateCardProps {
   onMoveToStage: (candidate: Candidate, stage: string) => void;
   onToggleStar: (candidate: Candidate) => void;
   onCopyEmail: (email: string) => void;
+  onDelete: (candidate: Candidate) => void;
 }
 
-const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail }: CandidateCardProps) => {
-  const [showInterview, setShowInterview] = useState(false);
+const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete }: CandidateCardProps) => {
   const [showDetails, setShowDetails] = useState(false);
+  const [showSendEmail, setShowSendEmail] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
+  const [showCvPreview, setShowCvPreview] = useState(false);
 
   return (
     <>
@@ -369,6 +449,9 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
                 <p className="text-xs font-semibold leading-tight flex-1 min-w-0" title={candidate.full_name}>
                   {candidate.full_name}
                 </p>
+                {candidate.is_starred && (
+                  <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 shrink-0" />
+                )}
               </div>
               <div className="pl-3.5 flex items-center gap-1.5 flex-wrap">
                 <span 
@@ -406,6 +489,13 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
         </ContextMenuTrigger>
 
         <ContextMenuContent className="w-52">
+          <ContextMenuItem onClick={() => setShowDetails(true)}>
+            <Eye className="w-4 h-4 mr-2" />
+            View details
+          </ContextMenuItem>
+
+          <ContextMenuSeparator />
+
           <ContextMenuSub>
             <ContextMenuSubTrigger>
               <ArrowRight className="w-4 h-4 mr-2" />
@@ -423,28 +513,109 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
 
           <ContextMenuSeparator />
 
-          <ContextMenuItem onClick={() => setShowDetails(true)}>
-            <Eye className="w-4 h-4 mr-2" />
-            View details
+          <ContextMenuItem onClick={() => setShowSendEmail(true)}>
+            <Send className="w-4 h-4 mr-2" />
+            Send email
           </ContextMenuItem>
 
+          <ContextMenuItem onClick={() => setShowHistory(true)}>
+            <History className="w-4 h-4 mr-2" />
+            Communication history
+          </ContextMenuItem>
+
+          <ContextMenuItem onClick={() => setShowInvite(true)}>
+            <CalendarPlus className="w-4 h-4 mr-2" />
+            Send interview invite
+          </ContextMenuItem>
+
+          {candidate.cv_file_url && (
+            <ContextMenuItem onClick={() => setShowCvPreview(true)}>
+              <FileText className="w-4 h-4 mr-2" />
+              Preview CV
+            </ContextMenuItem>
+          )}
+
+          <ContextMenuSeparator />
+
+          <ContextMenuItem onClick={() => onCopyEmail(candidate.email)}>
+            <Copy className="w-4 h-4 mr-2" />
+            Copy email
+          </ContextMenuItem>
+
+          {candidate.phone && (
+            <ContextMenuItem onClick={() => {
+              navigator.clipboard.writeText(candidate.phone!);
+              toast.success('Phone copied');
+            }}>
+              <Phone className="w-4 h-4 mr-2" />
+              Copy phone
+            </ContextMenuItem>
+          )}
+
+          <ContextMenuItem onClick={() => onToggleStar(candidate)}>
+            <Star className={cn("w-4 h-4 mr-2", candidate.is_starred && "fill-yellow-500 text-yellow-500")} />
+            {candidate.is_starred ? 'Unstar' : 'Star'}
+          </ContextMenuItem>
+
+          <ContextMenuSeparator />
+
+          <ContextMenuItem
+            className="text-destructive focus:text-destructive"
+            onClick={() => onDelete(candidate)}
+          >
+            <Trash2 className="w-4 h-4 mr-2" />
+            Delete
+          </ContextMenuItem>
         </ContextMenuContent>
       </ContextMenu>
-
-      <Dialog open={showInterview} onOpenChange={setShowInterview}>
-        <DialogContent className="max-w-3xl max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Interview Results — {candidate.full_name}</DialogTitle>
-          </DialogHeader>
-          <InterviewResultsFetcher applicantId={candidate.id} cachedSession={null} />
-        </DialogContent>
-      </Dialog>
 
       <CandidateDetailDialog
         open={showDetails}
         onOpenChange={setShowDetails}
         applicantId={candidate.id}
       />
+
+      <SendEmailDialog
+        open={showSendEmail}
+        onOpenChange={setShowSendEmail}
+        applicant={{
+          id: candidate.id,
+          full_name: candidate.full_name,
+          email: candidate.email,
+          job_title: candidate.job_title,
+          status: candidate.status,
+        }}
+      />
+
+      <CommunicationHistory
+        open={showHistory}
+        onOpenChange={setShowHistory}
+        applicantId={candidate.id}
+        applicantName={candidate.full_name}
+        applicantEmail={candidate.email}
+      />
+
+      <InterviewInviteDialog
+        open={showInvite}
+        onOpenChange={setShowInvite}
+        applicant={{
+          id: candidate.id,
+          full_name: candidate.full_name,
+          email: candidate.email,
+          job_title: candidate.job_title,
+        }}
+      />
+
+      {candidate.cv_file_url && (
+        <Dialog open={showCvPreview} onOpenChange={setShowCvPreview}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>CV Preview — {candidate.full_name}</DialogTitle>
+            </DialogHeader>
+            <CVImagePreview pdfUrl={candidate.cv_file_url} fileName={candidate.full_name + '.pdf'} />
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 };
