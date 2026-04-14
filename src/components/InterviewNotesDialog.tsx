@@ -6,61 +6,119 @@ import { supabase } from '@/integrations/supabase/client';
 import { NotesEditor } from '@/components/NotesEditor';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
-import { Loader2, Save, Pencil, Eye } from 'lucide-react';
+import { Loader2, Save, Pencil, Eye, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { getAdminDisplayName } from '@/lib/adminDisplayNames';
+import { format } from 'date-fns';
+
+interface ApplicantNote {
+  id: string;
+  content: string;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
 
 interface InterviewNotesDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   applicantId: string;
   applicantName: string;
+  onNotesUpdated?: () => void;
 }
 
-export function InterviewNotesDialog({ open, onOpenChange, applicantId, applicantName }: InterviewNotesDialogProps) {
-  const [notes, setNotes] = useState('');
-  const [originalNotes, setOriginalNotes] = useState('');
+export function InterviewNotesDialog({ open, onOpenChange, applicantId, applicantName, onNotesUpdated }: InterviewNotesDialogProps) {
+  const [notes, setNotes] = useState<ApplicantNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+  const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState('');
+  const [isAddingNew, setIsAddingNew] = useState(false);
+  const [newContent, setNewContent] = useState('');
 
   const fetchNotes = useCallback(async () => {
     setLoading(true);
     const { data } = await supabase
-      .from('applicants_prescreen')
-      .select('notes')
-      .eq('id', applicantId)
-      .single();
-    const val = data?.notes || '';
-    setNotes(val);
-    setOriginalNotes(val);
+      .from('applicant_notes')
+      .select('*')
+      .eq('applicant_id', applicantId)
+      .order('created_at', { ascending: false });
+    setNotes((data as ApplicantNote[]) || []);
     setLoading(false);
   }, [applicantId]);
 
   useEffect(() => {
     if (open) {
       fetchNotes();
-      setIsEditing(false);
+      setEditingNoteId(null);
+      setIsAddingNew(false);
+      setNewContent('');
     }
   }, [open, fetchNotes]);
 
-  const handleSave = async () => {
+  const handleAddNote = async () => {
+    if (!newContent || newContent === '<p></p>') {
+      toast.error('Note cannot be empty');
+      return;
+    }
     setSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
     const { error } = await supabase
-      .from('applicants_prescreen')
-      .update({ notes })
-      .eq('id', applicantId);
+      .from('applicant_notes')
+      .insert({
+        applicant_id: applicantId,
+        content: newContent,
+        created_by: user?.id || null,
+      });
     setSaving(false);
 
     if (error) {
-      toast.error('Failed to save notes');
+      toast.error('Failed to add note');
     } else {
-      setOriginalNotes(notes);
-      setIsEditing(false);
-      toast.success('Notes saved');
+      setNewContent('');
+      setIsAddingNew(false);
+      toast.success('Note added');
+      fetchNotes();
+      onNotesUpdated?.();
     }
   };
 
-  const hasChanges = notes !== originalNotes;
+  const handleUpdateNote = async (noteId: string) => {
+    if (!editContent || editContent === '<p></p>') {
+      toast.error('Note cannot be empty');
+      return;
+    }
+    setSaving(true);
+    const { error } = await supabase
+      .from('applicant_notes')
+      .update({ content: editContent, updated_at: new Date().toISOString() })
+      .eq('id', noteId);
+    setSaving(false);
+
+    if (error) {
+      toast.error('Failed to update note');
+    } else {
+      setEditingNoteId(null);
+      toast.success('Note updated');
+      fetchNotes();
+      onNotesUpdated?.();
+    }
+  };
+
+  const handleDeleteNote = async (noteId: string) => {
+    const { error } = await supabase
+      .from('applicant_notes')
+      .delete()
+      .eq('id', noteId);
+
+    if (error) {
+      toast.error('Failed to delete note');
+    } else {
+      toast.success('Note deleted');
+      fetchNotes();
+      onNotesUpdated?.();
+    }
+  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -82,59 +140,131 @@ export function InterviewNotesDialog({ open, onOpenChange, applicantId, applican
           </TabsList>
 
           <TabsContent value="notes" className="mt-4 space-y-3">
-            {loading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+            {/* Add New Note */}
+            {!isAddingNew ? (
+              <div className="flex justify-end">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => { setIsAddingNew(true); setEditingNoteId(null); }}
+                  className="gap-1.5"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  Add Note
+                </Button>
               </div>
-            ) : isEditing ? (
-              <div className="space-y-3">
+            ) : (
+              <div className="space-y-3 border rounded-lg p-3 bg-muted/20">
                 <NotesEditor
-                  value={notes}
-                  onChange={setNotes}
-                  placeholder="Add interview notes..."
-                  minHeight="200px"
+                  value={newContent}
+                  onChange={setNewContent}
+                  placeholder="Write your note..."
+                  minHeight="120px"
                 />
                 <div className="flex gap-2 justify-end">
                   <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => { setNotes(originalNotes); setIsEditing(false); }}
+                    onClick={() => { setIsAddingNew(false); setNewContent(''); }}
                   >
                     Cancel
                   </Button>
                   <Button
                     size="sm"
-                    onClick={handleSave}
-                    disabled={saving || !hasChanges}
+                    onClick={handleAddNote}
+                    disabled={saving}
                     className="gap-1.5"
                   >
                     {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-                    Save
+                    Save Note
                   </Button>
                 </div>
               </div>
+            )}
+
+            {/* Notes List */}
+            {loading ? (
+              <div className="flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : notes.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No notes yet. Click "Add Note" to get started.
+              </div>
             ) : (
               <div className="space-y-3">
-                {notes && notes !== '<p></p>' ? (
-                  <div className="bg-muted/30 rounded-lg p-4 border">
-                    <FormattedNotes content={notes} />
+                {notes.map((note) => (
+                  <div key={note.id} className="border rounded-lg p-3 bg-muted/10">
+                    {/* Header with timestamp and author */}
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                        <span className="font-medium">
+                          {getAdminDisplayName(note.created_by, 'Unknown')}
+                        </span>
+                        <span>•</span>
+                        <span>{format(new Date(note.created_at), 'MMM d, yyyy h:mm a')}</span>
+                        {note.updated_at !== note.created_at && (
+                          <>
+                            <span>•</span>
+                            <span className="italic">edited</span>
+                          </>
+                        )}
+                      </div>
+                      {editingNoteId !== note.id && (
+                        <div className="flex gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs"
+                            onClick={() => { setEditingNoteId(note.id); setEditContent(note.content); setIsAddingNew(false); }}
+                          >
+                            <Pencil className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-7 px-2 text-xs text-destructive hover:text-destructive"
+                            onClick={() => handleDeleteNote(note.id)}
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Content */}
+                    {editingNoteId === note.id ? (
+                      <div className="space-y-2">
+                        <NotesEditor
+                          value={editContent}
+                          onChange={setEditContent}
+                          placeholder="Edit note..."
+                          minHeight="100px"
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setEditingNoteId(null)}
+                          >
+                            Cancel
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => handleUpdateNote(note.id)}
+                            disabled={saving}
+                            className="gap-1.5"
+                          >
+                            {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
+                            Save
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <FormattedNotes content={note.content} />
+                    )}
                   </div>
-                ) : (
-                  <div className="text-center py-8 text-muted-foreground">
-                    No interview notes yet
-                  </div>
-                )}
-                <div className="flex justify-end">
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => setIsEditing(true)}
-                    className="gap-1.5"
-                  >
-                    <Pencil className="w-3.5 h-3.5" />
-                    {notes && notes !== '<p></p>' ? 'Edit Notes' : 'Add Notes'}
-                  </Button>
-                </div>
+                ))}
               </div>
             )}
           </TabsContent>
