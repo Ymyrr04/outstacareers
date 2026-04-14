@@ -207,8 +207,8 @@ export const RecruitmentFunnel = () => {
       });
 
     if (searchTerm) {
-      const query = searchTerm.toLowerCase();
-      results = results.filter((role) => role.jobTitle.toLowerCase().includes(query));
+      const query = searchTerm.trim().toLowerCase();
+      results = results.filter((role) => role.jobTitle.trim().toLowerCase() === query);
     }
 
     results.sort((a, b) => {
