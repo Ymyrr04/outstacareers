@@ -200,7 +200,7 @@ export const RecruitmentFunnel = () => {
     });
 
     return results;
-  }, [applicants, historyData, searchTerm, sortBy, jobStatusFilter, activeJobTitles]);
+  }, [applicants, historyData, searchTerm, sortBy, jobStatusFilter, activeJobTitles, dateFrom, dateTo]);
 
   const stageTotals = useMemo(
     () =>
