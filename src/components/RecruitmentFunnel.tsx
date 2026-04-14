@@ -130,12 +130,28 @@ export const RecruitmentFunnel = () => {
       map[title][effectiveStatus] = (map[title][effectiveStatus] || 0) + 1;
     }
 
-    let results: RoleFunnelData[] = Object.entries(map)
-      .map(([jobTitle, stages]) => ({
-        jobTitle,
-        total: Object.values(stages).reduce((sum, count) => sum + count, 0),
-        stages,
-      }))
+    // Build historical map: role -> stage -> count
+    const histMap: Record<string, Record<string, number>> = {};
+    for (const h of historyData) {
+      if (!RECRUITMENT_STATUSES.has(h.to_status as (typeof FUNNEL_STAGES)[number])) continue;
+      if (!histMap[h.job_title]) histMap[h.job_title] = {};
+      histMap[h.job_title][h.to_status] = (histMap[h.job_title][h.to_status] || 0) + h.applicant_count;
+    }
+
+    // Merge all role names from both sources
+    const allRoles = new Set([...Object.keys(map), ...Object.keys(histMap)]);
+
+    let results: RoleFunnelData[] = Array.from(allRoles)
+      .map((jobTitle) => {
+        const stages = map[jobTitle] || {};
+        const historicalStages = histMap[jobTitle] || {};
+        return {
+          jobTitle,
+          total: Object.values(stages).reduce((sum, count) => sum + count, 0),
+          stages,
+          historicalStages,
+        };
+      })
       .filter((role) => {
         const stageKeys = Object.keys(role.stages);
         return !(stageKeys.length === 1 && stageKeys[0] === 'Hired');
@@ -149,7 +165,6 @@ export const RecruitmentFunnel = () => {
     results.sort((a, b) => {
       if (sortBy === 'name') return a.jobTitle.localeCompare(b.jobTitle);
       if (sortBy === 'total') return b.total - a.total;
-
       const aForReview = a.stages['For Review'] || 0;
       const bForReview = b.stages['For Review'] || 0;
       if (bForReview !== aForReview) return bForReview - aForReview;
@@ -157,12 +172,15 @@ export const RecruitmentFunnel = () => {
     });
 
     return results;
-  }, [applicants, searchTerm, sortBy]);
+  }, [applicants, historyData, searchTerm, sortBy]);
 
   const stageTotals = useMemo(
     () =>
-      FUNNEL_STAGES.reduce<Record<string, number>>((acc, stage) => {
-        acc[stage] = roleFunnels.reduce((sum, role) => sum + (role.stages[stage] || 0), 0);
+      FUNNEL_STAGES.reduce<Record<string, { current: number; historical: number }>>((acc, stage) => {
+        acc[stage] = {
+          current: roleFunnels.reduce((sum, role) => sum + (role.stages[stage] || 0), 0),
+          historical: roleFunnels.reduce((sum, role) => sum + (role.historicalStages[stage] || 0), 0),
+        };
         return acc;
       }, {}),
     [roleFunnels]
