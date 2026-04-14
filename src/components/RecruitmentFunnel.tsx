@@ -165,6 +165,11 @@ export const RecruitmentFunnel = () => {
       .filter((role) => {
         const stageKeys = Object.keys(role.stages);
         return !(stageKeys.length === 1 && stageKeys[0] === 'Hired');
+      })
+      .filter((role) => {
+        if (jobStatusFilter === 'all' || !activeJobTitles) return true;
+        const isActive = activeJobTitles.has(role.jobTitle);
+        return jobStatusFilter === 'active' ? isActive : !isActive;
       });
 
     if (searchTerm) {
