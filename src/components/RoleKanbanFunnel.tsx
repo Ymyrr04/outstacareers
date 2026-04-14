@@ -294,28 +294,25 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <div className="bg-card rounded-md p-2.5 shadow-sm border border-border/50 hover:shadow-md transition-shadow space-y-1.5 cursor-context-menu">
-            <div className="flex items-start gap-2">
-              <div className={cn('w-2 h-2 rounded-full mt-1.5 shrink-0', dotColor)} />
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold truncate leading-tight" title={candidate.full_name}>
-                  {candidate.full_name}
-                </p>
-              </div>
-              <Badge 
-                variant="outline" 
+            <div className="flex items-center gap-1.5">
+              <div className={cn('w-2 h-2 rounded-full shrink-0', dotColor)} />
+              <p className="text-xs font-semibold truncate flex-1 min-w-0" title={candidate.full_name}>
+                {candidate.full_name}
+              </p>
+              <span 
                 className={cn(
-                  "text-[10px] shrink-0 h-5 px-1.5 font-mono font-bold",
+                  "text-[10px] font-bold px-1.5 py-0.5 rounded shrink-0",
                   candidate.total_score != null && candidate.total_score >= 70
-                    ? "border-emerald-300 bg-emerald-50 text-emerald-700 dark:border-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-400"
+                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
                     : candidate.total_score != null && candidate.total_score >= 40
-                    ? "border-amber-300 bg-amber-50 text-amber-700 dark:border-amber-700 dark:bg-amber-950/30 dark:text-amber-400"
+                    ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
                     : candidate.total_score != null
-                    ? "border-red-300 bg-red-50 text-red-700 dark:border-red-700 dark:bg-red-950/30 dark:text-red-400"
-                    : ""
+                    ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400"
+                    : "bg-muted text-muted-foreground"
                 )}
               >
-                {candidate.total_score != null ? candidate.total_score : '—'}
-              </Badge>
+                {candidate.total_score ?? '–'}
+              </span>
             </div>
 
             <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
