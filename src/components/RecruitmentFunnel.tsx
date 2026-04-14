@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { format } from 'date-fns';
+
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
@@ -14,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Search, TrendingDown, Upload, CheckCircle, XCircle, ChevronDown } from 'lucide-react';
+import { Search, TrendingDown, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { RoleKanbanFunnel } from '@/components/RoleKanbanFunnel';
 
@@ -35,21 +35,15 @@ interface RoleFunnelData {
   jobTitle: string;
   total: number;
   stages: Record<string, number>;
+  historicalStages: Record<string, number>;
 }
 
-interface ImportLog {
-  id: string;
-  total_records: number;
-  success_count: number;
-  error_count: number;
-  source_filename: string | null;
-  notes: string | null;
-  created_at: string;
-}
+
+
 
 export const RecruitmentFunnel = () => {
   const [applicants, setApplicants] = useState<{ job_title: string; status: string; pre_archive_status: string | null }[]>([]);
-  const [importLogs, setImportLogs] = useState<ImportLog[]>([]);
+  const [historyData, setHistoryData] = useState<{ job_title: string; to_status: string; applicant_count: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'pipeline' | 'name' | 'total'>('pipeline');
@@ -59,30 +53,55 @@ export const RecruitmentFunnel = () => {
     const fetchAll = async () => {
       setLoading(true);
 
+      // Fetch current applicants
       let all: { job_title: string; status: string; pre_archive_status: string | null }[] = [];
       let from = 0;
       const batchSize = 1000;
-
       while (true) {
         const { data } = await supabase
           .from('applicants_prescreen')
           .select('job_title, status, pre_archive_status')
           .range(from, from + batchSize - 1);
-
         if (!data || data.length === 0) break;
         all = all.concat(data);
         if (data.length < batchSize) break;
         from += batchSize;
       }
-
       setApplicants(all);
 
-      const { data: logs } = await supabase
-        .from('contractor_import_logs')
-        .select('*')
-        .order('created_at', { ascending: false });
+      // Fetch historical pass-through counts (applicant_id + to_status joined with job_title)
+      let histAll: { applicant_id: string; to_status: string; job_title: string }[] = [];
+      from = 0;
+      while (true) {
+        const { data } = await supabase
+          .from('applicant_status_history')
+          .select('applicant_id, to_status, applicants_prescreen!inner(job_title)')
+          .range(from, from + batchSize - 1) as { data: any[] | null };
+        if (!data || data.length === 0) break;
+        histAll = histAll.concat(
+          data.map((d: any) => ({
+            applicant_id: d.applicant_id,
+            to_status: d.to_status,
+            job_title: d.applicants_prescreen?.job_title || 'Unknown',
+          }))
+        );
+        if (data.length < batchSize) break;
+        from += batchSize;
+      }
 
-      setImportLogs((logs as ImportLog[]) || []);
+      // Aggregate: count distinct applicants per job_title + to_status
+      const histMap: Record<string, Set<string>> = {};
+      for (const h of histAll) {
+        const key = `${h.job_title}|||${h.to_status}`;
+        if (!histMap[key]) histMap[key] = new Set();
+        histMap[key].add(h.applicant_id);
+      }
+      const histAgg = Object.entries(histMap).map(([key, ids]) => {
+        const [job_title, to_status] = key.split('|||');
+        return { job_title, to_status, applicant_count: ids.size };
+      });
+      setHistoryData(histAgg);
+
       setLoading(false);
     };
 
@@ -104,12 +123,28 @@ export const RecruitmentFunnel = () => {
       map[title][effectiveStatus] = (map[title][effectiveStatus] || 0) + 1;
     }
 
-    let results: RoleFunnelData[] = Object.entries(map)
-      .map(([jobTitle, stages]) => ({
-        jobTitle,
-        total: Object.values(stages).reduce((sum, count) => sum + count, 0),
-        stages,
-      }))
+    // Build historical map: role -> stage -> count
+    const histMap: Record<string, Record<string, number>> = {};
+    for (const h of historyData) {
+      if (!RECRUITMENT_STATUSES.has(h.to_status as (typeof FUNNEL_STAGES)[number])) continue;
+      if (!histMap[h.job_title]) histMap[h.job_title] = {};
+      histMap[h.job_title][h.to_status] = (histMap[h.job_title][h.to_status] || 0) + h.applicant_count;
+    }
+
+    // Merge all role names from both sources
+    const allRoles = new Set([...Object.keys(map), ...Object.keys(histMap)]);
+
+    let results: RoleFunnelData[] = Array.from(allRoles)
+      .map((jobTitle) => {
+        const stages = map[jobTitle] || {};
+        const historicalStages = histMap[jobTitle] || {};
+        return {
+          jobTitle,
+          total: Object.values(stages).reduce((sum, count) => sum + count, 0),
+          stages,
+          historicalStages,
+        };
+      })
       .filter((role) => {
         const stageKeys = Object.keys(role.stages);
         return !(stageKeys.length === 1 && stageKeys[0] === 'Hired');
@@ -123,7 +158,6 @@ export const RecruitmentFunnel = () => {
     results.sort((a, b) => {
       if (sortBy === 'name') return a.jobTitle.localeCompare(b.jobTitle);
       if (sortBy === 'total') return b.total - a.total;
-
       const aForReview = a.stages['For Review'] || 0;
       const bForReview = b.stages['For Review'] || 0;
       if (bForReview !== aForReview) return bForReview - aForReview;
@@ -131,12 +165,15 @@ export const RecruitmentFunnel = () => {
     });
 
     return results;
-  }, [applicants, searchTerm, sortBy]);
+  }, [applicants, historyData, searchTerm, sortBy]);
 
   const stageTotals = useMemo(
     () =>
-      FUNNEL_STAGES.reduce<Record<string, number>>((acc, stage) => {
-        acc[stage] = roleFunnels.reduce((sum, role) => sum + (role.stages[stage] || 0), 0);
+      FUNNEL_STAGES.reduce<Record<string, { current: number; historical: number }>>((acc, stage) => {
+        acc[stage] = {
+          current: roleFunnels.reduce((sum, role) => sum + (role.stages[stage] || 0), 0),
+          historical: roleFunnels.reduce((sum, role) => sum + (role.historicalStages[stage] || 0), 0),
+        };
         return acc;
       }, {}),
     [roleFunnels]
@@ -202,16 +239,26 @@ export const RecruitmentFunnel = () => {
                     <TableHead className="sticky left-0 z-20 min-w-[260px] bg-muted/40">
                       Role
                     </TableHead>
-                    {FUNNEL_STAGES.map((stage) => (
-                      <TableHead key={stage} className="min-w-[120px] text-center">
-                        <div className="flex flex-col items-center gap-1 py-1">
-                          <span className="text-xs font-semibold text-foreground">{stage}</span>
-                          <Badge variant="secondary" className="text-[10px]">
-                            {stageTotals[stage] || 0}
-                          </Badge>
-                        </div>
-                      </TableHead>
-                    ))}
+                    {FUNNEL_STAGES.map((stage) => {
+                      const totals = stageTotals[stage] || { current: 0, historical: 0 };
+                      return (
+                        <TableHead key={stage} className="min-w-[120px] text-center">
+                          <div className="flex flex-col items-center gap-1 py-1">
+                            <span className="text-xs font-semibold text-foreground">{stage}</span>
+                            <div className="flex items-center gap-1">
+                              <Badge variant="secondary" className="text-[10px]">
+                                {totals.current}
+                              </Badge>
+                              {totals.historical > 0 && (
+                                <Badge variant="outline" className="text-[9px] text-muted-foreground" title="Historical pass-through">
+                                  ↗{totals.historical}
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </TableHead>
+                      );
+                    })}
                     <TableHead className="min-w-[96px] text-center">Total</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -226,20 +273,27 @@ export const RecruitmentFunnel = () => {
                       </TableCell>
 
                       {FUNNEL_STAGES.map((stage) => {
-                        const count = role.stages[stage] || 0;
-                        const hasApplicants = count > 0;
+                        const currentCount = role.stages[stage] || 0;
+                        const historicalCount = role.historicalStages[stage] || 0;
 
                         return (
                           <TableCell key={stage} className="text-center">
-                            <div
-                              className={cn(
-                                'mx-auto flex h-10 w-16 items-center justify-center rounded-md border text-sm font-semibold transition-colors',
-                                hasApplicants
-                                  ? 'border-border bg-accent/10 text-foreground'
-                                  : 'border-border/60 bg-muted/40 text-muted-foreground'
+                            <div className="mx-auto flex flex-col items-center gap-0.5">
+                              <div
+                                className={cn(
+                                  'flex h-8 w-14 items-center justify-center rounded-md border text-sm font-semibold',
+                                  currentCount > 0
+                                    ? 'border-border bg-accent/10 text-foreground'
+                                    : 'border-border/60 bg-muted/40 text-muted-foreground'
+                                )}
+                              >
+                                {currentCount}
+                              </div>
+                              {historicalCount > 0 && (
+                                <span className="text-[9px] text-muted-foreground" title="Passed through this stage historically">
+                                  ↗{historicalCount}
+                                </span>
                               )}
-                            >
-                              {count}
                             </div>
                           </TableCell>
                         );
@@ -273,57 +327,3 @@ export const RecruitmentFunnel = () => {
   );
 };
 
-const ImportHistory = ({ importLogs }: { importLogs: ImportLog[] }) => (
-  <div className="mt-8 space-y-3">
-    <div className="flex items-center gap-2">
-      <Upload className="w-5 h-5 text-primary" />
-      <h2 className="text-lg font-semibold">Contractor Import History</h2>
-      <Badge variant="secondary">{importLogs.length} imports</Badge>
-    </div>
-
-    {importLogs.length === 0 ? (
-      <p className="py-6 text-center text-sm text-muted-foreground">No import batches recorded yet.</p>
-    ) : (
-      <div className="space-y-2">
-        {importLogs.map((log) => (
-          <Card key={log.id}>
-            <CardContent className="p-3">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="text-sm font-medium">
-                    {format(new Date(log.created_at), 'MMM d, yyyy h:mm a')}
-                  </div>
-                  {log.source_filename && (
-                    <span className="text-xs text-muted-foreground">{log.source_filename}</span>
-                  )}
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1">
-                    <CheckCircle className="w-3.5 h-3.5 text-primary" />
-                    <span className="text-sm font-medium">{log.success_count}</span>
-                  </div>
-
-                  {log.error_count > 0 && (
-                    <div className="flex items-center gap-1">
-                      <XCircle className="w-3.5 h-3.5 text-destructive" />
-                      <span className="text-sm font-medium">{log.error_count}</span>
-                    </div>
-                  )}
-
-                  <Badge variant="outline" className="text-[10px]">
-                    {log.total_records} total
-                  </Badge>
-                </div>
-              </div>
-
-              {log.notes && (
-                <p className="mt-1 text-xs text-muted-foreground">{log.notes}</p>
-              )}
-            </CardContent>
-          </Card>
-        ))}
-      </div>
-    )}
-  </div>
-);
