@@ -1,9 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Users, MapPin, Mail } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { Button } from '@/components/ui/button';
+import { Users, MapPin, Mail, ChevronsUpDown, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const FUNNEL_STAGES = [
@@ -45,6 +47,7 @@ interface RoleKanbanFunnelProps {
 
 export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
   const [selectedRole, setSelectedRole] = useState<string>(roles[0] || '');
+  const [comboOpen, setComboOpen] = useState(false);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -101,18 +104,37 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
           )}
         </div>
 
-        <Select value={selectedRole} onValueChange={setSelectedRole}>
-          <SelectTrigger className="h-9 w-[320px] text-sm">
-            <SelectValue placeholder="Select a role..." />
-          </SelectTrigger>
-          <SelectContent className="max-h-[300px]">
-            {roles.map((role) => (
-              <SelectItem key={role} value={role}>
-                {role}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <Popover open={comboOpen} onOpenChange={setComboOpen}>
+          <PopoverTrigger asChild>
+            <Button variant="outline" role="combobox" aria-expanded={comboOpen} className="h-9 w-[320px] justify-between text-sm font-normal">
+              {selectedRole || 'Select a role...'}
+              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent className="w-[320px] p-0">
+            <Command>
+              <CommandInput placeholder="Search roles..." />
+              <CommandList>
+                <CommandEmpty>No role found.</CommandEmpty>
+                <CommandGroup>
+                  {roles.map((role) => (
+                    <CommandItem
+                      key={role}
+                      value={role}
+                      onSelect={() => {
+                        setSelectedRole(role);
+                        setComboOpen(false);
+                      }}
+                    >
+                      <Check className={cn('mr-2 h-4 w-4', selectedRole === role ? 'opacity-100' : 'opacity-0')} />
+                      {role}
+                    </CommandItem>
+                  ))}
+                </CommandGroup>
+              </CommandList>
+            </Command>
+          </PopoverContent>
+        </Popover>
       </div>
 
       {loading ? (
