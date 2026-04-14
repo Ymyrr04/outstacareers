@@ -119,6 +119,7 @@ const handler = async (req: Request): Promise<Response> => {
       cc,
       bcc,
       inReplyTo,
+      sendAsEmail,
     }: SendEmailRequest = await req.json();
 
     // Extract admin name and email from JWT for personalized sign-off and sender selection
