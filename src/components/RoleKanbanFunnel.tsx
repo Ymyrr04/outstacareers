@@ -27,6 +27,7 @@ import { CVImagePreview } from '@/components/CVImagePreview';
 import { CopyableText } from '@/components/CopyableText';
 import { InterviewNotesDialog } from '@/components/InterviewNotesDialog';
 import { CandidateProfileDialog } from '@/components/CandidateProfileDialog';
+import { HiredAssignmentDialog } from '@/components/HiredAssignmentDialog';
 
 const FUNNEL_STAGES = [
   'For Review',
@@ -86,6 +87,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   const [draggedCandidate, setDraggedCandidate] = useState<Candidate | null>(null);
   const [dropTargetStage, setDropTargetStage] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState<'score-desc' | 'score-asc' | 'name-asc' | 'name-desc' | 'newest' | 'oldest'>('score-desc');
+  const [hiredCandidate, setHiredCandidate] = useState<Candidate | null>(null);
+  const [showHiredDialog, setShowHiredDialog] = useState(false);
 
   // Fetch active job titles independently
   useEffect(() => {
@@ -187,6 +190,13 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   }, []);
 
   const handleMoveToStage = useCallback(async (candidate: Candidate, newStage: string) => {
+    // Intercept "Hired" to show assignment dialog
+    if (newStage === 'Hired') {
+      setHiredCandidate(candidate);
+      setShowHiredDialog(true);
+      return;
+    }
+
     const { error } = await supabase
       .from('applicants_prescreen')
       .update({ status: newStage })
@@ -206,6 +216,14 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
     toast.success(`Moved ${candidate.full_name} to ${newStage}`);
     fetchCandidates(selectedRole);
   }, [selectedRole, fetchCandidates]);
+
+  const handleHiredComplete = useCallback(async () => {
+    if (hiredCandidate) {
+      fetchCandidates(selectedRole);
+    }
+    setShowHiredDialog(false);
+    setHiredCandidate(null);
+  }, [hiredCandidate, selectedRole, fetchCandidates]);
 
   const handleToggleStar = useCallback(async (candidate: Candidate) => {
     const newVal = !candidate.is_starred;
@@ -547,6 +565,24 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
           </div>
           <ScrollBar orientation="horizontal" />
         </ScrollArea>
+      )}
+
+      {hiredCandidate && (
+        <HiredAssignmentDialog
+          open={showHiredDialog}
+          onOpenChange={(open) => {
+            if (!open) handleHiredComplete();
+          }}
+          applicant={hiredCandidate ? {
+            id: hiredCandidate.id,
+            full_name: hiredCandidate.full_name,
+            email: hiredCandidate.email,
+            phone: hiredCandidate.phone || null,
+            location: hiredCandidate.location,
+            job_title: hiredCandidate.job_title,
+          } : null}
+          onComplete={handleHiredComplete}
+        />
       )}
     </div>
   );
