@@ -221,6 +221,25 @@ export const CVImagePreview = ({ pdfUrl, fileName }: CVImagePreviewProps) => {
           <Button variant="outline" size="sm" onClick={handleZoomIn} disabled={scale >= 3}>
             <ZoomIn className="w-4 h-4" />
           </Button>
+          {signedUrl && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                const a = document.createElement('a');
+                a.href = signedUrl;
+                a.download = `${fileName}.pdf`;
+                a.target = '_blank';
+                a.rel = 'noopener noreferrer';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+              }}
+            >
+              <Download className="w-4 h-4 mr-1" />
+              Download
+            </Button>
+          )}
         </div>
       </div>
 
