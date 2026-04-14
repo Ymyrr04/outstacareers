@@ -474,7 +474,7 @@ export const RecruitmentFunnel = () => {
 
                 <TableBody>
                   {roleFunnels.map((role) => (
-                    <TableRow key={role.jobTitle} className="cursor-pointer hover:bg-muted/60" onClick={() => { setSearchTerm(role.jobTitle); setSearchSelected(true); }}>
+                    <TableRow key={role.jobTitle} className="cursor-pointer hover:bg-muted/60" onClick={() => { setSearchTerm(role.jobTitle); }}>
                       <TableCell className="sticky left-0 z-10 bg-background font-medium group-hover:bg-muted/60">
                         <div className="max-w-[240px] truncate text-primary hover:underline" title={role.jobTitle}>
                           {role.jobTitle}
