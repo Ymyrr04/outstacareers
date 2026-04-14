@@ -2,9 +2,10 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Pencil, Save, Loader2, UserCircle, X } from 'lucide-react';
+import { Pencil, Save, Loader2, UserCircle, X, Copy } from 'lucide-react';
 import { NotesEditor } from '@/components/NotesEditor';
 import { FormattedNotes } from '@/components/FormattedNotes';
+import { toast as sonnerToast } from 'sonner';
 
 interface CandidateProfileSectionProps {
   applicantId: string;
@@ -93,15 +94,33 @@ export function CandidateProfileSection({
             </Button>
           </div>
         ) : (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleStartEdit}
-            className="text-blue-700 hover:text-blue-800 hover:bg-blue-100"
-          >
-            <Pencil className="w-4 h-4 mr-1" />
-            {candidateProfile ? 'Edit' : 'Add Profile'}
-          </Button>
+          <div className="flex gap-1">
+            {candidateProfile && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  const tmp = document.createElement('div');
+                  tmp.innerHTML = candidateProfile;
+                  navigator.clipboard.writeText(tmp.innerText || tmp.textContent || '');
+                  sonnerToast.success('Profile copied');
+                }}
+                className="text-muted-foreground"
+              >
+                <Copy className="w-4 h-4 mr-1" />
+                Copy
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleStartEdit}
+              className="text-blue-700 hover:text-blue-800 hover:bg-blue-100"
+            >
+              <Pencil className="w-4 h-4 mr-1" />
+              {candidateProfile ? 'Edit' : 'Add Profile'}
+            </Button>
+          </div>
         )}
       </div>
 
