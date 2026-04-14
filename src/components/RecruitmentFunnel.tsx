@@ -391,8 +391,9 @@ export const RecruitmentFunnel = () => {
                             'w-full text-left px-3 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors',
                             searchTerm === role && 'bg-accent/50 font-medium'
                           )}
+                          onMouseDown={(e) => e.preventDefault()}
                           onClick={() => {
-                            setSearchTerm(role);
+                            setSearchTerm(prev => prev === role ? '' : role);
                             setSearchDropdownOpen(false);
                             setRoleSearchQuery('');
                           }}
@@ -474,7 +475,7 @@ export const RecruitmentFunnel = () => {
 
                 <TableBody>
                   {roleFunnels.map((role) => (
-                    <TableRow key={role.jobTitle} className="cursor-pointer hover:bg-muted/60" onClick={() => { setSearchTerm(role.jobTitle); }}>
+                    <TableRow key={role.jobTitle} className="cursor-pointer hover:bg-muted/60" onClick={() => { setSearchTerm(prev => prev === role.jobTitle ? '' : role.jobTitle); }}>
                       <TableCell className="sticky left-0 z-10 bg-background font-medium group-hover:bg-muted/60">
                         <div className="max-w-[240px] truncate text-primary hover:underline" title={role.jobTitle}>
                           {role.jobTitle}
