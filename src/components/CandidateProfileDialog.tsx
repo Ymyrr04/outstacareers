@@ -133,13 +133,7 @@ export function CandidateProfileDialog({ open, onOpenChange, applicantId, applic
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center justify-between gap-2">
-            <DialogTitle>Candidate Profile — {applicantName}</DialogTitle>
-            <Button variant="outline" size="sm" onClick={handleCopyProfile} className="gap-1.5 shrink-0">
-              <Copy className="w-3.5 h-3.5" />
-              Copy All
-            </Button>
-          </div>
+          <DialogTitle>Candidate Profile — {applicantName}</DialogTitle>
         </DialogHeader>
 
         {loading ? (
@@ -164,6 +158,14 @@ export function CandidateProfileDialog({ open, onOpenChange, applicantId, applic
                   </h4>
                   {editingId !== profile.id && (
                     <div className="flex gap-1">
+                      <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => {
+                        const tmp = document.createElement('div');
+                        tmp.innerHTML = profile.content;
+                        navigator.clipboard.writeText(tmp.innerText || tmp.textContent || '');
+                        toast.success('Profile copied');
+                      }}>
+                        <Copy className="w-3.5 h-3.5" />
+                      </Button>
                       <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => {
                         setEditingId(profile.id);
                         setEditTitle(profile.title);
