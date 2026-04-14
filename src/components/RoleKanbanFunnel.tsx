@@ -412,7 +412,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
                 setDropdownOpen(true);
                 setRoleSearch('');
               }}
-              className="pl-8 h-9 w-[320px] text-sm pr-8"
+              className="pl-8 h-9 w-[320px] text-sm pr-8 border-blue-400 focus:border-blue-500 focus:ring-blue-500"
             />
             {selectedRole && !dropdownOpen && (
               <button
@@ -482,7 +482,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
                   }, 400);
                 }
               }}
-              className="pl-8 h-9 w-[260px] text-sm"
+              className="pl-8 h-9 w-[260px] text-sm border-blue-400 focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
         </div>
