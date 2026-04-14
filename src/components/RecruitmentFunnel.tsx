@@ -142,7 +142,7 @@ export const RecruitmentFunnel = () => {
     for (const applicant of applicants) {
       // Date range filter on submitted_at
       if (effectiveFrom && applicant.submitted_at < effectiveFrom) continue;
-      if (effectiveTo && applicant.submitted_at < effectiveTo + 'T23:59:59' === false && applicant.submitted_at > effectiveTo + 'T23:59:59.999Z') continue;
+      if (effectiveTo && applicant.submitted_at > effectiveTo + 'T23:59:59.999Z') continue;
 
       const effectiveStatus = applicant.status === 'Archive' || applicant.status === 'Archived'
         ? (applicant.pre_archive_status || applicant.status)
