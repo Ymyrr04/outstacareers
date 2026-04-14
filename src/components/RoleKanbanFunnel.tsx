@@ -54,9 +54,10 @@ interface Candidate {
 
 interface RoleKanbanFunnelProps {
   roles: string[];
+  onNavigateToApplicant?: (applicantId: string, status: string) => void;
 }
 
-export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
+export const RoleKanbanFunnel = ({ roles, onNavigateToApplicant }: RoleKanbanFunnelProps) => {
   const [selectedRole, setSelectedRole] = useState<string>(roles[0] || '');
   const [roleSearch, setRoleSearch] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -259,6 +260,7 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
                             onMoveToStage={handleMoveToStage}
                             onToggleStar={handleToggleStar}
                             onCopyEmail={handleCopyEmail}
+                            onNavigateToApplicant={onNavigateToApplicant}
                           />
                         ))
                       )}
@@ -282,9 +284,10 @@ interface CandidateCardProps {
   onMoveToStage: (candidate: Candidate, stage: string) => void;
   onToggleStar: (candidate: Candidate) => void;
   onCopyEmail: (email: string) => void;
+  onNavigateToApplicant?: (applicantId: string, status: string) => void;
 }
 
-const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail }: CandidateCardProps) => {
+const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onNavigateToApplicant }: CandidateCardProps) => {
   const [showInterview, setShowInterview] = useState(false);
 
   return (
@@ -336,9 +339,14 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
 
           <ContextMenuSeparator />
 
+          <ContextMenuItem onClick={() => onNavigateToApplicant?.(candidate.id, candidate.status)}>
+            <Eye className="w-4 h-4 mr-2" />
+            View details
+          </ContextMenuItem>
+
           <ContextMenuItem onClick={() => setShowInterview(true)}>
             <ClipboardList className="w-4 h-4 mr-2" />
-            View details
+            Interview results
           </ContextMenuItem>
 
           <ContextMenuItem onClick={() => onCopyEmail(candidate.email)}>
