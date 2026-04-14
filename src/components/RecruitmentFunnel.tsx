@@ -132,7 +132,22 @@ export const RecruitmentFunnel = () => {
     fetchJobs();
   }, []);
 
-  const roleFunnels = useMemo(() => {
+  // Close search dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchDropdownRef.current && !searchDropdownRef.current.contains(event.target as Node)) {
+        setSearchDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const allRoleNames = useMemo(() =>
+    Array.from(new Set(applicants.map(a => a.job_title?.trim()).filter(Boolean))).sort(),
+    [applicants]
+  );
+
     // Resolve date range (auto-swap if reversed)
     let effectiveFrom = dateFrom;
     let effectiveTo = dateTo;
