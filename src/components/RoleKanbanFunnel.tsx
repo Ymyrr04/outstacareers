@@ -19,6 +19,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigge
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
+import { ApplicationHistoryBadge } from '@/components/ApplicationHistoryBadge';
 import { CandidateDetailDialog } from '@/components/CandidateDetailDialog';
 import { SendEmailDialog } from '@/components/SendEmailDialog';
 import { CommunicationHistory } from '@/components/CommunicationHistory';
@@ -706,6 +707,7 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
                     IV: {candidate.interview_overall_score}
                   </span>
                 )}
+                <ApplicationHistoryBadge email={candidate.email} currentId={candidate.id} phone={candidate.phone} />
               </div>
             </div>
 
