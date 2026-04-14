@@ -311,8 +311,8 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   const startTime = Date.now();
-  const MAX_RUNTIME_MS = 45000; // 45 seconds max to leave buffer for cleanup
-  const BATCH_SIZE = 100; // Process 100 emails per run
+  const MAX_RUNTIME_MS = 25000; // 25 seconds max to stay well within limits
+  const BATCH_SIZE = 30; // Process 30 emails per run to stay within memory limits
   const MAX_RETRIES = 3; // Max reconnection attempts
 
   try {
