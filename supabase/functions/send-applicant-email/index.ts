@@ -77,6 +77,12 @@ interface SendEmailRequest {
   sendAsEmail?: string; // Override sender to a specific admin's credentials
 }
 
+function normalizeSmtpSecret(value: string | undefined | null): string | null {
+  if (!value) return null;
+  const normalized = value.replace(/\s+/g, '');
+  return normalized.length > 0 ? normalized : null;
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -84,7 +90,7 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const defaultGmailUser = Deno.env.get("GMAIL_USER");
-    const defaultGmailPassword = Deno.env.get("GMAIL_APP_PASSWORD");
+    const defaultGmailPassword = normalizeSmtpSecret(Deno.env.get("GMAIL_APP_PASSWORD"));
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
@@ -107,6 +113,8 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    const requestBody: SendEmailRequest = await req.json();
+
     const {
       applicantId,
       templateId,
@@ -121,7 +129,7 @@ const handler = async (req: Request): Promise<Response> => {
       bcc,
       inReplyTo,
       sendAsEmail,
-    }: SendEmailRequest = await req.json();
+    } = requestBody;
 
     // Extract admin name and email from JWT for personalized sign-off and sender selection
     const adminName = getAdminNameFromJwt(req.headers.get('authorization'));
@@ -139,7 +147,7 @@ const handler = async (req: Request): Promise<Response> => {
       const creds = ADMIN_GMAIL_CREDENTIALS[effectiveAdminEmail];
       if (creds) {
         const specificUser = Deno.env.get(creds.userEnv);
-        const specificPass = Deno.env.get(creds.passEnv);
+        const specificPass = normalizeSmtpSecret(Deno.env.get(creds.passEnv));
         if (specificUser && specificPass) {
           gmailUser = specificUser;
           gmailPassword = specificPass;
@@ -305,18 +313,17 @@ const handler = async (req: Request): Promise<Response> => {
       const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
       if (supabaseUrl && supabaseServiceKey) {
         const supabase = createClient(supabaseUrl, supabaseServiceKey);
-        const reqBody = await req.clone().json();
         await supabase
           .from('email_logs')
           .insert({
-            applicant_id: reqBody.applicantId,
-            template_id: reqBody.templateId || null,
-            subject: reqBody.subject,
-            body_html: reqBody.bodyHtml,
-            recipient_email: reqBody.recipientEmail,
+            applicant_id: requestBody.applicantId,
+            template_id: requestBody.templateId || null,
+            subject: requestBody.subject,
+            body_html: requestBody.bodyHtml,
+            recipient_email: requestBody.recipientEmail,
             status: 'failed',
-            applicant_status_at_send: reqBody.applicantStatusAtSend || null,
-            is_automated: reqBody.isAutomated,
+            applicant_status_at_send: requestBody.applicantStatusAtSend || null,
+            is_automated: requestBody.isAutomated,
             error_message: error.message,
           });
       }
