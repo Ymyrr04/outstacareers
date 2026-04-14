@@ -5,6 +5,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import {
   Table,
   TableBody,
@@ -13,7 +14,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { Search, TrendingDown, Upload, CheckCircle, XCircle } from 'lucide-react';
+import { Search, TrendingDown, Upload, CheckCircle, XCircle, ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const FUNNEL_STAGES = [
@@ -51,6 +52,7 @@ export const RecruitmentFunnel = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'pipeline' | 'name' | 'total'>('pipeline');
+  const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
     const fetchAll = async () => {
@@ -151,110 +153,116 @@ export const RecruitmentFunnel = () => {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between gap-3 flex-wrap">
-        <div className="flex items-center gap-2 flex-wrap">
-          <TrendingDown className="w-5 h-5 text-primary" />
-          <h2 className="text-lg font-semibold">Recruitment Funnel</h2>
-          <Badge variant="secondary">{grandTotal} total applicants</Badge>
-          <Badge variant="outline">{roleFunnels.length} roles</Badge>
-        </div>
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <CollapsibleTrigger asChild>
+          <button className="flex items-center justify-between gap-3 w-full flex-wrap cursor-pointer group">
+            <div className="flex items-center gap-2 flex-wrap">
+              <TrendingDown className="w-5 h-5 text-primary" />
+              <h2 className="text-lg font-semibold">Recruitment Funnel</h2>
+              <Badge variant="secondary">{grandTotal} total applicants</Badge>
+              <Badge variant="outline">{roleFunnels.length} roles</Badge>
+            </div>
+            <ChevronDown className={cn(
+              'w-5 h-5 text-muted-foreground transition-transform duration-200',
+              isOpen && 'rotate-180'
+            )} />
+          </button>
+        </CollapsibleTrigger>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search roles..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-8 h-8 w-52 text-sm"
-            />
+        <CollapsibleContent className="mt-4 space-y-3">
+          <div className="flex items-center gap-2 flex-wrap justify-end">
+            <div className="relative">
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search roles..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-8 h-8 w-52 text-sm"
+              />
+            </div>
+
+            <Select value={sortBy} onValueChange={(value) => setSortBy(value as 'pipeline' | 'name' | 'total')}>
+              <SelectTrigger className="h-8 w-[150px] text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="pipeline">For Review first</SelectItem>
+                <SelectItem value="total">Highest total</SelectItem>
+                <SelectItem value="name">A-Z</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
-          <Select value={sortBy} onValueChange={(value) => setSortBy(value as 'pipeline' | 'name' | 'total')}>
-            <SelectTrigger className="h-8 w-[150px] text-sm">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="pipeline">For Review first</SelectItem>
-              <SelectItem value="total">Highest total</SelectItem>
-              <SelectItem value="name">A-Z</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+          <Card>
+            <CardContent className="p-0">
+              <Table className="min-w-[1180px]">
+                <TableHeader>
+                  <TableRow className="bg-muted/40 hover:bg-muted/40">
+                    <TableHead className="sticky left-0 z-20 min-w-[260px] bg-muted/40">
+                      Role
+                    </TableHead>
+                    {FUNNEL_STAGES.map((stage) => (
+                      <TableHead key={stage} className="min-w-[120px] text-center">
+                        <div className="flex flex-col items-center gap-1 py-1">
+                          <span className="text-xs font-semibold text-foreground">{stage}</span>
+                          <Badge variant="secondary" className="text-[10px]">
+                            {stageTotals[stage] || 0}
+                          </Badge>
+                        </div>
+                      </TableHead>
+                    ))}
+                    <TableHead className="min-w-[96px] text-center">Total</TableHead>
+                  </TableRow>
+                </TableHeader>
 
-      <Card>
-        <CardContent className="p-0">
-          <Table className="min-w-[1180px]">
-            <TableHeader>
-              <TableRow className="bg-muted/40 hover:bg-muted/40">
-                <TableHead className="sticky left-0 z-20 min-w-[260px] bg-muted/40">
-                  Role
-                </TableHead>
-                {FUNNEL_STAGES.map((stage) => (
-                  <TableHead key={stage} className="min-w-[120px] text-center">
-                    <div className="flex flex-col items-center gap-1 py-1">
-                      <span className="text-xs font-semibold text-foreground">{stage}</span>
-                      <Badge variant="secondary" className="text-[10px]">
-                        {stageTotals[stage] || 0}
-                      </Badge>
-                    </div>
-                  </TableHead>
-                ))}
-                <TableHead className="min-w-[96px] text-center">Total</TableHead>
-              </TableRow>
-            </TableHeader>
-
-            <TableBody>
-              {roleFunnels.map((role) => (
-                <TableRow key={role.jobTitle}>
-                  <TableCell className="sticky left-0 z-10 bg-background font-medium">
-                    <div className="max-w-[240px] truncate" title={role.jobTitle}>
-                      {role.jobTitle}
-                    </div>
-                  </TableCell>
-
-                  {FUNNEL_STAGES.map((stage) => {
-                    const count = role.stages[stage] || 0;
-                    const hasApplicants = count > 0;
-
-                    return (
-                      <TableCell key={stage} className="text-center">
-                        <div
-                          className={cn(
-                            'mx-auto flex h-10 w-16 items-center justify-center rounded-md border text-sm font-semibold transition-colors',
-                            hasApplicants
-                              ? 'border-border bg-accent/10 text-foreground'
-                              : 'border-border/60 bg-muted/40 text-muted-foreground'
-                          )}
-                        >
-                          {count}
+                <TableBody>
+                  {roleFunnels.map((role) => (
+                    <TableRow key={role.jobTitle}>
+                      <TableCell className="sticky left-0 z-10 bg-background font-medium">
+                        <div className="max-w-[240px] truncate" title={role.jobTitle}>
+                          {role.jobTitle}
                         </div>
                       </TableCell>
-                    );
-                  })}
 
-                  <TableCell className="text-center">
-                    <Badge variant="secondary">{role.total}</Badge>
-                  </TableCell>
-                </TableRow>
-              ))}
+                      {FUNNEL_STAGES.map((stage) => {
+                        const count = role.stages[stage] || 0;
+                        const hasApplicants = count > 0;
 
-              {roleFunnels.length === 0 && (
-                <TableRow>
-                  <TableCell colSpan={FUNNEL_STAGES.length + 2} className="py-8 text-center text-sm text-muted-foreground">
-                    No roles found.
-                  </TableCell>
-                </TableRow>
-              )}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                        return (
+                          <TableCell key={stage} className="text-center">
+                            <div
+                              className={cn(
+                                'mx-auto flex h-10 w-16 items-center justify-center rounded-md border text-sm font-semibold transition-colors',
+                                hasApplicants
+                                  ? 'border-border bg-accent/10 text-foreground'
+                                  : 'border-border/60 bg-muted/40 text-muted-foreground'
+                              )}
+                            >
+                              {count}
+                            </div>
+                          </TableCell>
+                        );
+                      })}
 
-      <p className="text-xs text-muted-foreground">
-        Each row is one role, so you can scan across the stages and compare how applicants moved through the pipeline.
-      </p>
+                      <TableCell className="text-center">
+                        <Badge variant="secondary">{role.total}</Badge>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+
+                  {roleFunnels.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={FUNNEL_STAGES.length + 2} className="py-8 text-center text-sm text-muted-foreground">
+                        No roles found.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </CollapsibleContent>
+      </Collapsible>
 
       <ImportHistory importLogs={importLogs} />
     </div>
