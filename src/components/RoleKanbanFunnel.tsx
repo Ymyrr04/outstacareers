@@ -377,6 +377,35 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
               className="pl-8 h-9 w-[260px] text-sm"
             />
           </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="h-9 px-2.5 rounded-md border border-border bg-background hover:bg-accent transition-colors flex items-center gap-1.5 text-sm text-muted-foreground">
+                <ArrowUpDown className="w-4 h-4" />
+                <span className="hidden sm:inline">Sort</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => setSortOption('score-desc')} className={cn(sortOption === 'score-desc' && 'bg-accent')}>
+                <ArrowDown01 className="mr-2 h-4 w-4" /> Score: High → Low
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOption('score-asc')} className={cn(sortOption === 'score-asc' && 'bg-accent')}>
+                <ArrowUp01 className="mr-2 h-4 w-4" /> Score: Low → High
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOption('name-asc')} className={cn(sortOption === 'name-asc' && 'bg-accent')}>
+                <ArrowDownAZ className="mr-2 h-4 w-4" /> Name: A → Z
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOption('name-desc')} className={cn(sortOption === 'name-desc' && 'bg-accent')}>
+                <ArrowUpAZ className="mr-2 h-4 w-4" /> Name: Z → A
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOption('newest')} className={cn(sortOption === 'newest' && 'bg-accent')}>
+                <Clock className="mr-2 h-4 w-4" /> Newest First
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOption('oldest')} className={cn(sortOption === 'oldest' && 'bg-accent')}>
+                <Clock className="mr-2 h-4 w-4" /> Oldest First
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
