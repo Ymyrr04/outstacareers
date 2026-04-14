@@ -310,6 +310,7 @@ export const RecruitmentFunnel = () => {
                     <TableHead className="sticky left-0 z-20 min-w-[260px] bg-muted/40">
                       Role
                     </TableHead>
+                    <TableHead className="min-w-[72px] text-center sticky left-[260px] z-20 bg-muted/40">Total</TableHead>
                     {FUNNEL_STAGES.map((stage) => {
                       const totals = stageTotals[stage] || { current: 0, historical: 0 };
                       const rate = conversionRates[stage];
@@ -341,7 +342,6 @@ export const RecruitmentFunnel = () => {
                         </TableHead>
                       );
                     })}
-                    <TableHead className="min-w-[96px] text-center">Total</TableHead>
                   </TableRow>
                 </TableHeader>
 
