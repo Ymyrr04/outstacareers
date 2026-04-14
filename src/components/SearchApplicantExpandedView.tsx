@@ -1,14 +1,17 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Star, Check, X, RefreshCw, Loader2, Download, Mic, Phone, Mail, MessageCircle, User, Zap, Briefcase, CheckCircle, AlertTriangle, ClipboardList, FileText } from 'lucide-react';
+import { Star, Check, X, RefreshCw, Loader2, Download, Mic, Phone, Mail, MessageCircle, User, Zap, Briefcase, CheckCircle, AlertTriangle, ClipboardList, FileText, Pencil, Save } from 'lucide-react';
+import { Input } from '@/components/ui/input';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
 import { CandidateProfileSection } from '@/components/CandidateProfileSection';
 import { RoleHistorySection } from '@/components/RoleHistorySection';
 import { ApplicationHistorySection } from '@/components/ApplicationHistorySection';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { CVImagePreview } from '@/components/CVImagePreview';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import type { PaginatedApplicant } from '@/hooks/usePaginatedApplicants';
 
 interface SearchApplicantExpandedViewProps {
@@ -17,6 +20,7 @@ interface SearchApplicantExpandedViewProps {
   onDownloadCv: (id: string, path: string, name: string) => void;
   rescoring: string | null;
   downloadingCv: string | null;
+  onApplicantUpdated?: () => void;
 }
 
 const BooleanBadge = ({ value, label }: { value: boolean; label: string }) => (
@@ -32,9 +36,41 @@ export const SearchApplicantExpandedView = ({
   onDownloadCv,
   rescoring,
   downloadingCv,
+  onApplicantUpdated,
 }: SearchApplicantExpandedViewProps) => {
   const [activeTab, setActiveTab] = useState<'cv' | 'interview'>('cv');
   const [showCvPreview, setShowCvPreview] = useState(false);
+  const [editingContact, setEditingContact] = useState(false);
+  const [savingContact, setSavingContact] = useState(false);
+  const [contactForm, setContactForm] = useState({
+    full_name: applicant.full_name,
+    email: applicant.email,
+    phone: applicant.phone || '',
+    whatsapp: applicant.whatsapp || '',
+  });
+
+  const handleSaveContact = useCallback(async () => {
+    setSavingContact(true);
+    try {
+      const { error } = await supabase
+        .from('applicants_prescreen')
+        .update({
+          full_name: contactForm.full_name,
+          email: contactForm.email,
+          phone: contactForm.phone || null,
+          whatsapp: contactForm.whatsapp || null,
+        })
+        .eq('id', applicant.id);
+      if (error) throw error;
+      toast.success('Contact information updated');
+      setEditingContact(false);
+      onApplicantUpdated?.();
+    } catch (err: any) {
+      toast.error('Failed to update: ' + err.message);
+    } finally {
+      setSavingContact(false);
+    }
+  }, [contactForm, applicant.id, onApplicantUpdated]);
 
   return (
     <div onMouseDown={(e) => e.stopPropagation()}>
@@ -221,41 +257,78 @@ export const SearchApplicantExpandedView = ({
 
       {/* Contact Info */}
       <div className="mb-6 p-4 bg-muted/30 rounded-lg">
-        <h4 className="font-semibold flex items-center gap-2 mb-3">
-          <User className="w-4 h-4" /> Contact Information
-        </h4>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="flex items-center gap-2">
-            <User className="w-4 h-4 text-muted-foreground" />
-            <span className="text-sm">{applicant.full_name}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <Mail className="w-4 h-4 text-muted-foreground" />
-            <a href={`mailto:${applicant.email}`} className="text-sm text-primary hover:underline">{applicant.email}</a>
-          </div>
-          <div className="flex items-center gap-2">
-            <Phone className="w-4 h-4 text-muted-foreground" />
-            {applicant.phone ? (
-              <a href={`tel:${applicant.phone}`} className="text-sm text-primary hover:underline">{applicant.phone}</a>
-            ) : (
-              <span className="text-sm text-muted-foreground">Not provided</span>
-            )}
-          </div>
-          <div className="flex items-center gap-2">
-            <MessageCircle className="w-4 h-4 text-green-600" />
-            {applicant.whatsapp ? (
-              <a href={`https://wa.me/${applicant.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-sm text-green-600 hover:underline">
-                {applicant.whatsapp}
-              </a>
-            ) : applicant.phone ? (
-              <a href={`https://wa.me/${applicant.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-sm text-green-600 hover:underline">
-                {applicant.phone} <span className="text-xs text-muted-foreground">(phone)</span>
-              </a>
-            ) : (
-              <span className="text-sm text-muted-foreground">Not provided</span>
-            )}
-          </div>
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="font-semibold flex items-center gap-2">
+            <User className="w-4 h-4" /> Contact Information
+          </h4>
+          {editingContact ? (
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={() => { setEditingContact(false); setContactForm({ full_name: applicant.full_name, email: applicant.email, phone: applicant.phone || '', whatsapp: applicant.whatsapp || '' }); }}>
+                <X className="w-4 h-4 mr-1" /> Cancel
+              </Button>
+              <Button size="sm" onClick={handleSaveContact} disabled={savingContact}>
+                {savingContact ? <Loader2 className="w-4 h-4 animate-spin mr-1" /> : <Save className="w-4 h-4 mr-1" />} Save
+              </Button>
+            </div>
+          ) : (
+            <Button variant="ghost" size="sm" onClick={() => setEditingContact(true)}>
+              <Pencil className="w-4 h-4 mr-1" /> Edit
+            </Button>
+          )}
         </div>
+        {editingContact ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Full Name</label>
+              <Input value={contactForm.full_name} onChange={(e) => setContactForm(f => ({ ...f, full_name: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Email</label>
+              <Input value={contactForm.email} onChange={(e) => setContactForm(f => ({ ...f, email: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Phone</label>
+              <Input value={contactForm.phone} onChange={(e) => setContactForm(f => ({ ...f, phone: e.target.value }))} />
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">WhatsApp</label>
+              <Input value={contactForm.whatsapp} onChange={(e) => setContactForm(f => ({ ...f, whatsapp: e.target.value }))} />
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-muted-foreground" />
+              <span className="text-sm">{applicant.full_name}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Mail className="w-4 h-4 text-muted-foreground" />
+              <a href={`mailto:${applicant.email}`} className="text-sm text-primary hover:underline">{applicant.email}</a>
+            </div>
+            <div className="flex items-center gap-2">
+              <Phone className="w-4 h-4 text-muted-foreground" />
+              {applicant.phone ? (
+                <a href={`tel:${applicant.phone}`} className="text-sm text-primary hover:underline">{applicant.phone}</a>
+              ) : (
+                <span className="text-sm text-muted-foreground">Not provided</span>
+              )}
+            </div>
+            <div className="flex items-center gap-2">
+              <MessageCircle className="w-4 h-4 text-green-600" />
+              {applicant.whatsapp ? (
+                <a href={`https://wa.me/${applicant.whatsapp.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-sm text-green-600 hover:underline">
+                  {applicant.whatsapp}
+                </a>
+              ) : applicant.phone ? (
+                <a href={`https://wa.me/${applicant.phone.replace(/[^0-9]/g, '')}`} target="_blank" rel="noopener noreferrer" className="text-sm text-green-600 hover:underline">
+                  {applicant.phone} <span className="text-xs text-muted-foreground">(phone)</span>
+                </a>
+              ) : (
+                <span className="text-sm text-muted-foreground">Not provided</span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Notes */}
