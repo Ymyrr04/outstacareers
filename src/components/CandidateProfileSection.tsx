@@ -99,10 +99,13 @@ export function CandidateProfileSection({
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
+              onClick={() => {
                   const tmp = document.createElement('div');
                   tmp.innerHTML = candidateProfile;
-                  navigator.clipboard.writeText(tmp.innerText || tmp.textContent || '');
+                  const plainText = tmp.innerText || tmp.textContent || '';
+                  const blob = new Blob([candidateProfile], { type: 'text/html' });
+                  const textBlob = new Blob([plainText], { type: 'text/plain' });
+                  navigator.clipboard.write([new ClipboardItem({ 'text/html': blob, 'text/plain': textBlob })]);
                   sonnerToast.success('Profile copied');
                 }}
                 className="text-muted-foreground"
