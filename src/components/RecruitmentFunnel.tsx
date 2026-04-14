@@ -354,6 +354,10 @@ export const RecruitmentFunnel = () => {
                         </div>
                       </TableCell>
 
+                      <TableCell className="text-center sticky left-[260px] z-10 bg-background">
+                        <Badge variant="secondary">{role.total}</Badge>
+                      </TableCell>
+
                       {FUNNEL_STAGES.map((stage) => {
                         const currentCount = role.stages[stage] || 0;
                         const historicalCount = role.historicalStages[stage] || 0;
@@ -382,10 +386,6 @@ export const RecruitmentFunnel = () => {
                           </TableCell>
                         );
                       })}
-
-                      <TableCell className="text-center">
-                        <Badge variant="secondary">{role.total}</Badge>
-                      </TableCell>
                     </TableRow>
                   ))}
 
