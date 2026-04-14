@@ -150,8 +150,8 @@ const handler = async (req: Request): Promise<Response> => {
     
     // Auto-replace generic sign-offs with the admin's name if available
     let processedBodyHtml = bodyHtml;
-    if (adminName && !isAutomated) {
-      const signOff = `Best regards,<br><br>${adminName}<br>OutSta Recruitment Team`;
+    if (senderAdminName && !isAutomated) {
+      const signOff = `Best regards,<br><br>${senderAdminName}<br>OutSta Recruitment Team`;
       processedBodyHtml = processedBodyHtml
         .replace(/Best regards,\s*<br\s*\/?>\s*The\s+(Outsta\s+)?Recruitment\s+Team/gi, signOff)
         .replace(/Best regards,\s*\n\s*The\s+(Outsta\s+)?Recruitment\s+Team/gi, signOff)
