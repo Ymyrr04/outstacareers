@@ -307,6 +307,17 @@ export const RecruitmentFunnel = () => {
               />
             </div>
 
+            <Select value={jobStatusFilter} onValueChange={(value) => setJobStatusFilter(value as 'active' | 'inactive' | 'all')}>
+              <SelectTrigger className="h-8 w-[130px] text-sm">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Jobs</SelectItem>
+                <SelectItem value="active">Active Jobs</SelectItem>
+                <SelectItem value="inactive">Archived Jobs</SelectItem>
+              </SelectContent>
+            </Select>
+
             <Select value={sortBy} onValueChange={(value) => setSortBy(value as 'pipeline' | 'name' | 'total')}>
               <SelectTrigger className="h-8 w-[150px] text-sm">
                 <SelectValue />
