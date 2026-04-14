@@ -77,6 +77,8 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
   const [loading, setLoading] = useState(false);
   const [candidateSearch, setCandidateSearch] = useState('');
   const candidateSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [draggedCandidate, setDraggedCandidate] = useState<Candidate | null>(null);
+  const [dropTargetStage, setDropTargetStage] = useState<string | null>(null);
 
   const fetchCandidates = useCallback(async (role: string) => {
     if (!role) return;
