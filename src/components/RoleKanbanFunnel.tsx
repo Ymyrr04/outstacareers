@@ -1,11 +1,9 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
-import { Button } from '@/components/ui/button';
-import { Users, MapPin, Mail, ChevronsUpDown, Check } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Users, MapPin, Mail, Search } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const FUNNEL_STAGES = [
@@ -47,7 +45,9 @@ interface RoleKanbanFunnelProps {
 
 export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
   const [selectedRole, setSelectedRole] = useState<string>(roles[0] || '');
-  const [comboOpen, setComboOpen] = useState(false);
+  const [roleSearch, setRoleSearch] = useState('');
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [loading, setLoading] = useState(false);
 
@@ -68,6 +68,17 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
 
     fetchCandidates();
   }, [selectedRole]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   const stageGroups = useMemo(() => {
     const groups: Record<string, Candidate[]> = {};
@@ -104,37 +115,53 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
           )}
         </div>
 
-        <Popover open={comboOpen} onOpenChange={setComboOpen}>
-          <PopoverTrigger asChild>
-            <Button variant="outline" role="combobox" aria-expanded={comboOpen} className="h-9 w-[320px] justify-between text-sm font-normal">
-              {selectedRole || 'Select a role...'}
-              <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-[320px] p-0">
-            <Command>
-              <CommandInput placeholder="Search roles..." />
-              <CommandList>
-                <CommandEmpty>No role found.</CommandEmpty>
-                <CommandGroup>
-                  {roles.map((role) => (
-                    <CommandItem
-                      key={role}
-                      value={role}
-                      onSelect={() => {
-                        setSelectedRole(role);
-                        setComboOpen(false);
-                      }}
-                    >
-                      <Check className={cn('mr-2 h-4 w-4', selectedRole === role ? 'opacity-100' : 'opacity-0')} />
-                      {role}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
+        <div className="relative" ref={dropdownRef}>
+          <div className="relative">
+            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+            <Input
+              placeholder="Search & select role..."
+              value={dropdownOpen ? roleSearch : selectedRole}
+              onChange={(e) => {
+                setRoleSearch(e.target.value);
+                setDropdownOpen(true);
+              }}
+              onFocus={() => {
+                setDropdownOpen(true);
+                setRoleSearch('');
+              }}
+              className="pl-8 h-9 w-[320px] text-sm"
+            />
+          </div>
+          {dropdownOpen && (
+            <div className="absolute z-50 mt-1 w-[320px] rounded-md border bg-popover shadow-md">
+              <ScrollArea className="max-h-[250px]">
+                <div className="p-1">
+                  {roles
+                    .filter((r) => r.toLowerCase().includes(roleSearch.toLowerCase()))
+                    .map((role) => (
+                      <button
+                        key={role}
+                        className={cn(
+                          'w-full text-left px-3 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors',
+                          selectedRole === role && 'bg-accent/50 font-medium'
+                        )}
+                        onClick={() => {
+                          setSelectedRole(role);
+                          setDropdownOpen(false);
+                          setRoleSearch('');
+                        }}
+                      >
+                        {role}
+                      </button>
+                    ))}
+                  {roles.filter((r) => r.toLowerCase().includes(roleSearch.toLowerCase())).length === 0 && (
+                    <p className="px-3 py-2 text-sm text-muted-foreground">No roles found.</p>
+                  )}
+                </div>
+              </ScrollArea>
+            </div>
+          )}
+        </div>
       </div>
 
       {loading ? (
