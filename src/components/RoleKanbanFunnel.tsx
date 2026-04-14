@@ -231,6 +231,7 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
                 <div className="p-1">
                   {roles
                     .filter((r) => r.toLowerCase().includes(roleSearch.toLowerCase()))
+                    .sort((a, b) => a.localeCompare(b))
                     .map((role) => (
                       <button
                         key={role}
