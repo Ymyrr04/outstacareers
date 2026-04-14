@@ -368,6 +368,12 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
           <InterviewResultsFetcher applicantId={candidate.id} cachedSession={null} />
         </DialogContent>
       </Dialog>
+
+      <CandidateDetailDialog
+        open={showDetails}
+        onOpenChange={setShowDetails}
+        applicantId={candidate.id}
+      />
     </>
   );
 };
