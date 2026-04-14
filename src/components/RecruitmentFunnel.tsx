@@ -56,6 +56,8 @@ export const RecruitmentFunnel = () => {
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'pipeline' | 'name' | 'total'>('pipeline');
+  const [jobStatusFilter, setJobStatusFilter] = useState<'active' | 'inactive' | 'all'>('all');
+  const [activeJobTitles, setActiveJobTitles] = useState<Set<string> | null>(null);
   const [isOpen, setIsOpen] = useState(false);
 
   useEffect(() => {
