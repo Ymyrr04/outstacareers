@@ -148,6 +148,7 @@ export const RecruitmentFunnel = () => {
     [applicants]
   );
 
+  const roleFunnels = useMemo(() => {
     // Resolve date range (auto-swap if reversed)
     let effectiveFrom = dateFrom;
     let effectiveTo = dateTo;
