@@ -51,7 +51,7 @@ function getHeatmapColor(count: number, maxCount: number): string {
 }
 
 export const RecruitmentFunnel = () => {
-  const [applicants, setApplicants] = useState<{ job_title: string; status: string; pre_archive_status: string | null }[]>([]);
+  const [applicants, setApplicants] = useState<{ job_title: string; status: string; pre_archive_status: string | null; submitted_at: string }[]>([]);
   const [historyData, setHistoryData] = useState<{ job_title: string; to_status: string; applicant_count: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -59,18 +59,20 @@ export const RecruitmentFunnel = () => {
   const [jobStatusFilter, setJobStatusFilter] = useState<'active' | 'inactive' | 'all'>('all');
   const [activeJobTitles, setActiveJobTitles] = useState<Set<string> | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   useEffect(() => {
     const fetchAll = async () => {
       setLoading(true);
 
-      let all: { job_title: string; status: string; pre_archive_status: string | null }[] = [];
+      let all: { job_title: string; status: string; pre_archive_status: string | null; submitted_at: string }[] = [];
       let from = 0;
       const batchSize = 1000;
       while (true) {
         const { data } = await supabase
           .from('applicants_prescreen')
-          .select('job_title, status, pre_archive_status')
+          .select('job_title, status, pre_archive_status, submitted_at')
           .range(from, from + batchSize - 1);
         if (!data || data.length === 0) break;
         all = all.concat(data);
@@ -128,9 +130,20 @@ export const RecruitmentFunnel = () => {
   }, []);
 
   const roleFunnels = useMemo(() => {
+    // Resolve date range (auto-swap if reversed)
+    let effectiveFrom = dateFrom;
+    let effectiveTo = dateTo;
+    if (effectiveFrom && effectiveTo && effectiveFrom > effectiveTo) {
+      [effectiveFrom, effectiveTo] = [effectiveTo, effectiveFrom];
+    }
+
     const map: Record<string, Record<string, number>> = {};
 
     for (const applicant of applicants) {
+      // Date range filter on submitted_at
+      if (effectiveFrom && applicant.submitted_at < effectiveFrom) continue;
+      if (effectiveTo && applicant.submitted_at > effectiveTo + 'T23:59:59.999Z') continue;
+
       const effectiveStatus = applicant.status === 'Archive' || applicant.status === 'Archived'
         ? (applicant.pre_archive_status || applicant.status)
         : applicant.status;
@@ -187,7 +200,7 @@ export const RecruitmentFunnel = () => {
     });
 
     return results;
-  }, [applicants, historyData, searchTerm, sortBy, jobStatusFilter, activeJobTitles]);
+  }, [applicants, historyData, searchTerm, sortBy, jobStatusFilter, activeJobTitles, dateFrom, dateTo]);
 
   const stageTotals = useMemo(
     () =>
@@ -297,6 +310,29 @@ export const RecruitmentFunnel = () => {
 
           {/* Search & Sort */}
           <div className="flex items-center gap-2 flex-wrap justify-end">
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="h-8 w-[140px] text-sm"
+              placeholder="From"
+            />
+            <span className="text-xs text-muted-foreground">to</span>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="h-8 w-[140px] text-sm"
+              placeholder="To"
+            />
+            {(dateFrom || dateTo) && (
+              <button
+                onClick={() => { setDateFrom(''); setDateTo(''); }}
+                className="text-xs text-muted-foreground hover:text-foreground underline"
+              >
+                Clear
+              </button>
+            )}
             <div className="relative">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
               <Input
