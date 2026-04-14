@@ -69,9 +69,10 @@ interface Candidate {
 
 interface RoleKanbanFunnelProps {
   roles?: string[];
+  onRoleSelect?: (role: string) => void;
 }
 
-export const RoleKanbanFunnel = (_props: RoleKanbanFunnelProps) => {
+export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunnelProps) => {
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [roleSearch, setRoleSearch] = useState('');
@@ -108,6 +109,11 @@ export const RoleKanbanFunnel = (_props: RoleKanbanFunnelProps) => {
       setSelectedRole(filteredRoles[0]);
     }
   }, [filteredRoles]);
+
+  // Notify parent when selected role changes
+  useEffect(() => {
+    if (selectedRole) _onRoleSelect?.(selectedRole);
+  }, [selectedRole, _onRoleSelect]);
 
   const fetchCandidates = useCallback(async (role: string) => {
     if (!role) return;
