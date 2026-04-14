@@ -598,6 +598,25 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
               <Mail className="w-2.5 h-2.5 shrink-0" />
               <span className="truncate">{candidate.email}</span>
             </div>
+
+            {(() => {
+              const enteredAt = candidate.stage_entered_at ? new Date(candidate.stage_entered_at) : new Date(candidate.submitted_at);
+              const now = new Date();
+              const diffMs = now.getTime() - enteredAt.getTime();
+              const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+              const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
+              const isOverdue = diffDays > 2;
+              const label = diffDays >= 1 ? `${diffDays}d` : `${diffHours}h`;
+              return (
+                <div className={cn(
+                  "flex items-center gap-1 text-[10px] font-medium",
+                  isOverdue ? "text-red-600 dark:text-red-400" : "text-muted-foreground"
+                )}>
+                  <Clock className="w-2.5 h-2.5 shrink-0" />
+                  <span>{label} in stage</span>
+                </div>
+              );
+            })()}
           </div>
         </ContextMenuTrigger>
 
