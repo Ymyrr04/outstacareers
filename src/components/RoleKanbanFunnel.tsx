@@ -417,6 +417,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
             {selectedRole && !dropdownOpen && (
               <button
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
+                onMouseDown={(e) => e.preventDefault()}
                 onClick={(e) => {
                   e.stopPropagation();
                   setSelectedRole('');
@@ -429,7 +430,10 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
             )}
           </div>
           {dropdownOpen && (
-            <div className="absolute z-50 mt-1 w-[320px] rounded-md border bg-popover shadow-md overflow-hidden">
+            <div
+              className="absolute z-50 mt-1 w-[320px] rounded-md border bg-popover shadow-md overflow-hidden"
+              onMouseDown={(e) => e.preventDefault()}
+            >
               <ScrollArea className="max-h-[300px] overflow-y-auto">
                 <div className="p-1">
                   {filteredRoles
@@ -442,6 +446,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
                           'w-full text-left px-3 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors',
                           selectedRole === role && 'bg-accent/50 font-medium'
                         )}
+                        onMouseDown={(e) => e.preventDefault()}
                         onClick={() => {
                           setSelectedRole(role);
                           setDropdownOpen(false);
