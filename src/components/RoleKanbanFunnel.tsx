@@ -14,7 +14,8 @@ import {
   ContextMenuSubContent,
 } from '@/components/ui/context-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone } from 'lucide-react';
+import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
@@ -79,6 +80,7 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
   const candidateSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [draggedCandidate, setDraggedCandidate] = useState<Candidate | null>(null);
   const [dropTargetStage, setDropTargetStage] = useState<string | null>(null);
+  const [sortOption, setSortOption] = useState<'score-desc' | 'score-asc' | 'name-asc' | 'name-desc' | 'newest' | 'oldest'>('score-desc');
 
   const fetchCandidates = useCallback(async (role: string) => {
     if (!role) return;
@@ -264,8 +266,24 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
       }
     }
 
+    // Sort each stage's candidates
+    const sortFn = (a: Candidate, b: Candidate) => {
+      switch (sortOption) {
+        case 'score-desc': return (b.total_score ?? -1) - (a.total_score ?? -1);
+        case 'score-asc': return (a.total_score ?? -1) - (b.total_score ?? -1);
+        case 'name-asc': return a.full_name.localeCompare(b.full_name);
+        case 'name-desc': return b.full_name.localeCompare(a.full_name);
+        case 'newest': return new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime();
+        case 'oldest': return new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime();
+        default: return 0;
+      }
+    };
+    for (const stage of FUNNEL_STAGES) {
+      groups[stage].sort(sortFn);
+    }
+
     return groups;
-  }, [filteredCandidates]);
+  }, [filteredCandidates, sortOption]);
 
   const totalInPipeline = useMemo(
     () => Object.values(stageGroups).reduce((sum, arr) => sum + arr.length, 0),
@@ -359,6 +377,35 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
               className="pl-8 h-9 w-[260px] text-sm"
             />
           </div>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button className="h-9 px-2.5 rounded-md border border-border bg-background hover:bg-accent transition-colors flex items-center gap-1.5 text-sm text-muted-foreground">
+                <ArrowUpDown className="w-4 h-4" />
+                <span className="hidden sm:inline">Sort</span>
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => setSortOption('score-desc')} className={cn(sortOption === 'score-desc' && 'bg-accent')}>
+                <ArrowDown01 className="mr-2 h-4 w-4" /> Score: High → Low
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOption('score-asc')} className={cn(sortOption === 'score-asc' && 'bg-accent')}>
+                <ArrowUp01 className="mr-2 h-4 w-4" /> Score: Low → High
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOption('name-asc')} className={cn(sortOption === 'name-asc' && 'bg-accent')}>
+                <ArrowDownAZ className="mr-2 h-4 w-4" /> Name: A → Z
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOption('name-desc')} className={cn(sortOption === 'name-desc' && 'bg-accent')}>
+                <ArrowUpAZ className="mr-2 h-4 w-4" /> Name: Z → A
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOption('newest')} className={cn(sortOption === 'newest' && 'bg-accent')}>
+                <Clock className="mr-2 h-4 w-4" /> Newest First
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => setSortOption('oldest')} className={cn(sortOption === 'oldest' && 'bg-accent')}>
+                <Clock className="mr-2 h-4 w-4" /> Oldest First
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
 
