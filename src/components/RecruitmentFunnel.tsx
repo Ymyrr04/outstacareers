@@ -268,7 +268,7 @@ export const RecruitmentFunnel = () => {
       {/* Per-role Kanban pipeline */}
       <RoleKanbanFunnel roles={roleFunnels.map(r => r.jobTitle)} />
 
-      <ImportHistory importLogs={importLogs} />
+      
     </div>
   );
 };
