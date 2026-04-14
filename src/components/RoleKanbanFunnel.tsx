@@ -80,6 +80,7 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
   const candidateSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [draggedCandidate, setDraggedCandidate] = useState<Candidate | null>(null);
   const [dropTargetStage, setDropTargetStage] = useState<string | null>(null);
+  const [sortOption, setSortOption] = useState<'score-desc' | 'score-asc' | 'name-asc' | 'name-desc' | 'newest' | 'oldest'>('score-desc');
 
   const fetchCandidates = useCallback(async (role: string) => {
     if (!role) return;
