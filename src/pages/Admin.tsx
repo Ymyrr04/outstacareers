@@ -1562,7 +1562,7 @@ const Admin = () => {
             {canViewTab('funnel') && (
               <TabsTrigger value="funnel" className="flex items-center gap-2">
                 <TrendingDown className="w-4 h-4" />
-                Funnel
+                Recruitment Pipeline / Funnel
               </TabsTrigger>
             )}
             {canViewTab('pipeline') && (
