@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
-import { ScrollArea, ScrollBar } from '@/components/ui/scroll-area';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Input } from '@/components/ui/input';
 import {
   ContextMenu,
@@ -460,7 +460,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
       ) : !selectedRole ? (
         <p className="py-8 text-center text-sm text-muted-foreground">Select a role to view its pipeline.</p>
       ) : (
-        <ScrollArea className="w-full">
+        <div className="w-full overflow-x-auto">
           <div className="flex gap-3 pb-4 min-w-max">
             {FUNNEL_STAGES.map((stage) => {
               const colors = STAGE_COLORS[stage];
@@ -532,7 +532,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
                     </div>
                   </div>
 
-                  <ScrollArea className="flex-1 max-h-[720px]">
+                  <div className="flex-1 max-h-[720px] overflow-y-auto">
                     <div className="p-2 space-y-2">
                       {stageCandidates.length === 0 ? (
                         <p className={cn(
@@ -562,13 +562,12 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
                         ))
                       )}
                     </div>
-                  </ScrollArea>
+                  </div>
                 </div>
               );
             })}
           </div>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
+        </div>
       )}
 
       {hiredCandidate && (
