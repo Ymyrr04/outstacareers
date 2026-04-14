@@ -412,6 +412,30 @@ export function SendEmailDialog({
         </DialogHeader>
 
         <div className="flex-1 overflow-auto space-y-4 py-2">
+          {/* Send As */}
+          <div className="space-y-1.5">
+            <Label className="text-sm">Send as</Label>
+            <Select value={sendAsEmail} onValueChange={setSendAsEmail}>
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Select sender..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">
+                  {currentAdminEmail 
+                    ? `${EMAIL_TO_NAME[currentAdminEmail] || currentAdminEmail} (default)`
+                    : 'Default (recruitment@outsta.io)'}
+                </SelectItem>
+                {ADMIN_SENDERS
+                  .filter(a => a.email !== currentAdminEmail)
+                  .map((admin) => (
+                    <SelectItem key={admin.email} value={admin.email}>
+                      {admin.name} ({admin.email})
+                    </SelectItem>
+                  ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           {/* Template */}
           <div className="space-y-1.5">
             <Label className="text-sm">Template</Label>
