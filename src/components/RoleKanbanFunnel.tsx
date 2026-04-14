@@ -625,6 +625,26 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
   const [showCvPreview, setShowCvPreview] = useState(false);
   const [showInterviewResults, setShowInterviewResults] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [showActivity, setShowActivity] = useState(false);
+  const [activityHistory, setActivityHistory] = useState<Array<{ from_status: string | null; to_status: string; changed_by: string | null; created_at: string }>>([]);
+  const [activityLoading, setActivityLoading] = useState(false);
+
+  const fetchActivity = useCallback(async () => {
+    setActivityLoading(true);
+    const { data, error } = await supabase
+      .from('applicant_status_history')
+      .select('from_status, to_status, changed_by, created_at')
+      .eq('applicant_id', candidate.id)
+      .order('created_at', { ascending: false });
+    if (!error) {
+      setActivityHistory(data || []);
+    }
+    setActivityLoading(false);
+  }, [candidate.id]);
+
+  useEffect(() => {
+    if (showActivity) fetchActivity();
+  }, [showActivity, fetchActivity]);
 
   return (
     <>
