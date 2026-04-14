@@ -88,6 +88,8 @@ const handler = async (req: Request): Promise<Response> => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let requestBody: SendEmailRequest | null = null;
+
   try {
     const defaultGmailUser = Deno.env.get("GMAIL_USER");
     const defaultGmailPassword = normalizeSmtpSecret(Deno.env.get("GMAIL_APP_PASSWORD"));
@@ -113,7 +115,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const requestBody: SendEmailRequest = await req.json();
+    requestBody = await req.json();
 
     const {
       applicantId,
@@ -312,18 +314,18 @@ const handler = async (req: Request): Promise<Response> => {
       const supabaseUrl = Deno.env.get("SUPABASE_URL");
       const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
       if (supabaseUrl && supabaseServiceKey) {
-        const supabase = createClient(supabaseUrl, supabaseServiceKey);
-        await supabase
+        const sb = createClient(supabaseUrl, supabaseServiceKey);
+        await sb
           .from('email_logs')
           .insert({
-            applicant_id: requestBody.applicantId,
-            template_id: requestBody.templateId || null,
-            subject: requestBody.subject,
-            body_html: requestBody.bodyHtml,
-            recipient_email: requestBody.recipientEmail,
+            applicant_id: requestBody?.applicantId,
+            template_id: requestBody?.templateId || null,
+            subject: requestBody?.subject || 'Unknown',
+            body_html: requestBody?.bodyHtml || '',
+            recipient_email: requestBody?.recipientEmail || 'unknown',
             status: 'failed',
-            applicant_status_at_send: requestBody.applicantStatusAtSend || null,
-            is_automated: requestBody.isAutomated,
+            applicant_status_at_send: requestBody?.applicantStatusAtSend || null,
+            is_automated: requestBody?.isAutomated ?? false,
             error_message: error.message,
           });
       }
