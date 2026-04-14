@@ -550,7 +550,7 @@ const handler = async (req: Request): Promise<Response> => {
                 applicant_id: matchedApplicantId,
                 from_email: email,
                 subject: message.subject || "(No Subject)",
-                body_text: message.body.substring(0, 50000),
+                body_text: message.body.substring(0, 10000),
                 in_reply_to: message.inReplyTo || null,
                 received_at: receivedAt,
                 gmail_message_id: message.messageId,
