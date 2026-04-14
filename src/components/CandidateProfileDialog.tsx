@@ -139,7 +139,10 @@ export function CandidateProfileDialog({ open, onOpenChange, applicantId, applic
                       <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => {
                         const tmp = document.createElement('div');
                         tmp.innerHTML = profile.content;
-                        navigator.clipboard.writeText(tmp.innerText || tmp.textContent || '');
+                        const plainText = tmp.innerText || tmp.textContent || '';
+                        const blob = new Blob([profile.content], { type: 'text/html' });
+                        const textBlob = new Blob([plainText], { type: 'text/plain' });
+                        navigator.clipboard.write([new ClipboardItem({ 'text/html': blob, 'text/plain': textBlob })]);
                         toast.success('Profile copied');
                       }}>
                         <Copy className="w-3.5 h-3.5" />
