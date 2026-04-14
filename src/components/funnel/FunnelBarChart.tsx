@@ -19,19 +19,19 @@ interface FunnelBarChartProps {
 
 export const FunnelBarChart = ({ stageTotals, stages }: FunnelBarChartProps) => {
   const chartData = useMemo(() => {
-    const firstStageCount = stageTotals[stages[0]]?.historical || stageTotals[stages[0]]?.current || 1;
+    const totalPipeline = stages.reduce((sum, s) => sum + (stageTotals[s]?.current || 0), 0) || 1;
 
     return stages.map((stage) => {
       const t = stageTotals[stage] || { current: 0, historical: 0 };
-      const passThrough = t.historical > 0 ? t.historical : t.current;
-      const conversionFromStart = ((passThrough / firstStageCount) * 100);
+      // Show % of total pipeline (distribution), not misleading stage-to-stage conversion
+      const pctOfTotal = (t.current / totalPipeline) * 100;
 
       return {
         stage: stage.length > 12 ? stage.slice(0, 11) + '…' : stage,
         fullStage: stage,
         current: t.current,
         historical: t.historical,
-        conversion: Math.round(conversionFromStart),
+        distribution: Math.round(pctOfTotal),
       };
     });
   }, [stageTotals, stages]);
