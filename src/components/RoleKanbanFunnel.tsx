@@ -266,8 +266,24 @@ export const RoleKanbanFunnel = ({ roles }: RoleKanbanFunnelProps) => {
       }
     }
 
+    // Sort each stage's candidates
+    const sortFn = (a: Candidate, b: Candidate) => {
+      switch (sortOption) {
+        case 'score-desc': return (b.total_score ?? -1) - (a.total_score ?? -1);
+        case 'score-asc': return (a.total_score ?? -1) - (b.total_score ?? -1);
+        case 'name-asc': return a.full_name.localeCompare(b.full_name);
+        case 'name-desc': return b.full_name.localeCompare(a.full_name);
+        case 'newest': return new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime();
+        case 'oldest': return new Date(a.submitted_at).getTime() - new Date(b.submitted_at).getTime();
+        default: return 0;
+      }
+    };
+    for (const stage of FUNNEL_STAGES) {
+      groups[stage].sort(sortFn);
+    }
+
     return groups;
-  }, [filteredCandidates]);
+  }, [filteredCandidates, sortOption]);
 
   const totalInPipeline = useMemo(
     () => Object.values(stageGroups).reduce((sum, arr) => sum + arr.length, 0),
