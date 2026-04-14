@@ -16,6 +16,7 @@ import {
   Send, Loader2, Clock, CalendarIcon, AlertTriangle, User, Paperclip, X, FileImage, File
 } from 'lucide-react';
 import { RichTextToolbar } from './RichTextToolbar';
+import { EMAIL_TO_NAME } from '@/lib/adminDisplayNames';
 
 interface EmailAttachment {
   filename: string;

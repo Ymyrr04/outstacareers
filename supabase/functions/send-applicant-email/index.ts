@@ -69,11 +69,12 @@ interface SendEmailRequest {
   recipientEmail: string;
   applicantStatusAtSend?: string;
   isAutomated: boolean;
-  scheduleFor?: string; // ISO date string for scheduled emails
+  scheduleFor?: string;
   attachments?: Attachment[];
-  cc?: string[]; // CC email addresses
-  bcc?: string[]; // BCC email addresses
-  inReplyTo?: string; // Message-ID of the email being replied to (for threading)
+  cc?: string[];
+  bcc?: string[];
+  inReplyTo?: string;
+  sendAsEmail?: string; // Override sender to a specific admin's credentials
 }
 
 const handler = async (req: Request): Promise<Response> => {
