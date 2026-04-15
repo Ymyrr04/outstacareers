@@ -361,7 +361,7 @@ export const SearchApplicantExpandedView = ({
         <div className="mb-4">
           <CVImagePreview
             pdfUrl={applicant.cv_file_url}
-            fileName={`${applicant.full_name} CV`}
+            fileName={`${applicant.full_name} CV.pdf`}
           />
         </div>
       )}
