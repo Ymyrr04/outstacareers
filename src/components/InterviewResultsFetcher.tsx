@@ -85,6 +85,28 @@ export function InterviewResultsFetcher({
   }
 
   if (session) {
+    const isInProgress = session.status === 'in_progress';
+    
+    if (isInProgress) {
+      // Interview link expires 2 days after session started
+      const startedAt = session.completed_at ? new Date(session.completed_at) : null;
+      // Use the session's created_at-like field - we need started_at which we don't have, 
+      // so we'll fetch it or estimate. Since we know the link expires 2 days from start,
+      // let's show a general message.
+      return (
+        <div className="p-6 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/30 text-center">
+          <ClipboardList className="w-8 h-8 mx-auto mb-2 text-amber-500" />
+          <p className="font-medium text-amber-700 dark:text-amber-400 mb-1">Interview Not Yet Completed</p>
+          <p className="text-sm text-muted-foreground mb-2">
+            The candidate has started but has not yet finished the interview assessment.
+          </p>
+          <p className="text-xs text-muted-foreground">
+            The interview link expires 48 hours after it was sent.
+          </p>
+        </div>
+      );
+    }
+    
     return (
       <div className="p-4 bg-purple-50/50 dark:bg-purple-950/20 rounded-lg border border-purple-200/50 dark:border-purple-800/30">
         <InterviewResultsView 
