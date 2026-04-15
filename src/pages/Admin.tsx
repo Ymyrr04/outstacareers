@@ -1568,7 +1568,7 @@ const Admin = () => {
             {canViewTab('pipeline') && (
               <TabsTrigger value="pipeline" className="flex items-center gap-2">
                 <Kanban className="w-4 h-4" />
-                Pipeline
+                Client Pipeline
               </TabsTrigger>
             )}
             {canViewTab('post-hire') && (
