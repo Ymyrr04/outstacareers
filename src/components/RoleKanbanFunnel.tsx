@@ -118,8 +118,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   }, []);
 
   const filteredRoles = useMemo(() => {
-    return activeRoles;
-  }, [activeRoles]);
+    return jobFilter === 'active' ? activeRoles : allRoles;
+  }, [activeRoles, allRoles, jobFilter]);
 
   // Set initial selected role when filtered roles are ready
   useEffect(() => {
