@@ -105,15 +105,16 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
 
   // Fetch active job titles independently
   useEffect(() => {
-    const fetchActiveJobs = async () => {
-      const { data } = await supabase
-        .from('jobs')
-        .select('title')
-        .eq('is_active', true)
-        .order('title');
-      setActiveRoles((data || []).map(j => j.title).filter(t => t && !/^\$?\d+(\.\d+)?$/.test(t.trim())));
+    const fetchJobs = async () => {
+      const [activeResult, allResult] = await Promise.all([
+        supabase.from('jobs').select('title').eq('is_active', true).order('title'),
+        supabase.from('jobs').select('title').order('title'),
+      ]);
+      const filterTitle = (data: any[]) => (data || []).map(j => j.title).filter(t => t && !/^\$?\d+(\.\d+)?$/.test(t.trim()));
+      setActiveRoles(filterTitle(activeResult.data));
+      setAllRoles(filterTitle(allResult.data));
     };
-    fetchActiveJobs();
+    fetchJobs();
   }, []);
 
   const filteredRoles = useMemo(() => {
