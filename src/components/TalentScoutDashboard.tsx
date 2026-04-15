@@ -833,17 +833,27 @@ export const TalentScoutDashboard = () => {
                           )}
                         </div>
 
-                        {/* CV Link */}
-                        {result.cv_file_url && (
+                        {/* CV Link & Full Profile */}
+                        <div className="flex flex-wrap gap-2">
                           <Button
-                            variant="outline"
+                            variant="default"
                             size="sm"
                             className="gap-1"
-                            onClick={() => window.open(result.cv_file_url!, '_blank')}
+                            onClick={() => setSelectedCandidateId(result.id)}
                           >
-                            <FileText className="w-3.5 h-3.5" /> View CV
+                            <Eye className="w-3.5 h-3.5" /> View Full Profile
                           </Button>
-                        )}
+                          {result.cv_file_url && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-1"
+                              onClick={() => window.open(result.cv_file_url!, '_blank')}
+                            >
+                              <FileText className="w-3.5 h-3.5" /> View CV
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     )}
                   </CardContent>
