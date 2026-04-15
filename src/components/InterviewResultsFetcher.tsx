@@ -63,6 +63,7 @@ export function InterviewResultsFetcher({
         completed_at: data.completed_at,
         started_at: data.started_at,
       };
+      setStartedAt(data.started_at);
       setSession(sessionData);
       onSessionFound?.(sessionData);
     }
@@ -72,9 +73,20 @@ export function InterviewResultsFetcher({
   };
 
   useEffect(() => {
-    // If we don't have a cached session, check the database
     if (!cachedSession) {
       fetchSession();
+    } else if (cachedSession.status === 'in_progress' && !cachedSession.started_at) {
+      // Fetch started_at for in-progress sessions missing it
+      supabase
+        .from('interview_sessions')
+        .select('started_at')
+        .eq('applicant_id', applicantId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.started_at) setStartedAt(data.started_at);
+        });
     }
   }, [applicantId, cachedSession]);
 
