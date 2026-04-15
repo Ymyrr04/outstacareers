@@ -146,21 +146,24 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
 
     const applicantIds = (data || []).map(a => a.id);
     let interviewScores: Record<string, number> = {};
+    let interviewMeta: Record<string, { status: string; started_at: string }> = {};
     let stageEnteredMap: Record<string, string> = {};
     
     if (applicantIds.length > 0) {
       for (let i = 0; i < applicantIds.length; i += 100) {
         const batch = applicantIds.slice(i, i + 100);
         
-        // Fetch interview scores
+        // Fetch interview sessions (all statuses for expiry detection)
         const { data: sessions } = await supabase
           .from('interview_sessions')
-          .select('applicant_id, overall_score')
+          .select('applicant_id, overall_score, status, started_at')
           .in('applicant_id', batch)
-          .in('status', ['completed', 'completed_manual_review'])
           .order('created_at', { ascending: false });
         
         for (const s of sessions || []) {
+          if (!(s.applicant_id in interviewMeta)) {
+            interviewMeta[s.applicant_id] = { status: s.status, started_at: s.started_at };
+          }
           if (s.overall_score != null && !(s.applicant_id in interviewScores)) {
             interviewScores[s.applicant_id] = s.overall_score;
           }
