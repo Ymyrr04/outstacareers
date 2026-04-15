@@ -24,6 +24,7 @@ const FUNNEL_STAGES = [
   'For Review',
   'For Interview',
   'SIV',
+  'Pitch',
   'Client Interview',
   'Hired',
   'Bench',
