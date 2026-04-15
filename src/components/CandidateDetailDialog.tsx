@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { SearchApplicantExpandedView } from '@/components/SearchApplicantExpandedView';
 import { Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 import type { PaginatedApplicant } from '@/hooks/usePaginatedApplicants';
 
 interface CandidateDetailDialogProps {
@@ -14,6 +15,7 @@ interface CandidateDetailDialogProps {
 export function CandidateDetailDialog({ open, onOpenChange, applicantId }: CandidateDetailDialogProps) {
   const [applicant, setApplicant] = useState<PaginatedApplicant | null>(null);
   const [loading, setLoading] = useState(false);
+  const [downloadingCv, setDownloadingCv] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open || !applicantId) {
@@ -52,6 +54,32 @@ export function CandidateDetailDialog({ open, onOpenChange, applicantId }: Candi
     fetchApplicant();
   }, [open, applicantId]);
 
+  const handleDownloadCv = useCallback(async (id: string, cvUrl: string, name: string) => {
+    setDownloadingCv(id);
+    try {
+      const match = cvUrl.match(/\/storage\/v1\/object\/(?:public|sign)\/cv-uploads\/(.+?)(?:\?|$)/) 
+        || cvUrl.match(/cv-uploads\/(.+?)(?:\?|$)/);
+      const filePath = match ? decodeURIComponent(match[1]) : cvUrl;
+
+      const { data, error } = await supabase.storage.from('cv-uploads').download(filePath);
+      if (error || !data) throw error || new Error('No data');
+
+      const url = URL.createObjectURL(data);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${name}-CV.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Download error:', err);
+      toast.error('Failed to download CV');
+    } finally {
+      setDownloadingCv(null);
+    }
+  }, []);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
@@ -67,9 +95,9 @@ export function CandidateDetailDialog({ open, onOpenChange, applicantId }: Candi
           <SearchApplicantExpandedView
             applicant={applicant}
             onRescoreCv={() => {}}
-            onDownloadCv={() => {}}
+            onDownloadCv={handleDownloadCv}
             rescoring={null}
-            downloadingCv={null}
+            downloadingCv={downloadingCv}
           />
         ) : (
           <p className="text-center text-muted-foreground py-8">Could not load candidate details.</p>
