@@ -17,6 +17,7 @@ interface InterviewSession {
   ai_strengths: string[] | null;
   ai_concerns: string[] | null;
   completed_at: string | null;
+  started_at?: string | null;
 }
 
 interface InterviewResultsFetcherProps {
