@@ -64,6 +64,8 @@ interface Candidate {
   submitted_at: string;
   total_score: number | null;
   interview_overall_score: number | null;
+  interview_status: string | null;
+  interview_started_at: string | null;
   job_title: string;
   job_id: string | null;
   cv_file_url: string | null;
