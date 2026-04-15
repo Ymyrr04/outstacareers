@@ -276,6 +276,14 @@ export function InterviewNotesDialog({ open, onOpenChange, applicantId, applican
                 ))}
               </div>
             )}
+
+            {/* Legacy notes from applicants_prescreen.notes field */}
+            {legacyNotes && (
+              <div className="border rounded-lg p-3 bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/50 dark:border-amber-800/30">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Applicant Notes</p>
+                <FormattedNotes content={legacyNotes} />
+              </div>
+            )}
           </TabsContent>
 
           <TabsContent value="results" className="mt-4">
