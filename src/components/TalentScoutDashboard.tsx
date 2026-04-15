@@ -893,6 +893,16 @@ export const TalentScoutDashboard = () => {
         onOpenChange={(open) => { if (!open) setSelectedCandidateId(null); }}
         applicantId={selectedCandidateId}
       />
+      {cvPreview && (
+        <Dialog open={!!cvPreview} onOpenChange={(open) => { if (!open) setCvPreview(null); }}>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>CV Preview — {cvPreview.name}</DialogTitle>
+            </DialogHeader>
+            <CVImagePreview pdfUrl={cvPreview.url} fileName={cvPreview.name + '.pdf'} />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
