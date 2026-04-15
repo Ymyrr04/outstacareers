@@ -103,8 +103,9 @@ export function InterviewResultsFetcher({
     const isInProgress = session.status === 'in_progress';
     
     if (isInProgress) {
-      const expiresAt = session.started_at 
-        ? new Date(new Date(session.started_at).getTime() + 48 * 60 * 60 * 1000) 
+      const effectiveStartedAt = startedAt || session.started_at;
+      const expiresAt = effectiveStartedAt
+        ? new Date(new Date(effectiveStartedAt).getTime() + 48 * 60 * 60 * 1000) 
         : null;
       const now = new Date();
       const hoursLeft = expiresAt ? Math.max(0, Math.round((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60))) : null;
