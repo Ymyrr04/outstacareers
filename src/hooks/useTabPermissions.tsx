@@ -14,6 +14,7 @@ export const TAB_IDS = [
   'analytics',
   'talent-scout',
   'external-scout',
+  'workflow',
 ] as const;
 
 export type TabId = typeof TAB_IDS[number];
@@ -30,6 +31,7 @@ export const TAB_LABELS: Record<TabId, string> = {
   'funnel': 'Funnel',
   'talent-scout': 'Talent Scout',
   'external-scout': 'External Scout',
+  'workflow': 'Workflow',
 };
 
 interface TabPermission {
