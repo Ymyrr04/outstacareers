@@ -29,6 +29,7 @@ interface InterviewNotesDialogProps {
 
 export function InterviewNotesDialog({ open, onOpenChange, applicantId, applicantName, onNotesUpdated }: InterviewNotesDialogProps) {
   const [notes, setNotes] = useState<ApplicantNote[]>([]);
+  const [legacyNotes, setLegacyNotes] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -38,12 +39,20 @@ export function InterviewNotesDialog({ open, onOpenChange, applicantId, applican
 
   const fetchNotes = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('applicant_notes')
-      .select('*')
-      .eq('applicant_id', applicantId)
-      .order('created_at', { ascending: false });
-    setNotes((data as ApplicantNote[]) || []);
+    const [notesResult, applicantResult] = await Promise.all([
+      supabase
+        .from('applicant_notes')
+        .select('*')
+        .eq('applicant_id', applicantId)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('applicants_prescreen')
+        .select('notes')
+        .eq('id', applicantId)
+        .single(),
+    ]);
+    setNotes((notesResult.data as ApplicantNote[]) || []);
+    setLegacyNotes(applicantResult.data?.notes || null);
     setLoading(false);
   }, [applicantId]);
 
@@ -187,7 +196,7 @@ export function InterviewNotesDialog({ open, onOpenChange, applicantId, applican
               <div className="flex items-center justify-center py-8">
                 <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
               </div>
-            ) : notes.length === 0 ? (
+            ) : notes.length === 0 && !legacyNotes ? (
               <div className="text-center py-8 text-muted-foreground">
                 No notes yet. Click "Add Note" to get started.
               </div>
@@ -265,6 +274,14 @@ export function InterviewNotesDialog({ open, onOpenChange, applicantId, applican
                     )}
                   </div>
                 ))}
+              </div>
+            )}
+
+            {/* Legacy notes from applicants_prescreen.notes field */}
+            {legacyNotes && (
+              <div className="border rounded-lg p-3 bg-amber-50/50 dark:bg-amber-950/20 border-amber-200/50 dark:border-amber-800/30">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-2">Applicant Notes</p>
+                <FormattedNotes content={legacyNotes} />
               </div>
             )}
           </TabsContent>
