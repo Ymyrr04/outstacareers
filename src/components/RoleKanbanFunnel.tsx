@@ -78,6 +78,8 @@ interface RoleKanbanFunnelProps {
 
 export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunnelProps) => {
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
+  const [allRoles, setAllRoles] = useState<string[]>([]);
+  const [jobFilter, setJobFilter] = useState<'active' | 'all'>('active');
   const [selectedRole, setSelectedRole] = useState<string>('');
   const [roleSearch, setRoleSearch] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -103,20 +105,21 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
 
   // Fetch active job titles independently
   useEffect(() => {
-    const fetchActiveJobs = async () => {
-      const { data } = await supabase
-        .from('jobs')
-        .select('title')
-        .eq('is_active', true)
-        .order('title');
-      setActiveRoles((data || []).map(j => j.title).filter(t => t && !/^\$?\d+(\.\d+)?$/.test(t.trim())));
+    const fetchJobs = async () => {
+      const [activeResult, allResult] = await Promise.all([
+        supabase.from('jobs').select('title').eq('is_active', true).order('title'),
+        supabase.from('jobs').select('title').order('title'),
+      ]);
+      const filterTitle = (data: any[]) => (data || []).map(j => j.title).filter(t => t && !/^\$?\d+(\.\d+)?$/.test(t.trim()));
+      setActiveRoles(filterTitle(activeResult.data));
+      setAllRoles(filterTitle(allResult.data));
     };
-    fetchActiveJobs();
+    fetchJobs();
   }, []);
 
   const filteredRoles = useMemo(() => {
-    return activeRoles;
-  }, [activeRoles]);
+    return jobFilter === 'active' ? activeRoles : allRoles;
+  }, [activeRoles, allRoles, jobFilter]);
 
   // Set initial selected role when filtered roles are ready
   useEffect(() => {
@@ -489,6 +492,27 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
               }}
               className="pl-8 h-9 w-[260px] text-sm border-blue-400 focus:border-blue-500 focus:ring-blue-500"
             />
+          </div>
+
+          <div className="flex items-center gap-1 border rounded-md p-0.5">
+            <button
+              className={cn(
+                'px-2.5 py-1 text-xs rounded-sm transition-colors',
+                jobFilter === 'active' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'
+              )}
+              onClick={() => setJobFilter('active')}
+            >
+              Active Jobs
+            </button>
+            <button
+              className={cn(
+                'px-2.5 py-1 text-xs rounded-sm transition-colors',
+                jobFilter === 'all' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'
+              )}
+              onClick={() => setJobFilter('all')}
+            >
+              All Jobs
+            </button>
           </div>
         </div>
       </div>
