@@ -114,6 +114,7 @@ export const TalentScoutDashboard = () => {
   const [cachedSearches, setCachedSearches] = useState<CachedSearch[]>(loadCachedSearches());
   const [showHistory, setShowHistory] = useState(false);
   const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [postedJobs, setPostedJobs] = useState<{ id: string; title: string; description: string | null; qualifications: string[] | null; responsibilities: string[] | null }[]>([]);
 
   // Fetch posted jobs on mount
