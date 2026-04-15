@@ -84,7 +84,7 @@ const saveCachedSearches = (searches: CachedSearch[]) => {
 };
 
 const STATUS_OPTIONS = [
-  'For Review', 'For Interview', 'SIV', 'Client Interview',
+  'For Review', 'For Interview', 'SIV', 'Pitch', 'Client Interview',
   'Hired', 'Bench', 'Reject', 'Archive', 'Archived', 'Talent Pool'
 ];
 
