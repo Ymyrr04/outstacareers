@@ -756,6 +756,31 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
                     IV: {candidate.interview_overall_score}
                   </span>
                 )}
+                {(() => {
+                  const cvScore = candidate.total_score ?? 0;
+                  const isExpired = candidate.interview_status === 'in_progress' && candidate.interview_started_at
+                    ? new Date().getTime() - new Date(candidate.interview_started_at).getTime() > 48 * 60 * 60 * 1000
+                    : false;
+                  const ivScore = candidate.interview_overall_score ?? (isExpired ? 0 : null);
+                  if (ivScore === null && candidate.total_score === null) return null;
+                  const combined = ivScore !== null
+                    ? Math.round((cvScore + ivScore) / 2)
+                    : cvScore;
+                  const showCombined = ivScore !== null || isExpired;
+                  if (!showCombined) return null;
+                  return (
+                    <span className={cn(
+                      "inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded",
+                      combined >= 70
+                        ? "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400"
+                        : combined >= 40
+                        ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
+                        : "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400"
+                    )}>
+                      OA: {combined}
+                    </span>
+                  );
+                })()}
                 <ApplicationHistoryBadge email={candidate.email} currentId={candidate.id} phone={candidate.phone} />
               </div>
             </div>
