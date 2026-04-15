@@ -64,6 +64,8 @@ interface Candidate {
   submitted_at: string;
   total_score: number | null;
   interview_overall_score: number | null;
+  interview_status: string | null;
+  interview_started_at: string | null;
   job_title: string;
   job_id: string | null;
   cv_file_url: string | null;
@@ -144,21 +146,24 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
 
     const applicantIds = (data || []).map(a => a.id);
     let interviewScores: Record<string, number> = {};
+    let interviewMeta: Record<string, { status: string; started_at: string }> = {};
     let stageEnteredMap: Record<string, string> = {};
     
     if (applicantIds.length > 0) {
       for (let i = 0; i < applicantIds.length; i += 100) {
         const batch = applicantIds.slice(i, i + 100);
         
-        // Fetch interview scores
+        // Fetch interview sessions (all statuses for expiry detection)
         const { data: sessions } = await supabase
           .from('interview_sessions')
-          .select('applicant_id, overall_score')
+          .select('applicant_id, overall_score, status, started_at')
           .in('applicant_id', batch)
-          .in('status', ['completed', 'completed_manual_review'])
           .order('created_at', { ascending: false });
         
         for (const s of sessions || []) {
+          if (!(s.applicant_id in interviewMeta)) {
+            interviewMeta[s.applicant_id] = { status: s.status, started_at: s.started_at };
+          }
           if (s.overall_score != null && !(s.applicant_id in interviewScores)) {
             interviewScores[s.applicant_id] = s.overall_score;
           }
@@ -183,6 +188,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
       ...a,
       is_starred: a.is_starred ?? false,
       interview_overall_score: interviewScores[a.id] ?? null,
+      interview_status: interviewMeta[a.id]?.status ?? null,
+      interview_started_at: interviewMeta[a.id]?.started_at ?? null,
       stage_entered_at: stageEnteredMap[a.id] || a.submitted_at,
     })));
     setLoading(false);
@@ -749,6 +756,31 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
                     IV: {candidate.interview_overall_score}
                   </span>
                 )}
+                {(() => {
+                  const cvScore = candidate.total_score ?? 0;
+                  const isExpired = candidate.interview_status === 'in_progress' && candidate.interview_started_at
+                    ? new Date().getTime() - new Date(candidate.interview_started_at).getTime() > 48 * 60 * 60 * 1000
+                    : false;
+                  const ivScore = candidate.interview_overall_score ?? (isExpired ? 0 : null);
+                  if (ivScore === null && candidate.total_score === null) return null;
+                  const combined = ivScore !== null
+                    ? Math.round((cvScore + ivScore) / 2)
+                    : cvScore;
+                  const showCombined = ivScore !== null || isExpired;
+                  if (!showCombined) return null;
+                  return (
+                    <span className={cn(
+                      "inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded",
+                      combined >= 70
+                        ? "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400"
+                        : combined >= 40
+                        ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
+                        : "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400"
+                    )}>
+                      OA: {combined}
+                    </span>
+                  );
+                })()}
                 <ApplicationHistoryBadge email={candidate.email} currentId={candidate.id} phone={candidate.phone} />
               </div>
             </div>
