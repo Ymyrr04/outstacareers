@@ -29,6 +29,7 @@ interface InterviewNotesDialogProps {
 
 export function InterviewNotesDialog({ open, onOpenChange, applicantId, applicantName, onNotesUpdated }: InterviewNotesDialogProps) {
   const [notes, setNotes] = useState<ApplicantNote[]>([]);
+  const [legacyNotes, setLegacyNotes] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editingNoteId, setEditingNoteId] = useState<string | null>(null);
@@ -38,12 +39,20 @@ export function InterviewNotesDialog({ open, onOpenChange, applicantId, applican
 
   const fetchNotes = useCallback(async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('applicant_notes')
-      .select('*')
-      .eq('applicant_id', applicantId)
-      .order('created_at', { ascending: false });
-    setNotes((data as ApplicantNote[]) || []);
+    const [notesResult, applicantResult] = await Promise.all([
+      supabase
+        .from('applicant_notes')
+        .select('*')
+        .eq('applicant_id', applicantId)
+        .order('created_at', { ascending: false }),
+      supabase
+        .from('applicants_prescreen')
+        .select('notes')
+        .eq('id', applicantId)
+        .single(),
+    ]);
+    setNotes((notesResult.data as ApplicantNote[]) || []);
+    setLegacyNotes(applicantResult.data?.notes || null);
     setLoading(false);
   }, [applicantId]);
 
