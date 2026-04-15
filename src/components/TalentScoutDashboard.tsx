@@ -885,6 +885,11 @@ export const TalentScoutDashboard = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <CandidateDetailDialog
+        open={!!selectedCandidateId}
+        onOpenChange={(open) => { if (!open) setSelectedCandidateId(null); }}
+        applicantId={selectedCandidateId}
+      />
     </div>
   );
 };
