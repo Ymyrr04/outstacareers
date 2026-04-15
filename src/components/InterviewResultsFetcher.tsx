@@ -34,6 +34,7 @@ export function InterviewResultsFetcher({
   const [session, setSession] = useState<InterviewSession | null>(cachedSession);
   const [loading, setLoading] = useState(!cachedSession);
   const [checked, setChecked] = useState(!!cachedSession);
+  const [startedAt, setStartedAt] = useState<string | null>(cachedSession?.started_at || null);
 
   const fetchSession = async () => {
     setLoading(true);
