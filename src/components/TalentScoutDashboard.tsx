@@ -14,6 +14,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Loader2, SearchIcon, Target, Users, MapPin, Star, FileText, CheckCircle, XCircle, Sparkles, Plus, X, ChevronDown, ChevronUp, History, Trash2, ShieldAlert, BarChart3, AlertTriangle, Briefcase, Eye } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
 import { CandidateDetailDialog } from '@/components/CandidateDetailDialog';
+import { CVImagePreview } from '@/components/CVImagePreview';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface ScoreBreakdown {
   experience_relevance: number;
@@ -115,6 +117,7 @@ export const TalentScoutDashboard = () => {
   const [showHistory, setShowHistory] = useState(false);
   const [showRejectConfirm, setShowRejectConfirm] = useState(false);
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
+  const [cvPreview, setCvPreview] = useState<{ url: string; name: string } | null>(null);
   const [postedJobs, setPostedJobs] = useState<{ id: string; title: string; description: string | null; qualifications: string[] | null; responsibilities: string[] | null }[]>([]);
 
   // Fetch posted jobs on mount
@@ -848,7 +851,7 @@ export const TalentScoutDashboard = () => {
                               variant="outline"
                               size="sm"
                               className="gap-1"
-                              onClick={() => window.open(result.cv_file_url!, '_blank')}
+                              onClick={() => setCvPreview({ url: result.cv_file_url!, name: result.full_name })}
                             >
                               <FileText className="w-3.5 h-3.5" /> View CV
                             </Button>
@@ -890,6 +893,16 @@ export const TalentScoutDashboard = () => {
         onOpenChange={(open) => { if (!open) setSelectedCandidateId(null); }}
         applicantId={selectedCandidateId}
       />
+      {cvPreview && (
+        <Dialog open={!!cvPreview} onOpenChange={(open) => { if (!open) setCvPreview(null); }}>
+          <DialogContent className="max-w-5xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>CV Preview — {cvPreview.name}</DialogTitle>
+            </DialogHeader>
+            <CVImagePreview pdfUrl={cvPreview.url} fileName={cvPreview.name + '.pdf'} />
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 };
