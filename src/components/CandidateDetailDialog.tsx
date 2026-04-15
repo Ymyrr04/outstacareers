@@ -82,7 +82,7 @@ export function CandidateDetailDialog({ open, onOpenChange, applicantId }: Candi
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>{applicant?.full_name || 'Candidate Details'}</DialogTitle>
         </DialogHeader>
