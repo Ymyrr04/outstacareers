@@ -39,7 +39,7 @@ export const SearchApplicantExpandedView = ({
   onApplicantUpdated,
 }: SearchApplicantExpandedViewProps) => {
   const [activeTab, setActiveTab] = useState<'cv' | 'interview'>('cv');
-  const [showCvPreview, setShowCvPreview] = useState(false);
+  const [showCvPreview, setShowCvPreview] = useState(true);
   const [editingContact, setEditingContact] = useState(false);
   const [savingContact, setSavingContact] = useState(false);
   const [contactForm, setContactForm] = useState({
