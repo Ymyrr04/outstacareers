@@ -17,6 +17,7 @@ interface InterviewSession {
   ai_strengths: string[] | null;
   ai_concerns: string[] | null;
   completed_at: string | null;
+  started_at?: string | null;
 }
 
 interface InterviewResultsFetcherProps {
@@ -59,6 +60,7 @@ export function InterviewResultsFetcher({
         ai_strengths: data.ai_strengths,
         ai_concerns: data.ai_concerns,
         completed_at: data.completed_at,
+        started_at: data.started_at,
       };
       setSession(sessionData);
       onSessionFound?.(sessionData);
@@ -88,11 +90,13 @@ export function InterviewResultsFetcher({
     const isInProgress = session.status === 'in_progress';
     
     if (isInProgress) {
-      // Interview link expires 2 days after session started
-      const startedAt = session.completed_at ? new Date(session.completed_at) : null;
-      // Use the session's created_at-like field - we need started_at which we don't have, 
-      // so we'll fetch it or estimate. Since we know the link expires 2 days from start,
-      // let's show a general message.
+      const expiresAt = session.started_at 
+        ? new Date(new Date(session.started_at).getTime() + 48 * 60 * 60 * 1000) 
+        : null;
+      const now = new Date();
+      const hoursLeft = expiresAt ? Math.max(0, Math.round((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60))) : null;
+      const isExpired = hoursLeft !== null && hoursLeft <= 0;
+
       return (
         <div className="p-6 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg border border-amber-200/50 dark:border-amber-800/30 text-center">
           <ClipboardList className="w-8 h-8 mx-auto mb-2 text-amber-500" />
@@ -100,9 +104,17 @@ export function InterviewResultsFetcher({
           <p className="text-sm text-muted-foreground mb-2">
             The candidate has started but has not yet finished the interview assessment.
           </p>
-          <p className="text-xs text-muted-foreground">
-            The interview link expires 48 hours after it was sent.
-          </p>
+          {hoursLeft !== null ? (
+            isExpired ? (
+              <p className="text-xs text-red-500 font-medium">The interview link has expired.</p>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Interview link expires in approximately <span className="font-medium text-amber-600 dark:text-amber-400">{hoursLeft} hour{hoursLeft !== 1 ? 's' : ''}</span>.
+              </p>
+            )
+          ) : (
+            <p className="text-xs text-muted-foreground">The interview link expires 48 hours after it was sent.</p>
+          )}
         </div>
       );
     }
