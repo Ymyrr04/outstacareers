@@ -356,16 +356,6 @@ export const SearchApplicantExpandedView = ({
         <ApplicationHistorySection email={applicant.email} currentId={applicant.id} phone={applicant.phone} />
       </div>
 
-      {/* CV Preview */}
-      {showCvPreview && applicant.cv_file_url && (
-        <div className="mb-4">
-          <CVImagePreview
-            pdfUrl={applicant.cv_file_url}
-            fileName={`${applicant.full_name} CV.pdf`}
-          />
-        </div>
-      )}
-
       {/* CV and Voice Links */}
       <div className="flex flex-wrap gap-3 mb-4">
         {applicant.cv_file_url && (
@@ -427,6 +417,16 @@ export const SearchApplicantExpandedView = ({
           <p className="text-sm text-muted-foreground">{applicant.start_availability}</p>
         </div>
       </div>
+
+      {/* CV Preview */}
+      {showCvPreview && applicant.cv_file_url && (
+        <div className="mt-4">
+          <CVImagePreview
+            pdfUrl={applicant.cv_file_url}
+            fileName={`${applicant.full_name} CV.pdf`}
+          />
+        </div>
+      )}
     </div>
   );
 };
