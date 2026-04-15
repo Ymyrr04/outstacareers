@@ -61,6 +61,7 @@ import { SearchApplicantExpandedView } from '@/components/SearchApplicantExpande
 import { TalentScoutDashboard } from '@/components/TalentScoutDashboard';
 import { ExternalScoutDashboard } from '@/components/ExternalScoutDashboard';
 import { RecruitmentFunnel } from '@/components/RecruitmentFunnel';
+import { WorkflowBoard } from '@/components/WorkflowBoard';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 // Status options for applicant tracking - new pipeline order
@@ -1607,6 +1608,12 @@ const Admin = () => {
               <TabsTrigger value="external-scout" className="flex items-center gap-2">
                 <Globe className="w-4 h-4" />
                 External Scout
+              </TabsTrigger>
+            )}
+            {canViewTab('workflow') && (
+              <TabsTrigger value="workflow" className="flex items-center gap-2">
+                <ClipboardList className="w-4 h-4" />
+                Workflow
               </TabsTrigger>
             )}
             {/* Settings tab - only for super admins (mark@outsta.io) */}
@@ -3583,6 +3590,11 @@ const Admin = () => {
           {/* External Scout Tab */}
           <TabsContent value="external-scout" className="space-y-6">
             <ExternalScoutDashboard />
+          </TabsContent>
+
+          {/* Workflow Tab */}
+          <TabsContent value="workflow" className="space-y-6">
+            <WorkflowBoard />
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
