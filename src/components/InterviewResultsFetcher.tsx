@@ -34,6 +34,7 @@ export function InterviewResultsFetcher({
   const [session, setSession] = useState<InterviewSession | null>(cachedSession);
   const [loading, setLoading] = useState(!cachedSession);
   const [checked, setChecked] = useState(!!cachedSession);
+  const [startedAt, setStartedAt] = useState<string | null>(cachedSession?.started_at || null);
 
   const fetchSession = async () => {
     setLoading(true);
@@ -62,6 +63,7 @@ export function InterviewResultsFetcher({
         completed_at: data.completed_at,
         started_at: data.started_at,
       };
+      setStartedAt(data.started_at);
       setSession(sessionData);
       onSessionFound?.(sessionData);
     }
@@ -71,9 +73,20 @@ export function InterviewResultsFetcher({
   };
 
   useEffect(() => {
-    // If we don't have a cached session, check the database
     if (!cachedSession) {
       fetchSession();
+    } else if (cachedSession.status === 'in_progress' && !cachedSession.started_at) {
+      // Fetch started_at for in-progress sessions missing it
+      supabase
+        .from('interview_sessions')
+        .select('started_at')
+        .eq('applicant_id', applicantId)
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+        .then(({ data }) => {
+          if (data?.started_at) setStartedAt(data.started_at);
+        });
     }
   }, [applicantId, cachedSession]);
 
@@ -90,8 +103,9 @@ export function InterviewResultsFetcher({
     const isInProgress = session.status === 'in_progress';
     
     if (isInProgress) {
-      const expiresAt = session.started_at 
-        ? new Date(new Date(session.started_at).getTime() + 48 * 60 * 60 * 1000) 
+      const effectiveStartedAt = startedAt || session.started_at;
+      const expiresAt = effectiveStartedAt
+        ? new Date(new Date(effectiveStartedAt).getTime() + 48 * 60 * 60 * 1000) 
         : null;
       const now = new Date();
       const hoursLeft = expiresAt ? Math.max(0, Math.round((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60))) : null;
