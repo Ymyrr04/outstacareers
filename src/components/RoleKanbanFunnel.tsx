@@ -188,6 +188,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
       ...a,
       is_starred: a.is_starred ?? false,
       interview_overall_score: interviewScores[a.id] ?? null,
+      interview_status: interviewMeta[a.id]?.status ?? null,
+      interview_started_at: interviewMeta[a.id]?.started_at ?? null,
       stage_entered_at: stageEnteredMap[a.id] || a.submitted_at,
     })));
     setLoading(false);
