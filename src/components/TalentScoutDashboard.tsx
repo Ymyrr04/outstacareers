@@ -11,8 +11,9 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Loader2, SearchIcon, Target, Users, MapPin, Star, FileText, CheckCircle, XCircle, Sparkles, Plus, X, ChevronDown, ChevronUp, History, Trash2, ShieldAlert, BarChart3, AlertTriangle, Briefcase } from 'lucide-react';
+import { Loader2, SearchIcon, Target, Users, MapPin, Star, FileText, CheckCircle, XCircle, Sparkles, Plus, X, ChevronDown, ChevronUp, History, Trash2, ShieldAlert, BarChart3, AlertTriangle, Briefcase, Eye } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
+import { CandidateDetailDialog } from '@/components/CandidateDetailDialog';
 
 interface ScoreBreakdown {
   experience_relevance: number;
@@ -113,6 +114,7 @@ export const TalentScoutDashboard = () => {
   const [cachedSearches, setCachedSearches] = useState<CachedSearch[]>(loadCachedSearches());
   const [showHistory, setShowHistory] = useState(false);
   const [showRejectConfirm, setShowRejectConfirm] = useState(false);
+  const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(null);
   const [postedJobs, setPostedJobs] = useState<{ id: string; title: string; description: string | null; qualifications: string[] | null; responsibilities: string[] | null }[]>([]);
 
   // Fetch posted jobs on mount
@@ -831,17 +833,27 @@ export const TalentScoutDashboard = () => {
                           )}
                         </div>
 
-                        {/* CV Link */}
-                        {result.cv_file_url && (
+                        {/* CV Link & Full Profile */}
+                        <div className="flex flex-wrap gap-2">
                           <Button
-                            variant="outline"
+                            variant="default"
                             size="sm"
                             className="gap-1"
-                            onClick={() => window.open(result.cv_file_url!, '_blank')}
+                            onClick={() => setSelectedCandidateId(result.id)}
                           >
-                            <FileText className="w-3.5 h-3.5" /> View CV
+                            <Eye className="w-3.5 h-3.5" /> View Full Profile
                           </Button>
-                        )}
+                          {result.cv_file_url && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="gap-1"
+                              onClick={() => window.open(result.cv_file_url!, '_blank')}
+                            >
+                              <FileText className="w-3.5 h-3.5" /> View CV
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     )}
                   </CardContent>
@@ -873,6 +885,11 @@ export const TalentScoutDashboard = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <CandidateDetailDialog
+        open={!!selectedCandidateId}
+        onOpenChange={(open) => { if (!open) setSelectedCandidateId(null); }}
+        applicantId={selectedCandidateId}
+      />
     </div>
   );
 };
