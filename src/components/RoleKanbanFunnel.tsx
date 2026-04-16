@@ -320,6 +320,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     if (selectedRole && selectedRole !== ALL_ROLES_KEY) _onRoleSelect?.(selectedRole);
   }, [selectedRole, _onRoleSelect]);
 
+  // Notify parent of full filter context (role + jobFilter), including "All Roles".
+  useEffect(() => {
+    onFiltersChange?.({ role: selectedRole, jobFilter });
+  }, [selectedRole, jobFilter, onFiltersChange]);
+
   const fetchCandidates = useCallback(async (role: string) => {
     if (!role) return;
 
