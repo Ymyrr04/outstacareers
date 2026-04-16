@@ -316,9 +316,10 @@ export const RecruitmentFunnel = () => {
       <RoleKanbanFunnel
         roles={roleFunnels.map(r => r.jobTitle)}
         onRoleSelect={(role) => setSearchTerm(role === '__all__' ? '' : role)}
-        onFiltersChange={({ role, jobFilter }) => {
+        onFiltersChange={({ role, jobFilter, adminScopedRoles: roles }) => {
           setSearchTerm(role === '__all__' ? '' : role);
           setJobStatusFilter(jobFilter);
+          setAdminScopedRoles(roles);
         }}
       />
 
