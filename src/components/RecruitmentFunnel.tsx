@@ -98,17 +98,18 @@ export const RecruitmentFunnel = () => {
       }
       setApplicants(all);
 
-      let histAll: { applicant_id: string; to_status: string; created_at: string; job_title: string }[] = [];
+      let histAll: { applicant_id: string; from_status: string | null; to_status: string; created_at: string; job_title: string }[] = [];
       from = 0;
       while (true) {
         const { data } = await supabase
           .from('applicant_status_history')
-          .select('applicant_id, to_status, created_at, applicants_prescreen!inner(job_title)')
+          .select('applicant_id, from_status, to_status, created_at, applicants_prescreen!inner(job_title)')
           .range(from, from + batchSize - 1) as { data: any[] | null };
         if (!data || data.length === 0) break;
         histAll = histAll.concat(
           data.map((d: any) => ({
             applicant_id: d.applicant_id,
+            from_status: d.from_status,
             to_status: d.to_status,
             created_at: d.created_at,
             job_title: d.applicants_prescreen?.job_title || 'Unknown',
@@ -117,6 +118,7 @@ export const RecruitmentFunnel = () => {
         if (data.length < batchSize) break;
         from += batchSize;
       }
+      setRawHistory(histAll);
 
       // Track most-recent status-change timestamp per applicant
       const lastChange: Record<string, string> = {};
