@@ -417,8 +417,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
 
     // Cache the fully-enriched result and swap it in.
     candidateCacheRef.current.set(cacheKey, { data: enriched, ts: Date.now() });
+    persistCache();
     setCandidates(enriched);
-  }, [activeRoles, allRoles, jobFilter, filteredRoles, selectedAdmin]);
+  }, [activeRoles, allRoles, jobFilter, filteredRoles, selectedAdmin, persistCache]);
 
   useEffect(() => {
     if (selectedRole === ALL_ROLES_KEY && activeRoles.length === 0 && allRoles.length === 0) return;
