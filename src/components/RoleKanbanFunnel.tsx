@@ -756,6 +756,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
                               setDropTargetStage(null);
                             }}
                             showRoleLabel={selectedRole === ALL_ROLES_KEY}
+                            isInactiveRole={jobFilter === 'all' && inactiveRolesSet.has(candidate.job_title)}
                           />
                         ))
                       )}
