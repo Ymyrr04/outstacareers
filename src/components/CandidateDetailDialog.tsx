@@ -10,49 +10,60 @@ interface CandidateDetailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   applicantId: string | null;
+  initialApplicant?: PaginatedApplicant | null;
 }
 
-export function CandidateDetailDialog({ open, onOpenChange, applicantId }: CandidateDetailDialogProps) {
-  const [applicant, setApplicant] = useState<PaginatedApplicant | null>(null);
+export function CandidateDetailDialog({ open, onOpenChange, applicantId, initialApplicant }: CandidateDetailDialogProps) {
+  const [applicant, setApplicant] = useState<PaginatedApplicant | null>(initialApplicant ?? null);
   const [loading, setLoading] = useState(false);
   const [downloadingCv, setDownloadingCv] = useState<string | null>(null);
 
+  // Sync initial data when dialog opens with a (possibly different) candidate
+  useEffect(() => {
+    if (open && initialApplicant && initialApplicant.id === applicantId) {
+      setApplicant(initialApplicant);
+    }
+  }, [open, applicantId, initialApplicant]);
+
   useEffect(() => {
     if (!open || !applicantId) {
-      setApplicant(null);
+      if (!open) setApplicant(null);
       return;
     }
 
-    const fetchApplicant = async () => {
-      setLoading(true);
-      const { data } = await supabase
-        .from('applicants_prescreen')
-        .select('*')
-        .eq('id', applicantId)
-        .single();
+    // If we already have data from the parent, skip the spinner — refresh silently in background.
+    const hasInitial = !!(initialApplicant && initialApplicant.id === applicantId);
 
-      if (data) {
-        // Fetch interview session
-        const { data: sessionData } = await supabase
+    const fetchApplicant = async () => {
+      if (!hasInitial) setLoading(true);
+      const [applicantRes, sessionRes] = await Promise.all([
+        supabase
+          .from('applicants_prescreen')
+          .select('*')
+          .eq('id', applicantId)
+          .maybeSingle(),
+        supabase
           .from('interview_sessions')
           .select('id, status, experience_score, technical_score, communication_score, situational_score, personality_score, overall_score, ai_summary, ai_strengths, ai_concerns, completed_at')
           .eq('applicant_id', applicantId)
           .order('created_at', { ascending: false })
           .limit(1)
-          .maybeSingle();
+          .maybeSingle(),
+      ]);
 
+      if (applicantRes.data) {
         setApplicant({
-          ...data,
-          is_starred: data.is_starred ?? false,
-          ai_assessment_details: data.ai_assessment_details as any,
-          interview_session: sessionData || null,
+          ...applicantRes.data,
+          is_starred: applicantRes.data.is_starred ?? false,
+          ai_assessment_details: applicantRes.data.ai_assessment_details as any,
+          interview_session: sessionRes.data || null,
         } as PaginatedApplicant);
       }
       setLoading(false);
     };
 
     fetchApplicant();
-  }, [open, applicantId]);
+  }, [open, applicantId, initialApplicant]);
 
   const handleDownloadCv = useCallback(async (id: string, cvUrl: string, name: string) => {
     setDownloadingCv(id);
