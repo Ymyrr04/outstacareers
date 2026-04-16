@@ -52,8 +52,10 @@ function getHeatmapColor(count: number, maxCount: number): string {
 }
 
 export const RecruitmentFunnel = () => {
-  const [applicants, setApplicants] = useState<{ job_title: string; status: string; pre_archive_status: string | null; submitted_at: string }[]>([]);
+  const [applicants, setApplicants] = useState<{ id: string; job_title: string; status: string; pre_archive_status: string | null; submitted_at: string }[]>([]);
   const [historyData, setHistoryData] = useState<{ job_title: string; to_status: string; applicant_count: number }[]>([]);
+  // Most-recent status-change timestamp per applicant (for avg days in pipeline)
+  const [lastStatusChange, setLastStatusChange] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'pipeline' | 'name' | 'total'>('pipeline');
