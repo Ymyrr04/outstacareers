@@ -14,15 +14,34 @@ interface CandidateDetailDialogProps {
   initialApplicant?: PaginatedApplicant | null;
 }
 
+// An "initial" applicant from the kanban is just a slim row (id, name, email,
+// status, total_score, etc.) — it's missing the breakdown scores, AI summary,
+// flags, etc. that the dialog renders. Treat it as a complete payload only
+// when those fields are present; otherwise we show the loading spinner until
+// the full fetch finishes.
+function isFullyHydrated(a: PaginatedApplicant | null | undefined): boolean {
+  if (!a) return false;
+  // Use a field that only the full fetch sets (and that the slim kanban row
+  // does NOT include) as the hydration marker.
+  return Object.prototype.hasOwnProperty.call(a, 'ai_summary')
+    && Object.prototype.hasOwnProperty.call(a, 'home_office')
+    && Object.prototype.hasOwnProperty.call(a, 'role_experience_score');
+}
+
 export function CandidateDetailDialog({ open, onOpenChange, applicantId, initialApplicant }: CandidateDetailDialogProps) {
-  const [applicant, setApplicant] = useState<PaginatedApplicant | null>(initialApplicant ?? null);
+  const [applicant, setApplicant] = useState<PaginatedApplicant | null>(
+    isFullyHydrated(initialApplicant) ? initialApplicant! : null
+  );
   const [loading, setLoading] = useState(false);
   const [downloadingCv, setDownloadingCv] = useState<string | null>(null);
 
   // Sync initial data when dialog opens with a (possibly different) candidate
   useEffect(() => {
-    if (open && initialApplicant && initialApplicant.id === applicantId) {
-      setApplicant(initialApplicant);
+    if (open && isFullyHydrated(initialApplicant) && initialApplicant!.id === applicantId) {
+      setApplicant(initialApplicant!);
+    } else if (open && initialApplicant?.id !== applicant?.id) {
+      // Different candidate (or slim payload) — clear stale data so the spinner shows.
+      setApplicant(null);
     }
   }, [open, applicantId, initialApplicant]);
 
@@ -32,8 +51,10 @@ export function CandidateDetailDialog({ open, onOpenChange, applicantId, initial
       return;
     }
 
-    // If we already have data from the parent, skip the spinner — refresh silently in background.
-    const hasInitial = !!(initialApplicant && initialApplicant.id === applicantId);
+    // If parent passed a fully-hydrated payload, skip the spinner. A slim
+    // kanban row (no scores/flags) doesn't count — show the spinner so the
+    // user doesn't see "-/50" placeholders while data loads.
+    const hasInitial = isFullyHydrated(initialApplicant) && initialApplicant!.id === applicantId;
 
     const fetchApplicant = async () => {
       if (!hasInitial) setLoading(true);
