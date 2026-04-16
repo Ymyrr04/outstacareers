@@ -654,26 +654,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
             ))}
           </select>
 
-          <div className="flex items-center gap-1 border rounded-md p-0.5">
-            <button
-              className={cn(
-                'px-2.5 py-1 text-xs rounded-sm transition-colors',
-                jobFilter === 'active' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'
-              )}
-              onClick={() => setJobFilter('active')}
-            >
-              Active Jobs
-            </button>
-            <button
-              className={cn(
-                'px-2.5 py-1 text-xs rounded-sm transition-colors',
-                jobFilter === 'all' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'
-              )}
-              onClick={() => setJobFilter('all')}
-            >
-              All Jobs
-            </button>
-          </div>
+          <select
+            value={jobFilter}
+            onChange={(e) => setJobFilter(e.target.value as 'active' | 'all' | 'inactive')}
+            className="h-9 text-sm rounded-md border border-input bg-background px-3 py-1 focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="active">Active Jobs</option>
+            <option value="all">All Jobs</option>
+            <option value="inactive">Inactive Jobs</option>
+          </select>
         </div>
       </div>
 
