@@ -296,8 +296,39 @@ export const RecruitmentFunnel = () => {
       }
     }
 
-    return { totalActive, overallConversionRate, bottleneckStage, avgDaysInPipeline: 0 };
-  }, [roleFunnels, stageTotals]);
+    // Avg days in pipeline: for each applicant currently in a recruitment stage
+    // within the filtered roles, compute days from submitted_at to last status
+    // change (or now if no status change recorded yet).
+    let effectiveFrom = dateFrom;
+    let effectiveTo = dateTo;
+    if (effectiveFrom && effectiveTo && effectiveFrom > effectiveTo) {
+      [effectiveFrom, effectiveTo] = [effectiveTo, effectiveFrom];
+    }
+    const filteredRoleSet = new Set(roleFunnels.map(r => r.jobTitle));
+    const now = Date.now();
+    const MS_PER_DAY = 1000 * 60 * 60 * 24;
+    let totalDays = 0;
+    let dayCount = 0;
+    for (const a of applicants) {
+      if (!filteredRoleSet.has(a.job_title || 'Unknown')) continue;
+      if (effectiveFrom && a.submitted_at < effectiveFrom) continue;
+      if (effectiveTo && a.submitted_at > effectiveTo + 'T23:59:59.999Z') continue;
+      const effectiveStatus = a.status === 'Archive' || a.status === 'Archived'
+        ? (a.pre_archive_status || a.status)
+        : a.status;
+      if (!RECRUITMENT_STATUSES.has(effectiveStatus as (typeof FUNNEL_STAGES)[number])) continue;
+      const submittedMs = new Date(a.submitted_at).getTime();
+      if (!isFinite(submittedMs)) continue;
+      const lastChange = lastStatusChange[a.id];
+      const endMs = lastChange ? new Date(lastChange).getTime() : now;
+      const days = Math.max(0, (endMs - submittedMs) / MS_PER_DAY);
+      totalDays += days;
+      dayCount += 1;
+    }
+    const avgDaysInPipeline = dayCount > 0 ? Math.round(totalDays / dayCount) : 0;
+
+    return { totalActive, overallConversionRate, bottleneckStage, avgDaysInPipeline };
+  }, [roleFunnels, stageTotals, applicants, lastStatusChange, dateFrom, dateTo]);
 
   // Conversion rates: % of total pipeline in each stage (distribution view)
   // Since historical flow data is sparse (status_history trigger was added recently),
