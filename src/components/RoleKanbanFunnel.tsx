@@ -936,7 +936,7 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
                 <FileText className="w-2.5 h-2.5 shrink-0" />
                 <span className="truncate font-medium text-primary/80" title={candidate.job_title}>{candidate.job_title}</span>
                 {isInactiveRole && (
-                  <Badge variant="outline" className="h-4 px-1 text-[9px] font-medium text-muted-foreground border-muted-foreground/30 shrink-0">
+                  <Badge variant="outline" className="h-4 px-1 text-[9px] font-medium bg-red-100 text-red-700 border-red-300 dark:bg-red-950/40 dark:text-red-400 dark:border-red-900 shrink-0">
                     Inactive
                   </Badge>
                 )}
