@@ -327,7 +327,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
       interview_started_at: interviewMeta[a.id]?.started_at ?? null,
       stage_entered_at: stageEnteredMap[a.id] || a.submitted_at,
     })));
-  }, [activeRoles, allRoles, jobFilter]);
+  }, [activeRoles, allRoles, jobFilter, filteredRoles]);
 
   useEffect(() => {
     if (selectedRole === ALL_ROLES_KEY && activeRoles.length === 0 && allRoles.length === 0) return;
