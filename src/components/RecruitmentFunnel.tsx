@@ -126,7 +126,7 @@ export const RecruitmentFunnel = () => {
     };
 
     fetchAll();
-  }, []);
+  }, [isOpen, hasFetchedHistorical]);
 
   // Fetch active job titles for filtering
   useEffect(() => {
