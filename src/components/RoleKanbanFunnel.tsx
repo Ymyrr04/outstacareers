@@ -80,11 +80,12 @@ interface Candidate {
 interface RoleKanbanFunnelProps {
   roles?: string[];
   onRoleSelect?: (role: string) => void;
+  onFiltersChange?: (filters: { role: string; jobFilter: 'active' | 'all' | 'inactive' }) => void;
 }
 
 const ALL_ROLES_KEY = '__all__';
 
-export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunnelProps) => {
+export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange }: RoleKanbanFunnelProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
   const [allRoles, setAllRoles] = useState<string[]>([]);
