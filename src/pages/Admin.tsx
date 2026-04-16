@@ -207,6 +207,7 @@ type SortOption = 'newest' | 'oldest' | 'score-desc' | 'score-asc' | 'starred' |
 const Admin = () => {
   const { user, isAdmin, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const { tab: urlTab } = useParams<{ tab?: string }>();
   const { toast } = useToast();
   const { canViewTab, loading: tabPermissionsLoading } = useTabPermissions();
   const [jobs, setJobs] = useState<Job[]>([]);
