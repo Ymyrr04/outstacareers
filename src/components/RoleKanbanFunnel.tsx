@@ -1188,45 +1188,53 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
         </ContextMenuContent>
       </ContextMenu>
 
-      <CandidateDetailDialog
-        open={showDetails}
-        onOpenChange={(open) => { setShowDetails(open); if (!open) setShowDetailsTab(undefined); }}
-        applicantId={candidate.id}
-        initialApplicant={candidate as any}
-      />
+      {mountDetails && (
+        <CandidateDetailDialog
+          open={showDetails}
+          onOpenChange={(open) => { setShowDetails(open); if (!open) setShowDetailsTab(undefined); }}
+          applicantId={candidate.id}
+          initialApplicant={candidate as any}
+        />
+      )}
 
-      <SendEmailDialog
-        open={showSendEmail}
-        onOpenChange={setShowSendEmail}
-        applicant={{
-          id: candidate.id,
-          full_name: candidate.full_name,
-          email: candidate.email,
-          job_title: candidate.job_title,
-          status: candidate.status,
-        }}
-      />
+      {mountSendEmail && (
+        <SendEmailDialog
+          open={showSendEmail}
+          onOpenChange={setShowSendEmail}
+          applicant={{
+            id: candidate.id,
+            full_name: candidate.full_name,
+            email: candidate.email,
+            job_title: candidate.job_title,
+            status: candidate.status,
+          }}
+        />
+      )}
 
-      <CommunicationHistory
-        open={showHistory}
-        onOpenChange={setShowHistory}
-        applicantId={candidate.id}
-        applicantName={candidate.full_name}
-        applicantEmail={candidate.email}
-      />
+      {mountHistory && (
+        <CommunicationHistory
+          open={showHistory}
+          onOpenChange={setShowHistory}
+          applicantId={candidate.id}
+          applicantName={candidate.full_name}
+          applicantEmail={candidate.email}
+        />
+      )}
 
-      <InterviewInviteDialog
-        open={showInvite}
-        onOpenChange={setShowInvite}
-        applicant={{
-          id: candidate.id,
-          full_name: candidate.full_name,
-          email: candidate.email,
-          job_title: candidate.job_title,
-        }}
-      />
+      {mountInvite && (
+        <InterviewInviteDialog
+          open={showInvite}
+          onOpenChange={setShowInvite}
+          applicant={{
+            id: candidate.id,
+            full_name: candidate.full_name,
+            email: candidate.email,
+            job_title: candidate.job_title,
+          }}
+        />
+      )}
 
-      {candidate.cv_file_url && (
+      {mountCvPreview && candidate.cv_file_url && (
         <Dialog open={showCvPreview} onOpenChange={setShowCvPreview}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -1237,62 +1245,68 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
         </Dialog>
       )}
 
-      <InterviewNotesDialog
-        open={showInterviewResults}
-        onOpenChange={setShowInterviewResults}
-        applicantId={candidate.id}
-        applicantName={candidate.full_name}
-      />
+      {mountInterviewResults && (
+        <InterviewNotesDialog
+          open={showInterviewResults}
+          onOpenChange={setShowInterviewResults}
+          applicantId={candidate.id}
+          applicantName={candidate.full_name}
+        />
+      )}
 
-      <CandidateProfileDialog
-        open={showProfile}
-        onOpenChange={setShowProfile}
-        applicantId={candidate.id}
-        applicantName={candidate.full_name}
-      />
+      {mountProfile && (
+        <CandidateProfileDialog
+          open={showProfile}
+          onOpenChange={setShowProfile}
+          applicantId={candidate.id}
+          applicantName={candidate.full_name}
+        />
+      )}
 
-      <Dialog open={showActivity} onOpenChange={setShowActivity}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Activity className="w-4 h-4" />
-              Activity — {candidate.full_name}
-            </DialogTitle>
-          </DialogHeader>
-          {activityLoading ? (
-            <div className="py-8 text-center text-muted-foreground text-sm">Loading...</div>
-          ) : activityHistory.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground text-sm">No activity recorded</div>
-          ) : (
-            <div className="max-h-[400px] overflow-y-auto space-y-3">
-              {activityHistory.map((entry, idx) => {
-                const date = new Date(entry.created_at);
-                const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                const formattedTime = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                const adminName = getAdminDisplayName(entry.changed_by, 'System');
-                return (
-                  <div key={idx} className="flex gap-3 text-sm">
-                    <div className="flex flex-col items-center">
-                      <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
-                      {idx < activityHistory.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
+      {mountActivity && (
+        <Dialog open={showActivity} onOpenChange={setShowActivity}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Activity className="w-4 h-4" />
+                Activity — {candidate.full_name}
+              </DialogTitle>
+            </DialogHeader>
+            {activityLoading ? (
+              <div className="py-8 text-center text-muted-foreground text-sm">Loading...</div>
+            ) : activityHistory.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground text-sm">No activity recorded</div>
+            ) : (
+              <div className="max-h-[400px] overflow-y-auto space-y-3">
+                {activityHistory.map((entry, idx) => {
+                  const date = new Date(entry.created_at);
+                  const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                  const formattedTime = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                  const adminName = getAdminDisplayName(entry.changed_by, 'System');
+                  return (
+                    <div key={idx} className="flex gap-3 text-sm">
+                      <div className="flex flex-col items-center">
+                        <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
+                        {idx < activityHistory.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
+                      </div>
+                      <div className="pb-3">
+                        <p className="text-foreground">
+                          <span className="font-medium">{adminName}</span>
+                          {' moved from '}
+                          <span className="font-medium">{entry.from_status || '—'}</span>
+                          {' → '}
+                          <span className="font-medium">{entry.to_status}</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{formattedDate} at {formattedTime}</p>
+                      </div>
                     </div>
-                    <div className="pb-3">
-                      <p className="text-foreground">
-                        <span className="font-medium">{adminName}</span>
-                        {' moved from '}
-                        <span className="font-medium">{entry.from_status || '—'}</span>
-                        {' → '}
-                        <span className="font-medium">{entry.to_status}</span>
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{formattedDate} at {formattedTime}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+                  );
+                })}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 };
