@@ -131,8 +131,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
         next.delete('admin');
       }
       // Job filter
-      if (jobFilter === 'all') {
-        next.set('jobs', 'all');
+      if (jobFilter === 'all' || jobFilter === 'inactive') {
+        next.set('jobs', jobFilter);
       } else {
         next.delete('jobs');
       }
