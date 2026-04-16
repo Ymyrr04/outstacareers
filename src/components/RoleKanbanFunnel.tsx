@@ -109,6 +109,53 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   const [sortOption, setSortOption] = useState<'score-desc' | 'score-asc' | 'name-asc' | 'name-desc' | 'newest' | 'oldest' | 'assessed'>('score-desc');
   const [hiredCandidate, setHiredCandidate] = useState<Candidate | null>(null);
   const [showHiredDialog, setShowHiredDialog] = useState(false);
+
+  // ---- Multi-select (bulk action) state ----
+  // Selection is locked to a single stage at a time. Switching to a card in a
+  // different stage clears the prior selection and starts a fresh one.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectionStage, setSelectionStage] = useState<string | null>(null);
+  const [bulkMoving, setBulkMoving] = useState(false);
+
+  // Lasso (drag-to-select) state. Only active for one column at a time.
+  const [lasso, setLasso] = useState<{
+    stage: string;
+    startX: number;
+    startY: number;
+    curX: number;
+    curY: number;
+    additive: boolean;
+    baseSelection: Set<string>;
+  } | null>(null);
+  const lassoContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+    setSelectionStage(null);
+  }, []);
+
+  // Toggle a single card's selection (called on Ctrl/Cmd+click).
+  const toggleCardSelection = useCallback((candidate: Candidate) => {
+    setSelectedIds(prev => {
+      // Switching stages? Start fresh with just this card selected.
+      if (selectionStage && selectionStage !== candidate.status) {
+        setSelectionStage(candidate.status);
+        return new Set([candidate.id]);
+      }
+      const next = new Set(prev);
+      if (next.has(candidate.id)) {
+        next.delete(candidate.id);
+      } else {
+        next.add(candidate.id);
+      }
+      if (next.size === 0) {
+        setSelectionStage(null);
+      } else if (!selectionStage) {
+        setSelectionStage(candidate.status);
+      }
+      return next;
+    });
+  }, [selectionStage]);
   const [selectedAdmin, setSelectedAdmin] = useState<string>(() => {
     return searchParams.get('admin') || 'all';
   });
@@ -181,7 +228,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
       }
       return next;
     }, { replace: true });
-  }, [selectedRole, selectedAdmin, jobFilter, setSearchParams]);
+    // Clear selection when context changes — selected IDs may no longer be visible.
+    clearSelection();
+  }, [selectedRole, selectedAdmin, jobFilter, setSearchParams, clearSelection]);
 
   const updateCandidateStageInState = useCallback((candidateId: string, newStage: string) => {
     const movedAt = new Date().toISOString();
@@ -465,6 +514,45 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
 
     toast.success(`Moved ${candidate.full_name} to ${newStage}`);
   }, [updateCandidateStageInState]);
+
+  // Bulk move: update every selected candidate to the target stage in one DB call,
+  // then optimistically update local state. Skips "Hired" because that requires
+  // the per-candidate assignment dialog.
+  const handleBulkMoveToStage = useCallback(async (newStage: string) => {
+    if (newStage === 'Hired') {
+      toast.error('Move candidates to Hired one at a time (assignment dialog required).');
+      return;
+    }
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    setBulkMoving(true);
+
+    // Snapshot previous statuses for rollback
+    const prevById = new Map<string, string>();
+    candidates.forEach(c => { if (selectedIds.has(c.id)) prevById.set(c.id, c.status); });
+
+    // Optimistic update
+    ids.forEach(id => updateCandidateStageInState(id, newStage));
+
+    const { error } = await supabase
+      .from('applicants_prescreen')
+      .update({ status: newStage })
+      .in('id', ids);
+
+    setBulkMoving(false);
+
+    if (error) {
+      // Rollback
+      prevById.forEach((prevStatus, id) => updateCandidateStageInState(id, prevStatus));
+      toast.error('Failed to move selected candidates');
+      return;
+    }
+
+    toast.success(`Moved ${ids.length} candidate${ids.length === 1 ? '' : 's'} to ${newStage}`);
+    clearSelection();
+  }, [selectedIds, candidates, updateCandidateStageInState, clearSelection]);
+
+
 
   const handleHiredComplete = useCallback(async () => {
     if (hiredCandidate) {
@@ -844,7 +932,91 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
                     </div>
                   </div>
 
-                  <div className="flex-1 max-h-[720px] overflow-y-auto">
+                  <div
+                    className="flex-1 max-h-[720px] overflow-y-auto relative"
+                    onMouseDown={(e) => {
+                      // Lasso starts only on empty space (not on a card or interactive child).
+                      // Bail out for right-click, Ctrl-click (treated as right-click on macOS),
+                      // and when the mousedown landed on a card.
+                      if (e.button !== 0) return;
+                      const target = e.target as HTMLElement;
+                      if (target.closest('[data-candidate-card]')) return;
+                      if (target.closest('button, a, input, select, textarea')) return;
+
+                      const container = e.currentTarget as HTMLDivElement;
+                      lassoContainerRef.current = container;
+                      const rect = container.getBoundingClientRect();
+                      const x = e.clientX - rect.left + container.scrollTop * 0; // x is horizontal only
+                      const y = e.clientY - rect.top + container.scrollTop;
+                      const additive = e.shiftKey || e.ctrlKey || e.metaKey;
+                      // Reset selection if not additive and switching stages
+                      if (!additive && selectionStage !== stage) {
+                        setSelectedIds(new Set());
+                      }
+                      setSelectionStage(stage);
+                      setLasso({
+                        stage,
+                        startX: x,
+                        startY: y,
+                        curX: x,
+                        curY: y,
+                        additive,
+                        baseSelection: additive ? new Set(selectedIds) : new Set(),
+                      });
+                      e.preventDefault();
+                    }}
+                    onMouseMove={(e) => {
+                      if (!lasso || lasso.stage !== stage) return;
+                      const container = lassoContainerRef.current;
+                      if (!container) return;
+                      const rect = container.getBoundingClientRect();
+                      const curX = e.clientX - rect.left;
+                      const curY = e.clientY - rect.top + container.scrollTop;
+                      setLasso(l => l ? { ...l, curX, curY } : l);
+
+                      // Compute selection rect (in container-local coords accounting for scroll)
+                      const minX = Math.min(lasso.startX, curX);
+                      const maxX = Math.max(lasso.startX, curX);
+                      const minY = Math.min(lasso.startY, curY);
+                      const maxY = Math.max(lasso.startY, curY);
+
+                      // Intersect with each card's bounding box
+                      const cards = container.querySelectorAll<HTMLElement>('[data-candidate-card]');
+                      const hits = new Set<string>(lasso.baseSelection);
+                      const containerRect = container.getBoundingClientRect();
+                      cards.forEach(card => {
+                        const cr = card.getBoundingClientRect();
+                        const cardLeft = cr.left - containerRect.left;
+                        const cardRight = cr.right - containerRect.left;
+                        const cardTop = cr.top - containerRect.top + container.scrollTop;
+                        const cardBottom = cr.bottom - containerRect.top + container.scrollTop;
+                        const intersects = !(cardRight < minX || cardLeft > maxX || cardBottom < minY || cardTop > maxY);
+                        if (intersects) {
+                          const id = card.getAttribute('data-candidate-id');
+                          if (id) hits.add(id);
+                        }
+                      });
+                      setSelectedIds(hits);
+                    }}
+                    onMouseUp={() => {
+                      if (lasso) setLasso(null);
+                    }}
+                    onMouseLeave={() => {
+                      if (lasso) setLasso(null);
+                    }}
+                  >
+                    {/* Lasso visual */}
+                    {lasso && lasso.stage === stage && (
+                      <div
+                        className="absolute pointer-events-none border-2 border-primary bg-primary/10 rounded-sm z-10"
+                        style={{
+                          left: Math.min(lasso.startX, lasso.curX),
+                          top: Math.min(lasso.startY, lasso.curY),
+                          width: Math.abs(lasso.curX - lasso.startX),
+                          height: Math.abs(lasso.curY - lasso.startY),
+                        }}
+                      />
+                    )}
                     <div className="p-2 space-y-2">
                       {stageCandidates.length === 0 ? (
                         <p className={cn(
@@ -872,6 +1044,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
                             }}
                             showRoleLabel={selectedRole === ALL_ROLES_KEY}
                             isInactiveRole={jobFilter === 'all' && inactiveRolesSet.has(candidate.job_title)}
+                            isSelected={selectedIds.has(candidate.id)}
+                            onSelectToggle={() => toggleCardSelection(candidate)}
                           />
                         ))
                       )}
@@ -901,6 +1075,51 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
           onComplete={handleHiredComplete}
         />
       )}
+
+      {/* Floating bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-background border-2 border-primary shadow-2xl rounded-full pl-4 pr-2 py-2 animate-in slide-in-from-bottom-4">
+          <span className="text-sm font-medium">
+            <span className="text-primary font-bold">{selectedIds.size}</span> selected
+            {selectionStage && (
+              <span className="text-muted-foreground"> in {selectionStage}</span>
+            )}
+          </span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                disabled={bulkMoving}
+                className="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              >
+                <ArrowRight className="w-3.5 h-3.5" />
+                {bulkMoving ? 'Moving…' : 'Move to stage'}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-48">
+              {FUNNEL_STAGES.filter(s => s !== selectionStage).map(stage => (
+                <DropdownMenuItem
+                  key={stage}
+                  disabled={stage === 'Hired'}
+                  onClick={() => handleBulkMoveToStage(stage)}
+                >
+                  <span className={cn('w-2 h-2 rounded-full mr-2', STAGE_COLORS[stage]?.dot)} />
+                  {stage}
+                  {stage === 'Hired' && (
+                    <span className="ml-auto text-[10px] text-muted-foreground">single only</span>
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <button
+            onClick={clearSelection}
+            className="inline-flex items-center justify-center h-8 w-8 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground"
+            title="Clear selection"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 };
@@ -918,9 +1137,11 @@ interface CandidateCardProps {
   onDragEnd?: () => void;
   showRoleLabel?: boolean;
   isInactiveRole?: boolean;
+  isSelected?: boolean;
+  onSelectToggle?: () => void;
 }
 
-const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole }: CandidateCardProps) => {
+const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle }: CandidateCardProps) => {
   const [showDetails, setShowDetails] = useState(false);
   const [showDetailsTab, setShowDetailsTab] = useState<string | undefined>(undefined); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [showSendEmail, setShowSendEmail] = useState(false);
@@ -978,7 +1199,17 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <div
+            data-candidate-card="true"
+            data-candidate-id={candidate.id}
             draggable
+            onClick={(e) => {
+              // Ctrl/Cmd+click toggles selection without opening anything else.
+              if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                onSelectToggle?.();
+              }
+            }}
             onDragStart={(e) => {
               e.dataTransfer.effectAllowed = 'move';
               e.dataTransfer.setData('text/plain', candidate.id);
@@ -987,7 +1218,8 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
             onDragEnd={() => onDragEnd?.()}
             className={cn(
               "bg-card rounded-md p-2.5 shadow-sm border border-border/50 hover:shadow-md transition-all space-y-1.5 cursor-grab active:cursor-grabbing",
-              isDragging && "opacity-40 scale-95 shadow-lg"
+              isDragging && "opacity-40 scale-95 shadow-lg",
+              isSelected && "ring-2 ring-primary border-primary bg-primary/5"
             )}
           >
             <div className="space-y-1">
