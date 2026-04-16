@@ -916,7 +916,7 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
               <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
                 <FileText className="w-2.5 h-2.5 shrink-0" />
                 <span className="truncate font-medium text-primary/80" title={candidate.job_title}>{candidate.job_title}</span>
-                {jobFilter === 'all' && inactiveRolesSet.has(candidate.job_title) && (
+                {isInactiveRole && (
                   <Badge variant="outline" className="h-4 px-1 text-[9px] font-medium text-muted-foreground border-muted-foreground/30 shrink-0">
                     Inactive
                   </Badge>
