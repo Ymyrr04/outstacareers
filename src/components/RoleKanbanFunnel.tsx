@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -83,10 +84,16 @@ interface RoleKanbanFunnelProps {
 const ALL_ROLES_KEY = '__all__';
 
 export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunnelProps) => {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
   const [allRoles, setAllRoles] = useState<string[]>([]);
-  const [jobFilter, setJobFilter] = useState<'active' | 'all'>('active');
-  const [selectedRole, setSelectedRole] = useState<string>(ALL_ROLES_KEY);
+  const [jobFilter, setJobFilter] = useState<'active' | 'all'>(() => {
+    const p = searchParams.get('jobs');
+    return p === 'all' ? 'all' : 'active';
+  });
+  const [selectedRole, setSelectedRole] = useState<string>(() => {
+    return searchParams.get('role') || ALL_ROLES_KEY;
+  });
   const [roleSearch, setRoleSearch] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -99,9 +106,37 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   const [sortOption, setSortOption] = useState<'score-desc' | 'score-asc' | 'name-asc' | 'name-desc' | 'newest' | 'oldest' | 'assessed'>('score-desc');
   const [hiredCandidate, setHiredCandidate] = useState<Candidate | null>(null);
   const [showHiredDialog, setShowHiredDialog] = useState(false);
-  const [selectedAdmin, setSelectedAdmin] = useState<string>('all');
+  const [selectedAdmin, setSelectedAdmin] = useState<string>(() => {
+    return searchParams.get('admin') || 'all';
+  });
   const [adminList, setAdminList] = useState<{ id: string; name: string }[]>([]);
   const [adminJobTitlesMap, setAdminJobTitlesMap] = useState<Record<string, string[]>>({});
+
+  // Sync filter state to URL search params
+  useEffect(() => {
+    setSearchParams(prev => {
+      const next = new URLSearchParams(prev);
+      // Role
+      if (selectedRole && selectedRole !== ALL_ROLES_KEY) {
+        next.set('role', selectedRole);
+      } else {
+        next.delete('role');
+      }
+      // Admin
+      if (selectedAdmin && selectedAdmin !== 'all') {
+        next.set('admin', selectedAdmin);
+      } else {
+        next.delete('admin');
+      }
+      // Job filter
+      if (jobFilter === 'all') {
+        next.set('jobs', 'all');
+      } else {
+        next.delete('jobs');
+      }
+      return next;
+    }, { replace: true });
+  }, [selectedRole, selectedAdmin, jobFilter, setSearchParams]);
 
   const updateCandidateStageInState = useCallback((candidateId: string, newStage: string) => {
     const movedAt = new Date().toISOString();
