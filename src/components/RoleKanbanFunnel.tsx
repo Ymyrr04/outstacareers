@@ -208,55 +208,63 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
     if (!role) return;
     setLoading(true);
 
-    let allData: any[] = [];
     const batchSize = 1000;
 
-    // Only fetch applicants whose effective status is in the funnel
-    // (also include Archive/Archived since their pre_archive_status may be a funnel stage)
-    const funnelStatuses = [...FUNNEL_STAGES, 'Archive', 'Archived'];
+    // Two-phase load:
+    //  Phase 1 (priority): active funnel stages — render immediately
+    //  Phase 2 (background): Bench / Reject / Talent Pool / Archive
+    const PRIORITY_STATUSES = ['For Review', 'For Interview', 'SIV', 'Pitch', 'Client Interview', 'Hired'];
+    const BACKGROUND_STATUSES = ['Bench', 'Reject', 'Talent Pool', 'Archive', 'Archived'];
 
-    if (role === ALL_ROLES_KEY) {
-      const rolesToFetch = jobFilter === 'active' ? activeRoles : (allRoles.length > 0 ? allRoles : activeRoles);
-      if (rolesToFetch.length === 0) {
-        setCandidates([]);
-        setLoading(false);
-        return;
-      }
-      let from = 0;
-      while (true) {
+    const fetchByStatuses = async (statuses: string[]): Promise<any[]> => {
+      if (role === ALL_ROLES_KEY) {
+        const rolesToFetch = jobFilter === 'active' ? activeRoles : (allRoles.length > 0 ? allRoles : activeRoles);
+        if (rolesToFetch.length === 0) return [];
+        let collected: any[] = [];
+        let from = 0;
+        while (true) {
+          const { data } = await supabase
+            .from('applicants_prescreen')
+            .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred')
+            .in('job_title', rolesToFetch)
+            .in('status', statuses)
+            .order('total_score', { ascending: false, nullsFirst: false })
+            .range(from, from + batchSize - 1);
+          if (!data || data.length === 0) break;
+          collected = collected.concat(data);
+          if (data.length < batchSize) break;
+          from += batchSize;
+        }
+        return collected;
+      } else {
         const { data } = await supabase
           .from('applicants_prescreen')
           .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred')
-          .in('job_title', rolesToFetch)
-          .in('status', funnelStatuses)
-          .order('total_score', { ascending: false, nullsFirst: false })
-          .range(from, from + batchSize - 1);
-        if (!data || data.length === 0) break;
-        allData = allData.concat(data);
-        if (data.length < batchSize) break;
-        from += batchSize;
+          .eq('job_title', role)
+          .in('status', statuses)
+          .order('total_score', { ascending: false, nullsFirst: false });
+        return data || [];
       }
-    } else {
-      const { data } = await supabase
-        .from('applicants_prescreen')
-        .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred')
-        .eq('job_title', role)
-        .in('status', funnelStatuses)
-        .order('total_score', { ascending: false, nullsFirst: false });
-      allData = data || [];
-    }
+    };
 
-    // Render candidates immediately so the UI is responsive,
-    // then enrich with interview scores + stage-entered timestamps in the background.
-    setCandidates(allData.map(a => ({
+    const mapToCandidate = (rows: any[]) => rows.map(a => ({
       ...a,
       is_starred: a.is_starred ?? false,
       interview_overall_score: null,
       interview_status: null,
       interview_started_at: null,
       stage_entered_at: a.submitted_at,
-    })));
+    }));
+
+    // Phase 1: priority statuses
+    const priorityData = await fetchByStatuses(PRIORITY_STATUSES);
+    setCandidates(mapToCandidate(priorityData));
     setLoading(false);
+
+    // Phase 2: background fetch for cold columns
+    const backgroundData = await fetchByStatuses(BACKGROUND_STATUSES);
+    const allData = [...priorityData, ...backgroundData];
+    setCandidates(mapToCandidate(allData));
 
     const applicantIds = allData.map(a => a.id);
     if (applicantIds.length === 0) return;
