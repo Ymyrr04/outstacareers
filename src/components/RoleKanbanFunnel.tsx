@@ -109,6 +109,53 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   const [sortOption, setSortOption] = useState<'score-desc' | 'score-asc' | 'name-asc' | 'name-desc' | 'newest' | 'oldest' | 'assessed'>('score-desc');
   const [hiredCandidate, setHiredCandidate] = useState<Candidate | null>(null);
   const [showHiredDialog, setShowHiredDialog] = useState(false);
+
+  // ---- Multi-select (bulk action) state ----
+  // Selection is locked to a single stage at a time. Switching to a card in a
+  // different stage clears the prior selection and starts a fresh one.
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [selectionStage, setSelectionStage] = useState<string | null>(null);
+  const [bulkMoving, setBulkMoving] = useState(false);
+
+  // Lasso (drag-to-select) state. Only active for one column at a time.
+  const [lasso, setLasso] = useState<{
+    stage: string;
+    startX: number;
+    startY: number;
+    curX: number;
+    curY: number;
+    additive: boolean;
+    baseSelection: Set<string>;
+  } | null>(null);
+  const lassoContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const clearSelection = useCallback(() => {
+    setSelectedIds(new Set());
+    setSelectionStage(null);
+  }, []);
+
+  // Toggle a single card's selection (called on Ctrl/Cmd+click).
+  const toggleCardSelection = useCallback((candidate: Candidate) => {
+    setSelectedIds(prev => {
+      // Switching stages? Start fresh with just this card selected.
+      if (selectionStage && selectionStage !== candidate.status) {
+        setSelectionStage(candidate.status);
+        return new Set([candidate.id]);
+      }
+      const next = new Set(prev);
+      if (next.has(candidate.id)) {
+        next.delete(candidate.id);
+      } else {
+        next.add(candidate.id);
+      }
+      if (next.size === 0) {
+        setSelectionStage(null);
+      } else if (!selectionStage) {
+        setSelectionStage(candidate.status);
+      }
+      return next;
+    });
+  }, [selectionStage]);
   const [selectedAdmin, setSelectedAdmin] = useState<string>(() => {
     return searchParams.get('admin') || 'all';
   });
