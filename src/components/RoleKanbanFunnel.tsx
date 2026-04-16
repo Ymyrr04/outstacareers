@@ -1092,9 +1092,11 @@ interface CandidateCardProps {
   onDragEnd?: () => void;
   showRoleLabel?: boolean;
   isInactiveRole?: boolean;
+  isSelected?: boolean;
+  onSelectToggle?: () => void;
 }
 
-const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole }: CandidateCardProps) => {
+const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle }: CandidateCardProps) => {
   const [showDetails, setShowDetails] = useState(false);
   const [showDetailsTab, setShowDetailsTab] = useState<string | undefined>(undefined); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [showSendEmail, setShowSendEmail] = useState(false);
