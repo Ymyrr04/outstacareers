@@ -226,8 +226,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   }, [activeRoles, allRoles, jobFilter]);
 
   useEffect(() => {
+    if (selectedRole === ALL_ROLES_KEY && activeRoles.length === 0 && allRoles.length === 0) return;
     if (selectedRole) fetchCandidates(selectedRole);
-  }, [selectedRole, fetchCandidates]);
+  }, [selectedRole, fetchCandidates, activeRoles, allRoles]);
 
   // Close dropdown on outside click
   useEffect(() => {
