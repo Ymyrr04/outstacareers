@@ -675,6 +675,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
                               setDraggedCandidate(null);
                               setDropTargetStage(null);
                             }}
+                            showRoleLabel={selectedRole === ALL_ROLES_KEY}
                           />
                         ))
                       )}
