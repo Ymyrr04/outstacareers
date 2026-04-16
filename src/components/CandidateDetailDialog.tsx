@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { SearchApplicantExpandedView } from '@/components/SearchApplicantExpandedView';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { priorityGate } from '@/lib/priorityGate';
 import type { PaginatedApplicant } from '@/hooks/usePaginatedApplicants';
 
 interface CandidateDetailDialogProps {
@@ -36,35 +37,42 @@ export function CandidateDetailDialog({ open, onOpenChange, applicantId, initial
 
     const fetchApplicant = async () => {
       if (!hasInitial) setLoading(true);
+      // Mark this fetch as high-priority so background phases in the kanban
+      // (cold columns + interview/history enrichment) yield until we're done.
+      priorityGate.begin();
       // Exclude heavy columns (cv_text) — they aren't rendered here and slow down the
       // round-trip significantly for candidates with large CVs.
       const APPLICANT_COLUMNS = 'id, full_name, email, phone, whatsapp, home_office, noise_canceling_headset, laptop_or_pc, good_internet, internet_speed, power_backup, can_work_40_50, us_timezone_ok, start_availability, has_experience, currently_working, location, job_title, job_id, apply_url, status, submitted_at, notes, role_experience_score, skills_tools_score, availability_setup_score, bonus_red_flag_score, total_score, ranking_status, ai_summary, cv_file_url, vocaroo_link, voice_recording_url, ai_assessment_details, extracted_skills, extracted_tools, years_of_experience, job_source, is_available, availability_checked_at, original_job_id, original_job_title, reprofiled_at, candidate_profile, details_viewed_at, is_starred, device_type';
 
-      const [applicantRes, sessionRes] = await Promise.all([
-        supabase
-          .from('applicants_prescreen')
-          .select(APPLICANT_COLUMNS)
-          .eq('id', applicantId)
-          .maybeSingle(),
-        supabase
-          .from('interview_sessions')
-          .select('id, status, experience_score, technical_score, communication_score, situational_score, personality_score, overall_score, ai_summary, ai_strengths, ai_concerns, completed_at')
-          .eq('applicant_id', applicantId)
-          .order('created_at', { ascending: false })
-          .limit(1)
-          .maybeSingle(),
-      ]);
+      try {
+        const [applicantRes, sessionRes] = await Promise.all([
+          supabase
+            .from('applicants_prescreen')
+            .select(APPLICANT_COLUMNS)
+            .eq('id', applicantId)
+            .maybeSingle(),
+          supabase
+            .from('interview_sessions')
+            .select('id, status, experience_score, technical_score, communication_score, situational_score, personality_score, overall_score, ai_summary, ai_strengths, ai_concerns, completed_at')
+            .eq('applicant_id', applicantId)
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .maybeSingle(),
+        ]);
 
-      if (applicantRes.data) {
-        setApplicant({
-          ...applicantRes.data,
-          cv_text: null,
-          is_starred: applicantRes.data.is_starred ?? false,
-          ai_assessment_details: applicantRes.data.ai_assessment_details as any,
-          interview_session: sessionRes.data || null,
-        } as PaginatedApplicant);
+        if (applicantRes.data) {
+          setApplicant({
+            ...applicantRes.data,
+            cv_text: null,
+            is_starred: applicantRes.data.is_starred ?? false,
+            ai_assessment_details: applicantRes.data.ai_assessment_details as any,
+            interview_session: sessionRes.data || null,
+          } as PaginatedApplicant);
+        }
+      } finally {
+        setLoading(false);
+        priorityGate.end();
       }
-      setLoading(false);
     };
 
     fetchApplicant();

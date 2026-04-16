@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { priorityGate } from '@/lib/priorityGate';
 import { toast } from 'sonner';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
 import { ApplicationHistoryBadge } from '@/components/ApplicationHistoryBadge';
@@ -276,7 +277,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
     setCandidates(mapToCandidate(priorityData));
     setLoading(false);
 
-    // Phase 2: background fetch for cold columns
+    // Phase 2: background fetch for cold columns — yield to any active
+    // priority work (e.g., the Candidate Detail Dialog opening).
+    await priorityGate.wait();
     const backgroundData = await fetchByStatuses(BACKGROUND_STATUSES);
     const allData = [...priorityData, ...backgroundData];
     setCandidates(mapToCandidate(allData));
@@ -294,7 +297,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
     const interviewMeta: Record<string, { status: string; started_at: string }> = {};
     const stageEnteredMap: Record<string, string> = {};
 
+    // Phase 3: enrichment — yield again before kicking off the parallel batches.
+    await priorityGate.wait();
     await Promise.all(batches.map(async (batch) => {
+      // Yield per-batch too, so a dialog opening mid-enrichment still wins.
+      await priorityGate.wait();
       const [sessionsRes, historyRes] = await Promise.all([
         supabase
           .from('interview_sessions')
