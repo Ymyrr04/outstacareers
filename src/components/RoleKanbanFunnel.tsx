@@ -154,6 +154,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
         ? { ...candidate, status: newStage, stage_entered_at: movedAt }
         : candidate
     )));
+    // Keep cached views consistent so switching admin doesn't show stale stages.
+    candidateCacheRef.current.forEach((entry, key) => {
+      const updated = entry.data.map(candidate => (
+        candidate.id === candidateId
+          ? { ...candidate, status: newStage, stage_entered_at: movedAt }
+          : candidate
+      ));
+      candidateCacheRef.current.set(key, { data: updated, ts: entry.ts });
+    });
   }, []);
 
   // Fetch active job titles and admin assignments independently
