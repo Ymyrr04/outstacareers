@@ -300,7 +300,7 @@ export const RecruitmentFunnel = () => {
 
   return (
     <div className="space-y-4">
-      <RoleKanbanFunnel roles={roleFunnels.map(r => r.jobTitle)} onRoleSelect={(role) => setSearchTerm(role)} />
+      <RoleKanbanFunnel roles={roleFunnels.map(r => r.jobTitle)} onRoleSelect={(role) => setSearchTerm(role === '__all__' ? '' : role)} />
 
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>
