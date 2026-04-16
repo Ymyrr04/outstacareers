@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback, useRef, useTransition } from 'react';
 import { format } from 'date-fns';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
