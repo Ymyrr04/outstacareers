@@ -80,11 +80,13 @@ interface RoleKanbanFunnelProps {
   onRoleSelect?: (role: string) => void;
 }
 
+const ALL_ROLES_KEY = '__all__';
+
 export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunnelProps) => {
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
   const [allRoles, setAllRoles] = useState<string[]>([]);
   const [jobFilter, setJobFilter] = useState<'active' | 'all'>('active');
-  const [selectedRole, setSelectedRole] = useState<string>('');
+  const [selectedRole, setSelectedRole] = useState<string>(ALL_ROLES_KEY);
   const [roleSearch, setRoleSearch] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -125,28 +127,56 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
     return jobFilter === 'active' ? activeRoles : allRoles;
   }, [activeRoles, allRoles, jobFilter]);
 
-  // Set initial selected role when filtered roles are ready
+  // If a specific role is selected but no longer in the list, reset to all
   useEffect(() => {
-    if (filteredRoles.length > 0 && (!selectedRole || !filteredRoles.includes(selectedRole))) {
-      setSelectedRole(filteredRoles[0]);
+    if (selectedRole && selectedRole !== ALL_ROLES_KEY && !filteredRoles.includes(selectedRole)) {
+      setSelectedRole(ALL_ROLES_KEY);
     }
   }, [filteredRoles]);
 
   // Notify parent when selected role changes
   useEffect(() => {
-    if (selectedRole) _onRoleSelect?.(selectedRole);
+    if (selectedRole && selectedRole !== ALL_ROLES_KEY) _onRoleSelect?.(selectedRole);
   }, [selectedRole, _onRoleSelect]);
 
   const fetchCandidates = useCallback(async (role: string) => {
     if (!role) return;
     setLoading(true);
-    const { data } = await supabase
-      .from('applicants_prescreen')
-      .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred')
-      .eq('job_title', role)
-      .order('total_score', { ascending: false, nullsFirst: false });
 
-    const applicantIds = (data || []).map(a => a.id);
+    let allData: any[] = [];
+    const batchSize = 1000;
+
+    if (role === ALL_ROLES_KEY) {
+      // Fetch candidates for all active jobs
+      const rolesToFetch = jobFilter === 'active' ? activeRoles : (allRoles.length > 0 ? allRoles : activeRoles);
+      if (rolesToFetch.length === 0) {
+        setCandidates([]);
+        setLoading(false);
+        return;
+      }
+      let from = 0;
+      while (true) {
+        const { data } = await supabase
+          .from('applicants_prescreen')
+          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred')
+          .in('job_title', rolesToFetch)
+          .order('total_score', { ascending: false, nullsFirst: false })
+          .range(from, from + batchSize - 1);
+        if (!data || data.length === 0) break;
+        allData = allData.concat(data);
+        if (data.length < batchSize) break;
+        from += batchSize;
+      }
+    } else {
+      const { data } = await supabase
+        .from('applicants_prescreen')
+        .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred')
+        .eq('job_title', role)
+        .order('total_score', { ascending: false, nullsFirst: false });
+      allData = data || [];
+    }
+
+    const applicantIds = allData.map(a => a.id);
     let interviewScores: Record<string, number> = {};
     let interviewMeta: Record<string, { status: string; started_at: string }> = {};
     let stageEnteredMap: Record<string, string> = {};
@@ -155,7 +185,6 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
       for (let i = 0; i < applicantIds.length; i += 100) {
         const batch = applicantIds.slice(i, i + 100);
         
-        // Fetch interview sessions (all statuses for expiry detection)
         const { data: sessions } = await supabase
           .from('interview_sessions')
           .select('applicant_id, overall_score, status, started_at')
@@ -171,7 +200,6 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
           }
         }
 
-        // Fetch latest status history entry (when they entered current stage)
         const { data: history } = await supabase
           .from('applicant_status_history')
           .select('applicant_id, created_at')
@@ -186,7 +214,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
       }
     }
 
-    setCandidates((data || []).map(a => ({
+    setCandidates(allData.map(a => ({
       ...a,
       is_starred: a.is_starred ?? false,
       interview_overall_score: interviewScores[a.id] ?? null,
@@ -195,7 +223,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
       stage_entered_at: stageEnteredMap[a.id] || a.submitted_at,
     })));
     setLoading(false);
-  }, []);
+  }, [activeRoles, allRoles, jobFilter]);
 
   useEffect(() => {
     if (selectedRole) fetchCandidates(selectedRole);
@@ -403,9 +431,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
         <div className="flex items-center gap-2">
           <Users className="w-5 h-5 text-primary" />
           <h2 className="text-lg font-semibold">Role Pipeline</h2>
-          {selectedRole && (
-            <Badge variant="secondary">{totalInPipeline} candidates</Badge>
-          )}
+          <Badge variant="secondary">{totalInPipeline} candidates</Badge>
         </div>
 
         <div className="flex items-center gap-2">
@@ -415,7 +441,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search & select role..."
-              value={dropdownOpen ? roleSearch : selectedRole}
+              value={dropdownOpen ? roleSearch : (selectedRole === ALL_ROLES_KEY ? 'All Roles' : selectedRole)}
               onChange={(e) => {
                 setRoleSearch(e.target.value);
                 setDropdownOpen(true);
@@ -426,15 +452,14 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
               }}
               className="pl-8 h-9 w-[320px] text-sm pr-8 border-blue-400 focus:border-blue-500 focus:ring-blue-500"
             />
-            {selectedRole && !dropdownOpen && (
+            {selectedRole && selectedRole !== ALL_ROLES_KEY && !dropdownOpen && (
               <button
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setSelectedRole('');
+                  setSelectedRole(ALL_ROLES_KEY);
                   setRoleSearch('');
-                  setDropdownOpen(true);
                 }}
               >
                 ✕
@@ -448,6 +473,20 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
             >
               <ScrollArea className="max-h-[300px] overflow-y-auto">
                 <div className="p-1">
+                  <button
+                    className={cn(
+                      'w-full text-left px-3 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors font-medium',
+                      selectedRole === ALL_ROLES_KEY && 'bg-accent/50'
+                    )}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setSelectedRole(ALL_ROLES_KEY);
+                      setDropdownOpen(false);
+                      setRoleSearch('');
+                    }}
+                  >
+                    All Roles
+                  </button>
                   {filteredRoles
                     .filter((r) => r.toLowerCase().includes(roleSearch.toLowerCase()))
                     .sort((a, b) => a.localeCompare(b))
@@ -634,6 +673,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
                               setDraggedCandidate(null);
                               setDropTargetStage(null);
                             }}
+                            showRoleLabel={selectedRole === ALL_ROLES_KEY}
                           />
                         ))
                       )}
@@ -678,9 +718,10 @@ interface CandidateCardProps {
   isDragging?: boolean;
   onDragStart?: () => void;
   onDragEnd?: () => void;
+  showRoleLabel?: boolean;
 }
 
-const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd }: CandidateCardProps) => {
+const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel }: CandidateCardProps) => {
   const [showDetails, setShowDetails] = useState(false);
   const [showDetailsTab, setShowDetailsTab] = useState<string | undefined>(undefined); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [showSendEmail, setShowSendEmail] = useState(false);
@@ -786,6 +827,13 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
                 <ApplicationHistoryBadge email={candidate.email} currentId={candidate.id} phone={candidate.phone} />
               </div>
             </div>
+
+            {showRoleLabel && (
+              <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
+                <FileText className="w-2.5 h-2.5 shrink-0" />
+                <span className="truncate font-medium text-primary/80" title={candidate.job_title}>{candidate.job_title}</span>
+              </div>
+            )}
 
             <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
               <MapPin className="w-2.5 h-2.5 shrink-0" />
