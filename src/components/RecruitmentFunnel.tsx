@@ -351,6 +351,119 @@ export const RecruitmentFunnel = () => {
     return rates;
   }, [stageTotals, totalPipeline]);
 
+  // Per-stage avg time + per-transition avg time, scoped to the same filters
+  // (admin-scoped roles, role search, job status, date range).
+  const { stageTimings, transitionTimings } = useMemo(() => {
+    const MS_PER_DAY = 1000 * 60 * 60 * 24;
+    const now = Date.now();
+
+    // Resolve date range
+    let effectiveFrom = dateFrom;
+    let effectiveTo = dateTo;
+    if (effectiveFrom && effectiveTo && effectiveFrom > effectiveTo) {
+      [effectiveFrom, effectiveTo] = [effectiveTo, effectiveFrom];
+    }
+
+    // Filtered roles set (already incorporates admin / job-status / search filters)
+    const filteredRoleSet = new Set(roleFunnels.map(r => r.jobTitle));
+
+    // Quick lookup: applicant id -> { job_title, submitted_at, currentStatus }
+    const applicantInfo = new Map<string, { job_title: string; submitted_at: string; currentStatus: string }>();
+    for (const a of applicants) {
+      const effectiveStatus = a.status === 'Archive' || a.status === 'Archived'
+        ? (a.pre_archive_status || a.status)
+        : a.status;
+      applicantInfo.set(a.id, {
+        job_title: a.job_title || 'Unknown',
+        submitted_at: a.submitted_at,
+        currentStatus: effectiveStatus,
+      });
+    }
+
+    // Group history events per applicant (sorted asc by created_at) — only for applicants
+    // whose role + submitted_at pass the filters.
+    const eventsByApplicant = new Map<string, { from_status: string | null; to_status: string; created_at: string }[]>();
+    for (const h of rawHistory) {
+      const info = applicantInfo.get(h.applicant_id);
+      if (!info) continue;
+      if (!filteredRoleSet.has(info.job_title)) continue;
+      if (effectiveFrom && info.submitted_at < effectiveFrom) continue;
+      if (effectiveTo && info.submitted_at > effectiveTo + 'T23:59:59.999Z') continue;
+      let arr = eventsByApplicant.get(h.applicant_id);
+      if (!arr) {
+        arr = [];
+        eventsByApplicant.set(h.applicant_id, arr);
+      }
+      arr.push({ from_status: h.from_status, to_status: h.to_status, created_at: h.created_at });
+    }
+
+    // Per-stage durations: time from arriving in a stage until leaving it (or until now if still there)
+    const stageBuckets = new Map<string, number[]>(); // stage -> array of days
+    // Per-transition durations: time spent in `from` before moving to `to`
+    const transitionBuckets = new Map<string, number[]>(); // "from→to" -> days
+
+    for (const [applicantId, events] of eventsByApplicant) {
+      events.sort((a, b) => a.created_at.localeCompare(b.created_at));
+      const info = applicantInfo.get(applicantId)!;
+
+      for (let i = 0; i < events.length; i++) {
+        const ev = events[i];
+        const arrivedAt = new Date(ev.created_at).getTime();
+        if (!isFinite(arrivedAt)) continue;
+
+        const next = events[i + 1];
+        const leftAt = next ? new Date(next.created_at).getTime() : now;
+        if (!isFinite(leftAt)) continue;
+
+        const days = Math.max(0, (leftAt - arrivedAt) / MS_PER_DAY);
+
+        // Only count stages we recognize in the funnel
+        if (RECRUITMENT_STATUSES.has(ev.to_status as (typeof FUNNEL_STAGES)[number])) {
+          const list = stageBuckets.get(ev.to_status) || [];
+          list.push(days);
+          stageBuckets.set(ev.to_status, list);
+        }
+
+        // Transition: time spent in `ev.to_status` before moving to `next.to_status`
+        if (next) {
+          const key = `${ev.to_status}→${next.to_status}`;
+          const list = transitionBuckets.get(key) || [];
+          list.push(days);
+          transitionBuckets.set(key, list);
+        }
+      }
+    }
+
+    const avg = (arr: number[]) => arr.reduce((s, n) => s + n, 0) / arr.length;
+
+    const stageTimings: StageTiming[] = FUNNEL_STAGES
+      .map((stage) => {
+        const arr = stageBuckets.get(stage) || [];
+        return {
+          stage,
+          avgDays: arr.length > 0 ? avg(arr) : 0,
+          sampleSize: arr.length,
+        };
+      })
+      .filter((s) => s.sampleSize > 0);
+
+    const transitionTimings: TransitionTiming[] = Array.from(transitionBuckets.entries())
+      .map(([key, arr]) => {
+        const [fromStatus, toStatus] = key.split('→');
+        return {
+          fromStatus,
+          toStatus,
+          avgDays: avg(arr),
+          sampleSize: arr.length,
+        };
+      })
+      .sort((a, b) => b.avgDays - a.avgDays)
+      .slice(0, 12);
+
+    return { stageTimings, transitionTimings };
+  }, [rawHistory, applicants, roleFunnels, dateFrom, dateTo]);
+
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-12">
