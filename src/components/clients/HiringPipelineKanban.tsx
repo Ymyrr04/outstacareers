@@ -87,14 +87,15 @@ const CelebrationPopup = ({
   isVideo: boolean;
   onComplete: () => void;
 }) => {
-  // Only use timeout for GIFs - videos will use onEnded event
   useEffect(() => {
-    if (mediaUrl && !isVideo) {
-      const timer = setTimeout(() => {
-        onComplete();
-      }, 1800); // Faster GIF display
-      return () => clearTimeout(timer);
-    }
+    if (!mediaUrl) return;
+    // For GIFs, dismiss after 1.8s. For videos, use onEnded but add a fallback timeout
+    // in case the video fails to load or play.
+    const timeout = isVideo ? 5000 : 1800;
+    const timer = setTimeout(() => {
+      onComplete();
+    }, timeout);
+    return () => clearTimeout(timer);
   }, [mediaUrl, isVideo, onComplete]);
 
   if (!mediaUrl) return null;
