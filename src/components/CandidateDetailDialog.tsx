@@ -51,9 +51,6 @@ export function CandidateDetailDialog({ open, onOpenChange, applicantId, initial
       return;
     }
 
-    // If we already have data from the parent, skip the spinner — refresh silently in background.
-    const hasInitial = !!(initialApplicant && initialApplicant.id === applicantId);
-
     // If parent passed a fully-hydrated payload, skip the spinner. A slim
     // kanban row (no scores/flags) doesn't count — show the spinner so the
     // user doesn't see "-/50" placeholders while data loads.
