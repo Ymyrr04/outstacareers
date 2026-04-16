@@ -454,15 +454,14 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
               }}
               className="pl-8 h-9 w-[320px] text-sm pr-8 border-blue-400 focus:border-blue-500 focus:ring-blue-500"
             />
-            {selectedRole && !dropdownOpen && (
+            {selectedRole && selectedRole !== ALL_ROLES_KEY && !dropdownOpen && (
               <button
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground text-xs"
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={(e) => {
                   e.stopPropagation();
-                  setSelectedRole('');
+                  setSelectedRole(ALL_ROLES_KEY);
                   setRoleSearch('');
-                  setDropdownOpen(true);
                 }}
               >
                 ✕
@@ -476,6 +475,20 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
             >
               <ScrollArea className="max-h-[300px] overflow-y-auto">
                 <div className="p-1">
+                  <button
+                    className={cn(
+                      'w-full text-left px-3 py-1.5 text-sm rounded-sm hover:bg-accent hover:text-accent-foreground transition-colors font-medium',
+                      selectedRole === ALL_ROLES_KEY && 'bg-accent/50'
+                    )}
+                    onMouseDown={(e) => e.preventDefault()}
+                    onClick={() => {
+                      setSelectedRole(ALL_ROLES_KEY);
+                      setDropdownOpen(false);
+                      setRoleSearch('');
+                    }}
+                  >
+                    All Roles
+                  </button>
                   {filteredRoles
                     .filter((r) => r.toLowerCase().includes(roleSearch.toLowerCase()))
                     .sort((a, b) => a.localeCompare(b))
