@@ -335,7 +335,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   useEffect(() => {
     if (selectedRole === ALL_ROLES_KEY && activeRoles.length === 0 && allRoles.length === 0) return;
     if (selectedRole) fetchCandidates(selectedRole);
-  }, [selectedRole, fetchCandidates, activeRoles, allRoles]);
+    // Intentionally exclude fetchCandidates from deps: it changes whenever
+    // filteredRoles/jobFilter recompute, which would cause redundant refetches
+    // while the user sits on the page (e.g., admin map loading in stages).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRole, jobFilter, selectedAdmin, activeRoles.length, allRoles.length]);
 
   // Close dropdown on outside click
   useEffect(() => {
