@@ -54,7 +54,7 @@ function getHeatmapColor(count: number, maxCount: number): string {
 export const RecruitmentFunnel = () => {
   const [applicants, setApplicants] = useState<{ job_title: string; status: string; pre_archive_status: string | null; submitted_at: string }[]>([]);
   const [historyData, setHistoryData] = useState<{ job_title: string; to_status: string; applicant_count: number }[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'pipeline' | 'name' | 'total'>('pipeline');
   const [jobStatusFilter, setJobStatusFilter] = useState<'active' | 'inactive' | 'all'>('all');
