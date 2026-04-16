@@ -31,7 +31,10 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const currentYear = new Date().getFullYear();
   const [onboardedYear, setOnboardedYear] = useState<number>(currentYear);
-  const [placementsMonths, setPlacementsMonths] = useState<number>(3);
+  const threeMonthsAgo = new Date();
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+  const [placementsFrom, setPlacementsFrom] = useState<string>(threeMonthsAgo.toISOString().split('T')[0]);
+  const [placementsTo, setPlacementsTo] = useState<string>(new Date().toISOString().split('T')[0]);
   const [sourceYear, setSourceYear] = useState<number>(currentYear);
   const [retentionYear, setRetentionYear] = useState<number>(currentYear);
 
