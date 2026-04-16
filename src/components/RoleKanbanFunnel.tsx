@@ -617,21 +617,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
               placeholder="Search candidate across roles..."
               value={candidateSearch}
               onChange={(e) => {
-                const val = e.target.value;
-                setCandidateSearch(val);
-                if (candidateSearchTimer.current) clearTimeout(candidateSearchTimer.current);
-                if (val.trim().length >= 2) {
-                  candidateSearchTimer.current = setTimeout(async () => {
-                    const { data } = await supabase
-                      .from('applicants_prescreen')
-                      .select('job_title')
-                      .ilike('full_name', `%${val.trim()}%`)
-                      .limit(1);
-                    if (data && data.length > 0 && data[0].job_title !== selectedRole) {
-                      setSelectedRole(data[0].job_title);
-                    }
-                  }, 400);
-                }
+                setCandidateSearch(e.target.value);
               }}
               className="pl-8 h-9 w-[260px] text-sm border-blue-400 focus:border-blue-500 focus:ring-blue-500"
             />
