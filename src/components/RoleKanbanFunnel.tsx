@@ -360,6 +360,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
     const applicantIds = allData.map(a => a.id);
     if (applicantIds.length === 0) {
       candidateCacheRef.current.set(cacheKey, { data: [], ts: Date.now() });
+      persistCache();
       return;
     }
 
