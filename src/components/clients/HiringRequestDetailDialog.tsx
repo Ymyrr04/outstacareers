@@ -1163,7 +1163,7 @@ export const HiringRequestDetailDialog = ({
           </div>
 
           {/* Footer */}
-          <div className="flex items-center justify-between px-4 py-3 bg-muted/20">
+          <div className="flex items-center gap-4 px-4 py-3 bg-muted/20">
             <div className="text-xs text-muted-foreground">
               Created: {format(new Date(request.created_at), 'MMM d, yyyy h:mm a')}
             </div>
