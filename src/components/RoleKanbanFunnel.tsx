@@ -226,6 +226,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   }, [activeRoles, allRoles, jobFilter]);
 
   useEffect(() => {
+    // For ALL_ROLES_KEY, wait until roles are loaded before fetching
+    if (selectedRole === ALL_ROLES_KEY && activeRoles.length === 0 && allRoles.length === 0) return;
     if (selectedRole) fetchCandidates(selectedRole);
   }, [selectedRole, fetchCandidates]);
 
