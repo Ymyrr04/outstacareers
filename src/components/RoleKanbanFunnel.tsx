@@ -443,7 +443,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
             <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
             <Input
               placeholder="Search & select role..."
-              value={dropdownOpen ? roleSearch : selectedRole}
+              value={dropdownOpen ? roleSearch : (selectedRole === ALL_ROLES_KEY ? 'All Roles' : selectedRole)}
               onChange={(e) => {
                 setRoleSearch(e.target.value);
                 setDropdownOpen(true);
