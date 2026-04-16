@@ -116,10 +116,46 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   const [adminJobTitlesMap, setAdminJobTitlesMap] = useState<Record<string, string[]>>({});
 
   // Cache fully-enriched candidate lists keyed by `${role}|${jobFilter}|${admin}`.
-  // Switching back to a previously-viewed admin/role combo renders instantly
-  // from cache instead of refetching all 3 phases. A TTL keeps data fresh.
-  const candidateCacheRef = useRef<Map<string, { data: Candidate[]; ts: number }>>(new Map());
+  // Persisted to sessionStorage so refreshes within the same tab session
+  // also hit the cache instead of waiting on the 3-phase fetch.
+  const SS_CACHE_KEY = 'rkf:candidate-cache:v1';
   const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
+  const candidateCacheRef = useRef<Map<string, { data: Candidate[]; ts: number }>>(
+    (() => {
+      if (typeof window === 'undefined') return new Map();
+      try {
+        const raw = sessionStorage.getItem(SS_CACHE_KEY);
+        if (!raw) return new Map();
+        const parsed = JSON.parse(raw) as Record<string, { data: Candidate[]; ts: number }>;
+        const map = new Map<string, { data: Candidate[]; ts: number }>();
+        const now = Date.now();
+        for (const [k, v] of Object.entries(parsed)) {
+          // Drop ancient entries (>30 min) to bound storage size.
+          if (v && Array.isArray(v.data) && now - v.ts < 30 * 60 * 1000) {
+            map.set(k, v);
+          }
+        }
+        return map;
+      } catch {
+        return new Map();
+      }
+    })()
+  );
+
+  // Debounced persist to sessionStorage to avoid serializing on every set.
+  const persistCacheTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const persistCache = useCallback(() => {
+    if (persistCacheTimerRef.current) clearTimeout(persistCacheTimerRef.current);
+    persistCacheTimerRef.current = setTimeout(() => {
+      try {
+        const obj: Record<string, { data: Candidate[]; ts: number }> = {};
+        candidateCacheRef.current.forEach((v, k) => { obj[k] = v; });
+        sessionStorage.setItem(SS_CACHE_KEY, JSON.stringify(obj));
+      } catch {
+        // Quota exceeded — non-fatal.
+      }
+    }, 300);
+  }, []);
 
   // Sync filter state to URL search params
   useEffect(() => {
