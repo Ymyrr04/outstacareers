@@ -99,6 +99,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   const [sortOption, setSortOption] = useState<'score-desc' | 'score-asc' | 'name-asc' | 'name-desc' | 'newest' | 'oldest' | 'assessed'>('score-desc');
   const [hiredCandidate, setHiredCandidate] = useState<Candidate | null>(null);
   const [showHiredDialog, setShowHiredDialog] = useState(false);
+  const [selectedAdmin, setSelectedAdmin] = useState<string>('all');
+  const [adminList, setAdminList] = useState<{ id: string; name: string }[]>([]);
+  const [adminJobTitlesMap, setAdminJobTitlesMap] = useState<Record<string, string[]>>({});
 
   const updateCandidateStageInState = useCallback((candidateId: string, newStage: string) => {
     const movedAt = new Date().toISOString();
