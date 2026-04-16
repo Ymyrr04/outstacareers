@@ -80,11 +80,12 @@ interface Candidate {
 interface RoleKanbanFunnelProps {
   roles?: string[];
   onRoleSelect?: (role: string) => void;
+  onFiltersChange?: (filters: { role: string; jobFilter: 'active' | 'all' | 'inactive' }) => void;
 }
 
 const ALL_ROLES_KEY = '__all__';
 
-export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunnelProps) => {
+export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange }: RoleKanbanFunnelProps) => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
   const [allRoles, setAllRoles] = useState<string[]>([]);
@@ -318,6 +319,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   useEffect(() => {
     if (selectedRole && selectedRole !== ALL_ROLES_KEY) _onRoleSelect?.(selectedRole);
   }, [selectedRole, _onRoleSelect]);
+
+  // Notify parent of full filter context (role + jobFilter), including "All Roles".
+  useEffect(() => {
+    onFiltersChange?.({ role: selectedRole, jobFilter });
+  }, [selectedRole, jobFilter, onFiltersChange]);
 
   const fetchCandidates = useCallback(async (role: string) => {
     if (!role) return;
