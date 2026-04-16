@@ -3,6 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Building2, Briefcase, Megaphone, ChevronDown, ChevronUp, Download, ShieldCheck } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
@@ -30,7 +31,10 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
   const [expandedSection, setExpandedSection] = useState<string | null>(null);
   const currentYear = new Date().getFullYear();
   const [onboardedYear, setOnboardedYear] = useState<number>(currentYear);
-  const [placementsMonths, setPlacementsMonths] = useState<number>(3);
+  const threeMonthsAgo = new Date();
+  threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+  const [placementsFrom, setPlacementsFrom] = useState<string>(threeMonthsAgo.toISOString().split('T')[0]);
+  const [placementsTo, setPlacementsTo] = useState<string>(new Date().toISOString().split('T')[0]);
   const [sourceYear, setSourceYear] = useState<number>(currentYear);
   const [retentionYear, setRetentionYear] = useState<number>(currentYear);
 
@@ -67,16 +71,16 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
 
   // 2. Roles filled by industry (closed hiring requests in past N months)
   const rolesByIndustry = useMemo(() => {
-    const now = new Date();
-    const cutoff = new Date(now);
-    cutoff.setMonth(cutoff.getMonth() - placementsMonths);
+    const fromDate = new Date(placementsFrom);
+    const toDate = new Date(placementsTo);
+    toDate.setHours(23, 59, 59, 999);
 
     const byIndustry: Record<string, string[]> = {};
 
     hiringRequests.forEach(r => {
       if (r.pipeline_stage !== 'closed' || !r.closed_at) return;
       const closedDate = new Date(r.closed_at);
-      if (closedDate < cutoff || closedDate > now) return;
+      if (closedDate < fromDate || closedDate > toDate) return;
       const industry = r.industry || 'Unknown';
       if (!byIndustry[industry]) byIndustry[industry] = [];
       byIndustry[industry].push(r.job_title);
@@ -84,7 +88,7 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
 
     return Object.entries(byIndustry)
       .sort((a, b) => b[1].length - a[1].length);
-  }, [hiringRequests, placementsMonths]);
+  }, [hiringRequests, placementsFrom, placementsTo]);
 
   const totalPlaced = rolesByIndustry.reduce((sum, [, list]) => sum + list.length, 0);
 
@@ -188,7 +192,7 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
 
     // Section 2: Roles Filled
     const maxRoles = Math.max(...rolesByIndustry.map(([, roles]) => roles.length), 0);
-    rows.push([`Roles Filled (Past ${placementsMonths} months)`, '', ...Array(maxRoles).fill('')]);
+    rows.push([`Roles Filled (${placementsFrom} to ${placementsTo})`, '', ...Array(maxRoles).fill('')]);
     rows.push(['Industry', 'Count', ...Array.from({ length: maxRoles }, (_, i) => `Role ${i + 1}`)]);
     rolesByIndustry.forEach(([industry, roles]) => {
       rows.push([industry, roles.length.toString(), ...roles, ...Array(maxRoles - roles.length).fill('')]);
@@ -227,7 +231,7 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
     URL.revokeObjectURL(url);
 
     toast({ title: 'Exported', description: 'Client insights downloaded as CSV' });
-  }, [clientOnboardedByIndustry, rolesByIndustry, clientsBySource, retentionData, retentionFiltered, totalOnboarded, totalPlaced, totalFromSource, overallRetention, onboardedYear, placementsMonths, sourceYear, retentionYear, toast]);
+  }, [clientOnboardedByIndustry, rolesByIndustry, clientsBySource, retentionData, retentionFiltered, totalOnboarded, totalPlaced, totalFromSource, overallRetention, onboardedYear, placementsFrom, placementsTo, sourceYear, retentionYear, toast]);
 
   return (
     <div className="space-y-2">
@@ -329,24 +333,22 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
               </div>
               <span className="text-sm font-medium">Roles Filled</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Select
-                value={placementsMonths.toString()}
-                onValueChange={(v) => setPlacementsMonths(parseInt(v))}
-              >
-                <SelectTrigger
-                  className="h-6 w-[72px] text-[10px] px-1.5"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent onClick={(e) => e.stopPropagation()}>
-                  <SelectItem value="1">1 month</SelectItem>
-                  <SelectItem value="3">3 months</SelectItem>
-                  <SelectItem value="6">6 months</SelectItem>
-                  <SelectItem value="12">12 months</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center gap-1">
+              <Input
+                type="date"
+                value={placementsFrom}
+                onChange={(e) => setPlacementsFrom(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                className="h-6 w-[110px] text-[10px] px-1.5"
+              />
+              <span className="text-[10px] text-muted-foreground">–</span>
+              <Input
+                type="date"
+                value={placementsTo}
+                onChange={(e) => setPlacementsTo(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                className="h-6 w-[110px] text-[10px] px-1.5"
+              />
               {expandedSection === 'placements' ? (
                 <ChevronUp className="w-4 h-4 text-muted-foreground" />
               ) : (
