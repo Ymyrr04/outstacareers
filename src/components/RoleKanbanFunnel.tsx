@@ -87,9 +87,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
   const [allRoles, setAllRoles] = useState<string[]>([]);
-  const [jobFilter, setJobFilter] = useState<'active' | 'all'>(() => {
+  const [jobFilter, setJobFilter] = useState<'active' | 'all' | 'inactive'>(() => {
     const p = searchParams.get('jobs');
-    return p === 'all' ? 'all' : 'active';
+    if (p === 'all') return 'all';
+    if (p === 'inactive') return 'inactive';
+    return 'active';
   });
   const [selectedRole, setSelectedRole] = useState<string>(() => {
     return searchParams.get('role') || ALL_ROLES_KEY;
@@ -129,8 +131,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
         next.delete('admin');
       }
       // Job filter
-      if (jobFilter === 'all') {
-        next.set('jobs', 'all');
+      if (jobFilter === 'all' || jobFilter === 'inactive') {
+        next.set('jobs', jobFilter);
       } else {
         next.delete('jobs');
       }
@@ -179,7 +181,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   }, []);
 
   const filteredRoles = useMemo(() => {
-    const base = jobFilter === 'active' ? activeRoles : allRoles;
+    let base: string[];
+    if (jobFilter === 'active') {
+      base = activeRoles;
+    } else if (jobFilter === 'inactive') {
+      const activeSet = new Set(activeRoles);
+      base = allRoles.filter(r => !activeSet.has(r));
+    } else {
+      base = allRoles;
+    }
     if (selectedAdmin && selectedAdmin !== 'all') {
       const adminTitles = new Set(adminJobTitlesMap[selectedAdmin] || []);
       return base.filter(r => adminTitles.has(r));
@@ -218,7 +228,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
 
     const fetchByStatuses = async (statuses: string[]): Promise<any[]> => {
       if (role === ALL_ROLES_KEY) {
-        const rolesToFetch = jobFilter === 'active' ? activeRoles : (allRoles.length > 0 ? allRoles : activeRoles);
+        const rolesToFetch = filteredRoles.length > 0
+          ? filteredRoles
+          : (jobFilter === 'active' ? activeRoles : allRoles);
         if (rolesToFetch.length === 0) return [];
         let collected: any[] = [];
         let from = 0;
@@ -315,7 +327,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
       interview_started_at: interviewMeta[a.id]?.started_at ?? null,
       stage_entered_at: stageEnteredMap[a.id] || a.submitted_at,
     })));
-  }, [activeRoles, allRoles, jobFilter]);
+  }, [activeRoles, allRoles, jobFilter, filteredRoles]);
 
   useEffect(() => {
     if (selectedRole === ALL_ROLES_KEY && activeRoles.length === 0 && allRoles.length === 0) return;
@@ -642,26 +654,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
             ))}
           </select>
 
-          <div className="flex items-center gap-1 border rounded-md p-0.5">
-            <button
-              className={cn(
-                'px-2.5 py-1 text-xs rounded-sm transition-colors',
-                jobFilter === 'active' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'
-              )}
-              onClick={() => setJobFilter('active')}
-            >
-              Active Jobs
-            </button>
-            <button
-              className={cn(
-                'px-2.5 py-1 text-xs rounded-sm transition-colors',
-                jobFilter === 'all' ? 'bg-primary text-primary-foreground' : 'hover:bg-accent'
-              )}
-              onClick={() => setJobFilter('all')}
-            >
-              All Jobs
-            </button>
-          </div>
+          <select
+            value={jobFilter}
+            onChange={(e) => setJobFilter(e.target.value as 'active' | 'all' | 'inactive')}
+            className="h-9 text-sm rounded-md border border-input bg-background px-3 py-1 focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="active">Active Jobs</option>
+            <option value="all">All Jobs</option>
+            <option value="inactive">Inactive Jobs</option>
+          </select>
         </div>
       </div>
 
