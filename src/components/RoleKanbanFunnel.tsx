@@ -573,6 +573,17 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
             />
           </div>
 
+          <select
+            value={selectedAdmin}
+            onChange={(e) => setSelectedAdmin(e.target.value)}
+            className="h-9 text-sm rounded-md border border-input bg-background px-3 py-1 focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="all">All Admins</option>
+            {adminList.map(admin => (
+              <option key={admin.id} value={admin.id}>{admin.name}</option>
+            ))}
+          </select>
+
           <div className="flex items-center gap-1 border rounded-md p-0.5">
             <button
               className={cn(
