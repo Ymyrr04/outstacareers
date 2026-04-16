@@ -116,10 +116,46 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   const [adminJobTitlesMap, setAdminJobTitlesMap] = useState<Record<string, string[]>>({});
 
   // Cache fully-enriched candidate lists keyed by `${role}|${jobFilter}|${admin}`.
-  // Switching back to a previously-viewed admin/role combo renders instantly
-  // from cache instead of refetching all 3 phases. A TTL keeps data fresh.
-  const candidateCacheRef = useRef<Map<string, { data: Candidate[]; ts: number }>>(new Map());
+  // Persisted to sessionStorage so refreshes within the same tab session
+  // also hit the cache instead of waiting on the 3-phase fetch.
+  const SS_CACHE_KEY = 'rkf:candidate-cache:v1';
   const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
+  const candidateCacheRef = useRef<Map<string, { data: Candidate[]; ts: number }>>(
+    (() => {
+      if (typeof window === 'undefined') return new Map();
+      try {
+        const raw = sessionStorage.getItem(SS_CACHE_KEY);
+        if (!raw) return new Map();
+        const parsed = JSON.parse(raw) as Record<string, { data: Candidate[]; ts: number }>;
+        const map = new Map<string, { data: Candidate[]; ts: number }>();
+        const now = Date.now();
+        for (const [k, v] of Object.entries(parsed)) {
+          // Drop ancient entries (>30 min) to bound storage size.
+          if (v && Array.isArray(v.data) && now - v.ts < 30 * 60 * 1000) {
+            map.set(k, v);
+          }
+        }
+        return map;
+      } catch {
+        return new Map();
+      }
+    })()
+  );
+
+  // Debounced persist to sessionStorage to avoid serializing on every set.
+  const persistCacheTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const persistCache = useCallback(() => {
+    if (persistCacheTimerRef.current) clearTimeout(persistCacheTimerRef.current);
+    persistCacheTimerRef.current = setTimeout(() => {
+      try {
+        const obj: Record<string, { data: Candidate[]; ts: number }> = {};
+        candidateCacheRef.current.forEach((v, k) => { obj[k] = v; });
+        sessionStorage.setItem(SS_CACHE_KEY, JSON.stringify(obj));
+      } catch {
+        // Quota exceeded — non-fatal.
+      }
+    }, 300);
+  }, []);
 
   // Sync filter state to URL search params
   useEffect(() => {
@@ -163,7 +199,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
       ));
       candidateCacheRef.current.set(key, { data: updated, ts: entry.ts });
     });
-  }, []);
+    persistCache();
+  }, [persistCache]);
 
   // Fetch active job titles and admin assignments independently
   useEffect(() => {
@@ -323,6 +360,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
     const applicantIds = allData.map(a => a.id);
     if (applicantIds.length === 0) {
       candidateCacheRef.current.set(cacheKey, { data: [], ts: Date.now() });
+      persistCache();
       return;
     }
 
@@ -379,8 +417,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
 
     // Cache the fully-enriched result and swap it in.
     candidateCacheRef.current.set(cacheKey, { data: enriched, ts: Date.now() });
+    persistCache();
     setCandidates(enriched);
-  }, [activeRoles, allRoles, jobFilter, filteredRoles, selectedAdmin]);
+  }, [activeRoles, allRoles, jobFilter, filteredRoles, selectedAdmin, persistCache]);
 
   useEffect(() => {
     if (selectedRole === ALL_ROLES_KEY && activeRoles.length === 0 && allRoles.length === 0) return;
@@ -894,6 +933,28 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
   const [activityHistory, setActivityHistory] = useState<Array<{ from_status: string | null; to_status: string; changed_by: string | null; created_at: string }>>([]);
   const [activityLoading, setActivityLoading] = useState(false);
 
+  // Lazy-mount: track which dialogs have ever been opened. We only render
+  // a dialog component into the tree after the user opens it the first time.
+  // This avoids mounting 8 hidden dialogs per card (thousands across the
+  // pipeline), which was inflating render time and DOM/heap considerably.
+  const [mountDetails, setMountDetails] = useState(false);
+  const [mountSendEmail, setMountSendEmail] = useState(false);
+  const [mountHistory, setMountHistory] = useState(false);
+  const [mountInvite, setMountInvite] = useState(false);
+  const [mountCvPreview, setMountCvPreview] = useState(false);
+  const [mountInterviewResults, setMountInterviewResults] = useState(false);
+  const [mountProfile, setMountProfile] = useState(false);
+  const [mountActivity, setMountActivity] = useState(false);
+
+  const openDetails = useCallback(() => { setMountDetails(true); setShowDetails(true); }, []);
+  const openSendEmail = useCallback(() => { setMountSendEmail(true); setShowSendEmail(true); }, []);
+  const openHistory = useCallback(() => { setMountHistory(true); setShowHistory(true); }, []);
+  const openInvite = useCallback(() => { setMountInvite(true); setShowInvite(true); }, []);
+  const openCvPreview = useCallback(() => { setMountCvPreview(true); setShowCvPreview(true); }, []);
+  const openInterviewResults = useCallback(() => { setMountInterviewResults(true); setShowInterviewResults(true); }, []);
+  const openProfile = useCallback(() => { setMountProfile(true); setShowProfile(true); }, []);
+  const openActivity = useCallback(() => { setMountActivity(true); setShowActivity(true); }, []);
+
   const fetchActivity = useCallback(async () => {
     setActivityLoading(true);
     const { data, error } = await supabase
@@ -1032,7 +1093,7 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
         </ContextMenuTrigger>
 
         <ContextMenuContent className="w-52">
-          <ContextMenuItem onClick={() => setShowDetails(true)}>
+          <ContextMenuItem onClick={openDetails}>
             <Eye className="w-4 h-4 mr-2" />
             View details
           </ContextMenuItem>
@@ -1056,38 +1117,38 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
 
           <ContextMenuSeparator />
 
-          <ContextMenuItem onClick={() => setShowSendEmail(true)}>
+          <ContextMenuItem onClick={openSendEmail}>
             <Send className="w-4 h-4 mr-2" />
             Send email
           </ContextMenuItem>
 
-          <ContextMenuItem onClick={() => setShowHistory(true)}>
+          <ContextMenuItem onClick={openHistory}>
             <History className="w-4 h-4 mr-2" />
             Communication history
           </ContextMenuItem>
 
-          <ContextMenuItem onClick={() => setShowInvite(true)}>
+          <ContextMenuItem onClick={openInvite}>
             <CalendarPlus className="w-4 h-4 mr-2" />
             Send interview invite
           </ContextMenuItem>
 
-          <ContextMenuItem onClick={() => setShowInterviewResults(true)}>
+          <ContextMenuItem onClick={openInterviewResults}>
             <ClipboardList className="w-4 h-4 mr-2" />
             Interview notes
           </ContextMenuItem>
 
-          <ContextMenuItem onClick={() => setShowProfile(true)}>
+          <ContextMenuItem onClick={openProfile}>
             <UserCircle className="w-4 h-4 mr-2" />
             Profile
           </ContextMenuItem>
 
-          <ContextMenuItem onClick={() => setShowActivity(true)}>
+          <ContextMenuItem onClick={openActivity}>
             <Activity className="w-4 h-4 mr-2" />
             Activity
           </ContextMenuItem>
 
           {candidate.cv_file_url && (
-            <ContextMenuItem onClick={() => setShowCvPreview(true)}>
+            <ContextMenuItem onClick={openCvPreview}>
               <FileText className="w-4 h-4 mr-2" />
               Preview CV
             </ContextMenuItem>
@@ -1127,45 +1188,53 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
         </ContextMenuContent>
       </ContextMenu>
 
-      <CandidateDetailDialog
-        open={showDetails}
-        onOpenChange={(open) => { setShowDetails(open); if (!open) setShowDetailsTab(undefined); }}
-        applicantId={candidate.id}
-        initialApplicant={candidate as any}
-      />
+      {mountDetails && (
+        <CandidateDetailDialog
+          open={showDetails}
+          onOpenChange={(open) => { setShowDetails(open); if (!open) setShowDetailsTab(undefined); }}
+          applicantId={candidate.id}
+          initialApplicant={candidate as any}
+        />
+      )}
 
-      <SendEmailDialog
-        open={showSendEmail}
-        onOpenChange={setShowSendEmail}
-        applicant={{
-          id: candidate.id,
-          full_name: candidate.full_name,
-          email: candidate.email,
-          job_title: candidate.job_title,
-          status: candidate.status,
-        }}
-      />
+      {mountSendEmail && (
+        <SendEmailDialog
+          open={showSendEmail}
+          onOpenChange={setShowSendEmail}
+          applicant={{
+            id: candidate.id,
+            full_name: candidate.full_name,
+            email: candidate.email,
+            job_title: candidate.job_title,
+            status: candidate.status,
+          }}
+        />
+      )}
 
-      <CommunicationHistory
-        open={showHistory}
-        onOpenChange={setShowHistory}
-        applicantId={candidate.id}
-        applicantName={candidate.full_name}
-        applicantEmail={candidate.email}
-      />
+      {mountHistory && (
+        <CommunicationHistory
+          open={showHistory}
+          onOpenChange={setShowHistory}
+          applicantId={candidate.id}
+          applicantName={candidate.full_name}
+          applicantEmail={candidate.email}
+        />
+      )}
 
-      <InterviewInviteDialog
-        open={showInvite}
-        onOpenChange={setShowInvite}
-        applicant={{
-          id: candidate.id,
-          full_name: candidate.full_name,
-          email: candidate.email,
-          job_title: candidate.job_title,
-        }}
-      />
+      {mountInvite && (
+        <InterviewInviteDialog
+          open={showInvite}
+          onOpenChange={setShowInvite}
+          applicant={{
+            id: candidate.id,
+            full_name: candidate.full_name,
+            email: candidate.email,
+            job_title: candidate.job_title,
+          }}
+        />
+      )}
 
-      {candidate.cv_file_url && (
+      {mountCvPreview && candidate.cv_file_url && (
         <Dialog open={showCvPreview} onOpenChange={setShowCvPreview}>
           <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
             <DialogHeader>
@@ -1176,62 +1245,68 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
         </Dialog>
       )}
 
-      <InterviewNotesDialog
-        open={showInterviewResults}
-        onOpenChange={setShowInterviewResults}
-        applicantId={candidate.id}
-        applicantName={candidate.full_name}
-      />
+      {mountInterviewResults && (
+        <InterviewNotesDialog
+          open={showInterviewResults}
+          onOpenChange={setShowInterviewResults}
+          applicantId={candidate.id}
+          applicantName={candidate.full_name}
+        />
+      )}
 
-      <CandidateProfileDialog
-        open={showProfile}
-        onOpenChange={setShowProfile}
-        applicantId={candidate.id}
-        applicantName={candidate.full_name}
-      />
+      {mountProfile && (
+        <CandidateProfileDialog
+          open={showProfile}
+          onOpenChange={setShowProfile}
+          applicantId={candidate.id}
+          applicantName={candidate.full_name}
+        />
+      )}
 
-      <Dialog open={showActivity} onOpenChange={setShowActivity}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Activity className="w-4 h-4" />
-              Activity — {candidate.full_name}
-            </DialogTitle>
-          </DialogHeader>
-          {activityLoading ? (
-            <div className="py-8 text-center text-muted-foreground text-sm">Loading...</div>
-          ) : activityHistory.length === 0 ? (
-            <div className="py-8 text-center text-muted-foreground text-sm">No activity recorded</div>
-          ) : (
-            <div className="max-h-[400px] overflow-y-auto space-y-3">
-              {activityHistory.map((entry, idx) => {
-                const date = new Date(entry.created_at);
-                const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                const formattedTime = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-                const adminName = getAdminDisplayName(entry.changed_by, 'System');
-                return (
-                  <div key={idx} className="flex gap-3 text-sm">
-                    <div className="flex flex-col items-center">
-                      <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
-                      {idx < activityHistory.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
+      {mountActivity && (
+        <Dialog open={showActivity} onOpenChange={setShowActivity}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Activity className="w-4 h-4" />
+                Activity — {candidate.full_name}
+              </DialogTitle>
+            </DialogHeader>
+            {activityLoading ? (
+              <div className="py-8 text-center text-muted-foreground text-sm">Loading...</div>
+            ) : activityHistory.length === 0 ? (
+              <div className="py-8 text-center text-muted-foreground text-sm">No activity recorded</div>
+            ) : (
+              <div className="max-h-[400px] overflow-y-auto space-y-3">
+                {activityHistory.map((entry, idx) => {
+                  const date = new Date(entry.created_at);
+                  const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                  const formattedTime = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                  const adminName = getAdminDisplayName(entry.changed_by, 'System');
+                  return (
+                    <div key={idx} className="flex gap-3 text-sm">
+                      <div className="flex flex-col items-center">
+                        <div className="w-2 h-2 rounded-full bg-primary mt-1.5 shrink-0" />
+                        {idx < activityHistory.length - 1 && <div className="w-px flex-1 bg-border mt-1" />}
+                      </div>
+                      <div className="pb-3">
+                        <p className="text-foreground">
+                          <span className="font-medium">{adminName}</span>
+                          {' moved from '}
+                          <span className="font-medium">{entry.from_status || '—'}</span>
+                          {' → '}
+                          <span className="font-medium">{entry.to_status}</span>
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">{formattedDate} at {formattedTime}</p>
+                      </div>
                     </div>
-                    <div className="pb-3">
-                      <p className="text-foreground">
-                        <span className="font-medium">{adminName}</span>
-                        {' moved from '}
-                        <span className="font-medium">{entry.from_status || '—'}</span>
-                        {' → '}
-                        <span className="font-medium">{entry.to_status}</span>
-                      </p>
-                      <p className="text-xs text-muted-foreground mt-0.5">{formattedDate} at {formattedTime}</p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+                  );
+                })}
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
     </>
   );
 };
