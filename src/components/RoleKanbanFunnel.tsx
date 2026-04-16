@@ -276,7 +276,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
     setCandidates(mapToCandidate(priorityData));
     setLoading(false);
 
-    // Phase 2: background fetch for cold columns
+    // Phase 2: background fetch for cold columns — yield to any active
+    // priority work (e.g., the Candidate Detail Dialog opening).
+    await priorityGate.wait();
     const backgroundData = await fetchByStatuses(BACKGROUND_STATUSES);
     const allData = [...priorityData, ...backgroundData];
     setCandidates(mapToCandidate(allData));
@@ -294,7 +296,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
     const interviewMeta: Record<string, { status: string; started_at: string }> = {};
     const stageEnteredMap: Record<string, string> = {};
 
+    // Phase 3: enrichment — yield again before kicking off the parallel batches.
+    await priorityGate.wait();
     await Promise.all(batches.map(async (batch) => {
+      // Yield per-batch too, so a dialog opening mid-enrichment still wins.
+      await priorityGate.wait();
       const [sessionsRes, historyRes] = await Promise.all([
         supabase
           .from('interview_sessions')
