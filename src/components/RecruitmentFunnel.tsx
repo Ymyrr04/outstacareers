@@ -19,6 +19,7 @@ import { cn } from '@/lib/utils';
 import { RoleKanbanFunnel } from '@/components/RoleKanbanFunnel';
 import { FunnelKPICards } from '@/components/funnel/FunnelKPICards';
 import { FunnelBarChart } from '@/components/funnel/FunnelBarChart';
+import { StageTimingBreakdown, type StageTiming, type TransitionTiming } from '@/components/funnel/StageTimingBreakdown';
 
 const FUNNEL_STAGES = [
   'For Review',
