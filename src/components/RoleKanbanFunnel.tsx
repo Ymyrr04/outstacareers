@@ -80,7 +80,12 @@ interface Candidate {
 interface RoleKanbanFunnelProps {
   roles?: string[];
   onRoleSelect?: (role: string) => void;
-  onFiltersChange?: (filters: { role: string; jobFilter: 'active' | 'all' | 'inactive' }) => void;
+  onFiltersChange?: (filters: {
+    role: string;
+    jobFilter: 'active' | 'all' | 'inactive';
+    selectedAdmin: string;
+    adminScopedRoles: string[] | null;
+  }) => void;
 }
 
 const ALL_ROLES_KEY = '__all__';
@@ -320,10 +325,14 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     if (selectedRole && selectedRole !== ALL_ROLES_KEY) _onRoleSelect?.(selectedRole);
   }, [selectedRole, _onRoleSelect]);
 
-  // Notify parent of full filter context (role + jobFilter), including "All Roles".
+  // Notify parent of full filter context (role + jobFilter + admin), including "All Roles".
+  // adminScopedRoles is the list of roles assigned to the selected admin (or null when "all").
   useEffect(() => {
-    onFiltersChange?.({ role: selectedRole, jobFilter });
-  }, [selectedRole, jobFilter, onFiltersChange]);
+    const adminScopedRoles = selectedAdmin && selectedAdmin !== 'all'
+      ? (adminJobTitlesMap[selectedAdmin] || [])
+      : null;
+    onFiltersChange?.({ role: selectedRole, jobFilter, selectedAdmin, adminScopedRoles });
+  }, [selectedRole, jobFilter, selectedAdmin, adminJobTitlesMap, onFiltersChange]);
 
   const fetchCandidates = useCallback(async (role: string) => {
     if (!role) return;

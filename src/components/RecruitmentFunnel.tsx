@@ -66,6 +66,8 @@ export const RecruitmentFunnel = () => {
   const searchDropdownRef = useRef<HTMLDivElement>(null);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  // Admin-scoped role list mirrored from the pipeline above (null = no admin filter).
+  const [adminScopedRoles, setAdminScopedRoles] = useState<string[] | null>(null);
 
   useEffect(() => {
     // Defer the heavy historical-data fetch until the user opens the collapsible.
@@ -211,6 +213,11 @@ export const RecruitmentFunnel = () => {
         if (jobStatusFilter === 'all' || !activeJobTitles) return true;
         const isActive = activeJobTitles.has(role.jobTitle);
         return jobStatusFilter === 'active' ? isActive : !isActive;
+      })
+      .filter((role) => {
+        // Mirror the recruiter (admin) filter from the pipeline above.
+        if (!adminScopedRoles) return true;
+        return adminScopedRoles.includes(role.jobTitle);
       });
 
     if (searchTerm) {
@@ -228,7 +235,7 @@ export const RecruitmentFunnel = () => {
     });
 
     return results;
-  }, [applicants, historyData, searchTerm, sortBy, jobStatusFilter, activeJobTitles, dateFrom, dateTo]);
+  }, [applicants, historyData, searchTerm, sortBy, jobStatusFilter, activeJobTitles, dateFrom, dateTo, adminScopedRoles]);
 
   const stageTotals = useMemo(
     () =>
@@ -309,9 +316,10 @@ export const RecruitmentFunnel = () => {
       <RoleKanbanFunnel
         roles={roleFunnels.map(r => r.jobTitle)}
         onRoleSelect={(role) => setSearchTerm(role === '__all__' ? '' : role)}
-        onFiltersChange={({ role, jobFilter }) => {
+        onFiltersChange={({ role, jobFilter, adminScopedRoles: roles }) => {
           setSearchTerm(role === '__all__' ? '' : role);
           setJobStatusFilter(jobFilter);
+          setAdminScopedRoles(roles);
         }}
       />
 
