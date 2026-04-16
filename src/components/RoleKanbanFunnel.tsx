@@ -228,7 +228,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
       }
       return next;
     }, { replace: true });
-  }, [selectedRole, selectedAdmin, jobFilter, setSearchParams]);
+    // Clear selection when context changes — selected IDs may no longer be visible.
+    clearSelection();
+  }, [selectedRole, selectedAdmin, jobFilter, setSearchParams, clearSelection]);
 
   const updateCandidateStageInState = useCallback((candidateId: string, newStage: string) => {
     const movedAt = new Date().toISOString();
