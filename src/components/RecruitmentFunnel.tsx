@@ -52,8 +52,10 @@ function getHeatmapColor(count: number, maxCount: number): string {
 }
 
 export const RecruitmentFunnel = () => {
-  const [applicants, setApplicants] = useState<{ job_title: string; status: string; pre_archive_status: string | null; submitted_at: string }[]>([]);
+  const [applicants, setApplicants] = useState<{ id: string; job_title: string; status: string; pre_archive_status: string | null; submitted_at: string }[]>([]);
   const [historyData, setHistoryData] = useState<{ job_title: string; to_status: string; applicant_count: number }[]>([]);
+  // Most-recent status-change timestamp per applicant (for avg days in pipeline)
+  const [lastStatusChange, setLastStatusChange] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [sortBy, setSortBy] = useState<'pipeline' | 'name' | 'total'>('pipeline');
@@ -78,13 +80,13 @@ export const RecruitmentFunnel = () => {
       setLoading(true);
       setHasFetchedHistorical(true);
 
-      let all: { job_title: string; status: string; pre_archive_status: string | null; submitted_at: string }[] = [];
+      let all: { id: string; job_title: string; status: string; pre_archive_status: string | null; submitted_at: string }[] = [];
       let from = 0;
       const batchSize = 1000;
       while (true) {
         const { data } = await supabase
           .from('applicants_prescreen')
-          .select('job_title, status, pre_archive_status, submitted_at')
+          .select('id, job_title, status, pre_archive_status, submitted_at')
           .range(from, from + batchSize - 1);
         if (!data || data.length === 0) break;
         all = all.concat(data);
@@ -93,24 +95,34 @@ export const RecruitmentFunnel = () => {
       }
       setApplicants(all);
 
-      let histAll: { applicant_id: string; to_status: string; job_title: string }[] = [];
+      let histAll: { applicant_id: string; to_status: string; created_at: string; job_title: string }[] = [];
       from = 0;
       while (true) {
         const { data } = await supabase
           .from('applicant_status_history')
-          .select('applicant_id, to_status, applicants_prescreen!inner(job_title)')
+          .select('applicant_id, to_status, created_at, applicants_prescreen!inner(job_title)')
           .range(from, from + batchSize - 1) as { data: any[] | null };
         if (!data || data.length === 0) break;
         histAll = histAll.concat(
           data.map((d: any) => ({
             applicant_id: d.applicant_id,
             to_status: d.to_status,
+            created_at: d.created_at,
             job_title: d.applicants_prescreen?.job_title || 'Unknown',
           }))
         );
         if (data.length < batchSize) break;
         from += batchSize;
       }
+
+      // Track most-recent status-change timestamp per applicant
+      const lastChange: Record<string, string> = {};
+      for (const h of histAll) {
+        if (!lastChange[h.applicant_id] || h.created_at > lastChange[h.applicant_id]) {
+          lastChange[h.applicant_id] = h.created_at;
+        }
+      }
+      setLastStatusChange(lastChange);
 
       const histMap: Record<string, Set<string>> = {};
       for (const h of histAll) {
@@ -284,8 +296,39 @@ export const RecruitmentFunnel = () => {
       }
     }
 
-    return { totalActive, overallConversionRate, bottleneckStage, avgDaysInPipeline: 0 };
-  }, [roleFunnels, stageTotals]);
+    // Avg days in pipeline: for each applicant currently in a recruitment stage
+    // within the filtered roles, compute days from submitted_at to last status
+    // change (or now if no status change recorded yet).
+    let effectiveFrom = dateFrom;
+    let effectiveTo = dateTo;
+    if (effectiveFrom && effectiveTo && effectiveFrom > effectiveTo) {
+      [effectiveFrom, effectiveTo] = [effectiveTo, effectiveFrom];
+    }
+    const filteredRoleSet = new Set(roleFunnels.map(r => r.jobTitle));
+    const now = Date.now();
+    const MS_PER_DAY = 1000 * 60 * 60 * 24;
+    let totalDays = 0;
+    let dayCount = 0;
+    for (const a of applicants) {
+      if (!filteredRoleSet.has(a.job_title || 'Unknown')) continue;
+      if (effectiveFrom && a.submitted_at < effectiveFrom) continue;
+      if (effectiveTo && a.submitted_at > effectiveTo + 'T23:59:59.999Z') continue;
+      const effectiveStatus = a.status === 'Archive' || a.status === 'Archived'
+        ? (a.pre_archive_status || a.status)
+        : a.status;
+      if (!RECRUITMENT_STATUSES.has(effectiveStatus as (typeof FUNNEL_STAGES)[number])) continue;
+      const submittedMs = new Date(a.submitted_at).getTime();
+      if (!isFinite(submittedMs)) continue;
+      const lastChange = lastStatusChange[a.id];
+      const endMs = lastChange ? new Date(lastChange).getTime() : now;
+      const days = Math.max(0, (endMs - submittedMs) / MS_PER_DAY);
+      totalDays += days;
+      dayCount += 1;
+    }
+    const avgDaysInPipeline = dayCount > 0 ? Math.round(totalDays / dayCount) : 0;
+
+    return { totalActive, overallConversionRate, bottleneckStage, avgDaysInPipeline };
+  }, [roleFunnels, stageTotals, applicants, lastStatusChange, dateFrom, dateTo]);
 
   // Conversion rates: % of total pipeline in each stage (distribution view)
   // Since historical flow data is sparse (status_history trigger was added recently),
