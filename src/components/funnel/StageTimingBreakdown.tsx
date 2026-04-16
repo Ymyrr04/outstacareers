@@ -50,10 +50,10 @@ export const StageTimingBreakdown = ({
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-semibold flex items-center gap-2">
             <Clock className="w-4 h-4 text-primary" />
-            Avg Time Spent in Each Stage
+            Avg Time in Active Pipeline Stages
           </CardTitle>
           <p className="text-xs text-muted-foreground">
-            How long candidates sit in each stage before moving on (or to now if still there).
+            Average time candidates spend in each active stage. Excludes terminal stages (Hired, Reject, Archived, Talent Pool, Bench).
           </p>
         </CardHeader>
         <CardContent className="pt-2">
