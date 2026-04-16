@@ -512,6 +512,12 @@ export const RecruitmentFunnel = () => {
           {/* Funnel Bar Chart */}
           <FunnelBarChart stageTotals={stageTotals} stages={FUNNEL_STAGES} />
 
+          {/* Per-stage and per-transition timing breakdown */}
+          <StageTimingBreakdown
+            stageTimings={stageTimings}
+            transitionTimings={transitionTimings}
+          />
+
           {/* Search & Sort */}
           <div className="flex items-center gap-2 flex-wrap justify-end">
             <Input
