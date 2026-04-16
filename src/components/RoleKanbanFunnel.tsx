@@ -127,10 +127,10 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
     return jobFilter === 'active' ? activeRoles : allRoles;
   }, [activeRoles, allRoles, jobFilter]);
 
-  // Set initial selected role when filtered roles are ready
+  // If a specific role is selected but no longer in the list, reset to all
   useEffect(() => {
-    if (filteredRoles.length > 0 && (!selectedRole || !filteredRoles.includes(selectedRole))) {
-      setSelectedRole(filteredRoles[0]);
+    if (selectedRole && selectedRole !== ALL_ROLES_KEY && !filteredRoles.includes(selectedRole)) {
+      setSelectedRole(ALL_ROLES_KEY);
     }
   }, [filteredRoles]);
 
