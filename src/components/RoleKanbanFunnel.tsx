@@ -99,6 +99,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   const [sortOption, setSortOption] = useState<'score-desc' | 'score-asc' | 'name-asc' | 'name-desc' | 'newest' | 'oldest' | 'assessed'>('score-desc');
   const [hiredCandidate, setHiredCandidate] = useState<Candidate | null>(null);
   const [showHiredDialog, setShowHiredDialog] = useState(false);
+  const [selectedAdmin, setSelectedAdmin] = useState<string>('all');
+  const [adminList, setAdminList] = useState<{ id: string; name: string }[]>([]);
+  const [adminJobTitlesMap, setAdminJobTitlesMap] = useState<Record<string, string[]>>({});
 
   const updateCandidateStageInState = useCallback((candidateId: string, newStage: string) => {
     const movedAt = new Date().toISOString();
@@ -109,16 +112,33 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
     )));
   }, []);
 
-  // Fetch active job titles independently
+  // Fetch active job titles and admin assignments independently
   useEffect(() => {
     const fetchJobs = async () => {
       const [activeResult, allResult] = await Promise.all([
-        supabase.from('jobs').select('title').eq('is_active', true).order('title'),
-        supabase.from('jobs').select('title').order('title'),
+        supabase.from('jobs').select('title, assigned_admin_id').eq('is_active', true).order('title'),
+        supabase.from('jobs').select('title, assigned_admin_id').order('title'),
       ]);
       const filterTitle = (data: any[]) => (data || []).map(j => j.title).filter(t => t && !/^\$?\d+(\.\d+)?$/.test(t.trim()));
       setActiveRoles(filterTitle(activeResult.data));
       setAllRoles(filterTitle(allResult.data));
+
+      // Build admin list and admin-to-job-titles map
+      const adminMap = new Map<string, string[]>();
+      for (const j of [...(activeResult.data || []), ...(allResult.data || [])]) {
+        if (j.assigned_admin_id && j.title) {
+          if (!adminMap.has(j.assigned_admin_id)) adminMap.set(j.assigned_admin_id, []);
+          const titles = adminMap.get(j.assigned_admin_id)!;
+          if (!titles.includes(j.title)) titles.push(j.title);
+        }
+      }
+      const admins = Array.from(adminMap.keys()).map(id => ({
+        id,
+        name: getAdminDisplayName(id, id.slice(0, 8)),
+      }));
+      admins.sort((a, b) => a.name.localeCompare(b.name));
+      setAdminList(admins);
+      setAdminJobTitlesMap(Object.fromEntries(adminMap));
     };
     fetchJobs();
   }, []);
@@ -371,14 +391,24 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   }, []);
 
   const filteredCandidates = useMemo(() => {
-    if (!candidateSearch.trim()) return candidates;
-    const term = candidateSearch.toLowerCase();
-    return candidates.filter(c =>
-      c.full_name.toLowerCase().includes(term) ||
-      c.email.toLowerCase().includes(term) ||
-      (c.location && c.location.toLowerCase().includes(term))
-    );
-  }, [candidates, candidateSearch]);
+    let result = candidates;
+
+    // Filter by admin
+    if (selectedAdmin !== 'all') {
+      const adminJobTitles = adminJobTitlesMap[selectedAdmin] || [];
+      result = result.filter(c => adminJobTitles.includes(c.job_title));
+    }
+
+    if (candidateSearch.trim()) {
+      const term = candidateSearch.toLowerCase();
+      result = result.filter(c =>
+        c.full_name.toLowerCase().includes(term) ||
+        c.email.toLowerCase().includes(term) ||
+        (c.location && c.location.toLowerCase().includes(term))
+      );
+    }
+    return result;
+  }, [candidates, candidateSearch, selectedAdmin, adminJobTitlesMap]);
 
   const stageGroups = useMemo(() => {
     const groups: Record<string, Candidate[]> = {};
@@ -542,6 +572,17 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
               className="pl-8 h-9 w-[260px] text-sm border-blue-400 focus:border-blue-500 focus:ring-blue-500"
             />
           </div>
+
+          <select
+            value={selectedAdmin}
+            onChange={(e) => setSelectedAdmin(e.target.value)}
+            className="h-9 text-sm rounded-md border border-input bg-background px-3 py-1 focus:outline-none focus:ring-2 focus:ring-ring"
+          >
+            <option value="all">All Admins</option>
+            {adminList.map(admin => (
+              <option key={admin.id} value={admin.id}>{admin.name}</option>
+            ))}
+          </select>
 
           <div className="flex items-center gap-1 border rounded-md p-0.5">
             <button
