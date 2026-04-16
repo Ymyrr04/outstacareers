@@ -87,9 +87,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
   const [allRoles, setAllRoles] = useState<string[]>([]);
-  const [jobFilter, setJobFilter] = useState<'active' | 'all'>(() => {
+  const [jobFilter, setJobFilter] = useState<'active' | 'all' | 'inactive'>(() => {
     const p = searchParams.get('jobs');
-    return p === 'all' ? 'all' : 'active';
+    if (p === 'all') return 'all';
+    if (p === 'inactive') return 'inactive';
+    return 'active';
   });
   const [selectedRole, setSelectedRole] = useState<string>(() => {
     return searchParams.get('role') || ALL_ROLES_KEY;
