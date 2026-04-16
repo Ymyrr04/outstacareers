@@ -1154,7 +1154,17 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
       <ContextMenu>
         <ContextMenuTrigger asChild>
           <div
+            data-candidate-card="true"
+            data-candidate-id={candidate.id}
             draggable
+            onClick={(e) => {
+              // Ctrl/Cmd+click toggles selection without opening anything else.
+              if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                e.stopPropagation();
+                onSelectToggle?.();
+              }
+            }}
             onDragStart={(e) => {
               e.dataTransfer.effectAllowed = 'move';
               e.dataTransfer.setData('text/plain', candidate.id);
@@ -1163,7 +1173,8 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
             onDragEnd={() => onDragEnd?.()}
             className={cn(
               "bg-card rounded-md p-2.5 shadow-sm border border-border/50 hover:shadow-md transition-all space-y-1.5 cursor-grab active:cursor-grabbing",
-              isDragging && "opacity-40 scale-95 shadow-lg"
+              isDragging && "opacity-40 scale-95 shadow-lg",
+              isSelected && "ring-2 ring-primary border-primary bg-primary/5"
             )}
           >
             <div className="space-y-1">
