@@ -199,7 +199,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
       ));
       candidateCacheRef.current.set(key, { data: updated, ts: entry.ts });
     });
-  }, []);
+    persistCache();
+  }, [persistCache]);
 
   // Fetch active job titles and admin assignments independently
   useEffect(() => {
