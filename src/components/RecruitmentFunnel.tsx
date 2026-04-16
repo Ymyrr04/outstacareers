@@ -213,6 +213,11 @@ export const RecruitmentFunnel = () => {
         if (jobStatusFilter === 'all' || !activeJobTitles) return true;
         const isActive = activeJobTitles.has(role.jobTitle);
         return jobStatusFilter === 'active' ? isActive : !isActive;
+      })
+      .filter((role) => {
+        // Mirror the recruiter (admin) filter from the pipeline above.
+        if (!adminScopedRoles) return true;
+        return adminScopedRoles.includes(role.jobTitle);
       });
 
     if (searchTerm) {
