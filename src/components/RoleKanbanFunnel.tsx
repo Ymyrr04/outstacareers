@@ -391,14 +391,24 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   }, []);
 
   const filteredCandidates = useMemo(() => {
-    if (!candidateSearch.trim()) return candidates;
-    const term = candidateSearch.toLowerCase();
-    return candidates.filter(c =>
-      c.full_name.toLowerCase().includes(term) ||
-      c.email.toLowerCase().includes(term) ||
-      (c.location && c.location.toLowerCase().includes(term))
-    );
-  }, [candidates, candidateSearch]);
+    let result = candidates;
+
+    // Filter by admin
+    if (selectedAdmin !== 'all') {
+      const adminJobTitles = adminJobTitlesMap[selectedAdmin] || [];
+      result = result.filter(c => adminJobTitles.includes(c.job_title));
+    }
+
+    if (candidateSearch.trim()) {
+      const term = candidateSearch.toLowerCase();
+      result = result.filter(c =>
+        c.full_name.toLowerCase().includes(term) ||
+        c.email.toLowerCase().includes(term) ||
+        (c.location && c.location.toLowerCase().includes(term))
+      );
+    }
+    return result;
+  }, [candidates, candidateSearch, selectedAdmin, adminJobTitlesMap]);
 
   const stageGroups = useMemo(() => {
     const groups: Record<string, Candidate[]> = {};
