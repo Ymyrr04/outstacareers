@@ -431,9 +431,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
         <div className="flex items-center gap-2">
           <Users className="w-5 h-5 text-primary" />
           <h2 className="text-lg font-semibold">Role Pipeline</h2>
-          {selectedRole && (
-            <Badge variant="secondary">{totalInPipeline} candidates</Badge>
-          )}
+          <Badge variant="secondary">{totalInPipeline} candidates</Badge>
         </div>
 
         <div className="flex items-center gap-2">
