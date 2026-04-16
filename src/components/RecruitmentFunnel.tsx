@@ -35,6 +35,10 @@ const FUNNEL_STAGES = [
 
 const RECRUITMENT_STATUSES = new Set(FUNNEL_STAGES);
 
+// Stages where a candidate is no longer actively progressing through the pipeline.
+// Time spent here (and transitions into them) is excluded from "active pipeline" timing metrics.
+const TERMINAL_STAGES = new Set<string>(['Hired', 'Reject', 'Archived', 'Talent Pool', 'Bench']);
+
 interface RoleFunnelData {
   jobTitle: string;
   total: number;
@@ -417,15 +421,20 @@ export const RecruitmentFunnel = () => {
 
         const days = Math.max(0, (leftAt - arrivedAt) / MS_PER_DAY);
 
-        // Only count stages we recognize in the funnel
-        if (RECRUITMENT_STATUSES.has(ev.to_status as (typeof FUNNEL_STAGES)[number])) {
+        // Only count stages we recognize in the funnel AND that are part of the active pipeline
+        // (exclude terminal stages like Hired / Reject / Archived / Talent Pool / Bench).
+        if (
+          RECRUITMENT_STATUSES.has(ev.to_status as (typeof FUNNEL_STAGES)[number]) &&
+          !TERMINAL_STAGES.has(ev.to_status)
+        ) {
           const list = stageBuckets.get(ev.to_status) || [];
           list.push(days);
           stageBuckets.set(ev.to_status, list);
         }
 
-        // Transition: time spent in `ev.to_status` before moving to `next.to_status`
-        if (next) {
+        // Transition: time spent in `ev.to_status` before moving to `next.to_status`.
+        // Skip transitions where the source stage is terminal (candidate already exited active pipeline).
+        if (next && !TERMINAL_STAGES.has(ev.to_status)) {
           const key = `${ev.to_status}→${next.to_status}`;
           const list = transitionBuckets.get(key) || [];
           list.push(days);
