@@ -192,7 +192,7 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
 
     // Section 2: Roles Filled
     const maxRoles = Math.max(...rolesByIndustry.map(([, roles]) => roles.length), 0);
-    rows.push([`Roles Filled (Past ${placementsMonths} months)`, '', ...Array(maxRoles).fill('')]);
+    rows.push([`Roles Filled (${placementsFrom} to ${placementsTo})`, '', ...Array(maxRoles).fill('')]);
     rows.push(['Industry', 'Count', ...Array.from({ length: maxRoles }, (_, i) => `Role ${i + 1}`)]);
     rolesByIndustry.forEach(([industry, roles]) => {
       rows.push([industry, roles.length.toString(), ...roles, ...Array(maxRoles - roles.length).fill('')]);
@@ -231,7 +231,7 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
     URL.revokeObjectURL(url);
 
     toast({ title: 'Exported', description: 'Client insights downloaded as CSV' });
-  }, [clientOnboardedByIndustry, rolesByIndustry, clientsBySource, retentionData, retentionFiltered, totalOnboarded, totalPlaced, totalFromSource, overallRetention, onboardedYear, placementsMonths, sourceYear, retentionYear, toast]);
+  }, [clientOnboardedByIndustry, rolesByIndustry, clientsBySource, retentionData, retentionFiltered, totalOnboarded, totalPlaced, totalFromSource, overallRetention, onboardedYear, placementsFrom, placementsTo, sourceYear, retentionYear, toast]);
 
   return (
     <div className="space-y-2">
@@ -333,24 +333,22 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
               </div>
               <span className="text-sm font-medium">Roles Filled</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Select
-                value={placementsMonths.toString()}
-                onValueChange={(v) => setPlacementsMonths(parseInt(v))}
-              >
-                <SelectTrigger
-                  className="h-6 w-[72px] text-[10px] px-1.5"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent onClick={(e) => e.stopPropagation()}>
-                  <SelectItem value="1">1 month</SelectItem>
-                  <SelectItem value="3">3 months</SelectItem>
-                  <SelectItem value="6">6 months</SelectItem>
-                  <SelectItem value="12">12 months</SelectItem>
-                </SelectContent>
-              </Select>
+            <div className="flex items-center gap-1">
+              <Input
+                type="date"
+                value={placementsFrom}
+                onChange={(e) => setPlacementsFrom(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                className="h-6 w-[110px] text-[10px] px-1.5"
+              />
+              <span className="text-[10px] text-muted-foreground">–</span>
+              <Input
+                type="date"
+                value={placementsTo}
+                onChange={(e) => setPlacementsTo(e.target.value)}
+                onClick={(e) => e.stopPropagation()}
+                className="h-6 w-[110px] text-[10px] px-1.5"
+              />
               {expandedSection === 'placements' ? (
                 <ChevronUp className="w-4 h-4 text-muted-foreground" />
               ) : (
