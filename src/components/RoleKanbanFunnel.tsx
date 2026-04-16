@@ -933,6 +933,28 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
   const [activityHistory, setActivityHistory] = useState<Array<{ from_status: string | null; to_status: string; changed_by: string | null; created_at: string }>>([]);
   const [activityLoading, setActivityLoading] = useState(false);
 
+  // Lazy-mount: track which dialogs have ever been opened. We only render
+  // a dialog component into the tree after the user opens it the first time.
+  // This avoids mounting 8 hidden dialogs per card (thousands across the
+  // pipeline), which was inflating render time and DOM/heap considerably.
+  const [mountDetails, setMountDetails] = useState(false);
+  const [mountSendEmail, setMountSendEmail] = useState(false);
+  const [mountHistory, setMountHistory] = useState(false);
+  const [mountInvite, setMountInvite] = useState(false);
+  const [mountCvPreview, setMountCvPreview] = useState(false);
+  const [mountInterviewResults, setMountInterviewResults] = useState(false);
+  const [mountProfile, setMountProfile] = useState(false);
+  const [mountActivity, setMountActivity] = useState(false);
+
+  const openDetails = useCallback(() => { setMountDetails(true); setShowDetails(true); }, []);
+  const openSendEmail = useCallback(() => { setMountSendEmail(true); setShowSendEmail(true); }, []);
+  const openHistory = useCallback(() => { setMountHistory(true); setShowHistory(true); }, []);
+  const openInvite = useCallback(() => { setMountInvite(true); setShowInvite(true); }, []);
+  const openCvPreview = useCallback(() => { setMountCvPreview(true); setShowCvPreview(true); }, []);
+  const openInterviewResults = useCallback(() => { setMountInterviewResults(true); setShowInterviewResults(true); }, []);
+  const openProfile = useCallback(() => { setMountProfile(true); setShowProfile(true); }, []);
+  const openActivity = useCallback(() => { setMountActivity(true); setShowActivity(true); }, []);
+
   const fetchActivity = useCallback(async () => {
     setActivityLoading(true);
     const { data, error } = await supabase
