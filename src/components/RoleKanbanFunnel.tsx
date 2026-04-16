@@ -1093,7 +1093,7 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
         </ContextMenuTrigger>
 
         <ContextMenuContent className="w-52">
-          <ContextMenuItem onClick={() => setShowDetails(true)}>
+          <ContextMenuItem onClick={openDetails}>
             <Eye className="w-4 h-4 mr-2" />
             View details
           </ContextMenuItem>
@@ -1117,38 +1117,38 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
 
           <ContextMenuSeparator />
 
-          <ContextMenuItem onClick={() => setShowSendEmail(true)}>
+          <ContextMenuItem onClick={openSendEmail}>
             <Send className="w-4 h-4 mr-2" />
             Send email
           </ContextMenuItem>
 
-          <ContextMenuItem onClick={() => setShowHistory(true)}>
+          <ContextMenuItem onClick={openHistory}>
             <History className="w-4 h-4 mr-2" />
             Communication history
           </ContextMenuItem>
 
-          <ContextMenuItem onClick={() => setShowInvite(true)}>
+          <ContextMenuItem onClick={openInvite}>
             <CalendarPlus className="w-4 h-4 mr-2" />
             Send interview invite
           </ContextMenuItem>
 
-          <ContextMenuItem onClick={() => setShowInterviewResults(true)}>
+          <ContextMenuItem onClick={openInterviewResults}>
             <ClipboardList className="w-4 h-4 mr-2" />
             Interview notes
           </ContextMenuItem>
 
-          <ContextMenuItem onClick={() => setShowProfile(true)}>
+          <ContextMenuItem onClick={openProfile}>
             <UserCircle className="w-4 h-4 mr-2" />
             Profile
           </ContextMenuItem>
 
-          <ContextMenuItem onClick={() => setShowActivity(true)}>
+          <ContextMenuItem onClick={openActivity}>
             <Activity className="w-4 h-4 mr-2" />
             Activity
           </ContextMenuItem>
 
           {candidate.cv_file_url && (
-            <ContextMenuItem onClick={() => setShowCvPreview(true)}>
+            <ContextMenuItem onClick={openCvPreview}>
               <FileText className="w-4 h-4 mr-2" />
               Preview CV
             </ContextMenuItem>
