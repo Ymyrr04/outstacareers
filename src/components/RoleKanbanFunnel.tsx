@@ -112,16 +112,33 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
     )));
   }, []);
 
-  // Fetch active job titles independently
+  // Fetch active job titles and admin assignments independently
   useEffect(() => {
     const fetchJobs = async () => {
       const [activeResult, allResult] = await Promise.all([
-        supabase.from('jobs').select('title').eq('is_active', true).order('title'),
-        supabase.from('jobs').select('title').order('title'),
+        supabase.from('jobs').select('title, assigned_admin_id').eq('is_active', true).order('title'),
+        supabase.from('jobs').select('title, assigned_admin_id').order('title'),
       ]);
       const filterTitle = (data: any[]) => (data || []).map(j => j.title).filter(t => t && !/^\$?\d+(\.\d+)?$/.test(t.trim()));
       setActiveRoles(filterTitle(activeResult.data));
       setAllRoles(filterTitle(allResult.data));
+
+      // Build admin list and admin-to-job-titles map
+      const adminMap = new Map<string, string[]>();
+      for (const j of [...(activeResult.data || []), ...(allResult.data || [])]) {
+        if (j.assigned_admin_id && j.title) {
+          if (!adminMap.has(j.assigned_admin_id)) adminMap.set(j.assigned_admin_id, []);
+          const titles = adminMap.get(j.assigned_admin_id)!;
+          if (!titles.includes(j.title)) titles.push(j.title);
+        }
+      }
+      const admins = Array.from(adminMap.keys()).map(id => ({
+        id,
+        name: getAdminDisplayName(id, id.slice(0, 8)),
+      }));
+      admins.sort((a, b) => a.name.localeCompare(b.name));
+      setAdminList(admins);
+      setAdminJobTitlesMap(Object.fromEntries(adminMap));
     };
     fetchJobs();
   }, []);
