@@ -513,6 +513,45 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
     toast.success(`Moved ${candidate.full_name} to ${newStage}`);
   }, [updateCandidateStageInState]);
 
+  // Bulk move: update every selected candidate to the target stage in one DB call,
+  // then optimistically update local state. Skips "Hired" because that requires
+  // the per-candidate assignment dialog.
+  const handleBulkMoveToStage = useCallback(async (newStage: string) => {
+    if (newStage === 'Hired') {
+      toast.error('Move candidates to Hired one at a time (assignment dialog required).');
+      return;
+    }
+    const ids = Array.from(selectedIds);
+    if (ids.length === 0) return;
+    setBulkMoving(true);
+
+    // Snapshot previous statuses for rollback
+    const prevById = new Map<string, string>();
+    candidates.forEach(c => { if (selectedIds.has(c.id)) prevById.set(c.id, c.status); });
+
+    // Optimistic update
+    ids.forEach(id => updateCandidateStageInState(id, newStage));
+
+    const { error } = await supabase
+      .from('applicants_prescreen')
+      .update({ status: newStage })
+      .in('id', ids);
+
+    setBulkMoving(false);
+
+    if (error) {
+      // Rollback
+      prevById.forEach((prevStatus, id) => updateCandidateStageInState(id, prevStatus));
+      toast.error('Failed to move selected candidates');
+      return;
+    }
+
+    toast.success(`Moved ${ids.length} candidate${ids.length === 1 ? '' : 's'} to ${newStage}`);
+    clearSelection();
+  }, [selectedIds, candidates, updateCandidateStageInState, clearSelection]);
+
+
+
   const handleHiredComplete = useCallback(async () => {
     if (hiredCandidate) {
       updateCandidateStageInState(hiredCandidate.id, 'Hired');
