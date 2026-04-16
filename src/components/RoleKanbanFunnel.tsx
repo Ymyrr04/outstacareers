@@ -182,6 +182,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
     return jobFilter === 'active' ? activeRoles : allRoles;
   }, [activeRoles, allRoles, jobFilter]);
 
+  const inactiveRolesSet = useMemo(() => {
+    const activeSet = new Set(activeRoles);
+    return new Set(allRoles.filter(r => !activeSet.has(r)));
+  }, [activeRoles, allRoles]);
+
   // If a specific role is selected but no longer in the list, reset to all
   useEffect(() => {
     if (selectedRole && selectedRole !== ALL_ROLES_KEY && !filteredRoles.includes(selectedRole)) {
