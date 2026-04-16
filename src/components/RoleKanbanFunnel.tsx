@@ -181,7 +181,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   }, []);
 
   const filteredRoles = useMemo(() => {
-    const base = jobFilter === 'active' ? activeRoles : allRoles;
+    let base: string[];
+    if (jobFilter === 'active') {
+      base = activeRoles;
+    } else if (jobFilter === 'inactive') {
+      const activeSet = new Set(activeRoles);
+      base = allRoles.filter(r => !activeSet.has(r));
+    } else {
+      base = allRoles;
+    }
     if (selectedAdmin && selectedAdmin !== 'all') {
       const adminTitles = new Set(adminJobTitlesMap[selectedAdmin] || []);
       return base.filter(r => adminTitles.has(r));
