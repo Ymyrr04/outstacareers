@@ -1075,6 +1075,51 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
           onComplete={handleHiredComplete}
         />
       )}
+
+      {/* Floating bulk action bar */}
+      {selectedIds.size > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 bg-background border-2 border-primary shadow-2xl rounded-full pl-4 pr-2 py-2 animate-in slide-in-from-bottom-4">
+          <span className="text-sm font-medium">
+            <span className="text-primary font-bold">{selectedIds.size}</span> selected
+            {selectionStage && (
+              <span className="text-muted-foreground"> in {selectionStage}</span>
+            )}
+          </span>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                disabled={bulkMoving}
+                className="inline-flex items-center gap-1.5 h-8 px-3 text-xs font-semibold rounded-full bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
+              >
+                <ArrowRight className="w-3.5 h-3.5" />
+                {bulkMoving ? 'Moving…' : 'Move to stage'}
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="center" className="w-48">
+              {FUNNEL_STAGES.filter(s => s !== selectionStage).map(stage => (
+                <DropdownMenuItem
+                  key={stage}
+                  disabled={stage === 'Hired'}
+                  onClick={() => handleBulkMoveToStage(stage)}
+                >
+                  <span className={cn('w-2 h-2 rounded-full mr-2', STAGE_COLORS[stage]?.dot)} />
+                  {stage}
+                  {stage === 'Hired' && (
+                    <span className="ml-auto text-[10px] text-muted-foreground">single only</span>
+                  )}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+          <button
+            onClick={clearSelection}
+            className="inline-flex items-center justify-center h-8 w-8 rounded-full hover:bg-muted text-muted-foreground hover:text-foreground"
+            title="Clear selection"
+          >
+            ✕
+          </button>
+        </div>
+      )}
     </div>
   );
 };
