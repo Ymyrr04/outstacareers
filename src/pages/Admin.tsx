@@ -337,7 +337,11 @@ const Admin = () => {
   const [isExporting, setIsExporting] = useState(false);
   
   // Main tab state for layout control
-  const [activeMainTab, setActiveMainTab] = useState('jobs');
+  const validTabs = ['jobs', 'applicants', 'funnel', 'pipeline', 'post-hire', 'clients', 'contractors', 'analytics', 'talent-scout', 'external-scout', 'workflow', 'settings'];
+  const [activeMainTab, setActiveMainTab] = useState(() => {
+    if (urlTab && validTabs.includes(urlTab)) return urlTab;
+    return 'jobs';
+  });
   const [isTabSwitching, startTabTransition] = useTransition();
   const [showDelayedLoader, setShowDelayedLoader] = useState(false);
   const [manualTabLoading, setManualTabLoading] = useState(false);
