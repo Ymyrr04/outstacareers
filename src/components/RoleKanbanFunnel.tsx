@@ -80,7 +80,12 @@ interface Candidate {
 interface RoleKanbanFunnelProps {
   roles?: string[];
   onRoleSelect?: (role: string) => void;
-  onFiltersChange?: (filters: { role: string; jobFilter: 'active' | 'all' | 'inactive' }) => void;
+  onFiltersChange?: (filters: {
+    role: string;
+    jobFilter: 'active' | 'all' | 'inactive';
+    selectedAdmin: string;
+    adminScopedRoles: string[] | null;
+  }) => void;
 }
 
 const ALL_ROLES_KEY = '__all__';
