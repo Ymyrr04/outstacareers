@@ -235,7 +235,7 @@ export const RecruitmentFunnel = () => {
     });
 
     return results;
-  }, [applicants, historyData, searchTerm, sortBy, jobStatusFilter, activeJobTitles, dateFrom, dateTo]);
+  }, [applicants, historyData, searchTerm, sortBy, jobStatusFilter, activeJobTitles, dateFrom, dateTo, adminScopedRoles]);
 
   const stageTotals = useMemo(
     () =>
