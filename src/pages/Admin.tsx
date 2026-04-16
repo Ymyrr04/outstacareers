@@ -374,16 +374,25 @@ const Admin = () => {
     }
   }, [manualTabLoading, isTabSwitching, activeMainTab]);
   
+  // Sync tab from URL param changes (e.g. browser back/forward)
+  useEffect(() => {
+    if (urlTab && validTabs.includes(urlTab) && urlTab !== activeMainTab) {
+      setActiveMainTab(urlTab);
+    }
+  }, [urlTab]);
+
   // Handle tab switching with transition to prevent UI freeze
   const handleMainTabChange = useCallback((newTab: string) => {
     // Show loading immediately for heavy tabs
     if (heavyTabs.includes(newTab)) {
       setManualTabLoading(true);
     }
+    // Update URL
+    navigate(`/admin/${newTab}`, { replace: true });
     startTabTransition(() => {
       setActiveMainTab(newTab);
     });
-  }, []);
+  }, [navigate]);
   
   // Assessment tab state for CV/Interview navigation
   const [activeAssessmentTab, setActiveAssessmentTab] = useState<'cv' | 'interview'>('cv');
