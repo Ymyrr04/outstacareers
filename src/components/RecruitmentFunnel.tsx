@@ -60,6 +60,7 @@ export const RecruitmentFunnel = () => {
   const [jobStatusFilter, setJobStatusFilter] = useState<'active' | 'inactive' | 'all'>('all');
   const [activeJobTitles, setActiveJobTitles] = useState<Set<string> | null>(null);
   const [isOpen, setIsOpen] = useState(false);
+  const [hasFetchedHistorical, setHasFetchedHistorical] = useState(false);
   const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
   const [roleSearchQuery, setRoleSearchQuery] = useState('');
   const searchDropdownRef = useRef<HTMLDivElement>(null);
@@ -67,8 +68,13 @@ export const RecruitmentFunnel = () => {
   const [dateTo, setDateTo] = useState('');
 
   useEffect(() => {
+    // Defer the heavy historical-data fetch until the user opens the collapsible.
+    // This dramatically improves initial load of the Role Pipeline above.
+    if (!isOpen || hasFetchedHistorical) return;
+
     const fetchAll = async () => {
       setLoading(true);
+      setHasFetchedHistorical(true);
 
       let all: { job_title: string; status: string; pre_archive_status: string | null; submitted_at: string }[] = [];
       let from = 0;
