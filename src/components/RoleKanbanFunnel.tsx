@@ -228,7 +228,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
 
     const fetchByStatuses = async (statuses: string[]): Promise<any[]> => {
       if (role === ALL_ROLES_KEY) {
-        const rolesToFetch = jobFilter === 'active' ? activeRoles : (allRoles.length > 0 ? allRoles : activeRoles);
+        const rolesToFetch = filteredRoles.length > 0
+          ? filteredRoles
+          : (jobFilter === 'active' ? activeRoles : allRoles);
         if (rolesToFetch.length === 0) return [];
         let collected: any[] = [];
         let from = 0;
