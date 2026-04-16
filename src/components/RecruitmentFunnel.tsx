@@ -66,6 +66,8 @@ export const RecruitmentFunnel = () => {
   const searchDropdownRef = useRef<HTMLDivElement>(null);
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  // Admin-scoped role list mirrored from the pipeline above (null = no admin filter).
+  const [adminScopedRoles, setAdminScopedRoles] = useState<string[] | null>(null);
 
   useEffect(() => {
     // Defer the heavy historical-data fetch until the user opens the collapsible.
