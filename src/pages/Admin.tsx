@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback, useRef, useTransition } from 'react';
 import { format } from 'date-fns';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -207,6 +207,7 @@ type SortOption = 'newest' | 'oldest' | 'score-desc' | 'score-asc' | 'starred' |
 const Admin = () => {
   const { user, isAdmin, loading, signOut } = useAuth();
   const navigate = useNavigate();
+  const { tab: urlTab } = useParams<{ tab?: string }>();
   const { toast } = useToast();
   const { canViewTab, loading: tabPermissionsLoading } = useTabPermissions();
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -336,7 +337,11 @@ const Admin = () => {
   const [isExporting, setIsExporting] = useState(false);
   
   // Main tab state for layout control
-  const [activeMainTab, setActiveMainTab] = useState('jobs');
+  const validTabs = ['jobs', 'applicants', 'funnel', 'pipeline', 'post-hire', 'clients', 'contractors', 'analytics', 'talent-scout', 'external-scout', 'workflow', 'settings'];
+  const [activeMainTab, setActiveMainTab] = useState(() => {
+    if (urlTab && validTabs.includes(urlTab)) return urlTab;
+    return 'jobs';
+  });
   const [isTabSwitching, startTabTransition] = useTransition();
   const [showDelayedLoader, setShowDelayedLoader] = useState(false);
   const [manualTabLoading, setManualTabLoading] = useState(false);
@@ -369,16 +374,25 @@ const Admin = () => {
     }
   }, [manualTabLoading, isTabSwitching, activeMainTab]);
   
+  // Sync tab from URL param changes (e.g. browser back/forward)
+  useEffect(() => {
+    if (urlTab && validTabs.includes(urlTab) && urlTab !== activeMainTab) {
+      setActiveMainTab(urlTab);
+    }
+  }, [urlTab]);
+
   // Handle tab switching with transition to prevent UI freeze
   const handleMainTabChange = useCallback((newTab: string) => {
     // Show loading immediately for heavy tabs
     if (heavyTabs.includes(newTab)) {
       setManualTabLoading(true);
     }
+    // Update URL
+    navigate(`/admin/${newTab}`, { replace: true });
     startTabTransition(() => {
       setActiveMainTab(newTab);
     });
-  }, []);
+  }, [navigate]);
   
   // Assessment tab state for CV/Interview navigation
   const [activeAssessmentTab, setActiveAssessmentTab] = useState<'cv' | 'interview'>('cv');
