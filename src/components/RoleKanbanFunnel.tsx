@@ -932,7 +932,91 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
                     </div>
                   </div>
 
-                  <div className="flex-1 max-h-[720px] overflow-y-auto">
+                  <div
+                    className="flex-1 max-h-[720px] overflow-y-auto relative"
+                    onMouseDown={(e) => {
+                      // Lasso starts only on empty space (not on a card or interactive child).
+                      // Bail out for right-click, Ctrl-click (treated as right-click on macOS),
+                      // and when the mousedown landed on a card.
+                      if (e.button !== 0) return;
+                      const target = e.target as HTMLElement;
+                      if (target.closest('[data-candidate-card]')) return;
+                      if (target.closest('button, a, input, select, textarea')) return;
+
+                      const container = e.currentTarget as HTMLDivElement;
+                      lassoContainerRef.current = container;
+                      const rect = container.getBoundingClientRect();
+                      const x = e.clientX - rect.left + container.scrollTop * 0; // x is horizontal only
+                      const y = e.clientY - rect.top + container.scrollTop;
+                      const additive = e.shiftKey || e.ctrlKey || e.metaKey;
+                      // Reset selection if not additive and switching stages
+                      if (!additive && selectionStage !== stage) {
+                        setSelectedIds(new Set());
+                      }
+                      setSelectionStage(stage);
+                      setLasso({
+                        stage,
+                        startX: x,
+                        startY: y,
+                        curX: x,
+                        curY: y,
+                        additive,
+                        baseSelection: additive ? new Set(selectedIds) : new Set(),
+                      });
+                      e.preventDefault();
+                    }}
+                    onMouseMove={(e) => {
+                      if (!lasso || lasso.stage !== stage) return;
+                      const container = lassoContainerRef.current;
+                      if (!container) return;
+                      const rect = container.getBoundingClientRect();
+                      const curX = e.clientX - rect.left;
+                      const curY = e.clientY - rect.top + container.scrollTop;
+                      setLasso(l => l ? { ...l, curX, curY } : l);
+
+                      // Compute selection rect (in container-local coords accounting for scroll)
+                      const minX = Math.min(lasso.startX, curX);
+                      const maxX = Math.max(lasso.startX, curX);
+                      const minY = Math.min(lasso.startY, curY);
+                      const maxY = Math.max(lasso.startY, curY);
+
+                      // Intersect with each card's bounding box
+                      const cards = container.querySelectorAll<HTMLElement>('[data-candidate-card]');
+                      const hits = new Set<string>(lasso.baseSelection);
+                      const containerRect = container.getBoundingClientRect();
+                      cards.forEach(card => {
+                        const cr = card.getBoundingClientRect();
+                        const cardLeft = cr.left - containerRect.left;
+                        const cardRight = cr.right - containerRect.left;
+                        const cardTop = cr.top - containerRect.top + container.scrollTop;
+                        const cardBottom = cr.bottom - containerRect.top + container.scrollTop;
+                        const intersects = !(cardRight < minX || cardLeft > maxX || cardBottom < minY || cardTop > maxY);
+                        if (intersects) {
+                          const id = card.getAttribute('data-candidate-id');
+                          if (id) hits.add(id);
+                        }
+                      });
+                      setSelectedIds(hits);
+                    }}
+                    onMouseUp={() => {
+                      if (lasso) setLasso(null);
+                    }}
+                    onMouseLeave={() => {
+                      if (lasso) setLasso(null);
+                    }}
+                  >
+                    {/* Lasso visual */}
+                    {lasso && lasso.stage === stage && (
+                      <div
+                        className="absolute pointer-events-none border-2 border-primary bg-primary/10 rounded-sm z-10"
+                        style={{
+                          left: Math.min(lasso.startX, lasso.curX),
+                          top: Math.min(lasso.startY, lasso.curY),
+                          width: Math.abs(lasso.curX - lasso.startX),
+                          height: Math.abs(lasso.curY - lasso.startY),
+                        }}
+                      />
+                    )}
                     <div className="p-2 space-y-2">
                       {stageCandidates.length === 0 ? (
                         <p className={cn(
@@ -960,6 +1044,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
                             }}
                             showRoleLabel={selectedRole === ALL_ROLES_KEY}
                             isInactiveRole={jobFilter === 'all' && inactiveRolesSet.has(candidate.job_title)}
+                            isSelected={selectedIds.has(candidate.id)}
+                            onSelectToggle={() => toggleCardSelection(candidate)}
                           />
                         ))
                       )}
