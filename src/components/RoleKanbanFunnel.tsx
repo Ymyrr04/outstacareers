@@ -202,12 +202,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
     return new Set(allRoles.filter(r => !activeSet.has(r)));
   }, [activeRoles, allRoles]);
 
-  // If a specific role is selected but no longer in the list, reset to all
+  // If a specific role is selected but no longer in the list, reset to all.
+  // Wait until roles have actually loaded to avoid resetting on initial mount/refresh.
   useEffect(() => {
+    const rolesLoaded = activeRoles.length > 0 || allRoles.length > 0;
+    if (!rolesLoaded) return;
     if (selectedRole && selectedRole !== ALL_ROLES_KEY && !filteredRoles.includes(selectedRole)) {
       setSelectedRole(ALL_ROLES_KEY);
     }
-  }, [filteredRoles]);
+  }, [filteredRoles, activeRoles, allRoles]);
 
   // Notify parent when selected role changes
   useEffect(() => {
