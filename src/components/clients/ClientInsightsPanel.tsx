@@ -71,16 +71,16 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
 
   // 2. Roles filled by industry (closed hiring requests in past N months)
   const rolesByIndustry = useMemo(() => {
-    const now = new Date();
-    const cutoff = new Date(now);
-    cutoff.setMonth(cutoff.getMonth() - placementsMonths);
+    const fromDate = new Date(placementsFrom);
+    const toDate = new Date(placementsTo);
+    toDate.setHours(23, 59, 59, 999);
 
     const byIndustry: Record<string, string[]> = {};
 
     hiringRequests.forEach(r => {
       if (r.pipeline_stage !== 'closed' || !r.closed_at) return;
       const closedDate = new Date(r.closed_at);
-      if (closedDate < cutoff || closedDate > now) return;
+      if (closedDate < fromDate || closedDate > toDate) return;
       const industry = r.industry || 'Unknown';
       if (!byIndustry[industry]) byIndustry[industry] = [];
       byIndustry[industry].push(r.job_title);
@@ -88,7 +88,7 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
 
     return Object.entries(byIndustry)
       .sort((a, b) => b[1].length - a[1].length);
-  }, [hiringRequests, placementsMonths]);
+  }, [hiringRequests, placementsFrom, placementsTo]);
 
   const totalPlaced = rolesByIndustry.reduce((sum, [, list]) => sum + list.length, 0);
 
