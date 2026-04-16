@@ -80,11 +80,13 @@ interface RoleKanbanFunnelProps {
   onRoleSelect?: (role: string) => void;
 }
 
+const ALL_ROLES_KEY = '__all__';
+
 export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunnelProps) => {
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
   const [allRoles, setAllRoles] = useState<string[]>([]);
   const [jobFilter, setJobFilter] = useState<'active' | 'all'>('active');
-  const [selectedRole, setSelectedRole] = useState<string>('');
+  const [selectedRole, setSelectedRole] = useState<string>(ALL_ROLES_KEY);
   const [roleSearch, setRoleSearch] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
