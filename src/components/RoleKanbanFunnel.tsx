@@ -115,6 +115,12 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
   const [adminList, setAdminList] = useState<{ id: string; name: string }[]>([]);
   const [adminJobTitlesMap, setAdminJobTitlesMap] = useState<Record<string, string[]>>({});
 
+  // Cache fully-enriched candidate lists keyed by `${role}|${jobFilter}|${admin}`.
+  // Switching back to a previously-viewed admin/role combo renders instantly
+  // from cache instead of refetching all 3 phases. A TTL keeps data fresh.
+  const candidateCacheRef = useRef<Map<string, { data: Candidate[]; ts: number }>>(new Map());
+  const CACHE_TTL_MS = 2 * 60 * 1000; // 2 minutes
+
   // Sync filter state to URL search params
   useEffect(() => {
     setSearchParams(prev => {
@@ -148,6 +154,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
         ? { ...candidate, status: newStage, stage_entered_at: movedAt }
         : candidate
     )));
+    // Keep cached views consistent so switching admin doesn't show stale stages.
+    candidateCacheRef.current.forEach((entry, key) => {
+      const updated = entry.data.map(candidate => (
+        candidate.id === candidateId
+          ? { ...candidate, status: newStage, stage_entered_at: movedAt }
+          : candidate
+      ));
+      candidateCacheRef.current.set(key, { data: updated, ts: entry.ts });
+    });
   }, []);
 
   // Fetch active job titles and admin assignments independently
@@ -220,7 +235,25 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
 
   const fetchCandidates = useCallback(async (role: string) => {
     if (!role) return;
-    setLoading(true);
+
+    // Build a cache key from the inputs that affect the result set.
+    const cacheKey = `${role}|${jobFilter}|${selectedAdmin}|${
+      role === ALL_ROLES_KEY ? filteredRoles.slice().sort().join(',') : ''
+    }`;
+    const cached = candidateCacheRef.current.get(cacheKey);
+    const now = Date.now();
+    const isFresh = cached && (now - cached.ts) < CACHE_TTL_MS;
+
+    if (cached) {
+      // Render cached data instantly — no spinner, no waiting.
+      setCandidates(cached.data);
+      setLoading(false);
+      // If still fresh, skip the network entirely.
+      if (isFresh) return;
+      // Stale cache: fall through to silent background refresh (no spinner).
+    } else {
+      setLoading(true);
+    }
 
     const batchSize = 1000;
 
@@ -272,20 +305,26 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
       stage_entered_at: a.submitted_at,
     }));
 
-    // Phase 1: priority statuses
+    // Phase 1: priority statuses — only paint partial data when no cache was
+    // shown (avoid flashing stale → partial → full).
     const priorityData = await fetchByStatuses(PRIORITY_STATUSES);
-    setCandidates(mapToCandidate(priorityData));
-    setLoading(false);
+    if (!cached) {
+      setCandidates(mapToCandidate(priorityData));
+      setLoading(false);
+    }
 
     // Phase 2: background fetch for cold columns — yield to any active
     // priority work (e.g., the Candidate Detail Dialog opening).
     await priorityGate.wait();
     const backgroundData = await fetchByStatuses(BACKGROUND_STATUSES);
     const allData = [...priorityData, ...backgroundData];
-    setCandidates(mapToCandidate(allData));
+    if (!cached) setCandidates(mapToCandidate(allData));
 
     const applicantIds = allData.map(a => a.id);
-    if (applicantIds.length === 0) return;
+    if (applicantIds.length === 0) {
+      candidateCacheRef.current.set(cacheKey, { data: [], ts: Date.now() });
+      return;
+    }
 
     // Build batches and run them in parallel (sessions + history per batch)
     const batches: string[][] = [];
@@ -330,14 +369,18 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
       }
     }));
 
-    setCandidates(prev => prev.map(a => ({
+    const enriched = mapToCandidate(allData).map(a => ({
       ...a,
       interview_overall_score: interviewScores[a.id] ?? null,
       interview_status: interviewMeta[a.id]?.status ?? null,
       interview_started_at: interviewMeta[a.id]?.started_at ?? null,
       stage_entered_at: stageEnteredMap[a.id] || a.submitted_at,
-    })));
-  }, [activeRoles, allRoles, jobFilter, filteredRoles]);
+    }));
+
+    // Cache the fully-enriched result and swap it in.
+    candidateCacheRef.current.set(cacheKey, { data: enriched, ts: Date.now() });
+    setCandidates(enriched);
+  }, [activeRoles, allRoles, jobFilter, filteredRoles, selectedAdmin]);
 
   useEffect(() => {
     if (selectedRole === ALL_ROLES_KEY && activeRoles.length === 0 && allRoles.length === 0) return;
