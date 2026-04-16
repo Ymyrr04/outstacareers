@@ -206,8 +206,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
     let allData: any[] = [];
     const batchSize = 1000;
 
+    // Only fetch applicants whose effective status is in the funnel
+    // (also include Archive/Archived since their pre_archive_status may be a funnel stage)
+    const funnelStatuses = [...FUNNEL_STAGES, 'Archive', 'Archived'];
+
     if (role === ALL_ROLES_KEY) {
-      // Fetch candidates for all active jobs
       const rolesToFetch = jobFilter === 'active' ? activeRoles : (allRoles.length > 0 ? allRoles : activeRoles);
       if (rolesToFetch.length === 0) {
         setCandidates([]);
@@ -220,6 +223,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
           .from('applicants_prescreen')
           .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred')
           .in('job_title', rolesToFetch)
+          .in('status', funnelStatuses)
           .order('total_score', { ascending: false, nullsFirst: false })
           .range(from, from + batchSize - 1);
         if (!data || data.length === 0) break;
@@ -232,57 +236,72 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
         .from('applicants_prescreen')
         .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred')
         .eq('job_title', role)
+        .in('status', funnelStatuses)
         .order('total_score', { ascending: false, nullsFirst: false });
       allData = data || [];
     }
 
-    const applicantIds = allData.map(a => a.id);
-    let interviewScores: Record<string, number> = {};
-    let interviewMeta: Record<string, { status: string; started_at: string }> = {};
-    let stageEnteredMap: Record<string, string> = {};
-    
-    if (applicantIds.length > 0) {
-      for (let i = 0; i < applicantIds.length; i += 100) {
-        const batch = applicantIds.slice(i, i + 100);
-        
-        const { data: sessions } = await supabase
-          .from('interview_sessions')
-          .select('applicant_id, overall_score, status, started_at')
-          .in('applicant_id', batch)
-          .order('created_at', { ascending: false });
-        
-        for (const s of sessions || []) {
-          if (!(s.applicant_id in interviewMeta)) {
-            interviewMeta[s.applicant_id] = { status: s.status, started_at: s.started_at };
-          }
-          if (s.overall_score != null && !(s.applicant_id in interviewScores)) {
-            interviewScores[s.applicant_id] = s.overall_score;
-          }
-        }
-
-        const { data: history } = await supabase
-          .from('applicant_status_history')
-          .select('applicant_id, created_at')
-          .in('applicant_id', batch)
-          .order('created_at', { ascending: false });
-        
-        for (const h of history || []) {
-          if (!(h.applicant_id in stageEnteredMap)) {
-            stageEnteredMap[h.applicant_id] = h.created_at;
-          }
-        }
-      }
-    }
-
+    // Render candidates immediately so the UI is responsive,
+    // then enrich with interview scores + stage-entered timestamps in the background.
     setCandidates(allData.map(a => ({
       ...a,
       is_starred: a.is_starred ?? false,
+      interview_overall_score: null,
+      interview_status: null,
+      interview_started_at: null,
+      stage_entered_at: a.submitted_at,
+    })));
+    setLoading(false);
+
+    const applicantIds = allData.map(a => a.id);
+    if (applicantIds.length === 0) return;
+
+    // Build batches and run them in parallel (sessions + history per batch)
+    const batches: string[][] = [];
+    for (let i = 0; i < applicantIds.length; i += 200) {
+      batches.push(applicantIds.slice(i, i + 200));
+    }
+
+    const interviewScores: Record<string, number> = {};
+    const interviewMeta: Record<string, { status: string; started_at: string }> = {};
+    const stageEnteredMap: Record<string, string> = {};
+
+    await Promise.all(batches.map(async (batch) => {
+      const [sessionsRes, historyRes] = await Promise.all([
+        supabase
+          .from('interview_sessions')
+          .select('applicant_id, overall_score, status, started_at')
+          .in('applicant_id', batch)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('applicant_status_history')
+          .select('applicant_id, created_at')
+          .in('applicant_id', batch)
+          .order('created_at', { ascending: false }),
+      ]);
+
+      for (const s of sessionsRes.data || []) {
+        if (!(s.applicant_id in interviewMeta)) {
+          interviewMeta[s.applicant_id] = { status: s.status, started_at: s.started_at };
+        }
+        if (s.overall_score != null && !(s.applicant_id in interviewScores)) {
+          interviewScores[s.applicant_id] = s.overall_score;
+        }
+      }
+      for (const h of historyRes.data || []) {
+        if (!(h.applicant_id in stageEnteredMap)) {
+          stageEnteredMap[h.applicant_id] = h.created_at;
+        }
+      }
+    }));
+
+    setCandidates(prev => prev.map(a => ({
+      ...a,
       interview_overall_score: interviewScores[a.id] ?? null,
       interview_status: interviewMeta[a.id]?.status ?? null,
       interview_started_at: interviewMeta[a.id]?.started_at ?? null,
       stage_entered_at: stageEnteredMap[a.id] || a.submitted_at,
     })));
-    setLoading(false);
   }, [activeRoles, allRoles, jobFilter]);
 
   useEffect(() => {
