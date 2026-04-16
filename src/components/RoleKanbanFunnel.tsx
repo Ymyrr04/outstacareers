@@ -136,19 +136,47 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
 
   // Notify parent when selected role changes
   useEffect(() => {
-    if (selectedRole) _onRoleSelect?.(selectedRole);
+    if (selectedRole && selectedRole !== ALL_ROLES_KEY) _onRoleSelect?.(selectedRole);
   }, [selectedRole, _onRoleSelect]);
 
   const fetchCandidates = useCallback(async (role: string) => {
     if (!role) return;
     setLoading(true);
-    const { data } = await supabase
-      .from('applicants_prescreen')
-      .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred')
-      .eq('job_title', role)
-      .order('total_score', { ascending: false, nullsFirst: false });
 
-    const applicantIds = (data || []).map(a => a.id);
+    let allData: any[] = [];
+    const batchSize = 1000;
+
+    if (role === ALL_ROLES_KEY) {
+      // Fetch candidates for all active jobs
+      const rolesToFetch = jobFilter === 'active' ? activeRoles : (allRoles.length > 0 ? allRoles : activeRoles);
+      if (rolesToFetch.length === 0) {
+        setCandidates([]);
+        setLoading(false);
+        return;
+      }
+      let from = 0;
+      while (true) {
+        const { data } = await supabase
+          .from('applicants_prescreen')
+          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred')
+          .in('job_title', rolesToFetch)
+          .order('total_score', { ascending: false, nullsFirst: false })
+          .range(from, from + batchSize - 1);
+        if (!data || data.length === 0) break;
+        allData = allData.concat(data);
+        if (data.length < batchSize) break;
+        from += batchSize;
+      }
+    } else {
+      const { data } = await supabase
+        .from('applicants_prescreen')
+        .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred')
+        .eq('job_title', role)
+        .order('total_score', { ascending: false, nullsFirst: false });
+      allData = data || [];
+    }
+
+    const applicantIds = allData.map(a => a.id);
     let interviewScores: Record<string, number> = {};
     let interviewMeta: Record<string, { status: string; started_at: string }> = {};
     let stageEnteredMap: Record<string, string> = {};
@@ -157,7 +185,6 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
       for (let i = 0; i < applicantIds.length; i += 100) {
         const batch = applicantIds.slice(i, i + 100);
         
-        // Fetch interview sessions (all statuses for expiry detection)
         const { data: sessions } = await supabase
           .from('interview_sessions')
           .select('applicant_id, overall_score, status, started_at')
@@ -173,7 +200,6 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
           }
         }
 
-        // Fetch latest status history entry (when they entered current stage)
         const { data: history } = await supabase
           .from('applicant_status_history')
           .select('applicant_id, created_at')
@@ -188,7 +214,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
       }
     }
 
-    setCandidates((data || []).map(a => ({
+    setCandidates(allData.map(a => ({
       ...a,
       is_starred: a.is_starred ?? false,
       interview_overall_score: interviewScores[a.id] ?? null,
@@ -197,7 +223,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect }: RoleKanbanFunn
       stage_entered_at: stageEnteredMap[a.id] || a.submitted_at,
     })));
     setLoading(false);
-  }, []);
+  }, [activeRoles, allRoles, jobFilter]);
 
   useEffect(() => {
     if (selectedRole) fetchCandidates(selectedRole);
