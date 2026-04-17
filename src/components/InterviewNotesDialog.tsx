@@ -1,5 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
@@ -36,6 +46,7 @@ export function InterviewNotesDialog({ open, onOpenChange, applicantId, applican
   const [editContent, setEditContent] = useState('');
   const [isAddingNew, setIsAddingNew] = useState(false);
   const [newContent, setNewContent] = useState('');
+  const [deletingNoteId, setDeletingNoteId] = useState<string | null>(null);
 
   const fetchNotes = useCallback(async () => {
     setLoading(true);
@@ -234,7 +245,7 @@ export function InterviewNotesDialog({ open, onOpenChange, applicantId, applican
                             variant="ghost"
                             size="sm"
                             className="h-7 px-2 text-xs text-destructive hover:text-destructive"
-                            onClick={() => handleDeleteNote(note.id)}
+                            onClick={() => setDeletingNoteId(note.id)}
                           >
                             <Trash2 className="w-3 h-3" />
                           </Button>
@@ -293,6 +304,31 @@ export function InterviewNotesDialog({ open, onOpenChange, applicantId, applican
           </TabsContent>
         </Tabs>
       </DialogContent>
+
+      <AlertDialog open={!!deletingNoteId} onOpenChange={(open) => !open && setDeletingNoteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this note?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the note. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={async () => {
+                if (deletingNoteId) {
+                  await handleDeleteNote(deletingNoteId);
+                  setDeletingNoteId(null);
+                }
+              }}
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }
