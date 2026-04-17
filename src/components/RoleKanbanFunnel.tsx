@@ -141,13 +141,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   }, []);
 
   // Toggle a single card's selection (called on Ctrl/Cmd+click).
+  // Selection is now free across any stage and role.
   const toggleCardSelection = useCallback((candidate: Candidate) => {
     setSelectedIds(prev => {
-      // Switching stages? Start fresh with just this card selected.
-      if (selectionStage && selectionStage !== candidate.status) {
-        setSelectionStage(candidate.status);
-        return new Set([candidate.id]);
-      }
       const next = new Set(prev);
       if (next.has(candidate.id)) {
         next.delete(candidate.id);
@@ -156,12 +152,13 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       }
       if (next.size === 0) {
         setSelectionStage(null);
-      } else if (!selectionStage) {
+      } else {
+        // Track the most-recently-clicked card's stage for the bulk action label.
         setSelectionStage(candidate.status);
       }
       return next;
     });
-  }, [selectionStage]);
+  }, []);
   const [selectedAdmin, setSelectedAdmin] = useState<string>(() => {
     return searchParams.get('admin') || 'all';
   });
@@ -1008,10 +1005,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                       const x = e.clientX - rect.left + container.scrollTop * 0; // x is horizontal only
                       const y = e.clientY - rect.top + container.scrollTop;
                       const additive = e.shiftKey || e.ctrlKey || e.metaKey;
-                      // Reset selection if not additive and switching stages
-                      if (!additive && selectionStage !== stage) {
-                        setSelectedIds(new Set());
-                      }
+                      // Always preserve existing selection across stages — the lasso
+                      // adds to it. Holding shift/ctrl/cmd is no longer required.
                       setSelectionStage(stage);
                       setLasso({
                         stage,
@@ -1019,8 +1014,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                         startY: y,
                         curX: x,
                         curY: y,
-                        additive,
-                        baseSelection: additive ? new Set(selectedIds) : new Set(),
+                        additive: true,
+                        baseSelection: new Set(selectedIds),
                       });
                       e.preventDefault();
                     }}
