@@ -433,10 +433,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       stage_entered_at: a.submitted_at,
     }));
 
-    // Phase 1: priority statuses — show all in-progress candidates regardless
-    // of whether their job is still active (closing a job shouldn't hide
-    // candidates already in the pipeline).
-    const priorityData = await fetchUnfilteredByStatuses(PRIORITY_STATUSES);
+    // Phase 1: priority statuses — only paint partial data when no cache was
+    // shown (avoid flashing stale → partial → full).
+    const priorityData = await fetchByStatuses(PRIORITY_STATUSES);
     if (!cached) {
       setCandidates(mapToCandidate(priorityData));
       setLoading(false);
