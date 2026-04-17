@@ -45,7 +45,15 @@ export function WysiwygEditor({
       if (bubbleMenuRef.current && bubbleMenuRef.current.contains(e.target as Node)) {
         return;
       }
-      
+
+      // Only react to mousedowns that originate inside this editor instance.
+      // Without this guard, every click anywhere on the page triggers a
+      // re-render between mousedown and focus, which can swallow the click
+      // on the contenteditable area (especially inside Radix dialogs).
+      if (!editorRef.current || !editorRef.current.contains(e.target as Node)) {
+        return;
+      }
+
       setIsMouseDown(true);
       setShowBubbleMenu(false);
       if (showTimeoutRef.current) {
