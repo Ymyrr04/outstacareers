@@ -122,7 +122,7 @@ export function WysiwygEditor({
     ],
     content: value,
     editable: !disabled,
-    autofocus: 'end',
+    autofocus: autoFocus ? 'end' : false,
     onUpdate: ({ editor }) => {
       const html = editor.getHTML();
       // Convert empty paragraph to empty string
