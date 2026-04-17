@@ -360,9 +360,29 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
 
     // Two-phase load:
     //  Phase 1 (priority): active funnel stages — render immediately
-    //  Phase 2 (background): Bench / Reject / Talent Pool / Archive
+    //  Phase 2 (background): Reject / Archive (filtered) + Bench / Talent Pool (unfiltered)
     const PRIORITY_STATUSES = ['For Review', 'For Interview', 'SIV', 'Pitch', 'Client Interview', 'Hired'];
-    const BACKGROUND_STATUSES = ['Bench', 'Reject', 'Talent Pool', 'Archive', 'Archived'];
+    const BACKGROUND_STATUSES = ['Reject', 'Archive', 'Archived'];
+    // Bench and Talent Pool always show ALL applicants regardless of role/admin/job filters
+    const UNFILTERED_STATUSES = ['Bench', 'Talent Pool'];
+
+    const fetchUnfilteredByStatuses = async (statuses: string[]): Promise<any[]> => {
+      let collected: any[] = [];
+      let from = 0;
+      while (true) {
+        const { data } = await supabase
+          .from('applicants_prescreen')
+          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred')
+          .in('status', statuses)
+          .order('total_score', { ascending: false, nullsFirst: false })
+          .range(from, from + batchSize - 1);
+        if (!data || data.length === 0) break;
+        collected = collected.concat(data);
+        if (data.length < batchSize) break;
+        from += batchSize;
+      }
+      return collected;
+    };
 
     const fetchByStatuses = async (statuses: string[]): Promise<any[]> => {
       if (role === ALL_ROLES_KEY) {
