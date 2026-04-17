@@ -279,6 +279,17 @@ export function WysiwygEditor({
     }
   }, [disabled, editor]);
 
+  // Ensure focus when autoFocus is true (works reliably inside dialogs/conditional mounts)
+  useEffect(() => {
+    if (editor && autoFocus && !disabled) {
+      // Small delay so Radix Dialog's focus trap doesn't steal focus back
+      const t = setTimeout(() => {
+        editor.commands.focus('end');
+      }, 50);
+      return () => clearTimeout(t);
+    }
+  }, [editor, autoFocus, disabled]);
+
   const handleInsertLink = useCallback(() => {
     if (!editor || !linkUrl) return;
     

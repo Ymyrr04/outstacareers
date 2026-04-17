@@ -166,7 +166,7 @@ export function CandidateProfileDialog({ open, onOpenChange, applicantId, applic
                       placeholder="Profile title (e.g. VA Profile, CSR Profile)"
                       className="text-sm"
                     />
-                    <NotesEditor value={editContent} onChange={setEditContent} placeholder="Edit profile..." minHeight="100px" />
+                    <NotesEditor value={editContent} onChange={setEditContent} placeholder="Edit profile..." minHeight="100px" autoFocus />
                     <div className="flex gap-2 justify-end">
                       <Button variant="outline" size="sm" onClick={() => setEditingId(null)}>Cancel</Button>
                       <Button size="sm" onClick={() => handleUpdateProfile(profile.id)} disabled={saving} className="gap-1.5">
@@ -190,7 +190,7 @@ export function CandidateProfileDialog({ open, onOpenChange, applicantId, applic
                   placeholder="Profile title (e.g. VA Profile, CSR Profile)"
                   className="text-sm"
                 />
-                <NotesEditor value={newContent} onChange={setNewContent} placeholder="Write additional profile..." minHeight="120px" />
+                <NotesEditor value={newContent} onChange={setNewContent} placeholder="Write additional profile..." minHeight="120px" autoFocus />
                 <div className="flex gap-2 justify-end">
                   <Button variant="outline" size="sm" onClick={() => { setIsAddingNew(false); setNewTitle(''); setNewContent(''); }}>
                     <X className="w-3.5 h-3.5 mr-1" />
