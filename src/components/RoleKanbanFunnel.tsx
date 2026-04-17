@@ -1411,7 +1411,7 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
 
           <ContextMenuItem onClick={openInterviewResults}>
             <ClipboardList className="w-4 h-4 mr-2" />
-            Interview notes
+            Notes
           </ContextMenuItem>
 
           <ContextMenuItem onClick={openProfile}>

@@ -144,7 +144,7 @@ export function InterviewNotesDialog({ open, onOpenChange, applicantId, applican
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Interview Notes — {applicantName}</DialogTitle>
+          <DialogTitle>Notes — {applicantName}</DialogTitle>
         </DialogHeader>
 
         <Tabs defaultValue="notes" className="w-full">
