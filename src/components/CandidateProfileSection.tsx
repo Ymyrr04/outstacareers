@@ -129,6 +129,7 @@ export function CandidateProfileSection({
           onChange={setProfile}
           placeholder="Add internal profile summary...&#10;&#10;• Key strengths and positioning&#10;• Suitable clients or industries&#10;• Notable skills or experience"
           minHeight="120px"
+          autoFocus
         />
       ) : candidateProfile ? (
         <FormattedNotes content={candidateProfile} />
