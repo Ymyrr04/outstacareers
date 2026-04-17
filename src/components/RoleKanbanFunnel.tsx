@@ -141,13 +141,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   }, []);
 
   // Toggle a single card's selection (called on Ctrl/Cmd+click).
+  // Selection is now free across any stage and role.
   const toggleCardSelection = useCallback((candidate: Candidate) => {
     setSelectedIds(prev => {
-      // Switching stages? Start fresh with just this card selected.
-      if (selectionStage && selectionStage !== candidate.status) {
-        setSelectionStage(candidate.status);
-        return new Set([candidate.id]);
-      }
       const next = new Set(prev);
       if (next.has(candidate.id)) {
         next.delete(candidate.id);
@@ -156,12 +152,13 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       }
       if (next.size === 0) {
         setSelectionStage(null);
-      } else if (!selectionStage) {
+      } else {
+        // Track the most-recently-clicked card's stage for the bulk action label.
         setSelectionStage(candidate.status);
       }
       return next;
     });
-  }, [selectionStage]);
+  }, []);
   const [selectedAdmin, setSelectedAdmin] = useState<string>(() => {
     return searchParams.get('admin') || 'all';
   });
