@@ -8,6 +8,7 @@ import { NotesEditor } from '@/components/NotesEditor';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { Loader2, Copy, Plus, Save, Pencil, Trash2, X } from 'lucide-react';
 import { toast } from 'sonner';
+import { copyHtmlAndWhatsApp } from '@/lib/htmlToWhatsApp';
 
 interface AdditionalProfile {
   id: string;
@@ -136,14 +137,9 @@ export function CandidateProfileDialog({ open, onOpenChange, applicantId, applic
                   </h4>
                   {editingId !== profile.id && (
                     <div className="flex gap-1">
-                      <Button variant="ghost" size="sm" className="h-7 px-2" onClick={() => {
-                        const tmp = document.createElement('div');
-                        tmp.innerHTML = profile.content;
-                        const plainText = tmp.innerText || tmp.textContent || '';
-                        const blob = new Blob([profile.content], { type: 'text/html' });
-                        const textBlob = new Blob([plainText], { type: 'text/plain' });
-                        navigator.clipboard.write([new ClipboardItem({ 'text/html': blob, 'text/plain': textBlob })]);
-                        toast.success('Profile copied');
+                      <Button variant="ghost" size="sm" className="h-7 px-2" onClick={async () => {
+                        await copyHtmlAndWhatsApp(profile.content);
+                        toast.success('Profile copied (formatted for WhatsApp too)');
                       }}>
                         <Copy className="w-3.5 h-3.5" />
                       </Button>

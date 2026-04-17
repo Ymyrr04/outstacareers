@@ -6,6 +6,7 @@ import { Pencil, Save, Loader2, UserCircle, X, Copy } from 'lucide-react';
 import { NotesEditor } from '@/components/NotesEditor';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { toast as sonnerToast } from 'sonner';
+import { copyHtmlAndWhatsApp } from '@/lib/htmlToWhatsApp';
 
 interface CandidateProfileSectionProps {
   applicantId: string;
@@ -99,14 +100,9 @@ export function CandidateProfileSection({
               <Button
                 variant="ghost"
                 size="sm"
-              onClick={() => {
-                  const tmp = document.createElement('div');
-                  tmp.innerHTML = candidateProfile;
-                  const plainText = tmp.innerText || tmp.textContent || '';
-                  const blob = new Blob([candidateProfile], { type: 'text/html' });
-                  const textBlob = new Blob([plainText], { type: 'text/plain' });
-                  navigator.clipboard.write([new ClipboardItem({ 'text/html': blob, 'text/plain': textBlob })]);
-                  sonnerToast.success('Profile copied');
+              onClick={async () => {
+                  await copyHtmlAndWhatsApp(candidateProfile);
+                  sonnerToast.success('Profile copied (formatted for WhatsApp too)');
                 }}
                 className="text-muted-foreground"
               >
