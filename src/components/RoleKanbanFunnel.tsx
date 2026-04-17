@@ -437,8 +437,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     // Phase 2: background fetch for cold columns — yield to any active
     // priority work (e.g., the Candidate Detail Dialog opening).
     await priorityGate.wait();
-    const backgroundData = await fetchByStatuses(BACKGROUND_STATUSES);
-    const allData = [...priorityData, ...backgroundData];
+    const [backgroundData, unfilteredData] = await Promise.all([
+      fetchByStatuses(BACKGROUND_STATUSES),
+      fetchUnfilteredByStatuses(UNFILTERED_STATUSES),
+    ]);
+    const allData = [...priorityData, ...backgroundData, ...unfilteredData];
     if (!cached) setCandidates(mapToCandidate(allData));
 
     const applicantIds = allData.map(a => a.id);
