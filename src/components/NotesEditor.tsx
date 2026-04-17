@@ -6,6 +6,7 @@ interface NotesEditorProps {
   placeholder?: string;
   disabled?: boolean;
   minHeight?: string;
+  autoFocus?: boolean;
 }
 
 export function NotesEditor({ 
@@ -13,7 +14,8 @@ export function NotesEditor({
   onChange, 
   placeholder = "Add notes...",
   disabled = false,
-  minHeight = "100px"
+  minHeight = "100px",
+  autoFocus = false,
 }: NotesEditorProps) {
   return (
     <WysiwygEditor
@@ -22,6 +24,7 @@ export function NotesEditor({
       placeholder={placeholder}
       disabled={disabled}
       minHeight={minHeight}
+      autoFocus={autoFocus}
     />
   );
 }
