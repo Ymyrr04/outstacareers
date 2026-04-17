@@ -250,6 +250,7 @@ export function InterviewNotesDialog({ open, onOpenChange, applicantId, applican
                           onChange={setEditContent}
                           placeholder="Edit note..."
                           minHeight="100px"
+                          autoFocus
                         />
                         <div className="flex gap-2 justify-end">
                           <Button
