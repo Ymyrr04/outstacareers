@@ -1256,15 +1256,36 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
             data-candidate-card="true"
             data-candidate-id={candidate.id}
             draggable
-            onClick={(e) => {
-              // Ctrl/Cmd+click toggles selection without opening anything else.
-              if (e.ctrlKey || e.metaKey) {
+            onMouseDown={(e) => {
+              // Ctrl/Cmd/Shift+click toggles selection. Use mousedown so the
+              // action fires even if the browser interprets the gesture as a
+              // drag-start or right-click (macOS treats Ctrl+click as right-click).
+              if (e.ctrlKey || e.metaKey || e.shiftKey) {
                 e.preventDefault();
                 e.stopPropagation();
                 onSelectToggle?.();
               }
             }}
+            onClick={(e) => {
+              if (e.ctrlKey || e.metaKey || e.shiftKey) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            }}
+            onContextMenu={(e) => {
+              // Prevent macOS Ctrl+click from opening the context menu.
+              if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                e.stopPropagation();
+              }
+            }}
             onDragStart={(e) => {
+              // Don't allow drag while modifier keys are held — that gesture is
+              // for multi-select, not for moving cards.
+              if (e.ctrlKey || e.metaKey || e.shiftKey) {
+                e.preventDefault();
+                return;
+              }
               e.dataTransfer.effectAllowed = 'move';
               e.dataTransfer.setData('text/plain', candidate.id);
               onDragStart?.();
