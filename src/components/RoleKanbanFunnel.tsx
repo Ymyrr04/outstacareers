@@ -360,20 +360,27 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
 
     // Two-phase load:
     //  Phase 1 (priority): active funnel stages — render immediately
-    //  Phase 2 (background): Reject / Archive (filtered) + Bench / Talent Pool (unfiltered)
+    //  Phase 2 (background): Reject / Archive (filtered) + Bench / Talent Pool
+    //  Bench/Talent Pool ignore admin + job-active filters, but DO respect the
+    //  selected role when one is chosen (so filtering by role still works).
     const PRIORITY_STATUSES = ['For Review', 'For Interview', 'SIV', 'Pitch', 'Client Interview', 'Hired'];
     const BACKGROUND_STATUSES = ['Reject', 'Archive', 'Archived'];
-    // Bench and Talent Pool always show ALL applicants regardless of role/admin/job filters
     const UNFILTERED_STATUSES = ['Bench', 'Talent Pool'];
 
     const fetchUnfilteredByStatuses = async (statuses: string[]): Promise<any[]> => {
       let collected: any[] = [];
       let from = 0;
       while (true) {
-        const { data } = await supabase
+        let q = supabase
           .from('applicants_prescreen')
           .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred')
-          .in('status', statuses)
+          .in('status', statuses);
+        // When a specific role is selected, scope Bench/Talent Pool to that role.
+        // When "All Roles" is selected, show all applicants regardless of filters.
+        if (role !== ALL_ROLES_KEY) {
+          q = q.eq('job_title', role);
+        }
+        const { data } = await q
           .order('total_score', { ascending: false, nullsFirst: false })
           .range(from, from + batchSize - 1);
         if (!data || data.length === 0) break;
