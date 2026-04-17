@@ -15,6 +15,7 @@ interface WysiwygEditorProps {
   placeholder?: string;
   disabled?: boolean;
   minHeight?: string;
+  autoFocus?: boolean;
 }
 
 export function WysiwygEditor({
@@ -22,7 +23,8 @@ export function WysiwygEditor({
   onChange,
   placeholder = "Add notes...",
   disabled = false,
-  minHeight = "100px"
+  minHeight = "100px",
+  autoFocus = false,
 }: WysiwygEditorProps) {
   const [linkUrl, setLinkUrl] = useState('');
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
