@@ -1577,6 +1577,38 @@ export const ClientAnalyticsDashboard = () => {
                     backgroundColor: 'hsl(var(--background))',
                     border: '1px solid hsl(var(--border))',
                   }}
+                  content={({ active, payload, label }: any) => {
+                    if (!active || !payload?.length) return null;
+                    const row = payload[0]?.payload || {};
+                    const hires = Number(row.hires || 0);
+                    const seps = Number(row.totalSeparations || 0);
+                    const net = hires - seps;
+                    const netColor =
+                      net > 0
+                        ? 'text-green-600'
+                        : net < 0
+                        ? 'text-red-600'
+                        : 'text-muted-foreground';
+                    return (
+                      <div className="rounded-md border bg-background px-3 py-2 text-xs shadow-md">
+                        <div className="font-medium mb-1">{label}</div>
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-green-600">Hires</span>
+                          <span className="font-mono font-medium">{hires}</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-4">
+                          <span className="text-red-600">Separations</span>
+                          <span className="font-mono font-medium">{seps}</span>
+                        </div>
+                        <div className="mt-1 pt-1 border-t flex items-center justify-between gap-4">
+                          <span className={`font-medium ${netColor}`}>NET</span>
+                          <span className={`font-mono font-semibold ${netColor}`}>
+                            {net > 0 ? `+${net}` : net}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  }}
                 />
                 <Legend wrapperStyle={{ paddingTop: 8 }} />
                 <Bar
