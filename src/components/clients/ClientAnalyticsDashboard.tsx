@@ -1,7 +1,10 @@
 // Client Analytics Dashboard
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Building2, TrendingUp, TrendingDown, Users, GripVertical, ArrowUpDown, ArrowUp, ArrowDown, Globe, UserPlus, Languages } from 'lucide-react';
 import {
@@ -23,6 +26,11 @@ interface ContractorData {
   hourly_rate: number | null;
   job_title: string | null;
   country: string | null;
+  notes: string | null;
+  applicant: {
+    id: string;
+    full_name: string | null;
+  } | null;
   client: {
     id: string;
     company_name: string;
@@ -91,12 +99,40 @@ export const ClientAnalyticsDashboard = () => {
   const [hiringRequests, setHiringRequests] = useState<{ client_status: string; client_id: string | null; pipeline_stage: string; start_date: string | null }[]>([]);
   const [lostYearFilter, setLostYearFilter] = useState(2026);
 
+  // Separations drill-down
+  const [separationDrillDown, setSeparationDrillDown] = useState<{
+    monthKey: string; // e.g. "2026-03"
+    monthLabel: string; // e.g. "March 2026"
+    type: 'terminated' | 'resigned';
+  } | null>(null);
+  const lastBarClickRef = useRef<{ key: string; time: number } | null>(null);
+
+  const handleSeparationBarClick = useCallback(
+    (data: any, type: 'terminated' | 'resigned') => {
+      // Recharts passes the data point's payload directly on Bar onClick
+      const payload = data?.payload || data;
+      const monthKey: string | undefined = payload?.monthKey;
+      const monthLabel: string | undefined = payload?.monthLabel;
+      if (!monthKey || !monthLabel) return;
+      const id = `${monthKey}-${type}`;
+      const now = Date.now();
+      const last = lastBarClickRef.current;
+      if (last && last.key === id && now - last.time < 400) {
+        setSeparationDrillDown({ monthKey, monthLabel, type });
+        lastBarClickRef.current = null;
+      } else {
+        lastBarClickRef.current = { key: id, time: now };
+      }
+    },
+    []
+  );
+
   const fetchData = useCallback(async () => {
     try {
       const [contractorsRes, clientsRes, applicantsRes, hiringRequestsRes] = await Promise.all([
         supabase
           .from('contractor_assignments')
-          .select(`*, country, client:clients(id, company_name, industry)`),
+          .select(`*, country, notes, client:clients(id, company_name, industry), applicant:applicants_prescreen(id, full_name)`),
         supabase
           .from('clients')
           .select('id, company_name, industry, leads_from, website, notes, is_hiring'),
@@ -319,12 +355,41 @@ export const ClientAnalyticsDashboard = () => {
       .map(([month, counts]) => {
         const [year, m] = month.split('-');
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const fullMonthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
         return {
           month: `${monthNames[parseInt(m) - 1]} ${year.slice(2)}`,
+          monthKey: month,
+          monthLabel: `${fullMonthNames[parseInt(m) - 1]} ${year}`,
           ...counts,
         };
       });
   }, [contractors]);
+
+  // Compute drill-down rows from contractors when a separation cell is clicked
+  const separationDrillDownRows = useMemo(() => {
+    if (!separationDrillDown) return [];
+    const { monthKey, type } = separationDrillDown;
+    return contractors
+      .filter((c) => c.status === type)
+      .map((c) => {
+        const dateStr = c.end_date || c.start_date;
+        if (!dateStr) return null;
+        const d = new Date(dateStr);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (key !== monthKey) return null;
+        return {
+          id: c.id,
+          name: c.applicant?.full_name || '—',
+          type,
+          date: dateStr,
+          department: c.client?.company_name || c.job_title || '—',
+          jobTitle: c.job_title || '—',
+          notes: c.notes || '',
+        };
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null)
+      .sort((a, b) => (a.date < b.date ? 1 : -1));
+  }, [separationDrillDown, contractors]);
 
   // 3. Retention Rate per Company (raw data without sorting)
   const retentionByCompanyRaw = useMemo(() => {
@@ -888,8 +953,22 @@ export const ClientAnalyticsDashboard = () => {
                     border: '1px solid hsl(var(--border))' 
                   }} 
                 />
-                <Bar dataKey="terminated" fill="#ef4444" name="Terminated" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="resigned" fill="#8b5cf6" name="Resigned" radius={[4, 4, 0, 0]} />
+                <Bar
+                  dataKey="terminated"
+                  fill="#ef4444"
+                  name="Terminated"
+                  radius={[4, 4, 0, 0]}
+                  cursor="pointer"
+                  onClick={(data: any) => handleSeparationBarClick(data, 'terminated')}
+                />
+                <Bar
+                  dataKey="resigned"
+                  fill="#8b5cf6"
+                  name="Resigned"
+                  radius={[4, 4, 0, 0]}
+                  cursor="pointer"
+                  onClick={(data: any) => handleSeparationBarClick(data, 'resigned')}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -1321,6 +1400,94 @@ export const ClientAnalyticsDashboard = () => {
           </div>
         ))}
       </div>
+
+      {/* Separations drill-down dialog */}
+      <Dialog
+        open={!!separationDrillDown}
+        onOpenChange={(open) => !open && setSeparationDrillDown(null)}
+      >
+        <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {separationDrillDown && (
+                <>
+                  <span>{separationDrillDown.monthLabel}</span>
+                  <span className="text-muted-foreground">—</span>
+                  <Badge
+                    variant="outline"
+                    className={
+                      separationDrillDown.type === 'terminated'
+                        ? 'border-red-500/50 text-red-600 bg-red-500/10'
+                        : 'border-purple-500/50 text-purple-600 bg-purple-500/10'
+                    }
+                  >
+                    {separationDrillDown.type === 'terminated' ? 'Terminated' : 'Resigned'}
+                  </Badge>
+                  <span className="text-sm font-normal text-muted-foreground">
+                    ({separationDrillDownRows.length})
+                  </span>
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto -mx-1 px-1">
+            {separationDrillDownRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No records found for this month.
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Employee Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Separation Date</TableHead>
+                    <TableHead>Department / Client</TableHead>
+                    <TableHead>Notes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {separationDrillDownRows.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell className="font-medium">{row.name}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={
+                            row.type === 'terminated'
+                              ? 'border-red-500/50 text-red-600 bg-red-500/10'
+                              : 'border-purple-500/50 text-purple-600 bg-purple-500/10'
+                          }
+                        >
+                          {row.type === 'terminated' ? 'Terminated' : 'Resigned'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(row.date).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span>{row.department}</span>
+                          {row.jobTitle && row.jobTitle !== row.department && (
+                            <span className="text-xs text-muted-foreground">{row.jobTitle}</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-[260px] whitespace-pre-wrap text-muted-foreground">
+                        {row.notes || '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
