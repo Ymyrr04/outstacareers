@@ -1670,7 +1670,7 @@ export const ClientAnalyticsDashboard = () => {
                     variant="outline"
                     className="border-green-500/50 text-green-600 bg-green-500/10"
                   >
-                    {hiresDrillDownRows.length}
+                    {hiresDrillDownRows.reduce((sum, r) => sum + r.totalHires, 0)}
                   </Badge>
                 </>
               )}
