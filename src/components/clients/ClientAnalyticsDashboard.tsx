@@ -99,6 +99,13 @@ export const ClientAnalyticsDashboard = () => {
   const [hiringRequests, setHiringRequests] = useState<{ client_status: string; client_id: string | null; pipeline_stage: string; start_date: string | null }[]>([]);
   const [lostYearFilter, setLostYearFilter] = useState(2026);
 
+  // Separations drill-down
+  const [separationDrillDown, setSeparationDrillDown] = useState<{
+    monthKey: string; // e.g. "2026-03"
+    monthLabel: string; // e.g. "March 2026"
+    type: 'terminated' | 'resigned';
+  } | null>(null);
+
   const fetchData = useCallback(async () => {
     try {
       const [contractorsRes, clientsRes, applicantsRes, hiringRequestsRes] = await Promise.all([
