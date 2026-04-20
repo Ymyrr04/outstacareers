@@ -425,29 +425,54 @@ export const ClientAnalyticsDashboard = () => {
     return { terminated, resigned, total: terminated + resigned };
   }, [separationDrillDownRows]);
 
-  // Compute drill-down rows for hires in a selected month (based on start_date)
+  // Compute drill-down rows for hires in a selected month — grouped by client
   const hiresDrillDownRows = useMemo(() => {
     if (!hiresDrillDown) return [];
     const { monthKey } = hiresDrillDown;
-    return contractors
-      .map((c) => {
-        if (!c.start_date) return null;
-        const d = new Date(c.start_date);
-        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-        if (key !== monthKey) return null;
-        return {
-          id: c.id,
-          name: c.applicant?.full_name || '—',
-          clientName: c.client?.company_name || '—',
-          jobTitle: c.job_title || '—',
-          hiredDate: c.start_date,
-          status: c.status,
-          country: c.country || '—',
-          notes: c.notes || '',
-        };
-      })
-      .filter((r): r is NonNullable<typeof r> => r !== null)
-      .sort((a, b) => (a.hiredDate < b.hiredDate ? 1 : -1));
+
+    type Group = {
+      clientId: string;
+      clientName: string;
+      totalHires: number;
+      lastHiredDate: string;
+      countries: Set<string>;
+      jobTitles: Set<string>;
+    };
+    const groups = new Map<string, Group>();
+
+    contractors.forEach((c) => {
+      if (!c.start_date) return;
+      const d = new Date(c.start_date);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      if (key !== monthKey) return;
+
+      const clientId = c.client?.id || c.client_id || 'unknown';
+      const clientName = c.client?.company_name || '—';
+      const existing = groups.get(clientId) || {
+        clientId,
+        clientName,
+        totalHires: 0,
+        lastHiredDate: c.start_date,
+        countries: new Set<string>(),
+        jobTitles: new Set<string>(),
+      };
+      existing.totalHires += 1;
+      if (c.start_date > existing.lastHiredDate) existing.lastHiredDate = c.start_date;
+      if (c.country) existing.countries.add(c.country);
+      if (c.job_title) existing.jobTitles.add(c.job_title);
+      groups.set(clientId, existing);
+    });
+
+    return Array.from(groups.values())
+      .map((g) => ({
+        id: g.clientId,
+        clientName: g.clientName,
+        totalHires: g.totalHires,
+        lastHiredDate: g.lastHiredDate,
+        country: g.countries.size > 0 ? Array.from(g.countries).join(', ') : '—',
+        jobTitle: g.jobTitles.size > 0 ? Array.from(g.jobTitles).join(', ') : '—',
+      }))
+      .sort((a, b) => b.totalHires - a.totalHires || (a.lastHiredDate < b.lastHiredDate ? 1 : -1));
   }, [hiresDrillDown, contractors]);
 
   // 3. Retention Rate per Company (raw data without sorting)
@@ -1660,39 +1685,34 @@ export const ClientAnalyticsDashboard = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Employee Name</TableHead>
-                    <TableHead>Job Title</TableHead>
-                    <TableHead>Hired Date</TableHead>
+                    <TableHead>Client Name</TableHead>
+                    <TableHead className="text-right">Total Hires</TableHead>
+                    <TableHead>Last Hired Date</TableHead>
                     <TableHead>Country</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Notes</TableHead>
+                    <TableHead>Job Title</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {hiresDrillDownRows.map((row) => (
                     <TableRow key={row.id}>
                       <TableCell className="font-medium">{row.clientName}</TableCell>
-                      <TableCell>{row.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{row.jobTitle}</TableCell>
-                      <TableCell>
-                        {row.hiredDate
-                          ? new Date(row.hiredDate).toLocaleDateString(undefined, {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                            })
-                          : '—'}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{row.country}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize">
-                          {row.status || '—'}
+                      <TableCell className="text-right">
+                        <Badge
+                          variant="outline"
+                          className="border-green-500/50 text-green-600 bg-green-500/10"
+                        >
+                          {row.totalHires}
                         </Badge>
                       </TableCell>
-                      <TableCell className="max-w-[260px] whitespace-pre-wrap text-muted-foreground">
-                        {row.notes || '—'}
+                      <TableCell>
+                        {new Date(row.lastHiredDate).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
                       </TableCell>
+                      <TableCell className="text-muted-foreground">{row.country}</TableCell>
+                      <TableCell className="text-muted-foreground">{row.jobTitle}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
