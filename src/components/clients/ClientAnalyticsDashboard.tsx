@@ -1415,6 +1415,78 @@ export const ClientAnalyticsDashboard = () => {
         </Card>
       </div>
 
+      {/* Hires vs. Separations trend (full width, above bar charts) */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <TrendingUp className="w-4 h-4" />
+            Hires vs. Separations
+            <span className="text-xs text-muted-foreground font-normal">(2026+)</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="h-[320px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart
+                data={monthlyStats.map((m) => ({
+                  ...m,
+                  net: (m.hires || 0) - (m.terminated || 0) - (m.resigned || 0),
+                }))}
+                margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                <XAxis dataKey="month" className="text-xs" />
+                <YAxis className="text-xs" allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--background))',
+                    border: '1px solid hsl(var(--border))',
+                  }}
+                />
+                <Legend wrapperStyle={{ paddingTop: 8 }} />
+                <Line
+                  type="monotone"
+                  dataKey="hires"
+                  name="Hires"
+                  stroke="#22c55e"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="terminated"
+                  name="Terminated"
+                  stroke="#ef4444"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="resigned"
+                  name="Resigned"
+                  stroke="#8b5cf6"
+                  strokeWidth={2}
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="net"
+                  name="Net Change"
+                  stroke="#9ca3af"
+                  strokeWidth={2}
+                  strokeDasharray="5 5"
+                  dot={{ r: 3 }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Draggable Cards Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {cardOrder.map((cardId) => (
