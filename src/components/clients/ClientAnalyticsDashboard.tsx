@@ -957,7 +957,11 @@ export const ClientAnalyticsDashboard = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px]">
+          <div
+            className="h-[300px] [&_.recharts-bar-rectangle]:outline-none [&_.recharts-rectangle]:outline-none [&_path:focus]:outline-none [&_*]:focus:outline-none"
+            draggable={false}
+            onDragStart={(e) => e.preventDefault()}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyStats}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
