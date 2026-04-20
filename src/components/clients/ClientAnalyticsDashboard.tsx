@@ -425,6 +425,31 @@ export const ClientAnalyticsDashboard = () => {
     return { terminated, resigned, total: terminated + resigned };
   }, [separationDrillDownRows]);
 
+  // Compute drill-down rows for hires in a selected month (based on start_date)
+  const hiresDrillDownRows = useMemo(() => {
+    if (!hiresDrillDown) return [];
+    const { monthKey } = hiresDrillDown;
+    return contractors
+      .map((c) => {
+        if (!c.start_date) return null;
+        const d = new Date(c.start_date);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (key !== monthKey) return null;
+        return {
+          id: c.id,
+          name: c.applicant?.full_name || '—',
+          clientName: c.client?.company_name || '—',
+          jobTitle: c.job_title || '—',
+          hiredDate: c.start_date,
+          status: c.status,
+          country: c.country || '—',
+          notes: c.notes || '',
+        };
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null)
+      .sort((a, b) => (a.hiredDate < b.hiredDate ? 1 : -1));
+  }, [hiresDrillDown, contractors]);
+
   // 3. Retention Rate per Company (raw data without sorting)
   const retentionByCompanyRaw = useMemo(() => {
     const companyStats: Record<string, { name: string; total: number; active: number }> = {};
