@@ -463,8 +463,12 @@ export const ClientAnalyticsDashboard = () => {
       lastHiredDate: string;
       countries: Set<string>;
       jobTitles: Set<string>;
+      tenureDaysSum: number;
+      tenureCount: number;
+      anyStillWorking: boolean;
     };
     const groups = new Map<string, Group>();
+    const nowMs = Date.now();
 
     contractors.forEach((c) => {
       if (!c.start_date) return;
@@ -481,11 +485,25 @@ export const ClientAnalyticsDashboard = () => {
         lastHiredDate: c.start_date,
         countries: new Set<string>(),
         jobTitles: new Set<string>(),
+        tenureDaysSum: 0,
+        tenureCount: 0,
+        anyStillWorking: false,
       };
       existing.totalHires += 1;
       if (c.start_date > existing.lastHiredDate) existing.lastHiredDate = c.start_date;
       if (c.country) existing.countries.add(c.country);
       if (c.job_title) existing.jobTitles.add(c.job_title);
+
+      // Tenure: from start_date to end_date (if ended) or now (if still working)
+      const startMs = d.getTime();
+      const status = (c.status || '').toLowerCase();
+      const isEnded = ['terminated', 'resigned', 'ended', 'completed', 'inactive'].includes(status);
+      const endMs = isEnded && c.end_date ? new Date(c.end_date).getTime() : nowMs;
+      if (!isEnded) existing.anyStillWorking = true;
+      if (!Number.isNaN(startMs) && !Number.isNaN(endMs) && endMs >= startMs) {
+        existing.tenureDaysSum += (endMs - startMs) / (1000 * 60 * 60 * 24);
+        existing.tenureCount += 1;
+      }
       groups.set(clientId, existing);
     });
 
@@ -498,6 +516,8 @@ export const ClientAnalyticsDashboard = () => {
         country: g.countries.size > 0 ? Array.from(g.countries).join(', ') : '—',
         jobTitle: g.jobTitles.size > 0 ? Array.from(g.jobTitles).join(', ') : '—',
         avgGapDays: avgGapDaysByClient.get(g.clientId) ?? null,
+        tenureDays: g.tenureCount > 0 ? g.tenureDaysSum / g.tenureCount : null,
+        anyStillWorking: g.anyStillWorking,
       }))
       .sort((a, b) => b.totalHires - a.totalHires || (a.lastHiredDate < b.lastHiredDate ? 1 : -1));
   }, [hiresDrillDown, contractors]);
@@ -1728,6 +1748,7 @@ export const ClientAnalyticsDashboard = () => {
                     <TableHead className="text-right">Total Hires</TableHead>
                     <TableHead>Last Hired Date</TableHead>
                     <TableHead>Avg. Time Between Hires</TableHead>
+                    <TableHead>Avg. Tenure</TableHead>
                     <TableHead>Country</TableHead>
                     <TableHead>Job Title</TableHead>
                   </TableRow>
@@ -1753,6 +1774,17 @@ export const ClientAnalyticsDashboard = () => {
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {formatAvgGap(row.avgGapDays)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5">
+                          {formatAvgGap(row.tenureDays)}
+                          {row.anyStillWorking && row.tenureDays !== null && (
+                            <span
+                              className="inline-block h-1.5 w-1.5 rounded-full bg-green-500"
+                              title="Still working"
+                            />
+                          )}
+                        </span>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{row.country}</TableCell>
                       <TableCell className="text-muted-foreground">{row.jobTitle}</TableCell>
