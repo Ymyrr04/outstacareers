@@ -15,6 +15,9 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  LineChart,
+  Line,
+  Legend,
 } from 'recharts';
 
 interface ContractorData {
