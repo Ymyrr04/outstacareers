@@ -117,6 +117,20 @@ export const ClientAnalyticsDashboard = () => {
     setSeparationDrillDown({ monthKey, monthLabel });
   }, []);
 
+  // Hires drill-down for a specific month
+  const [hiresDrillDown, setHiresDrillDown] = useState<{
+    monthKey: string;
+    monthLabel: string;
+  } | null>(null);
+
+  const handleHiresBarClick = useCallback((data: any) => {
+    const payload = data?.payload || data;
+    const monthKey: string | undefined = payload?.monthKey;
+    const monthLabel: string | undefined = payload?.monthLabel;
+    if (!monthKey || !monthLabel) return;
+    setHiresDrillDown({ monthKey, monthLabel });
+  }, []);
+
   const fetchData = useCallback(async () => {
     try {
       const [contractorsRes, clientsRes, applicantsRes, hiringRequestsRes] = await Promise.all([
