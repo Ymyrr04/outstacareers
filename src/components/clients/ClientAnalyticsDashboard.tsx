@@ -430,6 +430,32 @@ export const ClientAnalyticsDashboard = () => {
     if (!hiresDrillDown) return [];
     const { monthKey } = hiresDrillDown;
 
+    // Collect ALL start_dates per client (across all time) to compute the
+    // average gap between consecutive hires for each client.
+    const allDatesByClient = new Map<string, number[]>();
+    contractors.forEach((c) => {
+      if (!c.start_date) return;
+      const clientId = c.client?.id || c.client_id || 'unknown';
+      const t = new Date(c.start_date).getTime();
+      if (Number.isNaN(t)) return;
+      const arr = allDatesByClient.get(clientId) || [];
+      arr.push(t);
+      allDatesByClient.set(clientId, arr);
+    });
+
+    const avgGapDaysByClient = new Map<string, number | null>();
+    allDatesByClient.forEach((times, clientId) => {
+      if (times.length < 2) {
+        avgGapDaysByClient.set(clientId, null);
+        return;
+      }
+      const sorted = [...times].sort((a, b) => a - b);
+      let totalDiffMs = 0;
+      for (let i = 1; i < sorted.length; i++) totalDiffMs += sorted[i] - sorted[i - 1];
+      const avgMs = totalDiffMs / (sorted.length - 1);
+      avgGapDaysByClient.set(clientId, avgMs / (1000 * 60 * 60 * 24));
+    });
+
     type Group = {
       clientId: string;
       clientName: string;
@@ -471,9 +497,22 @@ export const ClientAnalyticsDashboard = () => {
         lastHiredDate: g.lastHiredDate,
         country: g.countries.size > 0 ? Array.from(g.countries).join(', ') : '—',
         jobTitle: g.jobTitles.size > 0 ? Array.from(g.jobTitles).join(', ') : '—',
+        avgGapDays: avgGapDaysByClient.get(g.clientId) ?? null,
       }))
       .sort((a, b) => b.totalHires - a.totalHires || (a.lastHiredDate < b.lastHiredDate ? 1 : -1));
   }, [hiresDrillDown, contractors]);
+
+  // Format an average gap in days into a friendly "X days" / "Y weeks" label
+  const formatAvgGap = (days: number | null): string => {
+    if (days === null || !Number.isFinite(days)) return '—';
+    if (days < 14) return `${Math.round(days)} day${Math.round(days) === 1 ? '' : 's'}`;
+    if (days < 60) {
+      const weeks = days / 7;
+      return `${weeks.toFixed(1)} weeks`;
+    }
+    const months = days / 30.44;
+    return `${months.toFixed(1)} months`;
+  };
 
   // 3. Retention Rate per Company (raw data without sorting)
   const retentionByCompanyRaw = useMemo(() => {
@@ -1688,6 +1727,7 @@ export const ClientAnalyticsDashboard = () => {
                     <TableHead>Client Name</TableHead>
                     <TableHead className="text-right">Total Hires</TableHead>
                     <TableHead>Last Hired Date</TableHead>
+                    <TableHead>Avg. Time Between Hires</TableHead>
                     <TableHead>Country</TableHead>
                     <TableHead>Job Title</TableHead>
                   </TableRow>
@@ -1710,6 +1750,9 @@ export const ClientAnalyticsDashboard = () => {
                           month: 'short',
                           day: 'numeric',
                         })}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        {formatAvgGap(row.avgGapDays)}
                       </TableCell>
                       <TableCell className="text-muted-foreground">{row.country}</TableCell>
                       <TableCell className="text-muted-foreground">{row.jobTitle}</TableCell>
