@@ -1419,24 +1419,23 @@ export const ClientAnalyticsDashboard = () => {
       {/* Hires vs. Separations trend (full width, above bar charts) */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base flex items-center gap-2">
+          <CardTitle className="text-base flex items-center gap-2 pl-5">
             <TrendingUp className="w-4 h-4" />
             Hires vs. Separations
             <span className="text-xs text-muted-foreground font-normal">(2026+)</span>
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[320px]">
+          <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart
                 data={monthlyStats.map((m) => ({
                   ...m,
                   totalSeparations: (m.terminated || 0) + (m.resigned || 0),
                 }))}
-                margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
               >
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
-                <XAxis dataKey="month" className="text-xs" />
+                <XAxis dataKey="month" className="text-xs" angle={-45} textAnchor="end" height={60} />
                 <YAxis className="text-xs" allowDecimals={false} />
                 <Tooltip
                   contentStyle={{
@@ -1444,7 +1443,6 @@ export const ClientAnalyticsDashboard = () => {
                     border: '1px solid hsl(var(--border))',
                   }}
                 />
-                <Legend wrapperStyle={{ paddingTop: 8 }} />
                 <Bar
                   dataKey="hires"
                   name="Hires"
@@ -1462,6 +1460,16 @@ export const ClientAnalyticsDashboard = () => {
                 />
               </ComposedChart>
             </ResponsiveContainer>
+          </div>
+          <div className="flex justify-center gap-6 mt-4 text-sm">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-sm bg-[#22c55e]" />
+              <span>Hires</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-sm bg-[#ef4444]" />
+              <span>Total Separations</span>
+            </div>
           </div>
         </CardContent>
       </Card>
