@@ -364,12 +364,35 @@ export const ClientAnalyticsDashboard = () => {
         const d = new Date(dateStr);
         const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
         if (key !== monthKey) return null;
+
+        // Calculate tenure between hired (start_date) and separation date
+        let tenure = '—';
+        if (c.start_date && dateStr) {
+          const start = new Date(c.start_date);
+          const end = new Date(dateStr);
+          const diffMs = end.getTime() - start.getTime();
+          if (!Number.isNaN(diffMs) && diffMs >= 0) {
+            const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+            const years = Math.floor(totalDays / 365);
+            const remAfterYears = totalDays - years * 365;
+            const months = Math.floor(remAfterYears / 30);
+            const days = remAfterYears - months * 30;
+            const parts: string[] = [];
+            if (years > 0) parts.push(`${years}y`);
+            if (months > 0) parts.push(`${months}mo`);
+            if (years === 0 && months === 0) parts.push(`${days}d`);
+            tenure = parts.join(' ') || '0d';
+          }
+        }
+
         return {
           id: c.id,
           name: c.applicant?.full_name || '—',
+          clientName: c.client?.company_name || '—',
           type: c.status as 'terminated' | 'resigned',
+          hiredDate: c.start_date,
           date: dateStr,
-          department: c.client?.company_name || c.job_title || '—',
+          tenure,
           jobTitle: c.job_title || '—',
           notes: c.notes || '',
         };
