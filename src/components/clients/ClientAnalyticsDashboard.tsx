@@ -1685,39 +1685,34 @@ export const ClientAnalyticsDashboard = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Employee Name</TableHead>
-                    <TableHead>Job Title</TableHead>
-                    <TableHead>Hired Date</TableHead>
+                    <TableHead>Client Name</TableHead>
+                    <TableHead className="text-right">Total Hires</TableHead>
+                    <TableHead>Last Hired Date</TableHead>
                     <TableHead>Country</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Notes</TableHead>
+                    <TableHead>Job Title</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {hiresDrillDownRows.map((row) => (
                     <TableRow key={row.id}>
                       <TableCell className="font-medium">{row.clientName}</TableCell>
-                      <TableCell>{row.name}</TableCell>
-                      <TableCell className="text-muted-foreground">{row.jobTitle}</TableCell>
-                      <TableCell>
-                        {row.hiredDate
-                          ? new Date(row.hiredDate).toLocaleDateString(undefined, {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                            })
-                          : '—'}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">{row.country}</TableCell>
-                      <TableCell>
-                        <Badge variant="outline" className="capitalize">
-                          {row.status || '—'}
+                      <TableCell className="text-right">
+                        <Badge
+                          variant="outline"
+                          className="border-green-500/50 text-green-600 bg-green-500/10"
+                        >
+                          {row.totalHires}
                         </Badge>
                       </TableCell>
-                      <TableCell className="max-w-[260px] whitespace-pre-wrap text-muted-foreground">
-                        {row.notes || '—'}
+                      <TableCell>
+                        {new Date(row.lastHiredDate).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
                       </TableCell>
+                      <TableCell className="text-muted-foreground">{row.country}</TableCell>
+                      <TableCell className="text-muted-foreground">{row.jobTitle}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
