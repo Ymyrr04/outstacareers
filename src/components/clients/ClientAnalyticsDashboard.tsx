@@ -1457,17 +1457,46 @@ export const ClientAnalyticsDashboard = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Client</TableHead>
                     <TableHead>Employee Name</TableHead>
-                    <TableHead>Type</TableHead>
+                    <TableHead>Hired Date</TableHead>
                     <TableHead>Separation Date</TableHead>
-                    <TableHead>Department / Client</TableHead>
+                    <TableHead>Tenure</TableHead>
+                    <TableHead>Type</TableHead>
                     <TableHead>Notes</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {separationDrillDownRows.map((row) => (
                     <TableRow key={row.id}>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span className="font-medium">{row.clientName}</span>
+                          {row.jobTitle && row.jobTitle !== '—' && (
+                            <span className="text-xs text-muted-foreground">{row.jobTitle}</span>
+                          )}
+                        </div>
+                      </TableCell>
                       <TableCell className="font-medium">{row.name}</TableCell>
+                      <TableCell>
+                        {row.hiredDate
+                          ? new Date(row.hiredDate).toLocaleDateString(undefined, {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                            })
+                          : '—'}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(row.date).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap text-muted-foreground">
+                        {row.tenure}
+                      </TableCell>
                       <TableCell>
                         <Badge
                           variant="outline"
@@ -1479,21 +1508,6 @@ export const ClientAnalyticsDashboard = () => {
                         >
                           {row.type === 'terminated' ? 'Terminated' : 'Resigned'}
                         </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(row.date).toLocaleDateString(undefined, {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                        })}
-                      </TableCell>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span>{row.department}</span>
-                          {row.jobTitle && row.jobTitle !== row.department && (
-                            <span className="text-xs text-muted-foreground">{row.jobTitle}</span>
-                          )}
-                        </div>
                       </TableCell>
                       <TableCell className="max-w-[260px] whitespace-pre-wrap text-muted-foreground">
                         {row.notes || '—'}
