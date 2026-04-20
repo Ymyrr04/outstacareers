@@ -352,11 +352,12 @@ export const ClientAnalyticsDashboard = () => {
   }, [contractors]);
 
   // Compute drill-down rows from contractors when a separation cell is clicked
+  // Includes BOTH terminated and resigned for the selected month
   const separationDrillDownRows = useMemo(() => {
     if (!separationDrillDown) return [];
-    const { monthKey, type } = separationDrillDown;
+    const { monthKey } = separationDrillDown;
     return contractors
-      .filter((c) => c.status === type)
+      .filter((c) => c.status === 'terminated' || c.status === 'resigned')
       .map((c) => {
         const dateStr = c.end_date || c.start_date;
         if (!dateStr) return null;
@@ -366,7 +367,7 @@ export const ClientAnalyticsDashboard = () => {
         return {
           id: c.id,
           name: c.applicant?.full_name || '—',
-          type,
+          type: c.status as 'terminated' | 'resigned',
           date: dateStr,
           department: c.client?.company_name || c.job_title || '—',
           jobTitle: c.job_title || '—',
@@ -376,6 +377,12 @@ export const ClientAnalyticsDashboard = () => {
       .filter((r): r is NonNullable<typeof r> => r !== null)
       .sort((a, b) => (a.date < b.date ? 1 : -1));
   }, [separationDrillDown, contractors]);
+
+  const drillDownCounts = useMemo(() => {
+    const terminated = separationDrillDownRows.filter((r) => r.type === 'terminated').length;
+    const resigned = separationDrillDownRows.filter((r) => r.type === 'resigned').length;
+    return { terminated, resigned, total: terminated + resigned };
+  }, [separationDrillDownRows]);
 
   // 3. Retention Rate per Company (raw data without sorting)
   const retentionByCompanyRaw = useMemo(() => {
@@ -945,7 +952,7 @@ export const ClientAnalyticsDashboard = () => {
                   name="Terminated"
                   radius={[4, 4, 0, 0]}
                   cursor="pointer"
-                  onClick={(data: any) => handleSeparationBarClick(data, 'terminated')}
+                  onClick={(data: any) => handleSeparationBarClick(data)}
                 />
                 <Bar
                   dataKey="resigned"
@@ -953,7 +960,7 @@ export const ClientAnalyticsDashboard = () => {
                   name="Resigned"
                   radius={[4, 4, 0, 0]}
                   cursor="pointer"
-                  onClick={(data: any) => handleSeparationBarClick(data, 'resigned')}
+                  onClick={(data: any) => handleSeparationBarClick(data)}
                 />
               </BarChart>
             </ResponsiveContainer>
@@ -1394,24 +1401,26 @@ export const ClientAnalyticsDashboard = () => {
       >
         <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex flex-wrap items-center gap-2">
               {separationDrillDown && (
                 <>
                   <span>{separationDrillDown.monthLabel}</span>
-                  <span className="text-muted-foreground">—</span>
+                  <span className="text-muted-foreground">— Separations</span>
+                  <span className="text-sm font-normal text-muted-foreground">
+                    ({drillDownCounts.total})
+                  </span>
                   <Badge
                     variant="outline"
-                    className={
-                      separationDrillDown.type === 'terminated'
-                        ? 'border-red-500/50 text-red-600 bg-red-500/10'
-                        : 'border-purple-500/50 text-purple-600 bg-purple-500/10'
-                    }
+                    className="border-red-500/50 text-red-600 bg-red-500/10"
                   >
-                    {separationDrillDown.type === 'terminated' ? 'Terminated' : 'Resigned'}
+                    Terminated: {drillDownCounts.terminated}
                   </Badge>
-                  <span className="text-sm font-normal text-muted-foreground">
-                    ({separationDrillDownRows.length})
-                  </span>
+                  <Badge
+                    variant="outline"
+                    className="border-purple-500/50 text-purple-600 bg-purple-500/10"
+                  >
+                    Resigned: {drillDownCounts.resigned}
+                  </Badge>
                 </>
               )}
             </DialogTitle>
