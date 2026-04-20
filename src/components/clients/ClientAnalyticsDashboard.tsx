@@ -334,12 +334,41 @@ export const ClientAnalyticsDashboard = () => {
       .map(([month, counts]) => {
         const [year, m] = month.split('-');
         const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+        const fullMonthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
         return {
           month: `${monthNames[parseInt(m) - 1]} ${year.slice(2)}`,
+          monthKey: month,
+          monthLabel: `${fullMonthNames[parseInt(m) - 1]} ${year}`,
           ...counts,
         };
       });
   }, [contractors]);
+
+  // Compute drill-down rows from contractors when a separation cell is clicked
+  const separationDrillDownRows = useMemo(() => {
+    if (!separationDrillDown) return [];
+    const { monthKey, type } = separationDrillDown;
+    return contractors
+      .filter((c) => c.status === type)
+      .map((c) => {
+        const dateStr = c.end_date || c.start_date;
+        if (!dateStr) return null;
+        const d = new Date(dateStr);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (key !== monthKey) return null;
+        return {
+          id: c.id,
+          name: c.applicant?.full_name || '—',
+          type,
+          date: dateStr,
+          department: c.client?.company_name || c.job_title || '—',
+          jobTitle: c.job_title || '—',
+          notes: c.notes || '',
+        };
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null)
+      .sort((a, b) => (a.date < b.date ? 1 : -1));
+  }, [separationDrillDown, contractors]);
 
   // 3. Retention Rate per Company (raw data without sorting)
   const retentionByCompanyRaw = useMemo(() => {
