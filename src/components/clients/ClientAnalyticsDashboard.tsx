@@ -18,6 +18,7 @@ import {
   LineChart,
   Line,
   Legend,
+  ComposedChart,
 } from 'recharts';
 
 interface ContractorData {
@@ -1427,10 +1428,10 @@ export const ClientAnalyticsDashboard = () => {
         <CardContent>
           <div className="h-[320px]">
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart
+              <ComposedChart
                 data={monthlyStats.map((m) => ({
                   ...m,
-                  net: (m.hires || 0) - (m.terminated || 0) - (m.resigned || 0),
+                  totalSeparations: (m.terminated || 0) + (m.resigned || 0),
                 }))}
                 margin={{ top: 8, right: 16, left: 0, bottom: 8 }}
               >
@@ -1444,44 +1445,22 @@ export const ClientAnalyticsDashboard = () => {
                   }}
                 />
                 <Legend wrapperStyle={{ paddingTop: 8 }} />
-                <Line
-                  type="monotone"
+                <Bar
                   dataKey="hires"
                   name="Hires"
-                  stroke="#22c55e"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
+                  fill="#22c55e"
+                  radius={[4, 4, 0, 0]}
                 />
                 <Line
                   type="monotone"
-                  dataKey="terminated"
-                  name="Terminated"
+                  dataKey="totalSeparations"
+                  name="Total Separations"
                   stroke="#ef4444"
                   strokeWidth={2}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
+                  dot={{ r: 4 }}
+                  activeDot={{ r: 6 }}
                 />
-                <Line
-                  type="monotone"
-                  dataKey="resigned"
-                  name="Resigned"
-                  stroke="#8b5cf6"
-                  strokeWidth={2}
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="net"
-                  name="Net Change"
-                  stroke="#9ca3af"
-                  strokeWidth={2}
-                  strokeDasharray="5 5"
-                  dot={{ r: 3 }}
-                  activeDot={{ r: 5 }}
-                />
-              </LineChart>
+              </ComposedChart>
             </ResponsiveContainer>
           </div>
         </CardContent>
