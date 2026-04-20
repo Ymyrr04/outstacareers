@@ -932,8 +932,22 @@ export const ClientAnalyticsDashboard = () => {
                     border: '1px solid hsl(var(--border))' 
                   }} 
                 />
-                <Bar dataKey="terminated" fill="#ef4444" name="Terminated" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="resigned" fill="#8b5cf6" name="Resigned" radius={[4, 4, 0, 0]} />
+                <Bar
+                  dataKey="terminated"
+                  fill="#ef4444"
+                  name="Terminated"
+                  radius={[4, 4, 0, 0]}
+                  cursor="pointer"
+                  onClick={(data: any) => handleSeparationBarClick(data, 'terminated')}
+                />
+                <Bar
+                  dataKey="resigned"
+                  fill="#8b5cf6"
+                  name="Resigned"
+                  radius={[4, 4, 0, 0]}
+                  cursor="pointer"
+                  onClick={(data: any) => handleSeparationBarClick(data, 'resigned')}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
