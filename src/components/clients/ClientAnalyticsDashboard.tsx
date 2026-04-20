@@ -1400,6 +1400,94 @@ export const ClientAnalyticsDashboard = () => {
           </div>
         ))}
       </div>
+
+      {/* Separations drill-down dialog */}
+      <Dialog
+        open={!!separationDrillDown}
+        onOpenChange={(open) => !open && setSeparationDrillDown(null)}
+      >
+        <DialogContent className="max-w-3xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {separationDrillDown && (
+                <>
+                  <span>{separationDrillDown.monthLabel}</span>
+                  <span className="text-muted-foreground">—</span>
+                  <Badge
+                    variant="outline"
+                    className={
+                      separationDrillDown.type === 'terminated'
+                        ? 'border-red-500/50 text-red-600 bg-red-500/10'
+                        : 'border-purple-500/50 text-purple-600 bg-purple-500/10'
+                    }
+                  >
+                    {separationDrillDown.type === 'terminated' ? 'Terminated' : 'Resigned'}
+                  </Badge>
+                  <span className="text-sm font-normal text-muted-foreground">
+                    ({separationDrillDownRows.length})
+                  </span>
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto -mx-1 px-1">
+            {separationDrillDownRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No records found for this month.
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Employee Name</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Separation Date</TableHead>
+                    <TableHead>Department / Client</TableHead>
+                    <TableHead>Notes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {separationDrillDownRows.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell className="font-medium">{row.name}</TableCell>
+                      <TableCell>
+                        <Badge
+                          variant="outline"
+                          className={
+                            row.type === 'terminated'
+                              ? 'border-red-500/50 text-red-600 bg-red-500/10'
+                              : 'border-purple-500/50 text-purple-600 bg-purple-500/10'
+                          }
+                        >
+                          {row.type === 'terminated' ? 'Terminated' : 'Resigned'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {new Date(row.date).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex flex-col">
+                          <span>{row.department}</span>
+                          {row.jobTitle && row.jobTitle !== row.department && (
+                            <span className="text-xs text-muted-foreground">{row.jobTitle}</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="max-w-[260px] whitespace-pre-wrap text-muted-foreground">
+                        {row.notes || '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
