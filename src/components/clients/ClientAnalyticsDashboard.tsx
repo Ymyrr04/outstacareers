@@ -18,6 +18,7 @@ import {
   LineChart,
   Line,
   Legend,
+  ComposedChart,
 } from 'recharts';
 
 interface ContractorData {
