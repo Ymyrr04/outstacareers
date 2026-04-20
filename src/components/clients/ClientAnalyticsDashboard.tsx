@@ -99,33 +99,19 @@ export const ClientAnalyticsDashboard = () => {
   const [hiringRequests, setHiringRequests] = useState<{ client_status: string; client_id: string | null; pipeline_stage: string; start_date: string | null }[]>([]);
   const [lostYearFilter, setLostYearFilter] = useState(2026);
 
-  // Separations drill-down
+  // Separations drill-down (groups Terminated + Resigned for the month)
   const [separationDrillDown, setSeparationDrillDown] = useState<{
     monthKey: string; // e.g. "2026-03"
     monthLabel: string; // e.g. "March 2026"
-    type: 'terminated' | 'resigned';
   } | null>(null);
-  const lastBarClickRef = useRef<{ key: string; time: number } | null>(null);
 
-  const handleSeparationBarClick = useCallback(
-    (data: any, type: 'terminated' | 'resigned') => {
-      // Recharts passes the data point's payload directly on Bar onClick
-      const payload = data?.payload || data;
-      const monthKey: string | undefined = payload?.monthKey;
-      const monthLabel: string | undefined = payload?.monthLabel;
-      if (!monthKey || !monthLabel) return;
-      const id = `${monthKey}-${type}`;
-      const now = Date.now();
-      const last = lastBarClickRef.current;
-      if (last && last.key === id && now - last.time < 400) {
-        setSeparationDrillDown({ monthKey, monthLabel, type });
-        lastBarClickRef.current = null;
-      } else {
-        lastBarClickRef.current = { key: id, time: now };
-      }
-    },
-    []
-  );
+  const handleSeparationBarClick = useCallback((data: any) => {
+    const payload = data?.payload || data;
+    const monthKey: string | undefined = payload?.monthKey;
+    const monthLabel: string | undefined = payload?.monthLabel;
+    if (!monthKey || !monthLabel) return;
+    setSeparationDrillDown({ monthKey, monthLabel });
+  }, []);
 
   const fetchData = useCallback(async () => {
     try {
