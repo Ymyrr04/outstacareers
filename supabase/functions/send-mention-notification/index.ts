@@ -7,13 +7,13 @@ const corsHeaders = {
 };
 
 interface MentionNotificationRequest {
-  type: 'mention' | 'assignment';
+  type: 'mention' | 'assignment' | 'new_comment';
   recipientEmail: string;
   recipientName: string;
   senderName: string;
   requestTitle: string;
   clientName: string;
-  commentContent?: string; // For mentions
+  commentContent?: string; // For mentions and new_comment
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -77,6 +77,34 @@ const handler = async (req: Request): Promise<Response> => {
       </div>
       <p style="color:#999;font-size:13px;margin:0;">
         Log in to the admin dashboard to view the full comment and respond.
+      </p>
+    </div>
+  </div>
+</body>
+</html>`;
+    } else if (type === 'new_comment') {
+      subject = `New comment on ${requestTitle} - ${clientName} (${timeRef})`;
+      const plainComment = (commentContent || '').replace(/<[^>]*>/g, '').substring(0, 200);
+      bodyHtml = `
+<!DOCTYPE html>
+<html>
+<body style="margin:0;padding:20px;font-family:Arial,sans-serif;background:#f5f5f5;">
+  <div style="max-width:560px;margin:0 auto;background:#fff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+    <div style="background:#1a1a2e;padding:24px 32px;">
+      <h1 style="color:#fff;margin:0;font-size:20px;letter-spacing:1px;">OutSta</h1>
+    </div>
+    <div style="padding:28px 32px;">
+      <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">
+        Hi <strong>${recipientName}</strong>,
+      </p>
+      <p style="color:#333;font-size:15px;line-height:1.6;margin:0 0 16px;">
+        <strong>${senderName}</strong> posted a new comment on <strong>${requestTitle}</strong> (${clientName}):
+      </p>
+      <div style="background:#f8f9fa;border-left:4px solid #10b981;padding:12px 16px;border-radius:0 8px 8px 0;margin:0 0 20px;">
+        <p style="color:#555;font-size:14px;margin:0;line-height:1.5;">${plainComment}</p>
+      </div>
+      <p style="color:#999;font-size:13px;margin:0;">
+        Log in to the admin dashboard to view the full thread and respond.
       </p>
     </div>
   </div>

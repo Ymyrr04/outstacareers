@@ -230,22 +230,26 @@ export const HiringRequestDetailDialog = ({
       const mentionPattern = /@(\w+)/g;
       const plainText = newComment.replace(/<[^>]*>/g, '');
       const mentions = plainText.match(mentionPattern);
-      
+
+      const mentionedEmails = new Set<string>();
+
       if (mentions) {
         // Deduplicate mentions (in case someone is mentioned twice)
         const uniqueMentionNames = [...new Set(mentions.map(m => m.substring(1).toLowerCase()))];
-        
+
         // Resolve all mentioned admins
         const mentionedAdmins = uniqueMentionNames
           .map(mentionedName => adminUsers.find(admin => {
             const displayName = getAdminDisplayName(admin.email, '').toLowerCase();
             return displayName === mentionedName;
           }))
-          .filter((admin): admin is NonNullable<typeof admin> => 
+          .filter((admin): admin is NonNullable<typeof admin> =>
             !!admin && admin.email !== user.email
           );
 
-        // Send all email notifications in parallel
+        mentionedAdmins.forEach(a => mentionedEmails.add(a.email.toLowerCase()));
+
+        // Send all mention email notifications in parallel
         const emailPromises = mentionedAdmins.map(mentionedAdmin =>
           supabase.functions.invoke('send-mention-notification', {
             body: {
@@ -274,9 +278,33 @@ export const HiringRequestDetailDialog = ({
           });
         });
 
-        // Wait for all email notifications to complete
         await Promise.all(emailPromises);
       }
+
+      // Notify all OTHER admins (excluding author and already-mentioned users) about the new comment
+      const otherAdmins = adminUsers.filter(admin =>
+        admin.email &&
+        admin.email !== user.email &&
+        !mentionedEmails.has(admin.email.toLowerCase())
+      );
+
+      const commentEmailPromises = otherAdmins.map(admin =>
+        supabase.functions.invoke('send-mention-notification', {
+          body: {
+            type: 'new_comment',
+            recipientEmail: admin.email,
+            recipientName: getAdminDisplayName(admin.email),
+            senderName: getAdminDisplayName(user.email),
+            requestTitle: request.job_title,
+            clientName: request.client_name || 'Unknown Client',
+            commentContent: newComment,
+          },
+        }).then(({ error: emailError }) => {
+          if (emailError) console.error(`New-comment email to ${admin.email} failed:`, emailError);
+        })
+      );
+
+      await Promise.all(commentEmailPromises);
       
       setNewComment('');
       fetchComments(request.id);
