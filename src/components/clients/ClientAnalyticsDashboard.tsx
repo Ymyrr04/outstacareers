@@ -1628,6 +1628,79 @@ export const ClientAnalyticsDashboard = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Hires drill-down dialog */}
+      <Dialog
+        open={!!hiresDrillDown}
+        onOpenChange={(open) => !open && setHiresDrillDown(null)}
+      >
+        <DialogContent className="max-w-5xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex flex-wrap items-center gap-2">
+              {hiresDrillDown && (
+                <>
+                  <span>{hiresDrillDown.monthLabel}</span>
+                  <span className="text-muted-foreground">— Hires</span>
+                  <Badge
+                    variant="outline"
+                    className="border-green-500/50 text-green-600 bg-green-500/10"
+                  >
+                    {hiresDrillDownRows.length}
+                  </Badge>
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto -mx-1 px-1">
+            {hiresDrillDownRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No hires found for this month.
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Employee Name</TableHead>
+                    <TableHead>Job Title</TableHead>
+                    <TableHead>Hired Date</TableHead>
+                    <TableHead>Country</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Notes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {hiresDrillDownRows.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell className="font-medium">{row.clientName}</TableCell>
+                      <TableCell>{row.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{row.jobTitle}</TableCell>
+                      <TableCell>
+                        {row.hiredDate
+                          ? new Date(row.hiredDate).toLocaleDateString(undefined, {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                            })
+                          : '—'}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{row.country}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="capitalize">
+                          {row.status || '—'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="max-w-[260px] whitespace-pre-wrap text-muted-foreground">
+                        {row.notes || '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
