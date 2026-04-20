@@ -281,11 +281,13 @@ export const HiringRequestDetailDialog = ({
         await Promise.all(emailPromises);
       }
 
-      // Notify all OTHER admins (excluding author and already-mentioned users) about the new comment
+      // Notify all OTHER admins (excluding author, already-mentioned users, and opted-out admins) about the new comment
+      const EXCLUDED_FROM_COMMENT_NOTIFS = new Set(['adam@outsta.io', 'sean@outsta.io']);
       const otherAdmins = adminUsers.filter(admin =>
         admin.email &&
         admin.email !== user.email &&
-        !mentionedEmails.has(admin.email.toLowerCase())
+        !mentionedEmails.has(admin.email.toLowerCase()) &&
+        !EXCLUDED_FROM_COMMENT_NOTIFS.has(admin.email.toLowerCase())
       );
 
       const commentEmailPromises = otherAdmins.map(admin =>
