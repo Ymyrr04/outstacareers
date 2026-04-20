@@ -968,7 +968,11 @@ export const ClientAnalyticsDashboard = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px]">
+          <div
+            className="h-[300px] [&_.recharts-bar-rectangle]:outline-none [&_.recharts-rectangle]:outline-none [&_path:focus]:outline-none [&_*]:focus:outline-none"
+            draggable={false}
+            onDragStart={(e) => e.preventDefault()}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyStats}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -980,7 +984,14 @@ export const ClientAnalyticsDashboard = () => {
                     border: '1px solid hsl(var(--border))' 
                   }} 
                 />
-                <Bar dataKey="hires" fill="#22c55e" name="Hires" radius={[4, 4, 0, 0]} />
+                <Bar
+                  dataKey="hires"
+                  fill="#22c55e"
+                  name="Hires"
+                  radius={[4, 4, 0, 0]}
+                  cursor="pointer"
+                  onClick={(data: any) => handleHiresBarClick(data)}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
