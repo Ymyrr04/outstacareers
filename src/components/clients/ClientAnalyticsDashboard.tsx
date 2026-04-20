@@ -1748,6 +1748,7 @@ export const ClientAnalyticsDashboard = () => {
                     <TableHead className="text-right">Total Hires</TableHead>
                     <TableHead>Last Hired Date</TableHead>
                     <TableHead>Avg. Time Between Hires</TableHead>
+                    <TableHead>Avg. Tenure</TableHead>
                     <TableHead>Country</TableHead>
                     <TableHead>Job Title</TableHead>
                   </TableRow>
@@ -1773,6 +1774,17 @@ export const ClientAnalyticsDashboard = () => {
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {formatAvgGap(row.avgGapDays)}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5">
+                          {formatAvgGap(row.tenureDays)}
+                          {row.anyStillWorking && row.tenureDays !== null && (
+                            <span
+                              className="inline-block h-1.5 w-1.5 rounded-full bg-green-500"
+                              title="Still working"
+                            />
+                          )}
+                        </span>
                       </TableCell>
                       <TableCell className="text-muted-foreground">{row.country}</TableCell>
                       <TableCell className="text-muted-foreground">{row.jobTitle}</TableCell>
