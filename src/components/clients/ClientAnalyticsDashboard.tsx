@@ -2,6 +2,9 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Building2, TrendingUp, TrendingDown, Users, GripVertical, ArrowUpDown, ArrowUp, ArrowDown, Globe, UserPlus, Languages } from 'lucide-react';
 import {
@@ -23,6 +26,11 @@ interface ContractorData {
   hourly_rate: number | null;
   job_title: string | null;
   country: string | null;
+  notes: string | null;
+  applicant: {
+    id: string;
+    full_name: string | null;
+  } | null;
   client: {
     id: string;
     company_name: string;
@@ -96,7 +104,7 @@ export const ClientAnalyticsDashboard = () => {
       const [contractorsRes, clientsRes, applicantsRes, hiringRequestsRes] = await Promise.all([
         supabase
           .from('contractor_assignments')
-          .select(`*, country, client:clients(id, company_name, industry)`),
+          .select(`*, country, notes, client:clients(id, company_name, industry), applicant:applicants_prescreen(id, full_name)`),
         supabase
           .from('clients')
           .select('id, company_name, industry, leads_from, website, notes, is_hiring'),
