@@ -117,6 +117,20 @@ export const ClientAnalyticsDashboard = () => {
     setSeparationDrillDown({ monthKey, monthLabel });
   }, []);
 
+  // Hires drill-down for a specific month
+  const [hiresDrillDown, setHiresDrillDown] = useState<{
+    monthKey: string;
+    monthLabel: string;
+  } | null>(null);
+
+  const handleHiresBarClick = useCallback((data: any) => {
+    const payload = data?.payload || data;
+    const monthKey: string | undefined = payload?.monthKey;
+    const monthLabel: string | undefined = payload?.monthLabel;
+    if (!monthKey || !monthLabel) return;
+    setHiresDrillDown({ monthKey, monthLabel });
+  }, []);
+
   const fetchData = useCallback(async () => {
     try {
       const [contractorsRes, clientsRes, applicantsRes, hiringRequestsRes] = await Promise.all([
@@ -410,6 +424,31 @@ export const ClientAnalyticsDashboard = () => {
     const resigned = separationDrillDownRows.filter((r) => r.type === 'resigned').length;
     return { terminated, resigned, total: terminated + resigned };
   }, [separationDrillDownRows]);
+
+  // Compute drill-down rows for hires in a selected month (based on start_date)
+  const hiresDrillDownRows = useMemo(() => {
+    if (!hiresDrillDown) return [];
+    const { monthKey } = hiresDrillDown;
+    return contractors
+      .map((c) => {
+        if (!c.start_date) return null;
+        const d = new Date(c.start_date);
+        const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+        if (key !== monthKey) return null;
+        return {
+          id: c.id,
+          name: c.applicant?.full_name || '—',
+          clientName: c.client?.company_name || '—',
+          jobTitle: c.job_title || '—',
+          hiredDate: c.start_date,
+          status: c.status,
+          country: c.country || '—',
+          notes: c.notes || '',
+        };
+      })
+      .filter((r): r is NonNullable<typeof r> => r !== null)
+      .sort((a, b) => (a.hiredDate < b.hiredDate ? 1 : -1));
+  }, [hiresDrillDown, contractors]);
 
   // 3. Retention Rate per Company (raw data without sorting)
   const retentionByCompanyRaw = useMemo(() => {
@@ -929,7 +968,11 @@ export const ClientAnalyticsDashboard = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="h-[300px]">
+          <div
+            className="h-[300px] [&_.recharts-bar-rectangle]:outline-none [&_.recharts-rectangle]:outline-none [&_path:focus]:outline-none [&_*]:focus:outline-none"
+            draggable={false}
+            onDragStart={(e) => e.preventDefault()}
+          >
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={monthlyStats}>
                 <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
@@ -941,7 +984,14 @@ export const ClientAnalyticsDashboard = () => {
                     border: '1px solid hsl(var(--border))' 
                   }} 
                 />
-                <Bar dataKey="hires" fill="#22c55e" name="Hires" radius={[4, 4, 0, 0]} />
+                <Bar
+                  dataKey="hires"
+                  fill="#22c55e"
+                  name="Hires"
+                  radius={[4, 4, 0, 0]}
+                  cursor="pointer"
+                  onClick={(data: any) => handleHiresBarClick(data)}
+                />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -1565,6 +1615,79 @@ export const ClientAnalyticsDashboard = () => {
                           }
                         >
                           {row.type === 'terminated' ? 'Terminated' : 'Resigned'}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="max-w-[260px] whitespace-pre-wrap text-muted-foreground">
+                        {row.notes || '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Hires drill-down dialog */}
+      <Dialog
+        open={!!hiresDrillDown}
+        onOpenChange={(open) => !open && setHiresDrillDown(null)}
+      >
+        <DialogContent className="max-w-5xl max-h-[80vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex flex-wrap items-center gap-2">
+              {hiresDrillDown && (
+                <>
+                  <span>{hiresDrillDown.monthLabel}</span>
+                  <span className="text-muted-foreground">— Hires</span>
+                  <Badge
+                    variant="outline"
+                    className="border-green-500/50 text-green-600 bg-green-500/10"
+                  >
+                    {hiresDrillDownRows.length}
+                  </Badge>
+                </>
+              )}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="overflow-y-auto -mx-1 px-1">
+            {hiresDrillDownRows.length === 0 ? (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No hires found for this month.
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Client</TableHead>
+                    <TableHead>Employee Name</TableHead>
+                    <TableHead>Job Title</TableHead>
+                    <TableHead>Hired Date</TableHead>
+                    <TableHead>Country</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Notes</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {hiresDrillDownRows.map((row) => (
+                    <TableRow key={row.id}>
+                      <TableCell className="font-medium">{row.clientName}</TableCell>
+                      <TableCell>{row.name}</TableCell>
+                      <TableCell className="text-muted-foreground">{row.jobTitle}</TableCell>
+                      <TableCell>
+                        {row.hiredDate
+                          ? new Date(row.hiredDate).toLocaleDateString(undefined, {
+                              year: 'numeric',
+                              month: 'short',
+                              day: 'numeric',
+                            })
+                          : '—'}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground">{row.country}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className="capitalize">
+                          {row.status || '—'}
                         </Badge>
                       </TableCell>
                       <TableCell className="max-w-[260px] whitespace-pre-wrap text-muted-foreground">
