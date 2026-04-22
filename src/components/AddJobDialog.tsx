@@ -40,7 +40,7 @@ const jobSchema = z.object({
   region: z.enum(['all', 'philippines', 'latin-america']),
   qualifications: z.array(z.string().max(1000)).max(20).optional(),
   responsibilities: z.array(z.string().max(1000)).max(20).optional(),
-  assigned_admin_id: z.string().uuid().optional().nullable(),
+  assigned_admin_id: z.union([z.string().uuid(), z.literal(''), z.null()]).optional(),
 });
 
 interface AddJobDialogProps {
