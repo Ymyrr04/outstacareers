@@ -1176,6 +1176,7 @@ export const ContractorsDashboard = () => {
                         {visibleColumns.country && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('country')}>Country {getSortIcon('country')}</TableHead>}
                         {visibleColumns.source && <TableHead className="min-w-[100px]">Source</TableHead>}
                         {visibleColumns.notes && <TableHead className="min-w-[200px]">Notes</TableHead>}
+                        {visibleColumns.separationNote && <TableHead className="min-w-[200px]">Separation Note</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
