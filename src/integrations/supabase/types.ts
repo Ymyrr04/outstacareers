@@ -631,6 +631,7 @@ export type Database = {
           is_replacement: boolean | null
           job_title: string | null
           notes: string | null
+          separation_note: string | null
           source: string | null
           start_date: string | null
           status: string | null
@@ -652,6 +653,7 @@ export type Database = {
           is_replacement?: boolean | null
           job_title?: string | null
           notes?: string | null
+          separation_note?: string | null
           source?: string | null
           start_date?: string | null
           status?: string | null
@@ -673,6 +675,7 @@ export type Database = {
           is_replacement?: boolean | null
           job_title?: string | null
           notes?: string | null
+          separation_note?: string | null
           source?: string | null
           start_date?: string | null
           status?: string | null
