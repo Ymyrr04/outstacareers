@@ -1467,6 +1467,24 @@ export const ContractorsDashboard = () => {
                               )}
                             </TableCell>
                           )}
+                          {visibleColumns.separationNote && (
+                            <TableCell>
+                              {contractor.separation_note ? (
+                                <HoverCard>
+                                  <HoverCardTrigger asChild>
+                                    <span className="text-sm text-muted-foreground line-clamp-1 max-w-[200px] cursor-help underline decoration-dotted underline-offset-2">
+                                      {contractor.separation_note}
+                                    </span>
+                                  </HoverCardTrigger>
+                                  <HoverCardContent className="w-80 text-sm" align="start">
+                                    <p className="whitespace-pre-wrap">{contractor.separation_note}</p>
+                                  </HoverCardContent>
+                                </HoverCard>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))}
                     </TableBody>
