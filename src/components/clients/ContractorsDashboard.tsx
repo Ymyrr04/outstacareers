@@ -78,6 +78,7 @@ interface ContractorWithDetails {
   status: string;
   status_changed_at: string | null;
   notes: string | null;
+  separation_note: string | null;
   contact_number: string | null;
   emergency_number: string | null;
   timesheet_link: string | null;
