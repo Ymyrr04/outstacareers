@@ -185,6 +185,7 @@ export const ContractorsDashboard = () => {
     country: 'Country',
     source: 'Source',
     notes: 'Notes',
+    separationNote: 'Separation Note',
   };
 
   const COLUMN_SORT_MAP: Record<string, { asc: string; desc: string }> = {
