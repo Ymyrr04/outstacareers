@@ -1122,6 +1122,17 @@ export const ContractorsDashboard = () => {
                             )}
                           </TableCell>
                         )}
+                        {visibleColumns.separationNote && (
+                          <TableCell>
+                            {contractor.separation_note ? (
+                              <span className="text-sm text-muted-foreground line-clamp-2 max-w-[200px] whitespace-pre-wrap" title={contractor.separation_note}>
+                                {contractor.separation_note}
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
