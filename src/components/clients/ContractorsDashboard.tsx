@@ -320,11 +320,11 @@ export const ContractorsDashboard = () => {
         status: data.status,
       };
 
-      // Find existing contractor to preserve their notes
+      // Find existing contractor to preserve their separation note history
       const existingContractor = contractors.find(c => c.id === pendingStatusChange.contractorId);
-      const existingNotes = existingContractor?.notes || '';
+      const existingSeparationNote = existingContractor?.separation_note || '';
 
-      // Build the status note line to APPEND (not overwrite) to preserve onboarding info
+      // Build the separation note entry — saved in its own field, NOT in notes
       let statusNote = '';
       if (data.renderingReason) {
         statusNote = `Rendering for ${data.renderingReason}${data.effectiveDate ? ` - Effective: ${data.effectiveDate}` : ''}`;
@@ -335,8 +335,8 @@ export const ContractorsDashboard = () => {
       if (statusNote) {
         const timestamp = new Date().toISOString().split('T')[0];
         const formattedNote = `[${timestamp}] ${statusNote}`;
-        updateData.notes = existingNotes
-          ? `${formattedNote}\n\n${existingNotes}`
+        updateData.separation_note = existingSeparationNote
+          ? `${formattedNote}\n\n${existingSeparationNote}`
           : formattedNote;
       }
       
@@ -364,7 +364,7 @@ export const ContractorsDashboard = () => {
               status: data.status, 
               start_date: updateData.start_date || c.start_date,
               end_date: updateData.end_date || c.end_date,
-              notes: updateData.notes !== undefined ? updateData.notes : c.notes,
+              separation_note: updateData.separation_note !== undefined ? updateData.separation_note : c.separation_note,
             } 
           : c
         )
