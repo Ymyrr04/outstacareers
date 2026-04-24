@@ -319,14 +319,24 @@ export const ContractorsDashboard = () => {
         status: data.status,
       };
 
-      // Set notes for rendering
+      // Find existing contractor to preserve their notes
+      const existingContractor = contractors.find(c => c.id === pendingStatusChange.contractorId);
+      const existingNotes = existingContractor?.notes || '';
+
+      // Build the status note line to APPEND (not overwrite) to preserve onboarding info
+      let statusNote = '';
       if (data.renderingReason) {
-        updateData.notes = `Rendering for ${data.renderingReason}${data.effectiveDate ? ` - Effective: ${data.effectiveDate}` : ''}`;
+        statusNote = `Rendering for ${data.renderingReason}${data.effectiveDate ? ` - Effective: ${data.effectiveDate}` : ''}`;
+      } else if ((data.status === 'resigned' || data.status === 'terminated') && data.reason) {
+        statusNote = `${data.status === 'resigned' ? 'Resignation' : 'Termination'} reason: ${data.reason}`;
       }
-      
-      // Set notes for resigned/terminated with reason
-      if ((data.status === 'resigned' || data.status === 'terminated') && data.reason) {
-        updateData.notes = `${data.status === 'resigned' ? 'Resignation' : 'Termination'} reason: ${data.reason}`;
+
+      if (statusNote) {
+        const timestamp = new Date().toISOString().split('T')[0];
+        const formattedNote = `[${timestamp}] ${statusNote}`;
+        updateData.notes = existingNotes
+          ? `${formattedNote}\n\n${existingNotes}`
+          : formattedNote;
       }
       
       // Set start_date for scheduled
@@ -352,7 +362,8 @@ export const ContractorsDashboard = () => {
               ...c, 
               status: data.status, 
               start_date: updateData.start_date || c.start_date,
-              end_date: updateData.end_date || c.end_date 
+              end_date: updateData.end_date || c.end_date,
+              notes: updateData.notes !== undefined ? updateData.notes : c.notes,
             } 
           : c
         )
