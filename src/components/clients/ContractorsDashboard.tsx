@@ -164,6 +164,7 @@ export const ContractorsDashboard = () => {
     country: false,
     source: false,
     notes: true,
+    separationNote: true,
   });
 
   const columnLabels: Record<string, string> = {
