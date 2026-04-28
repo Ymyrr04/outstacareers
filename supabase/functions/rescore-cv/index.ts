@@ -334,6 +334,12 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
     const aiData = await aiResponse.json();
     const aiContent = aiData.choices?.[0]?.message?.content;
 
+    logAiUsage({
+      functionName: 'rescore-cv:scoring',
+      model: 'google/gemini-2.5-flash',
+      usage: aiData.usage,
+    });
+
     if (!aiContent) {
       return new Response(JSON.stringify({ error: 'No response from AI' }), {
         status: 500,
