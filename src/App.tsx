@@ -19,6 +19,7 @@ import ImageEditor from "./pages/ImageEditor";
 import CalendlyCallback from "./pages/CalendlyCallback";
 import TalentPool from "./pages/TalentPool";
 import NotFound from "./pages/NotFound";
+import AiUsage from "./pages/AiUsage";
 
 const queryClient = new QueryClient();
 
