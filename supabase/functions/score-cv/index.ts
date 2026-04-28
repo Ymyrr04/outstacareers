@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { logAiUsage } from "../_shared/logAiUsage.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -189,6 +190,14 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
+
+    // Log AI usage (fire and forget)
+    logAiUsage({
+      functionName: 'score-cv',
+      model: 'google/gemini-3-flash-preview',
+      usage: data.usage,
+      context: { job_title, cv_text_length: cv_text?.length ?? 0 },
+    });
 
     if (!content) {
       console.error('No content in AI response');

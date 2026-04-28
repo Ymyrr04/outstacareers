@@ -19,6 +19,7 @@ import ImageEditor from "./pages/ImageEditor";
 import CalendlyCallback from "./pages/CalendlyCallback";
 import TalentPool from "./pages/TalentPool";
 import NotFound from "./pages/NotFound";
+import AiUsage from "./pages/AiUsage";
 
 const queryClient = new QueryClient();
 
@@ -37,6 +38,7 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
                 <Route path="/admin" element={<Admin />} />
+                <Route path="/admin/ai-usage" element={<AiUsage />} />
                 <Route path="/admin/:tab" element={<Admin />} />
                 <Route path="/jobs/:company/:titleSlug/:jobId" element={<JobApplication />} />
                 <Route path="/job/:jobId" element={<JobDetails />} />

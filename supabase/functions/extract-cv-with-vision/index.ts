@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logAiUsage } from "../_shared/logAiUsage.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -189,6 +190,13 @@ If the document is not readable or is not a CV/resume, respond with: "EXTRACTION
 
     const visionData = await visionResponse.json();
     const extractedText = visionData.choices?.[0]?.message?.content;
+
+    logAiUsage({
+      functionName: 'extract-cv-with-vision',
+      model: 'google/gemini-2.5-flash',
+      usage: visionData.usage,
+      context: { mimeType, applicant_id },
+    });
 
     if (!extractedText || extractedText.startsWith('EXTRACTION_FAILED:')) {
       console.error('Vision extraction failed:', extractedText);
