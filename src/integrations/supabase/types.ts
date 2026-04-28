@@ -41,6 +41,48 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_usage_logs: {
+        Row: {
+          completion_tokens: number | null
+          context: Json | null
+          created_at: string
+          error_message: string | null
+          function_name: string
+          id: string
+          model: string | null
+          prompt_tokens: number | null
+          status: string | null
+          total_tokens: number | null
+          user_id: string | null
+        }
+        Insert: {
+          completion_tokens?: number | null
+          context?: Json | null
+          created_at?: string
+          error_message?: string | null
+          function_name: string
+          id?: string
+          model?: string | null
+          prompt_tokens?: number | null
+          status?: string | null
+          total_tokens?: number | null
+          user_id?: string | null
+        }
+        Update: {
+          completion_tokens?: number | null
+          context?: Json | null
+          created_at?: string
+          error_message?: string | null
+          function_name?: string
+          id?: string
+          model?: string | null
+          prompt_tokens?: number | null
+          status?: string | null
+          total_tokens?: number | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       analytics_events: {
         Row: {
           created_at: string
