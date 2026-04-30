@@ -160,7 +160,24 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
         },
       });
 
-      if (error) throw error;
+      // If the edge function returned non-2xx, supabase-js wraps it in a FunctionsHttpError
+      // and swallows the body. Read the actual error message from the response.
+      if (error) {
+        let detailedMessage = error.message || 'Failed to send email';
+        try {
+          const ctx = (error as any).context;
+          if (ctx && typeof ctx.json === 'function') {
+            const body = await ctx.json();
+            if (body?.error) detailedMessage = body.error;
+          } else if (ctx && typeof ctx.text === 'function') {
+            const text = await ctx.text();
+            if (text) detailedMessage = text;
+          }
+        } catch {
+          // ignore parse errors, fall back to generic message
+        }
+        throw new Error(detailedMessage);
+      }
       if (data?.error) throw new Error(data.error);
 
       toast({
