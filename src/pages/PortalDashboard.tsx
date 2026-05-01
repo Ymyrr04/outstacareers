@@ -596,6 +596,9 @@ const PortalDashboard = () => {
 
     setDays(next);
     setOvertimeHours(String(t.overtime_hours));
+    setIncentiveNote('');
+    setExtraAmount('');
+    setExtraReason('');
     setNotes(t.notes || '');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -608,6 +611,9 @@ const PortalDashboard = () => {
     setDraftDateRange(undefined);
     setDays({});
     setOvertimeHours('0');
+    setIncentiveNote('');
+    setExtraAmount('');
+    setExtraReason('');
     setNotes('');
   };
 
