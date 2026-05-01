@@ -712,8 +712,27 @@ const PortalDashboard = () => {
                   <Input id="p-phone" value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="p-shift">Regular work shift (EST) <span className="text-destructive">*</span></Label>
-                  <Input id="p-shift" placeholder="e.g. 9 AM – 6 PM EST" value={profileForm.regular_work_shift} onChange={(e) => setProfileForm({ ...profileForm, regular_work_shift: e.target.value })} />
+                  <Label>Regular work shift (EST) <span className="text-destructive">*</span></Label>
+                  {(() => {
+                    const { start, end } = parseShift(profileForm.regular_work_shift);
+                    return (
+                      <div className="flex items-center gap-2">
+                        <TimeCombobox
+                          value={start}
+                          placeholder="Start time"
+                          ariaLabel="Shift start time"
+                          onChange={(v) => setProfileForm({ ...profileForm, regular_work_shift: composeShift(v, end) })}
+                        />
+                        <span className="text-muted-foreground text-sm shrink-0">–</span>
+                        <TimeCombobox
+                          value={end}
+                          placeholder="End time"
+                          ariaLabel="Shift end time"
+                          onChange={(v) => setProfileForm({ ...profileForm, regular_work_shift: composeShift(start, v) })}
+                        />
+                      </div>
+                    );
+                  })()}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="p-hpw">Hours per week <span className="text-destructive">*</span></Label>
