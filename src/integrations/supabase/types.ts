@@ -1053,6 +1053,7 @@ export type Database = {
           created_at: string
           daily_hours: Json | null
           id: string
+          incentive_amount: number
           notes: string | null
           overtime_hours: number
           status: string
@@ -1066,6 +1067,7 @@ export type Database = {
           created_at?: string
           daily_hours?: Json | null
           id?: string
+          incentive_amount?: number
           notes?: string | null
           overtime_hours?: number
           status?: string
@@ -1079,6 +1081,7 @@ export type Database = {
           created_at?: string
           daily_hours?: Json | null
           id?: string
+          incentive_amount?: number
           notes?: string | null
           overtime_hours?: number
           status?: string

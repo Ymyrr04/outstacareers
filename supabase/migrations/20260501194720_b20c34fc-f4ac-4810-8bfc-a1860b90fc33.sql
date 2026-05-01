@@ -1,0 +1,1 @@
+ALTER TABLE public.contractor_timesheets ADD COLUMN IF NOT EXISTS incentive_amount numeric(10,2) NOT NULL DEFAULT 0;
