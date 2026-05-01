@@ -206,6 +206,8 @@ const PortalDashboard = () => {
   const [info, setInfo] = useState<ContractorInfo | null>(null);
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [clientNotified, setClientNotified] = useState(false);
+  const [invoiceMatches, setInvoiceMatches] = useState(false);
   const [missingReasonOpen, setMissingReasonOpen] = useState(false);
   const [missingDays, setMissingDays] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
