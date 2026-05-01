@@ -193,6 +193,10 @@ const PortalDashboard = () => {
   const handleSubmitClick = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!info) return;
+    if (!dateRangeValid) {
+      toast({ title: 'Invalid date range', description: '"To" date must be on or after "From" date.', variant: 'destructive' });
+      return;
+    }
     if (!validateNumbers()) return;
     if (totalHours <= 0) {
       toast({ title: 'No hours entered', description: 'Please enter hours for at least one day.', variant: 'destructive' });
