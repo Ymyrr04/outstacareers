@@ -416,6 +416,7 @@ const PortalDashboard = () => {
                       <Calendar
                         mode="range"
                         numberOfMonths={2}
+                        showOutsideDays={false}
                         defaultMonth={dateRange?.from ?? new Date()}
                         selected={dateRange}
                         onSelect={(range: DateRange | undefined) => {
