@@ -693,9 +693,27 @@ export const PLDashboard = () => {
                         {profileInvoices.map((inv) => {
                           const rate = Number(profileContractor.hourly_rate || 0);
                           const total = Number(inv.total_hours || 0) * rate + Number(inv.overtime_hours || 0) + Number(inv.incentive_amount || 0);
+                          // Compute date range from daily_hours keys, fallback to week_ending - 6 days
+                          let rangeLabel = '—';
+                          const dh = inv.daily_hours && typeof inv.daily_hours === 'object' ? inv.daily_hours : null;
+                          const dayKeys = dh ? Object.keys(dh).filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort() : [];
+                          let startDate: Date | null = null;
+                          let endDate: Date | null = null;
+                          if (dayKeys.length > 0) {
+                            startDate = new Date(dayKeys[0]);
+                            endDate = new Date(dayKeys[dayKeys.length - 1]);
+                          } else if (inv.week_ending_date) {
+                            endDate = new Date(inv.week_ending_date);
+                            startDate = new Date(endDate);
+                            startDate.setDate(startDate.getDate() - 6);
+                          }
+                          if (startDate && endDate) {
+                            const sameYear = startDate.getFullYear() === endDate.getFullYear();
+                            rangeLabel = `${format(startDate, sameYear ? 'MMM d' : 'MMM d, yyyy')} – ${format(endDate, 'MMM d, yyyy')}`;
+                          }
                           return (
                             <TableRow key={inv.id}>
-                              <TableCell>{inv.week_ending_date ? format(new Date(inv.week_ending_date), 'MMM d, yyyy') : '—'}</TableCell>
+                              <TableCell className="whitespace-nowrap">{rangeLabel}</TableCell>
                               <TableCell className="text-right">{Number(inv.total_hours || 0).toFixed(2)}</TableCell>
                               <TableCell className="text-right">{Number(inv.overtime_hours || 0).toFixed(2)}</TableCell>
                               <TableCell className="text-right">${Number(inv.incentive_amount || 0).toFixed(2)}</TableCell>
