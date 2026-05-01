@@ -50,6 +50,9 @@ const App = () => (
                 <Route path="/image-editor" element={<ImageEditor />} />
                 <Route path="/auth/calendly/callback" element={<CalendlyCallback />} />
                 <Route path="/talent-pool" element={<TalentPool />} />
+                <Route path="/portal/login" element={<PortalLogin />} />
+                <Route path="/portal/change-password" element={<PortalChangePassword />} />
+                <Route path="/portal" element={<PortalDashboard />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
