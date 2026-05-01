@@ -442,7 +442,6 @@ export const PLDashboard = () => {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">{c.hourly_rate != null ? `$${Number(c.hourly_rate).toFixed(2)}` : '—'}</TableCell>
-                    <TableCell className="text-right">{c.hours_per_week ?? '—'}</TableCell>
                     <TableCell>
                       {c.latestTimesheet ? (
                         <div className="flex flex-col gap-0.5">
