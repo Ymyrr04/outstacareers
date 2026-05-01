@@ -55,7 +55,13 @@ interface ContractorRow {
   } | null;
 }
 
-export const PLDashboard = () => {
+const ProfileField = ({ label, value }: { label: string; value: string | null | undefined }) => (
+  <div>
+    <div className="text-xs text-muted-foreground">{label}</div>
+    <div className="font-medium">{value && String(value).trim() ? value : '—'}</div>
+  </div>
+);
+
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [profileContractor, setProfileContractor] = useState<any | null>(null);
