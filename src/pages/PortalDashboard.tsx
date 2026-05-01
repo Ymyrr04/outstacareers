@@ -825,7 +825,20 @@ const PortalDashboard = () => {
                     Cancel
                   </Button>
                 )}
-                <Button type="button" onClick={() => handleSubmitClick()} disabled={submitting}>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (profileIncomplete) {
+                      toast({ title: 'Complete your profile first', description: 'Please fill in the required profile details before submitting hours.', variant: 'destructive' });
+                      setProfileEditing(true);
+                      setProfileOpen(true);
+                      return;
+                    }
+                    handleSubmitClick();
+                  }}
+                  disabled={submitting || profileIncomplete}
+                  title={profileIncomplete ? 'Complete your profile to enable submitting' : undefined}
+                >
                   {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                   {editingId ? 'Save changes' : 'Submit'}
                 </Button>
