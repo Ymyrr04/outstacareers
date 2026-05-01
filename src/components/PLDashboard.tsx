@@ -706,7 +706,7 @@ export const PLDashboard = () => {
                           <TableHead>Date range</TableHead>
                           <TableHead className="text-right">Hours</TableHead>
                           <TableHead className="text-right">OT</TableHead>
-                          <TableHead className="text-right">Incentives</TableHead>
+                          <TableHead className="text-right">Bonus</TableHead>
                           <TableHead className="text-right">Total</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Submitted</TableHead>
