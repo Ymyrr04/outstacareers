@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Search, Check, X } from 'lucide-react';
+import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface TimesheetRow {
@@ -48,6 +48,8 @@ export const PLDashboard = () => {
   const [contractors, setContractors] = useState<ContractorRow[]>([]);
   const [search, setSearch] = useState('');
   const [contractorSearch, setContractorSearch] = useState('');
+  const [contractorSort, setContractorSort] = useState<{ key: 'name' | 'company' | 'status' | 'rate' | 'hpw'; dir: 'asc' | 'desc' }>({ key: 'name', dir: 'asc' });
+  const [tsSort, setTsSort] = useState<{ key: 'name' | 'company' | 'week' | 'hours' | 'ot' | 'incentives' | 'status' | 'submitted'; dir: 'asc' | 'desc' }>({ key: 'submitted', dir: 'desc' });
   const [stats, setStats] = useState({ portalUsers: 0, totalEligibleContractors: 0 });
 
   const fetchData = async () => {
@@ -200,26 +202,71 @@ export const PLDashboard = () => {
     fetchData();
   };
 
-  const filtered = rows.filter((r) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (
-      r.contractor?.applicant?.full_name?.toLowerCase().includes(q) ||
-      r.contractor?.applicant?.email?.toLowerCase().includes(q) ||
-      r.contractor?.client?.company_name?.toLowerCase().includes(q)
-    );
-  });
+  const cmp = (a: any, b: any, dir: 'asc' | 'desc') => {
+    if (a == null && b == null) return 0;
+    if (a == null) return 1;
+    if (b == null) return -1;
+    if (typeof a === 'number' && typeof b === 'number') return dir === 'asc' ? a - b : b - a;
+    const r = String(a).localeCompare(String(b));
+    return dir === 'asc' ? r : -r;
+  };
 
-  const filteredContractors = contractors.filter((c) => {
-    if (!contractorSearch) return true;
-    const q = contractorSearch.toLowerCase();
-    return (
-      c.applicant?.full_name?.toLowerCase().includes(q) ||
-      c.applicant?.email?.toLowerCase().includes(q) ||
-      c.client?.company_name?.toLowerCase().includes(q) ||
-      c.job_title?.toLowerCase().includes(q)
-    );
-  });
+  const filtered = rows
+    .filter((r) => {
+      if (!search) return true;
+      const q = search.toLowerCase();
+      return (
+        r.contractor?.applicant?.full_name?.toLowerCase().includes(q) ||
+        r.contractor?.applicant?.email?.toLowerCase().includes(q) ||
+        r.contractor?.client?.company_name?.toLowerCase().includes(q)
+      );
+    })
+    .sort((a, b) => {
+      const k = tsSort.key;
+      const d = tsSort.dir;
+      switch (k) {
+        case 'name': return cmp(a.contractor?.applicant?.full_name, b.contractor?.applicant?.full_name, d);
+        case 'company': return cmp(a.contractor?.client?.company_name, b.contractor?.client?.company_name, d);
+        case 'week': return cmp(new Date(a.week_ending_date).getTime(), new Date(b.week_ending_date).getTime(), d);
+        case 'hours': return cmp(Number(a.total_hours), Number(b.total_hours), d);
+        case 'ot': return cmp(Number(a.overtime_hours), Number(b.overtime_hours), d);
+        case 'incentives': return cmp(Number(a.incentive_amount || 0), Number(b.incentive_amount || 0), d);
+        case 'status': return cmp(a.status, b.status, d);
+        case 'submitted': return cmp(new Date(a.submitted_at).getTime(), new Date(b.submitted_at).getTime(), d);
+      }
+    });
+
+  const filteredContractors = contractors
+    .filter((c) => {
+      if (!contractorSearch) return true;
+      const q = contractorSearch.toLowerCase();
+      return (
+        c.applicant?.full_name?.toLowerCase().includes(q) ||
+        c.applicant?.email?.toLowerCase().includes(q) ||
+        c.client?.company_name?.toLowerCase().includes(q) ||
+        c.job_title?.toLowerCase().includes(q)
+      );
+    })
+    .sort((a, b) => {
+      const k = contractorSort.key;
+      const d = contractorSort.dir;
+      switch (k) {
+        case 'name': return cmp(a.applicant?.full_name, b.applicant?.full_name, d);
+        case 'company': return cmp(a.client?.company_name, b.client?.company_name, d);
+        case 'status': return cmp(a.status, b.status, d);
+        case 'rate': return cmp(a.hourly_rate != null ? Number(a.hourly_rate) : null, b.hourly_rate != null ? Number(b.hourly_rate) : null, d);
+        case 'hpw': return cmp(a.hours_per_week, b.hours_per_week, d);
+      }
+    });
+
+  const toggleContractorSort = (key: typeof contractorSort.key) =>
+    setContractorSort((s) => s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' });
+  const toggleTsSort = (key: typeof tsSort.key) =>
+    setTsSort((s) => s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' });
+
+  const SortIcon = ({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) =>
+    !active ? <ArrowUpDown className="w-3 h-3 ml-1 inline opacity-40" /> :
+    dir === 'asc' ? <ArrowUp className="w-3 h-3 ml-1 inline" /> : <ArrowDown className="w-3 h-3 ml-1 inline" />;
 
   const totalHoursAll = filtered.reduce((s, r) => s + Number(r.total_hours), 0);
   const totalOTAll = filtered.reduce((s, r) => s + Number(r.overtime_hours), 0);
@@ -275,12 +322,11 @@ export const PLDashboard = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Contractor</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Position</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Rate</TableHead>
-                  <TableHead className="text-right">Hrs/Wk</TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('name')}>Contractor<SortIcon active={contractorSort.key === 'name'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('company')}>Company<SortIcon active={contractorSort.key === 'company'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('status')}>Status<SortIcon active={contractorSort.key === 'status'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('rate')}>Rate<SortIcon active={contractorSort.key === 'rate'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('hpw')}>Hrs/Wk<SortIcon active={contractorSort.key === 'hpw'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead>Portal Account</TableHead>
                 </TableRow>
               </TableHeader>
@@ -292,7 +338,7 @@ export const PLDashboard = () => {
                       <div className="text-xs text-muted-foreground">{c.applicant?.email || '—'}</div>
                     </TableCell>
                     <TableCell>{c.client?.company_name || '—'}</TableCell>
-                    <TableCell className="text-sm">{c.job_title || '—'}</TableCell>
+                    
                     <TableCell>
                       <Badge variant={c.status === 'active' ? 'default' : 'secondary'} className="capitalize">
                         {c.status}
@@ -345,17 +391,16 @@ export const PLDashboard = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Contractor</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Position</TableHead>
-                  <TableHead>Week Ending</TableHead>
-                  <TableHead className="text-right">Hours</TableHead>
-                  <TableHead className="text-right">OT</TableHead>
-                  <TableHead className="text-right">Incentives</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('name')}>Contractor<SortIcon active={tsSort.key === 'name'} dir={tsSort.dir} /></button></TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('company')}>Company<SortIcon active={tsSort.key === 'company'} dir={tsSort.dir} /></button></TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('week')}>Week Ending<SortIcon active={tsSort.key === 'week'} dir={tsSort.dir} /></button></TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('hours')}>Hours<SortIcon active={tsSort.key === 'hours'} dir={tsSort.dir} /></button></TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('ot')}>OT<SortIcon active={tsSort.key === 'ot'} dir={tsSort.dir} /></button></TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('incentives')}>Incentives<SortIcon active={tsSort.key === 'incentives'} dir={tsSort.dir} /></button></TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('status')}>Status<SortIcon active={tsSort.key === 'status'} dir={tsSort.dir} /></button></TableHead>
                   <TableHead>Daily &gt;10h</TableHead>
                   <TableHead>Notes</TableHead>
-                  <TableHead>Submitted</TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('submitted')}>Submitted<SortIcon active={tsSort.key === 'submitted'} dir={tsSort.dir} /></button></TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -371,7 +416,7 @@ export const PLDashboard = () => {
                         <div className="text-xs text-muted-foreground">{r.contractor?.applicant?.email}</div>
                       </TableCell>
                       <TableCell>{r.contractor?.client?.company_name || '—'}</TableCell>
-                      <TableCell className="text-sm">{r.contractor?.job_title || '—'}</TableCell>
+                      
                       <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
                       <TableCell className="text-right font-medium">{Number(r.total_hours).toFixed(2)}</TableCell>
                       <TableCell className="text-right">{Number(r.overtime_hours).toFixed(2)}</TableCell>
