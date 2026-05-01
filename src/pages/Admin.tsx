@@ -3593,6 +3593,11 @@ const Admin = () => {
             <ContractorsDashboard />
           </TabsContent>
 
+          {/* PL Tab */}
+          <TabsContent value="pl" className="space-y-6">
+            <PLDashboard />
+          </TabsContent>
+
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6">
             <ClientAnalyticsDashboard />
