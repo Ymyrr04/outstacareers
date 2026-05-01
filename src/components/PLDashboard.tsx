@@ -518,7 +518,7 @@ export const PLDashboard = () => {
                                   .maybeSingle(),
                                 supabase
                                   .from('contractor_timesheets')
-                                  .select('id, week_ending_date, total_hours, overtime_hours, incentive_amount, status, submitted_at')
+                                  .select('id, week_ending_date, total_hours, overtime_hours, incentive_amount, status, submitted_at, daily_hours')
                                   .eq('contractor_assignment_id', c.id)
                                   .order('week_ending_date', { ascending: false }),
                               ]);
@@ -680,7 +680,7 @@ export const PLDashboard = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Week ending</TableHead>
+                          <TableHead>Date range</TableHead>
                           <TableHead className="text-right">Hours</TableHead>
                           <TableHead className="text-right">OT</TableHead>
                           <TableHead className="text-right">Incentives</TableHead>
@@ -693,9 +693,27 @@ export const PLDashboard = () => {
                         {profileInvoices.map((inv) => {
                           const rate = Number(profileContractor.hourly_rate || 0);
                           const total = Number(inv.total_hours || 0) * rate + Number(inv.overtime_hours || 0) + Number(inv.incentive_amount || 0);
+                          // Compute date range from daily_hours keys, fallback to week_ending - 6 days
+                          let rangeLabel = '—';
+                          const dh = inv.daily_hours && typeof inv.daily_hours === 'object' ? inv.daily_hours : null;
+                          const dayKeys = dh ? Object.keys(dh).filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort() : [];
+                          let startDate: Date | null = null;
+                          let endDate: Date | null = null;
+                          if (dayKeys.length > 0) {
+                            startDate = new Date(dayKeys[0]);
+                            endDate = new Date(dayKeys[dayKeys.length - 1]);
+                          } else if (inv.week_ending_date) {
+                            endDate = new Date(inv.week_ending_date);
+                            startDate = new Date(endDate);
+                            startDate.setDate(startDate.getDate() - 6);
+                          }
+                          if (startDate && endDate) {
+                            const sameYear = startDate.getFullYear() === endDate.getFullYear();
+                            rangeLabel = `${format(startDate, sameYear ? 'MMM d' : 'MMM d, yyyy')} – ${format(endDate, 'MMM d, yyyy')}`;
+                          }
                           return (
                             <TableRow key={inv.id}>
-                              <TableCell>{inv.week_ending_date ? format(new Date(inv.week_ending_date), 'MMM d, yyyy') : '—'}</TableCell>
+                              <TableCell className="whitespace-nowrap">{rangeLabel}</TableCell>
                               <TableCell className="text-right">{Number(inv.total_hours || 0).toFixed(2)}</TableCell>
                               <TableCell className="text-right">{Number(inv.overtime_hours || 0).toFixed(2)}</TableCell>
                               <TableCell className="text-right">${Number(inv.incentive_amount || 0).toFixed(2)}</TableCell>
