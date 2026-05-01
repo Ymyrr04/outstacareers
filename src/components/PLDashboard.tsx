@@ -58,6 +58,7 @@ interface ContractorRow {
 export const PLDashboard = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [profileApplicantId, setProfileApplicantId] = useState<string | null>(null);
   const [provisioning, setProvisioning] = useState(false);
   const [provisioningId, setProvisioningId] = useState<string | null>(null);
   const [rows, setRows] = useState<TimesheetRow[]>([]);
