@@ -441,9 +441,9 @@ const PortalDashboard = () => {
       <AlertDialog open={missingReasonOpen} onOpenChange={setMissingReasonOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Add a reason for empty days</AlertDialogTitle>
+            <AlertDialogTitle>Reason required</AlertDialogTitle>
             <AlertDialogDescription>
-              Please add a short reason for the following day(s) with no hours: {' '}
+              Please add a short reason for the following day(s) — empty days need a reason, and days with more than 10 hours need a justification (these will require admin approval): {' '}
               <strong>{missingDays.map((k) => DAY_LABELS[k as typeof DAY_KEYS[number]]).join(', ')}</strong>.
             </AlertDialogDescription>
           </AlertDialogHeader>
