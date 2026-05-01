@@ -332,41 +332,48 @@ const PortalDashboard = () => {
                     Total: <span className="font-semibold">{totalHours.toFixed(2)}</span> hrs
                   </div>
                 </div>
-                <div className="rounded-md border divide-y">
+                <div className="space-y-2">
                   {DAY_KEYS.map((k) => {
                     const start = weekStart ? new Date(weekStart + 'T00:00:00') : null;
                     const date = start ? addDays(start, DAY_KEYS.indexOf(k)) : null;
                     const hoursNum = parseFloat(days[k].hours || '0');
-                    const isEmpty = days[k].hours === '' || hoursNum === 0;
                     const isOvertime = !isNaN(hoursNum) && hoursNum > 10;
                     return (
-                      <div key={k} className="grid grid-cols-1 md:grid-cols-[160px_140px_1fr] gap-3 p-3 items-center">
+                      <div
+                        key={k}
+                        className={`grid grid-cols-1 md:grid-cols-[160px_160px_1fr] gap-3 p-3 items-center rounded-md border bg-background ${isOvertime ? 'border-amber-500' : 'border-input'}`}
+                      >
                         <div>
                           <div className="font-medium text-sm">{DAY_LABELS[k]}</div>
                           {date && <div className="text-xs text-muted-foreground">{format(date, 'MMM d')}</div>}
                         </div>
-                        <Input
-                          type="number"
-                          step="0.25"
-                          min="0"
-                          max="24"
-                          placeholder="0"
-                          value={days[k].hours}
-                          onChange={(e) => updateDay(k, { hours: e.target.value })}
-                          aria-label={`${DAY_LABELS[k]} hours`}
-                          className={isOvertime ? 'border-amber-500 focus-visible:ring-amber-500' : ''}
-                        />
-                        {days[k].reason ? (
-                          <div className={`text-xs ${isOvertime ? 'text-amber-600' : 'text-muted-foreground'}`}>
-                            <span className="font-medium">Reason:</span> {days[k].reason}
-                          </div>
-                        ) : isOvertime ? (
-                          <div className="text-xs text-amber-600">Over 10 hrs — reason required on submit</div>
-                        ) : isEmpty ? (
-                          <div className="text-xs text-muted-foreground">No hours — reason required on submit</div>
-                        ) : (
-                          <div className="text-xs text-muted-foreground">Worked</div>
-                        )}
+                        <div className="space-y-1">
+                          <Label htmlFor={`hrs-${k}`} className="text-xs text-muted-foreground">Hours worked</Label>
+                          <Input
+                            id={`hrs-${k}`}
+                            type="number"
+                            step="0.25"
+                            min="0"
+                            max="24"
+                            placeholder="0"
+                            value={days[k].hours}
+                            onChange={(e) => updateDay(k, { hours: e.target.value })}
+                            aria-label={`${DAY_LABELS[k]} hours`}
+                            className={isOvertime ? 'border-amber-500 focus-visible:ring-amber-500' : ''}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor={`reason-${k}`} className="text-xs text-muted-foreground">
+                            Reason {isOvertime ? '(required — overtime)' : '(only if no hours)'}
+                          </Label>
+                          <Input
+                            id={`reason-${k}`}
+                            placeholder={isOvertime ? 'e.g. urgent deadline' : 'Optional — e.g. day off, holiday, sick'}
+                            value={days[k].reason}
+                            onChange={(e) => updateDay(k, { reason: e.target.value })}
+                            className={isOvertime ? 'border-amber-500 focus-visible:ring-amber-500' : ''}
+                          />
+                        </div>
                       </div>
                     );
                   })}
