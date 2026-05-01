@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, LogOut, Pencil } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
-import { format } from 'date-fns';
+import { addDays, format, startOfWeek } from 'date-fns';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,6 +30,11 @@ interface ContractorInfo {
   hourly_rate: number | null;
 }
 
+interface DayEntry {
+  hours: string; // string for input control
+  reason: string;
+}
+
 interface Timesheet {
   id: string;
   week_ending_date: string;
@@ -38,16 +43,23 @@ interface Timesheet {
   notes: string | null;
   status: string;
   submitted_at: string;
+  daily_hours: Record<string, { hours: number; reason?: string }> | null;
 }
 
-// Compute most recent Sunday (week-ending day) for the default value
-const getDefaultWeekEnding = () => {
-  const d = new Date();
-  const day = d.getDay(); // 0=Sun
-  const diff = day === 0 ? 0 : -day; // last Sunday or today if Sunday
-  d.setDate(d.getDate() + diff);
-  return d.toISOString().split('T')[0];
+const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
+const DAY_LABELS: Record<typeof DAY_KEYS[number], string> = {
+  mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday',
+  fri: 'Friday', sat: 'Saturday', sun: 'Sunday',
 };
+
+// Returns the Monday of the current week (week starts Monday)
+const getDefaultWeekStart = () => {
+  const monday = startOfWeek(new Date(), { weekStartsOn: 1 });
+  return monday.toISOString().split('T')[0];
+};
+
+const emptyDays = (): Record<string, DayEntry> =>
+  Object.fromEntries(DAY_KEYS.map((k) => [k, { hours: '', reason: '' }]));
 
 const PortalDashboard = () => {
   const navigate = useNavigate();
@@ -57,12 +69,28 @@ const PortalDashboard = () => {
   const [info, setInfo] = useState<ContractorInfo | null>(null);
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [missingReasonOpen, setMissingReasonOpen] = useState(false);
+  const [missingDays, setMissingDays] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [weekEnding, setWeekEnding] = useState(getDefaultWeekEnding());
-  const [totalHours, setTotalHours] = useState('');
+  const [weekStart, setWeekStart] = useState(getDefaultWeekStart());
+  const [days, setDays] = useState<Record<string, DayEntry>>(emptyDays());
   const [overtimeHours, setOvertimeHours] = useState('0');
   const [notes, setNotes] = useState('');
+
+  // Compute week-ending (Sunday) from week start (Monday)
+  const weekEnding = useMemo(() => {
+    if (!weekStart) return '';
+    const start = new Date(weekStart + 'T00:00:00');
+    return format(addDays(start, 6), 'yyyy-MM-dd');
+  }, [weekStart]);
+
+  const totalHours = useMemo(() => {
+    return DAY_KEYS.reduce((sum, k) => {
+      const v = parseFloat(days[k]?.hours || '0');
+      return sum + (isNaN(v) ? 0 : v);
+    }, 0);
+  }, [days]);
 
   const loadAll = async () => {
     setLoading(true);
@@ -104,7 +132,7 @@ const PortalDashboard = () => {
 
     const { data: ts } = await supabase
       .from('contractor_timesheets')
-      .select('id, week_ending_date, total_hours, overtime_hours, notes, status, submitted_at')
+      .select('id, week_ending_date, total_hours, overtime_hours, notes, status, submitted_at, daily_hours')
       .eq('contractor_assignment_id', portal.contractor_assignment_id)
       .order('week_ending_date', { ascending: false });
 
@@ -119,49 +147,77 @@ const PortalDashboard = () => {
     navigate('/portal/login');
   };
 
-  const validate = () => {
-    const total = parseFloat(totalHours);
+  // Validate inputs (per-day hours and overtime). Returns true if numeric values are sane.
+  const validateNumbers = (): boolean => {
+    for (const k of DAY_KEYS) {
+      const raw = days[k]?.hours;
+      if (raw === '' || raw == null) continue;
+      const n = parseFloat(raw);
+      if (isNaN(n) || n < 0 || n > 24) {
+        toast({ title: `Invalid hours for ${DAY_LABELS[k]}`, description: 'Daily hours must be between 0 and 24.', variant: 'destructive' });
+        return false;
+      }
+    }
     const ot = parseFloat(overtimeHours || '0');
-    if (isNaN(total) || total < 0 || total > 168) {
-      toast({ title: 'Invalid hours', description: 'Total hours must be between 0 and 168.', variant: 'destructive' });
-      return null;
-    }
-    if (isNaN(ot) || ot < 0 || ot > total) {
+    if (isNaN(ot) || ot < 0 || ot > totalHours) {
       toast({ title: 'Invalid overtime', description: 'Overtime cannot exceed total hours.', variant: 'destructive' });
-      return null;
+      return false;
     }
-    return { total, ot };
+    return true;
   };
+
+  // Returns list of day keys that are empty (no hours entered)
+  const getEmptyDays = (): string[] =>
+    DAY_KEYS.filter((k) => {
+      const raw = days[k]?.hours;
+      return raw === '' || raw == null || parseFloat(raw) === 0;
+    });
 
   const handleSubmitClick = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!info) return;
-    if (!validate()) return;
+    if (!validateNumbers()) return;
+    if (totalHours <= 0) {
+      toast({ title: 'No hours entered', description: 'Please enter hours for at least one day.', variant: 'destructive' });
+      return;
+    }
+    const empties = getEmptyDays();
+    const missingReason = empties.filter((k) => !days[k]?.reason?.trim());
+    if (missingReason.length > 0) {
+      setMissingDays(missingReason);
+      setMissingReasonOpen(true);
+      return;
+    }
     setConfirmOpen(true);
   };
 
   const performSubmit = async () => {
     if (!info) return;
-    const v = validate();
-    if (!v) return;
+    if (!validateNumbers()) return;
+    const ot = parseFloat(overtimeHours || '0');
+
+    const dailyPayload: Record<string, { hours: number; reason?: string }> = {};
+    DAY_KEYS.forEach((k) => {
+      const h = parseFloat(days[k]?.hours || '0') || 0;
+      const reason = days[k]?.reason?.trim() || '';
+      dailyPayload[k] = { hours: h, ...(reason ? { reason } : {}) };
+    });
+
     setSubmitting(true);
     try {
       const { error } = await supabase.from('contractor_timesheets').upsert({
         contractor_assignment_id: info.contractor_assignment_id,
         week_ending_date: weekEnding,
-        total_hours: v.total,
-        overtime_hours: v.ot,
+        total_hours: totalHours,
+        overtime_hours: ot,
         notes: notes.trim() || null,
+        daily_hours: dailyPayload,
         status: 'submitted',
         submitted_at: new Date().toISOString(),
       }, { onConflict: 'contractor_assignment_id,week_ending_date' });
       if (error) throw error;
       toast({ title: editingId ? 'Timesheet updated' : 'Timesheet submitted' });
-      setTotalHours('');
-      setOvertimeHours('0');
-      setNotes('');
-      setEditingId(null);
-      setWeekEnding(getDefaultWeekEnding());
+      handleCancelEdit();
       loadAll();
     } catch (err: any) {
       toast({ title: 'Submission failed', description: err.message, variant: 'destructive' });
@@ -173,8 +229,19 @@ const PortalDashboard = () => {
 
   const handleEdit = (t: Timesheet) => {
     setEditingId(t.id);
-    setWeekEnding(t.week_ending_date);
-    setTotalHours(String(t.total_hours));
+    // Derive week start (Monday) from week ending (Sunday) = ending - 6 days
+    const ending = new Date(t.week_ending_date + 'T00:00:00');
+    setWeekStart(format(addDays(ending, -6), 'yyyy-MM-dd'));
+    const next = emptyDays();
+    if (t.daily_hours && typeof t.daily_hours === 'object') {
+      DAY_KEYS.forEach((k) => {
+        const d = (t.daily_hours as any)[k];
+        if (d) {
+          next[k] = { hours: d.hours != null ? String(d.hours) : '', reason: d.reason || '' };
+        }
+      });
+    }
+    setDays(next);
     setOvertimeHours(String(t.overtime_hours));
     setNotes(t.notes || '');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -182,18 +249,21 @@ const PortalDashboard = () => {
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setWeekEnding(getDefaultWeekEnding());
-    setTotalHours('');
+    setWeekStart(getDefaultWeekStart());
+    setDays(emptyDays());
     setOvertimeHours('0');
     setNotes('');
   };
 
-  // Block Enter key from auto-submitting the form (except inside the textarea)
   const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
     const target = e.target as HTMLElement;
     if (e.key === 'Enter' && target.tagName !== 'TEXTAREA') {
       e.preventDefault();
     }
+  };
+
+  const updateDay = (k: string, patch: Partial<DayEntry>) => {
+    setDays((prev) => ({ ...prev, [k]: { ...prev[k], ...patch } }));
   };
 
   if (loading) {
@@ -220,28 +290,76 @@ const PortalDashboard = () => {
             <CardDescription>
               {editingId
                 ? 'Update the entry below and click Save to confirm changes.'
-                : 'Submitting again for the same week-ending date will update your previous entry.'}
+                : 'Pick the week (Monday start) and enter the hours you worked each day.'}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmitClick} onKeyDown={handleFormKeyDown} className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="week">Week ending (Sunday)</Label>
-                <Input id="week" type="date" required value={weekEnding} onChange={(e) => setWeekEnding(e.target.value)} />
+            <form onSubmit={handleSubmitClick} onKeyDown={handleFormKeyDown} className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="week">Week starting (Monday)</Label>
+                  <Input id="week" type="date" required value={weekStart} onChange={(e) => setWeekStart(e.target.value)} />
+                  {weekStart && weekEnding && (
+                    <p className="text-xs text-muted-foreground">
+                      {format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – {format(new Date(weekEnding + 'T00:00:00'), 'MMM d, yyyy')}
+                    </p>
+                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="ot">Overtime hours (within total)</Label>
+                  <Input id="ot" type="number" step="0.25" min="0" value={overtimeHours} onChange={(e) => setOvertimeHours(e.target.value)} />
+                </div>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="total">Total hours</Label>
-                <Input id="total" type="number" step="0.25" min="0" max="168" required value={totalHours} onChange={(e) => setTotalHours(e.target.value)} placeholder="e.g. 40" />
+
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label>Hours per day</Label>
+                  <div className="text-sm">
+                    Total: <span className="font-semibold">{totalHours.toFixed(2)}</span> hrs
+                  </div>
+                </div>
+                <div className="rounded-md border divide-y">
+                  {DAY_KEYS.map((k) => {
+                    const start = weekStart ? new Date(weekStart + 'T00:00:00') : null;
+                    const date = start ? addDays(start, DAY_KEYS.indexOf(k)) : null;
+                    const isEmpty = days[k].hours === '' || parseFloat(days[k].hours) === 0;
+                    return (
+                      <div key={k} className="grid grid-cols-1 md:grid-cols-[160px_140px_1fr] gap-3 p-3 items-center">
+                        <div>
+                          <div className="font-medium text-sm">{DAY_LABELS[k]}</div>
+                          {date && <div className="text-xs text-muted-foreground">{format(date, 'MMM d')}</div>}
+                        </div>
+                        <Input
+                          type="number"
+                          step="0.25"
+                          min="0"
+                          max="24"
+                          placeholder="0"
+                          value={days[k].hours}
+                          onChange={(e) => updateDay(k, { hours: e.target.value })}
+                          aria-label={`${DAY_LABELS[k]} hours`}
+                        />
+                        {isEmpty ? (
+                          <Input
+                            placeholder={`Reason for no hours on ${DAY_LABELS[k]} (e.g. day off, holiday, sick)`}
+                            value={days[k].reason}
+                            onChange={(e) => updateDay(k, { reason: e.target.value })}
+                          />
+                        ) : (
+                          <div className="text-xs text-muted-foreground">Worked</div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
+
               <div className="space-y-2">
-                <Label htmlFor="ot">Overtime hours</Label>
-                <Input id="ot" type="number" step="0.25" min="0" value={overtimeHours} onChange={(e) => setOvertimeHours(e.target.value)} />
-              </div>
-              <div className="space-y-2 md:col-span-3">
                 <Label htmlFor="notes">Notes (optional)</Label>
                 <Textarea id="notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Holidays, leave, special tasks, etc." />
               </div>
-              <div className="md:col-span-3 flex justify-end gap-2">
+
+              <div className="flex justify-end gap-2">
                 {editingId && (
                   <Button type="button" variant="outline" onClick={handleCancelEdit} disabled={submitting}>
                     Cancel
@@ -295,13 +413,30 @@ const PortalDashboard = () => {
         </Card>
       </main>
 
+      {/* Missing reason prompt */}
+      <AlertDialog open={missingReasonOpen} onOpenChange={setMissingReasonOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Add a reason for empty days</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please add a short reason for the following day(s) with no hours: {' '}
+              <strong>{missingDays.map((k) => DAY_LABELS[k as typeof DAY_KEYS[number]]).join(', ')}</strong>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogAction onClick={() => setMissingReasonOpen(false)}>OK</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Submission confirmation */}
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{editingId ? 'Save changes to this timesheet?' : 'Submit this timesheet?'}</AlertDialogTitle>
             <AlertDialogDescription>
-              Week ending <strong>{weekEnding && format(new Date(weekEnding), 'MMM d, yyyy')}</strong> ·{' '}
-              <strong>{totalHours || '0'}</strong> total hours · <strong>{overtimeHours || '0'}</strong> overtime.
+              Week of <strong>{weekStart && format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – {weekEnding && format(new Date(weekEnding + 'T00:00:00'), 'MMM d, yyyy')}</strong> ·{' '}
+              <strong>{totalHours.toFixed(2)}</strong> total hours · <strong>{overtimeHours || '0'}</strong> overtime.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

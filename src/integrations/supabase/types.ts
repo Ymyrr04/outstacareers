@@ -1048,6 +1048,7 @@ export type Database = {
         Row: {
           contractor_assignment_id: string
           created_at: string
+          daily_hours: Json | null
           id: string
           notes: string | null
           overtime_hours: number
@@ -1060,6 +1061,7 @@ export type Database = {
         Insert: {
           contractor_assignment_id: string
           created_at?: string
+          daily_hours?: Json | null
           id?: string
           notes?: string | null
           overtime_hours?: number
@@ -1072,6 +1074,7 @@ export type Database = {
         Update: {
           contractor_assignment_id?: string
           created_at?: string
+          daily_hours?: Json | null
           id?: string
           notes?: string | null
           overtime_hours?: number

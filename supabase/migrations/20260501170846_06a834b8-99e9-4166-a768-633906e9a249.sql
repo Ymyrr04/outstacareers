@@ -1,0 +1,1 @@
+ALTER TABLE public.contractor_timesheets ADD COLUMN IF NOT EXISTS daily_hours jsonb DEFAULT '{}'::jsonb;
