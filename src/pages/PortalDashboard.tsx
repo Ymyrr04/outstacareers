@@ -116,6 +116,15 @@ const PortalDashboard = () => {
   const [missingDays, setMissingDays] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
 
+  const emptyProfileForm: ProfileForm = {
+    full_name: '', phone: '', whatsapp: '', location: '', country: '',
+    contact_number: '', emergency_number: '', hours_per_week: '',
+    hourly_rate: '', regular_work_shift: '',
+  };
+  const [profileForm, setProfileForm] = useState<ProfileForm>(emptyProfileForm);
+  const [profileEditing, setProfileEditing] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
+
   const [weekStart, setWeekStart] = useState('');
   const [weekEnd, setWeekEnd] = useState('');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
