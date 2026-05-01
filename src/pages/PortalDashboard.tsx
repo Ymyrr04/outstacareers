@@ -46,11 +46,7 @@ interface Timesheet {
   daily_hours: Record<string, { hours: number; reason?: string }> | null;
 }
 
-const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
-const DAY_LABELS: Record<typeof DAY_KEYS[number], string> = {
-  mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday',
-  fri: 'Friday', sat: 'Saturday', sun: 'Sunday',
-};
+const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 // Returns the Monday of the current week (week starts Monday)
 const getDefaultWeekStart = () => {
@@ -58,8 +54,25 @@ const getDefaultWeekStart = () => {
   return monday.toISOString().split('T')[0];
 };
 
-const emptyDays = (): Record<string, DayEntry> =>
-  Object.fromEntries(DAY_KEYS.map((k) => [k, { hours: '', reason: '' }]));
+// Build the list of date keys (yyyy-MM-dd) inclusive between from and to
+const buildDateKeys = (from: string, to: string): string[] => {
+  if (!from || !to) return [];
+  const start = new Date(from + 'T00:00:00');
+  const end = new Date(to + 'T00:00:00');
+  if (end < start) return [];
+  const out: string[] = [];
+  // cap at 31 days as a safety net
+  for (let i = 0; i < 31; i++) {
+    const d = addDays(start, i);
+    out.push(format(d, 'yyyy-MM-dd'));
+    if (format(d, 'yyyy-MM-dd') === to) break;
+  }
+  return out;
+};
+
+const emptyDaysFor = (keys: string[]): Record<string, DayEntry> =>
+  Object.fromEntries(keys.map((k) => [k, { hours: '', reason: '' }]));
+
 
 const PortalDashboard = () => {
   const navigate = useNavigate();
