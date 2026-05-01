@@ -108,20 +108,41 @@ export const PLDashboard = () => {
 
   useEffect(() => { fetchData(); }, []);
 
+  const callProvision = async (payload?: Record<string, unknown>) => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+    const url = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/provision-contractor-accounts`;
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify(payload ?? {}),
+    });
+    let body: any = null;
+    try { body = await res.json(); } catch { body = { error: await res.text() }; }
+    if (!res.ok) {
+      const msg = body?.error || body?.message || `HTTP ${res.status} ${res.statusText}`;
+      throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    }
+    return body;
+  };
+
   const handleProvision = async () => {
     if (!confirm(`Create login accounts for all active & rendering contractors who don't have one yet?\n\nDefault password: OutSta2026!\n\nNo emails will be sent — share the password manually for testing.`)) return;
     setProvisioning(true);
     try {
-      const { data, error } = await supabase.functions.invoke('provision-contractor-accounts');
-      if (error) throw error;
+      const data = await callProvision();
       toast({
         title: 'Provisioning complete',
-        description: `Created ${data.created}, linked ${data.linked}, skipped ${data.skipped}. ${data.errors?.length ? `${data.errors.length} errors.` : ''}`,
+        description: `Created ${data.created}, linked ${data.linked}, skipped ${data.skipped}. ${data.errors?.length ? `${data.errors.length} errors — see console.` : ''}`,
       });
       if (data.errors?.length) console.error('Provision errors:', data.errors);
       fetchData();
     } catch (e: any) {
-      toast({ title: 'Failed', description: e.message, variant: 'destructive' });
+      toast({ title: 'Provisioning failed', description: e.message || String(e), variant: 'destructive' });
     } finally {
       setProvisioning(false);
     }
@@ -135,21 +156,22 @@ export const PLDashboard = () => {
     if (!confirm(`Create a portal account for ${c.applicant.full_name}?\n\nEmail: ${c.applicant.email}\nDefault password: OutSta2026!\n\nNo email will be sent — share the password manually.`)) return;
     setProvisioningId(c.id);
     try {
-      const { data, error } = await supabase.functions.invoke('provision-contractor-accounts', {
-        body: { contractorAssignmentId: c.id },
-      });
-      if (error) throw error;
+      const data = await callProvision({ contractorAssignmentId: c.id });
       if (data.errors?.length) {
         toast({ title: 'Failed', description: data.errors[0], variant: 'destructive' });
+      } else if (data.total === 0) {
+        toast({ title: 'Nothing to do', description: 'Contractor not found or not eligible (must be active/rendering with an email).', variant: 'destructive' });
+      } else if (data.created === 0 && data.linked === 0) {
+        toast({ title: 'Already provisioned', description: `${c.applicant.email} already has a portal account.` });
       } else {
         toast({
           title: 'Account ready',
-          description: `${data.created ? 'Created' : data.linked ? 'Linked existing user' : 'Already provisioned'} for ${c.applicant.email}`,
+          description: `${data.created ? 'Created new account' : 'Linked existing user'} for ${c.applicant.email}`,
         });
       }
       fetchData();
     } catch (e: any) {
-      toast({ title: 'Failed', description: e.message, variant: 'destructive' });
+      toast({ title: 'Provisioning failed', description: e.message || String(e), variant: 'destructive' });
     } finally {
       setProvisioningId(null);
     }
