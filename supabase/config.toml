@@ -74,3 +74,6 @@ verify_jwt = true
 
 [functions.process-contractor-milestones]
 verify_jwt = false
+
+[functions.provision-contractor-accounts]
+verify_jwt = false
