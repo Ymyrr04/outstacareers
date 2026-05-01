@@ -1240,8 +1240,8 @@ const PortalDashboard = () => {
           <AlertDialogHeader>
             <AlertDialogTitle className="text-2xl">{editingId ? 'Save changes to this timesheet?' : 'Submit this timesheet?'}</AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-4 text-base">
-                <div>
+              <div className="space-y-4 text-lg">
+                <div className="text-lg">
                   Week of <strong>{weekStart && format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – {weekEnding && format(new Date(weekEnding + 'T00:00:00'), 'MMM d, yyyy')}</strong> ·{' '}
                   <strong>{totalHours.toFixed(2)}</strong> total hours · <strong>${parseFloat(overtimeHours || '0').toFixed(2)}</strong> incentives.
                   {info?.hourly_rate != null && (
