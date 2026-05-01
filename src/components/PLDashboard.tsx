@@ -485,10 +485,24 @@ export const PLDashboard = () => {
                             {provisioningId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><UserPlus className="w-3 h-3 mr-1" />Create</>}
                           </Button>
                         </div>
-                      ) : c.mustChange ? (
-                        <Badge variant="outline" className="border-amber-500 text-amber-600">Pending password change</Badge>
                       ) : (
-                        <Badge variant="outline" className="border-emerald-500 text-emerald-600">Active</Badge>
+                        <div className="flex items-center gap-2">
+                          {c.mustChange ? (
+                            <Badge variant="outline" className="border-amber-500 text-amber-600">Pending password change</Badge>
+                          ) : (
+                            <Badge variant="outline" className="border-emerald-500 text-emerald-600">Active</Badge>
+                          )}
+                          {c.applicant_id && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-xs"
+                              onClick={() => setProfileApplicantId(c.applicant_id)}
+                            >
+                              <Eye className="w-3 h-3 mr-1" />Profile
+                            </Button>
+                          )}
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>
