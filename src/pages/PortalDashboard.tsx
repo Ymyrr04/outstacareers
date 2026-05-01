@@ -401,6 +401,31 @@ const PortalDashboard = () => {
       return !isNaN(v) && v > 10;
     });
 
+  // Expected hours for the selected period (uses Hours per week from profile, prorated by days when range != 7)
+  const expectedHours = useMemo(() => {
+    const hpw = info?.hours_per_week ? Number(info.hours_per_week) : null;
+    if (!hpw || dateKeys.length === 0) return null;
+    // Prorate by selected days assuming a 5-day work week
+    return (hpw / 5) * dateKeys.length;
+  }, [info?.hours_per_week, dateKeys]);
+
+  const hoursDiff = useMemo(() => {
+    if (expectedHours == null) return 0;
+    return Number((totalHours - expectedHours).toFixed(2));
+  }, [totalHours, expectedHours]);
+
+  // Tolerance: anything within ±0.25h is considered matching
+  const hoursMatch = expectedHours == null ? true : Math.abs(hoursDiff) <= 0.25;
+
+  // When over expected: days with > 8h need a reason explaining the extra time
+  const getOverHoursDays = (): string[] => {
+    if (expectedHours == null || hoursDiff <= 0.25) return [];
+    return dateKeys.filter((k) => {
+      const v = parseFloat(days[k]?.hours || '0');
+      return !isNaN(v) && v > 8;
+    });
+  };
+
   const hasPendingApproval = useMemo(() => getOvertimeDays().length > 0, [days, dateKeys]);
 
   const handleSubmitClick = (e?: React.FormEvent) => {
@@ -417,11 +442,25 @@ const PortalDashboard = () => {
     }
     const empties = getEmptyDays();
     const overtimes = getOvertimeDays();
-    const missingReason = [...empties, ...overtimes].filter((k) => !days[k]?.reason?.trim());
+    const overHours = getOverHoursDays();
+    const allFlagged = Array.from(new Set([...empties, ...overtimes, ...overHours]));
+    const missingReason = allFlagged.filter((k) => !days[k]?.reason?.trim());
     if (missingReason.length > 0) {
       setMissingDays(missingReason);
       setMissingReasonOpen(true);
       return;
+    }
+    // If under target hours but no empty days (e.g., shorter days), require a reason on at least one day
+    if (!hoursMatch && hoursDiff < 0 && empties.length === 0) {
+      const anyReason = dateKeys.some((k) => days[k]?.reason?.trim());
+      if (!anyReason) {
+        toast({
+          title: `Missing ${Math.abs(hoursDiff).toFixed(2)} hrs`,
+          description: 'Total is below your weekly target. Please add a Reason on at least one day explaining the discrepancy.',
+          variant: 'destructive',
+        });
+        return;
+      }
     }
     setConfirmOpen(true);
   };
@@ -876,6 +915,25 @@ const PortalDashboard = () => {
                     </div>
                   </div>
                 </div>
+                {expectedHours != null && dateKeys.length > 0 && (
+                  hoursMatch ? (
+                    <div className="rounded-md border border-emerald-300 bg-emerald-50 text-emerald-900 px-3 py-2 text-xs">
+                      ✓ Matches your weekly target ({expectedHours.toFixed(2)} hrs expected for {dateKeys.length} day{dateKeys.length === 1 ? '' : 's'}).
+                    </div>
+                  ) : (
+                    <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 px-3 py-2 text-xs">
+                      <span className="font-semibold">
+                        {hoursDiff < 0
+                          ? `Missing ${Math.abs(hoursDiff).toFixed(2)} hrs`
+                          : `Over by ${hoursDiff.toFixed(2)} hrs`}
+                      </span>{' '}
+                      — Expected {expectedHours.toFixed(2)} hrs (based on {info?.hours_per_week} hrs/week × {dateKeys.length} day{dateKeys.length === 1 ? '' : 's'} ÷ 5).{' '}
+                      {hoursDiff < 0
+                        ? 'Please add a Reason on the day(s) where hours are missing (e.g. day off, holiday, sick).'
+                        : 'Please add a Reason on the day(s) where you worked extra hours.'}
+                    </div>
+                  )
+                )}
                 <div className="space-y-2">
                   {dateKeys.length === 0 && (
                     <p className="text-sm text-muted-foreground p-3 border rounded-md">
