@@ -558,7 +558,6 @@ const PortalDashboard = () => {
                 <ProfileField label="Email" value={info?.email} />
                 <ProfileField label="Phone" value={info?.phone} />
                 <ProfileField label="Job title" value={info?.job_title} />
-                <ProfileField label="Job title" value={info?.job_title} />
                 <ProfileField label="Company" value={info?.company_name} />
                 <ProfileField label="Regular work shift" value={info?.regular_work_shift} />
                 <ProfileField label="Hours per week" value={info?.hours_per_week != null ? `${info.hours_per_week} hrs` : null} />
