@@ -31,6 +31,7 @@ interface TimesheetRow {
 
 interface ContractorRow {
   id: string;
+  applicant_id: string | null;
   job_title: string | null;
   status: string;
   hourly_rate: number | null;
