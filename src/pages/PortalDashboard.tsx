@@ -131,6 +131,7 @@ const PortalDashboard = () => {
   };
   const [profileForm, setProfileForm] = useState<ProfileForm>(emptyProfileForm);
   const [profileEditing, setProfileEditing] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
 
   const [weekStart, setWeekStart] = useState('');
