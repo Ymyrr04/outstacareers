@@ -8,9 +8,13 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, LogOut, Pencil } from 'lucide-react';
+import { Loader2, LogOut, Pencil, CalendarIcon } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
 import { addDays, format, startOfWeek } from 'date-fns';
+import { Calendar } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { cn } from '@/lib/utils';
+import type { DateRange } from 'react-day-picker';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -384,34 +388,53 @@ const PortalDashboard = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmitClick} onKeyDown={handleFormKeyDown} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="week-from">From</Label>
-                  <Input
-                    id="week-from"
-                    type="date"
-                    required
-                    value={weekStart}
-                    onChange={(e) => setWeekStart(e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="week-to">To</Label>
-                  <Input
-                    id="week-to"
-                    type="date"
-                    required
-                    min={weekStart || undefined}
-                    value={weekEnd}
-                    onChange={(e) => setWeekEnd(e.target.value)}
-                  />
+                  <Label>Date range</Label>
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className={cn(
+                          'w-full justify-start text-left font-normal',
+                          !weekStart && 'text-muted-foreground'
+                        )}
+                      >
+                        <CalendarIcon className="mr-2 h-4 w-4" />
+                        {weekStart && weekEnd ? (
+                          <>
+                            {format(new Date(weekStart + 'T00:00:00'), 'MMM d, yyyy')} – {format(new Date(weekEnd + 'T00:00:00'), 'MMM d, yyyy')}
+                          </>
+                        ) : weekStart ? (
+                          <>{format(new Date(weekStart + 'T00:00:00'), 'MMM d, yyyy')} – pick end date</>
+                        ) : (
+                          <span>Pick a date range</span>
+                        )}
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
+                      <Calendar
+                        mode="range"
+                        numberOfMonths={2}
+                        defaultMonth={weekStart ? new Date(weekStart + 'T00:00:00') : new Date()}
+                        selected={{
+                          from: weekStart ? new Date(weekStart + 'T00:00:00') : undefined,
+                          to: weekEnd ? new Date(weekEnd + 'T00:00:00') : undefined,
+                        }}
+                        onSelect={(range: DateRange | undefined) => {
+                          if (range?.from) setWeekStart(format(range.from, 'yyyy-MM-dd'));
+                          else setWeekStart('');
+                          if (range?.to) setWeekEnd(format(range.to, 'yyyy-MM-dd'));
+                          else setWeekEnd('');
+                        }}
+                        initialFocus
+                        className={cn('p-3 pointer-events-auto')}
+                      />
+                    </PopoverContent>
+                  </Popover>
                   {weekStart && weekEnd && !dateRangeValid && (
                     <p className="text-xs text-destructive">"To" must be on or after "From".</p>
-                  )}
-                  {weekStart && weekEnd && dateRangeValid && (
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – {format(new Date(weekEnd + 'T00:00:00'), 'MMM d, yyyy')}
-                    </p>
                   )}
                 </div>
                 <div className="space-y-2">
