@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Search } from 'lucide-react';
+import { Loader2, UserPlus, Search, Check, X } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface TimesheetRow {
@@ -18,6 +18,7 @@ interface TimesheetRow {
   notes: string | null;
   status: string;
   submitted_at: string;
+  daily_hours: Record<string, { hours: number; reason?: string }> | null;
   contractor: {
     job_title: string | null;
     applicant: { full_name: string; email: string } | null;
@@ -55,7 +56,7 @@ export const PLDashboard = () => {
       supabase
         .from('contractor_timesheets')
         .select(`
-          id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, notes, status, submitted_at,
+          id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, notes, status, submitted_at, daily_hours,
           contractor:contractor_assignments(
             job_title,
             applicant:applicants_prescreen(full_name, email),
@@ -178,6 +179,24 @@ export const PLDashboard = () => {
     } finally {
       setProvisioningId(null);
     }
+  };
+
+  const handleDecision = async (r: TimesheetRow, decision: 'approved' | 'rejected') => {
+    const overDays = r.daily_hours
+      ? Object.entries(r.daily_hours).filter(([, v]) => Number(v?.hours) > 10).map(([k]) => k)
+      : [];
+    const summary = overDays.length ? `\n\nDays >10 hrs: ${overDays.join(', ')}` : '';
+    if (!confirm(`${decision === 'approved' ? 'Approve' : 'Reject'} timesheet for ${r.contractor?.applicant?.full_name} (week ending ${format(new Date(r.week_ending_date), 'MMM d, yyyy')})?${summary}`)) return;
+    const { error } = await supabase
+      .from('contractor_timesheets')
+      .update({ status: decision })
+      .eq('id', r.id);
+    if (error) {
+      toast({ title: 'Update failed', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: `Timesheet ${decision}` });
+    fetchData();
   };
 
   const filtered = rows.filter((r) => {
@@ -326,26 +345,69 @@ export const PLDashboard = () => {
                   <TableHead>Week Ending</TableHead>
                   <TableHead className="text-right">Hours</TableHead>
                   <TableHead className="text-right">OT</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Daily &gt;10h</TableHead>
                   <TableHead>Notes</TableHead>
                   <TableHead>Submitted</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((r) => (
-                  <TableRow key={r.id}>
-                    <TableCell>
-                      <div className="font-medium">{r.contractor?.applicant?.full_name || '—'}</div>
-                      <div className="text-xs text-muted-foreground">{r.contractor?.applicant?.email}</div>
-                    </TableCell>
-                    <TableCell>{r.contractor?.client?.company_name || '—'}</TableCell>
-                    <TableCell className="text-sm">{r.contractor?.job_title || '—'}</TableCell>
-                    <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
-                    <TableCell className="text-right font-medium">{Number(r.total_hours).toFixed(2)}</TableCell>
-                    <TableCell className="text-right">{Number(r.overtime_hours).toFixed(2)}</TableCell>
-                    <TableCell className="text-sm max-w-xs truncate">{r.notes || '—'}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{format(new Date(r.submitted_at), 'MMM d, h:mm a')}</TableCell>
-                  </TableRow>
-                ))}
+                {filtered.map((r) => {
+                  const overDays = r.daily_hours
+                    ? Object.entries(r.daily_hours).filter(([, v]) => Number((v as any)?.hours) > 10)
+                    : [];
+                  return (
+                    <TableRow key={r.id} className={r.status === 'pending_approval' ? 'bg-amber-50/40 dark:bg-amber-950/10' : ''}>
+                      <TableCell>
+                        <div className="font-medium">{r.contractor?.applicant?.full_name || '—'}</div>
+                        <div className="text-xs text-muted-foreground">{r.contractor?.applicant?.email}</div>
+                      </TableCell>
+                      <TableCell>{r.contractor?.client?.company_name || '—'}</TableCell>
+                      <TableCell className="text-sm">{r.contractor?.job_title || '—'}</TableCell>
+                      <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
+                      <TableCell className="text-right font-medium">{Number(r.total_hours).toFixed(2)}</TableCell>
+                      <TableCell className="text-right">{Number(r.overtime_hours).toFixed(2)}</TableCell>
+                      <TableCell>
+                        {r.status === 'pending_approval' ? (
+                          <Badge variant="outline" className="border-amber-500 text-amber-600">Pending approval</Badge>
+                        ) : r.status === 'approved' ? (
+                          <Badge variant="outline" className="border-emerald-500 text-emerald-600">Approved</Badge>
+                        ) : r.status === 'rejected' ? (
+                          <Badge variant="outline" className="border-destructive text-destructive">Rejected</Badge>
+                        ) : (
+                          <Badge variant="secondary" className="capitalize">{r.status}</Badge>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs">
+                        {overDays.length === 0 ? '—' : (
+                          <div className="space-y-0.5">
+                            {overDays.map(([k, v]) => (
+                              <div key={k}>
+                                <span className="font-medium capitalize">{k}</span>: {Number((v as any).hours)}h
+                                {(v as any).reason && <span className="text-muted-foreground"> — {(v as any).reason}</span>}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm max-w-xs truncate">{r.notes || '—'}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{format(new Date(r.submitted_at), 'MMM d, h:mm a')}</TableCell>
+                      <TableCell className="text-right">
+                        {r.status === 'pending_approval' ? (
+                          <div className="flex justify-end gap-1">
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-emerald-500 text-emerald-600 hover:bg-emerald-50" onClick={() => handleDecision(r, 'approved')}>
+                              <Check className="w-3 h-3 mr-1" />Approve
+                            </Button>
+                            <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-destructive text-destructive hover:bg-destructive/10" onClick={() => handleDecision(r, 'rejected')}>
+                              <X className="w-3 h-3 mr-1" />Reject
+                            </Button>
+                          </div>
+                        ) : '—'}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           )}

@@ -173,6 +173,15 @@ const PortalDashboard = () => {
       return raw === '' || raw == null || parseFloat(raw) === 0;
     });
 
+  // Returns list of day keys that exceed 10 hours (require overtime justification)
+  const getOvertimeDays = (): string[] =>
+    DAY_KEYS.filter((k) => {
+      const v = parseFloat(days[k]?.hours || '0');
+      return !isNaN(v) && v > 10;
+    });
+
+  const hasPendingApproval = useMemo(() => getOvertimeDays().length > 0, [days]);
+
   const handleSubmitClick = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!info) return;
@@ -182,7 +191,8 @@ const PortalDashboard = () => {
       return;
     }
     const empties = getEmptyDays();
-    const missingReason = empties.filter((k) => !days[k]?.reason?.trim());
+    const overtimes = getOvertimeDays();
+    const missingReason = [...empties, ...overtimes].filter((k) => !days[k]?.reason?.trim());
     if (missingReason.length > 0) {
       setMissingDays(missingReason);
       setMissingReasonOpen(true);
@@ -205,6 +215,7 @@ const PortalDashboard = () => {
 
     setSubmitting(true);
     try {
+      const needsApproval = getOvertimeDays().length > 0;
       const { error } = await supabase.from('contractor_timesheets').upsert({
         contractor_assignment_id: info.contractor_assignment_id,
         week_ending_date: weekEnding,
@@ -212,11 +223,14 @@ const PortalDashboard = () => {
         overtime_hours: ot,
         notes: notes.trim() || null,
         daily_hours: dailyPayload,
-        status: 'submitted',
+        status: needsApproval ? 'pending_approval' : 'submitted',
         submitted_at: new Date().toISOString(),
       }, { onConflict: 'contractor_assignment_id,week_ending_date' });
       if (error) throw error;
-      toast({ title: editingId ? 'Timesheet updated' : 'Timesheet submitted' });
+      toast({
+        title: editingId ? 'Timesheet updated' : 'Timesheet submitted',
+        description: needsApproval ? 'Days over 10 hours are pending admin approval.' : undefined,
+      });
       handleCancelEdit();
       loadAll();
     } catch (err: any) {
@@ -322,7 +336,9 @@ const PortalDashboard = () => {
                   {DAY_KEYS.map((k) => {
                     const start = weekStart ? new Date(weekStart + 'T00:00:00') : null;
                     const date = start ? addDays(start, DAY_KEYS.indexOf(k)) : null;
-                    const isEmpty = days[k].hours === '' || parseFloat(days[k].hours) === 0;
+                    const hoursNum = parseFloat(days[k].hours || '0');
+                    const isEmpty = days[k].hours === '' || hoursNum === 0;
+                    const isOvertime = !isNaN(hoursNum) && hoursNum > 10;
                     return (
                       <div key={k} className="grid grid-cols-1 md:grid-cols-[160px_140px_1fr] gap-3 p-3 items-center">
                         <div>
@@ -338,12 +354,20 @@ const PortalDashboard = () => {
                           value={days[k].hours}
                           onChange={(e) => updateDay(k, { hours: e.target.value })}
                           aria-label={`${DAY_LABELS[k]} hours`}
+                          className={isOvertime ? 'border-amber-500 focus-visible:ring-amber-500' : ''}
                         />
                         {isEmpty ? (
                           <Input
                             placeholder={`Reason for no hours on ${DAY_LABELS[k]} (e.g. day off, holiday, sick)`}
                             value={days[k].reason}
                             onChange={(e) => updateDay(k, { reason: e.target.value })}
+                          />
+                        ) : isOvertime ? (
+                          <Input
+                            placeholder={`Reason for ${hoursNum} hrs (>10) — pending approval`}
+                            value={days[k].reason}
+                            onChange={(e) => updateDay(k, { reason: e.target.value })}
+                            className="border-amber-500 focus-visible:ring-amber-500"
                           />
                         ) : (
                           <div className="text-xs text-muted-foreground">Worked</div>
@@ -386,6 +410,7 @@ const PortalDashboard = () => {
                     <TableHead>Week ending</TableHead>
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead className="text-right">OT</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Notes</TableHead>
                     <TableHead>Submitted</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -397,6 +422,17 @@ const PortalDashboard = () => {
                       <TableCell>{format(new Date(t.week_ending_date), 'MMM d, yyyy')}</TableCell>
                       <TableCell className="text-right font-medium">{Number(t.total_hours).toFixed(2)}</TableCell>
                       <TableCell className="text-right">{Number(t.overtime_hours).toFixed(2)}</TableCell>
+                      <TableCell>
+                        {t.status === 'pending_approval' ? (
+                          <span className="inline-flex items-center rounded-full border border-amber-500 text-amber-600 px-2 py-0.5 text-xs font-medium">Pending approval</span>
+                        ) : t.status === 'approved' ? (
+                          <span className="inline-flex items-center rounded-full border border-emerald-500 text-emerald-600 px-2 py-0.5 text-xs font-medium">Approved</span>
+                        ) : t.status === 'rejected' ? (
+                          <span className="inline-flex items-center rounded-full border border-destructive text-destructive px-2 py-0.5 text-xs font-medium">Rejected</span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full border border-muted-foreground/30 text-muted-foreground px-2 py-0.5 text-xs font-medium capitalize">{t.status}</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm max-w-xs truncate">{t.notes || '—'}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{format(new Date(t.submitted_at), 'MMM d, h:mm a')}</TableCell>
                       <TableCell className="text-right">
@@ -417,9 +453,9 @@ const PortalDashboard = () => {
       <AlertDialog open={missingReasonOpen} onOpenChange={setMissingReasonOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Add a reason for empty days</AlertDialogTitle>
+            <AlertDialogTitle>Reason required</AlertDialogTitle>
             <AlertDialogDescription>
-              Please add a short reason for the following day(s) with no hours: {' '}
+              Please add a short reason for the following day(s) — empty days need a reason, and days with more than 10 hours need a justification (these will require admin approval): {' '}
               <strong>{missingDays.map((k) => DAY_LABELS[k as typeof DAY_KEYS[number]]).join(', ')}</strong>.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -437,6 +473,11 @@ const PortalDashboard = () => {
             <AlertDialogDescription>
               Week of <strong>{weekStart && format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – {weekEnding && format(new Date(weekEnding + 'T00:00:00'), 'MMM d, yyyy')}</strong> ·{' '}
               <strong>{totalHours.toFixed(2)}</strong> total hours · <strong>{overtimeHours || '0'}</strong> overtime.
+              {hasPendingApproval && (
+                <span className="block mt-2 text-amber-600 font-medium">
+                  ⚠ One or more days exceed 10 hours. This timesheet will be marked <strong>Pending approval</strong> until reviewed by an admin.
+                </span>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
