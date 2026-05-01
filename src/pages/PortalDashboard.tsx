@@ -461,6 +461,11 @@ const PortalDashboard = () => {
             <AlertDialogDescription>
               Week of <strong>{weekStart && format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – {weekEnding && format(new Date(weekEnding + 'T00:00:00'), 'MMM d, yyyy')}</strong> ·{' '}
               <strong>{totalHours.toFixed(2)}</strong> total hours · <strong>{overtimeHours || '0'}</strong> overtime.
+              {hasPendingApproval && (
+                <span className="block mt-2 text-amber-600 font-medium">
+                  ⚠ One or more days exceed 10 hours. This timesheet will be marked <strong>Pending approval</strong> until reviewed by an admin.
+                </span>
+              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
