@@ -458,8 +458,8 @@ export const PLDashboard = () => {
                         </div>
                       ) : (
                         <Badge variant="outline" className="text-muted-foreground">Not submitted</Badge>
-                      )}
                     </TableCell>
+                    <TableCell className="text-right">{c.hours_per_week ?? '—'}</TableCell>
                     <TableCell className="text-right">
                       {c.latestTimesheet ? (() => {
                         const expected = Number(c.hours_per_week || 0);
