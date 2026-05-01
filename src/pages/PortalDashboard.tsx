@@ -96,6 +96,8 @@ const PortalDashboard = () => {
   const [weekStart, setWeekStart] = useState('');
   const [weekEnd, setWeekEnd] = useState('');
   const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [draftDateRange, setDraftDateRange] = useState<DateRange | undefined>(undefined);
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [days, setDays] = useState<Record<string, DayEntry>>({});
   const [overtimeHours, setOvertimeHours] = useState('0');
   const [notes, setNotes] = useState('');
@@ -313,6 +315,10 @@ const PortalDashboard = () => {
       from: new Date(fromKey + 'T00:00:00'),
       to: new Date(toKey + 'T00:00:00'),
     });
+    setDraftDateRange({
+      from: new Date(fromKey + 'T00:00:00'),
+      to: new Date(toKey + 'T00:00:00'),
+    });
 
     const keys = buildDateKeys(fromKey, toKey);
     const next = emptyDaysFor(keys);
@@ -342,9 +348,27 @@ const PortalDashboard = () => {
     setWeekStart('');
     setWeekEnd('');
     setDateRange(undefined);
+    setDraftDateRange(undefined);
     setDays({});
     setOvertimeHours('0');
     setNotes('');
+  };
+
+  const handleClearDateRange = () => {
+    setDraftDateRange(undefined);
+    setDateRange(undefined);
+    setWeekStart('');
+    setWeekEnd('');
+    setDays({});
+  };
+
+  const handleApplyDateRange = () => {
+    if (!draftDateRange?.from || !draftDateRange?.to) return;
+
+    setDateRange(draftDateRange);
+    setWeekStart(format(draftDateRange.from, 'yyyy-MM-dd'));
+    setWeekEnd(format(draftDateRange.to, 'yyyy-MM-dd'));
+    setDatePickerOpen(false);
   };
 
   const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
@@ -390,7 +414,13 @@ const PortalDashboard = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Date range</Label>
-                  <Popover>
+                  <Popover
+                    open={datePickerOpen}
+                    onOpenChange={(open) => {
+                      setDatePickerOpen(open);
+                      setDraftDateRange(open ? dateRange : dateRange);
+                    }}
+                  >
                     <PopoverTrigger asChild>
                       <Button
                         type="button"
@@ -413,27 +443,33 @@ const PortalDashboard = () => {
                       </Button>
                     </PopoverTrigger>
                     <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
-                      <Calendar
-                        mode="range"
-                        numberOfMonths={2}
-                        showOutsideDays={false}
-                        defaultMonth={dateRange?.from ?? new Date()}
-                        selected={dateRange}
-                        onSelect={(range: DateRange | undefined) => {
-                          setDateRange(range);
-                          setWeekStart(range?.from ? format(range.from, 'yyyy-MM-dd') : '');
-                          setWeekEnd(range?.to ? format(range.to, 'yyyy-MM-dd') : '');
-                        }}
-                        initialFocus
-                        className={cn('p-3 pointer-events-auto')}
-                        classNames={{
-                          cell: 'h-9 w-9 text-center text-sm p-0 relative focus-within:relative focus-within:z-20',
-                          day_today: 'text-primary font-semibold',
-                          day_range_start: 'day-range-start rounded-l-md bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
-                          day_range_end: 'day-range-end rounded-r-md bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
-                          day_range_middle: 'aria-selected:bg-accent aria-selected:text-accent-foreground rounded-none',
-                        }}
-                      />
+                      <div className="space-y-2 p-2">
+                        <Calendar
+                          mode="range"
+                          numberOfMonths={2}
+                          showOutsideDays={false}
+                          defaultMonth={draftDateRange?.from ?? dateRange?.from ?? new Date()}
+                          selected={draftDateRange}
+                          onSelect={setDraftDateRange}
+                          initialFocus
+                          className={cn('p-3 pointer-events-auto')}
+                          classNames={{
+                            cell: 'h-9 w-9 text-center text-sm p-0 relative focus-within:relative focus-within:z-20',
+                            day_today: 'text-primary font-semibold',
+                            day_range_start: 'day-range-start rounded-l-md bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
+                            day_range_end: 'day-range-end rounded-r-md bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
+                            day_range_middle: 'aria-selected:bg-accent aria-selected:text-accent-foreground rounded-none',
+                          }}
+                        />
+                        <div className="flex items-center justify-end gap-2 border-t px-3 py-2">
+                          <Button type="button" variant="ghost" size="sm" onClick={handleClearDateRange}>
+                            Clear
+                          </Button>
+                          <Button type="button" size="sm" onClick={handleApplyDateRange} disabled={!draftDateRange?.from || !draftDateRange?.to}>
+                            Apply
+                          </Button>
+                        </div>
+                      </div>
                     </PopoverContent>
                   </Popover>
                   {weekStart && weekEnd && !dateRangeValid && (
