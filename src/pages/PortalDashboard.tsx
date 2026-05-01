@@ -442,15 +442,15 @@ const PortalDashboard = () => {
                     return (
                       <div
                         key={k}
-                        className={`grid grid-cols-1 md:grid-cols-[180px_180px_1fr] gap-4 p-4 items-center rounded-lg border-2 shadow-sm ${
+                        className={`grid grid-cols-1 md:grid-cols-[180px_180px_1fr] gap-4 p-4 items-center rounded-lg border-2 shadow-sm bg-background ${
                           isOvertime
-                            ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/20'
-                            : 'border-blue-300 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20'
+                            ? 'border-amber-500'
+                            : 'border-blue-300 dark:border-blue-800'
                         }`}
                       >
                         <div>
-                          <div className="font-semibold text-sm text-blue-900 dark:text-blue-100">{label}</div>
-                          <div className="text-xs text-blue-700/70 dark:text-blue-300/70">{format(date, 'MMM d, yyyy')}</div>
+                          <div className="font-semibold text-sm">{label}</div>
+                          <div className="text-xs text-muted-foreground">{format(date, 'MMM d, yyyy')}</div>
                         </div>
                         <div className="space-y-1">
                           <Label htmlFor={`hrs-${k}`} className="text-xs font-medium text-blue-900/80 dark:text-blue-100/80">Hours worked</Label>
