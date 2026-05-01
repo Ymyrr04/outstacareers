@@ -637,7 +637,7 @@ export const PLDashboard = () => {
         contractor={profileContractor}
         open={!!profileContractor}
         onOpenChange={(o) => { if (!o) setProfileContractor(null); }}
-        onUpdated={() => { setProfileContractor(null); load(); }}
+        onUpdated={() => { setProfileContractor(null); fetchData(); }}
       />
     </div>
   );
