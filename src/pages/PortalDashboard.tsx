@@ -216,11 +216,15 @@ const PortalDashboard = () => {
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle>Submit Weekly Hours</CardTitle>
-            <CardDescription>Submitting again for the same week-ending date will update your previous entry.</CardDescription>
+            <CardTitle>{editingId ? 'Edit Weekly Hours' : 'Submit Weekly Hours'}</CardTitle>
+            <CardDescription>
+              {editingId
+                ? 'Update the entry below and click Save to confirm changes.'
+                : 'Submitting again for the same week-ending date will update your previous entry.'}
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <form onSubmit={handleSubmitClick} onKeyDown={handleFormKeyDown} className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="space-y-2">
                 <Label htmlFor="week">Week ending (Sunday)</Label>
                 <Input id="week" type="date" required value={weekEnding} onChange={(e) => setWeekEnding(e.target.value)} />
@@ -237,9 +241,15 @@ const PortalDashboard = () => {
                 <Label htmlFor="notes">Notes (optional)</Label>
                 <Textarea id="notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Holidays, leave, special tasks, etc." />
               </div>
-              <div className="md:col-span-3 flex justify-end">
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}Submit
+              <div className="md:col-span-3 flex justify-end gap-2">
+                {editingId && (
+                  <Button type="button" variant="outline" onClick={handleCancelEdit} disabled={submitting}>
+                    Cancel
+                  </Button>
+                )}
+                <Button type="button" onClick={() => handleSubmitClick()} disabled={submitting}>
+                  {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+                  {editingId ? 'Save changes' : 'Submit'}
                 </Button>
               </div>
             </form>
@@ -260,16 +270,22 @@ const PortalDashboard = () => {
                     <TableHead className="text-right">OT</TableHead>
                     <TableHead>Notes</TableHead>
                     <TableHead>Submitted</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {timesheets.map((t) => (
-                    <TableRow key={t.id}>
+                    <TableRow key={t.id} className={editingId === t.id ? 'bg-muted/40' : ''}>
                       <TableCell>{format(new Date(t.week_ending_date), 'MMM d, yyyy')}</TableCell>
                       <TableCell className="text-right font-medium">{Number(t.total_hours).toFixed(2)}</TableCell>
                       <TableCell className="text-right">{Number(t.overtime_hours).toFixed(2)}</TableCell>
                       <TableCell className="text-sm max-w-xs truncate">{t.notes || '—'}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{format(new Date(t.submitted_at), 'MMM d, h:mm a')}</TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm" onClick={() => handleEdit(t)}>
+                          <Pencil className="w-3.5 h-3.5 mr-1" />Edit
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -278,6 +294,25 @@ const PortalDashboard = () => {
           </CardContent>
         </Card>
       </main>
+
+      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>{editingId ? 'Save changes to this timesheet?' : 'Submit this timesheet?'}</AlertDialogTitle>
+            <AlertDialogDescription>
+              Week ending <strong>{weekEnding && format(new Date(weekEnding), 'MMM d, yyyy')}</strong> ·{' '}
+              <strong>{totalHours || '0'}</strong> total hours · <strong>{overtimeHours || '0'}</strong> overtime.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={submitting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); performSubmit(); }} disabled={submitting}>
+              {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
+              Confirm
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
