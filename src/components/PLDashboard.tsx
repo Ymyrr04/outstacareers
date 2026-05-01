@@ -464,16 +464,16 @@ export const PLDashboard = () => {
                     <TableCell className="text-right">
                       {c.latestTimesheet ? (() => {
                         const expected = Number(c.hours_per_week || 0);
-                        const regular = Number(c.latestTimesheet.total_hours);
+                        const total = Number(c.latestTimesheet.total_hours);
                         const ot = Number(c.latestTimesheet.overtime_hours);
-                        const grandTotal = regular + ot;
+                        const regular = total - ot;
                         let colorClass = 'text-foreground';
                         if (expected > 0) {
                           if (ot > 0 || regular > expected) colorClass = 'text-emerald-600';
                           else if (regular < expected) colorClass = 'text-red-600';
                           else colorClass = 'text-blue-600';
                         }
-                        return <span className={`font-medium ${colorClass}`}>{grandTotal.toFixed(2)}</span>;
+                        return <span className={`font-medium ${colorClass}`}>{total.toFixed(2)}</span>;
                       })() : (
                         <span className="text-muted-foreground">—</span>
                       )}
