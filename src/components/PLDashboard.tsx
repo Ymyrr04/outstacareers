@@ -384,7 +384,7 @@ export const PLDashboard = () => {
           <CardContent><p className="text-2xl font-bold text-amber-600">{totalDepositAll.toFixed(2)}</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Incentives</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Bonus</CardTitle></CardHeader>
           <CardContent><p className="text-2xl font-bold">${totalIncentivesAll.toFixed(2)}</p></CardContent>
         </Card>
       </div>
