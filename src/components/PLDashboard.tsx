@@ -6,8 +6,9 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye } from 'lucide-react';
 import { format } from 'date-fns';
+import { CandidateDetailDialog } from '@/components/CandidateDetailDialog';
 
 interface TimesheetRow {
   id: string;
@@ -31,6 +32,7 @@ interface TimesheetRow {
 
 interface ContractorRow {
   id: string;
+  applicant_id: string | null;
   job_title: string | null;
   status: string;
   hourly_rate: number | null;
@@ -56,6 +58,7 @@ interface ContractorRow {
 export const PLDashboard = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [profileApplicantId, setProfileApplicantId] = useState<string | null>(null);
   const [provisioning, setProvisioning] = useState(false);
   const [provisioningId, setProvisioningId] = useState<string | null>(null);
   const [rows, setRows] = useState<TimesheetRow[]>([]);
@@ -87,7 +90,7 @@ export const PLDashboard = () => {
       supabase
         .from('contractor_assignments')
         .select(`
-          id, job_title, status, hourly_rate, hours_per_week, start_date,
+          id, applicant_id, job_title, status, hourly_rate, hours_per_week, start_date,
           applicant:applicants_prescreen(full_name, email),
           client:clients(company_name)
         `)
@@ -140,6 +143,7 @@ export const PLDashboard = () => {
       }
       return {
         id: c.id,
+        applicant_id: c.applicant_id,
         job_title: c.job_title,
         status: c.status,
         hourly_rate: c.hourly_rate,
@@ -481,10 +485,24 @@ export const PLDashboard = () => {
                             {provisioningId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><UserPlus className="w-3 h-3 mr-1" />Create</>}
                           </Button>
                         </div>
-                      ) : c.mustChange ? (
-                        <Badge variant="outline" className="border-amber-500 text-amber-600">Pending password change</Badge>
                       ) : (
-                        <Badge variant="outline" className="border-emerald-500 text-emerald-600">Active</Badge>
+                        <div className="flex items-center gap-2">
+                          {c.mustChange ? (
+                            <Badge variant="outline" className="border-amber-500 text-amber-600">Pending password change</Badge>
+                          ) : (
+                            <Badge variant="outline" className="border-emerald-500 text-emerald-600">Active</Badge>
+                          )}
+                          {c.applicant_id && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-xs"
+                              onClick={() => setProfileApplicantId(c.applicant_id)}
+                            >
+                              <Eye className="w-3 h-3 mr-1" />Profile
+                            </Button>
+                          )}
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>
@@ -601,6 +619,12 @@ export const PLDashboard = () => {
           )}
         </CardContent>
       </Card>
+
+      <CandidateDetailDialog
+        open={!!profileApplicantId}
+        onOpenChange={(o) => { if (!o) setProfileApplicantId(null); }}
+        applicantId={profileApplicantId || ''}
+      />
     </div>
   );
 };
