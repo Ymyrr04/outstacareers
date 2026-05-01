@@ -942,8 +942,7 @@ const PortalDashboard = () => {
               </div>
 
               <div className="space-y-3">
-                <div className="flex items-end justify-between gap-4 flex-wrap">
-                  <Label className="pb-2">Hours per day</Label>
+                <div className="flex items-end justify-end gap-4 flex-wrap">
                   <div className="flex items-end gap-4 flex-wrap">
                     <div className="space-y-1">
                       <Label htmlFor="ot" className="text-xs">Incentives ($)</Label>
