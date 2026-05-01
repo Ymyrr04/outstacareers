@@ -74,16 +74,24 @@ const PortalDashboard = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [weekStart, setWeekStart] = useState(getDefaultWeekStart());
+  const [weekEnd, setWeekEnd] = useState(() => {
+    const start = new Date(getDefaultWeekStart() + 'T00:00:00');
+    return format(addDays(start, 6), 'yyyy-MM-dd');
+  });
   const [days, setDays] = useState<Record<string, DayEntry>>(emptyDays());
   const [overtimeHours, setOvertimeHours] = useState('0');
   const [notes, setNotes] = useState('');
 
-  // Compute week-ending (Sunday) from week start (Monday)
-  const weekEnding = useMemo(() => {
-    if (!weekStart) return '';
-    const start = new Date(weekStart + 'T00:00:00');
-    return format(addDays(start, 6), 'yyyy-MM-dd');
-  }, [weekStart]);
+  // week-ending used for DB key (Sunday or whatever the user chose as "to")
+  const weekEnding = weekEnd;
+
+  // Validate the date range — must be exactly 7 days (Mon–Sun or any 7-day window)
+  const dateRangeValid = useMemo(() => {
+    if (!weekStart || !weekEnd) return false;
+    const s = new Date(weekStart + 'T00:00:00').getTime();
+    const e = new Date(weekEnd + 'T00:00:00').getTime();
+    return e >= s;
+  }, [weekStart, weekEnd]);
 
   const totalHours = useMemo(() => {
     return DAY_KEYS.reduce((sum, k) => {
