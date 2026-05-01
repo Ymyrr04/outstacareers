@@ -191,16 +191,40 @@ const PortalDashboard = () => {
 
     const { data: assignment } = await supabase
       .from('contractor_assignments')
-      .select('id, job_title, hourly_rate, applicant:applicants_prescreen(full_name), client:clients(company_name)')
+      .select('id, applicant_id, job_title, hourly_rate, hours_per_week, regular_work_shift, contact_number, emergency_number, country, applicant:applicants_prescreen(full_name, email, phone, whatsapp, location), client:clients(company_name)')
       .eq('id', portal.contractor_assignment_id)
       .maybeSingle();
 
-    setInfo({
+    const applicant = (assignment?.applicant as any) || {};
+    const nextInfo: ContractorInfo = {
       contractor_assignment_id: portal.contractor_assignment_id,
+      applicant_id: assignment?.applicant_id || '',
       job_title: assignment?.job_title || null,
       company_name: (assignment?.client as any)?.company_name || null,
-      full_name: (assignment?.applicant as any)?.full_name || null,
-      hourly_rate: assignment?.hourly_rate || null,
+      full_name: applicant.full_name || null,
+      hourly_rate: assignment?.hourly_rate ?? null,
+      hours_per_week: assignment?.hours_per_week ?? null,
+      regular_work_shift: assignment?.regular_work_shift || null,
+      contact_number: assignment?.contact_number || null,
+      emergency_number: assignment?.emergency_number || null,
+      country: assignment?.country || null,
+      email: applicant.email || null,
+      phone: applicant.phone || null,
+      whatsapp: applicant.whatsapp || null,
+      location: applicant.location || null,
+    };
+    setInfo(nextInfo);
+    setProfileForm({
+      full_name: nextInfo.full_name || '',
+      phone: nextInfo.phone || '',
+      whatsapp: nextInfo.whatsapp || '',
+      location: nextInfo.location || '',
+      country: nextInfo.country || '',
+      contact_number: nextInfo.contact_number || '',
+      emergency_number: nextInfo.emergency_number || '',
+      hours_per_week: nextInfo.hours_per_week != null ? String(nextInfo.hours_per_week) : '',
+      hourly_rate: nextInfo.hourly_rate != null ? String(nextInfo.hourly_rate) : '',
+      regular_work_shift: nextInfo.regular_work_shift || '',
     });
 
     const { data: ts } = await supabase
