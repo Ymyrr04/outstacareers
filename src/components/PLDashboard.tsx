@@ -384,7 +384,7 @@ export const PLDashboard = () => {
           <CardContent><p className="text-2xl font-bold text-amber-600">{totalDepositAll.toFixed(2)}</p></CardContent>
         </Card>
         <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Incentives</CardTitle></CardHeader>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Bonus</CardTitle></CardHeader>
           <CardContent><p className="text-2xl font-bold">${totalIncentivesAll.toFixed(2)}</p></CardContent>
         </Card>
       </div>
@@ -422,7 +422,7 @@ export const PLDashboard = () => {
                   <TableHead>Latest Submission</TableHead>
                   <TableHead className="text-right">Hours</TableHead>
                   <TableHead className="text-right">OT</TableHead>
-                  <TableHead className="text-right">Incentives</TableHead>
+                  <TableHead className="text-right">Bonus</TableHead>
                   <TableHead className="text-right">Deposit</TableHead>
                   <TableHead>Portal Account</TableHead>
                 </TableRow>
@@ -464,15 +464,16 @@ export const PLDashboard = () => {
                     <TableCell className="text-right">
                       {c.latestTimesheet ? (() => {
                         const expected = Number(c.hours_per_week || 0);
-                        const total = Number(c.latestTimesheet.total_hours);
+                        const regular = Number(c.latestTimesheet.total_hours);
                         const ot = Number(c.latestTimesheet.overtime_hours);
+                        const grandTotal = regular + ot;
                         let colorClass = 'text-foreground';
                         if (expected > 0) {
-                          if (ot > 0 || total > expected) colorClass = 'text-emerald-600';
-                          else if (total < expected) colorClass = 'text-red-600';
+                          if (ot > 0 || regular > expected) colorClass = 'text-emerald-600';
+                          else if (regular < expected) colorClass = 'text-red-600';
                           else colorClass = 'text-blue-600';
                         }
-                        return <span className={`font-medium ${colorClass}`}>{total.toFixed(2)}</span>;
+                        return <span className={`font-medium ${colorClass}`}>{grandTotal.toFixed(2)}</span>;
                       })() : (
                         <span className="text-muted-foreground">—</span>
                       )}
@@ -589,7 +590,7 @@ export const PLDashboard = () => {
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('hours')}>Hours<SortIcon active={tsSort.key === 'hours'} dir={tsSort.dir} /></button></TableHead>
                   <TableHead className="text-right">Deposit</TableHead>
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('ot')}>OT<SortIcon active={tsSort.key === 'ot'} dir={tsSort.dir} /></button></TableHead>
-                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('incentives')}>Incentives<SortIcon active={tsSort.key === 'incentives'} dir={tsSort.dir} /></button></TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('incentives')}>Bonus<SortIcon active={tsSort.key === 'incentives'} dir={tsSort.dir} /></button></TableHead>
                   <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('status')}>Status<SortIcon active={tsSort.key === 'status'} dir={tsSort.dir} /></button></TableHead>
                   <TableHead>Daily &gt;10h</TableHead>
                   <TableHead>Notes</TableHead>
@@ -705,7 +706,7 @@ export const PLDashboard = () => {
                           <TableHead>Date range</TableHead>
                           <TableHead className="text-right">Hours</TableHead>
                           <TableHead className="text-right">OT</TableHead>
-                          <TableHead className="text-right">Incentives</TableHead>
+                          <TableHead className="text-right">Bonus</TableHead>
                           <TableHead className="text-right">Total</TableHead>
                           <TableHead>Status</TableHead>
                           <TableHead>Submitted</TableHead>
