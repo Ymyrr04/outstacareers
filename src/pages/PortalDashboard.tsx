@@ -119,40 +119,80 @@ const PortalDashboard = () => {
     navigate('/portal/login');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!info) return;
+  const validate = () => {
     const total = parseFloat(totalHours);
     const ot = parseFloat(overtimeHours || '0');
     if (isNaN(total) || total < 0 || total > 168) {
       toast({ title: 'Invalid hours', description: 'Total hours must be between 0 and 168.', variant: 'destructive' });
-      return;
+      return null;
     }
     if (isNaN(ot) || ot < 0 || ot > total) {
       toast({ title: 'Invalid overtime', description: 'Overtime cannot exceed total hours.', variant: 'destructive' });
-      return;
+      return null;
     }
+    return { total, ot };
+  };
+
+  const handleSubmitClick = (e?: React.FormEvent) => {
+    e?.preventDefault();
+    if (!info) return;
+    if (!validate()) return;
+    setConfirmOpen(true);
+  };
+
+  const performSubmit = async () => {
+    if (!info) return;
+    const v = validate();
+    if (!v) return;
     setSubmitting(true);
     try {
       const { error } = await supabase.from('contractor_timesheets').upsert({
         contractor_assignment_id: info.contractor_assignment_id,
         week_ending_date: weekEnding,
-        total_hours: total,
-        overtime_hours: ot,
+        total_hours: v.total,
+        overtime_hours: v.ot,
         notes: notes.trim() || null,
         status: 'submitted',
         submitted_at: new Date().toISOString(),
       }, { onConflict: 'contractor_assignment_id,week_ending_date' });
       if (error) throw error;
-      toast({ title: 'Timesheet submitted' });
+      toast({ title: editingId ? 'Timesheet updated' : 'Timesheet submitted' });
       setTotalHours('');
       setOvertimeHours('0');
       setNotes('');
+      setEditingId(null);
+      setWeekEnding(getDefaultWeekEnding());
       loadAll();
     } catch (err: any) {
       toast({ title: 'Submission failed', description: err.message, variant: 'destructive' });
     } finally {
       setSubmitting(false);
+      setConfirmOpen(false);
+    }
+  };
+
+  const handleEdit = (t: Timesheet) => {
+    setEditingId(t.id);
+    setWeekEnding(t.week_ending_date);
+    setTotalHours(String(t.total_hours));
+    setOvertimeHours(String(t.overtime_hours));
+    setNotes(t.notes || '');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleCancelEdit = () => {
+    setEditingId(null);
+    setWeekEnding(getDefaultWeekEnding());
+    setTotalHours('');
+    setOvertimeHours('0');
+    setNotes('');
+  };
+
+  // Block Enter key from auto-submitting the form (except inside the textarea)
+  const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
+    const target = e.target as HTMLElement;
+    if (e.key === 'Enter' && target.tagName !== 'TEXTAREA') {
+      e.preventDefault();
     }
   };
 
