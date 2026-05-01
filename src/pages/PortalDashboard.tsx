@@ -255,11 +255,11 @@ const PortalDashboard = () => {
     if (!validateNumbers()) return;
     const ot = parseFloat(overtimeHours || '0');
 
-    const dailyPayload: Record<string, { hours: number; reason?: string }> = {};
-    DAY_KEYS.forEach((k) => {
+    const dailyPayload: Record<string, { hours: number; reason?: string; weekday?: string }> = {};
+    dateKeys.forEach((k) => {
       const h = parseFloat(days[k]?.hours || '0') || 0;
       const reason = days[k]?.reason?.trim() || '';
-      dailyPayload[k] = { hours: h, ...(reason ? { reason } : {}) };
+      dailyPayload[k] = { hours: h, weekday: dayLabel(k), ...(reason ? { reason } : {}) };
     });
 
     setSubmitting(true);
