@@ -428,6 +428,7 @@ const PortalDashboard = () => {
                         className={cn('p-3 pointer-events-auto')}
                         classNames={{
                           cell: 'h-9 w-9 text-center text-sm p-0 relative focus-within:relative focus-within:z-20',
+                          day_today: 'text-primary font-semibold',
                           day_range_start: 'day-range-start rounded-l-md bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
                           day_range_end: 'day-range-end rounded-r-md bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
                           day_range_middle: 'aria-selected:bg-accent aria-selected:text-accent-foreground rounded-none',
