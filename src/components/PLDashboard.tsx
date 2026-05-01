@@ -35,10 +35,22 @@ interface ContractorRow {
   status: string;
   hourly_rate: number | null;
   hours_per_week: number | null;
+  start_date: string | null;
   applicant: { full_name: string; email: string } | null;
   client: { company_name: string } | null;
   hasPortal: boolean;
   mustChange: boolean | null;
+  latestTimesheet: {
+    id: string;
+    status: string;
+    week_ending_date: string;
+    total_hours: number;
+    overtime_hours: number;
+    submitted_at: string;
+    depositHours: number;
+    isDeposit: boolean;
+    weekIndex: number | null;
+  } | null;
 }
 
 export const PLDashboard = () => {
