@@ -202,26 +202,71 @@ export const PLDashboard = () => {
     fetchData();
   };
 
-  const filtered = rows.filter((r) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return (
-      r.contractor?.applicant?.full_name?.toLowerCase().includes(q) ||
-      r.contractor?.applicant?.email?.toLowerCase().includes(q) ||
-      r.contractor?.client?.company_name?.toLowerCase().includes(q)
-    );
-  });
+  const cmp = (a: any, b: any, dir: 'asc' | 'desc') => {
+    if (a == null && b == null) return 0;
+    if (a == null) return 1;
+    if (b == null) return -1;
+    if (typeof a === 'number' && typeof b === 'number') return dir === 'asc' ? a - b : b - a;
+    const r = String(a).localeCompare(String(b));
+    return dir === 'asc' ? r : -r;
+  };
 
-  const filteredContractors = contractors.filter((c) => {
-    if (!contractorSearch) return true;
-    const q = contractorSearch.toLowerCase();
-    return (
-      c.applicant?.full_name?.toLowerCase().includes(q) ||
-      c.applicant?.email?.toLowerCase().includes(q) ||
-      c.client?.company_name?.toLowerCase().includes(q) ||
-      c.job_title?.toLowerCase().includes(q)
-    );
-  });
+  const filtered = rows
+    .filter((r) => {
+      if (!search) return true;
+      const q = search.toLowerCase();
+      return (
+        r.contractor?.applicant?.full_name?.toLowerCase().includes(q) ||
+        r.contractor?.applicant?.email?.toLowerCase().includes(q) ||
+        r.contractor?.client?.company_name?.toLowerCase().includes(q)
+      );
+    })
+    .sort((a, b) => {
+      const k = tsSort.key;
+      const d = tsSort.dir;
+      switch (k) {
+        case 'name': return cmp(a.contractor?.applicant?.full_name, b.contractor?.applicant?.full_name, d);
+        case 'company': return cmp(a.contractor?.client?.company_name, b.contractor?.client?.company_name, d);
+        case 'week': return cmp(new Date(a.week_ending_date).getTime(), new Date(b.week_ending_date).getTime(), d);
+        case 'hours': return cmp(Number(a.total_hours), Number(b.total_hours), d);
+        case 'ot': return cmp(Number(a.overtime_hours), Number(b.overtime_hours), d);
+        case 'incentives': return cmp(Number(a.incentive_amount || 0), Number(b.incentive_amount || 0), d);
+        case 'status': return cmp(a.status, b.status, d);
+        case 'submitted': return cmp(new Date(a.submitted_at).getTime(), new Date(b.submitted_at).getTime(), d);
+      }
+    });
+
+  const filteredContractors = contractors
+    .filter((c) => {
+      if (!contractorSearch) return true;
+      const q = contractorSearch.toLowerCase();
+      return (
+        c.applicant?.full_name?.toLowerCase().includes(q) ||
+        c.applicant?.email?.toLowerCase().includes(q) ||
+        c.client?.company_name?.toLowerCase().includes(q) ||
+        c.job_title?.toLowerCase().includes(q)
+      );
+    })
+    .sort((a, b) => {
+      const k = contractorSort.key;
+      const d = contractorSort.dir;
+      switch (k) {
+        case 'name': return cmp(a.applicant?.full_name, b.applicant?.full_name, d);
+        case 'company': return cmp(a.client?.company_name, b.client?.company_name, d);
+        case 'status': return cmp(a.status, b.status, d);
+        case 'rate': return cmp(a.hourly_rate != null ? Number(a.hourly_rate) : null, b.hourly_rate != null ? Number(b.hourly_rate) : null, d);
+        case 'hpw': return cmp(a.hours_per_week, b.hours_per_week, d);
+      }
+    });
+
+  const toggleContractorSort = (key: typeof contractorSort.key) =>
+    setContractorSort((s) => s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' });
+  const toggleTsSort = (key: typeof tsSort.key) =>
+    setTsSort((s) => s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' });
+
+  const SortIcon = ({ active, dir }: { active: boolean; dir: 'asc' | 'desc' }) =>
+    !active ? <ArrowUpDown className="w-3 h-3 ml-1 inline opacity-40" /> :
+    dir === 'asc' ? <ArrowUp className="w-3 h-3 ml-1 inline" /> : <ArrowDown className="w-3 h-3 ml-1 inline" />;
 
   const totalHoursAll = filtered.reduce((s, r) => s + Number(r.total_hours), 0);
   const totalOTAll = filtered.reduce((s, r) => s + Number(r.overtime_hours), 0);
