@@ -1006,6 +1006,7 @@ const PortalDashboard = () => {
                     </div>
                   )
                 )}
+                <Label className="block pt-1">Hours per day</Label>
                 <div className="space-y-2">
                   {dateKeys.length === 0 && (
                     <p className="text-sm text-muted-foreground p-3 border rounded-md">
