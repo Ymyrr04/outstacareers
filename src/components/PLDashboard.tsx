@@ -64,6 +64,8 @@ export const PLDashboard = () => {
           id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, submitted_at, daily_hours,
           contractor:contractor_assignments(
             job_title,
+            start_date,
+            hours_per_week,
             applicant:applicants_prescreen(full_name, email),
             client:clients(company_name)
           )
