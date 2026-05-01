@@ -680,7 +680,7 @@ export const PLDashboard = () => {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>Week ending</TableHead>
+                          <TableHead>Date range</TableHead>
                           <TableHead className="text-right">Hours</TableHead>
                           <TableHead className="text-right">OT</TableHead>
                           <TableHead className="text-right">Incentives</TableHead>
