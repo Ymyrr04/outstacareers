@@ -426,6 +426,47 @@ export const PLDashboard = () => {
                     <TableCell className="text-right">{c.hourly_rate != null ? `$${Number(c.hourly_rate).toFixed(2)}` : '—'}</TableCell>
                     <TableCell className="text-right">{c.hours_per_week ?? '—'}</TableCell>
                     <TableCell>
+                      {c.latestTimesheet ? (
+                        <div className="flex flex-col gap-0.5">
+                          {c.latestTimesheet.status === 'pending_approval' ? (
+                            <Badge variant="outline" className="border-amber-500 text-amber-600 w-fit">Pending</Badge>
+                          ) : c.latestTimesheet.status === 'approved' ? (
+                            <Badge variant="outline" className="border-emerald-500 text-emerald-600 w-fit">Approved</Badge>
+                          ) : c.latestTimesheet.status === 'rejected' ? (
+                            <Badge variant="outline" className="border-destructive text-destructive w-fit">Rejected</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="capitalize w-fit">{c.latestTimesheet.status}</Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground">Wk {format(new Date(c.latestTimesheet.week_ending_date), 'MMM d')}</span>
+                        </div>
+                      ) : (
+                        <Badge variant="outline" className="text-muted-foreground">Not submitted</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {c.latestTimesheet ? (
+                        <div className="flex flex-col items-end">
+                          <span className="font-medium">{c.latestTimesheet.total_hours.toFixed(2)}</span>
+                          {c.latestTimesheet.overtime_hours > 0 && (
+                            <span className="text-xs text-muted-foreground">+{c.latestTimesheet.overtime_hours.toFixed(2)} OT</span>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {c.latestTimesheet?.isDeposit ? (
+                        <div className="flex flex-col items-end">
+                          <span className="font-medium text-amber-600">{c.latestTimesheet.depositHours.toFixed(2)}</span>
+                          <Badge variant="outline" className="border-amber-500 text-amber-600 text-[10px] px-1 py-0 h-4 mt-0.5">
+                            Wk {(c.latestTimesheet.weekIndex ?? 0) + 1}
+                          </Badge>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                       {!c.hasPortal ? (
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="text-muted-foreground">No account</Badge>
