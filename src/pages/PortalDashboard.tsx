@@ -460,9 +460,6 @@ const PortalDashboard = () => {
           hourly_rate: rate,
           hours_per_week: hpw,
           regular_work_shift: profileForm.regular_work_shift.trim() || null,
-          contact_number: profileForm.contact_number.trim() || null,
-          emergency_number: profileForm.emergency_number.trim() || null,
-          country: profileForm.country.trim() || null,
         })
         .eq('id', info.contractor_assignment_id);
       if (aErr) throw aErr;
@@ -472,8 +469,6 @@ const PortalDashboard = () => {
         .update({
           full_name: profileForm.full_name.trim(),
           phone: profileForm.phone.trim() || null,
-          whatsapp: profileForm.whatsapp.trim() || null,
-          location: profileForm.location.trim() || null,
         })
         .eq('id', info.applicant_id);
       if (pErr) throw pErr;
@@ -557,11 +552,6 @@ const PortalDashboard = () => {
                 <ProfileField label="Full name" value={info?.full_name} />
                 <ProfileField label="Email" value={info?.email} />
                 <ProfileField label="Phone" value={info?.phone} />
-                <ProfileField label="WhatsApp" value={info?.whatsapp} />
-                <ProfileField label="Location" value={info?.location} />
-                <ProfileField label="Country" value={info?.country} />
-                <ProfileField label="Contact number" value={info?.contact_number} />
-                <ProfileField label="Emergency number" value={info?.emergency_number} />
                 <ProfileField label="Job title" value={info?.job_title} />
                 <ProfileField label="Company" value={info?.company_name} />
                 <ProfileField label="Regular work shift" value={info?.regular_work_shift} />
@@ -581,26 +571,6 @@ const PortalDashboard = () => {
                 <div className="space-y-2">
                   <Label htmlFor="p-phone">Phone</Label>
                   <Input id="p-phone" value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="p-whatsapp">WhatsApp</Label>
-                  <Input id="p-whatsapp" value={profileForm.whatsapp} onChange={(e) => setProfileForm({ ...profileForm, whatsapp: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="p-location">Location</Label>
-                  <Input id="p-location" value={profileForm.location} onChange={(e) => setProfileForm({ ...profileForm, location: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="p-country">Country</Label>
-                  <Input id="p-country" value={profileForm.country} onChange={(e) => setProfileForm({ ...profileForm, country: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="p-contact">Contact number</Label>
-                  <Input id="p-contact" value={profileForm.contact_number} onChange={(e) => setProfileForm({ ...profileForm, contact_number: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="p-emergency">Emergency number</Label>
-                  <Input id="p-emergency" value={profileForm.emergency_number} onChange={(e) => setProfileForm({ ...profileForm, emergency_number: e.target.value })} />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="p-shift">Regular work shift</Label>
