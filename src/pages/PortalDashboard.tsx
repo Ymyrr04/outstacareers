@@ -417,12 +417,30 @@ const PortalDashboard = () => {
   // Tolerance: anything within ±0.25h is considered matching
   const hoursMatch = expectedHours == null ? true : Math.abs(hoursDiff) <= 0.25;
 
-  // When over expected: days with > 8h need a reason explaining the extra time
+  // Per-day expected hours (e.g., 50hrs/week ÷ 5 = 10hrs/day)
+  const perDayExpected = useMemo(() => {
+    const hpw = info?.hours_per_week ? Number(info.hours_per_week) : null;
+    if (!hpw) return null;
+    return hpw / 5;
+  }, [info?.hours_per_week]);
+
+  // When over expected: days with > per-day target need a reason explaining the extra time
   const getOverHoursDays = (): string[] => {
-    if (expectedHours == null || hoursDiff <= 0.25) return [];
+    if (expectedHours == null || hoursDiff <= 0.25 || perDayExpected == null) return [];
     return dateKeys.filter((k) => {
       const v = parseFloat(days[k]?.hours || '0');
-      return !isNaN(v) && v > 8;
+      return !isNaN(v) && v > perDayExpected;
+    });
+  };
+
+  // When under expected: days with hours entered but below per-day target need a reason
+  const getUnderHoursDays = (): string[] => {
+    if (expectedHours == null || hoursDiff >= -0.25 || perDayExpected == null) return [];
+    return dateKeys.filter((k) => {
+      const raw = days[k]?.hours;
+      if (raw === '' || raw == null) return false;
+      const v = parseFloat(raw);
+      return !isNaN(v) && v > 0 && v < perDayExpected;
     });
   };
 
@@ -443,15 +461,16 @@ const PortalDashboard = () => {
     const empties = getEmptyDays();
     const overtimes = getOvertimeDays();
     const overHours = getOverHoursDays();
-    const allFlagged = Array.from(new Set([...empties, ...overtimes, ...overHours]));
+    const underHours = getUnderHoursDays();
+    const allFlagged = Array.from(new Set([...empties, ...overtimes, ...overHours, ...underHours]));
     const missingReason = allFlagged.filter((k) => !days[k]?.reason?.trim());
     if (missingReason.length > 0) {
       setMissingDays(missingReason);
       setMissingReasonOpen(true);
       return;
     }
-    // If under target hours but no empty days (e.g., shorter days), require a reason on at least one day
-    if (!hoursMatch && hoursDiff < 0 && empties.length === 0) {
+    // Fallback: under target but no obvious flagged days — still require at least one reason
+    if (!hoursMatch && hoursDiff < 0) {
       const anyReason = dateKeys.some((k) => days[k]?.reason?.trim());
       if (!anyReason) {
         toast({
@@ -945,12 +964,36 @@ const PortalDashboard = () => {
                     const entry = days[k] || { hours: '', reason: '' };
                     const hoursNum = parseFloat(entry.hours || '0');
                     const isOvertime = !isNaN(hoursNum) && hoursNum > 10;
+                    const isOverTarget =
+                      perDayExpected != null && !isNaN(hoursNum) && hoursNum > perDayExpected && hoursDiff > 0.25;
+                    const isUnderTarget =
+                      perDayExpected != null &&
+                      entry.hours !== '' &&
+                      !isNaN(hoursNum) &&
+                      hoursNum > 0 &&
+                      hoursNum < perDayExpected &&
+                      hoursDiff < -0.25;
+                    const needsReason = isOvertime || isOverTarget || isUnderTarget;
+                    const reasonLabel = isOvertime
+                      ? '(required — overtime)'
+                      : isOverTarget
+                      ? '(required — over target)'
+                      : isUnderTarget
+                      ? '(required — under target)'
+                      : '(only if no hours)';
+                    const reasonPlaceholder = isOvertime
+                      ? 'e.g. urgent deadline'
+                      : isOverTarget
+                      ? 'e.g. compensation, extra workload'
+                      : isUnderTarget
+                      ? 'e.g. half day, left early, sick'
+                      : 'Optional — e.g. day off, holiday, sick';
                     const label = dayLabel(k);
                     return (
                       <div
                         key={k}
                         className={`grid grid-cols-1 md:grid-cols-[180px_180px_1fr] gap-4 p-4 items-center rounded-lg border-2 shadow-sm bg-background ${
-                          isOvertime
+                          needsReason
                             ? 'border-amber-500/50'
                             : 'border-blue-300/10 dark:border-blue-800/10'
                         }`}
@@ -971,19 +1014,19 @@ const PortalDashboard = () => {
                             value={entry.hours}
                             onChange={(e) => updateDay(k, { hours: e.target.value })}
                             aria-label={`${label} ${format(date, 'MMM d')} hours`}
-                            className={`bg-background border-2 ${isOvertime ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`}
+                            className={`bg-background border-2 ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`}
                           />
                         </div>
                         <div className="space-y-1">
                           <Label htmlFor={`reason-${k}`} className="text-xs font-medium text-muted-foreground">
-                            Reason {isOvertime ? '(required — overtime)' : '(only if no hours)'}
+                            Reason {reasonLabel}
                           </Label>
                           <Input
                             id={`reason-${k}`}
-                            placeholder={isOvertime ? 'e.g. urgent deadline' : 'Optional — e.g. day off, holiday, sick'}
+                            placeholder={reasonPlaceholder}
                             value={entry.reason}
                             onChange={(e) => updateDay(k, { reason: e.target.value })}
-                            className={`bg-background border-2 ${isOvertime ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`}
+                            className={`bg-background border-2 ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`}
                           />
                         </div>
                       </div>
