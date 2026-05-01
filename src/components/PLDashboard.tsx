@@ -75,6 +75,8 @@ export const PLDashboard = () => {
   const [rows, setRows] = useState<TimesheetRow[]>([]);
   const [contractors, setContractors] = useState<ContractorRow[]>([]);
   const [search, setSearch] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
   const [contractorSearch, setContractorSearch] = useState('');
   const [contractorSort, setContractorSort] = useState<{ key: 'name' | 'company' | 'status' | 'rate' | 'hpw'; dir: 'asc' | 'desc' }>({ key: 'company', dir: 'asc' });
   const [tsSort, setTsSort] = useState<{ key: 'name' | 'company' | 'week' | 'hours' | 'ot' | 'incentives' | 'status' | 'submitted'; dir: 'asc' | 'desc' }>({ key: 'submitted', dir: 'desc' });
@@ -284,13 +286,26 @@ export const PLDashboard = () => {
 
   const filtered = rows
     .filter((r) => {
-      if (!search) return true;
-      const q = search.toLowerCase();
-      return (
-        r.contractor?.applicant?.full_name?.toLowerCase().includes(q) ||
-        r.contractor?.applicant?.email?.toLowerCase().includes(q) ||
-        r.contractor?.client?.company_name?.toLowerCase().includes(q)
-      );
+      if (search) {
+        const q = search.toLowerCase();
+        const match =
+          r.contractor?.applicant?.full_name?.toLowerCase().includes(q) ||
+          r.contractor?.applicant?.email?.toLowerCase().includes(q) ||
+          r.contractor?.client?.company_name?.toLowerCase().includes(q);
+        if (!match) return false;
+      }
+      if (dateFrom || dateTo) {
+        const submitted = r.submitted_at ? new Date(r.submitted_at).getTime() : 0;
+        if (dateFrom) {
+          const from = new Date(dateFrom + 'T00:00:00').getTime();
+          if (submitted < from) return false;
+        }
+        if (dateTo) {
+          const to = new Date(dateTo + 'T23:59:59').getTime();
+          if (submitted > to) return false;
+        }
+      }
+      return true;
     })
     .sort((a, b) => {
       const k = tsSort.key;
@@ -570,9 +585,33 @@ export const PLDashboard = () => {
       <Card>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <CardTitle className="text-base">Timesheet Submissions</CardTitle>
-          <div className="relative w-full sm:w-80">
-            <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search submissions..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9" />
+          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+            <div className="flex items-center gap-2">
+              <Input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                className="h-9 w-[150px]"
+                aria-label="From date"
+              />
+              <span className="text-muted-foreground text-sm">to</span>
+              <Input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                className="h-9 w-[150px]"
+                aria-label="To date"
+              />
+              {(dateFrom || dateTo) && (
+                <Button variant="ghost" size="sm" className="h-9" onClick={() => { setDateFrom(''); setDateTo(''); }}>
+                  Clear
+                </Button>
+              )}
+            </div>
+            <div className="relative w-full sm:w-72">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+              <Input placeholder="Search submissions..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9" />
+            </div>
           </div>
         </CardHeader>
         <CardContent className="p-0">
