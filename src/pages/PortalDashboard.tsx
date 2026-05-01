@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, LogOut, Pencil, CalendarIcon } from 'lucide-react';
+import { Loader2, LogOut, Pencil, CalendarIcon, UserCircle2 } from 'lucide-react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Helmet } from 'react-helmet-async';
 import { addDays, format, startOfWeek } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
@@ -130,6 +131,7 @@ const PortalDashboard = () => {
   };
   const [profileForm, setProfileForm] = useState<ProfileForm>(emptyProfileForm);
   const [profileEditing, setProfileEditing] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const [profileSaving, setProfileSaving] = useState(false);
 
   const [weekStart, setWeekStart] = useState('');
@@ -527,36 +529,31 @@ const PortalDashboard = () => {
             <h1 className="text-lg font-semibold">OutSta PL Portal</h1>
             <p className="text-xs text-muted-foreground">{info?.full_name} · {info?.company_name} · {info?.job_title}</p>
           </div>
-          <Button variant="outline" size="sm" onClick={handleSignOut}><LogOut className="w-4 h-4 mr-2" />Sign out</Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setProfileEditing(false); setProfileOpen(true); }}
+              aria-label="Open profile"
+              className="gap-2"
+            >
+              <UserCircle2 className="w-6 h-6 text-primary" />
+              <span className="hidden sm:inline text-sm">Profile</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleSignOut}><LogOut className="w-4 h-4 mr-2" />Sign out</Button>
+          </div>
         </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-        <Card>
-          <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-            <div>
-              <CardTitle>My Profile</CardTitle>
-              <CardDescription>Keep your contact and assignment details up to date.</CardDescription>
-            </div>
+        <Dialog open={profileOpen} onOpenChange={(open) => { setProfileOpen(open); if (!open) setProfileEditing(false); }}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>My Profile</DialogTitle>
+              <DialogDescription>Keep your contact and assignment details up to date.</DialogDescription>
+            </DialogHeader>
             {!profileEditing ? (
-              <Button type="button" variant="outline" size="sm" onClick={() => setProfileEditing(true)}>
-                <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
-              </Button>
-            ) : (
-              <div className="flex gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={handleProfileCancel} disabled={profileSaving}>
-                  Cancel
-                </Button>
-                <Button type="button" size="sm" onClick={handleProfileSave} disabled={profileSaving}>
-                  {profileSaving && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
-                  Save
-                </Button>
-              </div>
-            )}
-          </CardHeader>
-          <CardContent>
-            {!profileEditing ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm py-2">
                 <ProfileField label="Full name" value={info?.full_name} />
                 <ProfileField label="Email" value={info?.email} />
                 <ProfileField label="Phone" value={info?.phone} />
@@ -572,7 +569,7 @@ const PortalDashboard = () => {
                 <ProfileField label="Current rate" value={info?.hourly_rate != null ? `$${Number(info.hourly_rate).toFixed(2)}/hr` : null} />
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
                 <div className="space-y-2">
                   <Label htmlFor="p-full_name">Full name</Label>
                   <Input id="p-full_name" value={profileForm.full_name} onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })} />
@@ -619,8 +616,26 @@ const PortalDashboard = () => {
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+            <DialogFooter className="gap-2">
+              {!profileEditing ? (
+                <>
+                  <Button type="button" variant="outline" onClick={() => setProfileOpen(false)}>Close</Button>
+                  <Button type="button" onClick={() => setProfileEditing(true)}>
+                    <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button type="button" variant="outline" onClick={handleProfileCancel} disabled={profileSaving}>Cancel</Button>
+                  <Button type="button" onClick={handleProfileSave} disabled={profileSaving}>
+                    {profileSaving && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
+                    Save
+                  </Button>
+                </>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Card>
           <CardHeader>
