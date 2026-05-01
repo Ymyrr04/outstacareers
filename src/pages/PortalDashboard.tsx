@@ -993,7 +993,7 @@ const PortalDashboard = () => {
                       <div
                         key={k}
                         className={`grid grid-cols-1 md:grid-cols-[180px_180px_1fr] gap-4 p-4 items-center rounded-lg border-2 shadow-sm bg-background ${
-                          isOvertime
+                          needsReason
                             ? 'border-amber-500/50'
                             : 'border-blue-300/10 dark:border-blue-800/10'
                         }`}
@@ -1014,19 +1014,19 @@ const PortalDashboard = () => {
                             value={entry.hours}
                             onChange={(e) => updateDay(k, { hours: e.target.value })}
                             aria-label={`${label} ${format(date, 'MMM d')} hours`}
-                            className={`bg-background border-2 ${isOvertime ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`}
+                            className={`bg-background border-2 ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`}
                           />
                         </div>
                         <div className="space-y-1">
                           <Label htmlFor={`reason-${k}`} className="text-xs font-medium text-muted-foreground">
-                            Reason {isOvertime ? '(required — overtime)' : '(only if no hours)'}
+                            Reason {reasonLabel}
                           </Label>
                           <Input
                             id={`reason-${k}`}
-                            placeholder={isOvertime ? 'e.g. urgent deadline' : 'Optional — e.g. day off, holiday, sick'}
+                            placeholder={reasonPlaceholder}
                             value={entry.reason}
                             onChange={(e) => updateDay(k, { reason: e.target.value })}
-                            className={`bg-background border-2 ${isOvertime ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`}
+                            className={`bg-background border-2 ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`}
                           />
                         </div>
                       </div>
