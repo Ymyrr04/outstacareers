@@ -1,0 +1,1 @@
+ALTER TABLE public.contractor_timesheets ADD CONSTRAINT contractor_timesheets_contractor_assignment_id_fkey FOREIGN KEY (contractor_assignment_id) REFERENCES public.contractor_assignments(id) ON DELETE CASCADE;
