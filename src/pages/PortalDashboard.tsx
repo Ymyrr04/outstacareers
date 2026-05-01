@@ -442,14 +442,18 @@ const PortalDashboard = () => {
                     return (
                       <div
                         key={k}
-                        className={`grid grid-cols-1 md:grid-cols-[160px_160px_1fr] gap-3 p-3 items-center rounded-md border bg-background ${isOvertime ? 'border-amber-500' : 'border-input'}`}
+                        className={`grid grid-cols-1 md:grid-cols-[180px_180px_1fr] gap-4 p-4 items-center rounded-lg border-2 shadow-sm ${
+                          isOvertime
+                            ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/20'
+                            : 'border-blue-300 bg-blue-50 dark:border-blue-800 dark:bg-blue-950/20'
+                        }`}
                       >
                         <div>
-                          <div className="font-medium text-sm">{label}</div>
-                          <div className="text-xs text-muted-foreground">{format(date, 'MMM d, yyyy')}</div>
+                          <div className="font-semibold text-sm text-blue-900 dark:text-blue-100">{label}</div>
+                          <div className="text-xs text-blue-700/70 dark:text-blue-300/70">{format(date, 'MMM d, yyyy')}</div>
                         </div>
                         <div className="space-y-1">
-                          <Label htmlFor={`hrs-${k}`} className="text-xs text-muted-foreground">Hours worked</Label>
+                          <Label htmlFor={`hrs-${k}`} className="text-xs font-medium text-blue-900/80 dark:text-blue-100/80">Hours worked</Label>
                           <Input
                             id={`hrs-${k}`}
                             type="number"
@@ -460,11 +464,11 @@ const PortalDashboard = () => {
                             value={entry.hours}
                             onChange={(e) => updateDay(k, { hours: e.target.value })}
                             aria-label={`${label} ${format(date, 'MMM d')} hours`}
-                            className={isOvertime ? 'border-amber-500 focus-visible:ring-amber-500' : ''}
+                            className={`bg-background border-2 ${isOvertime ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`}
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label htmlFor={`reason-${k}`} className="text-xs text-muted-foreground">
+                          <Label htmlFor={`reason-${k}`} className="text-xs font-medium text-blue-900/80 dark:text-blue-100/80">
                             Reason {isOvertime ? '(required — overtime)' : '(only if no hours)'}
                           </Label>
                           <Input
@@ -472,7 +476,7 @@ const PortalDashboard = () => {
                             placeholder={isOvertime ? 'e.g. urgent deadline' : 'Optional — e.g. day off, holiday, sick'}
                             value={entry.reason}
                             onChange={(e) => updateDay(k, { reason: e.target.value })}
-                            className={isOvertime ? 'border-amber-500 focus-visible:ring-amber-500' : ''}
+                            className={`bg-background border-2 ${isOvertime ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`}
                           />
                         </div>
                       </div>
