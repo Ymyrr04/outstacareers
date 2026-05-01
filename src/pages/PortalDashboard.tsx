@@ -915,6 +915,25 @@ const PortalDashboard = () => {
                     </div>
                   </div>
                 </div>
+                {expectedHours != null && dateKeys.length > 0 && (
+                  hoursMatch ? (
+                    <div className="rounded-md border border-emerald-300 bg-emerald-50 text-emerald-900 px-3 py-2 text-xs">
+                      ✓ Matches your weekly target ({expectedHours.toFixed(2)} hrs expected for {dateKeys.length} day{dateKeys.length === 1 ? '' : 's'}).
+                    </div>
+                  ) : (
+                    <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 px-3 py-2 text-xs">
+                      <span className="font-semibold">
+                        {hoursDiff < 0
+                          ? `Missing ${Math.abs(hoursDiff).toFixed(2)} hrs`
+                          : `Over by ${hoursDiff.toFixed(2)} hrs`}
+                      </span>{' '}
+                      — Expected {expectedHours.toFixed(2)} hrs (based on {info?.hours_per_week} hrs/week × {dateKeys.length} day{dateKeys.length === 1 ? '' : 's'} ÷ 5).{' '}
+                      {hoursDiff < 0
+                        ? 'Please add a Reason on the day(s) where hours are missing (e.g. day off, holiday, sick).'
+                        : 'Please add a Reason on the day(s) where you worked extra hours.'}
+                    </div>
+                  )
+                )}
                 <div className="space-y-2">
                   {dateKeys.length === 0 && (
                     <p className="text-sm text-muted-foreground p-3 border rounded-md">
