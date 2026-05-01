@@ -62,6 +62,7 @@ import { TalentScoutDashboard } from '@/components/TalentScoutDashboard';
 import { ExternalScoutDashboard } from '@/components/ExternalScoutDashboard';
 import { RecruitmentFunnel } from '@/components/RecruitmentFunnel';
 import { WorkflowBoard } from '@/components/WorkflowBoard';
+import { PLDashboard } from '@/components/PLDashboard';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 // Status options for applicant tracking - new pipeline order
@@ -1604,6 +1605,12 @@ const Admin = () => {
               <TabsTrigger value="contractors" className="flex items-center gap-2">
                 <UserCog className="w-4 h-4" />
                 Contractors
+              </TabsTrigger>
+            )}
+            {canViewTab('pl') && (
+              <TabsTrigger value="pl" className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                PL
               </TabsTrigger>
             )}
             {canViewTab('analytics') && (
@@ -3585,6 +3592,11 @@ const Admin = () => {
           {/* Contractors Tab */}
           <TabsContent value="contractors" className="space-y-6">
             <ContractorsDashboard />
+          </TabsContent>
+
+          {/* PL Tab */}
+          <TabsContent value="pl" className="space-y-6">
+            <PLDashboard />
           </TabsContent>
 
           {/* Analytics Tab */}

@@ -20,6 +20,9 @@ import CalendlyCallback from "./pages/CalendlyCallback";
 import TalentPool from "./pages/TalentPool";
 import NotFound from "./pages/NotFound";
 import AiUsage from "./pages/AiUsage";
+import PortalLogin from "./pages/PortalLogin";
+import PortalChangePassword from "./pages/PortalChangePassword";
+import PortalDashboard from "./pages/PortalDashboard";
 
 const queryClient = new QueryClient();
 
@@ -47,6 +50,9 @@ const App = () => (
                 <Route path="/image-editor" element={<ImageEditor />} />
                 <Route path="/auth/calendly/callback" element={<CalendlyCallback />} />
                 <Route path="/talent-pool" element={<TalentPool />} />
+                <Route path="/portal/login" element={<PortalLogin />} />
+                <Route path="/portal/change-password" element={<PortalChangePassword />} />
+                <Route path="/portal" element={<PortalDashboard />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

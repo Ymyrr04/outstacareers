@@ -1014,6 +1014,75 @@ export type Database = {
           },
         ]
       }
+      contractor_portal_users: {
+        Row: {
+          contractor_assignment_id: string
+          created_at: string
+          email: string
+          id: string
+          must_change_password: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          contractor_assignment_id: string
+          created_at?: string
+          email: string
+          id?: string
+          must_change_password?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          contractor_assignment_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          must_change_password?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      contractor_timesheets: {
+        Row: {
+          contractor_assignment_id: string
+          created_at: string
+          id: string
+          notes: string | null
+          overtime_hours: number
+          status: string
+          submitted_at: string
+          total_hours: number
+          updated_at: string
+          week_ending_date: string
+        }
+        Insert: {
+          contractor_assignment_id: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          overtime_hours?: number
+          status?: string
+          submitted_at?: string
+          total_hours: number
+          updated_at?: string
+          week_ending_date: string
+        }
+        Update: {
+          contractor_assignment_id?: string
+          created_at?: string
+          id?: string
+          notes?: string | null
+          overtime_hours?: number
+          status?: string
+          submitted_at?: string
+          total_hours?: number
+          updated_at?: string
+          week_ending_date?: string
+        }
+        Relationships: []
+      }
       deleted_applicants: {
         Row: {
           ai_assessment_details: Json | null
@@ -2001,6 +2070,7 @@ export type Database = {
     }
     Functions: {
       applicant_exists: { Args: { _applicant_id: string }; Returns: boolean }
+      get_my_contractor_assignment_id: { Args: never; Returns: string }
       has_active_interview_session: {
         Args: { _applicant_id: string }
         Returns: boolean
