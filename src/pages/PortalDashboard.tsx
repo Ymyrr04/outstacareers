@@ -923,8 +923,17 @@ const PortalDashboard = () => {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="ot">Overtime hours (within total)</Label>
-                  <Input id="ot" type="number" step="0.25" min="0" value={overtimeHours} onChange={(e) => setOvertimeHours(e.target.value)} />
+                  <Label htmlFor="ot">Incentives ($)</Label>
+                  <Input id="ot" type="number" step="0.01" min="0" value={overtimeHours} onChange={(e) => setOvertimeHours(e.target.value)} placeholder="0.00" />
+                  {parseFloat(overtimeHours || '0') > 0 && (
+                    <Textarea
+                      rows={2}
+                      value={incentiveNote}
+                      onChange={(e) => setIncentiveNote(e.target.value)}
+                      placeholder="Reason for incentive (e.g. performance bonus, project completion)"
+                      className="text-sm"
+                    />
+                  )}
                 </div>
               </div>
 
