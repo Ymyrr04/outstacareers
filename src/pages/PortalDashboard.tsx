@@ -1004,7 +1004,7 @@ const PortalDashboard = () => {
                           ? `Missing ${Math.abs(hoursDiff).toFixed(2)} hrs`
                           : `Over by ${hoursDiff.toFixed(2)} hrs`}
                       </span>{' '}
-                      — Expected {expectedHours.toFixed(2)} hrs (based on {info?.hours_per_week} hrs/week × {dateKeys.length} day{dateKeys.length === 1 ? '' : 's'} ÷ 5).{' '}
+                      — Expected {expectedHours.toFixed(2)} hrs/week (from your profile).{' '}
                       {hoursDiff < 0
                         ? 'Please add a Reason on the day(s) where hours are missing (e.g. day off, holiday, sick).'
                         : 'Please add a Reason on the day(s) where you worked extra hours.'}
