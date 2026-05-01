@@ -315,18 +315,38 @@ const PortalDashboard = () => {
             <CardDescription>
               {editingId
                 ? 'Update the entry below and click Save to confirm changes.'
-                : 'Pick the week (Monday start) and enter the hours you worked each day.'}
+                : 'Pick the date range (From – To) and enter the hours you worked each day.'}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmitClick} onKeyDown={handleFormKeyDown} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="week">Week starting (Monday)</Label>
-                  <Input id="week" type="date" required value={weekStart} onChange={(e) => setWeekStart(e.target.value)} />
-                  {weekStart && weekEnding && (
+                  <Label htmlFor="week-from">From</Label>
+                  <Input
+                    id="week-from"
+                    type="date"
+                    required
+                    value={weekStart}
+                    onChange={(e) => setWeekStart(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="week-to">To</Label>
+                  <Input
+                    id="week-to"
+                    type="date"
+                    required
+                    min={weekStart || undefined}
+                    value={weekEnd}
+                    onChange={(e) => setWeekEnd(e.target.value)}
+                  />
+                  {weekStart && weekEnd && !dateRangeValid && (
+                    <p className="text-xs text-destructive">"To" must be on or after "From".</p>
+                  )}
+                  {weekStart && weekEnd && dateRangeValid && (
                     <p className="text-xs text-muted-foreground">
-                      {format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – {format(new Date(weekEnding + 'T00:00:00'), 'MMM d, yyyy')}
+                      {format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – {format(new Date(weekEnd + 'T00:00:00'), 'MMM d, yyyy')}
                     </p>
                   )}
                 </div>
