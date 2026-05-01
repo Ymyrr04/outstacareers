@@ -401,6 +401,31 @@ const PortalDashboard = () => {
       return !isNaN(v) && v > 10;
     });
 
+  // Expected hours for the selected period (uses Hours per week from profile, prorated by days when range != 7)
+  const expectedHours = useMemo(() => {
+    const hpw = info?.hours_per_week ? Number(info.hours_per_week) : null;
+    if (!hpw || dateKeys.length === 0) return null;
+    // Prorate by selected days assuming a 5-day work week
+    return (hpw / 5) * dateKeys.length;
+  }, [info?.hours_per_week, dateKeys]);
+
+  const hoursDiff = useMemo(() => {
+    if (expectedHours == null) return 0;
+    return Number((totalHours - expectedHours).toFixed(2));
+  }, [totalHours, expectedHours]);
+
+  // Tolerance: anything within ±0.25h is considered matching
+  const hoursMatch = expectedHours == null ? true : Math.abs(hoursDiff) <= 0.25;
+
+  // When over expected: days with > 8h need a reason explaining the extra time
+  const getOverHoursDays = (): string[] => {
+    if (expectedHours == null || hoursDiff <= 0.25) return [];
+    return dateKeys.filter((k) => {
+      const v = parseFloat(days[k]?.hours || '0');
+      return !isNaN(v) && v > 8;
+    });
+  };
+
   const hasPendingApproval = useMemo(() => getOvertimeDays().length > 0, [days, dateKeys]);
 
   const handleSubmitClick = (e?: React.FormEvent) => {
