@@ -965,12 +965,12 @@ const PortalDashboard = () => {
                       Invoice total:{' '}
                       <span className="font-semibold text-primary">
                         {info?.hourly_rate != null
-                          ? `$${(totalHours * Number(info.hourly_rate)).toFixed(2)}`
+                          ? `$${(totalHours * Number(info.hourly_rate) + (parseFloat(overtimeHours || '0') || 0)).toFixed(2)}`
                           : '—'}
                       </span>
                       {info?.hourly_rate != null && (
                         <span className="text-muted-foreground ml-1 text-sm">
-                          (@ ${Number(info.hourly_rate).toFixed(2)}/hr)
+                          (@ ${Number(info.hourly_rate).toFixed(2)}/hr{parseFloat(overtimeHours || '0') > 0 ? ` + $${parseFloat(overtimeHours).toFixed(2)} incentive` : ''})
                         </span>
                       )}
                     </div>
@@ -1245,7 +1245,7 @@ const PortalDashboard = () => {
                   Week of <strong>{weekStart && format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – {weekEnding && format(new Date(weekEnding + 'T00:00:00'), 'MMM d, yyyy')}</strong> ·{' '}
                   <strong>{totalHours.toFixed(2)}</strong> total hours · <strong>${parseFloat(overtimeHours || '0').toFixed(2)}</strong> incentives.
                   {info?.hourly_rate != null && (
-                    <> · Invoice total <strong className="text-primary">${(totalHours * Number(info.hourly_rate)).toFixed(2)}</strong></>
+                    <> · Invoice total <strong className="text-primary">${(totalHours * Number(info.hourly_rate) + (parseFloat(overtimeHours || '0') || 0)).toFixed(2)}</strong></>
                   )}
                 </div>
                 {hasPendingApproval && (
@@ -1272,7 +1272,7 @@ const PortalDashboard = () => {
                     />
                     <span className="text-base">
                       The total amount{info?.hourly_rate != null && (
-                        <> (<strong className="text-primary">${(totalHours * Number(info.hourly_rate)).toFixed(2)}</strong>)</>
+                        <> (<strong className="text-primary">${(totalHours * Number(info.hourly_rate) + (parseFloat(overtimeHours || '0') || 0)).toFixed(2)}</strong>)</>
                       )} <strong>matches my Payoneer invoice</strong> request.
                     </span>
                   </label>
