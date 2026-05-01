@@ -109,21 +109,25 @@ export const PLDashboard = () => {
   useEffect(() => { fetchData(); }, []);
 
   const callProvision = async (payload?: Record<string, unknown>) => {
-    const { data, error } = await supabase.functions.invoke('provision-contractor-accounts', {
-      body: payload ?? {},
+    const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+    if (sessionError) throw new Error(`Unable to read admin session: ${sessionError.message}`);
+    const token = sessionData.session?.access_token;
+    if (!token) throw new Error('No active admin session. Please sign in as admin and try again.');
+
+    const res = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/provision-contractor-accounts`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+      },
+      body: JSON.stringify(payload ?? {}),
     });
-    if (error) {
-      // FunctionsHttpError exposes a Response in error.context — read the actual body
-      let detail = error.message;
-      const ctx: any = (error as any).context;
-      if (ctx && typeof ctx.json === 'function') {
-        try {
-          const body = await ctx.json();
-          detail = body?.error || body?.message || JSON.stringify(body);
-        } catch {
-          try { detail = await ctx.text(); } catch { /* ignore */ }
-        }
-      }
+    const text = await res.text();
+    let data: any = null;
+    try { data = text ? JSON.parse(text) : null; } catch { data = text; }
+    if (!res.ok) {
+      const detail = data?.error || data?.message || (typeof data === 'string' ? data : `HTTP ${res.status}`);
       throw new Error(detail);
     }
     return data;
