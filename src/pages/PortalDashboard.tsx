@@ -229,7 +229,10 @@ const PortalDashboard = () => {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [days, setDays] = useState<Record<string, DayEntry>>({});
   const [overtimeHours, setOvertimeHours] = useState('0');
+  const [incentiveNote, setIncentiveNote] = useState('');
   const [notes, setNotes] = useState('');
+  const [extraAmount, setExtraAmount] = useState('');
+  const [extraReason, setExtraReason] = useState('');
 
   // week-ending used for DB key (the "to" date)
   const weekEnding = weekEnd;
