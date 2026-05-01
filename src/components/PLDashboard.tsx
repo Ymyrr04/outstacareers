@@ -509,17 +509,26 @@ export const PLDashboard = () => {
                             disabled={loadingProfile}
                             onClick={async () => {
                               setLoadingProfile(true);
-                              const { data, error } = await supabase
-                                .from('contractor_assignments')
-                                .select('*, applicant:applicants_prescreen(full_name, email, location, phone), client:clients(company_name, industry)')
-                                .eq('id', c.id)
-                                .maybeSingle();
+                              setProfileInvoices([]);
+                              const [{ data, error }, { data: invoices }] = await Promise.all([
+                                supabase
+                                  .from('contractor_assignments')
+                                  .select('*, applicant:applicants_prescreen(full_name, email, location, phone), client:clients(company_name, industry)')
+                                  .eq('id', c.id)
+                                  .maybeSingle(),
+                                supabase
+                                  .from('contractor_timesheets')
+                                  .select('id, week_ending_date, total_hours, overtime_hours, incentive_amount, status, submitted_at')
+                                  .eq('contractor_assignment_id', c.id)
+                                  .order('week_ending_date', { ascending: false }),
+                              ]);
                               setLoadingProfile(false);
                               if (error || !data) {
                                 toast({ title: 'Failed to load profile', description: error?.message, variant: 'destructive' });
                                 return;
                               }
                               setProfileContractor(data);
+                              setProfileInvoices(invoices || []);
                             }}
                           >
                             <Eye className="w-3 h-3 mr-1" />Profile
