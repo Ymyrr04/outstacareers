@@ -590,7 +590,7 @@ export const PLDashboard = () => {
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('hours')}>Hours<SortIcon active={tsSort.key === 'hours'} dir={tsSort.dir} /></button></TableHead>
                   <TableHead className="text-right">Deposit</TableHead>
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('ot')}>OT<SortIcon active={tsSort.key === 'ot'} dir={tsSort.dir} /></button></TableHead>
-                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('incentives')}>Incentives<SortIcon active={tsSort.key === 'incentives'} dir={tsSort.dir} /></button></TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('incentives')}>Bonus<SortIcon active={tsSort.key === 'incentives'} dir={tsSort.dir} /></button></TableHead>
                   <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('status')}>Status<SortIcon active={tsSort.key === 'status'} dir={tsSort.dir} /></button></TableHead>
                   <TableHead>Daily &gt;10h</TableHead>
                   <TableHead>Notes</TableHead>
