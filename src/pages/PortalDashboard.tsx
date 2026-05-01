@@ -603,7 +603,7 @@ const PortalDashboard = () => {
     }
 
     setDays(next);
-    setOvertimeHours(String(t.overtime_hours));
+    setOvertimeHours(String(t.incentive_amount ?? 0));
     setIncentiveNote('');
     setExtraAmount('');
     setExtraReason('');
