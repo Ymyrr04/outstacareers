@@ -386,8 +386,12 @@ const PortalDashboard = () => {
       }
     }
     const ot = parseFloat(overtimeHours || '0');
-    if (isNaN(ot) || ot < 0 || ot > totalHours) {
-      toast({ title: 'Invalid overtime', description: 'Overtime cannot exceed total hours.', variant: 'destructive' });
+    if (isNaN(ot) || ot < 0) {
+      toast({ title: 'Invalid incentives', description: 'Incentives amount must be 0 or greater.', variant: 'destructive' });
+      return false;
+    }
+    if (ot > 0 && !incentiveNote.trim()) {
+      toast({ title: 'Incentive reason required', description: 'Please add a note explaining the incentive amount.', variant: 'destructive' });
       return false;
     }
     return true;
