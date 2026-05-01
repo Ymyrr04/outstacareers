@@ -56,6 +56,8 @@ const PortalDashboard = () => {
   const [submitting, setSubmitting] = useState(false);
   const [info, setInfo] = useState<ContractorInfo | null>(null);
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
 
   const [weekEnding, setWeekEnding] = useState(getDefaultWeekEnding());
   const [totalHours, setTotalHours] = useState('');
