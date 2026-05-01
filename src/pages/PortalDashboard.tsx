@@ -478,6 +478,8 @@ const PortalDashboard = () => {
       setProfileSaving(false);
     }
   };
+
+  const handleClearDateRange = () => {
     setDraftDateRange(undefined);
     setDateRange(undefined);
     setWeekStart('');
