@@ -57,15 +57,18 @@ const getDefaultWeekStart = () => {
 // Build the list of date keys (yyyy-MM-dd) inclusive between from and to
 const buildDateKeys = (from: string, to: string): string[] => {
   if (!from || !to) return [];
-  const start = new Date(from + 'T00:00:00');
-  const end = new Date(to + 'T00:00:00');
+  // Normalize to yyyy-MM-dd in case input has extra parts
+  const fromNorm = from.slice(0, 10);
+  const toNorm = to.slice(0, 10);
+  const start = new Date(fromNorm + 'T00:00:00');
+  const end = new Date(toNorm + 'T00:00:00');
+  if (isNaN(start.getTime()) || isNaN(end.getTime())) return [];
   if (end < start) return [];
+  const diffDays = Math.round((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  const count = Math.min(diffDays + 1, 31); // cap at 31 days
   const out: string[] = [];
-  // cap at 31 days as a safety net
-  for (let i = 0; i < 31; i++) {
-    const d = addDays(start, i);
-    out.push(format(d, 'yyyy-MM-dd'));
-    if (format(d, 'yyyy-MM-dd') === to) break;
+  for (let i = 0; i < count; i++) {
+    out.push(format(addDays(start, i), 'yyyy-MM-dd'));
   }
   return out;
 };
