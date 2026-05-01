@@ -28,10 +28,33 @@ import {
 
 interface ContractorInfo {
   contractor_assignment_id: string;
+  applicant_id: string;
   job_title: string | null;
   company_name: string | null;
   full_name: string | null;
   hourly_rate: number | null;
+  hours_per_week: number | null;
+  regular_work_shift: string | null;
+  contact_number: string | null;
+  emergency_number: string | null;
+  country: string | null;
+  email: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  location: string | null;
+}
+
+interface ProfileForm {
+  full_name: string;
+  phone: string;
+  whatsapp: string;
+  location: string;
+  country: string;
+  contact_number: string;
+  emergency_number: string;
+  hours_per_week: string;
+  hourly_rate: string;
+  regular_work_shift: string;
 }
 
 interface DayEntry {
