@@ -339,11 +339,10 @@ const PortalDashboard = () => {
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    const defStart = getDefaultWeekStart();
-    const defEnd = format(addDays(new Date(defStart + 'T00:00:00'), 6), 'yyyy-MM-dd');
-    setWeekStart(defStart);
-    setWeekEnd(defEnd);
-    setDays(emptyDaysFor(buildDateKeys(defStart, defEnd)));
+    setWeekStart('');
+    setWeekEnd('');
+    setDateRange(undefined);
+    setDays({});
     setOvertimeHours('0');
     setNotes('');
   };
