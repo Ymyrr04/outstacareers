@@ -46,11 +46,7 @@ interface Timesheet {
   daily_hours: Record<string, { hours: number; reason?: string }> | null;
 }
 
-const DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
-const DAY_LABELS: Record<typeof DAY_KEYS[number], string> = {
-  mon: 'Monday', tue: 'Tuesday', wed: 'Wednesday', thu: 'Thursday',
-  fri: 'Friday', sat: 'Saturday', sun: 'Sunday',
-};
+const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 // Returns the Monday of the current week (week starts Monday)
 const getDefaultWeekStart = () => {
@@ -58,8 +54,25 @@ const getDefaultWeekStart = () => {
   return monday.toISOString().split('T')[0];
 };
 
-const emptyDays = (): Record<string, DayEntry> =>
-  Object.fromEntries(DAY_KEYS.map((k) => [k, { hours: '', reason: '' }]));
+// Build the list of date keys (yyyy-MM-dd) inclusive between from and to
+const buildDateKeys = (from: string, to: string): string[] => {
+  if (!from || !to) return [];
+  const start = new Date(from + 'T00:00:00');
+  const end = new Date(to + 'T00:00:00');
+  if (end < start) return [];
+  const out: string[] = [];
+  // cap at 31 days as a safety net
+  for (let i = 0; i < 31; i++) {
+    const d = addDays(start, i);
+    out.push(format(d, 'yyyy-MM-dd'));
+    if (format(d, 'yyyy-MM-dd') === to) break;
+  }
+  return out;
+};
+
+const emptyDaysFor = (keys: string[]): Record<string, DayEntry> =>
+  Object.fromEntries(keys.map((k) => [k, { hours: '', reason: '' }]));
+
 
 const PortalDashboard = () => {
   const navigate = useNavigate();
@@ -78,14 +91,24 @@ const PortalDashboard = () => {
     const start = new Date(getDefaultWeekStart() + 'T00:00:00');
     return format(addDays(start, 6), 'yyyy-MM-dd');
   });
-  const [days, setDays] = useState<Record<string, DayEntry>>(emptyDays());
+  const [days, setDays] = useState<Record<string, DayEntry>>(() =>
+    emptyDaysFor(buildDateKeys(getDefaultWeekStart(), format(addDays(new Date(getDefaultWeekStart() + 'T00:00:00'), 6), 'yyyy-MM-dd')))
+  );
   const [overtimeHours, setOvertimeHours] = useState('0');
   const [notes, setNotes] = useState('');
 
-  // week-ending used for DB key (Sunday or whatever the user chose as "to")
+  // week-ending used for DB key (the "to" date)
   const weekEnding = weekEnd;
 
-  // Validate the date range — must be exactly 7 days (Mon–Sun or any 7-day window)
+  // Date keys for the currently selected range
+  const dateKeys = useMemo(() => buildDateKeys(weekStart, weekEnd), [weekStart, weekEnd]);
+
+  const dayLabel = (key: string) => {
+    const d = new Date(key + 'T00:00:00');
+    return WEEKDAY_NAMES[d.getDay()];
+  };
+
+  // Validate the date range
   const dateRangeValid = useMemo(() => {
     if (!weekStart || !weekEnd) return false;
     const s = new Date(weekStart + 'T00:00:00').getTime();
@@ -93,12 +116,26 @@ const PortalDashboard = () => {
     return e >= s;
   }, [weekStart, weekEnd]);
 
+  // Sync days state to match the date range — preserve existing values for overlapping keys
+  useEffect(() => {
+    if (editingId) return; // don't auto-rebuild while editing existing entry
+    setDays((prev) => {
+      const next: Record<string, DayEntry> = {};
+      dateKeys.forEach((k) => {
+        next[k] = prev[k] || { hours: '', reason: '' };
+      });
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekStart, weekEnd]);
+
   const totalHours = useMemo(() => {
-    return DAY_KEYS.reduce((sum, k) => {
+    return dateKeys.reduce((sum, k) => {
       const v = parseFloat(days[k]?.hours || '0');
       return sum + (isNaN(v) ? 0 : v);
     }, 0);
-  }, [days]);
+  }, [days, dateKeys]);
+
 
   const loadAll = async () => {
     setLoading(true);
@@ -157,12 +194,12 @@ const PortalDashboard = () => {
 
   // Validate inputs (per-day hours and overtime). Returns true if numeric values are sane.
   const validateNumbers = (): boolean => {
-    for (const k of DAY_KEYS) {
+    for (const k of dateKeys) {
       const raw = days[k]?.hours;
       if (raw === '' || raw == null) continue;
       const n = parseFloat(raw);
       if (isNaN(n) || n < 0 || n > 24) {
-        toast({ title: `Invalid hours for ${DAY_LABELS[k]}`, description: 'Daily hours must be between 0 and 24.', variant: 'destructive' });
+        toast({ title: `Invalid hours for ${dayLabel(k)} (${format(new Date(k + 'T00:00:00'), 'MMM d')})`, description: 'Daily hours must be between 0 and 24.', variant: 'destructive' });
         return false;
       }
     }
@@ -176,19 +213,19 @@ const PortalDashboard = () => {
 
   // Returns list of day keys that are empty (no hours entered)
   const getEmptyDays = (): string[] =>
-    DAY_KEYS.filter((k) => {
+    dateKeys.filter((k) => {
       const raw = days[k]?.hours;
       return raw === '' || raw == null || parseFloat(raw) === 0;
     });
 
   // Returns list of day keys that exceed 10 hours (require overtime justification)
   const getOvertimeDays = (): string[] =>
-    DAY_KEYS.filter((k) => {
+    dateKeys.filter((k) => {
       const v = parseFloat(days[k]?.hours || '0');
       return !isNaN(v) && v > 10;
     });
 
-  const hasPendingApproval = useMemo(() => getOvertimeDays().length > 0, [days]);
+  const hasPendingApproval = useMemo(() => getOvertimeDays().length > 0, [days, dateKeys]);
 
   const handleSubmitClick = (e?: React.FormEvent) => {
     e?.preventDefault();
@@ -218,11 +255,11 @@ const PortalDashboard = () => {
     if (!validateNumbers()) return;
     const ot = parseFloat(overtimeHours || '0');
 
-    const dailyPayload: Record<string, { hours: number; reason?: string }> = {};
-    DAY_KEYS.forEach((k) => {
+    const dailyPayload: Record<string, { hours: number; reason?: string; weekday?: string }> = {};
+    dateKeys.forEach((k) => {
       const h = parseFloat(days[k]?.hours || '0') || 0;
       const reason = days[k]?.reason?.trim() || '';
-      dailyPayload[k] = { hours: h, ...(reason ? { reason } : {}) };
+      dailyPayload[k] = { hours: h, weekday: dayLabel(k), ...(reason ? { reason } : {}) };
     });
 
     setSubmitting(true);
@@ -255,19 +292,38 @@ const PortalDashboard = () => {
 
   const handleEdit = (t: Timesheet) => {
     setEditingId(t.id);
-    // Derive week start (Monday) from week ending (Sunday) = ending - 6 days
-    const ending = new Date(t.week_ending_date + 'T00:00:00');
-    setWeekStart(format(addDays(ending, -6), 'yyyy-MM-dd'));
-    setWeekEnd(t.week_ending_date);
-    const next = emptyDays();
-    if (t.daily_hours && typeof t.daily_hours === 'object') {
-      DAY_KEYS.forEach((k) => {
-        const d = (t.daily_hours as any)[k];
-        if (d) {
-          next[k] = { hours: d.hours != null ? String(d.hours) : '', reason: d.reason || '' };
-        }
+    // Determine date range. Prefer explicit date keys stored in daily_hours; fallback to legacy 7-day window.
+    let fromKey = '';
+    let toKey = t.week_ending_date;
+    const dh = (t.daily_hours || {}) as Record<string, any>;
+    const dateLikeKeys = Object.keys(dh).filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
+    if (dateLikeKeys.length > 0) {
+      fromKey = dateLikeKeys[0];
+      toKey = dateLikeKeys[dateLikeKeys.length - 1];
+    } else {
+      const ending = new Date(t.week_ending_date + 'T00:00:00');
+      fromKey = format(addDays(ending, -6), 'yyyy-MM-dd');
+    }
+    setWeekStart(fromKey);
+    setWeekEnd(toKey);
+
+    const keys = buildDateKeys(fromKey, toKey);
+    const next = emptyDaysFor(keys);
+
+    if (dateLikeKeys.length > 0) {
+      keys.forEach((k) => {
+        const d = dh[k];
+        if (d) next[k] = { hours: d.hours != null ? String(d.hours) : '', reason: d.reason || '' };
+      });
+    } else {
+      // Legacy: map mon/tue/... in order onto the 7 generated keys
+      const legacy = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+      keys.forEach((k, i) => {
+        const d = dh[legacy[i]];
+        if (d) next[k] = { hours: d.hours != null ? String(d.hours) : '', reason: d.reason || '' };
       });
     }
+
     setDays(next);
     setOvertimeHours(String(t.overtime_hours));
     setNotes(t.notes || '');
@@ -277,9 +333,10 @@ const PortalDashboard = () => {
   const handleCancelEdit = () => {
     setEditingId(null);
     const defStart = getDefaultWeekStart();
+    const defEnd = format(addDays(new Date(defStart + 'T00:00:00'), 6), 'yyyy-MM-dd');
     setWeekStart(defStart);
-    setWeekEnd(format(addDays(new Date(defStart + 'T00:00:00'), 6), 'yyyy-MM-dd'));
-    setDays(emptyDays());
+    setWeekEnd(defEnd);
+    setDays(emptyDaysFor(buildDateKeys(defStart, defEnd)));
     setOvertimeHours('0');
     setNotes('');
   };
@@ -368,19 +425,25 @@ const PortalDashboard = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  {DAY_KEYS.map((k) => {
-                    const start = weekStart ? new Date(weekStart + 'T00:00:00') : null;
-                    const date = start ? addDays(start, DAY_KEYS.indexOf(k)) : null;
-                    const hoursNum = parseFloat(days[k].hours || '0');
+                  {dateKeys.length === 0 && (
+                    <p className="text-sm text-muted-foreground p-3 border rounded-md">
+                      Select a valid date range to enter hours.
+                    </p>
+                  )}
+                  {dateKeys.map((k) => {
+                    const date = new Date(k + 'T00:00:00');
+                    const entry = days[k] || { hours: '', reason: '' };
+                    const hoursNum = parseFloat(entry.hours || '0');
                     const isOvertime = !isNaN(hoursNum) && hoursNum > 10;
+                    const label = dayLabel(k);
                     return (
                       <div
                         key={k}
                         className={`grid grid-cols-1 md:grid-cols-[160px_160px_1fr] gap-3 p-3 items-center rounded-md border bg-background ${isOvertime ? 'border-amber-500' : 'border-input'}`}
                       >
                         <div>
-                          <div className="font-medium text-sm">{DAY_LABELS[k]}</div>
-                          {date && <div className="text-xs text-muted-foreground">{format(date, 'MMM d')}</div>}
+                          <div className="font-medium text-sm">{label}</div>
+                          <div className="text-xs text-muted-foreground">{format(date, 'MMM d, yyyy')}</div>
                         </div>
                         <div className="space-y-1">
                           <Label htmlFor={`hrs-${k}`} className="text-xs text-muted-foreground">Hours worked</Label>
@@ -391,9 +454,9 @@ const PortalDashboard = () => {
                             min="0"
                             max="24"
                             placeholder="0"
-                            value={days[k].hours}
+                            value={entry.hours}
                             onChange={(e) => updateDay(k, { hours: e.target.value })}
-                            aria-label={`${DAY_LABELS[k]} hours`}
+                            aria-label={`${label} ${format(date, 'MMM d')} hours`}
                             className={isOvertime ? 'border-amber-500 focus-visible:ring-amber-500' : ''}
                           />
                         </div>
@@ -404,7 +467,7 @@ const PortalDashboard = () => {
                           <Input
                             id={`reason-${k}`}
                             placeholder={isOvertime ? 'e.g. urgent deadline' : 'Optional — e.g. day off, holiday, sick'}
-                            value={days[k].reason}
+                            value={entry.reason}
                             onChange={(e) => updateDay(k, { reason: e.target.value })}
                             className={isOvertime ? 'border-amber-500 focus-visible:ring-amber-500' : ''}
                           />
@@ -502,7 +565,7 @@ const PortalDashboard = () => {
               return (
                 <div key={k} className="space-y-1">
                   <Label className="text-sm">
-                    {DAY_LABELS[k as typeof DAY_KEYS[number]]}{' '}
+                    {dayLabel(k)} <span className="text-xs text-muted-foreground">({format(new Date(k + 'T00:00:00'), 'MMM d')})</span>{' '}
                     <span className={`text-xs ${isOvertime ? 'text-amber-600' : 'text-muted-foreground'}`}>
                       ({isOvertime ? `${hoursNum} hrs — needs approval` : 'no hours'})
                     </span>
