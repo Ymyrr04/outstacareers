@@ -565,7 +565,7 @@ const PortalDashboard = () => {
               return (
                 <div key={k} className="space-y-1">
                   <Label className="text-sm">
-                    {DAY_LABELS[k as typeof DAY_KEYS[number]]}{' '}
+                    {dayLabel(k)} <span className="text-xs text-muted-foreground">({format(new Date(k + 'T00:00:00'), 'MMM d')})</span>{' '}
                     <span className={`text-xs ${isOvertime ? 'text-amber-600' : 'text-muted-foreground'}`}>
                       ({isOvertime ? `${hoursNum} hrs — needs approval` : 'no hours'})
                     </span>
