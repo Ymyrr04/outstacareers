@@ -141,6 +141,7 @@ export const PLDashboard = () => {
       }
       return {
         id: c.id,
+        applicant_id: c.applicant_id,
         job_title: c.job_title,
         status: c.status,
         hourly_rate: c.hourly_rate,
