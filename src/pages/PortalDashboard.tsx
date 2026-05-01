@@ -323,7 +323,7 @@ const PortalDashboard = () => {
       emergency_number: nextInfo.emergency_number || '',
       hours_per_week: nextInfo.hours_per_week != null ? String(nextInfo.hours_per_week) : '',
       hourly_rate: nextInfo.hourly_rate != null ? String(nextInfo.hourly_rate) : '',
-      regular_work_shift: nextInfo.regular_work_shift || '9 AM – 6 PM EST',
+      regular_work_shift: nextInfo.regular_work_shift || '9:00 AM – 6:00 PM EST',
     });
 
     // Force profile completion on first login if any required field is missing.
