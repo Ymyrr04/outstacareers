@@ -403,6 +403,9 @@ export const PLDashboard = () => {
                   <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('status')}>Status<SortIcon active={contractorSort.key === 'status'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('rate')}>Rate<SortIcon active={contractorSort.key === 'rate'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('hpw')}>Hrs/Wk<SortIcon active={contractorSort.key === 'hpw'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead>Latest Submission</TableHead>
+                  <TableHead className="text-right">Hours</TableHead>
+                  <TableHead className="text-right">Deposit</TableHead>
                   <TableHead>Portal Account</TableHead>
                 </TableRow>
               </TableHeader>
