@@ -995,7 +995,7 @@ const PortalDashboard = () => {
                 {expectedHours != null && dateKeys.length > 0 && (
                   hoursMatch ? (
                     <div className="rounded-md border border-emerald-300 bg-emerald-50 text-emerald-900 px-3 py-2 text-xs">
-                      ✓ Matches your weekly target ({expectedHours.toFixed(2)} hrs expected for {dateKeys.length} day{dateKeys.length === 1 ? '' : 's'}).
+                      ✓ Matches your weekly target ({expectedHours.toFixed(2)} hrs/week from your profile).
                     </div>
                   ) : (
                     <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 px-3 py-2 text-xs">
