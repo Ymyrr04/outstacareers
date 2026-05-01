@@ -412,12 +412,11 @@ const PortalDashboard = () => {
       return !isNaN(v) && v > 10;
     });
 
-  // Expected hours for the selected period (uses Hours per week from profile, prorated by days when range != 7)
+  // Expected hours = the contractor's weekly target from their profile (always, regardless of date range)
   const expectedHours = useMemo(() => {
     const hpw = info?.hours_per_week ? Number(info.hours_per_week) : null;
     if (!hpw || dateKeys.length === 0) return null;
-    // Prorate by selected days assuming a 5-day work week
-    return (hpw / 5) * dateKeys.length;
+    return hpw;
   }, [info?.hours_per_week, dateKeys]);
 
   const hoursDiff = useMemo(() => {
@@ -428,7 +427,7 @@ const PortalDashboard = () => {
   // Tolerance: anything within ±0.25h is considered matching
   const hoursMatch = expectedHours == null ? true : Math.abs(hoursDiff) <= 0.25;
 
-  // OT hours = anything worked beyond the prorated weekly target
+  // OT hours = anything worked beyond the weekly target
   const otHours = useMemo(() => {
     if (expectedHours == null) return 0;
     return Math.max(0, Number((totalHours - expectedHours).toFixed(2)));
@@ -996,7 +995,7 @@ const PortalDashboard = () => {
                 {expectedHours != null && dateKeys.length > 0 && (
                   hoursMatch ? (
                     <div className="rounded-md border border-emerald-300 bg-emerald-50 text-emerald-900 px-3 py-2 text-xs">
-                      ✓ Matches your weekly target ({expectedHours.toFixed(2)} hrs expected for {dateKeys.length} day{dateKeys.length === 1 ? '' : 's'}).
+                      ✓ Matches your weekly target ({expectedHours.toFixed(2)} hrs/week from your profile).
                     </div>
                   ) : (
                     <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 px-3 py-2 text-xs">
@@ -1005,7 +1004,7 @@ const PortalDashboard = () => {
                           ? `Missing ${Math.abs(hoursDiff).toFixed(2)} hrs`
                           : `Over by ${hoursDiff.toFixed(2)} hrs`}
                       </span>{' '}
-                      — Expected {expectedHours.toFixed(2)} hrs (based on {info?.hours_per_week} hrs/week × {dateKeys.length} day{dateKeys.length === 1 ? '' : 's'} ÷ 5).{' '}
+                      — Expected {expectedHours.toFixed(2)} hrs/week (from your profile).{' '}
                       {hoursDiff < 0
                         ? 'Please add a Reason on the day(s) where hours are missing (e.g. day off, holiday, sick).'
                         : 'Please add a Reason on the day(s) where you worked extra hours.'}
