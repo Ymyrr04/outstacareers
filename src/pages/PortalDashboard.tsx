@@ -410,7 +410,74 @@ const PortalDashboard = () => {
     setNotes('');
   };
 
-  const handleClearDateRange = () => {
+  const handleProfileCancel = () => {
+    if (!info) return;
+    setProfileForm({
+      full_name: info.full_name || '',
+      phone: info.phone || '',
+      whatsapp: info.whatsapp || '',
+      location: info.location || '',
+      country: info.country || '',
+      contact_number: info.contact_number || '',
+      emergency_number: info.emergency_number || '',
+      hours_per_week: info.hours_per_week != null ? String(info.hours_per_week) : '',
+      hourly_rate: info.hourly_rate != null ? String(info.hourly_rate) : '',
+      regular_work_shift: info.regular_work_shift || '',
+    });
+    setProfileEditing(false);
+  };
+
+  const handleProfileSave = async () => {
+    if (!info) return;
+    if (!profileForm.full_name.trim()) {
+      toast({ title: 'Name required', description: 'Please enter your full name.', variant: 'destructive' });
+      return;
+    }
+    const hpw = profileForm.hours_per_week.trim() === '' ? null : Number(profileForm.hours_per_week);
+    const rate = profileForm.hourly_rate.trim() === '' ? null : Number(profileForm.hourly_rate);
+    if (hpw != null && (isNaN(hpw) || hpw < 0 || hpw > 168)) {
+      toast({ title: 'Invalid hours', description: 'Hours per week must be between 0 and 168.', variant: 'destructive' });
+      return;
+    }
+    if (rate != null && (isNaN(rate) || rate < 0)) {
+      toast({ title: 'Invalid rate', description: 'Rate must be a non-negative number.', variant: 'destructive' });
+      return;
+    }
+    setProfileSaving(true);
+    try {
+      const { error: aErr } = await supabase
+        .from('contractor_assignments')
+        .update({
+          hourly_rate: rate,
+          hours_per_week: hpw,
+          regular_work_shift: profileForm.regular_work_shift.trim() || null,
+          contact_number: profileForm.contact_number.trim() || null,
+          emergency_number: profileForm.emergency_number.trim() || null,
+          country: profileForm.country.trim() || null,
+        })
+        .eq('id', info.contractor_assignment_id);
+      if (aErr) throw aErr;
+
+      const { error: pErr } = await supabase
+        .from('applicants_prescreen')
+        .update({
+          full_name: profileForm.full_name.trim(),
+          phone: profileForm.phone.trim() || null,
+          whatsapp: profileForm.whatsapp.trim() || null,
+          location: profileForm.location.trim() || null,
+        })
+        .eq('id', info.applicant_id);
+      if (pErr) throw pErr;
+
+      toast({ title: 'Profile updated', description: 'Your profile changes have been saved.' });
+      setProfileEditing(false);
+      await loadAll();
+    } catch (e: any) {
+      toast({ title: 'Could not save profile', description: e?.message || 'Please try again.', variant: 'destructive' });
+    } finally {
+      setProfileSaving(false);
+    }
+  };
     setDraftDateRange(undefined);
     setDateRange(undefined);
     setWeekStart('');
