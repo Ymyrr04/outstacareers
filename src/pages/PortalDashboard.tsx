@@ -74,16 +74,24 @@ const PortalDashboard = () => {
   const [editingId, setEditingId] = useState<string | null>(null);
 
   const [weekStart, setWeekStart] = useState(getDefaultWeekStart());
+  const [weekEnd, setWeekEnd] = useState(() => {
+    const start = new Date(getDefaultWeekStart() + 'T00:00:00');
+    return format(addDays(start, 6), 'yyyy-MM-dd');
+  });
   const [days, setDays] = useState<Record<string, DayEntry>>(emptyDays());
   const [overtimeHours, setOvertimeHours] = useState('0');
   const [notes, setNotes] = useState('');
 
-  // Compute week-ending (Sunday) from week start (Monday)
-  const weekEnding = useMemo(() => {
-    if (!weekStart) return '';
-    const start = new Date(weekStart + 'T00:00:00');
-    return format(addDays(start, 6), 'yyyy-MM-dd');
-  }, [weekStart]);
+  // week-ending used for DB key (Sunday or whatever the user chose as "to")
+  const weekEnding = weekEnd;
+
+  // Validate the date range — must be exactly 7 days (Mon–Sun or any 7-day window)
+  const dateRangeValid = useMemo(() => {
+    if (!weekStart || !weekEnd) return false;
+    const s = new Date(weekStart + 'T00:00:00').getTime();
+    const e = new Date(weekEnd + 'T00:00:00').getTime();
+    return e >= s;
+  }, [weekStart, weekEnd]);
 
   const totalHours = useMemo(() => {
     return DAY_KEYS.reduce((sum, k) => {
@@ -185,6 +193,10 @@ const PortalDashboard = () => {
   const handleSubmitClick = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!info) return;
+    if (!dateRangeValid) {
+      toast({ title: 'Invalid date range', description: '"To" date must be on or after "From" date.', variant: 'destructive' });
+      return;
+    }
     if (!validateNumbers()) return;
     if (totalHours <= 0) {
       toast({ title: 'No hours entered', description: 'Please enter hours for at least one day.', variant: 'destructive' });
@@ -246,6 +258,7 @@ const PortalDashboard = () => {
     // Derive week start (Monday) from week ending (Sunday) = ending - 6 days
     const ending = new Date(t.week_ending_date + 'T00:00:00');
     setWeekStart(format(addDays(ending, -6), 'yyyy-MM-dd'));
+    setWeekEnd(t.week_ending_date);
     const next = emptyDays();
     if (t.daily_hours && typeof t.daily_hours === 'object') {
       DAY_KEYS.forEach((k) => {
@@ -263,7 +276,9 @@ const PortalDashboard = () => {
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    setWeekStart(getDefaultWeekStart());
+    const defStart = getDefaultWeekStart();
+    setWeekStart(defStart);
+    setWeekEnd(format(addDays(new Date(defStart + 'T00:00:00'), 6), 'yyyy-MM-dd'));
     setDays(emptyDays());
     setOvertimeHours('0');
     setNotes('');
@@ -304,18 +319,38 @@ const PortalDashboard = () => {
             <CardDescription>
               {editingId
                 ? 'Update the entry below and click Save to confirm changes.'
-                : 'Pick the week (Monday start) and enter the hours you worked each day.'}
+                : 'Pick the date range (From – To) and enter the hours you worked each day.'}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmitClick} onKeyDown={handleFormKeyDown} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="week">Week starting (Monday)</Label>
-                  <Input id="week" type="date" required value={weekStart} onChange={(e) => setWeekStart(e.target.value)} />
-                  {weekStart && weekEnding && (
+                  <Label htmlFor="week-from">From</Label>
+                  <Input
+                    id="week-from"
+                    type="date"
+                    required
+                    value={weekStart}
+                    onChange={(e) => setWeekStart(e.target.value)}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="week-to">To</Label>
+                  <Input
+                    id="week-to"
+                    type="date"
+                    required
+                    min={weekStart || undefined}
+                    value={weekEnd}
+                    onChange={(e) => setWeekEnd(e.target.value)}
+                  />
+                  {weekStart && weekEnd && !dateRangeValid && (
+                    <p className="text-xs text-destructive">"To" must be on or after "From".</p>
+                  )}
+                  {weekStart && weekEnd && dateRangeValid && (
                     <p className="text-xs text-muted-foreground">
-                      {format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – {format(new Date(weekEnding + 'T00:00:00'), 'MMM d, yyyy')}
+                      {format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – {format(new Date(weekEnd + 'T00:00:00'), 'MMM d, yyyy')}
                     </p>
                   )}
                 </div>
