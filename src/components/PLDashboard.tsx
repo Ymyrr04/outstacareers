@@ -18,6 +18,7 @@ interface TimesheetRow {
   notes: string | null;
   status: string;
   submitted_at: string;
+  daily_hours: Record<string, { hours: number; reason?: string }> | null;
   contractor: {
     job_title: string | null;
     applicant: { full_name: string; email: string } | null;
