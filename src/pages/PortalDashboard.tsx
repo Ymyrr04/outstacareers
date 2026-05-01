@@ -461,15 +461,16 @@ const PortalDashboard = () => {
     const empties = getEmptyDays();
     const overtimes = getOvertimeDays();
     const overHours = getOverHoursDays();
-    const allFlagged = Array.from(new Set([...empties, ...overtimes, ...overHours]));
+    const underHours = getUnderHoursDays();
+    const allFlagged = Array.from(new Set([...empties, ...overtimes, ...overHours, ...underHours]));
     const missingReason = allFlagged.filter((k) => !days[k]?.reason?.trim());
     if (missingReason.length > 0) {
       setMissingDays(missingReason);
       setMissingReasonOpen(true);
       return;
     }
-    // If under target hours but no empty days (e.g., shorter days), require a reason on at least one day
-    if (!hoursMatch && hoursDiff < 0 && empties.length === 0) {
+    // Fallback: under target but no obvious flagged days — still require at least one reason
+    if (!hoursMatch && hoursDiff < 0) {
       const anyReason = dateKeys.some((k) => days[k]?.reason?.trim());
       if (!anyReason) {
         toast({
