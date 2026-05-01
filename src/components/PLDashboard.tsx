@@ -351,6 +351,7 @@ export const PLDashboard = () => {
                   <TableHead>Week Ending</TableHead>
                   <TableHead className="text-right">Hours</TableHead>
                   <TableHead className="text-right">OT</TableHead>
+                  <TableHead className="text-right">Incentives</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Daily &gt;10h</TableHead>
                   <TableHead>Notes</TableHead>
