@@ -425,19 +425,25 @@ const PortalDashboard = () => {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  {DAY_KEYS.map((k) => {
-                    const start = weekStart ? new Date(weekStart + 'T00:00:00') : null;
-                    const date = start ? addDays(start, DAY_KEYS.indexOf(k)) : null;
-                    const hoursNum = parseFloat(days[k].hours || '0');
+                  {dateKeys.length === 0 && (
+                    <p className="text-sm text-muted-foreground p-3 border rounded-md">
+                      Select a valid date range to enter hours.
+                    </p>
+                  )}
+                  {dateKeys.map((k) => {
+                    const date = new Date(k + 'T00:00:00');
+                    const entry = days[k] || { hours: '', reason: '' };
+                    const hoursNum = parseFloat(entry.hours || '0');
                     const isOvertime = !isNaN(hoursNum) && hoursNum > 10;
+                    const label = dayLabel(k);
                     return (
                       <div
                         key={k}
                         className={`grid grid-cols-1 md:grid-cols-[160px_160px_1fr] gap-3 p-3 items-center rounded-md border bg-background ${isOvertime ? 'border-amber-500' : 'border-input'}`}
                       >
                         <div>
-                          <div className="font-medium text-sm">{DAY_LABELS[k]}</div>
-                          {date && <div className="text-xs text-muted-foreground">{format(date, 'MMM d')}</div>}
+                          <div className="font-medium text-sm">{label}</div>
+                          <div className="text-xs text-muted-foreground">{format(date, 'MMM d, yyyy')}</div>
                         </div>
                         <div className="space-y-1">
                           <Label htmlFor={`hrs-${k}`} className="text-xs text-muted-foreground">Hours worked</Label>
@@ -448,9 +454,9 @@ const PortalDashboard = () => {
                             min="0"
                             max="24"
                             placeholder="0"
-                            value={days[k].hours}
+                            value={entry.hours}
                             onChange={(e) => updateDay(k, { hours: e.target.value })}
-                            aria-label={`${DAY_LABELS[k]} hours`}
+                            aria-label={`${label} ${format(date, 'MMM d')} hours`}
                             className={isOvertime ? 'border-amber-500 focus-visible:ring-amber-500' : ''}
                           />
                         </div>
@@ -461,7 +467,7 @@ const PortalDashboard = () => {
                           <Input
                             id={`reason-${k}`}
                             placeholder={isOvertime ? 'e.g. urgent deadline' : 'Optional — e.g. day off, holiday, sick'}
-                            value={days[k].reason}
+                            value={entry.reason}
                             onChange={(e) => updateDay(k, { reason: e.target.value })}
                             className={isOvertime ? 'border-amber-500 focus-visible:ring-amber-500' : ''}
                           />
