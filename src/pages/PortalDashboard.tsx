@@ -412,12 +412,11 @@ const PortalDashboard = () => {
       return !isNaN(v) && v > 10;
     });
 
-  // Expected hours for the selected period (uses Hours per week from profile, prorated by days when range != 7)
+  // Expected hours = the contractor's weekly target from their profile (always, regardless of date range)
   const expectedHours = useMemo(() => {
     const hpw = info?.hours_per_week ? Number(info.hours_per_week) : null;
     if (!hpw || dateKeys.length === 0) return null;
-    // Prorate by selected days assuming a 5-day work week
-    return (hpw / 5) * dateKeys.length;
+    return hpw;
   }, [info?.hours_per_week, dateKeys]);
 
   const hoursDiff = useMemo(() => {
@@ -428,7 +427,7 @@ const PortalDashboard = () => {
   // Tolerance: anything within ±0.25h is considered matching
   const hoursMatch = expectedHours == null ? true : Math.abs(hoursDiff) <= 0.25;
 
-  // OT hours = anything worked beyond the prorated weekly target
+  // OT hours = anything worked beyond the weekly target
   const otHours = useMemo(() => {
     if (expectedHours == null) return 0;
     return Math.max(0, Number((totalHours - expectedHours).toFixed(2)));
