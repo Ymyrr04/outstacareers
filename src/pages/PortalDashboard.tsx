@@ -1140,6 +1140,7 @@ const PortalDashboard = () => {
                     <TableHead>Week ending</TableHead>
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead className="text-right">OT</TableHead>
+                    <TableHead className="text-right">Incentives</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Notes</TableHead>
                     <TableHead>Submitted</TableHead>
@@ -1152,6 +1153,7 @@ const PortalDashboard = () => {
                       <TableCell>{format(new Date(t.week_ending_date), 'MMM d, yyyy')}</TableCell>
                       <TableCell className="text-right font-medium">{Number(t.total_hours).toFixed(2)}</TableCell>
                       <TableCell className="text-right">{Number(t.overtime_hours).toFixed(2)}</TableCell>
+                      <TableCell className="text-right">${Number(t.incentive_amount || 0).toFixed(2)}</TableCell>
                       <TableCell>
                         {t.status === 'pending_approval' ? (
                           <span className="inline-flex items-center rounded-full border border-amber-500 text-amber-600 px-2 py-0.5 text-xs font-medium">Pending approval</span>
