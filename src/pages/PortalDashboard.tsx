@@ -1238,7 +1238,7 @@ const PortalDashboard = () => {
           }
         }}
       >
-        <AlertDialogContent>
+        <AlertDialogContent className="max-w-3xl sm:max-w-3xl">
           <AlertDialogHeader>
             <AlertDialogTitle>{editingId ? 'Save changes to this timesheet?' : 'Submit this timesheet?'}</AlertDialogTitle>
             <AlertDialogDescription asChild>
