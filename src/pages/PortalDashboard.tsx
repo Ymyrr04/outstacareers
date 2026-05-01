@@ -215,6 +215,7 @@ const PortalDashboard = () => {
 
     setSubmitting(true);
     try {
+      const needsApproval = getOvertimeDays().length > 0;
       const { error } = await supabase.from('contractor_timesheets').upsert({
         contractor_assignment_id: info.contractor_assignment_id,
         week_ending_date: weekEnding,
@@ -222,11 +223,14 @@ const PortalDashboard = () => {
         overtime_hours: ot,
         notes: notes.trim() || null,
         daily_hours: dailyPayload,
-        status: 'submitted',
+        status: needsApproval ? 'pending_approval' : 'submitted',
         submitted_at: new Date().toISOString(),
       }, { onConflict: 'contractor_assignment_id,week_ending_date' });
       if (error) throw error;
-      toast({ title: editingId ? 'Timesheet updated' : 'Timesheet submitted' });
+      toast({
+        title: editingId ? 'Timesheet updated' : 'Timesheet submitted',
+        description: needsApproval ? 'Days over 10 hours are pending admin approval.' : undefined,
+      });
       handleCancelEdit();
       loadAll();
     } catch (err: any) {
