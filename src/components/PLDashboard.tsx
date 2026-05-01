@@ -22,6 +22,8 @@ interface TimesheetRow {
   daily_hours: Record<string, { hours: number; reason?: string }> | null;
   contractor: {
     job_title: string | null;
+    start_date: string | null;
+    hours_per_week: number | null;
     applicant: { full_name: string; email: string } | null;
     client: { company_name: string } | null;
   } | null;
@@ -62,6 +64,8 @@ export const PLDashboard = () => {
           id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, submitted_at, daily_hours,
           contractor:contractor_assignments(
             job_title,
+            start_date,
+            hours_per_week,
             applicant:applicants_prescreen(full_name, email),
             client:clients(company_name)
           )
@@ -268,13 +272,30 @@ export const PLDashboard = () => {
     !active ? <ArrowUpDown className="w-3 h-3 ml-1 inline opacity-40" /> :
     dir === 'asc' ? <ArrowUp className="w-3 h-3 ml-1 inline" /> : <ArrowDown className="w-3 h-3 ml-1 inline" />;
 
+  // Compute deposit hours: first 2 weeks from start_date are security deposit, capped at hours_per_week
+  const computeDeposit = (r: TimesheetRow): { depositHours: number; isDeposit: boolean; weekIndex: number | null } => {
+    const startStr = r.contractor?.start_date;
+    const hpw = Number(r.contractor?.hours_per_week || 0);
+    if (!startStr || !hpw) return { depositHours: 0, isDeposit: false, weekIndex: null };
+    const start = new Date(startStr);
+    const weekEnd = new Date(r.week_ending_date);
+    const diffDays = Math.floor((weekEnd.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) return { depositHours: 0, isDeposit: false, weekIndex: null };
+    // weekIndex 0 = first week (days 0-6), 1 = second week (days 7-13)
+    const weekIndex = Math.floor(diffDays / 7);
+    if (weekIndex > 1) return { depositHours: 0, isDeposit: false, weekIndex };
+    const regular = Math.min(Number(r.total_hours), hpw);
+    return { depositHours: regular, isDeposit: true, weekIndex };
+  };
+
   const totalHoursAll = filtered.reduce((s, r) => s + Number(r.total_hours), 0);
   const totalOTAll = filtered.reduce((s, r) => s + Number(r.overtime_hours), 0);
   const totalIncentivesAll = filtered.reduce((s, r) => s + Number(r.incentive_amount || 0), 0);
+  const totalDepositAll = filtered.reduce((s, r) => s + computeDeposit(r).depositHours, 0);
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Portal Accounts</CardTitle></CardHeader>
           <CardContent><p className="text-2xl font-bold">{stats.portalUsers} <span className="text-sm text-muted-foreground font-normal">/ {stats.totalEligibleContractors} eligible</span></p></CardContent>
@@ -290,6 +311,10 @@ export const PLDashboard = () => {
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Overtime Hours</CardTitle></CardHeader>
           <CardContent><p className="text-2xl font-bold">{totalOTAll.toFixed(2)}</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Deposit Hours</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold text-amber-600">{totalDepositAll.toFixed(2)}</p></CardContent>
         </Card>
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Incentives</CardTitle></CardHeader>
@@ -395,6 +420,7 @@ export const PLDashboard = () => {
                   <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('company')}>Company<SortIcon active={tsSort.key === 'company'} dir={tsSort.dir} /></button></TableHead>
                   <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('week')}>Week Ending<SortIcon active={tsSort.key === 'week'} dir={tsSort.dir} /></button></TableHead>
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('hours')}>Hours<SortIcon active={tsSort.key === 'hours'} dir={tsSort.dir} /></button></TableHead>
+                  <TableHead className="text-right">Deposit</TableHead>
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('ot')}>OT<SortIcon active={tsSort.key === 'ot'} dir={tsSort.dir} /></button></TableHead>
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('incentives')}>Incentives<SortIcon active={tsSort.key === 'incentives'} dir={tsSort.dir} /></button></TableHead>
                   <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('status')}>Status<SortIcon active={tsSort.key === 'status'} dir={tsSort.dir} /></button></TableHead>
@@ -409,6 +435,7 @@ export const PLDashboard = () => {
                   const overDays = r.daily_hours
                     ? Object.entries(r.daily_hours).filter(([, v]) => Number((v as any)?.hours) > 10)
                     : [];
+                  const dep = computeDeposit(r);
                   return (
                     <TableRow key={r.id} className={r.status === 'pending_approval' ? 'bg-amber-50/40 dark:bg-amber-950/10' : ''}>
                       <TableCell>
@@ -419,6 +446,18 @@ export const PLDashboard = () => {
                       
                       <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
                       <TableCell className="text-right font-medium">{Number(r.total_hours).toFixed(2)}</TableCell>
+                      <TableCell className="text-right">
+                        {dep.isDeposit ? (
+                          <div className="flex flex-col items-end">
+                            <span className="font-medium text-amber-600">{dep.depositHours.toFixed(2)}</span>
+                            <Badge variant="outline" className="border-amber-500 text-amber-600 text-[10px] px-1 py-0 h-4 mt-0.5">
+                              Wk {(dep.weekIndex ?? 0) + 1} deposit
+                            </Badge>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right">{Number(r.overtime_hours).toFixed(2)}</TableCell>
                       <TableCell className="text-right">${Number(r.incentive_amount || 0).toFixed(2)}</TableCell>
                       <TableCell>
