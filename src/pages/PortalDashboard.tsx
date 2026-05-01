@@ -631,7 +631,7 @@ const PortalDashboard = () => {
                   <Input id="p-phone" value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="p-shift">Regular work shift <span className="text-destructive">*</span></Label>
+                  <Label htmlFor="p-shift">Regular work shift (EST) <span className="text-destructive">*</span></Label>
                   <Input id="p-shift" placeholder="e.g. 9 AM – 6 PM EST" value={profileForm.regular_work_shift} onChange={(e) => setProfileForm({ ...profileForm, regular_work_shift: e.target.value })} />
                 </div>
                 <div className="space-y-2">
