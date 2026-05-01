@@ -463,13 +463,29 @@ const PortalDashboard = () => {
       toast({ title: 'Name required', description: 'Please enter your full name.', variant: 'destructive' });
       return;
     }
+    if (!profileForm.phone.trim()) {
+      toast({ title: 'Phone required', description: 'Please enter your phone number.', variant: 'destructive' });
+      return;
+    }
+    if (!profileForm.regular_work_shift.trim()) {
+      toast({ title: 'Work shift required', description: 'Please enter your regular work shift.', variant: 'destructive' });
+      return;
+    }
     const hpw = profileForm.hours_per_week.trim() === '' ? null : Number(profileForm.hours_per_week);
     const rate = profileForm.hourly_rate.trim() === '' ? null : Number(profileForm.hourly_rate);
-    if (hpw != null && (isNaN(hpw) || hpw < 0 || hpw > 168)) {
+    if (hpw == null) {
+      toast({ title: 'Hours per week required', description: 'Please enter your regular hours per week.', variant: 'destructive' });
+      return;
+    }
+    if (isNaN(hpw) || hpw < 0 || hpw > 168) {
       toast({ title: 'Invalid hours', description: 'Hours per week must be between 0 and 168.', variant: 'destructive' });
       return;
     }
-    if (rate != null && (isNaN(rate) || rate < 0)) {
+    if (rate == null) {
+      toast({ title: 'Rate required', description: 'Please enter your current hourly rate.', variant: 'destructive' });
+      return;
+    }
+    if (isNaN(rate) || rate < 0) {
       toast({ title: 'Invalid rate', description: 'Rate must be a non-negative number.', variant: 'destructive' });
       return;
     }
