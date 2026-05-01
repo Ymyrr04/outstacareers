@@ -468,7 +468,7 @@ const PortalDashboard = () => {
                           />
                         </div>
                         <div className="space-y-1">
-                          <Label htmlFor={`reason-${k}`} className="text-xs font-medium text-blue-900/80 dark:text-blue-100/80">
+                          <Label htmlFor={`reason-${k}`} className="text-xs font-medium text-muted-foreground">
                             Reason {isOvertime ? '(required — overtime)' : '(only if no hours)'}
                           </Label>
                           <Input
