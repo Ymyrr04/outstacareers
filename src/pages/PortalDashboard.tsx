@@ -28,6 +28,86 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+// 12-hour time slots in 30-min increments: "12:00 AM" .. "11:30 PM"
+const TIME_SLOTS: string[] = (() => {
+  const out: string[] = [];
+  for (let h = 0; h < 24; h++) {
+    for (const m of [0, 30]) {
+      const period = h < 12 ? 'AM' : 'PM';
+      const hour12 = h % 12 === 0 ? 12 : h % 12;
+      out.push(`${hour12}:${m.toString().padStart(2, '0')} ${period}`);
+    }
+  }
+  return out;
+})();
+
+// Parse "9 AM – 6 PM EST" or "9:00 AM – 6:00 PM EST" into start/end slot labels
+const parseShift = (raw: string | null | undefined): { start: string; end: string } => {
+  if (!raw) return { start: '', end: '' };
+  const cleaned = raw.replace(/\s*EST\s*$/i, '').trim();
+  const parts = cleaned.split(/\s*[–-]\s*/);
+  if (parts.length !== 2) return { start: '', end: '' };
+  const norm = (s: string): string => {
+    const m = s.trim().toUpperCase().match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/);
+    if (!m) return '';
+    const hh = parseInt(m[1], 10);
+    const mm = m[2] ? parseInt(m[2], 10) : 0;
+    if (hh < 1 || hh > 12 || (mm !== 0 && mm !== 30)) return '';
+    return `${hh}:${mm.toString().padStart(2, '0')} ${m[3]}`;
+  };
+  return { start: norm(parts[0]), end: norm(parts[1]) };
+};
+
+const composeShift = (start: string, end: string): string =>
+  start && end ? `${start} – ${end} EST` : '';
+
+function TimeCombobox({
+  value,
+  onChange,
+  placeholder,
+  ariaLabel,
+}: { value: string; onChange: (v: string) => void; placeholder: string; ariaLabel: string }) {
+  const [open, setOpen] = React.useState(false);
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-label={ariaLabel}
+          aria-expanded={open}
+          className={cn('w-full justify-between font-normal', !value && 'text-muted-foreground')}
+        >
+          {value || placeholder}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[220px] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Search time..." />
+          <CommandList className="max-h-64">
+            <CommandEmpty>No time found.</CommandEmpty>
+            <CommandGroup>
+              {TIME_SLOTS.map((t) => (
+                <CommandItem
+                  key={t}
+                  value={t}
+                  onSelect={() => { onChange(t); setOpen(false); }}
+                >
+                  <Check className={cn('mr-2 h-4 w-4', value === t ? 'opacity-100' : 'opacity-0')} />
+                  {t}
+                </CommandItem>
+              ))}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
+
 interface ContractorInfo {
   contractor_assignment_id: string;
   applicant_id: string;
