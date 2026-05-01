@@ -22,7 +22,7 @@ Deno.serve(async (req) => {
     });
     const { data: userData, error: userErr } = await userClient.auth.getUser();
     if (userErr || !userData.user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+      return new Response(JSON.stringify({ error: userErr?.message || "Unauthorized: no valid admin session was received" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
