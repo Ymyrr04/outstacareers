@@ -435,6 +435,7 @@ export const PLDashboard = () => {
                   const overDays = r.daily_hours
                     ? Object.entries(r.daily_hours).filter(([, v]) => Number((v as any)?.hours) > 10)
                     : [];
+                  const dep = computeDeposit(r);
                   return (
                     <TableRow key={r.id} className={r.status === 'pending_approval' ? 'bg-amber-50/40 dark:bg-amber-950/10' : ''}>
                       <TableCell>
@@ -445,6 +446,18 @@ export const PLDashboard = () => {
                       
                       <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
                       <TableCell className="text-right font-medium">{Number(r.total_hours).toFixed(2)}</TableCell>
+                      <TableCell className="text-right">
+                        {dep.isDeposit ? (
+                          <div className="flex flex-col items-end">
+                            <span className="font-medium text-amber-600">{dep.depositHours.toFixed(2)}</span>
+                            <Badge variant="outline" className="border-amber-500 text-amber-600 text-[10px] px-1 py-0 h-4 mt-0.5">
+                              Wk {(dep.weekIndex ?? 0) + 1} deposit
+                            </Badge>
+                          </div>
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-right">{Number(r.overtime_hours).toFixed(2)}</TableCell>
                       <TableCell className="text-right">${Number(r.incentive_amount || 0).toFixed(2)}</TableCell>
                       <TableCell>
