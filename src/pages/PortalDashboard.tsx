@@ -942,39 +942,37 @@ const PortalDashboard = () => {
               </div>
 
               <div className="space-y-3">
-                <div className="flex items-end justify-end gap-4 flex-wrap">
-                  <div className="flex items-end gap-4 flex-wrap">
-                    <div className="flex items-center gap-4 text-lg pb-1">
-                      <div>
-                        Total: <span className="font-semibold">{totalHours.toFixed(2)}</span> hrs
-                      </div>
-                      <div className="text-muted-foreground">|</div>
-                      <div>
-                        Invoice total:{' '}
-                        <span className="font-semibold text-primary">
-                          {info?.hourly_rate != null
-                            ? `$${(totalHours * Number(info.hourly_rate)).toFixed(2)}`
-                            : '—'}
-                        </span>
-                        {info?.hourly_rate != null && (
-                          <span className="text-muted-foreground ml-1 text-sm">
-                            (@ ${Number(info.hourly_rate).toFixed(2)}/hr)
-                          </span>
-                        )}
-                      </div>
+                <div className="flex items-end justify-between gap-4 flex-wrap">
+                  <div className="space-y-1">
+                    <Label htmlFor="ot" className="text-xs">Incentives ($)</Label>
+                    <Input
+                      id="ot"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={overtimeHours}
+                      onChange={(e) => setOvertimeHours(e.target.value)}
+                      placeholder="0.00"
+                      className="h-9 w-28 text-base"
+                    />
+                  </div>
+                  <div className="flex items-center gap-4 text-lg pb-1">
+                    <div>
+                      Total: <span className="font-semibold">{totalHours.toFixed(2)}</span> hrs
                     </div>
-                    <div className="space-y-1">
-                      <Label htmlFor="ot" className="text-xs">Incentives ($)</Label>
-                      <Input
-                        id="ot"
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        value={overtimeHours}
-                        onChange={(e) => setOvertimeHours(e.target.value)}
-                        placeholder="0.00"
-                        className="h-9 w-28 text-base"
-                      />
+                    <div className="text-muted-foreground">|</div>
+                    <div>
+                      Invoice total:{' '}
+                      <span className="font-semibold text-primary">
+                        {info?.hourly_rate != null
+                          ? `$${(totalHours * Number(info.hourly_rate)).toFixed(2)}`
+                          : '—'}
+                      </span>
+                      {info?.hourly_rate != null && (
+                        <span className="text-muted-foreground ml-1 text-sm">
+                          (@ ${Number(info.hourly_rate).toFixed(2)}/hr)
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
