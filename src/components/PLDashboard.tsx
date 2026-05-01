@@ -518,7 +518,7 @@ export const PLDashboard = () => {
                                   .maybeSingle(),
                                 supabase
                                   .from('contractor_timesheets')
-                                  .select('id, week_ending_date, total_hours, overtime_hours, incentive_amount, status, submitted_at')
+                                  .select('id, week_ending_date, total_hours, overtime_hours, incentive_amount, status, submitted_at, daily_hours')
                                   .eq('contractor_assignment_id', c.id)
                                   .order('week_ending_date', { ascending: false }),
                               ]);
