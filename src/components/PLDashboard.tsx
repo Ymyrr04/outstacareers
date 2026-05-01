@@ -418,9 +418,9 @@ export const PLDashboard = () => {
                   <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('company')}>Company<SortIcon active={contractorSort.key === 'company'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('status')}>Status<SortIcon active={contractorSort.key === 'status'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('rate')}>Rate<SortIcon active={contractorSort.key === 'rate'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('hpw')}>Hrs/Wk<SortIcon active={contractorSort.key === 'hpw'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead>Latest Submission</TableHead>
-                  <TableHead className="text-right">Hours</TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('hpw')}>Hrs/Wk<SortIcon active={contractorSort.key === 'hpw'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead className="text-right">Work Hours</TableHead>
                   <TableHead className="text-right">OT</TableHead>
                   <TableHead className="text-right">Bonus</TableHead>
                   <TableHead className="text-right">Deposit</TableHead>
@@ -442,7 +442,6 @@ export const PLDashboard = () => {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-right">{c.hourly_rate != null ? `$${Number(c.hourly_rate).toFixed(2)}` : '—'}</TableCell>
-                    <TableCell className="text-right">{c.hours_per_week ?? '—'}</TableCell>
                     <TableCell>
                       {c.latestTimesheet ? (
                         <div className="flex flex-col gap-0.5">
@@ -461,6 +460,7 @@ export const PLDashboard = () => {
                         <Badge variant="outline" className="text-muted-foreground">Not submitted</Badge>
                       )}
                     </TableCell>
+                    <TableCell className="text-right">{c.hours_per_week ?? '—'}</TableCell>
                     <TableCell className="text-right">
                       {c.latestTimesheet ? (() => {
                         const expected = Number(c.hours_per_week || 0);
