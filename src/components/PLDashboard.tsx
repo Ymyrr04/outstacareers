@@ -87,7 +87,7 @@ export const PLDashboard = () => {
       supabase
         .from('contractor_assignments')
         .select(`
-          id, job_title, status, hourly_rate, hours_per_week, start_date,
+          id, applicant_id, job_title, status, hourly_rate, hours_per_week, start_date,
           applicant:applicants_prescreen(full_name, email),
           client:clients(company_name)
         `)
