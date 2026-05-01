@@ -529,7 +529,19 @@ const PortalDashboard = () => {
             <h1 className="text-lg font-semibold">OutSta PL Portal</h1>
             <p className="text-xs text-muted-foreground">{info?.full_name} · {info?.company_name} · {info?.job_title}</p>
           </div>
-          <Button variant="outline" size="sm" onClick={handleSignOut}><LogOut className="w-4 h-4 mr-2" />Sign out</Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => { setProfileEditing(false); setProfileOpen(true); }}
+              aria-label="Open profile"
+              className="gap-2"
+            >
+              <UserCircle2 className="w-6 h-6 text-primary" />
+              <span className="hidden sm:inline text-sm">Profile</span>
+            </Button>
+            <Button variant="outline" size="sm" onClick={handleSignOut}><LogOut className="w-4 h-4 mr-2" />Sign out</Button>
+          </div>
         </div>
       </header>
 
