@@ -87,7 +87,7 @@ export const PLDashboard = () => {
       supabase
         .from('contractor_assignments')
         .select(`
-          id, job_title, status, hourly_rate, hours_per_week,
+          id, job_title, status, hourly_rate, hours_per_week, start_date,
           applicant:applicants_prescreen(full_name, email),
           client:clients(company_name)
         `)
@@ -102,17 +102,56 @@ export const PLDashboard = () => {
       (portalUsers || []).map((p: any) => [p.contractor_assignment_id, p.must_change_password])
     );
 
-    const enriched: ContractorRow[] = ((assignments as any[]) || []).map((c) => ({
-      id: c.id,
-      job_title: c.job_title,
-      status: c.status,
-      hourly_rate: c.hourly_rate,
-      hours_per_week: c.hours_per_week,
-      applicant: c.applicant,
-      client: c.client,
-      hasPortal: portalMap.has(c.id),
-      mustChange: portalMap.get(c.id) ?? null,
-    }));
+    // Build map of latest timesheet per contractor (timesheets already ordered by week desc, submitted desc)
+    const latestTsMap = new Map<string, any>();
+    ((timesheets as any[]) || []).forEach((t) => {
+      if (!latestTsMap.has(t.contractor_assignment_id)) {
+        latestTsMap.set(t.contractor_assignment_id, t);
+      }
+    });
+
+    const computeDepositFor = (startStr: string | null, hpw: number, weekEndingDate: string, totalHours: number) => {
+      if (!startStr || !hpw) return { depositHours: 0, isDeposit: false, weekIndex: null as number | null };
+      const start = new Date(startStr);
+      const weekEnd = new Date(weekEndingDate);
+      const diffDays = Math.floor((weekEnd.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+      if (diffDays < 0) return { depositHours: 0, isDeposit: false, weekIndex: null };
+      const weekIndex = Math.floor(diffDays / 7);
+      if (weekIndex > 1) return { depositHours: 0, isDeposit: false, weekIndex };
+      return { depositHours: Math.min(Number(totalHours), hpw), isDeposit: true, weekIndex };
+    };
+
+    const enriched: ContractorRow[] = ((assignments as any[]) || []).map((c) => {
+      const ts = latestTsMap.get(c.id);
+      let latestTimesheet: ContractorRow['latestTimesheet'] = null;
+      if (ts) {
+        const dep = computeDepositFor(c.start_date, Number(c.hours_per_week || 0), ts.week_ending_date, Number(ts.total_hours));
+        latestTimesheet = {
+          id: ts.id,
+          status: ts.status,
+          week_ending_date: ts.week_ending_date,
+          total_hours: Number(ts.total_hours),
+          overtime_hours: Number(ts.overtime_hours || 0),
+          submitted_at: ts.submitted_at,
+          depositHours: dep.depositHours,
+          isDeposit: dep.isDeposit,
+          weekIndex: dep.weekIndex,
+        };
+      }
+      return {
+        id: c.id,
+        job_title: c.job_title,
+        status: c.status,
+        hourly_rate: c.hourly_rate,
+        hours_per_week: c.hours_per_week,
+        start_date: c.start_date,
+        applicant: c.applicant,
+        client: c.client,
+        hasPortal: portalMap.has(c.id),
+        mustChange: portalMap.get(c.id) ?? null,
+        latestTimesheet,
+      };
+    });
 
     // Sort: by full name
     enriched.sort((a, b) => (a.applicant?.full_name || '').localeCompare(b.applicant?.full_name || ''));
