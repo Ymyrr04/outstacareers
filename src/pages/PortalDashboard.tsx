@@ -356,19 +356,14 @@ const PortalDashboard = () => {
                           aria-label={`${DAY_LABELS[k]} hours`}
                           className={isOvertime ? 'border-amber-500 focus-visible:ring-amber-500' : ''}
                         />
-                        {isEmpty ? (
-                          <Input
-                            placeholder={`Reason for no hours on ${DAY_LABELS[k]} (e.g. day off, holiday, sick)`}
-                            value={days[k].reason}
-                            onChange={(e) => updateDay(k, { reason: e.target.value })}
-                          />
+                        {days[k].reason ? (
+                          <div className={`text-xs ${isOvertime ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                            <span className="font-medium">Reason:</span> {days[k].reason}
+                          </div>
                         ) : isOvertime ? (
-                          <Input
-                            placeholder={`Reason for ${hoursNum} hrs (>10) — pending approval`}
-                            value={days[k].reason}
-                            onChange={(e) => updateDay(k, { reason: e.target.value })}
-                            className="border-amber-500 focus-visible:ring-amber-500"
-                          />
+                          <div className="text-xs text-amber-600">Over 10 hrs — reason required on submit</div>
+                        ) : isEmpty ? (
+                          <div className="text-xs text-muted-foreground">No hours — reason required on submit</div>
                         ) : (
                           <div className="text-xs text-muted-foreground">Worked</div>
                         )}
