@@ -154,6 +154,7 @@ interface Timesheet {
   week_ending_date: string;
   total_hours: number;
   overtime_hours: number;
+  incentive_amount: number;
   notes: string | null;
   status: string;
   submitted_at: string;
@@ -350,7 +351,7 @@ const PortalDashboard = () => {
 
     const { data: ts } = await supabase
       .from('contractor_timesheets')
-      .select('id, week_ending_date, total_hours, overtime_hours, notes, status, submitted_at, daily_hours')
+      .select('id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, submitted_at, daily_hours')
       .eq('contractor_assignment_id', portal.contractor_assignment_id)
       .order('week_ending_date', { ascending: false });
 
@@ -426,6 +427,12 @@ const PortalDashboard = () => {
 
   // Tolerance: anything within ±0.25h is considered matching
   const hoursMatch = expectedHours == null ? true : Math.abs(hoursDiff) <= 0.25;
+
+  // OT hours = anything worked beyond the prorated weekly target
+  const otHours = useMemo(() => {
+    if (expectedHours == null) return 0;
+    return Math.max(0, Number((totalHours - expectedHours).toFixed(2)));
+  }, [totalHours, expectedHours]);
 
   // Per-day expected hours (e.g., 50hrs/week ÷ 5 = 10hrs/day)
   const perDayExpected = useMemo(() => {
@@ -531,7 +538,8 @@ const PortalDashboard = () => {
         contractor_assignment_id: info.contractor_assignment_id,
         week_ending_date: weekEnding,
         total_hours: totalHours,
-        overtime_hours: ot,
+        overtime_hours: otHours,
+        incentive_amount: ot,
         notes: combinedNotes || null,
         daily_hours: dailyPayload,
         status: needsApproval ? 'pending_approval' : 'submitted',
@@ -595,7 +603,7 @@ const PortalDashboard = () => {
     }
 
     setDays(next);
-    setOvertimeHours(String(t.overtime_hours));
+    setOvertimeHours(String(t.incentive_amount ?? 0));
     setIncentiveNote('');
     setExtraAmount('');
     setExtraReason('');
@@ -1132,6 +1140,7 @@ const PortalDashboard = () => {
                     <TableHead>Week ending</TableHead>
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead className="text-right">OT</TableHead>
+                    <TableHead className="text-right">Incentives</TableHead>
                     <TableHead>Status</TableHead>
                     <TableHead>Notes</TableHead>
                     <TableHead>Submitted</TableHead>
@@ -1144,6 +1153,7 @@ const PortalDashboard = () => {
                       <TableCell>{format(new Date(t.week_ending_date), 'MMM d, yyyy')}</TableCell>
                       <TableCell className="text-right font-medium">{Number(t.total_hours).toFixed(2)}</TableCell>
                       <TableCell className="text-right">{Number(t.overtime_hours).toFixed(2)}</TableCell>
+                      <TableCell className="text-right">${Number(t.incentive_amount || 0).toFixed(2)}</TableCell>
                       <TableCell>
                         {t.status === 'pending_approval' ? (
                           <span className="inline-flex items-center rounded-full border border-amber-500 text-amber-600 px-2 py-0.5 text-xs font-medium">Pending approval</span>
@@ -1243,7 +1253,7 @@ const PortalDashboard = () => {
               <div className="space-y-4 text-lg">
                 <div className="text-lg">
                   Week of <strong>{weekStart && format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – {weekEnding && format(new Date(weekEnding + 'T00:00:00'), 'MMM d, yyyy')}</strong> ·{' '}
-                  <strong>{totalHours.toFixed(2)}</strong> total hours · <strong>${parseFloat(overtimeHours || '0').toFixed(2)}</strong> incentives.
+                  <strong>{totalHours.toFixed(2)}</strong> total hours{otHours > 0 && <> (incl. <strong>{otHours.toFixed(2)}</strong> OT hrs)</>} · <strong>${parseFloat(overtimeHours || '0').toFixed(2)}</strong> incentives.
                   {info?.hourly_rate != null && (
                     <> · Invoice total <strong className="text-primary">${(totalHours * Number(info.hourly_rate) + (parseFloat(overtimeHours || '0') || 0)).toFixed(2)}</strong></>
                   )}

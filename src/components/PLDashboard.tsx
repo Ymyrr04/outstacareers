@@ -15,6 +15,7 @@ interface TimesheetRow {
   week_ending_date: string;
   total_hours: number;
   overtime_hours: number;
+  incentive_amount: number;
   notes: string | null;
   status: string;
   submitted_at: string;
@@ -56,7 +57,7 @@ export const PLDashboard = () => {
       supabase
         .from('contractor_timesheets')
         .select(`
-          id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, notes, status, submitted_at, daily_hours,
+          id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, submitted_at, daily_hours,
           contractor:contractor_assignments(
             job_title,
             applicant:applicants_prescreen(full_name, email),
@@ -222,10 +223,11 @@ export const PLDashboard = () => {
 
   const totalHoursAll = filtered.reduce((s, r) => s + Number(r.total_hours), 0);
   const totalOTAll = filtered.reduce((s, r) => s + Number(r.overtime_hours), 0);
+  const totalIncentivesAll = filtered.reduce((s, r) => s + Number(r.incentive_amount || 0), 0);
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Portal Accounts</CardTitle></CardHeader>
           <CardContent><p className="text-2xl font-bold">{stats.portalUsers} <span className="text-sm text-muted-foreground font-normal">/ {stats.totalEligibleContractors} eligible</span></p></CardContent>
@@ -241,6 +243,10 @@ export const PLDashboard = () => {
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Overtime Hours</CardTitle></CardHeader>
           <CardContent><p className="text-2xl font-bold">{totalOTAll.toFixed(2)}</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Incentives</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">${totalIncentivesAll.toFixed(2)}</p></CardContent>
         </Card>
       </div>
 
@@ -345,6 +351,7 @@ export const PLDashboard = () => {
                   <TableHead>Week Ending</TableHead>
                   <TableHead className="text-right">Hours</TableHead>
                   <TableHead className="text-right">OT</TableHead>
+                  <TableHead className="text-right">Incentives</TableHead>
                   <TableHead>Status</TableHead>
                   <TableHead>Daily &gt;10h</TableHead>
                   <TableHead>Notes</TableHead>
@@ -368,6 +375,7 @@ export const PLDashboard = () => {
                       <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
                       <TableCell className="text-right font-medium">{Number(r.total_hours).toFixed(2)}</TableCell>
                       <TableCell className="text-right">{Number(r.overtime_hours).toFixed(2)}</TableCell>
+                      <TableCell className="text-right">${Number(r.incentive_amount || 0).toFixed(2)}</TableCell>
                       <TableCell>
                         {r.status === 'pending_approval' ? (
                           <Badge variant="outline" className="border-amber-500 text-amber-600">Pending approval</Badge>
