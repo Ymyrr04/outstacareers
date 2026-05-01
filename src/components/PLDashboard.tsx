@@ -48,6 +48,7 @@ interface ContractorRow {
     week_ending_date: string;
     total_hours: number;
     overtime_hours: number;
+    incentive_amount: number;
     submitted_at: string;
     depositHours: number;
     isDeposit: boolean;
@@ -145,6 +146,7 @@ export const PLDashboard = () => {
           week_ending_date: ts.week_ending_date,
           total_hours: Number(ts.total_hours),
           overtime_hours: Number(ts.overtime_hours || 0),
+          incentive_amount: Number(ts.incentive_amount || 0),
           submitted_at: ts.submitted_at,
           depositHours: dep.depositHours,
           isDeposit: dep.isDeposit,
@@ -419,6 +421,8 @@ export const PLDashboard = () => {
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('hpw')}>Hrs/Wk<SortIcon active={contractorSort.key === 'hpw'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead>Latest Submission</TableHead>
                   <TableHead className="text-right">Hours</TableHead>
+                  <TableHead className="text-right">OT</TableHead>
+                  <TableHead className="text-right">Incentives</TableHead>
                   <TableHead className="text-right">Deposit</TableHead>
                   <TableHead>Portal Account</TableHead>
                 </TableRow>
@@ -468,15 +472,22 @@ export const PLDashboard = () => {
                           else if (total < expected) colorClass = 'text-red-600';
                           else colorClass = 'text-blue-600';
                         }
-                        return (
-                          <div className="flex flex-col items-end">
-                            <span className={`font-medium ${colorClass}`}>{total.toFixed(2)}</span>
-                            {ot > 0 && (
-                              <span className="text-xs text-emerald-600">+{ot.toFixed(2)} OT</span>
-                            )}
-                          </div>
-                        );
+                        return <span className={`font-medium ${colorClass}`}>{total.toFixed(2)}</span>;
                       })() : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {c.latestTimesheet && c.latestTimesheet.overtime_hours > 0 ? (
+                        <span className="font-medium text-emerald-600">{c.latestTimesheet.overtime_hours.toFixed(2)}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {c.latestTimesheet && c.latestTimesheet.incentive_amount > 0 ? (
+                        <span className="font-medium text-blue-600">${c.latestTimesheet.incentive_amount.toFixed(2)}</span>
+                      ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
