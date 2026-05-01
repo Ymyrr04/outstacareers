@@ -91,14 +91,24 @@ const PortalDashboard = () => {
     const start = new Date(getDefaultWeekStart() + 'T00:00:00');
     return format(addDays(start, 6), 'yyyy-MM-dd');
   });
-  const [days, setDays] = useState<Record<string, DayEntry>>(emptyDays());
+  const [days, setDays] = useState<Record<string, DayEntry>>(() =>
+    emptyDaysFor(buildDateKeys(getDefaultWeekStart(), format(addDays(new Date(getDefaultWeekStart() + 'T00:00:00'), 6), 'yyyy-MM-dd')))
+  );
   const [overtimeHours, setOvertimeHours] = useState('0');
   const [notes, setNotes] = useState('');
 
-  // week-ending used for DB key (Sunday or whatever the user chose as "to")
+  // week-ending used for DB key (the "to" date)
   const weekEnding = weekEnd;
 
-  // Validate the date range — must be exactly 7 days (Mon–Sun or any 7-day window)
+  // Date keys for the currently selected range
+  const dateKeys = useMemo(() => buildDateKeys(weekStart, weekEnd), [weekStart, weekEnd]);
+
+  const dayLabel = (key: string) => {
+    const d = new Date(key + 'T00:00:00');
+    return WEEKDAY_NAMES[d.getDay()];
+  };
+
+  // Validate the date range
   const dateRangeValid = useMemo(() => {
     if (!weekStart || !weekEnd) return false;
     const s = new Date(weekStart + 'T00:00:00').getTime();
@@ -106,12 +116,26 @@ const PortalDashboard = () => {
     return e >= s;
   }, [weekStart, weekEnd]);
 
+  // Sync days state to match the date range — preserve existing values for overlapping keys
+  useEffect(() => {
+    if (editingId) return; // don't auto-rebuild while editing existing entry
+    setDays((prev) => {
+      const next: Record<string, DayEntry> = {};
+      dateKeys.forEach((k) => {
+        next[k] = prev[k] || { hours: '', reason: '' };
+      });
+      return next;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekStart, weekEnd]);
+
   const totalHours = useMemo(() => {
-    return DAY_KEYS.reduce((sum, k) => {
+    return dateKeys.reduce((sum, k) => {
       const v = parseFloat(days[k]?.hours || '0');
       return sum + (isNaN(v) ? 0 : v);
     }, 0);
-  }, [days]);
+  }, [days, dateKeys]);
+
 
   const loadAll = async () => {
     setLoading(true);
