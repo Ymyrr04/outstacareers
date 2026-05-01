@@ -965,12 +965,12 @@ const PortalDashboard = () => {
                       Invoice total:{' '}
                       <span className="font-semibold text-primary">
                         {info?.hourly_rate != null
-                          ? `$${(totalHours * Number(info.hourly_rate)).toFixed(2)}`
+                          ? `$${(totalHours * Number(info.hourly_rate) + (parseFloat(overtimeHours || '0') || 0)).toFixed(2)}`
                           : '—'}
                       </span>
                       {info?.hourly_rate != null && (
                         <span className="text-muted-foreground ml-1 text-sm">
-                          (@ ${Number(info.hourly_rate).toFixed(2)}/hr)
+                          (@ ${Number(info.hourly_rate).toFixed(2)}/hr{parseFloat(overtimeHours || '0') > 0 ? ` + $${parseFloat(overtimeHours).toFixed(2)} incentive` : ''})
                         </span>
                       )}
                     </div>
