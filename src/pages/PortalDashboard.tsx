@@ -86,7 +86,11 @@ function TimeCombobox({
       <PopoverContent className="w-[220px] p-0" align="start">
         <Command>
           <CommandInput placeholder="Search time..." />
-          <CommandList className="max-h-64">
+          <CommandList
+            className="max-h-64 overflow-y-auto overscroll-contain"
+            onWheel={(e) => e.stopPropagation()}
+            onTouchMove={(e) => e.stopPropagation()}
+          >
             <CommandEmpty>No time found.</CommandEmpty>
             <CommandGroup>
               {TIME_SLOTS.map((t) => (
