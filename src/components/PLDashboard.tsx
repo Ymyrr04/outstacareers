@@ -22,6 +22,8 @@ interface TimesheetRow {
   daily_hours: Record<string, { hours: number; reason?: string }> | null;
   contractor: {
     job_title: string | null;
+    start_date: string | null;
+    hours_per_week: number | null;
     applicant: { full_name: string; email: string } | null;
     client: { company_name: string } | null;
   } | null;
