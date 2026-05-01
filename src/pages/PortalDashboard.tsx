@@ -964,6 +964,30 @@ const PortalDashboard = () => {
                     const entry = days[k] || { hours: '', reason: '' };
                     const hoursNum = parseFloat(entry.hours || '0');
                     const isOvertime = !isNaN(hoursNum) && hoursNum > 10;
+                    const isOverTarget =
+                      perDayExpected != null && !isNaN(hoursNum) && hoursNum > perDayExpected && hoursDiff > 0.25;
+                    const isUnderTarget =
+                      perDayExpected != null &&
+                      entry.hours !== '' &&
+                      !isNaN(hoursNum) &&
+                      hoursNum > 0 &&
+                      hoursNum < perDayExpected &&
+                      hoursDiff < -0.25;
+                    const needsReason = isOvertime || isOverTarget || isUnderTarget;
+                    const reasonLabel = isOvertime
+                      ? '(required — overtime)'
+                      : isOverTarget
+                      ? '(required — over target)'
+                      : isUnderTarget
+                      ? '(required — under target)'
+                      : '(only if no hours)';
+                    const reasonPlaceholder = isOvertime
+                      ? 'e.g. urgent deadline'
+                      : isOverTarget
+                      ? 'e.g. compensation, extra workload'
+                      : isUnderTarget
+                      ? 'e.g. half day, left early, sick'
+                      : 'Optional — e.g. day off, holiday, sick';
                     const label = dayLabel(k);
                     return (
                       <div
