@@ -146,6 +146,7 @@ export const PLDashboard = () => {
           week_ending_date: ts.week_ending_date,
           total_hours: Number(ts.total_hours),
           overtime_hours: Number(ts.overtime_hours || 0),
+          incentive_amount: Number(ts.incentive_amount || 0),
           submitted_at: ts.submitted_at,
           depositHours: dep.depositHours,
           isDeposit: dep.isDeposit,
