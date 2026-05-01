@@ -173,6 +173,15 @@ const PortalDashboard = () => {
       return raw === '' || raw == null || parseFloat(raw) === 0;
     });
 
+  // Returns list of day keys that exceed 10 hours (require overtime justification)
+  const getOvertimeDays = (): string[] =>
+    DAY_KEYS.filter((k) => {
+      const v = parseFloat(days[k]?.hours || '0');
+      return !isNaN(v) && v > 10;
+    });
+
+  const hasPendingApproval = useMemo(() => getOvertimeDays().length > 0, [days]);
+
   const handleSubmitClick = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!info) return;
@@ -182,7 +191,8 @@ const PortalDashboard = () => {
       return;
     }
     const empties = getEmptyDays();
-    const missingReason = empties.filter((k) => !days[k]?.reason?.trim());
+    const overtimes = getOvertimeDays();
+    const missingReason = [...empties, ...overtimes].filter((k) => !days[k]?.reason?.trim());
     if (missingReason.length > 0) {
       setMissingDays(missingReason);
       setMissingReasonOpen(true);
