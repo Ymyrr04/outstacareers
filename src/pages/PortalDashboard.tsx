@@ -444,8 +444,8 @@ const PortalDashboard = () => {
                         key={k}
                         className={`grid grid-cols-1 md:grid-cols-[180px_180px_1fr] gap-4 p-4 items-center rounded-lg border-2 shadow-sm bg-background ${
                           isOvertime
-                            ? 'border-amber-500'
-                            : 'border-blue-300 dark:border-blue-800'
+                            ? 'border-amber-500/50'
+                            : 'border-blue-300/10 dark:border-blue-800/10'
                         }`}
                       >
                         <div>
