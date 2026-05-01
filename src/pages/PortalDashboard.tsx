@@ -1306,7 +1306,11 @@ const PortalDashboard = () => {
             <AlertDialogCancel disabled={submitting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => { e.preventDefault(); performSubmit(); }}
-              disabled={submitting || !clientNotified || !invoiceMatches}
+              disabled={
+                submitting ||
+                !clientNotified ||
+                (!invoiceMatches && (!(parseFloat(extraAmount || '0') > 0) || !extraReason.trim()))
+              }
             >
               {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               Confirm
