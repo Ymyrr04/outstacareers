@@ -546,31 +546,14 @@ const PortalDashboard = () => {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-        <Card>
-          <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-            <div>
-              <CardTitle>My Profile</CardTitle>
-              <CardDescription>Keep your contact and assignment details up to date.</CardDescription>
-            </div>
+        <Dialog open={profileOpen} onOpenChange={(open) => { setProfileOpen(open); if (!open) setProfileEditing(false); }}>
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle>My Profile</DialogTitle>
+              <DialogDescription>Keep your contact and assignment details up to date.</DialogDescription>
+            </DialogHeader>
             {!profileEditing ? (
-              <Button type="button" variant="outline" size="sm" onClick={() => setProfileEditing(true)}>
-                <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
-              </Button>
-            ) : (
-              <div className="flex gap-2">
-                <Button type="button" variant="outline" size="sm" onClick={handleProfileCancel} disabled={profileSaving}>
-                  Cancel
-                </Button>
-                <Button type="button" size="sm" onClick={handleProfileSave} disabled={profileSaving}>
-                  {profileSaving && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
-                  Save
-                </Button>
-              </div>
-            )}
-          </CardHeader>
-          <CardContent>
-            {!profileEditing ? (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm py-2">
                 <ProfileField label="Full name" value={info?.full_name} />
                 <ProfileField label="Email" value={info?.email} />
                 <ProfileField label="Phone" value={info?.phone} />
@@ -586,7 +569,7 @@ const PortalDashboard = () => {
                 <ProfileField label="Current rate" value={info?.hourly_rate != null ? `$${Number(info.hourly_rate).toFixed(2)}/hr` : null} />
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
                 <div className="space-y-2">
                   <Label htmlFor="p-full_name">Full name</Label>
                   <Input id="p-full_name" value={profileForm.full_name} onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })} />
@@ -633,8 +616,26 @@ const PortalDashboard = () => {
                 </div>
               </div>
             )}
-          </CardContent>
-        </Card>
+            <DialogFooter className="gap-2">
+              {!profileEditing ? (
+                <>
+                  <Button type="button" variant="outline" onClick={() => setProfileOpen(false)}>Close</Button>
+                  <Button type="button" onClick={() => setProfileEditing(true)}>
+                    <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button type="button" variant="outline" onClick={handleProfileCancel} disabled={profileSaving}>Cancel</Button>
+                  <Button type="button" onClick={handleProfileSave} disabled={profileSaving}>
+                    {profileSaving && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
+                    Save
+                  </Button>
+                </>
+              )}
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         <Card>
           <CardHeader>
