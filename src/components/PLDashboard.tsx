@@ -322,12 +322,11 @@ export const PLDashboard = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Contractor</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Position</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Rate</TableHead>
-                  <TableHead className="text-right">Hrs/Wk</TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('name')}>Contractor<SortIcon active={contractorSort.key === 'name'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('company')}>Company<SortIcon active={contractorSort.key === 'company'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('status')}>Status<SortIcon active={contractorSort.key === 'status'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('rate')}>Rate<SortIcon active={contractorSort.key === 'rate'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('hpw')}>Hrs/Wk<SortIcon active={contractorSort.key === 'hpw'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead>Portal Account</TableHead>
                 </TableRow>
               </TableHeader>
@@ -339,7 +338,7 @@ export const PLDashboard = () => {
                       <div className="text-xs text-muted-foreground">{c.applicant?.email || '—'}</div>
                     </TableCell>
                     <TableCell>{c.client?.company_name || '—'}</TableCell>
-                    <TableCell className="text-sm">{c.job_title || '—'}</TableCell>
+                    
                     <TableCell>
                       <Badge variant={c.status === 'active' ? 'default' : 'secondary'} className="capitalize">
                         {c.status}
@@ -392,17 +391,16 @@ export const PLDashboard = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Contractor</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead>Position</TableHead>
-                  <TableHead>Week Ending</TableHead>
-                  <TableHead className="text-right">Hours</TableHead>
-                  <TableHead className="text-right">OT</TableHead>
-                  <TableHead className="text-right">Incentives</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('name')}>Contractor<SortIcon active={tsSort.key === 'name'} dir={tsSort.dir} /></button></TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('company')}>Company<SortIcon active={tsSort.key === 'company'} dir={tsSort.dir} /></button></TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('week')}>Week Ending<SortIcon active={tsSort.key === 'week'} dir={tsSort.dir} /></button></TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('hours')}>Hours<SortIcon active={tsSort.key === 'hours'} dir={tsSort.dir} /></button></TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('ot')}>OT<SortIcon active={tsSort.key === 'ot'} dir={tsSort.dir} /></button></TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('incentives')}>Incentives<SortIcon active={tsSort.key === 'incentives'} dir={tsSort.dir} /></button></TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('status')}>Status<SortIcon active={tsSort.key === 'status'} dir={tsSort.dir} /></button></TableHead>
                   <TableHead>Daily &gt;10h</TableHead>
                   <TableHead>Notes</TableHead>
-                  <TableHead>Submitted</TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('submitted')}>Submitted<SortIcon active={tsSort.key === 'submitted'} dir={tsSort.dir} /></button></TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -418,7 +416,7 @@ export const PLDashboard = () => {
                         <div className="text-xs text-muted-foreground">{r.contractor?.applicant?.email}</div>
                       </TableCell>
                       <TableCell>{r.contractor?.client?.company_name || '—'}</TableCell>
-                      <TableCell className="text-sm">{r.contractor?.job_title || '—'}</TableCell>
+                      
                       <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
                       <TableCell className="text-right font-medium">{Number(r.total_hours).toFixed(2)}</TableCell>
                       <TableCell className="text-right">{Number(r.overtime_hours).toFixed(2)}</TableCell>
