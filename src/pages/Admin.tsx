@@ -1606,6 +1606,12 @@ const Admin = () => {
                 Contractors
               </TabsTrigger>
             )}
+            {canViewTab('pl') && (
+              <TabsTrigger value="pl" className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                PL
+              </TabsTrigger>
+            )}
             {canViewTab('analytics') && (
               <TabsTrigger value="analytics" className="flex items-center gap-2">
                 <Zap className="w-4 h-4" />
