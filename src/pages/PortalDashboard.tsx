@@ -1186,23 +1186,66 @@ const PortalDashboard = () => {
       </AlertDialog>
 
       {/* Submission confirmation */}
-      <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <AlertDialog
+        open={confirmOpen}
+        onOpenChange={(open) => {
+          setConfirmOpen(open);
+          if (open) {
+            setClientNotified(false);
+            setInvoiceMatches(false);
+          }
+        }}
+      >
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>{editingId ? 'Save changes to this timesheet?' : 'Submit this timesheet?'}</AlertDialogTitle>
-            <AlertDialogDescription>
-              Week of <strong>{weekStart && format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – {weekEnding && format(new Date(weekEnding + 'T00:00:00'), 'MMM d, yyyy')}</strong> ·{' '}
-              <strong>{totalHours.toFixed(2)}</strong> total hours · <strong>{overtimeHours || '0'}</strong> overtime.
-              {hasPendingApproval && (
-                <span className="block mt-2 text-amber-600 font-medium">
-                  ⚠ One or more days exceed 10 hours. This timesheet will be marked <strong>Pending approval</strong> until reviewed by an admin.
-                </span>
-              )}
+            <AlertDialogDescription asChild>
+              <div className="space-y-3">
+                <div>
+                  Week of <strong>{weekStart && format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – {weekEnding && format(new Date(weekEnding + 'T00:00:00'), 'MMM d, yyyy')}</strong> ·{' '}
+                  <strong>{totalHours.toFixed(2)}</strong> total hours · <strong>{overtimeHours || '0'}</strong> overtime.
+                  {info?.hourly_rate != null && (
+                    <> · Invoice total <strong className="text-primary">${(totalHours * Number(info.hourly_rate)).toFixed(2)}</strong></>
+                  )}
+                </div>
+                {hasPendingApproval && (
+                  <div className="text-amber-600 font-medium">
+                    ⚠ One or more days exceed 10 hours. This timesheet will be marked <strong>Pending approval</strong> until reviewed by an admin.
+                  </div>
+                )}
+                <div className="space-y-3 pt-2 border-t">
+                  <label className="flex items-start gap-2 cursor-pointer text-foreground">
+                    <Checkbox
+                      checked={clientNotified}
+                      onCheckedChange={(v) => setClientNotified(v === true)}
+                      className="mt-0.5"
+                    />
+                    <span className="text-sm">
+                      I confirm my client was <strong>notified and approved</strong> the hours in this timesheet.
+                    </span>
+                  </label>
+                  <label className="flex items-start gap-2 cursor-pointer text-foreground">
+                    <Checkbox
+                      checked={invoiceMatches}
+                      onCheckedChange={(v) => setInvoiceMatches(v === true)}
+                      className="mt-0.5"
+                    />
+                    <span className="text-sm">
+                      The total amount{info?.hourly_rate != null && (
+                        <> (<strong className="text-primary">${(totalHours * Number(info.hourly_rate)).toFixed(2)}</strong>)</>
+                      )} <strong>matches my Payoneer invoice</strong> request.
+                    </span>
+                  </label>
+                </div>
+              </div>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel disabled={submitting}>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={(e) => { e.preventDefault(); performSubmit(); }} disabled={submitting}>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); performSubmit(); }}
+              disabled={submitting || !clientNotified || !invoiceMatches}
+            >
               {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               Confirm
             </AlertDialogAction>
