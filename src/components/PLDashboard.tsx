@@ -422,7 +422,7 @@ export const PLDashboard = () => {
                   <TableHead>Latest Submission</TableHead>
                   <TableHead className="text-right">Hours</TableHead>
                   <TableHead className="text-right">OT</TableHead>
-                  <TableHead className="text-right">Incentives</TableHead>
+                  <TableHead className="text-right">Bonus</TableHead>
                   <TableHead className="text-right">Deposit</TableHead>
                   <TableHead>Portal Account</TableHead>
                 </TableRow>
