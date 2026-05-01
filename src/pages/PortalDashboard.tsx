@@ -854,10 +854,26 @@ const PortalDashboard = () => {
               </div>
 
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
+                <div className="flex items-center justify-between gap-4 flex-wrap">
                   <Label>Hours per day</Label>
-                  <div className="text-sm">
-                    Total: <span className="font-semibold">{totalHours.toFixed(2)}</span> hrs
+                  <div className="flex items-center gap-4 text-sm">
+                    <div>
+                      Total: <span className="font-semibold">{totalHours.toFixed(2)}</span> hrs
+                    </div>
+                    <div className="text-muted-foreground">|</div>
+                    <div>
+                      Invoice total:{' '}
+                      <span className="font-semibold text-primary">
+                        {info?.hourly_rate != null
+                          ? `$${(totalHours * Number(info.hourly_rate)).toFixed(2)}`
+                          : '—'}
+                      </span>
+                      {info?.hourly_rate != null && (
+                        <span className="text-muted-foreground ml-1">
+                          (@ ${Number(info.hourly_rate).toFixed(2)}/hr)
+                        </span>
+                      )}
+                    </div>
                   </div>
                 </div>
                 <div className="space-y-2">
