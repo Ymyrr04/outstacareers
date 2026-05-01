@@ -252,7 +252,18 @@ export const PLDashboard = () => {
                     <TableCell className="text-right">{c.hours_per_week ?? '—'}</TableCell>
                     <TableCell>
                       {!c.hasPortal ? (
-                        <Badge variant="outline" className="text-muted-foreground">No account</Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-muted-foreground">No account</Badge>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs"
+                            disabled={provisioningId === c.id || !c.applicant?.email}
+                            onClick={() => handleProvisionOne(c)}
+                          >
+                            {provisioningId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><UserPlus className="w-3 h-3 mr-1" />Create</>}
+                          </Button>
+                        </div>
                       ) : c.mustChange ? (
                         <Badge variant="outline" className="border-amber-500 text-amber-600">Pending password change</Badge>
                       ) : (
