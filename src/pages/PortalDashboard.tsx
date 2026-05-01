@@ -413,16 +413,12 @@ const PortalDashboard = () => {
                       <Calendar
                         mode="range"
                         numberOfMonths={2}
-                        defaultMonth={weekStart ? new Date(weekStart + 'T00:00:00') : new Date()}
-                        selected={{
-                          from: weekStart ? new Date(weekStart + 'T00:00:00') : undefined,
-                          to: weekEnd ? new Date(weekEnd + 'T00:00:00') : undefined,
-                        }}
+                        defaultMonth={dateRange?.from ?? new Date()}
+                        selected={dateRange}
                         onSelect={(range: DateRange | undefined) => {
-                          if (range?.from) setWeekStart(format(range.from, 'yyyy-MM-dd'));
-                          else setWeekStart('');
-                          if (range?.to) setWeekEnd(format(range.to, 'yyyy-MM-dd'));
-                          else setWeekEnd('');
+                          setDateRange(range);
+                          setWeekStart(range?.from ? format(range.from, 'yyyy-MM-dd') : '');
+                          setWeekEnd(range?.to ? format(range.to, 'yyyy-MM-dd') : '');
                         }}
                         initialFocus
                         className={cn('p-3 pointer-events-auto')}
