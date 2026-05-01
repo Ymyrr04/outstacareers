@@ -154,6 +154,7 @@ interface Timesheet {
   week_ending_date: string;
   total_hours: number;
   overtime_hours: number;
+  incentive_amount: number;
   notes: string | null;
   status: string;
   submitted_at: string;
