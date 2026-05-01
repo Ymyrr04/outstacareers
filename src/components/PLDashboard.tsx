@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye } from 'lucide-react';
 import { format } from 'date-fns';
-import { CandidateDetailDialog } from '@/components/CandidateDetailDialog';
+import { EditContractorDialog } from '@/components/clients/EditContractorDialog';
 
 interface TimesheetRow {
   id: string;
@@ -58,7 +58,8 @@ interface ContractorRow {
 export const PLDashboard = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
-  const [profileApplicantId, setProfileApplicantId] = useState<string | null>(null);
+  const [profileContractor, setProfileContractor] = useState<any | null>(null);
+  const [loadingProfile, setLoadingProfile] = useState(false);
   const [provisioning, setProvisioning] = useState(false);
   const [provisioningId, setProvisioningId] = useState<string | null>(null);
   const [rows, setRows] = useState<TimesheetRow[]>([]);
@@ -492,16 +493,28 @@ export const PLDashboard = () => {
                           ) : (
                             <Badge variant="outline" className="border-emerald-500 text-emerald-600">Active</Badge>
                           )}
-                          {c.applicant_id && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="h-7 px-2 text-xs"
-                              onClick={() => setProfileApplicantId(c.applicant_id)}
-                            >
-                              <Eye className="w-3 h-3 mr-1" />Profile
-                            </Button>
-                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs"
+                            disabled={loadingProfile}
+                            onClick={async () => {
+                              setLoadingProfile(true);
+                              const { data, error } = await supabase
+                                .from('contractor_assignments')
+                                .select('*, applicant:applicants_prescreen(full_name, email, location, phone), client:clients(company_name, industry)')
+                                .eq('id', c.id)
+                                .maybeSingle();
+                              setLoadingProfile(false);
+                              if (error || !data) {
+                                toast({ title: 'Failed to load profile', description: error?.message, variant: 'destructive' });
+                                return;
+                              }
+                              setProfileContractor(data);
+                            }}
+                          >
+                            <Eye className="w-3 h-3 mr-1" />Profile
+                          </Button>
                         </div>
                       )}
                     </TableCell>
@@ -620,10 +633,11 @@ export const PLDashboard = () => {
         </CardContent>
       </Card>
 
-      <CandidateDetailDialog
-        open={!!profileApplicantId}
-        onOpenChange={(o) => { if (!o) setProfileApplicantId(null); }}
-        applicantId={profileApplicantId || ''}
+      <EditContractorDialog
+        contractor={profileContractor}
+        open={!!profileContractor}
+        onOpenChange={(o) => { if (!o) setProfileContractor(null); }}
+        onUpdated={() => { setProfileContractor(null); fetchData(); }}
       />
     </div>
   );
