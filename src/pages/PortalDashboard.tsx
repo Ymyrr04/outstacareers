@@ -229,7 +229,10 @@ const PortalDashboard = () => {
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [days, setDays] = useState<Record<string, DayEntry>>({});
   const [overtimeHours, setOvertimeHours] = useState('0');
+  const [incentiveNote, setIncentiveNote] = useState('');
   const [notes, setNotes] = useState('');
+  const [extraAmount, setExtraAmount] = useState('');
+  const [extraReason, setExtraReason] = useState('');
 
   // week-ending used for DB key (the "to" date)
   const weekEnding = weekEnd;
@@ -383,8 +386,12 @@ const PortalDashboard = () => {
       }
     }
     const ot = parseFloat(overtimeHours || '0');
-    if (isNaN(ot) || ot < 0 || ot > totalHours) {
-      toast({ title: 'Invalid overtime', description: 'Overtime cannot exceed total hours.', variant: 'destructive' });
+    if (isNaN(ot) || ot < 0) {
+      toast({ title: 'Invalid incentives', description: 'Incentives amount must be 0 or greater.', variant: 'destructive' });
+      return false;
+    }
+    if (ot > 0 && !incentiveNote.trim()) {
+      toast({ title: 'Incentive reason required', description: 'Please add a note explaining the incentive amount.', variant: 'destructive' });
       return false;
     }
     return true;
@@ -513,12 +520,19 @@ const PortalDashboard = () => {
     setSubmitting(true);
     try {
       const needsApproval = getOvertimeDays().length > 0;
+      const extraAmt = parseFloat(extraAmount || '0') || 0;
+      const noteParts: string[] = [];
+      if (notes.trim()) noteParts.push(notes.trim());
+      if (ot > 0 && incentiveNote.trim()) noteParts.push(`Incentive ($${ot.toFixed(2)}): ${incentiveNote.trim()}`);
+      if (extraAmt > 0 && extraReason.trim()) noteParts.push(`Extra amount ($${extraAmt.toFixed(2)}): ${extraReason.trim()}`);
+      const combinedNotes = noteParts.join('\n\n');
+
       const { error } = await supabase.from('contractor_timesheets').upsert({
         contractor_assignment_id: info.contractor_assignment_id,
         week_ending_date: weekEnding,
         total_hours: totalHours,
         overtime_hours: ot,
-        notes: notes.trim() || null,
+        notes: combinedNotes || null,
         daily_hours: dailyPayload,
         status: needsApproval ? 'pending_approval' : 'submitted',
         submitted_at: new Date().toISOString(),
@@ -582,6 +596,9 @@ const PortalDashboard = () => {
 
     setDays(next);
     setOvertimeHours(String(t.overtime_hours));
+    setIncentiveNote('');
+    setExtraAmount('');
+    setExtraReason('');
     setNotes(t.notes || '');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -594,6 +611,9 @@ const PortalDashboard = () => {
     setDraftDateRange(undefined);
     setDays({});
     setOvertimeHours('0');
+    setIncentiveNote('');
+    setExtraAmount('');
+    setExtraReason('');
     setNotes('');
   };
 
@@ -920,8 +940,17 @@ const PortalDashboard = () => {
                   )}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="ot">Overtime hours (within total)</Label>
-                  <Input id="ot" type="number" step="0.25" min="0" value={overtimeHours} onChange={(e) => setOvertimeHours(e.target.value)} />
+                  <Label htmlFor="ot">Incentives ($)</Label>
+                  <Input id="ot" type="number" step="0.01" min="0" value={overtimeHours} onChange={(e) => setOvertimeHours(e.target.value)} placeholder="0.00" />
+                  {parseFloat(overtimeHours || '0') > 0 && (
+                    <Textarea
+                      rows={2}
+                      value={incentiveNote}
+                      onChange={(e) => setIncentiveNote(e.target.value)}
+                      placeholder="Reason for incentive (e.g. performance bonus, project completion)"
+                      className="text-sm"
+                    />
+                  )}
                 </div>
               </div>
 
@@ -1193,6 +1222,8 @@ const PortalDashboard = () => {
           if (open) {
             setClientNotified(false);
             setInvoiceMatches(false);
+            setExtraAmount('');
+            setExtraReason('');
           }
         }}
       >
@@ -1203,7 +1234,7 @@ const PortalDashboard = () => {
               <div className="space-y-3">
                 <div>
                   Week of <strong>{weekStart && format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – {weekEnding && format(new Date(weekEnding + 'T00:00:00'), 'MMM d, yyyy')}</strong> ·{' '}
-                  <strong>{totalHours.toFixed(2)}</strong> total hours · <strong>{overtimeHours || '0'}</strong> overtime.
+                  <strong>{totalHours.toFixed(2)}</strong> total hours · <strong>${parseFloat(overtimeHours || '0').toFixed(2)}</strong> incentives.
                   {info?.hourly_rate != null && (
                     <> · Invoice total <strong className="text-primary">${(totalHours * Number(info.hourly_rate)).toFixed(2)}</strong></>
                   )}
@@ -1236,6 +1267,37 @@ const PortalDashboard = () => {
                       )} <strong>matches my Payoneer invoice</strong> request.
                     </span>
                   </label>
+                  {!invoiceMatches && (
+                    <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3">
+                      <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                        Invoice doesn't match? Please add the extra amount on top and explain the reason.
+                      </p>
+                      <div className="space-y-1">
+                        <Label htmlFor="extra-amt" className="text-xs">Extra amount on top ($)</Label>
+                        <Input
+                          id="extra-amt"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={extraAmount}
+                          onChange={(e) => setExtraAmount(e.target.value)}
+                          placeholder="0.00"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="extra-reason" className="text-xs">Reason for the extra amount</Label>
+                        <Textarea
+                          id="extra-reason"
+                          rows={2}
+                          value={extraReason}
+                          onChange={(e) => setExtraReason(e.target.value)}
+                          placeholder="Explain why the invoice total differs (e.g. reimbursement, bonus, missed hours)"
+                          className="text-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </AlertDialogDescription>
@@ -1244,7 +1306,11 @@ const PortalDashboard = () => {
             <AlertDialogCancel disabled={submitting}>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={(e) => { e.preventDefault(); performSubmit(); }}
-              disabled={submitting || !clientNotified || !invoiceMatches}
+              disabled={
+                submitting ||
+                !clientNotified ||
+                (!invoiceMatches && (!(parseFloat(extraAmount || '0') > 0) || !extraReason.trim()))
+              }
             >
               {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
               Confirm
