@@ -245,6 +245,18 @@ const PortalDashboard = () => {
       regular_work_shift: nextInfo.regular_work_shift || '',
     });
 
+    // Force profile completion on first login if any required field is missing.
+    const incomplete =
+      !nextInfo.full_name ||
+      !nextInfo.phone ||
+      !nextInfo.regular_work_shift ||
+      nextInfo.hours_per_week == null ||
+      nextInfo.hourly_rate == null;
+    if (incomplete) {
+      setProfileEditing(true);
+      setProfileOpen(true);
+    }
+
     const { data: ts } = await supabase
       .from('contractor_timesheets')
       .select('id, week_ending_date, total_hours, overtime_hours, notes, status, submitted_at, daily_hours')
@@ -254,6 +266,15 @@ const PortalDashboard = () => {
     setTimesheets((ts as any) || []);
     setLoading(false);
   };
+
+  // Computed: profile is missing required fields
+  const profileIncomplete = !info
+    ? false
+    : (!info.full_name ||
+       !info.phone ||
+       !info.regular_work_shift ||
+       info.hours_per_week == null ||
+       info.hourly_rate == null);
 
   useEffect(() => { loadAll(); }, []);
 
@@ -442,13 +463,29 @@ const PortalDashboard = () => {
       toast({ title: 'Name required', description: 'Please enter your full name.', variant: 'destructive' });
       return;
     }
+    if (!profileForm.phone.trim()) {
+      toast({ title: 'Phone required', description: 'Please enter your phone number.', variant: 'destructive' });
+      return;
+    }
+    if (!profileForm.regular_work_shift.trim()) {
+      toast({ title: 'Work shift required', description: 'Please enter your regular work shift.', variant: 'destructive' });
+      return;
+    }
     const hpw = profileForm.hours_per_week.trim() === '' ? null : Number(profileForm.hours_per_week);
     const rate = profileForm.hourly_rate.trim() === '' ? null : Number(profileForm.hourly_rate);
-    if (hpw != null && (isNaN(hpw) || hpw < 0 || hpw > 168)) {
+    if (hpw == null) {
+      toast({ title: 'Hours per week required', description: 'Please enter your regular hours per week.', variant: 'destructive' });
+      return;
+    }
+    if (isNaN(hpw) || hpw < 0 || hpw > 168) {
       toast({ title: 'Invalid hours', description: 'Hours per week must be between 0 and 168.', variant: 'destructive' });
       return;
     }
-    if (rate != null && (isNaN(rate) || rate < 0)) {
+    if (rate == null) {
+      toast({ title: 'Rate required', description: 'Please enter your current hourly rate.', variant: 'destructive' });
+      return;
+    }
+    if (isNaN(rate) || rate < 0) {
       toast({ title: 'Invalid rate', description: 'Rate must be a non-negative number.', variant: 'destructive' });
       return;
     }
@@ -541,13 +578,34 @@ const PortalDashboard = () => {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-        <Dialog open={profileOpen} onOpenChange={(open) => { setProfileOpen(open); if (!open) setProfileEditing(false); }}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <Dialog
+          open={profileOpen || profileIncomplete}
+          onOpenChange={(open) => {
+            if (profileIncomplete && !open) return; // block close while incomplete
+            setProfileOpen(open);
+            if (!open) setProfileEditing(false);
+          }}
+        >
+          <DialogContent
+            className={`max-w-3xl max-h-[90vh] overflow-y-auto ${profileIncomplete ? '[&>button]:hidden' : ''}`}
+            onPointerDownOutside={(e) => { if (profileIncomplete) e.preventDefault(); }}
+            onEscapeKeyDown={(e) => { if (profileIncomplete) e.preventDefault(); }}
+            onInteractOutside={(e) => { if (profileIncomplete) e.preventDefault(); }}
+          >
             <DialogHeader>
-              <DialogTitle>My Profile</DialogTitle>
-              <DialogDescription>Keep your contact and assignment details up to date.</DialogDescription>
+              <DialogTitle>{profileIncomplete ? 'Complete your profile' : 'My Profile'}</DialogTitle>
+              <DialogDescription>
+                {profileIncomplete
+                  ? 'Please fill in the required details below before using the portal. This helps us keep your assignment information accurate.'
+                  : 'Keep your contact and assignment details up to date.'}
+              </DialogDescription>
             </DialogHeader>
-            {!profileEditing ? (
+            {profileIncomplete && (
+              <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 px-3 py-2 text-xs">
+                Required: Full name, Phone, Regular work shift, Hours per week, and Current rate.
+              </div>
+            )}
+            {(!profileEditing && !profileIncomplete) ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm py-2">
                 <ProfileField label="Full name" value={info?.full_name} />
                 <ProfileField label="Email" value={info?.email} />
@@ -561,7 +619,7 @@ const PortalDashboard = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
                 <div className="space-y-2">
-                  <Label htmlFor="p-full_name">Full name</Label>
+                  <Label htmlFor="p-full_name">Full name <span className="text-destructive">*</span></Label>
                   <Input id="p-full_name" value={profileForm.full_name} onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })} />
                 </div>
                 <div className="space-y-2">
@@ -569,25 +627,25 @@ const PortalDashboard = () => {
                   <Input value={info?.email || ''} disabled />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="p-phone">Phone</Label>
+                  <Label htmlFor="p-phone">Phone <span className="text-destructive">*</span></Label>
                   <Input id="p-phone" value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="p-shift">Regular work shift</Label>
+                  <Label htmlFor="p-shift">Regular work shift <span className="text-destructive">*</span></Label>
                   <Input id="p-shift" placeholder="e.g. 9 AM – 6 PM EST" value={profileForm.regular_work_shift} onChange={(e) => setProfileForm({ ...profileForm, regular_work_shift: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="p-hpw">Hours per week</Label>
+                  <Label htmlFor="p-hpw">Hours per week <span className="text-destructive">*</span></Label>
                   <Input id="p-hpw" type="number" step="0.5" min="0" max="168" value={profileForm.hours_per_week} onChange={(e) => setProfileForm({ ...profileForm, hours_per_week: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="p-rate">Current rate (per hour)</Label>
+                  <Label htmlFor="p-rate">Current rate (per hour) <span className="text-destructive">*</span></Label>
                   <Input id="p-rate" type="number" step="0.01" min="0" value={profileForm.hourly_rate} onChange={(e) => setProfileForm({ ...profileForm, hourly_rate: e.target.value })} />
                 </div>
               </div>
             )}
             <DialogFooter className="gap-2">
-              {!profileEditing ? (
+              {(!profileEditing && !profileIncomplete) ? (
                 <>
                   <Button type="button" variant="outline" onClick={() => setProfileOpen(false)}>Close</Button>
                   <Button type="button" onClick={() => setProfileEditing(true)}>
@@ -596,10 +654,12 @@ const PortalDashboard = () => {
                 </>
               ) : (
                 <>
-                  <Button type="button" variant="outline" onClick={handleProfileCancel} disabled={profileSaving}>Cancel</Button>
+                  {!profileIncomplete && (
+                    <Button type="button" variant="outline" onClick={handleProfileCancel} disabled={profileSaving}>Cancel</Button>
+                  )}
                   <Button type="button" onClick={handleProfileSave} disabled={profileSaving}>
                     {profileSaving && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
-                    Save
+                    {profileIncomplete ? 'Save & continue' : 'Save'}
                   </Button>
                 </>
               )}
@@ -765,7 +825,20 @@ const PortalDashboard = () => {
                     Cancel
                   </Button>
                 )}
-                <Button type="button" onClick={() => handleSubmitClick()} disabled={submitting}>
+                <Button
+                  type="button"
+                  onClick={() => {
+                    if (profileIncomplete) {
+                      toast({ title: 'Complete your profile first', description: 'Please fill in the required profile details before submitting hours.', variant: 'destructive' });
+                      setProfileEditing(true);
+                      setProfileOpen(true);
+                      return;
+                    }
+                    handleSubmitClick();
+                  }}
+                  disabled={submitting || profileIncomplete}
+                  title={profileIncomplete ? 'Complete your profile to enable submitting' : undefined}
+                >
                   {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                   {editingId ? 'Save changes' : 'Submit'}
                 </Button>
