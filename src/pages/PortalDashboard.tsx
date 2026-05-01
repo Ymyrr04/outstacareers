@@ -578,26 +578,6 @@ const PortalDashboard = () => {
                   <Input id="p-phone" value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="p-whatsapp">WhatsApp</Label>
-                  <Input id="p-whatsapp" value={profileForm.whatsapp} onChange={(e) => setProfileForm({ ...profileForm, whatsapp: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="p-location">Location</Label>
-                  <Input id="p-location" value={profileForm.location} onChange={(e) => setProfileForm({ ...profileForm, location: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="p-country">Country</Label>
-                  <Input id="p-country" value={profileForm.country} onChange={(e) => setProfileForm({ ...profileForm, country: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="p-contact">Contact number</Label>
-                  <Input id="p-contact" value={profileForm.contact_number} onChange={(e) => setProfileForm({ ...profileForm, contact_number: e.target.value })} />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="p-emergency">Emergency number</Label>
-                  <Input id="p-emergency" value={profileForm.emergency_number} onChange={(e) => setProfileForm({ ...profileForm, emergency_number: e.target.value })} />
-                </div>
-                <div className="space-y-2">
                   <Label htmlFor="p-shift">Regular work shift</Label>
                   <Input id="p-shift" placeholder="e.g. 9 AM – 6 PM EST" value={profileForm.regular_work_shift} onChange={(e) => setProfileForm({ ...profileForm, regular_work_shift: e.target.value })} />
                 </div>
