@@ -181,6 +181,24 @@ export const PLDashboard = () => {
     }
   };
 
+  const handleDecision = async (r: TimesheetRow, decision: 'approved' | 'rejected') => {
+    const overDays = r.daily_hours
+      ? Object.entries(r.daily_hours).filter(([, v]) => Number(v?.hours) > 10).map(([k]) => k)
+      : [];
+    const summary = overDays.length ? `\n\nDays >10 hrs: ${overDays.join(', ')}` : '';
+    if (!confirm(`${decision === 'approved' ? 'Approve' : 'Reject'} timesheet for ${r.contractor?.applicant?.full_name} (week ending ${format(new Date(r.week_ending_date), 'MMM d, yyyy')})?${summary}`)) return;
+    const { error } = await supabase
+      .from('contractor_timesheets')
+      .update({ status: decision })
+      .eq('id', r.id);
+    if (error) {
+      toast({ title: 'Update failed', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: `Timesheet ${decision}` });
+    fetchData();
+  };
+
   const filtered = rows.filter((r) => {
     if (!search) return true;
     const q = search.toLowerCase();
