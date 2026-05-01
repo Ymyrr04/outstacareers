@@ -272,9 +272,26 @@ export const PLDashboard = () => {
     !active ? <ArrowUpDown className="w-3 h-3 ml-1 inline opacity-40" /> :
     dir === 'asc' ? <ArrowUp className="w-3 h-3 ml-1 inline" /> : <ArrowDown className="w-3 h-3 ml-1 inline" />;
 
+  // Compute deposit hours: first 2 weeks from start_date are security deposit, capped at hours_per_week
+  const computeDeposit = (r: TimesheetRow): { depositHours: number; isDeposit: boolean; weekIndex: number | null } => {
+    const startStr = r.contractor?.start_date;
+    const hpw = Number(r.contractor?.hours_per_week || 0);
+    if (!startStr || !hpw) return { depositHours: 0, isDeposit: false, weekIndex: null };
+    const start = new Date(startStr);
+    const weekEnd = new Date(r.week_ending_date);
+    const diffDays = Math.floor((weekEnd.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+    if (diffDays < 0) return { depositHours: 0, isDeposit: false, weekIndex: null };
+    // weekIndex 0 = first week (days 0-6), 1 = second week (days 7-13)
+    const weekIndex = Math.floor(diffDays / 7);
+    if (weekIndex > 1) return { depositHours: 0, isDeposit: false, weekIndex };
+    const regular = Math.min(Number(r.total_hours), hpw);
+    return { depositHours: regular, isDeposit: true, weekIndex };
+  };
+
   const totalHoursAll = filtered.reduce((s, r) => s + Number(r.total_hours), 0);
   const totalOTAll = filtered.reduce((s, r) => s + Number(r.overtime_hours), 0);
   const totalIncentivesAll = filtered.reduce((s, r) => s + Number(r.incentive_amount || 0), 0);
+  const totalDepositAll = filtered.reduce((s, r) => s + computeDeposit(r).depositHours, 0);
 
   return (
     <div className="space-y-6">
