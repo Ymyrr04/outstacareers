@@ -332,7 +332,9 @@ const PortalDashboard = () => {
                   {DAY_KEYS.map((k) => {
                     const start = weekStart ? new Date(weekStart + 'T00:00:00') : null;
                     const date = start ? addDays(start, DAY_KEYS.indexOf(k)) : null;
-                    const isEmpty = days[k].hours === '' || parseFloat(days[k].hours) === 0;
+                    const hoursNum = parseFloat(days[k].hours || '0');
+                    const isEmpty = days[k].hours === '' || hoursNum === 0;
+                    const isOvertime = !isNaN(hoursNum) && hoursNum > 10;
                     return (
                       <div key={k} className="grid grid-cols-1 md:grid-cols-[160px_140px_1fr] gap-3 p-3 items-center">
                         <div>
@@ -348,12 +350,20 @@ const PortalDashboard = () => {
                           value={days[k].hours}
                           onChange={(e) => updateDay(k, { hours: e.target.value })}
                           aria-label={`${DAY_LABELS[k]} hours`}
+                          className={isOvertime ? 'border-amber-500 focus-visible:ring-amber-500' : ''}
                         />
                         {isEmpty ? (
                           <Input
                             placeholder={`Reason for no hours on ${DAY_LABELS[k]} (e.g. day off, holiday, sick)`}
                             value={days[k].reason}
                             onChange={(e) => updateDay(k, { reason: e.target.value })}
+                          />
+                        ) : isOvertime ? (
+                          <Input
+                            placeholder={`Reason for ${hoursNum} hrs (>10) — pending approval`}
+                            value={days[k].reason}
+                            onChange={(e) => updateDay(k, { reason: e.target.value })}
+                            className="border-amber-500 focus-visible:ring-amber-500"
                           />
                         ) : (
                           <div className="text-xs text-muted-foreground">Worked</div>
