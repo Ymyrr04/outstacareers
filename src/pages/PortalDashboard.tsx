@@ -254,6 +254,7 @@ const PortalDashboard = () => {
     // Derive week start (Monday) from week ending (Sunday) = ending - 6 days
     const ending = new Date(t.week_ending_date + 'T00:00:00');
     setWeekStart(format(addDays(ending, -6), 'yyyy-MM-dd'));
+    setWeekEnd(t.week_ending_date);
     const next = emptyDays();
     if (t.daily_hours && typeof t.daily_hours === 'object') {
       DAY_KEYS.forEach((k) => {
