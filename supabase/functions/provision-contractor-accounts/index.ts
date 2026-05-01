@@ -45,7 +45,7 @@ Deno.serve(async (req) => {
     let query = admin
       .from("contractor_assignments")
       .select("id, applicant:applicants_prescreen(email, full_name)")
-      .eq("status", "active");
+      .in("status", ["active", "rendering"]);
 
     if (body.contractorAssignmentId) {
       query = query.eq("id", body.contractorAssignmentId);
