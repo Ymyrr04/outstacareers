@@ -309,6 +309,10 @@ const PortalDashboard = () => {
     }
     setWeekStart(fromKey);
     setWeekEnd(toKey);
+    setDateRange({
+      from: new Date(fromKey + 'T00:00:00'),
+      to: new Date(toKey + 'T00:00:00'),
+    });
 
     const keys = buildDateKeys(fromKey, toKey);
     const next = emptyDaysFor(keys);
