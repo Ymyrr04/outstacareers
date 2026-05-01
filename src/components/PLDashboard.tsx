@@ -67,6 +67,8 @@ export const PLDashboard = () => {
   const [loading, setLoading] = useState(true);
   const [profileContractor, setProfileContractor] = useState<any | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
+  const [profileInvoices, setProfileInvoices] = useState<any[]>([]);
+  const [loadingInvoices, setLoadingInvoices] = useState(false);
   const [provisioning, setProvisioning] = useState(false);
   const [provisioningId, setProvisioningId] = useState<string | null>(null);
   const [rows, setRows] = useState<TimesheetRow[]>([]);
@@ -507,17 +509,26 @@ export const PLDashboard = () => {
                             disabled={loadingProfile}
                             onClick={async () => {
                               setLoadingProfile(true);
-                              const { data, error } = await supabase
-                                .from('contractor_assignments')
-                                .select('*, applicant:applicants_prescreen(full_name, email, location, phone), client:clients(company_name, industry)')
-                                .eq('id', c.id)
-                                .maybeSingle();
+                              setProfileInvoices([]);
+                              const [{ data, error }, { data: invoices }] = await Promise.all([
+                                supabase
+                                  .from('contractor_assignments')
+                                  .select('*, applicant:applicants_prescreen(full_name, email, location, phone), client:clients(company_name, industry)')
+                                  .eq('id', c.id)
+                                  .maybeSingle(),
+                                supabase
+                                  .from('contractor_timesheets')
+                                  .select('id, week_ending_date, total_hours, overtime_hours, incentive_amount, status, submitted_at')
+                                  .eq('contractor_assignment_id', c.id)
+                                  .order('week_ending_date', { ascending: false }),
+                              ]);
                               setLoadingProfile(false);
                               if (error || !data) {
                                 toast({ title: 'Failed to load profile', description: error?.message, variant: 'destructive' });
                                 return;
                               }
                               setProfileContractor(data);
+                              setProfileInvoices(invoices || []);
                             }}
                           >
                             <Eye className="w-3 h-3 mr-1" />Profile
@@ -640,27 +651,75 @@ export const PLDashboard = () => {
         </CardContent>
       </Card>
 
-      <Dialog open={!!profileContractor} onOpenChange={(o) => { if (!o) setProfileContractor(null); }}>
-        <DialogContent className="max-w-3xl">
+      <Dialog open={!!profileContractor} onOpenChange={(o) => { if (!o) { setProfileContractor(null); setProfileInvoices([]); } }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>My Profile</DialogTitle>
             <DialogDescription>Contractor's portal profile details.</DialogDescription>
           </DialogHeader>
           {profileContractor && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm py-2">
-              <ProfileField label="Full name" value={profileContractor.applicant?.full_name} />
-              <ProfileField label="Email" value={profileContractor.applicant?.email} />
-              <ProfileField label="Phone" value={profileContractor.applicant?.phone} />
-              <ProfileField label="Job title" value={profileContractor.job_title} />
-              <ProfileField label="Company" value={profileContractor.client?.company_name} />
-              <ProfileField label="Regular work shift" value={profileContractor.regular_work_shift} />
-              <ProfileField label="Hours per week" value={profileContractor.hours_per_week != null ? `${profileContractor.hours_per_week} hrs` : null} />
-              <ProfileField label="Current rate" value={profileContractor.hourly_rate != null ? `$${Number(profileContractor.hourly_rate).toFixed(2)}/hr` : null} />
-              <ProfileField label="Start date" value={profileContractor.start_date ? format(new Date(profileContractor.start_date), 'MMM d, yyyy') : null} />
-            </div>
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm py-2">
+                <ProfileField label="Full name" value={profileContractor.applicant?.full_name} />
+                <ProfileField label="Email" value={profileContractor.applicant?.email} />
+                <ProfileField label="Phone" value={profileContractor.applicant?.phone} />
+                <ProfileField label="Job title" value={profileContractor.job_title} />
+                <ProfileField label="Company" value={profileContractor.client?.company_name} />
+                <ProfileField label="Regular work shift" value={profileContractor.regular_work_shift} />
+                <ProfileField label="Hours per week" value={profileContractor.hours_per_week != null ? `${profileContractor.hours_per_week} hrs` : null} />
+                <ProfileField label="Current rate" value={profileContractor.hourly_rate != null ? `$${Number(profileContractor.hourly_rate).toFixed(2)}/hr` : null} />
+                <ProfileField label="Start date" value={profileContractor.start_date ? format(new Date(profileContractor.start_date), 'MMM d, yyyy') : null} />
+              </div>
+
+              <div className="mt-4">
+                <h4 className="font-semibold text-sm mb-2">Invoice History</h4>
+                {profileInvoices.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No submitted invoices yet.</p>
+                ) : (
+                  <div className="border rounded-md overflow-hidden">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Week ending</TableHead>
+                          <TableHead className="text-right">Hours</TableHead>
+                          <TableHead className="text-right">OT</TableHead>
+                          <TableHead className="text-right">Incentives</TableHead>
+                          <TableHead className="text-right">Total</TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Submitted</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {profileInvoices.map((inv) => {
+                          const rate = Number(profileContractor.hourly_rate || 0);
+                          const total = Number(inv.total_hours || 0) * rate + Number(inv.overtime_hours || 0) + Number(inv.incentive_amount || 0);
+                          return (
+                            <TableRow key={inv.id}>
+                              <TableCell>{inv.week_ending_date ? format(new Date(inv.week_ending_date), 'MMM d, yyyy') : '—'}</TableCell>
+                              <TableCell className="text-right">{Number(inv.total_hours || 0).toFixed(2)}</TableCell>
+                              <TableCell className="text-right">{Number(inv.overtime_hours || 0).toFixed(2)}</TableCell>
+                              <TableCell className="text-right">${Number(inv.incentive_amount || 0).toFixed(2)}</TableCell>
+                              <TableCell className="text-right font-medium">${total.toFixed(2)}</TableCell>
+                              <TableCell>
+                                <Badge variant={inv.status === 'submitted' ? 'default' : 'secondary'} className="capitalize">
+                                  {inv.status || '—'}
+                                </Badge>
+                              </TableCell>
+                              <TableCell className="text-xs text-muted-foreground">
+                                {inv.submitted_at ? format(new Date(inv.submitted_at), 'MMM d, yyyy') : '—'}
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </div>
+            </>
           )}
           <DialogFooter>
-            <Button variant="outline" onClick={() => setProfileContractor(null)}>Close</Button>
+            <Button variant="outline" onClick={() => { setProfileContractor(null); setProfileInvoices([]); }}>Close</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
