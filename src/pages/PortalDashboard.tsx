@@ -520,12 +520,19 @@ const PortalDashboard = () => {
     setSubmitting(true);
     try {
       const needsApproval = getOvertimeDays().length > 0;
+      const extraAmt = parseFloat(extraAmount || '0') || 0;
+      const noteParts: string[] = [];
+      if (notes.trim()) noteParts.push(notes.trim());
+      if (ot > 0 && incentiveNote.trim()) noteParts.push(`Incentive ($${ot.toFixed(2)}): ${incentiveNote.trim()}`);
+      if (extraAmt > 0 && extraReason.trim()) noteParts.push(`Extra amount ($${extraAmt.toFixed(2)}): ${extraReason.trim()}`);
+      const combinedNotes = noteParts.join('\n\n');
+
       const { error } = await supabase.from('contractor_timesheets').upsert({
         contractor_assignment_id: info.contractor_assignment_id,
         week_ending_date: weekEnding,
         total_hours: totalHours,
         overtime_hours: ot,
-        notes: notes.trim() || null,
+        notes: combinedNotes || null,
         daily_hours: dailyPayload,
         status: needsApproval ? 'pending_approval' : 'submitted',
         submitted_at: new Date().toISOString(),
