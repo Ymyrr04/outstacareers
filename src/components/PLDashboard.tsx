@@ -375,6 +375,7 @@ export const PLDashboard = () => {
                       <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
                       <TableCell className="text-right font-medium">{Number(r.total_hours).toFixed(2)}</TableCell>
                       <TableCell className="text-right">{Number(r.overtime_hours).toFixed(2)}</TableCell>
+                      <TableCell className="text-right">${Number(r.incentive_amount || 0).toFixed(2)}</TableCell>
                       <TableCell>
                         {r.status === 'pending_approval' ? (
                           <Badge variant="outline" className="border-amber-500 text-amber-600">Pending approval</Badge>
