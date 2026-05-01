@@ -8,7 +8,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye } from 'lucide-react';
 import { format } from 'date-fns';
-import { EditContractorDialog } from '@/components/clients/EditContractorDialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 interface TimesheetRow {
   id: string;
@@ -54,6 +54,13 @@ interface ContractorRow {
     weekIndex: number | null;
   } | null;
 }
+
+const ProfileField = ({ label, value }: { label: string; value: string | null | undefined }) => (
+  <div>
+    <div className="text-xs text-muted-foreground">{label}</div>
+    <div className="font-medium">{value && String(value).trim() ? value : '—'}</div>
+  </div>
+);
 
 export const PLDashboard = () => {
   const { toast } = useToast();
@@ -633,12 +640,30 @@ export const PLDashboard = () => {
         </CardContent>
       </Card>
 
-      <EditContractorDialog
-        contractor={profileContractor}
-        open={!!profileContractor}
-        onOpenChange={(o) => { if (!o) setProfileContractor(null); }}
-        onUpdated={() => { setProfileContractor(null); fetchData(); }}
-      />
+      <Dialog open={!!profileContractor} onOpenChange={(o) => { if (!o) setProfileContractor(null); }}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>My Profile</DialogTitle>
+            <DialogDescription>Contractor's portal profile details.</DialogDescription>
+          </DialogHeader>
+          {profileContractor && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm py-2">
+              <ProfileField label="Full name" value={profileContractor.applicant?.full_name} />
+              <ProfileField label="Email" value={profileContractor.applicant?.email} />
+              <ProfileField label="Phone" value={profileContractor.applicant?.phone} />
+              <ProfileField label="Job title" value={profileContractor.job_title} />
+              <ProfileField label="Company" value={profileContractor.client?.company_name} />
+              <ProfileField label="Regular work shift" value={profileContractor.regular_work_shift} />
+              <ProfileField label="Hours per week" value={profileContractor.hours_per_week != null ? `${profileContractor.hours_per_week} hrs` : null} />
+              <ProfileField label="Current rate" value={profileContractor.hourly_rate != null ? `$${Number(profileContractor.hourly_rate).toFixed(2)}/hr` : null} />
+              <ProfileField label="Start date" value={profileContractor.start_date ? format(new Date(profileContractor.start_date), 'MMM d, yyyy') : null} />
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProfileContractor(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
