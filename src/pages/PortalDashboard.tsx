@@ -453,7 +453,7 @@ const PortalDashboard = () => {
                           <div className="text-xs text-muted-foreground">{format(date, 'MMM d, yyyy')}</div>
                         </div>
                         <div className="space-y-1">
-                          <Label htmlFor={`hrs-${k}`} className="text-xs font-medium text-blue-900/80 dark:text-blue-100/80">Hours worked</Label>
+                          <Label htmlFor={`hrs-${k}`} className="text-xs font-medium text-muted-foreground">Hours worked</Label>
                           <Input
                             id={`hrs-${k}`}
                             type="number"
