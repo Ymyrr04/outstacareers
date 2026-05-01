@@ -460,9 +460,6 @@ const PortalDashboard = () => {
           hourly_rate: rate,
           hours_per_week: hpw,
           regular_work_shift: profileForm.regular_work_shift.trim() || null,
-          contact_number: profileForm.contact_number.trim() || null,
-          emergency_number: profileForm.emergency_number.trim() || null,
-          country: profileForm.country.trim() || null,
         })
         .eq('id', info.contractor_assignment_id);
       if (aErr) throw aErr;
@@ -472,8 +469,6 @@ const PortalDashboard = () => {
         .update({
           full_name: profileForm.full_name.trim(),
           phone: profileForm.phone.trim() || null,
-          whatsapp: profileForm.whatsapp.trim() || null,
-          location: profileForm.location.trim() || null,
         })
         .eq('id', info.applicant_id);
       if (pErr) throw pErr;
