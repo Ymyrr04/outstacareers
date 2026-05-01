@@ -109,25 +109,24 @@ export const PLDashboard = () => {
   useEffect(() => { fetchData(); }, []);
 
   const callProvision = async (payload?: Record<string, unknown>) => {
-    const { data: sessionData } = await supabase.auth.getSession();
-    const token = sessionData.session?.access_token;
-    const url = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/provision-contractor-accounts`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-        apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-      },
-      body: JSON.stringify(payload ?? {}),
+    const { data, error } = await supabase.functions.invoke('provision-contractor-accounts', {
+      body: payload ?? {},
     });
-    let body: any = null;
-    try { body = await res.json(); } catch { body = { error: await res.text() }; }
-    if (!res.ok) {
-      const msg = body?.error || body?.message || `HTTP ${res.status} ${res.statusText}`;
-      throw new Error(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    if (error) {
+      // FunctionsHttpError exposes a Response in error.context — read the actual body
+      let detail = error.message;
+      const ctx: any = (error as any).context;
+      if (ctx && typeof ctx.json === 'function') {
+        try {
+          const body = await ctx.json();
+          detail = body?.error || body?.message || JSON.stringify(body);
+        } catch {
+          try { detail = await ctx.text(); } catch { /* ignore */ }
+        }
+      }
+      throw new Error(detail);
     }
-    return body;
+    return data;
   };
 
   const handleProvision = async () => {
