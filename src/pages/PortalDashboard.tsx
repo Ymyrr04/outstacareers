@@ -1222,6 +1222,8 @@ const PortalDashboard = () => {
           if (open) {
             setClientNotified(false);
             setInvoiceMatches(false);
+            setExtraAmount('');
+            setExtraReason('');
           }
         }}
       >
