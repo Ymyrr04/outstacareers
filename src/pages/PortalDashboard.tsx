@@ -292,19 +292,38 @@ const PortalDashboard = () => {
 
   const handleEdit = (t: Timesheet) => {
     setEditingId(t.id);
-    // Derive week start (Monday) from week ending (Sunday) = ending - 6 days
-    const ending = new Date(t.week_ending_date + 'T00:00:00');
-    setWeekStart(format(addDays(ending, -6), 'yyyy-MM-dd'));
-    setWeekEnd(t.week_ending_date);
-    const next = emptyDays();
-    if (t.daily_hours && typeof t.daily_hours === 'object') {
-      DAY_KEYS.forEach((k) => {
-        const d = (t.daily_hours as any)[k];
-        if (d) {
-          next[k] = { hours: d.hours != null ? String(d.hours) : '', reason: d.reason || '' };
-        }
+    // Determine date range. Prefer explicit date keys stored in daily_hours; fallback to legacy 7-day window.
+    let fromKey = '';
+    let toKey = t.week_ending_date;
+    const dh = (t.daily_hours || {}) as Record<string, any>;
+    const dateLikeKeys = Object.keys(dh).filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
+    if (dateLikeKeys.length > 0) {
+      fromKey = dateLikeKeys[0];
+      toKey = dateLikeKeys[dateLikeKeys.length - 1];
+    } else {
+      const ending = new Date(t.week_ending_date + 'T00:00:00');
+      fromKey = format(addDays(ending, -6), 'yyyy-MM-dd');
+    }
+    setWeekStart(fromKey);
+    setWeekEnd(toKey);
+
+    const keys = buildDateKeys(fromKey, toKey);
+    const next = emptyDaysFor(keys);
+
+    if (dateLikeKeys.length > 0) {
+      keys.forEach((k) => {
+        const d = dh[k];
+        if (d) next[k] = { hours: d.hours != null ? String(d.hours) : '', reason: d.reason || '' };
+      });
+    } else {
+      // Legacy: map mon/tue/... in order onto the 7 generated keys
+      const legacy = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+      keys.forEach((k, i) => {
+        const d = dh[legacy[i]];
+        if (d) next[k] = { hours: d.hours != null ? String(d.hours) : '', reason: d.reason || '' };
       });
     }
+
     setDays(next);
     setOvertimeHours(String(t.overtime_hours));
     setNotes(t.notes || '');
@@ -314,9 +333,10 @@ const PortalDashboard = () => {
   const handleCancelEdit = () => {
     setEditingId(null);
     const defStart = getDefaultWeekStart();
+    const defEnd = format(addDays(new Date(defStart + 'T00:00:00'), 6), 'yyyy-MM-dd');
     setWeekStart(defStart);
-    setWeekEnd(format(addDays(new Date(defStart + 'T00:00:00'), 6), 'yyyy-MM-dd'));
-    setDays(emptyDays());
+    setWeekEnd(defEnd);
+    setDays(emptyDaysFor(buildDateKeys(defStart, defEnd)));
     setOvertimeHours('0');
     setNotes('');
   };
