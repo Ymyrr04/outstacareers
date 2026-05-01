@@ -93,14 +93,10 @@ const PortalDashboard = () => {
   const [missingDays, setMissingDays] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [weekStart, setWeekStart] = useState(getDefaultWeekStart());
-  const [weekEnd, setWeekEnd] = useState(() => {
-    const start = new Date(getDefaultWeekStart() + 'T00:00:00');
-    return format(addDays(start, 6), 'yyyy-MM-dd');
-  });
-  const [days, setDays] = useState<Record<string, DayEntry>>(() =>
-    emptyDaysFor(buildDateKeys(getDefaultWeekStart(), format(addDays(new Date(getDefaultWeekStart() + 'T00:00:00'), 6), 'yyyy-MM-dd')))
-  );
+  const [weekStart, setWeekStart] = useState('');
+  const [weekEnd, setWeekEnd] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [days, setDays] = useState<Record<string, DayEntry>>({});
   const [overtimeHours, setOvertimeHours] = useState('0');
   const [notes, setNotes] = useState('');
 
