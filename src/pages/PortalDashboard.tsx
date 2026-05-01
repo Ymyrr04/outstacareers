@@ -1265,6 +1265,37 @@ const PortalDashboard = () => {
                       )} <strong>matches my Payoneer invoice</strong> request.
                     </span>
                   </label>
+                  {!invoiceMatches && (
+                    <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3">
+                      <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                        Invoice doesn't match? Please add the extra amount on top and explain the reason.
+                      </p>
+                      <div className="space-y-1">
+                        <Label htmlFor="extra-amt" className="text-xs">Extra amount on top ($)</Label>
+                        <Input
+                          id="extra-amt"
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={extraAmount}
+                          onChange={(e) => setExtraAmount(e.target.value)}
+                          placeholder="0.00"
+                          className="h-8 text-sm"
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <Label htmlFor="extra-reason" className="text-xs">Reason for the extra amount</Label>
+                        <Textarea
+                          id="extra-reason"
+                          rows={2}
+                          value={extraReason}
+                          onChange={(e) => setExtraReason(e.target.value)}
+                          placeholder="Explain why the invoice total differs (e.g. reimbursement, bonus, missed hours)"
+                          className="text-sm"
+                        />
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </AlertDialogDescription>
