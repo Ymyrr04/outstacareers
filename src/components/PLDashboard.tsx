@@ -619,6 +619,12 @@ export const PLDashboard = () => {
           )}
         </CardContent>
       </Card>
+
+      <CandidateDetailDialog
+        open={!!profileApplicantId}
+        onOpenChange={(o) => { if (!o) setProfileApplicantId(null); }}
+        applicantId={profileApplicantId || ''}
+      />
     </div>
   );
 };
