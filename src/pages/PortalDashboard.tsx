@@ -1245,7 +1245,7 @@ const PortalDashboard = () => {
                   Week of <strong>{weekStart && format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – {weekEnding && format(new Date(weekEnding + 'T00:00:00'), 'MMM d, yyyy')}</strong> ·{' '}
                   <strong>{totalHours.toFixed(2)}</strong> total hours · <strong>${parseFloat(overtimeHours || '0').toFixed(2)}</strong> incentives.
                   {info?.hourly_rate != null && (
-                    <> · Invoice total <strong className="text-primary">${(totalHours * Number(info.hourly_rate)).toFixed(2)}</strong></>
+                    <> · Invoice total <strong className="text-primary">${(totalHours * Number(info.hourly_rate) + (parseFloat(overtimeHours || '0') || 0)).toFixed(2)}</strong></>
                   )}
                 </div>
                 {hasPendingApproval && (
