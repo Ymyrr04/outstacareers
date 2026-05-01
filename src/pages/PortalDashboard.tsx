@@ -245,6 +245,18 @@ const PortalDashboard = () => {
       regular_work_shift: nextInfo.regular_work_shift || '',
     });
 
+    // Force profile completion on first login if any required field is missing.
+    const incomplete =
+      !nextInfo.full_name ||
+      !nextInfo.phone ||
+      !nextInfo.regular_work_shift ||
+      nextInfo.hours_per_week == null ||
+      nextInfo.hourly_rate == null;
+    if (incomplete) {
+      setProfileEditing(true);
+      setProfileOpen(true);
+    }
+
     const { data: ts } = await supabase
       .from('contractor_timesheets')
       .select('id, week_ending_date, total_hours, overtime_hours, notes, status, submitted_at, daily_hours')
@@ -254,6 +266,15 @@ const PortalDashboard = () => {
     setTimesheets((ts as any) || []);
     setLoading(false);
   };
+
+  // Computed: profile is missing required fields
+  const profileIncomplete = !info
+    ? false
+    : (!info.full_name ||
+       !info.phone ||
+       !info.regular_work_shift ||
+       info.hours_per_week == null ||
+       info.hourly_rate == null);
 
   useEffect(() => { loadAll(); }, []);
 
