@@ -458,14 +458,25 @@ export const PLDashboard = () => {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      {c.latestTimesheet ? (
-                        <div className="flex flex-col items-end">
-                          <span className="font-medium">{c.latestTimesheet.total_hours.toFixed(2)}</span>
-                          {c.latestTimesheet.overtime_hours > 0 && (
-                            <span className="text-xs text-muted-foreground">+{c.latestTimesheet.overtime_hours.toFixed(2)} OT</span>
-                          )}
-                        </div>
-                      ) : (
+                      {c.latestTimesheet ? (() => {
+                        const expected = Number(c.hours_per_week || 0);
+                        const total = Number(c.latestTimesheet.total_hours);
+                        const ot = Number(c.latestTimesheet.overtime_hours);
+                        let colorClass = 'text-foreground';
+                        if (expected > 0) {
+                          if (ot > 0 || total > expected) colorClass = 'text-emerald-600';
+                          else if (total < expected) colorClass = 'text-red-600';
+                          else colorClass = 'text-blue-600';
+                        }
+                        return (
+                          <div className="flex flex-col items-end">
+                            <span className={`font-medium ${colorClass}`}>{total.toFixed(2)}</span>
+                            {ot > 0 && (
+                              <span className="text-xs text-emerald-600">+{ot.toFixed(2)} OT</span>
+                            )}
+                          </div>
+                        );
+                      })() : (
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
