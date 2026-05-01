@@ -442,11 +442,25 @@ const PortalDashboard = () => {
     }
     const empties = getEmptyDays();
     const overtimes = getOvertimeDays();
-    const missingReason = [...empties, ...overtimes].filter((k) => !days[k]?.reason?.trim());
+    const overHours = getOverHoursDays();
+    const allFlagged = Array.from(new Set([...empties, ...overtimes, ...overHours]));
+    const missingReason = allFlagged.filter((k) => !days[k]?.reason?.trim());
     if (missingReason.length > 0) {
       setMissingDays(missingReason);
       setMissingReasonOpen(true);
       return;
+    }
+    // If under target hours but no empty days (e.g., shorter days), require a reason on at least one day
+    if (!hoursMatch && hoursDiff < 0 && empties.length === 0) {
+      const anyReason = dateKeys.some((k) => days[k]?.reason?.trim());
+      if (!anyReason) {
+        toast({
+          title: `Missing ${Math.abs(hoursDiff).toFixed(2)} hrs`,
+          description: 'Total is below your weekly target. Please add a Reason on at least one day explaining the discrepancy.',
+          variant: 'destructive',
+        });
+        return;
+      }
     }
     setConfirmOpen(true);
   };
