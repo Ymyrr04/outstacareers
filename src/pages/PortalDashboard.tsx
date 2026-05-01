@@ -417,12 +417,30 @@ const PortalDashboard = () => {
   // Tolerance: anything within ±0.25h is considered matching
   const hoursMatch = expectedHours == null ? true : Math.abs(hoursDiff) <= 0.25;
 
-  // When over expected: days with > 8h need a reason explaining the extra time
+  // Per-day expected hours (e.g., 50hrs/week ÷ 5 = 10hrs/day)
+  const perDayExpected = useMemo(() => {
+    const hpw = info?.hours_per_week ? Number(info.hours_per_week) : null;
+    if (!hpw) return null;
+    return hpw / 5;
+  }, [info?.hours_per_week]);
+
+  // When over expected: days with > per-day target need a reason explaining the extra time
   const getOverHoursDays = (): string[] => {
-    if (expectedHours == null || hoursDiff <= 0.25) return [];
+    if (expectedHours == null || hoursDiff <= 0.25 || perDayExpected == null) return [];
     return dateKeys.filter((k) => {
       const v = parseFloat(days[k]?.hours || '0');
-      return !isNaN(v) && v > 8;
+      return !isNaN(v) && v > perDayExpected;
+    });
+  };
+
+  // When under expected: days with hours entered but below per-day target need a reason
+  const getUnderHoursDays = (): string[] => {
+    if (expectedHours == null || hoursDiff >= -0.25 || perDayExpected == null) return [];
+    return dateKeys.filter((k) => {
+      const raw = days[k]?.hours;
+      if (raw === '' || raw == null) return false;
+      const v = parseFloat(raw);
+      return !isNaN(v) && v > 0 && v < perDayExpected;
     });
   };
 
