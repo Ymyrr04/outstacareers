@@ -48,6 +48,7 @@ interface ContractorRow {
     week_ending_date: string;
     total_hours: number;
     overtime_hours: number;
+    incentive_amount: number;
     submitted_at: string;
     depositHours: number;
     isDeposit: boolean;
