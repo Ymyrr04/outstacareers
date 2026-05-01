@@ -227,7 +227,7 @@ export const PLDashboard = () => {
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Portal Accounts</CardTitle></CardHeader>
           <CardContent><p className="text-2xl font-bold">{stats.portalUsers} <span className="text-sm text-muted-foreground font-normal">/ {stats.totalEligibleContractors} eligible</span></p></CardContent>
@@ -243,6 +243,10 @@ export const PLDashboard = () => {
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Overtime Hours</CardTitle></CardHeader>
           <CardContent><p className="text-2xl font-bold">{totalOTAll.toFixed(2)}</p></CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Incentives</CardTitle></CardHeader>
+          <CardContent><p className="text-2xl font-bold">${totalIncentivesAll.toFixed(2)}</p></CardContent>
         </Card>
       </div>
 
