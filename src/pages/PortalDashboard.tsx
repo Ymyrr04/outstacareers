@@ -410,6 +410,7 @@ const PortalDashboard = () => {
                     <TableHead>Week ending</TableHead>
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead className="text-right">OT</TableHead>
+                    <TableHead>Status</TableHead>
                     <TableHead>Notes</TableHead>
                     <TableHead>Submitted</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -421,6 +422,17 @@ const PortalDashboard = () => {
                       <TableCell>{format(new Date(t.week_ending_date), 'MMM d, yyyy')}</TableCell>
                       <TableCell className="text-right font-medium">{Number(t.total_hours).toFixed(2)}</TableCell>
                       <TableCell className="text-right">{Number(t.overtime_hours).toFixed(2)}</TableCell>
+                      <TableCell>
+                        {t.status === 'pending_approval' ? (
+                          <span className="inline-flex items-center rounded-full border border-amber-500 text-amber-600 px-2 py-0.5 text-xs font-medium">Pending approval</span>
+                        ) : t.status === 'approved' ? (
+                          <span className="inline-flex items-center rounded-full border border-emerald-500 text-emerald-600 px-2 py-0.5 text-xs font-medium">Approved</span>
+                        ) : t.status === 'rejected' ? (
+                          <span className="inline-flex items-center rounded-full border border-destructive text-destructive px-2 py-0.5 text-xs font-medium">Rejected</span>
+                        ) : (
+                          <span className="inline-flex items-center rounded-full border border-muted-foreground/30 text-muted-foreground px-2 py-0.5 text-xs font-medium capitalize">{t.status}</span>
+                        )}
+                      </TableCell>
                       <TableCell className="text-sm max-w-xs truncate">{t.notes || '—'}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{format(new Date(t.submitted_at), 'MMM d, h:mm a')}</TableCell>
                       <TableCell className="text-right">
