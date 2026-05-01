@@ -41,6 +41,7 @@ export const PLDashboard = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [provisioning, setProvisioning] = useState(false);
+  const [provisioningId, setProvisioningId] = useState<string | null>(null);
   const [rows, setRows] = useState<TimesheetRow[]>([]);
   const [contractors, setContractors] = useState<ContractorRow[]>([]);
   const [search, setSearch] = useState('');
@@ -123,6 +124,34 @@ export const PLDashboard = () => {
       toast({ title: 'Failed', description: e.message, variant: 'destructive' });
     } finally {
       setProvisioning(false);
+    }
+  };
+
+  const handleProvisionOne = async (c: ContractorRow) => {
+    if (!c.applicant?.email) {
+      toast({ title: 'No email', description: 'This contractor has no email on file.', variant: 'destructive' });
+      return;
+    }
+    if (!confirm(`Create a portal account for ${c.applicant.full_name}?\n\nEmail: ${c.applicant.email}\nDefault password: OutSta2026!\n\nNo email will be sent — share the password manually.`)) return;
+    setProvisioningId(c.id);
+    try {
+      const { data, error } = await supabase.functions.invoke('provision-contractor-accounts', {
+        body: { contractorAssignmentId: c.id },
+      });
+      if (error) throw error;
+      if (data.errors?.length) {
+        toast({ title: 'Failed', description: data.errors[0], variant: 'destructive' });
+      } else {
+        toast({
+          title: 'Account ready',
+          description: `${data.created ? 'Created' : data.linked ? 'Linked existing user' : 'Already provisioned'} for ${c.applicant.email}`,
+        });
+      }
+      fetchData();
+    } catch (e: any) {
+      toast({ title: 'Failed', description: e.message, variant: 'destructive' });
+    } finally {
+      setProvisioningId(null);
     }
   };
 
@@ -223,7 +252,18 @@ export const PLDashboard = () => {
                     <TableCell className="text-right">{c.hours_per_week ?? '—'}</TableCell>
                     <TableCell>
                       {!c.hasPortal ? (
-                        <Badge variant="outline" className="text-muted-foreground">No account</Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-muted-foreground">No account</Badge>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs"
+                            disabled={provisioningId === c.id || !c.applicant?.email}
+                            onClick={() => handleProvisionOne(c)}
+                          >
+                            {provisioningId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><UserPlus className="w-3 h-3 mr-1" />Create</>}
+                          </Button>
+                        </div>
                       ) : c.mustChange ? (
                         <Badge variant="outline" className="border-amber-500 text-amber-600">Pending password change</Badge>
                       ) : (
