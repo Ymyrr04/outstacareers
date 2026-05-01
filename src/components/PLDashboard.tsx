@@ -48,7 +48,7 @@ export const PLDashboard = () => {
   const [contractors, setContractors] = useState<ContractorRow[]>([]);
   const [search, setSearch] = useState('');
   const [contractorSearch, setContractorSearch] = useState('');
-  const [contractorSort, setContractorSort] = useState<{ key: 'name' | 'company' | 'status' | 'rate' | 'hpw'; dir: 'asc' | 'desc' }>({ key: 'name', dir: 'asc' });
+  const [contractorSort, setContractorSort] = useState<{ key: 'name' | 'company' | 'status' | 'rate' | 'hpw'; dir: 'asc' | 'desc' }>({ key: 'company', dir: 'asc' });
   const [tsSort, setTsSort] = useState<{ key: 'name' | 'company' | 'week' | 'hours' | 'ot' | 'incentives' | 'status' | 'submitted'; dir: 'asc' | 'desc' }>({ key: 'submitted', dir: 'desc' });
   const [stats, setStats] = useState({ portalUsers: 0, totalEligibleContractors: 0 });
 
