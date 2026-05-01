@@ -673,6 +673,7 @@ export type Database = {
           is_replacement: boolean | null
           job_title: string | null
           notes: string | null
+          regular_work_shift: string | null
           separation_note: string | null
           source: string | null
           start_date: string | null
@@ -695,6 +696,7 @@ export type Database = {
           is_replacement?: boolean | null
           job_title?: string | null
           notes?: string | null
+          regular_work_shift?: string | null
           separation_note?: string | null
           source?: string | null
           start_date?: string | null
@@ -717,6 +719,7 @@ export type Database = {
           is_replacement?: boolean | null
           job_title?: string | null
           notes?: string | null
+          regular_work_shift?: string | null
           separation_note?: string | null
           source?: string | null
           start_date?: string | null
@@ -2073,6 +2076,7 @@ export type Database = {
     }
     Functions: {
       applicant_exists: { Args: { _applicant_id: string }; Returns: boolean }
+      get_my_applicant_id: { Args: never; Returns: string }
       get_my_contractor_assignment_id: { Args: never; Returns: string }
       has_active_interview_session: {
         Args: { _applicant_id: string }
