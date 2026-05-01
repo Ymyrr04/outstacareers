@@ -467,6 +467,7 @@ export const PLDashboard = () => {
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
+                    <TableCell>
                       {!c.hasPortal ? (
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="text-muted-foreground">No account</Badge>
