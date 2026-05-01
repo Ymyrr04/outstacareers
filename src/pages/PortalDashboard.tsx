@@ -1238,11 +1238,11 @@ const PortalDashboard = () => {
           }
         }}
       >
-        <AlertDialogContent className="max-w-3xl sm:max-w-3xl">
+        <AlertDialogContent className="max-w-4xl sm:max-w-4xl">
           <AlertDialogHeader>
-            <AlertDialogTitle>{editingId ? 'Save changes to this timesheet?' : 'Submit this timesheet?'}</AlertDialogTitle>
+            <AlertDialogTitle className="text-2xl">{editingId ? 'Save changes to this timesheet?' : 'Submit this timesheet?'}</AlertDialogTitle>
             <AlertDialogDescription asChild>
-              <div className="space-y-3">
+              <div className="space-y-4 text-base">
                 <div>
                   Week of <strong>{weekStart && format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – {weekEnding && format(new Date(weekEnding + 'T00:00:00'), 'MMM d, yyyy')}</strong> ·{' '}
                   <strong>{totalHours.toFixed(2)}</strong> total hours · <strong>${parseFloat(overtimeHours || '0').toFixed(2)}</strong> incentives.
@@ -1255,36 +1255,36 @@ const PortalDashboard = () => {
                     ⚠ One or more days exceed 10 hours. This timesheet will be marked <strong>Pending approval</strong> until reviewed by an admin.
                   </div>
                 )}
-                <div className="space-y-3 pt-2 border-t">
-                  <label className="flex items-start gap-2 cursor-pointer text-foreground">
+                <div className="space-y-4 pt-3 border-t">
+                  <label className="flex items-start gap-3 cursor-pointer text-foreground">
                     <Checkbox
                       checked={clientNotified}
                       onCheckedChange={(v) => setClientNotified(v === true)}
-                      className="mt-0.5"
+                      className="mt-1 h-5 w-5"
                     />
-                    <span className="text-sm">
+                    <span className="text-base">
                       I confirm my client was <strong>notified and approved</strong> the hours in this timesheet.
                     </span>
                   </label>
-                  <label className="flex items-start gap-2 cursor-pointer text-foreground">
+                  <label className="flex items-start gap-3 cursor-pointer text-foreground">
                     <Checkbox
                       checked={invoiceMatches}
                       onCheckedChange={(v) => setInvoiceMatches(v === true)}
-                      className="mt-0.5"
+                      className="mt-1 h-5 w-5"
                     />
-                    <span className="text-sm">
+                    <span className="text-base">
                       The total amount{info?.hourly_rate != null && (
                         <> (<strong className="text-primary">${(totalHours * Number(info.hourly_rate)).toFixed(2)}</strong>)</>
                       )} <strong>matches my Payoneer invoice</strong> request.
                     </span>
                   </label>
                   {!invoiceMatches && (
-                    <div className="space-y-2 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3">
-                      <p className="text-xs text-amber-700 dark:text-amber-400 font-medium">
+                    <div className="space-y-3 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-4">
+                      <p className="text-sm text-amber-700 dark:text-amber-400 font-medium">
                         Invoice doesn't match? Please add the extra amount on top and explain the reason.
                       </p>
-                      <div className="space-y-1">
-                        <Label htmlFor="extra-amt" className="text-xs">Extra amount on top ($)</Label>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="extra-amt" className="text-sm">Extra amount on top ($)</Label>
                         <Input
                           id="extra-amt"
                           type="number"
@@ -1293,18 +1293,18 @@ const PortalDashboard = () => {
                           value={extraAmount}
                           onChange={(e) => setExtraAmount(e.target.value)}
                           placeholder="0.00"
-                          className="h-8 text-sm"
+                          className="h-10 text-base"
                         />
                       </div>
-                      <div className="space-y-1">
-                        <Label htmlFor="extra-reason" className="text-xs">Reason for the extra amount</Label>
+                      <div className="space-y-1.5">
+                        <Label htmlFor="extra-reason" className="text-sm">Reason for the extra amount</Label>
                         <Textarea
                           id="extra-reason"
-                          rows={2}
+                          rows={3}
                           value={extraReason}
                           onChange={(e) => setExtraReason(e.target.value)}
                           placeholder="Explain why the invoice total differs (e.g. reimbursement, bonus, missed hours)"
-                          className="text-sm"
+                          className="text-base"
                         />
                       </div>
                     </div>
