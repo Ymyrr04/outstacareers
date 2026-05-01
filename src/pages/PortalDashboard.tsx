@@ -194,12 +194,12 @@ const PortalDashboard = () => {
 
   // Validate inputs (per-day hours and overtime). Returns true if numeric values are sane.
   const validateNumbers = (): boolean => {
-    for (const k of DAY_KEYS) {
+    for (const k of dateKeys) {
       const raw = days[k]?.hours;
       if (raw === '' || raw == null) continue;
       const n = parseFloat(raw);
       if (isNaN(n) || n < 0 || n > 24) {
-        toast({ title: `Invalid hours for ${DAY_LABELS[k]}`, description: 'Daily hours must be between 0 and 24.', variant: 'destructive' });
+        toast({ title: `Invalid hours for ${dayLabel(k)} (${format(new Date(k + 'T00:00:00'), 'MMM d')})`, description: 'Daily hours must be between 0 and 24.', variant: 'destructive' });
         return false;
       }
     }
@@ -213,19 +213,19 @@ const PortalDashboard = () => {
 
   // Returns list of day keys that are empty (no hours entered)
   const getEmptyDays = (): string[] =>
-    DAY_KEYS.filter((k) => {
+    dateKeys.filter((k) => {
       const raw = days[k]?.hours;
       return raw === '' || raw == null || parseFloat(raw) === 0;
     });
 
   // Returns list of day keys that exceed 10 hours (require overtime justification)
   const getOvertimeDays = (): string[] =>
-    DAY_KEYS.filter((k) => {
+    dateKeys.filter((k) => {
       const v = parseFloat(days[k]?.hours || '0');
       return !isNaN(v) && v > 10;
     });
 
-  const hasPendingApproval = useMemo(() => getOvertimeDays().length > 0, [days]);
+  const hasPendingApproval = useMemo(() => getOvertimeDays().length > 0, [days, dateKeys]);
 
   const handleSubmitClick = (e?: React.FormEvent) => {
     e?.preventDefault();
