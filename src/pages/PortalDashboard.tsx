@@ -481,6 +481,17 @@ const PortalDashboard = () => {
         return;
       }
     }
+    // Require Payoneer payment request link
+    const trimmedNotes = notes.trim();
+    const hasLink = /https?:\/\/\S+/i.test(trimmedNotes) || /payoneer\.com\/\S+/i.test(trimmedNotes);
+    if (!hasLink) {
+      toast({
+        title: 'Payoneer link required',
+        description: 'Please paste your Payoneer payment request link before submitting.',
+        variant: 'destructive',
+      });
+      return;
+    }
     setConfirmOpen(true);
   };
 
