@@ -557,11 +557,7 @@ const PortalDashboard = () => {
                 <ProfileField label="Full name" value={info?.full_name} />
                 <ProfileField label="Email" value={info?.email} />
                 <ProfileField label="Phone" value={info?.phone} />
-                <ProfileField label="WhatsApp" value={info?.whatsapp} />
-                <ProfileField label="Location" value={info?.location} />
-                <ProfileField label="Country" value={info?.country} />
-                <ProfileField label="Contact number" value={info?.contact_number} />
-                <ProfileField label="Emergency number" value={info?.emergency_number} />
+                <ProfileField label="Job title" value={info?.job_title} />
                 <ProfileField label="Job title" value={info?.job_title} />
                 <ProfileField label="Company" value={info?.company_name} />
                 <ProfileField label="Regular work shift" value={info?.regular_work_shift} />
