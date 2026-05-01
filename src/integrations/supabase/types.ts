@@ -1090,7 +1090,15 @@ export type Database = {
           updated_at?: string
           week_ending_date?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "contractor_timesheets_contractor_assignment_id_fkey"
+            columns: ["contractor_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "contractor_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       deleted_applicants: {
         Row: {
