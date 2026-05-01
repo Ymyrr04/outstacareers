@@ -356,19 +356,14 @@ const PortalDashboard = () => {
                           aria-label={`${DAY_LABELS[k]} hours`}
                           className={isOvertime ? 'border-amber-500 focus-visible:ring-amber-500' : ''}
                         />
-                        {isEmpty ? (
-                          <Input
-                            placeholder={`Reason for no hours on ${DAY_LABELS[k]} (e.g. day off, holiday, sick)`}
-                            value={days[k].reason}
-                            onChange={(e) => updateDay(k, { reason: e.target.value })}
-                          />
+                        {days[k].reason ? (
+                          <div className={`text-xs ${isOvertime ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                            <span className="font-medium">Reason:</span> {days[k].reason}
+                          </div>
                         ) : isOvertime ? (
-                          <Input
-                            placeholder={`Reason for ${hoursNum} hrs (>10) — pending approval`}
-                            value={days[k].reason}
-                            onChange={(e) => updateDay(k, { reason: e.target.value })}
-                            className="border-amber-500 focus-visible:ring-amber-500"
-                          />
+                          <div className="text-xs text-amber-600">Over 10 hrs — reason required on submit</div>
+                        ) : isEmpty ? (
+                          <div className="text-xs text-muted-foreground">No hours — reason required on submit</div>
                         ) : (
                           <div className="text-xs text-muted-foreground">Worked</div>
                         )}
@@ -449,18 +444,54 @@ const PortalDashboard = () => {
         </Card>
       </main>
 
-      {/* Missing reason prompt */}
+      {/* Missing reason prompt — collect reasons inline */}
       <AlertDialog open={missingReasonOpen} onOpenChange={setMissingReasonOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Reason required</AlertDialogTitle>
             <AlertDialogDescription>
-              Please add a short reason for the following day(s) — empty days need a reason, and days with more than 10 hours need a justification (these will require admin approval): {' '}
-              <strong>{missingDays.map((k) => DAY_LABELS[k as typeof DAY_KEYS[number]]).join(', ')}</strong>.
+              Please provide a short reason for the day(s) below. Empty days need a reason, and days over 10 hours require admin approval.
             </AlertDialogDescription>
           </AlertDialogHeader>
+          <div className="space-y-3 py-2">
+            {missingDays.map((k, idx) => {
+              const hoursNum = parseFloat(days[k]?.hours || '0');
+              const isOvertime = !isNaN(hoursNum) && hoursNum > 10;
+              return (
+                <div key={k} className="space-y-1">
+                  <Label className="text-sm">
+                    {DAY_LABELS[k as typeof DAY_KEYS[number]]}{' '}
+                    <span className={`text-xs ${isOvertime ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                      ({isOvertime ? `${hoursNum} hrs — needs approval` : 'no hours'})
+                    </span>
+                  </Label>
+                  <Input
+                    autoFocus={idx === 0}
+                    placeholder={isOvertime ? 'Reason for overtime (e.g. urgent deadline)' : 'Reason (e.g. day off, holiday, sick)'}
+                    value={days[k]?.reason || ''}
+                    onChange={(e) => updateDay(k, { reason: e.target.value })}
+                  />
+                </div>
+              );
+            })}
+          </div>
           <AlertDialogFooter>
-            <AlertDialogAction onClick={() => setMissingReasonOpen(false)}>OK</AlertDialogAction>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                const stillMissing = missingDays.filter((k) => !days[k]?.reason?.trim());
+                if (stillMissing.length > 0) {
+                  setMissingDays(stillMissing);
+                  toast({ title: 'Reason still required', description: 'Please fill in all reasons.', variant: 'destructive' });
+                  return;
+                }
+                setMissingReasonOpen(false);
+                setConfirmOpen(true);
+              }}
+            >
+              Continue
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
