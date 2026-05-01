@@ -428,6 +428,12 @@ const PortalDashboard = () => {
   // Tolerance: anything within ±0.25h is considered matching
   const hoursMatch = expectedHours == null ? true : Math.abs(hoursDiff) <= 0.25;
 
+  // OT hours = anything worked beyond the prorated weekly target
+  const otHours = useMemo(() => {
+    if (expectedHours == null) return 0;
+    return Math.max(0, Number((totalHours - expectedHours).toFixed(2)));
+  }, [totalHours, expectedHours]);
+
   // Per-day expected hours (e.g., 50hrs/week ÷ 5 = 10hrs/day)
   const perDayExpected = useMemo(() => {
     const hpw = info?.hours_per_week ? Number(info.hours_per_week) : null;
