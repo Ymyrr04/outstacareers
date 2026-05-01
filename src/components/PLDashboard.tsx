@@ -472,15 +472,22 @@ export const PLDashboard = () => {
                           else if (total < expected) colorClass = 'text-red-600';
                           else colorClass = 'text-blue-600';
                         }
-                        return (
-                          <div className="flex flex-col items-end">
-                            <span className={`font-medium ${colorClass}`}>{total.toFixed(2)}</span>
-                            {ot > 0 && (
-                              <span className="text-xs text-emerald-600">+{ot.toFixed(2)} OT</span>
-                            )}
-                          </div>
-                        );
+                        return <span className={`font-medium ${colorClass}`}>{total.toFixed(2)}</span>;
                       })() : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {c.latestTimesheet && c.latestTimesheet.overtime_hours > 0 ? (
+                        <span className="font-medium text-emerald-600">{c.latestTimesheet.overtime_hours.toFixed(2)}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {c.latestTimesheet && c.latestTimesheet.incentive_amount > 0 ? (
+                        <span className="font-medium text-blue-600">${c.latestTimesheet.incentive_amount.toFixed(2)}</span>
+                      ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
