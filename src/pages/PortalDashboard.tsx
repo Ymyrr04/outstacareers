@@ -28,10 +28,33 @@ import {
 
 interface ContractorInfo {
   contractor_assignment_id: string;
+  applicant_id: string;
   job_title: string | null;
   company_name: string | null;
   full_name: string | null;
   hourly_rate: number | null;
+  hours_per_week: number | null;
+  regular_work_shift: string | null;
+  contact_number: string | null;
+  emergency_number: string | null;
+  country: string | null;
+  email: string | null;
+  phone: string | null;
+  whatsapp: string | null;
+  location: string | null;
+}
+
+interface ProfileForm {
+  full_name: string;
+  phone: string;
+  whatsapp: string;
+  location: string;
+  country: string;
+  contact_number: string;
+  emergency_number: string;
+  hours_per_week: string;
+  hourly_rate: string;
+  regular_work_shift: string;
 }
 
 interface DayEntry {
@@ -81,6 +104,13 @@ const emptyDaysFor = (keys: string[]): Record<string, DayEntry> =>
   Object.fromEntries(keys.map((k) => [k, { hours: '', reason: '' }]));
 
 
+const ProfileField = ({ label, value }: { label: string; value: string | number | null | undefined }) => (
+  <div>
+    <div className="text-xs font-medium text-muted-foreground">{label}</div>
+    <div className="text-sm mt-0.5 break-words">{value != null && value !== '' ? value : <span className="text-muted-foreground">—</span>}</div>
+  </div>
+);
+
 const PortalDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -92,6 +122,15 @@ const PortalDashboard = () => {
   const [missingReasonOpen, setMissingReasonOpen] = useState(false);
   const [missingDays, setMissingDays] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+
+  const emptyProfileForm: ProfileForm = {
+    full_name: '', phone: '', whatsapp: '', location: '', country: '',
+    contact_number: '', emergency_number: '', hours_per_week: '',
+    hourly_rate: '', regular_work_shift: '',
+  };
+  const [profileForm, setProfileForm] = useState<ProfileForm>(emptyProfileForm);
+  const [profileEditing, setProfileEditing] = useState(false);
+  const [profileSaving, setProfileSaving] = useState(false);
 
   const [weekStart, setWeekStart] = useState('');
   const [weekEnd, setWeekEnd] = useState('');
@@ -168,16 +207,40 @@ const PortalDashboard = () => {
 
     const { data: assignment } = await supabase
       .from('contractor_assignments')
-      .select('id, job_title, hourly_rate, applicant:applicants_prescreen(full_name), client:clients(company_name)')
+      .select('id, applicant_id, job_title, hourly_rate, hours_per_week, regular_work_shift, contact_number, emergency_number, country, applicant:applicants_prescreen(full_name, email, phone, whatsapp, location), client:clients(company_name)')
       .eq('id', portal.contractor_assignment_id)
       .maybeSingle();
 
-    setInfo({
+    const applicant = (assignment?.applicant as any) || {};
+    const nextInfo: ContractorInfo = {
       contractor_assignment_id: portal.contractor_assignment_id,
+      applicant_id: assignment?.applicant_id || '',
       job_title: assignment?.job_title || null,
       company_name: (assignment?.client as any)?.company_name || null,
-      full_name: (assignment?.applicant as any)?.full_name || null,
-      hourly_rate: assignment?.hourly_rate || null,
+      full_name: applicant.full_name || null,
+      hourly_rate: assignment?.hourly_rate ?? null,
+      hours_per_week: assignment?.hours_per_week ?? null,
+      regular_work_shift: assignment?.regular_work_shift || null,
+      contact_number: assignment?.contact_number || null,
+      emergency_number: assignment?.emergency_number || null,
+      country: assignment?.country || null,
+      email: applicant.email || null,
+      phone: applicant.phone || null,
+      whatsapp: applicant.whatsapp || null,
+      location: applicant.location || null,
+    };
+    setInfo(nextInfo);
+    setProfileForm({
+      full_name: nextInfo.full_name || '',
+      phone: nextInfo.phone || '',
+      whatsapp: nextInfo.whatsapp || '',
+      location: nextInfo.location || '',
+      country: nextInfo.country || '',
+      contact_number: nextInfo.contact_number || '',
+      emergency_number: nextInfo.emergency_number || '',
+      hours_per_week: nextInfo.hours_per_week != null ? String(nextInfo.hours_per_week) : '',
+      hourly_rate: nextInfo.hourly_rate != null ? String(nextInfo.hourly_rate) : '',
+      regular_work_shift: nextInfo.regular_work_shift || '',
     });
 
     const { data: ts } = await supabase
@@ -354,6 +417,75 @@ const PortalDashboard = () => {
     setNotes('');
   };
 
+  const handleProfileCancel = () => {
+    if (!info) return;
+    setProfileForm({
+      full_name: info.full_name || '',
+      phone: info.phone || '',
+      whatsapp: info.whatsapp || '',
+      location: info.location || '',
+      country: info.country || '',
+      contact_number: info.contact_number || '',
+      emergency_number: info.emergency_number || '',
+      hours_per_week: info.hours_per_week != null ? String(info.hours_per_week) : '',
+      hourly_rate: info.hourly_rate != null ? String(info.hourly_rate) : '',
+      regular_work_shift: info.regular_work_shift || '',
+    });
+    setProfileEditing(false);
+  };
+
+  const handleProfileSave = async () => {
+    if (!info) return;
+    if (!profileForm.full_name.trim()) {
+      toast({ title: 'Name required', description: 'Please enter your full name.', variant: 'destructive' });
+      return;
+    }
+    const hpw = profileForm.hours_per_week.trim() === '' ? null : Number(profileForm.hours_per_week);
+    const rate = profileForm.hourly_rate.trim() === '' ? null : Number(profileForm.hourly_rate);
+    if (hpw != null && (isNaN(hpw) || hpw < 0 || hpw > 168)) {
+      toast({ title: 'Invalid hours', description: 'Hours per week must be between 0 and 168.', variant: 'destructive' });
+      return;
+    }
+    if (rate != null && (isNaN(rate) || rate < 0)) {
+      toast({ title: 'Invalid rate', description: 'Rate must be a non-negative number.', variant: 'destructive' });
+      return;
+    }
+    setProfileSaving(true);
+    try {
+      const { error: aErr } = await supabase
+        .from('contractor_assignments')
+        .update({
+          hourly_rate: rate,
+          hours_per_week: hpw,
+          regular_work_shift: profileForm.regular_work_shift.trim() || null,
+          contact_number: profileForm.contact_number.trim() || null,
+          emergency_number: profileForm.emergency_number.trim() || null,
+          country: profileForm.country.trim() || null,
+        })
+        .eq('id', info.contractor_assignment_id);
+      if (aErr) throw aErr;
+
+      const { error: pErr } = await supabase
+        .from('applicants_prescreen')
+        .update({
+          full_name: profileForm.full_name.trim(),
+          phone: profileForm.phone.trim() || null,
+          whatsapp: profileForm.whatsapp.trim() || null,
+          location: profileForm.location.trim() || null,
+        })
+        .eq('id', info.applicant_id);
+      if (pErr) throw pErr;
+
+      toast({ title: 'Profile updated', description: 'Your profile changes have been saved.' });
+      setProfileEditing(false);
+      await loadAll();
+    } catch (e: any) {
+      toast({ title: 'Could not save profile', description: e?.message || 'Please try again.', variant: 'destructive' });
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
   const handleClearDateRange = () => {
     setDraftDateRange(undefined);
     setDateRange(undefined);
@@ -400,6 +532,96 @@ const PortalDashboard = () => {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+        <Card>
+          <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
+            <div>
+              <CardTitle>My Profile</CardTitle>
+              <CardDescription>Keep your contact and assignment details up to date.</CardDescription>
+            </div>
+            {!profileEditing ? (
+              <Button type="button" variant="outline" size="sm" onClick={() => setProfileEditing(true)}>
+                <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button type="button" variant="outline" size="sm" onClick={handleProfileCancel} disabled={profileSaving}>
+                  Cancel
+                </Button>
+                <Button type="button" size="sm" onClick={handleProfileSave} disabled={profileSaving}>
+                  {profileSaving && <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" />}
+                  Save
+                </Button>
+              </div>
+            )}
+          </CardHeader>
+          <CardContent>
+            {!profileEditing ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-x-6 gap-y-4 text-sm">
+                <ProfileField label="Full name" value={info?.full_name} />
+                <ProfileField label="Email" value={info?.email} />
+                <ProfileField label="Phone" value={info?.phone} />
+                <ProfileField label="WhatsApp" value={info?.whatsapp} />
+                <ProfileField label="Location" value={info?.location} />
+                <ProfileField label="Country" value={info?.country} />
+                <ProfileField label="Contact number" value={info?.contact_number} />
+                <ProfileField label="Emergency number" value={info?.emergency_number} />
+                <ProfileField label="Job title" value={info?.job_title} />
+                <ProfileField label="Company" value={info?.company_name} />
+                <ProfileField label="Regular work shift" value={info?.regular_work_shift} />
+                <ProfileField label="Hours per week" value={info?.hours_per_week != null ? `${info.hours_per_week} hrs` : null} />
+                <ProfileField label="Current rate" value={info?.hourly_rate != null ? `$${Number(info.hourly_rate).toFixed(2)}/hr` : null} />
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="p-full_name">Full name</Label>
+                  <Input id="p-full_name" value={profileForm.full_name} onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input value={info?.email || ''} disabled />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="p-phone">Phone</Label>
+                  <Input id="p-phone" value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="p-whatsapp">WhatsApp</Label>
+                  <Input id="p-whatsapp" value={profileForm.whatsapp} onChange={(e) => setProfileForm({ ...profileForm, whatsapp: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="p-location">Location</Label>
+                  <Input id="p-location" value={profileForm.location} onChange={(e) => setProfileForm({ ...profileForm, location: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="p-country">Country</Label>
+                  <Input id="p-country" value={profileForm.country} onChange={(e) => setProfileForm({ ...profileForm, country: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="p-contact">Contact number</Label>
+                  <Input id="p-contact" value={profileForm.contact_number} onChange={(e) => setProfileForm({ ...profileForm, contact_number: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="p-emergency">Emergency number</Label>
+                  <Input id="p-emergency" value={profileForm.emergency_number} onChange={(e) => setProfileForm({ ...profileForm, emergency_number: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="p-shift">Regular work shift</Label>
+                  <Input id="p-shift" placeholder="e.g. 9 AM – 6 PM EST" value={profileForm.regular_work_shift} onChange={(e) => setProfileForm({ ...profileForm, regular_work_shift: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="p-hpw">Hours per week</Label>
+                  <Input id="p-hpw" type="number" step="0.5" min="0" max="168" value={profileForm.hours_per_week} onChange={(e) => setProfileForm({ ...profileForm, hours_per_week: e.target.value })} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="p-rate">Current rate (per hour)</Label>
+                  <Input id="p-rate" type="number" step="0.01" min="0" value={profileForm.hourly_rate} onChange={(e) => setProfileForm({ ...profileForm, hourly_rate: e.target.value })} />
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         <Card>
           <CardHeader>
             <CardTitle>{editingId ? 'Edit Weekly Hours' : 'Submit Weekly Hours'}</CardTitle>
