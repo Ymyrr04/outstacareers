@@ -62,6 +62,7 @@ const ProfileField = ({ label, value }: { label: string; value: string | null | 
   </div>
 );
 
+export const PLDashboard = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [profileContractor, setProfileContractor] = useState<any | null>(null);
