@@ -93,14 +93,10 @@ const PortalDashboard = () => {
   const [missingDays, setMissingDays] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  const [weekStart, setWeekStart] = useState(getDefaultWeekStart());
-  const [weekEnd, setWeekEnd] = useState(() => {
-    const start = new Date(getDefaultWeekStart() + 'T00:00:00');
-    return format(addDays(start, 6), 'yyyy-MM-dd');
-  });
-  const [days, setDays] = useState<Record<string, DayEntry>>(() =>
-    emptyDaysFor(buildDateKeys(getDefaultWeekStart(), format(addDays(new Date(getDefaultWeekStart() + 'T00:00:00'), 6), 'yyyy-MM-dd')))
-  );
+  const [weekStart, setWeekStart] = useState('');
+  const [weekEnd, setWeekEnd] = useState('');
+  const [dateRange, setDateRange] = useState<DateRange | undefined>(undefined);
+  const [days, setDays] = useState<Record<string, DayEntry>>({});
   const [overtimeHours, setOvertimeHours] = useState('0');
   const [notes, setNotes] = useState('');
 
@@ -313,6 +309,10 @@ const PortalDashboard = () => {
     }
     setWeekStart(fromKey);
     setWeekEnd(toKey);
+    setDateRange({
+      from: new Date(fromKey + 'T00:00:00'),
+      to: new Date(toKey + 'T00:00:00'),
+    });
 
     const keys = buildDateKeys(fromKey, toKey);
     const next = emptyDaysFor(keys);
@@ -339,11 +339,10 @@ const PortalDashboard = () => {
 
   const handleCancelEdit = () => {
     setEditingId(null);
-    const defStart = getDefaultWeekStart();
-    const defEnd = format(addDays(new Date(defStart + 'T00:00:00'), 6), 'yyyy-MM-dd');
-    setWeekStart(defStart);
-    setWeekEnd(defEnd);
-    setDays(emptyDaysFor(buildDateKeys(defStart, defEnd)));
+    setWeekStart('');
+    setWeekEnd('');
+    setDateRange(undefined);
+    setDays({});
     setOvertimeHours('0');
     setNotes('');
   };
@@ -417,16 +416,12 @@ const PortalDashboard = () => {
                       <Calendar
                         mode="range"
                         numberOfMonths={2}
-                        defaultMonth={weekStart ? new Date(weekStart + 'T00:00:00') : new Date()}
-                        selected={{
-                          from: weekStart ? new Date(weekStart + 'T00:00:00') : undefined,
-                          to: weekEnd ? new Date(weekEnd + 'T00:00:00') : undefined,
-                        }}
+                        defaultMonth={dateRange?.from ?? new Date()}
+                        selected={dateRange}
                         onSelect={(range: DateRange | undefined) => {
-                          if (range?.from) setWeekStart(format(range.from, 'yyyy-MM-dd'));
-                          else setWeekStart('');
-                          if (range?.to) setWeekEnd(format(range.to, 'yyyy-MM-dd'));
-                          else setWeekEnd('');
+                          setDateRange(range);
+                          setWeekStart(range?.from ? format(range.from, 'yyyy-MM-dd') : '');
+                          setWeekEnd(range?.to ? format(range.to, 'yyyy-MM-dd') : '');
                         }}
                         initialFocus
                         className={cn('p-3 pointer-events-auto')}
