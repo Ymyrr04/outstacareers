@@ -558,7 +558,7 @@ export const ContractorsDashboard = () => {
 
       toast({
         title: 'Success',
-        description: `Exported ${contractors.length} contractors`,
+        description: `Exported ${externalContractors.length} contractors`,
       });
     } catch (err: any) {
       toast({
