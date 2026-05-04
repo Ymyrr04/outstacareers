@@ -802,6 +802,63 @@ export type Database = {
           },
         ]
       }
+      contractor_checkin_templates: {
+        Row: {
+          contractor_assignment_id: string
+          created_at: string
+          id: string
+          sections: Json
+          updated_at: string
+        }
+        Insert: {
+          contractor_assignment_id: string
+          created_at?: string
+          id?: string
+          sections?: Json
+          updated_at?: string
+        }
+        Update: {
+          contractor_assignment_id?: string
+          created_at?: string
+          id?: string
+          sections?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      contractor_daily_checkins: {
+        Row: {
+          additional_notes: string | null
+          checkin_date: string
+          contractor_assignment_id: string
+          created_at: string
+          email_error: string | null
+          email_status: string | null
+          id: string
+          sections: Json
+        }
+        Insert: {
+          additional_notes?: string | null
+          checkin_date?: string
+          contractor_assignment_id: string
+          created_at?: string
+          email_error?: string | null
+          email_status?: string | null
+          id?: string
+          sections?: Json
+        }
+        Update: {
+          additional_notes?: string | null
+          checkin_date?: string
+          contractor_assignment_id?: string
+          created_at?: string
+          email_error?: string | null
+          email_status?: string | null
+          id?: string
+          sections?: Json
+        }
+        Relationships: []
+      }
       contractor_email_logs: {
         Row: {
           body_html: string

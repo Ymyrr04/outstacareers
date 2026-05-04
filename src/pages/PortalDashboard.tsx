@@ -12,6 +12,8 @@ import { Loader2, LogOut, Pencil, CalendarIcon, UserCircle2, Check, ChevronsUpDo
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Helmet } from 'react-helmet-async';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { DailyCheckin } from '@/components/portal/DailyCheckin';
 import { addDays, format, startOfWeek } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -883,6 +885,12 @@ const PortalDashboard = () => {
           </DialogContent>
         </Dialog>
 
+        <Tabs defaultValue="timesheet" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="timesheet">Timesheet</TabsTrigger>
+            <TabsTrigger value="checkin">Daily Check-in</TabsTrigger>
+          </TabsList>
+          <TabsContent value="timesheet" className="space-y-6 mt-0">
         <Card>
           <CardHeader>
             <CardTitle>{editingId ? 'Edit Weekly Hours' : 'Submit Weekly Hours'}</CardTitle>
@@ -1212,6 +1220,18 @@ const PortalDashboard = () => {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
+          <TabsContent value="checkin" className="mt-0">
+            {info && (
+              <DailyCheckin
+                contractorAssignmentId={info.contractor_assignment_id}
+                contractorName={info.full_name || 'Contractor'}
+                jobTitle={info.job_title}
+                companyName={info.company_name}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Missing reason prompt — collect reasons inline */}
