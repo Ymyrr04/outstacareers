@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 
 interface TimesheetRow {
   id: string;
@@ -25,6 +26,7 @@ interface TimesheetRow {
     job_title: string | null;
     start_date: string | null;
     hours_per_week: number | null;
+    client_id: string | null;
     applicant: { full_name: string; email: string } | null;
     client: { company_name: string } | null;
   } | null;
@@ -33,6 +35,7 @@ interface TimesheetRow {
 interface ContractorRow {
   id: string;
   applicant_id: string | null;
+  client_id: string | null;
   job_title: string | null;
   status: string;
   hourly_rate: number | null;
@@ -94,6 +97,7 @@ export const PLDashboard = () => {
             job_title,
             start_date,
             hours_per_week,
+            client_id,
             applicant:applicants_prescreen(full_name, email),
             client:clients(company_name)
           )
@@ -103,7 +107,7 @@ export const PLDashboard = () => {
       supabase
         .from('contractor_assignments')
         .select(`
-          id, applicant_id, job_title, status, hourly_rate, hours_per_week, start_date,
+          id, applicant_id, client_id, job_title, status, hourly_rate, hours_per_week, start_date,
           applicant:applicants_prescreen(full_name, email),
           client:clients(company_name)
         `)
@@ -158,6 +162,7 @@ export const PLDashboard = () => {
       return {
         id: c.id,
         applicant_id: c.applicant_id,
+        client_id: c.client_id,
         job_title: c.job_title,
         status: c.status,
         hourly_rate: c.hourly_rate,
@@ -176,9 +181,10 @@ export const PLDashboard = () => {
 
     setRows((timesheets as any) || []);
     setContractors(enriched);
+    const externalEnriched = enriched.filter((c) => c.client_id !== INTERNAL_CLIENT_ID);
     setStats({
-      portalUsers: enriched.filter((c) => c.hasPortal).length,
-      totalEligibleContractors: enriched.length,
+      portalUsers: externalEnriched.filter((c) => c.hasPortal).length,
+      totalEligibleContractors: externalEnriched.length,
     });
     setLoading(false);
   };
@@ -284,7 +290,12 @@ export const PLDashboard = () => {
     return dir === 'asc' ? r : -r;
   };
 
-  const filtered = rows
+  const externalRows = rows.filter((r) => r.contractor?.client_id !== INTERNAL_CLIENT_ID);
+  const internalRows = rows.filter((r) => r.contractor?.client_id === INTERNAL_CLIENT_ID);
+  const externalContractors = contractors.filter((c) => c.client_id !== INTERNAL_CLIENT_ID);
+  const internalContractors = contractors.filter((c) => c.client_id === INTERNAL_CLIENT_ID);
+
+  const applyTsFilters = (list: TimesheetRow[]) => list
     .filter((r) => {
       if (search) {
         const q = search.toLowerCase();
@@ -322,7 +333,10 @@ export const PLDashboard = () => {
       }
     });
 
-  const filteredContractors = contractors
+  const filtered = applyTsFilters(externalRows);
+  const filteredInternal = applyTsFilters(internalRows);
+
+  const applyContractorFilters = (list: ContractorRow[]) => list
     .filter((c) => {
       if (!contractorSearch) return true;
       const q = contractorSearch.toLowerCase();
@@ -344,6 +358,9 @@ export const PLDashboard = () => {
         case 'hpw': return cmp(a.hours_per_week, b.hours_per_week, d);
       }
     });
+
+  const filteredContractors = applyContractorFilters(externalContractors);
+  const filteredInternalContractors = applyContractorFilters(internalContractors);
 
   const toggleContractorSort = (key: typeof contractorSort.key) =>
     setContractorSort((s) => s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' });
@@ -582,6 +599,66 @@ export const PLDashboard = () => {
         </CardContent>
       </Card>
 
+      {filteredInternalContractors.length > 0 && (
+        <Card className="border-dashed">
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              Internal Team — OutSta ({filteredInternalContractors.length})
+              <Badge variant="outline" className="text-[10px]">Excluded from analytics</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Member</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Rate</TableHead>
+                  <TableHead className="text-right">Regular Work Hours</TableHead>
+                  <TableHead>Latest Submission</TableHead>
+                  <TableHead>Portal Account</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredInternalContractors.map((c) => (
+                  <TableRow key={c.id}>
+                    <TableCell>
+                      <div className="font-medium">{c.applicant?.full_name || '—'}</div>
+                      <div className="text-xs text-muted-foreground">{c.applicant?.email || '—'}</div>
+                    </TableCell>
+                    <TableCell>{c.job_title || '—'}</TableCell>
+                    <TableCell>
+                      <Badge variant={c.status === 'active' ? 'default' : 'secondary'} className="capitalize">{c.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">{c.hourly_rate != null ? `$${Number(c.hourly_rate).toFixed(2)}` : '—'}</TableCell>
+                    <TableCell className="text-right">{c.hours_per_week ?? '—'}</TableCell>
+                    <TableCell>
+                      {c.latestTimesheet ? (
+                        <span className="text-xs text-muted-foreground">
+                          Wk {format(new Date(c.latestTimesheet.week_ending_date), 'MMM d')} · {Number(c.latestTimesheet.total_hours).toFixed(2)}h
+                        </span>
+                      ) : (
+                        <Badge variant="outline" className="text-muted-foreground">Not submitted</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {!c.hasPortal ? (
+                        <Badge variant="outline" className="text-muted-foreground">No account</Badge>
+                      ) : c.mustChange ? (
+                        <Badge variant="outline" className="border-amber-500 text-amber-600">Pending password change</Badge>
+                      ) : (
+                        <Badge variant="outline" className="border-emerald-500 text-emerald-600">Active</Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <CardTitle className="text-base">Timesheet Submissions</CardTitle>
@@ -712,6 +789,71 @@ export const PLDashboard = () => {
           )}
         </CardContent>
       </Card>
+
+      {filteredInternal.length > 0 && (
+        <Card className="border-dashed">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              Internal Team Submissions — OutSta ({filteredInternal.length})
+              <Badge variant="outline" className="text-[10px]">Excluded from analytics</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Member</TableHead>
+                  <TableHead>Week Ending</TableHead>
+                  <TableHead className="text-right">Hours</TableHead>
+                  <TableHead className="text-right">OT</TableHead>
+                  <TableHead className="text-right">Bonus</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Submitted</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredInternal.map((r) => (
+                  <TableRow key={r.id} className={r.status === 'pending_approval' ? 'bg-amber-50/40 dark:bg-amber-950/10' : ''}>
+                    <TableCell>
+                      <div className="font-medium">{r.contractor?.applicant?.full_name || '—'}</div>
+                      <div className="text-xs text-muted-foreground">{r.contractor?.applicant?.email}</div>
+                    </TableCell>
+                    <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
+                    <TableCell className="text-right font-medium">{Number(r.total_hours).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{Number(r.overtime_hours).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">${Number(r.incentive_amount || 0).toFixed(2)}</TableCell>
+                    <TableCell>
+                      {r.status === 'pending_approval' ? (
+                        <Badge variant="outline" className="border-amber-500 text-amber-600">Pending approval</Badge>
+                      ) : r.status === 'approved' ? (
+                        <Badge variant="outline" className="border-emerald-500 text-emerald-600">Approved</Badge>
+                      ) : r.status === 'rejected' ? (
+                        <Badge variant="outline" className="border-destructive text-destructive">Rejected</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="capitalize">{r.status}</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{format(new Date(r.submitted_at), 'MMM d, h:mm a')}</TableCell>
+                    <TableCell className="text-right">
+                      {r.status === 'pending_approval' ? (
+                        <div className="flex justify-end gap-1">
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-emerald-500 text-emerald-600 hover:bg-emerald-50" onClick={() => handleDecision(r, 'approved')}>
+                            <Check className="w-3 h-3 mr-1" />Approve
+                          </Button>
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-destructive text-destructive hover:bg-destructive/10" onClick={() => handleDecision(r, 'rejected')}>
+                            <X className="w-3 h-3 mr-1" />Reject
+                          </Button>
+                        </div>
+                      ) : '—'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
 
       <Dialog open={!!profileContractor} onOpenChange={(o) => { if (!o) { setProfileContractor(null); setProfileInvoices([]); } }}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
