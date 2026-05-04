@@ -421,7 +421,12 @@ export const ContractorsDashboard = () => {
     fetchContractors();
   }, []);
 
-  const filteredContractors = contractors
+  // Internal team = OutSta company contractors. Excluded from external
+  // contractor counts, exports, and the Active/Separated tables.
+  const externalContractors = contractors.filter(c => c.client_id !== INTERNAL_CLIENT_ID);
+  const internalTeamContractors = contractors.filter(c => c.client_id === INTERNAL_CLIENT_ID);
+
+  const filteredContractors = externalContractors
     .filter(contractor => {
       const matchesSearch = !searchTerm || 
         contractor.applicant?.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
