@@ -529,7 +529,7 @@ export const ContractorsDashboard = () => {
         'Source'
       ];
 
-      const rows = contractors.map(c => [
+      const rows = externalContractors.map(c => [
         c.status,
         `"${(c.applicant?.full_name || '').replace(/"/g, '""')}"`,
         `"${(c.applicant?.email || '').replace(/"/g, '""')}"`,
