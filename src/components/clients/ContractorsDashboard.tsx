@@ -501,12 +501,12 @@ export const ContractorsDashboard = () => {
       return dateB - dateA;
     });
 
-  // Summary stats
-  const activeCount = contractors.filter(c => c.status === 'active').length;
-  const terminatedCount = contractors.filter(c => c.status === 'terminated').length;
-  const resignedCount = contractors.filter(c => c.status === 'resigned').length;
-  const renderingCount = contractors.filter(c => c.status === 'rendering').length;
-  const scheduledCount = contractors.filter(c => c.status === 'scheduled').length;
+  // Summary stats (exclude internal team)
+  const activeCount = externalContractors.filter(c => c.status === 'active').length;
+  const terminatedCount = externalContractors.filter(c => c.status === 'terminated').length;
+  const resignedCount = externalContractors.filter(c => c.status === 'resigned').length;
+  const renderingCount = externalContractors.filter(c => c.status === 'rendering').length;
+  const scheduledCount = externalContractors.filter(c => c.status === 'scheduled').length;
 
   // Export contractors to CSV
   const handleExport = () => {
