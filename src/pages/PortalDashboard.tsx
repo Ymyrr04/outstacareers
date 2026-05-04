@@ -445,7 +445,7 @@ const PortalDashboard = () => {
     if (expectedHours == null || hoursDiff <= 0.25 || perDayExpected == null) return [];
     return dateKeys.filter((k) => {
       const v = parseFloat(days[k]?.hours || '0');
-      return !isNaN(v) && v > perDayExpected;
+      return !isNaN(v) && v > 0 && v >= perDayExpected;
     });
   };
 
@@ -1037,7 +1037,7 @@ const PortalDashboard = () => {
                     const hoursNum = parseFloat(entry.hours || '0');
                     const isOvertime = !isNaN(hoursNum) && hoursNum > 10;
                     const isOverTarget =
-                      perDayExpected != null && !isNaN(hoursNum) && hoursNum > perDayExpected && hoursDiff > 0.25;
+                      perDayExpected != null && !isNaN(hoursNum) && hoursNum > 0 && hoursNum >= perDayExpected && hoursDiff > 0.25;
                     const isUnderTarget =
                       perDayExpected != null &&
                       entry.hours !== '' &&
