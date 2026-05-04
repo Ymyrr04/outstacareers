@@ -818,7 +818,7 @@ export const ContractorsDashboard = () => {
       <RecurringSchedulesManager />
 
       {/* Contractors Table - Active Section */}
-      {activeContractors.length === 0 && separatedContractors.length === 0 ? (
+      {activeContractors.length === 0 && separatedContractors.length === 0 && internalTeamContractors.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">
