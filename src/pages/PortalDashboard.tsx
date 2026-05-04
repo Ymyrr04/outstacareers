@@ -445,7 +445,7 @@ const PortalDashboard = () => {
     if (expectedHours == null || hoursDiff <= 0.25 || perDayExpected == null) return [];
     return dateKeys.filter((k) => {
       const v = parseFloat(days[k]?.hours || '0');
-      return !isNaN(v) && v > perDayExpected;
+      return !isNaN(v) && v > 0 && v >= perDayExpected;
     });
   };
 
