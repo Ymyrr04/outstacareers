@@ -503,7 +503,7 @@ const PortalDashboard = () => {
     if (!hasLink) {
       toast({
         title: 'Payoneer link required',
-        description: 'Please paste your Payoneer payment request link before submitting.',
+        description: 'Please paste your Payoneer payment request link before submitting. Having issues? Contact admin via WhatsApp: +63 998 232 6001',
         variant: 'destructive',
       });
       return;
