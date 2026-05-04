@@ -251,7 +251,7 @@ export const PLDashboard = () => {
         toast({ title: 'Already provisioned', description: `${c.applicant.email} already has a portal account.` });
       } else {
         // Send credentials email
-        const portalUrl = `${window.location.origin}/portal/login`;
+        const portalUrl = `https://outstahub.com/portal/login`;
         const firstName = (c.applicant.full_name || '').split(' ')[0] || 'there';
         const subject = 'Your OutSta Portal Account is Ready';
         const bodyHtml = `
