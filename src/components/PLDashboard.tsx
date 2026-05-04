@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye } from 'lucide-react';
+import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye, Mail } from 'lucide-react';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
@@ -75,6 +75,7 @@ export const PLDashboard = () => {
   const [loadingInvoices, setLoadingInvoices] = useState(false);
   const [provisioning, setProvisioning] = useState(false);
   const [provisioningId, setProvisioningId] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
   const [rows, setRows] = useState<TimesheetRow[]>([]);
   const [contractors, setContractors] = useState<ContractorRow[]>([]);
   const [search, setSearch] = useState('');
@@ -293,6 +294,46 @@ export const PLDashboard = () => {
       toast({ title: 'Provisioning failed', description: e.message || String(e), variant: 'destructive' });
     } finally {
       setProvisioningId(null);
+    }
+  };
+
+  const handleResendCredentials = async (c: ContractorRow) => {
+    if (!c.applicant?.email) {
+      toast({ title: 'No email', description: 'This contractor has no email on file.', variant: 'destructive' });
+      return;
+    }
+    if (!confirm(`Resend portal credentials to ${c.applicant.full_name}?\n\nEmail: ${c.applicant.email}\nPassword: OutSta2026! (only valid if they haven't changed it yet)`)) return;
+    setResendingId(c.id);
+    try {
+      const portalUrl = `https://outstahub.com/portal/login`;
+      const firstName = (c.applicant.full_name || '').split(' ')[0] || 'there';
+      const subject = 'Your OutSta Portal Account — Login Details';
+      const bodyHtml = `
+        <p>Hi ${firstName},</p>
+        <p>Here are your OutSta contractor portal login details again. You can log in to submit your weekly hours and view your invoices.</p>
+        <p><strong>Portal URL:</strong> <a href="${portalUrl}">${portalUrl}</a><br/>
+        <strong>Email:</strong> ${c.applicant.email}<br/>
+        <strong>Temporary password:</strong> OutSta2026!</p>
+        <p><em>Note: if you have already changed your password, please continue using the new one. The temporary password above only works if you haven't logged in yet.</em></p>
+        <p>For security, you'll be asked to change your password the first time you log in.</p>
+        <p>If you have any questions, just reply to this email.</p>
+        <p>Thanks,<br/>The OutSta Team</p>
+      `;
+      const { error } = await supabase.functions.invoke('send-contractor-email', {
+        body: {
+          contractorAssignmentId: c.id,
+          subject,
+          bodyHtml,
+          recipientEmail: c.applicant.email,
+          recipientName: c.applicant.full_name || c.applicant.email,
+        },
+      });
+      if (error) throw error;
+      toast({ title: 'Credentials resent', description: `Email sent to ${c.applicant.email}.` });
+    } catch (e: any) {
+      toast({ title: 'Failed to resend', description: e.message || String(e), variant: 'destructive' });
+    } finally {
+      setResendingId(null);
     }
   };
 
@@ -621,6 +662,18 @@ export const PLDashboard = () => {
                           >
                             <Eye className="w-3 h-3 mr-1" />Profile
                           </Button>
+                          {c.mustChange && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-xs"
+                              disabled={resendingId === c.id || !c.applicant?.email}
+                              onClick={() => handleResendCredentials(c)}
+                              title="Resend portal credentials email"
+                            >
+                              {resendingId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Mail className="w-3 h-3 mr-1" />Resend</>}
+                            </Button>
+                          )}
                         </div>
                       )}
                     </TableCell>
@@ -785,6 +838,18 @@ export const PLDashboard = () => {
                           >
                             <Eye className="w-3 h-3 mr-1" />Profile
                           </Button>
+                          {c.mustChange && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-xs"
+                              disabled={resendingId === c.id || !c.applicant?.email}
+                              onClick={() => handleResendCredentials(c)}
+                              title="Resend portal credentials email"
+                            >
+                              {resendingId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Mail className="w-3 h-3 mr-1" />Resend</>}
+                            </Button>
+                          )}
                         </div>
                       )}
                     </TableCell>
