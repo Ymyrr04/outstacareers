@@ -65,6 +65,7 @@ import { SendContractorEmailDialog } from './SendContractorEmailDialog';
 import { BulkContractorEmailDialog } from './BulkContractorEmailDialog';
 import { ContractorEmailTemplateManager } from './ContractorEmailTemplateManager';
 import { RecurringSchedulesManager } from './RecurringSchedulesManager';
+import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 
 interface ContractorWithDetails {
   id: string;
@@ -420,7 +421,12 @@ export const ContractorsDashboard = () => {
     fetchContractors();
   }, []);
 
-  const filteredContractors = contractors
+  // Internal team = OutSta company contractors. Excluded from external
+  // contractor counts, exports, and the Active/Separated tables.
+  const externalContractors = contractors.filter(c => c.client_id !== INTERNAL_CLIENT_ID);
+  const internalTeamContractors = contractors.filter(c => c.client_id === INTERNAL_CLIENT_ID);
+
+  const filteredContractors = externalContractors
     .filter(contractor => {
       const matchesSearch = !searchTerm || 
         contractor.applicant?.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -495,12 +501,12 @@ export const ContractorsDashboard = () => {
       return dateB - dateA;
     });
 
-  // Summary stats
-  const activeCount = contractors.filter(c => c.status === 'active').length;
-  const terminatedCount = contractors.filter(c => c.status === 'terminated').length;
-  const resignedCount = contractors.filter(c => c.status === 'resigned').length;
-  const renderingCount = contractors.filter(c => c.status === 'rendering').length;
-  const scheduledCount = contractors.filter(c => c.status === 'scheduled').length;
+  // Summary stats (exclude internal team)
+  const activeCount = externalContractors.filter(c => c.status === 'active').length;
+  const terminatedCount = externalContractors.filter(c => c.status === 'terminated').length;
+  const resignedCount = externalContractors.filter(c => c.status === 'resigned').length;
+  const renderingCount = externalContractors.filter(c => c.status === 'rendering').length;
+  const scheduledCount = externalContractors.filter(c => c.status === 'scheduled').length;
 
   // Export contractors to CSV
   const handleExport = () => {
@@ -523,7 +529,7 @@ export const ContractorsDashboard = () => {
         'Source'
       ];
 
-      const rows = contractors.map(c => [
+      const rows = externalContractors.map(c => [
         c.status,
         `"${(c.applicant?.full_name || '').replace(/"/g, '""')}"`,
         `"${(c.applicant?.email || '').replace(/"/g, '""')}"`,
@@ -552,7 +558,7 @@ export const ContractorsDashboard = () => {
 
       toast({
         title: 'Success',
-        description: `Exported ${contractors.length} contractors`,
+        description: `Exported ${externalContractors.length} contractors`,
       });
     } catch (err: any) {
       toast({
@@ -812,7 +818,7 @@ export const ContractorsDashboard = () => {
       <RecurringSchedulesManager />
 
       {/* Contractors Table - Active Section */}
-      {activeContractors.length === 0 && separatedContractors.length === 0 ? (
+      {activeContractors.length === 0 && separatedContractors.length === 0 && internalTeamContractors.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">
@@ -1485,6 +1491,93 @@ export const ContractorsDashboard = () => {
                               )}
                             </TableCell>
                           )}
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </Card>
+            </div>
+          )}
+
+          {/* Internal Team Section (OutSta employees - excluded from analytics & counts) */}
+          {internalTeamContractors.length > 0 && (
+            <div className="mt-8 space-y-4">
+              <div className="flex items-center gap-3">
+                <div className="h-px flex-1 bg-border" />
+                <h3 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                  <Building2 className="w-4 h-4" />
+                  Internal Team — OutSta ({internalTeamContractors.length})
+                  <Badge variant="outline" className="text-[10px] font-normal">
+                    Excluded from analytics
+                  </Badge>
+                </h3>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+
+              <Card className="overflow-hidden bg-primary/5 border-primary/20">
+                <div className="overflow-x-auto">
+                  <Table className="w-full table-auto">
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-[120px]">Status</TableHead>
+                        <TableHead className="min-w-[180px]">Name</TableHead>
+                        <TableHead className="min-w-[200px]">Email</TableHead>
+                        <TableHead className="min-w-[150px]">Position</TableHead>
+                        <TableHead className="w-[120px]">Start Date</TableHead>
+                        <TableHead className="w-[80px] text-right">Rate</TableHead>
+                        <TableHead className="w-[80px] text-right">Hours/Wk</TableHead>
+                        <TableHead className="min-w-[140px]">Contact</TableHead>
+                        <TableHead className="min-w-[120px]">Country</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {internalTeamContractors.map(contractor => (
+                        <TableRow
+                          key={contractor.id}
+                          className="hover:bg-muted/50"
+                          onContextMenu={(e) => {
+                            e.preventDefault();
+                            setEditingContractor(contractor);
+                          }}
+                        >
+                          <TableCell>
+                            <Badge
+                              variant="outline"
+                              className={`${STATUS_COLORS[contractor.status] || ''} text-xs capitalize`}
+                            >
+                              <span className="flex items-center gap-1">
+                                {STATUS_ICONS[contractor.status]}
+                                {contractor.status}
+                              </span>
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="font-medium whitespace-nowrap">
+                            {contractor.applicant?.full_name || 'Unknown'}
+                          </TableCell>
+                          <TableCell>
+                            <span className="text-sm">{contractor.applicant?.email || '—'}</span>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {contractor.job_title || '—'}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                            {contractor.start_date
+                              ? format(new Date(contractor.start_date), 'MMM d, yyyy')
+                              : '—'}
+                          </TableCell>
+                          <TableCell className="text-right whitespace-nowrap">
+                            {contractor.hourly_rate ? `$${contractor.hourly_rate}/hr` : '—'}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {contractor.hours_per_week ?? '—'}
+                          </TableCell>
+                          <TableCell className="text-sm">
+                            {contractor.contact_number || contractor.applicant?.phone || '—'}
+                          </TableCell>
+                          <TableCell className="text-sm text-muted-foreground">
+                            {contractor.country || contractor.applicant?.location || '—'}
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
