@@ -297,6 +297,46 @@ export const PLDashboard = () => {
     }
   };
 
+  const handleResendCredentials = async (c: ContractorRow) => {
+    if (!c.applicant?.email) {
+      toast({ title: 'No email', description: 'This contractor has no email on file.', variant: 'destructive' });
+      return;
+    }
+    if (!confirm(`Resend portal credentials to ${c.applicant.full_name}?\n\nEmail: ${c.applicant.email}\nPassword: OutSta2026! (only valid if they haven't changed it yet)`)) return;
+    setResendingId(c.id);
+    try {
+      const portalUrl = `https://outstahub.com/portal/login`;
+      const firstName = (c.applicant.full_name || '').split(' ')[0] || 'there';
+      const subject = 'Your OutSta Portal Account — Login Details';
+      const bodyHtml = `
+        <p>Hi ${firstName},</p>
+        <p>Here are your OutSta contractor portal login details again. You can log in to submit your weekly hours and view your invoices.</p>
+        <p><strong>Portal URL:</strong> <a href="${portalUrl}">${portalUrl}</a><br/>
+        <strong>Email:</strong> ${c.applicant.email}<br/>
+        <strong>Temporary password:</strong> OutSta2026!</p>
+        <p><em>Note: if you have already changed your password, please continue using the new one. The temporary password above only works if you haven't logged in yet.</em></p>
+        <p>For security, you'll be asked to change your password the first time you log in.</p>
+        <p>If you have any questions, just reply to this email.</p>
+        <p>Thanks,<br/>The OutSta Team</p>
+      `;
+      const { error } = await supabase.functions.invoke('send-contractor-email', {
+        body: {
+          contractorAssignmentId: c.id,
+          subject,
+          bodyHtml,
+          recipientEmail: c.applicant.email,
+          recipientName: c.applicant.full_name || c.applicant.email,
+        },
+      });
+      if (error) throw error;
+      toast({ title: 'Credentials resent', description: `Email sent to ${c.applicant.email}.` });
+    } catch (e: any) {
+      toast({ title: 'Failed to resend', description: e.message || String(e), variant: 'destructive' });
+    } finally {
+      setResendingId(null);
+    }
+  };
+
   const handleDecision = async (r: TimesheetRow, decision: 'approved' | 'rejected') => {
     const overDays = r.daily_hours
       ? Object.entries(r.daily_hours).filter(([, v]) => Number(v?.hours) > 10).map(([k]) => k)
