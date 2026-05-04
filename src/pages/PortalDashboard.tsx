@@ -885,6 +885,12 @@ const PortalDashboard = () => {
           </DialogContent>
         </Dialog>
 
+        <Tabs defaultValue="timesheet" className="space-y-6">
+          <TabsList>
+            <TabsTrigger value="timesheet">Timesheet</TabsTrigger>
+            <TabsTrigger value="checkin">Daily Check-in</TabsTrigger>
+          </TabsList>
+          <TabsContent value="timesheet" className="space-y-6 mt-0">
         <Card>
           <CardHeader>
             <CardTitle>{editingId ? 'Edit Weekly Hours' : 'Submit Weekly Hours'}</CardTitle>
