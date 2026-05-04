@@ -1037,7 +1037,7 @@ const PortalDashboard = () => {
                     const hoursNum = parseFloat(entry.hours || '0');
                     const isOvertime = !isNaN(hoursNum) && hoursNum > 10;
                     const isOverTarget =
-                      perDayExpected != null && !isNaN(hoursNum) && hoursNum > perDayExpected && hoursDiff > 0.25;
+                      perDayExpected != null && !isNaN(hoursNum) && hoursNum > 0 && hoursNum >= perDayExpected && hoursDiff > 0.25;
                     const isUnderTarget =
                       perDayExpected != null &&
                       entry.hours !== '' &&
