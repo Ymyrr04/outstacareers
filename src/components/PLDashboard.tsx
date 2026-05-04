@@ -838,6 +838,18 @@ export const PLDashboard = () => {
                           >
                             <Eye className="w-3 h-3 mr-1" />Profile
                           </Button>
+                          {c.mustChange && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-7 px-2 text-xs"
+                              disabled={resendingId === c.id || !c.applicant?.email}
+                              onClick={() => handleResendCredentials(c)}
+                              title="Resend portal credentials email"
+                            >
+                              {resendingId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Mail className="w-3 h-3 mr-1" />Resend</>}
+                            </Button>
+                          )}
                         </div>
                       )}
                     </TableCell>
