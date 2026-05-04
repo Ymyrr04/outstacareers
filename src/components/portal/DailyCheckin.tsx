@@ -95,7 +95,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
 
     let secs: CheckinSection[] = DEFAULT_SECTIONS;
     if (tpl?.sections && Array.isArray(tpl.sections) && tpl.sections.length > 0) {
-      secs = tpl.sections as CheckinSection[];
+      secs = tpl.sections as unknown as CheckinSection[];
     } else {
       // seed default template
       await supabase.from('contractor_checkin_templates').insert({
