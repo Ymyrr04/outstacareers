@@ -235,34 +235,56 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
             <Settings2 className="w-3.5 h-3.5 mr-1.5" /> Customize
           </Button>
         </CardHeader>
-        <CardContent className="space-y-6">
-          {sections.map(sec => (
-            <div key={sec.title} className="space-y-2">
-              <h3 className="text-sm font-semibold">{sec.title}</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                {sec.items.map((item, idx) => {
-                  const id = `${sec.title}-${idx}`;
-                  const isChecked = checked[sec.title]?.has(idx) || false;
-                  return (
-                    <label
-                      key={id}
-                      htmlFor={id}
-                      className="flex items-start gap-2 rounded-md border bg-background px-3 py-2 cursor-pointer hover:bg-muted/50 transition-colors"
-                    >
-                      <Checkbox id={id} checked={isChecked} onCheckedChange={() => toggleItem(sec.title, idx)} className="mt-0.5" />
-                      <span className="text-sm leading-snug">{item}</span>
-                    </label>
-                  );
-                })}
-                {sec.items.length === 0 && (
-                  <p className="text-xs text-muted-foreground italic col-span-full">No items — click Customize to add some.</p>
-                )}
-              </div>
-            </div>
-          ))}
+        <CardContent className="space-y-4">
+          {sections.map((sec, secIdx) => {
+            const sectionCount = checked[sec.title]?.size || 0;
+            const accents = [
+              { bar: 'bg-emerald-500', chip: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' },
+              { bar: 'bg-blue-500', chip: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20' },
+              { bar: 'bg-violet-500', chip: 'bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/20' },
+              { bar: 'bg-amber-500', chip: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20' },
+            ];
+            const a = accents[secIdx % accents.length];
+            return (
+              <section key={sec.title} className="rounded-lg border bg-muted/30 overflow-hidden">
+                <header className="flex items-center justify-between gap-3 px-4 py-2.5 bg-muted/60 border-b">
+                  <div className="flex items-center gap-2.5">
+                    <span className={`w-1 h-5 rounded-full ${a.bar}`} />
+                    <h3 className="text-sm font-semibold tracking-tight">{sec.title}</h3>
+                  </div>
+                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${a.chip}`}>
+                    {sectionCount}/{sec.items.length}
+                  </span>
+                </header>
+                <div className="p-3 grid grid-cols-1 md:grid-cols-2 gap-2">
+                  {sec.items.map((item, idx) => {
+                    const id = `${sec.title}-${idx}`;
+                    const isChecked = checked[sec.title]?.has(idx) || false;
+                    return (
+                      <label
+                        key={id}
+                        htmlFor={id}
+                        className={`flex items-start gap-2.5 rounded-md border px-3 py-2 cursor-pointer transition-all ${
+                          isChecked
+                            ? 'bg-primary/5 border-primary/40 shadow-sm'
+                            : 'bg-background border-border hover:bg-muted/50 hover:border-foreground/20'
+                        }`}
+                      >
+                        <Checkbox id={id} checked={isChecked} onCheckedChange={() => toggleItem(sec.title, idx)} className="mt-0.5" />
+                        <span className={`text-sm leading-snug ${isChecked ? 'font-medium text-foreground' : 'text-foreground/80'}`}>{item}</span>
+                      </label>
+                    );
+                  })}
+                  {sec.items.length === 0 && (
+                    <p className="text-xs text-muted-foreground italic col-span-full px-1 py-2">No items — click Customize to add some.</p>
+                  )}
+                </div>
+              </section>
+            );
+          })}
 
-          <div className="space-y-2">
-            <Label htmlFor="checkin-notes">Additional notes (optional)</Label>
+          <div className="space-y-2 pt-2 border-t">
+            <Label htmlFor="checkin-notes" className="text-sm font-semibold">Additional notes (optional)</Label>
             <Textarea
               id="checkin-notes"
               rows={3}
@@ -272,9 +294,11 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">{totalChecked} item{totalChecked === 1 ? '' : 's'} checked</p>
-            <Button onClick={handleSubmit} disabled={submitting}>
+          <div className="flex items-center justify-between pt-2 border-t">
+            <p className="text-xs text-muted-foreground">
+              <span className="font-semibold text-foreground">{totalChecked}</span> item{totalChecked === 1 ? '' : 's'} checked
+            </p>
+            <Button onClick={handleSubmit} disabled={submitting} size="lg">
               {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Submit check-in
             </Button>
           </div>
