@@ -599,6 +599,66 @@ export const PLDashboard = () => {
         </CardContent>
       </Card>
 
+      {filteredInternalContractors.length > 0 && (
+        <Card className="border-dashed">
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              Internal Team — OutSta ({filteredInternalContractors.length})
+              <Badge variant="outline" className="text-[10px]">Excluded from analytics</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Member</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Rate</TableHead>
+                  <TableHead className="text-right">Regular Work Hours</TableHead>
+                  <TableHead>Latest Submission</TableHead>
+                  <TableHead>Portal Account</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredInternalContractors.map((c) => (
+                  <TableRow key={c.id}>
+                    <TableCell>
+                      <div className="font-medium">{c.applicant?.full_name || '—'}</div>
+                      <div className="text-xs text-muted-foreground">{c.applicant?.email || '—'}</div>
+                    </TableCell>
+                    <TableCell>{c.job_title || '—'}</TableCell>
+                    <TableCell>
+                      <Badge variant={c.status === 'active' ? 'default' : 'secondary'} className="capitalize">{c.status}</Badge>
+                    </TableCell>
+                    <TableCell className="text-right">{c.hourly_rate != null ? `$${Number(c.hourly_rate).toFixed(2)}` : '—'}</TableCell>
+                    <TableCell className="text-right">{c.hours_per_week ?? '—'}</TableCell>
+                    <TableCell>
+                      {c.latestTimesheet ? (
+                        <span className="text-xs text-muted-foreground">
+                          Wk {format(new Date(c.latestTimesheet.week_ending_date), 'MMM d')} · {Number(c.latestTimesheet.total_hours).toFixed(2)}h
+                        </span>
+                      ) : (
+                        <Badge variant="outline" className="text-muted-foreground">Not submitted</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {!c.hasPortal ? (
+                        <Badge variant="outline" className="text-muted-foreground">No account</Badge>
+                      ) : c.mustChange ? (
+                        <Badge variant="outline" className="border-amber-500 text-amber-600">Pending password change</Badge>
+                      ) : (
+                        <Badge variant="outline" className="border-emerald-500 text-emerald-600">Active</Badge>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <CardTitle className="text-base">Timesheet Submissions</CardTitle>
