@@ -181,9 +181,10 @@ export const PLDashboard = () => {
 
     setRows((timesheets as any) || []);
     setContractors(enriched);
+    const externalEnriched = enriched.filter((c) => c.client_id !== INTERNAL_CLIENT_ID);
     setStats({
-      portalUsers: enriched.filter((c) => c.hasPortal).length,
-      totalEligibleContractors: enriched.length,
+      portalUsers: externalEnriched.filter((c) => c.hasPortal).length,
+      totalEligibleContractors: externalEnriched.length,
     });
     setLoading(false);
   };
