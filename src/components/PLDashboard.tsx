@@ -611,12 +611,16 @@ export const PLDashboard = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Member</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead className="text-right">Rate</TableHead>
-                  <TableHead className="text-right">Regular Work Hours</TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('name')}>Member<SortIcon active={contractorSort.key === 'name'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('company')}>Company<SortIcon active={contractorSort.key === 'company'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('status')}>Status<SortIcon active={contractorSort.key === 'status'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('rate')}>Rate<SortIcon active={contractorSort.key === 'rate'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead>Latest Submission</TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('hpw')}>Regular Work Hours<SortIcon active={contractorSort.key === 'hpw'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead className="text-right">Work Hours</TableHead>
+                  <TableHead className="text-right">OT</TableHead>
+                  <TableHead className="text-right">Bonus</TableHead>
+                  <TableHead className="text-right">Deposit</TableHead>
                   <TableHead>Portal Account</TableHead>
                 </TableRow>
               </TableHeader>
@@ -627,28 +631,128 @@ export const PLDashboard = () => {
                       <div className="font-medium">{c.applicant?.full_name || '—'}</div>
                       <div className="text-xs text-muted-foreground">{c.applicant?.email || '—'}</div>
                     </TableCell>
-                    <TableCell>{c.job_title || '—'}</TableCell>
+                    <TableCell>{c.client?.company_name || '—'}</TableCell>
                     <TableCell>
-                      <Badge variant={c.status === 'active' ? 'default' : 'secondary'} className="capitalize">{c.status}</Badge>
+                      <Badge variant={c.status === 'active' ? 'default' : 'secondary'} className="capitalize">
+                        {c.status}
+                      </Badge>
                     </TableCell>
                     <TableCell className="text-right">{c.hourly_rate != null ? `$${Number(c.hourly_rate).toFixed(2)}` : '—'}</TableCell>
-                    <TableCell className="text-right">{c.hours_per_week ?? '—'}</TableCell>
                     <TableCell>
                       {c.latestTimesheet ? (
-                        <span className="text-xs text-muted-foreground">
-                          Wk {format(new Date(c.latestTimesheet.week_ending_date), 'MMM d')} · {Number(c.latestTimesheet.total_hours).toFixed(2)}h
-                        </span>
+                        <div className="flex flex-col gap-0.5">
+                          {c.latestTimesheet.status === 'pending_approval' ? (
+                            <Badge variant="outline" className="border-amber-500 text-amber-600 w-fit">Pending</Badge>
+                          ) : c.latestTimesheet.status === 'approved' ? (
+                            <Badge variant="outline" className="border-emerald-500 text-emerald-600 w-fit">Approved</Badge>
+                          ) : c.latestTimesheet.status === 'rejected' ? (
+                            <Badge variant="outline" className="border-destructive text-destructive w-fit">Rejected</Badge>
+                          ) : (
+                            <Badge variant="secondary" className="capitalize w-fit">{c.latestTimesheet.status}</Badge>
+                          )}
+                          <span className="text-xs text-muted-foreground">Wk {format(new Date(c.latestTimesheet.week_ending_date), 'MMM d')}</span>
+                        </div>
                       ) : (
                         <Badge variant="outline" className="text-muted-foreground">Not submitted</Badge>
                       )}
                     </TableCell>
+                    <TableCell className="text-right">{c.hours_per_week ?? '—'}</TableCell>
+                    <TableCell className="text-right">
+                      {c.latestTimesheet ? (() => {
+                        const expected = Number(c.hours_per_week || 0);
+                        const total = Number(c.latestTimesheet.total_hours);
+                        const ot = Number(c.latestTimesheet.overtime_hours);
+                        const regular = total - ot;
+                        let colorClass = 'text-foreground';
+                        if (expected > 0) {
+                          if (ot > 0 || regular > expected) colorClass = 'text-emerald-600';
+                          else if (regular < expected) colorClass = 'text-red-600';
+                          else colorClass = 'text-blue-600';
+                        }
+                        return <span className={`font-medium ${colorClass}`}>{total.toFixed(2)}</span>;
+                      })() : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {c.latestTimesheet && c.latestTimesheet.overtime_hours > 0 ? (
+                        <span className="font-medium text-emerald-600">{c.latestTimesheet.overtime_hours.toFixed(2)}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {c.latestTimesheet && c.latestTimesheet.incentive_amount > 0 ? (
+                        <span className="font-medium text-blue-600">${c.latestTimesheet.incentive_amount.toFixed(2)}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      {c.latestTimesheet?.isDeposit ? (
+                        <div className="flex flex-col items-end">
+                          <span className="font-medium text-amber-600">{c.latestTimesheet.depositHours.toFixed(2)}</span>
+                          <Badge variant="outline" className="border-amber-500 text-amber-600 text-[10px] px-1 py-0 h-4 mt-0.5">
+                            Wk {(c.latestTimesheet.weekIndex ?? 0) + 1}
+                          </Badge>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       {!c.hasPortal ? (
-                        <Badge variant="outline" className="text-muted-foreground">No account</Badge>
-                      ) : c.mustChange ? (
-                        <Badge variant="outline" className="border-amber-500 text-amber-600">Pending password change</Badge>
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="text-muted-foreground">No account</Badge>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs"
+                            disabled={provisioningId === c.id || !c.applicant?.email}
+                            onClick={() => handleProvisionOne(c)}
+                          >
+                            {provisioningId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><UserPlus className="w-3 h-3 mr-1" />Create</>}
+                          </Button>
+                        </div>
                       ) : (
-                        <Badge variant="outline" className="border-emerald-500 text-emerald-600">Active</Badge>
+                        <div className="flex items-center gap-2">
+                          {c.mustChange ? (
+                            <Badge variant="outline" className="border-amber-500 text-amber-600">Pending password change</Badge>
+                          ) : (
+                            <Badge variant="outline" className="border-emerald-500 text-emerald-600">Active</Badge>
+                          )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs"
+                            disabled={loadingProfile}
+                            onClick={async () => {
+                              setLoadingProfile(true);
+                              setProfileInvoices([]);
+                              const [{ data, error }, { data: invoices }] = await Promise.all([
+                                supabase
+                                  .from('contractor_assignments')
+                                  .select('*, applicant:applicants_prescreen(full_name, email, location, phone), client:clients(company_name, industry)')
+                                  .eq('id', c.id)
+                                  .maybeSingle(),
+                                supabase
+                                  .from('contractor_timesheets')
+                                  .select('id, week_ending_date, total_hours, overtime_hours, incentive_amount, status, submitted_at, daily_hours')
+                                  .eq('contractor_assignment_id', c.id)
+                                  .order('week_ending_date', { ascending: false }),
+                              ]);
+                              setLoadingProfile(false);
+                              if (error || !data) {
+                                toast({ title: 'Failed to load profile', description: error?.message, variant: 'destructive' });
+                                return;
+                              }
+                              setProfileContractor(data);
+                              setProfileInvoices(invoices || []);
+                            }}
+                          >
+                            <Eye className="w-3 h-3 mr-1" />Profile
+                          </Button>
+                        </div>
                       )}
                     </TableCell>
                   </TableRow>
