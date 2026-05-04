@@ -122,16 +122,20 @@ export const ClientsDashboard = () => {
         }
       });
 
-      // Enrich clients with actual contractor counts
-      const enrichedClients = (clientsRes.data || []).map(client => ({
-        ...client,
-        contact_count: contactMap[client.id] || 0,
-        contractor_count: contractorMap[client.id] || 0,
-      }));
+      // Enrich clients with actual contractor counts; exclude OutSta (internal team)
+      const enrichedClients = (clientsRes.data || [])
+        .filter(client => client.id !== INTERNAL_CLIENT_ID)
+        .map(client => ({
+          ...client,
+          contact_count: contactMap[client.id] || 0,
+          contractor_count: contractorMap[client.id] || 0,
+        }));
 
       setClients(enrichedClients);
-      setContractorData((contractorCountsRes.data || []).map(c => ({ client_id: c.client_id, start_date: c.start_date ?? null, status: c.status ?? null })));
-      setHiringRequests(hiringRequestsRes.data || []);
+      setContractorData((contractorCountsRes.data || [])
+        .filter(c => c.client_id !== INTERNAL_CLIENT_ID)
+        .map(c => ({ client_id: c.client_id, start_date: c.start_date ?? null, status: c.status ?? null })));
+      setHiringRequests((hiringRequestsRes.data || []).filter(r => r.client_id !== INTERNAL_CLIENT_ID));
     } catch (err: any) {
       toast({
         title: 'Error',
