@@ -153,9 +153,10 @@ export const ClientAnalyticsDashboard = () => {
       if (contractorsRes.error) throw contractorsRes.error;
       if (clientsRes.error) throw clientsRes.error;
 
-      setContractors(contractorsRes.data || []);
-      setClients(clientsRes.data || []);
-      setHiringRequests(hiringRequestsRes.data || []);
+      // Exclude internal team (OutSta) from analytics
+      setContractors((contractorsRes.data || []).filter((c: any) => c.client_id !== INTERNAL_CLIENT_ID));
+      setClients((clientsRes.data || []).filter((c: any) => c.id !== INTERNAL_CLIENT_ID));
+      setHiringRequests((hiringRequestsRes.data || []).filter((r: any) => r.client_id !== INTERNAL_CLIENT_ID));
 
       // Calculate application source stats with deduplication
       if (!applicantsRes.error && applicantsRes.data) {
