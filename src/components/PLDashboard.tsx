@@ -790,6 +790,71 @@ export const PLDashboard = () => {
         </CardContent>
       </Card>
 
+      {filteredInternal.length > 0 && (
+        <Card className="border-dashed">
+          <CardHeader>
+            <CardTitle className="text-base flex items-center gap-2">
+              Internal Team Submissions — OutSta ({filteredInternal.length})
+              <Badge variant="outline" className="text-[10px]">Excluded from analytics</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Member</TableHead>
+                  <TableHead>Week Ending</TableHead>
+                  <TableHead className="text-right">Hours</TableHead>
+                  <TableHead className="text-right">OT</TableHead>
+                  <TableHead className="text-right">Bonus</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Submitted</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredInternal.map((r) => (
+                  <TableRow key={r.id} className={r.status === 'pending_approval' ? 'bg-amber-50/40 dark:bg-amber-950/10' : ''}>
+                    <TableCell>
+                      <div className="font-medium">{r.contractor?.applicant?.full_name || '—'}</div>
+                      <div className="text-xs text-muted-foreground">{r.contractor?.applicant?.email}</div>
+                    </TableCell>
+                    <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
+                    <TableCell className="text-right font-medium">{Number(r.total_hours).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">{Number(r.overtime_hours).toFixed(2)}</TableCell>
+                    <TableCell className="text-right">${Number(r.incentive_amount || 0).toFixed(2)}</TableCell>
+                    <TableCell>
+                      {r.status === 'pending_approval' ? (
+                        <Badge variant="outline" className="border-amber-500 text-amber-600">Pending approval</Badge>
+                      ) : r.status === 'approved' ? (
+                        <Badge variant="outline" className="border-emerald-500 text-emerald-600">Approved</Badge>
+                      ) : r.status === 'rejected' ? (
+                        <Badge variant="outline" className="border-destructive text-destructive">Rejected</Badge>
+                      ) : (
+                        <Badge variant="secondary" className="capitalize">{r.status}</Badge>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{format(new Date(r.submitted_at), 'MMM d, h:mm a')}</TableCell>
+                    <TableCell className="text-right">
+                      {r.status === 'pending_approval' ? (
+                        <div className="flex justify-end gap-1">
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-emerald-500 text-emerald-600 hover:bg-emerald-50" onClick={() => handleDecision(r, 'approved')}>
+                            <Check className="w-3 h-3 mr-1" />Approve
+                          </Button>
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-destructive text-destructive hover:bg-destructive/10" onClick={() => handleDecision(r, 'rejected')}>
+                            <X className="w-3 h-3 mr-1" />Reject
+                          </Button>
+                        </div>
+                      ) : '—'}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
       <Dialog open={!!profileContractor} onOpenChange={(o) => { if (!o) { setProfileContractor(null); setProfileInvoices([]); } }}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
