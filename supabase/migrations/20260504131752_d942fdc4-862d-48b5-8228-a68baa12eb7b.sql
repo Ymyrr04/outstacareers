@@ -1,0 +1,1 @@
+DELETE FROM public.contractor_portal_users;
