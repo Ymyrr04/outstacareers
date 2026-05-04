@@ -239,7 +239,7 @@ export const PLDashboard = () => {
       toast({ title: 'No email', description: 'This contractor has no email on file.', variant: 'destructive' });
       return;
     }
-    if (!confirm(`Create a portal account for ${c.applicant.full_name}?\n\nEmail: ${c.applicant.email}\nDefault password: OutSta2026!\n\nNo email will be sent — share the password manually.`)) return;
+    if (!confirm(`Create a portal account for ${c.applicant.full_name}?\n\nEmail: ${c.applicant.email}\nDefault password: OutSta2026!\n\nAn email with their portal credentials will be sent.`)) return;
     setProvisioningId(c.id);
     try {
       const data = await callProvision({ contractorAssignmentId: c.id });
@@ -250,10 +250,43 @@ export const PLDashboard = () => {
       } else if (data.created === 0 && data.linked === 0) {
         toast({ title: 'Already provisioned', description: `${c.applicant.email} already has a portal account.` });
       } else {
-        toast({
-          title: 'Account ready',
-          description: `${data.created ? 'Created new account' : 'Linked existing user'} for ${c.applicant.email}`,
+        // Send credentials email
+        const portalUrl = `${window.location.origin}/portal/login`;
+        const firstName = (c.applicant.full_name || '').split(' ')[0] || 'there';
+        const subject = 'Your OutSta Portal Account is Ready';
+        const bodyHtml = `
+          <p>Hi ${firstName},</p>
+          <p>Your OutSta contractor portal account has been created. You can now log in to submit your weekly hours and view your invoices.</p>
+          <p><strong>Portal URL:</strong> <a href="${portalUrl}">${portalUrl}</a><br/>
+          <strong>Email:</strong> ${c.applicant.email}<br/>
+          <strong>Temporary password:</strong> OutSta2026!</p>
+          <p>For security, you'll be asked to change your password the first time you log in.</p>
+          <p>If you have any questions, just reply to this email.</p>
+          <p>Thanks,<br/>The OutSta Team</p>
+        `;
+
+        const { error: emailError } = await supabase.functions.invoke('send-contractor-email', {
+          body: {
+            contractorAssignmentId: c.id,
+            subject,
+            bodyHtml,
+            recipientEmail: c.applicant.email,
+            recipientName: c.applicant.full_name || c.applicant.email,
+          },
         });
+
+        if (emailError) {
+          toast({
+            title: 'Account created, email failed',
+            description: `Portal account created for ${c.applicant.email}, but the credentials email could not be sent. Please share the password manually.`,
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Account ready & email sent',
+            description: `${data.created ? 'Created new account' : 'Linked existing user'} for ${c.applicant.email} and sent portal credentials.`,
+          });
+        }
       }
       fetchData();
     } catch (e: any) {
