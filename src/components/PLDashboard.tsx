@@ -289,7 +289,12 @@ export const PLDashboard = () => {
     return dir === 'asc' ? r : -r;
   };
 
-  const filtered = rows
+  const externalRows = rows.filter((r) => r.contractor?.client_id !== INTERNAL_CLIENT_ID);
+  const internalRows = rows.filter((r) => r.contractor?.client_id === INTERNAL_CLIENT_ID);
+  const externalContractors = contractors.filter((c) => c.client_id !== INTERNAL_CLIENT_ID);
+  const internalContractors = contractors.filter((c) => c.client_id === INTERNAL_CLIENT_ID);
+
+  const applyTsFilters = (list: TimesheetRow[]) => list
     .filter((r) => {
       if (search) {
         const q = search.toLowerCase();
@@ -327,7 +332,10 @@ export const PLDashboard = () => {
       }
     });
 
-  const filteredContractors = contractors
+  const filtered = applyTsFilters(externalRows);
+  const filteredInternal = applyTsFilters(internalRows);
+
+  const applyContractorFilters = (list: ContractorRow[]) => list
     .filter((c) => {
       if (!contractorSearch) return true;
       const q = contractorSearch.toLowerCase();
@@ -349,6 +357,9 @@ export const PLDashboard = () => {
         case 'hpw': return cmp(a.hours_per_week, b.hours_per_week, d);
       }
     });
+
+  const filteredContractors = applyContractorFilters(externalContractors);
+  const filteredInternalContractors = applyContractorFilters(internalContractors);
 
   const toggleContractorSort = (key: typeof contractorSort.key) =>
     setContractorSort((s) => s.key === key ? { key, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { key, dir: 'asc' });
