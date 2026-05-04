@@ -1097,12 +1097,27 @@ const PortalDashboard = () => {
               <div className="space-y-2">
                 <Label htmlFor="notes">Please attach your Payoneer request link here <span className="text-destructive">*</span></Label>
                 <Textarea id="notes" rows={3} value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="Paste your Payoneer payment request link" />
-                <p className="text-xs text-muted-foreground">
-                  Having issues submitting your Payoneer request? Contact admin via WhatsApp:{' '}
-                  <a href="https://wa.me/639982326001" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
-                    +63 998 232 6001
-                  </a>
-                </p>
+                <div className="text-xs text-muted-foreground space-y-1">
+                  <p>
+                    Having issues submitting your Payoneer request? Contact admin via WhatsApp:{' '}
+                    <a href="https://wa.me/639982326001" target="_blank" rel="noopener noreferrer" className="text-primary hover:underline font-medium">
+                      +63 998 232 6001
+                    </a>
+                  </p>
+                  <p>
+                    Or email us at{' '}
+                    <a href="mailto:mark@outsta.io" className="text-primary hover:underline font-medium">mark@outsta.io</a>
+                    {' '}/{' '}
+                    <a href="mailto:Liezl@outsta.io" className="text-primary hover:underline font-medium">Liezl@outsta.io</a>
+                  </p>
+                  <p className="pt-1">Please include in your message:</p>
+                  <ul className="list-disc pl-5 space-y-0.5">
+                    <li>Your total hours for the week</li>
+                    <li>Reason for not completing your hours (if applicable)</li>
+                    <li>Reason for OT (if applicable)</li>
+                    <li>Reason for the extra amount (if applicable)</li>
+                  </ul>
+                </div>
               </div>
 
               <div className="flex justify-end gap-2">
