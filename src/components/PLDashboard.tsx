@@ -307,14 +307,26 @@ export const PLDashboard = () => {
     try {
       const portalUrl = `https://outstahub.com/portal/login`;
       const firstName = (c.applicant.full_name || '').split(' ')[0] || 'there';
+
+      // Reset their auth password to the default so the credentials in the email actually work.
+      const { error: resetErr } = await supabase.functions.invoke('admin-reset-password', {
+        body: { email: c.applicant.email, password: 'OutSta2026!' },
+      });
+      if (resetErr) throw resetErr;
+
+      // Ensure they're flagged to change password on next login.
+      await supabase
+        .from('contractor_portal_users')
+        .update({ must_change_password: true })
+        .eq('contractor_assignment_id', c.id);
+
       const subject = 'Your OutSta Portal Account — Login Details';
       const bodyHtml = `
         <p>Hi ${firstName},</p>
-        <p>Here are your OutSta contractor portal login details again. You can log in to submit your weekly hours and view your invoices.</p>
+        <p>Here are your OutSta contractor portal login details. You can log in to submit your weekly hours and view your invoices.</p>
         <p><strong>Portal URL:</strong> <a href="${portalUrl}">${portalUrl}</a><br/>
         <strong>Email:</strong> ${c.applicant.email}<br/>
         <strong>Temporary password:</strong> OutSta2026!</p>
-        <p><em>Note: if you have already changed your password, please continue using the new one. The temporary password above only works if you haven't logged in yet.</em></p>
         <p>For security, you'll be asked to change your password the first time you log in.</p>
         <p>If you have any questions, just reply to this email.</p>
         <p>Thanks,<br/>The OutSta Team</p>

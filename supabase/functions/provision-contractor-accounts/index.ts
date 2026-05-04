@@ -123,6 +123,9 @@ Deno.serve(async (req) => {
           userId = newUser.user!.id;
           created += 1;
         } else {
+          // Reset existing auth user's password to the default so they can log in.
+          const { error: updErr } = await admin.auth.admin.updateUserById(userId, { password: DEFAULT_PASSWORD });
+          if (updErr) throw updErr;
           linked += 1;
         }
 
