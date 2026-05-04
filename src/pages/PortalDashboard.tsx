@@ -497,6 +497,19 @@ const PortalDashboard = () => {
         return;
       }
     }
+    // Fallback: over target but no individual day exceeds per-day expected
+    // (e.g. worked an extra day at the normal daily rate) — still require at least one reason
+    if (!hoursMatch && hoursDiff > 0) {
+      const anyReason = dateKeys.some((k) => days[k]?.reason?.trim());
+      if (!anyReason) {
+        toast({
+          title: `Over by ${hoursDiff.toFixed(2)} hrs`,
+          description: 'Total is above your weekly target. Please add a Reason on at least one day explaining the extra hours.',
+          variant: 'destructive',
+        });
+        return;
+      }
+    }
     // Require Payoneer payment request link
     const trimmedNotes = notes.trim();
     const hasLink = /https?:\/\/\S+/i.test(trimmedNotes) || /payoneer\.com\/\S+/i.test(trimmedNotes);
