@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye } from 'lucide-react';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 
 interface TimesheetRow {
   id: string;
@@ -25,6 +26,7 @@ interface TimesheetRow {
     job_title: string | null;
     start_date: string | null;
     hours_per_week: number | null;
+    client_id: string | null;
     applicant: { full_name: string; email: string } | null;
     client: { company_name: string } | null;
   } | null;
@@ -33,6 +35,7 @@ interface TimesheetRow {
 interface ContractorRow {
   id: string;
   applicant_id: string | null;
+  client_id: string | null;
   job_title: string | null;
   status: string;
   hourly_rate: number | null;
