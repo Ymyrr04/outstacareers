@@ -65,6 +65,7 @@ import { SendContractorEmailDialog } from './SendContractorEmailDialog';
 import { BulkContractorEmailDialog } from './BulkContractorEmailDialog';
 import { ContractorEmailTemplateManager } from './ContractorEmailTemplateManager';
 import { RecurringSchedulesManager } from './RecurringSchedulesManager';
+import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 
 interface ContractorWithDetails {
   id: string;
