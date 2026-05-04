@@ -75,6 +75,7 @@ export const PLDashboard = () => {
   const [loadingInvoices, setLoadingInvoices] = useState(false);
   const [provisioning, setProvisioning] = useState(false);
   const [provisioningId, setProvisioningId] = useState<string | null>(null);
+  const [resendingId, setResendingId] = useState<string | null>(null);
   const [rows, setRows] = useState<TimesheetRow[]>([]);
   const [contractors, setContractors] = useState<ContractorRow[]>([]);
   const [search, setSearch] = useState('');
