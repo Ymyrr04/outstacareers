@@ -1220,6 +1220,18 @@ const PortalDashboard = () => {
             )}
           </CardContent>
         </Card>
+          </TabsContent>
+          <TabsContent value="checkin" className="mt-0">
+            {info && (
+              <DailyCheckin
+                contractorAssignmentId={info.contractor_assignment_id}
+                contractorName={info.full_name || 'Contractor'}
+                jobTitle={info.job_title}
+                companyName={info.company_name}
+              />
+            )}
+          </TabsContent>
+        </Tabs>
       </main>
 
       {/* Missing reason prompt — collect reasons inline */}
