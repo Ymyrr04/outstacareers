@@ -222,8 +222,10 @@ const Admin = () => {
   const [rescoring, setRescoring] = useState<string | null>(null);
   const [activeStatusFolder, setActiveStatusFolder] = useState<ApplicantStatusFolder>('For Review');
   const [isFolderSwitching, setIsFolderSwitching] = useState(false);
-  const [previewCv, setPreviewCv] = useState<{ url: string; path: string; name: string; cvText: string | null } | null>(null);
+  const [previewCv, setPreviewCv] = useState<{ url: string; path: string; name: string; cvText: string | null; applicantId?: string } | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
+  const [replacingCv, setReplacingCv] = useState(false);
+  const replaceCvInputRef = useRef<HTMLInputElement>(null);
   
   // Edit mode state
   const [editingApplicant, setEditingApplicant] = useState<string | null>(null);
