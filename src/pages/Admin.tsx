@@ -607,7 +607,7 @@ const Admin = () => {
       // Create blob with correct MIME type
       const blob = new Blob([data], { type: mimeType });
       const url = URL.createObjectURL(blob);
-      setPreviewCv({ url, path: cvPath, name: applicantName, cvText });
+      setPreviewCv({ url, path: cvPath, name: applicantName, cvText, applicantId });
     } catch (err) {
       toast({
         title: 'Error',
