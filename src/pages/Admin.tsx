@@ -651,6 +651,52 @@ const Admin = () => {
     });
   };
 
+  const handleReplaceCv = async (file: File) => {
+    if (!previewCv?.applicantId) return;
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      toast({ title: 'Invalid file', description: 'CV must be a PDF file.', variant: 'destructive' });
+      return;
+    }
+    setReplacingCv(true);
+    try {
+      const filePath = `applications/${Date.now()}-${Math.random().toString(36).substring(7)}.pdf`;
+      const { error: uploadError } = await supabase.storage
+        .from('cv-uploads')
+        .upload(filePath, file, { contentType: 'application/pdf' });
+      if (uploadError) throw uploadError;
+
+      const { error: updateError } = await supabase
+        .from('applicants_prescreen')
+        .update({ cv_file_url: filePath, cv_text: null })
+        .eq('id', previewCv.applicantId);
+      if (updateError) throw updateError;
+
+      if (previewCv.path) {
+        await supabase.storage.from('cv-uploads').remove([previewCv.path]).catch(() => {});
+      }
+
+      setApplicants(prev => prev.map(a =>
+        a.id === previewCv.applicantId ? { ...a, cv_file_url: filePath, cv_text: null } : a
+      ));
+
+      toast({ title: 'CV updated', description: 'New CV uploaded successfully.' });
+
+      if (previewCv.url) URL.revokeObjectURL(previewCv.url);
+      const { data: blobData } = await supabase.storage.from('cv-uploads').download(filePath);
+      if (blobData) {
+        const newUrl = URL.createObjectURL(new Blob([blobData], { type: 'application/pdf' }));
+        setPreviewCv({ ...previewCv, url: newUrl, path: filePath, cvText: null });
+      } else {
+        handleClosePreview();
+      }
+    } catch (err: any) {
+      toast({ title: 'Upload failed', description: err.message || 'Failed to upload new CV', variant: 'destructive' });
+    } finally {
+      setReplacingCv(false);
+      if (replaceCvInputRef.current) replaceCvInputRef.current.value = '';
+    }
+  };
+
   const handleDownloadCv = async (applicantId: string, cvPath: string, applicantName: string) => {
     setDownloadingCv(applicantId);
     try {
