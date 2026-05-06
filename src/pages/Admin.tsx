@@ -3690,6 +3690,26 @@ const Admin = () => {
             <DialogTitle className="flex items-center justify-between">
               <span>CV Preview - {previewCv?.name}</span>
               <div className="flex gap-2">
+                <input
+                  ref={replaceCvInputRef}
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) handleReplaceCv(file);
+                  }}
+                />
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => replaceCvInputRef.current?.click()}
+                  disabled={replacingCv || !previewCv?.applicantId}
+                  className="flex items-center gap-2"
+                >
+                  {replacingCv ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
+                  {replacingCv ? 'Uploading...' : 'Upload New CV'}
+                </Button>
                 <Button
                   variant="outline"
                   size="sm"
