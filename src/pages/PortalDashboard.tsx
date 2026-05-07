@@ -888,7 +888,7 @@ const PortalDashboard = () => {
         <Tabs defaultValue="timesheet" className="space-y-6">
           <TabsList>
             <TabsTrigger value="timesheet">Timesheet</TabsTrigger>
-            <TabsTrigger value="checkin">Daily Check-in</TabsTrigger>
+            <TabsTrigger value="checkin">Check-in</TabsTrigger>
           </TabsList>
           <TabsContent value="timesheet" className="space-y-6 mt-0">
         <Card>
