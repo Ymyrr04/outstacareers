@@ -226,7 +226,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
       <Card>
         <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
           <div>
-            <CardTitle>Daily Check-in</CardTitle>
+            <CardTitle>Check-in</CardTitle>
             <CardDescription>
               Tick what applies, add any notes, and submit. A summary is emailed to your manager.
             </CardDescription>
