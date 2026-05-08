@@ -922,7 +922,7 @@ export const PLDashboard = () => {
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('ot')}>OT<SortIcon active={tsSort.key === 'ot'} dir={tsSort.dir} /></button></TableHead>
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('incentives')}>Bonus<SortIcon active={tsSort.key === 'incentives'} dir={tsSort.dir} /></button></TableHead>
                   <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('status')}>Status<SortIcon active={tsSort.key === 'status'} dir={tsSort.dir} /></button></TableHead>
-                  <TableHead>Daily &gt;10h</TableHead>
+                  <TableHead>Hour variance</TableHead>
                   <TableHead>Notes</TableHead>
                   <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('submitted')}>Submitted<SortIcon active={tsSort.key === 'submitted'} dir={tsSort.dir} /></button></TableHead>
                   <TableHead className="text-right">Actions</TableHead>
@@ -930,9 +930,18 @@ export const PLDashboard = () => {
               </TableHeader>
               <TableBody>
                 {filtered.map((r) => {
-                  const overDays = r.daily_hours
-                    ? Object.entries(r.daily_hours).filter(([, v]) => Number((v as any)?.hours) > 10)
+                  const dailyEntries: Array<[string, any]> = r.daily_hours
+                    ? Object.entries(r.daily_hours)
                     : [];
+                  const daysWithReason = dailyEntries.filter(([, v]) => (v as any)?.reason && String((v as any).reason).trim());
+                  const overDays = dailyEntries.filter(([, v]) => Number((v as any)?.hours) > 10);
+                  // Merge: any day flagged either by reason or >10h
+                  const flagMap = new Map<string, any>();
+                  [...daysWithReason, ...overDays].forEach(([k, v]) => flagMap.set(k, v));
+                  const flaggedDays = Array.from(flagMap.entries());
+
+                  const expectedWeekly = Number(r.contractor?.hours_per_week || 0);
+                  const weeklyDiff = expectedWeekly > 0 ? Number(r.total_hours) - expectedWeekly : 0;
                   const dep = computeDeposit(r);
                   return (
                     <TableRow key={r.id} className={r.status === 'pending_approval' ? 'bg-amber-50/40 dark:bg-amber-950/10' : ''}>
@@ -969,15 +978,31 @@ export const PLDashboard = () => {
                           <Badge variant="secondary" className="capitalize">{r.status}</Badge>
                         )}
                       </TableCell>
-                      <TableCell className="text-xs">
-                        {overDays.length === 0 ? '—' : (
+                      <TableCell className="text-xs max-w-[280px]">
+                        {expectedWeekly > 0 && Math.abs(weeklyDiff) > 0.25 && (
+                          <Badge
+                            variant="outline"
+                            className={`mb-1 text-[10px] px-1.5 py-0 h-4 ${weeklyDiff < 0 ? 'border-destructive text-destructive' : 'border-blue-500 text-blue-600'}`}
+                          >
+                            {weeklyDiff > 0 ? '+' : ''}{weeklyDiff.toFixed(2)}h vs {expectedWeekly}h target
+                          </Badge>
+                        )}
+                        {flaggedDays.length === 0 ? (
+                          expectedWeekly > 0 && Math.abs(weeklyDiff) <= 0.25 ? <span className="text-muted-foreground">—</span> : null
+                        ) : (
                           <div className="space-y-0.5">
-                            {overDays.map(([k, v]) => (
-                              <div key={k}>
-                                <span className="font-medium capitalize">{k}</span>: {Number((v as any).hours)}h
-                                {(v as any).reason && <span className="text-muted-foreground"> — {(v as any).reason}</span>}
-                              </div>
-                            ))}
+                            {flaggedDays.map(([k, v]) => {
+                              const hrs = Number((v as any).hours);
+                              const reason = (v as any).reason;
+                              const isOver = hrs > 10;
+                              return (
+                                <div key={k} className="leading-snug">
+                                  <span className={`font-medium capitalize ${isOver ? 'text-amber-600' : ''}`}>{k}</span>
+                                  <span className="text-muted-foreground">: {hrs}h</span>
+                                  {reason && <span className="text-foreground"> — {reason}</span>}
+                                </div>
+                              );
+                            })}
                           </div>
                         )}
                       </TableCell>
