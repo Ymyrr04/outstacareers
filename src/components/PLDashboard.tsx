@@ -1105,6 +1105,108 @@ export const PLDashboard = () => {
         </Card>
       )}
 
+      <Dialog open={!!viewTimesheet} onOpenChange={(o) => { if (!o) setViewTimesheet(null); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Timesheet Submission</DialogTitle>
+            <DialogDescription>
+              {viewTimesheet?.contractor?.applicant?.full_name} — Week ending {viewTimesheet ? format(new Date(viewTimesheet.week_ending_date), 'MMM d, yyyy') : ''}
+            </DialogDescription>
+          </DialogHeader>
+          {viewTimesheet && (() => {
+            const r = viewTimesheet;
+            const dailyEntries: Array<[string, any]> = r.daily_hours ? Object.entries(r.daily_hours) : [];
+            const dayKeys = dailyEntries.map(([k]) => k).filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
+            const isDated = dayKeys.length > 0;
+            const orderedDays = isDated
+              ? dayKeys.map((k) => [k, r.daily_hours![k]] as [string, any])
+              : dailyEntries;
+            const expectedWeekly = Number(r.contractor?.hours_per_week || 0);
+            const weeklyDiff = expectedWeekly > 0 ? Number(r.total_hours) - expectedWeekly : 0;
+            const dep = computeDeposit(r);
+            const fmtDayLabel = (k: string) => isDated ? format(new Date(k), 'EEE, MMM d') : k.charAt(0).toUpperCase() + k.slice(1);
+            return (
+              <div className="space-y-4 text-sm py-2">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
+                  <ProfileField label="Contractor" value={r.contractor?.applicant?.full_name} />
+                  <ProfileField label="Email" value={r.contractor?.applicant?.email} />
+                  <ProfileField label="Company" value={r.contractor?.client?.company_name} />
+                  <ProfileField label="Job title" value={r.contractor?.job_title} />
+                  <ProfileField label="Week ending" value={format(new Date(r.week_ending_date), 'MMM d, yyyy')} />
+                  <ProfileField label="Submitted" value={format(new Date(r.submitted_at), 'MMM d, yyyy h:mm a')} />
+                  <ProfileField label="Total hours" value={Number(r.total_hours).toFixed(2)} />
+                  <ProfileField label="Overtime" value={Number(r.overtime_hours).toFixed(2)} />
+                  <ProfileField label="Bonus" value={`$${Number(r.incentive_amount || 0).toFixed(2)}`} />
+                  <ProfileField label="Target hours/week" value={expectedWeekly ? `${expectedWeekly}` : null} />
+                  <ProfileField label="Variance" value={expectedWeekly ? `${weeklyDiff > 0 ? '+' : ''}${weeklyDiff.toFixed(2)}h` : null} />
+                  <ProfileField label="Status" value={r.status} />
+                </div>
+
+                {dep.isDeposit && (
+                  <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/20 p-3">
+                    <div className="text-xs font-medium text-amber-700">Security deposit week</div>
+                    <div className="text-sm">{dep.depositHours.toFixed(2)}h held as Wk {(dep.weekIndex ?? 0) + 1} deposit</div>
+                  </div>
+                )}
+
+                <div>
+                  <h4 className="font-semibold text-sm mb-2">Daily Breakdown</h4>
+                  {orderedDays.length === 0 ? (
+                    <p className="text-sm text-muted-foreground">No daily breakdown recorded.</p>
+                  ) : (
+                    <div className="border rounded-md overflow-hidden">
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>Day</TableHead>
+                            <TableHead className="text-right">Hours</TableHead>
+                            <TableHead>Reason / Notes</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {orderedDays.map(([k, v]) => {
+                            const hrs = Number((v as any)?.hours || 0);
+                            const reason = (v as any)?.reason;
+                            const isOver = hrs > 10;
+                            return (
+                              <TableRow key={k}>
+                                <TableCell className="font-medium">{fmtDayLabel(k)}</TableCell>
+                                <TableCell className={`text-right ${isOver ? 'text-amber-600 font-medium' : ''}`}>{hrs.toFixed(2)}</TableCell>
+                                <TableCell className="text-sm">{reason || <span className="text-muted-foreground">—</span>}</TableCell>
+                              </TableRow>
+                            );
+                          })}
+                        </TableBody>
+                      </Table>
+                    </div>
+                  )}
+                </div>
+
+                {r.notes && (
+                  <div>
+                    <h4 className="font-semibold text-sm mb-1">Submission Notes</h4>
+                    <div className="rounded-md border p-3 text-sm whitespace-pre-wrap">{r.notes}</div>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+          <DialogFooter>
+            {viewTimesheet?.status === 'pending_approval' && (
+              <>
+                <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive/10" onClick={() => { handleDecision(viewTimesheet, 'rejected'); setViewTimesheet(null); }}>
+                  <X className="w-4 h-4 mr-1" />Reject
+                </Button>
+                <Button variant="outline" className="border-emerald-500 text-emerald-600 hover:bg-emerald-50" onClick={() => { handleDecision(viewTimesheet, 'approved'); setViewTimesheet(null); }}>
+                  <Check className="w-4 h-4 mr-1" />Approve
+                </Button>
+              </>
+            )}
+            <Button variant="ghost" onClick={() => setViewTimesheet(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!profileContractor} onOpenChange={(o) => { if (!o) { setProfileContractor(null); setProfileInvoices([]); } }}>
         <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
