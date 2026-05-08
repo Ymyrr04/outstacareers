@@ -980,16 +980,8 @@ export const PLDashboard = () => {
                         )}
                       </TableCell>
                       <TableCell className="text-xs max-w-[280px]">
-                        {expectedWeekly > 0 && Math.abs(weeklyDiff) > 0.25 && (
-                          <Badge
-                            variant="outline"
-                            className={`mb-1 text-[10px] px-1.5 py-0 h-4 ${weeklyDiff < 0 ? 'border-destructive text-destructive' : 'border-blue-500 text-blue-600'}`}
-                          >
-                            {weeklyDiff > 0 ? '+' : ''}{weeklyDiff.toFixed(2)}h vs {expectedWeekly}h target
-                          </Badge>
-                        )}
                         {flaggedDays.length === 0 ? (
-                          expectedWeekly > 0 && Math.abs(weeklyDiff) <= 0.25 ? <span className="text-muted-foreground">—</span> : null
+                          <span className="text-muted-foreground">—</span>
                         ) : (
                           <div className="space-y-0.5">
                             {flaggedDays.map(([k, v]) => {
