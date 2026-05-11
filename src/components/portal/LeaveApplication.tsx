@@ -205,6 +205,23 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
                     </div>
                   ))}
                 </RadioGroup>
+                {(timePeriod === 'AM' || timePeriod === 'PM') && (
+                  <div className="pt-2">
+                    <Label className="text-xs text-muted-foreground">Specific time (EST)</Label>
+                    <Select value={specificTime} onValueChange={setSpecificTime}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[240px]">
+                        {TIME_SLOTS.filter((s) =>
+                          timePeriod === 'AM' ? s.endsWith('AM') : s.endsWith('PM')
+                        ).map((slot) => (
+                          <SelectItem key={slot} value={slot}>{slot} ET</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
             </div>
 
