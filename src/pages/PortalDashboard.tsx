@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Helmet } from 'react-helmet-async';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DailyCheckin } from '@/components/portal/DailyCheckin';
+import { LeaveApplication } from '@/components/portal/LeaveApplication';
 import { addDays, format, startOfWeek } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -889,6 +890,7 @@ const PortalDashboard = () => {
           <TabsList>
             <TabsTrigger value="timesheet">Timesheet</TabsTrigger>
             <TabsTrigger value="checkin">Check-in</TabsTrigger>
+            <TabsTrigger value="leave">Leave</TabsTrigger>
           </TabsList>
           <TabsContent value="timesheet" className="space-y-6 mt-0">
         <Card>
@@ -1230,6 +1232,9 @@ const PortalDashboard = () => {
                 companyName={info.company_name}
               />
             )}
+          </TabsContent>
+          <TabsContent value="leave" className="mt-0">
+            {info && <LeaveApplication contractorAssignmentId={info.contractor_assignment_id} />}
           </TabsContent>
         </Tabs>
       </main>
