@@ -62,9 +62,12 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
   const [leaveDate, setLeaveDate] = useState<Date | undefined>(undefined);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [timePeriod, setTimePeriod] = useState<'AM' | 'PM' | 'All day'>('All day');
+  const [specificTime, setSpecificTime] = useState<string>('9:00 AM');
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [otherChecked, setOtherChecked] = useState(false);
   const [otherText, setOtherText] = useState('');
+  const [compensationType, setCompensationType] = useState<'Paid' | 'Unpaid' | 'Time compensation' | ''>('');
+  const [compensationNote, setCompensationNote] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [history, setHistory] = useState<LeaveRow[]>([]);
@@ -74,7 +77,7 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
     setLoading(true);
     const { data, error } = await supabase
       .from('contractor_leave_applications' as any)
-      .select('id, leave_date, time_period, leave_type, leave_type_other, notes, status, created_at, review_notes')
+      .select('id, leave_date, time_period, specific_time, leave_type, leave_type_other, compensation_type, compensation_note, notes, status, created_at, review_notes')
       .eq('contractor_assignment_id', contractorAssignmentId)
       .order('leave_date', { ascending: false });
     if (!error) setHistory((data as any) || []);
@@ -90,9 +93,12 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
   const reset = () => {
     setLeaveDate(undefined);
     setTimePeriod('All day');
+    setSpecificTime('9:00 AM');
     setSelectedTypes([]);
     setOtherChecked(false);
     setOtherText('');
+    setCompensationType('');
+    setCompensationNote('');
     setNotes('');
   };
 
@@ -114,14 +120,25 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
       toast({ title: 'Select at least one leave type', variant: 'destructive' });
       return;
     }
+    if (!compensationType) {
+      toast({ title: 'Please select a compensation type', variant: 'destructive' });
+      return;
+    }
+    if (compensationType === 'Time compensation' && !compensationNote.trim()) {
+      toast({ title: 'Please add a comment for time compensation', variant: 'destructive' });
+      return;
+    }
     setSubmitting(true);
     try {
       const { error } = await supabase.from('contractor_leave_applications' as any).insert({
         contractor_assignment_id: contractorAssignmentId,
         leave_date: format(leaveDate, 'yyyy-MM-dd'),
         time_period: timePeriod,
+        specific_time: timePeriod === 'All day' ? null : specificTime,
         leave_type: types.join('; '),
         leave_type_other: otherChecked ? otherText.trim() : null,
+        compensation_type: compensationType,
+        compensation_note: compensationType === 'Time compensation' ? compensationNote.trim() : null,
         notes: notes.trim() || null,
       });
       if (error) throw error;
