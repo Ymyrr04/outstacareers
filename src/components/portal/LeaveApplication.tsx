@@ -252,7 +252,6 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
             </div>
 
             <div className="space-y-2">
-            <div className="space-y-2">
               <Label>Compensation <span className="text-destructive">*</span></Label>
               <div className="flex flex-wrap items-center gap-4 pt-1">
                 {(['Paid', 'Unpaid', 'Time compensation'] as const).map((c) => (
