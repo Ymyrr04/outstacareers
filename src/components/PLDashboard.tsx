@@ -1045,7 +1045,7 @@ export const PLDashboard = () => {
       </Card>
 
       {filteredInternal.length > 0 && (
-        <Card className="border-dashed">
+        <Card className="border-dashed" style={{ order: sectionOrder.indexOf('internalTimesheets') }}>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               Internal Team Submissions — OutSta ({filteredInternal.length})
