@@ -208,20 +208,33 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
                   ))}
                 </RadioGroup>
                 {(timePeriod === 'AM' || timePeriod === 'PM') && (
-                  <div className="pt-2">
-                    <Label className="text-xs text-muted-foreground">Specific time (EST)</Label>
-                    <Select value={specificTime} onValueChange={setSpecificTime}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[240px]">
-                        {TIME_SLOTS.filter((s) =>
-                          timePeriod === 'AM' ? s.endsWith('AM') : s.endsWith('PM')
-                        ).map((slot) => (
-                          <SelectItem key={slot} value={slot}>{slot} ET</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="pt-2 grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">From (EST)</Label>
+                      <Select value={timeFrom} onValueChange={setTimeFrom}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[240px]">
+                          {TIME_SLOTS.map((slot) => (
+                            <SelectItem key={slot} value={slot}>{slot} ET</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">To (EST)</Label>
+                      <Select value={timeTo} onValueChange={setTimeTo}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[240px]">
+                          {TIME_SLOTS.map((slot) => (
+                            <SelectItem key={slot} value={slot}>{slot} ET</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 )}
               </div>
