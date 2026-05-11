@@ -975,6 +975,62 @@ export type Database = {
         }
         Relationships: []
       }
+      contractor_leave_applications: {
+        Row: {
+          contractor_assignment_id: string
+          created_at: string
+          id: string
+          leave_date: string
+          leave_type: string
+          leave_type_other: string | null
+          notes: string | null
+          review_notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          status: string
+          time_period: string
+          updated_at: string
+        }
+        Insert: {
+          contractor_assignment_id: string
+          created_at?: string
+          id?: string
+          leave_date: string
+          leave_type: string
+          leave_type_other?: string | null
+          notes?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          time_period: string
+          updated_at?: string
+        }
+        Update: {
+          contractor_assignment_id?: string
+          created_at?: string
+          id?: string
+          leave_date?: string
+          leave_type?: string
+          leave_type_other?: string | null
+          notes?: string | null
+          review_notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          status?: string
+          time_period?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contractor_leave_applications_contractor_assignment_id_fkey"
+            columns: ["contractor_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "contractor_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contractor_pipeline_stages: {
         Row: {
           checkin_email_body: string | null
