@@ -10,6 +10,7 @@ import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, E
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
+import { AdminLeaveApplications } from '@/components/AdminLeaveApplications';
 
 interface TimesheetRow {
   id: string;
@@ -697,6 +698,8 @@ export const PLDashboard = () => {
           )}
         </CardContent>
       </Card>
+
+      <AdminLeaveApplications />
 
       {filteredInternalContractors.length > 0 && (
         <Card className="border-dashed">
