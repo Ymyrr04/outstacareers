@@ -62,7 +62,8 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
   const [leaveDate, setLeaveDate] = useState<Date | undefined>(undefined);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [timePeriod, setTimePeriod] = useState<'AM' | 'PM' | 'All day'>('All day');
-  const [specificTime, setSpecificTime] = useState<string>('9:00 AM');
+  const [timeFrom, setTimeFrom] = useState<string>('9:00 AM');
+  const [timeTo, setTimeTo] = useState<string>('12:00 PM');
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [otherChecked, setOtherChecked] = useState(false);
   const [otherText, setOtherText] = useState('');
@@ -93,7 +94,8 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
   const reset = () => {
     setLeaveDate(undefined);
     setTimePeriod('All day');
-    setSpecificTime('9:00 AM');
+    setTimeFrom('9:00 AM');
+    setTimeTo('12:00 PM');
     setSelectedTypes([]);
     setOtherChecked(false);
     setOtherText('');
@@ -134,7 +136,7 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
         contractor_assignment_id: contractorAssignmentId,
         leave_date: format(leaveDate, 'yyyy-MM-dd'),
         time_period: timePeriod,
-        specific_time: timePeriod === 'All day' ? null : specificTime,
+        specific_time: timePeriod === 'All day' ? null : `${timeFrom} - ${timeTo}`,
         leave_type: types.join('; '),
         leave_type_other: otherChecked ? otherText.trim() : null,
         compensation_type: compensationType,
@@ -206,20 +208,33 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
                   ))}
                 </RadioGroup>
                 {(timePeriod === 'AM' || timePeriod === 'PM') && (
-                  <div className="pt-2">
-                    <Label className="text-xs text-muted-foreground">Specific time (EST)</Label>
-                    <Select value={specificTime} onValueChange={setSpecificTime}>
-                      <SelectTrigger className="mt-1">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[240px]">
-                        {TIME_SLOTS.filter((s) =>
-                          timePeriod === 'AM' ? s.endsWith('AM') : s.endsWith('PM')
-                        ).map((slot) => (
-                          <SelectItem key={slot} value={slot}>{slot} ET</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                  <div className="pt-2 grid grid-cols-2 gap-2">
+                    <div>
+                      <Label className="text-xs text-muted-foreground">From (EST)</Label>
+                      <Select value={timeFrom} onValueChange={setTimeFrom}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[240px]">
+                          {TIME_SLOTS.map((slot) => (
+                            <SelectItem key={slot} value={slot}>{slot} ET</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <Label className="text-xs text-muted-foreground">To (EST)</Label>
+                      <Select value={timeTo} onValueChange={setTimeTo}>
+                        <SelectTrigger className="mt-1">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent className="max-h-[240px]">
+                          {TIME_SLOTS.map((slot) => (
+                            <SelectItem key={slot} value={slot}>{slot} ET</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                 )}
               </div>
