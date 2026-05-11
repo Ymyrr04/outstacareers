@@ -550,13 +550,20 @@ export const PLDashboard = () => {
 
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <Badge variant="outline" className="text-xs">Portal: <code className="ml-1">/portal/login</code> · Default password: <code className="ml-1">OutSta2026!</code></Badge>
-        <Button onClick={handleProvision} disabled={provisioning}>
-          {provisioning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UserPlus className="w-4 h-4 mr-2" />}
-          Provision Accounts
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setReorderOpen(true)}>
+            <Settings2 className="w-4 h-4 mr-2" />
+            Reorder Sections
+          </Button>
+          <Button onClick={handleProvision} disabled={provisioning}>
+            {provisioning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UserPlus className="w-4 h-4 mr-2" />}
+            Provision Accounts
+          </Button>
+        </div>
       </div>
 
-      <Card>
+      <div className="flex flex-col gap-6">
+      <Card style={{ order: sectionOrder.indexOf('contractors') }}>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <CardTitle className="text-base">Contractors ({filteredContractors.length})</CardTitle>
           <div className="relative w-full sm:w-80">
@@ -738,10 +745,12 @@ export const PLDashboard = () => {
         </CardContent>
       </Card>
 
-      <AdminLeaveApplications />
+      <div style={{ order: sectionOrder.indexOf('leave') }}>
+        <AdminLeaveApplications />
+      </div>
 
       {filteredInternalContractors.length > 0 && (
-        <Card className="border-dashed">
+        <Card className="border-dashed" style={{ order: sectionOrder.indexOf('internalContractors') }}>
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <CardTitle className="text-base flex items-center gap-2">
               Internal Team — OutSta ({filteredInternalContractors.length})
@@ -916,9 +925,8 @@ export const PLDashboard = () => {
         </Card>
       )}
 
-      <Card>
+      <Card style={{ order: sectionOrder.indexOf('timesheets') }}>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <CardTitle className="text-base">Timesheet Submissions</CardTitle>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <div className="flex items-center gap-2">
               <Input
@@ -1037,7 +1045,7 @@ export const PLDashboard = () => {
       </Card>
 
       {filteredInternal.length > 0 && (
-        <Card className="border-dashed">
+        <Card className="border-dashed" style={{ order: sectionOrder.indexOf('internalTimesheets') }}>
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               Internal Team Submissions — OutSta ({filteredInternal.length})
@@ -1105,6 +1113,42 @@ export const PLDashboard = () => {
           </CardContent>
         </Card>
       )}
+      </div>
+
+      <Dialog open={reorderOpen} onOpenChange={setReorderOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reorder Sections</DialogTitle>
+            <DialogDescription>Choose the order in which sections appear on your dashboard. Saved per browser.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            {sectionOrder.map((id, idx) => {
+              const def = SECTION_DEFS.find((s) => s.id === id);
+              if (!def) return null;
+              return (
+                <div key={id} className="flex items-center justify-between rounded-md border p-2">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground w-5 text-center">{idx + 1}</span>
+                    <span className="text-sm font-medium">{def.label}</span>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={idx === 0} onClick={() => moveSection(idx, -1)}>
+                      <ArrowUp className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={idx === sectionOrder.length - 1} onClick={() => moveSection(idx, 1)}>
+                      <ArrowDown className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={resetSectionOrder}>Reset to default</Button>
+            <Button onClick={() => setReorderOpen(false)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!viewTimesheet} onOpenChange={(o) => { if (!o) setViewTimesheet(null); }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
