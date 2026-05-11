@@ -94,7 +94,8 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
   const reset = () => {
     setLeaveDate(undefined);
     setTimePeriod('All day');
-    setSpecificTime('9:00 AM');
+    setTimeFrom('9:00 AM');
+    setTimeTo('12:00 PM');
     setSelectedTypes([]);
     setOtherChecked(false);
     setOtherText('');
