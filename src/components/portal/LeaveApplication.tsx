@@ -313,6 +313,7 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
                   <TableHead>Date</TableHead>
                   <TableHead>Period</TableHead>
                   <TableHead>Type</TableHead>
+                  <TableHead>Compensation</TableHead>
                   <TableHead>Notes</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
@@ -321,8 +322,19 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
                 {history.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell className="whitespace-nowrap">{format(new Date(r.leave_date + 'T00:00:00'), 'MMM/dd/yyyy')}</TableCell>
-                    <TableCell>{r.time_period}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {r.time_period}
+                      {r.specific_time && r.time_period !== 'All day' && (
+                        <div className="text-xs text-muted-foreground">{r.specific_time} ET</div>
+                      )}
+                    </TableCell>
                     <TableCell className="max-w-xs whitespace-normal text-sm">{r.leave_type}</TableCell>
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {r.compensation_type || '—'}
+                      {r.compensation_note && (
+                        <div className="text-xs text-muted-foreground italic mt-1 whitespace-normal">{r.compensation_note}</div>
+                      )}
+                    </TableCell>
                     <TableCell className="max-w-xs whitespace-normal text-sm text-muted-foreground">
                       {r.notes || '—'}
                       {r.review_notes && (
