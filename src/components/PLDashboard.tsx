@@ -699,6 +699,8 @@ export const PLDashboard = () => {
         </CardContent>
       </Card>
 
+      <AdminLeaveApplications />
+
       {filteredInternalContractors.length > 0 && (
         <Card className="border-dashed">
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
