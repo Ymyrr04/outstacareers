@@ -88,6 +88,45 @@ export const PLDashboard = () => {
   const [stats, setStats] = useState({ portalUsers: 0, totalEligibleContractors: 0 });
   const [viewTimesheet, setViewTimesheet] = useState<TimesheetRow | null>(null);
 
+  // Section reordering (persisted per browser)
+  const SECTION_DEFS = [
+    { id: 'contractors', label: 'Contractors' },
+    { id: 'leave', label: 'Leave Applications' },
+    { id: 'internalContractors', label: 'Internal Team — OutSta' },
+    { id: 'timesheets', label: 'Timesheet Submissions' },
+    { id: 'internalTimesheets', label: 'Internal Team Submissions' },
+  ] as const;
+  const PL_ORDER_KEY = 'pl-dashboard-section-order';
+  const [sectionOrder, setSectionOrder] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem(PL_ORDER_KEY);
+      if (stored) {
+        const arr = JSON.parse(stored);
+        if (Array.isArray(arr)) {
+          const ids = SECTION_DEFS.map((s) => s.id);
+          const filtered = arr.filter((x: any) => ids.includes(x));
+          const missing = ids.filter((x) => !filtered.includes(x));
+          return [...filtered, ...missing];
+        }
+      }
+    } catch {}
+    return SECTION_DEFS.map((s) => s.id);
+  });
+  const [reorderOpen, setReorderOpen] = useState(false);
+  useEffect(() => {
+    try { localStorage.setItem(PL_ORDER_KEY, JSON.stringify(sectionOrder)); } catch {}
+  }, [sectionOrder]);
+  const moveSection = (idx: number, dir: -1 | 1) => {
+    setSectionOrder((prev) => {
+      const arr = [...prev];
+      const j = idx + dir;
+      if (j < 0 || j >= arr.length) return prev;
+      [arr[idx], arr[j]] = [arr[j], arr[idx]];
+      return arr;
+    });
+  };
+  const resetSectionOrder = () => setSectionOrder(SECTION_DEFS.map((s) => s.id));
+
   const fetchData = async () => {
     setLoading(true);
 
