@@ -136,7 +136,7 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
         contractor_assignment_id: contractorAssignmentId,
         leave_date: format(leaveDate, 'yyyy-MM-dd'),
         time_period: timePeriod,
-        specific_time: timePeriod === 'All day' ? null : specificTime,
+        specific_time: timePeriod === 'All day' ? null : `${timeFrom} - ${timeTo}`,
         leave_type: types.join('; '),
         leave_type_other: otherChecked ? otherText.trim() : null,
         compensation_type: compensationType,
