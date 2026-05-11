@@ -381,6 +381,38 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={confirmOpen} onOpenChange={(o) => { if (!submitting) setConfirmOpen(o); }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirm leave application</DialogTitle>
+            <DialogDescription>
+              Please confirm the following before submitting your leave request.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="py-2">
+            <label className="flex items-start gap-3 cursor-pointer">
+              <Checkbox
+                checked={clientInformed}
+                onCheckedChange={(v) => setClientInformed(v === true)}
+                className="mt-0.5"
+              />
+              <span className="text-sm leading-relaxed">
+                I have already informed the client about this leave, and it has been approved by them.
+              </span>
+            </label>
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setConfirmOpen(false)} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button type="button" onClick={performSubmit} disabled={!clientInformed || submitting}>
+              {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+              Confirm & submit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
