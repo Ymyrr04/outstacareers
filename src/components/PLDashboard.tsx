@@ -925,9 +925,8 @@ export const PLDashboard = () => {
         </Card>
       )}
 
-      <Card>
+      <Card style={{ order: sectionOrder.indexOf('timesheets') }}>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <CardTitle className="text-base">Timesheet Submissions</CardTitle>
           <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
             <div className="flex items-center gap-2">
               <Input
