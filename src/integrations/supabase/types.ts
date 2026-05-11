@@ -977,6 +977,8 @@ export type Database = {
       }
       contractor_leave_applications: {
         Row: {
+          compensation_note: string | null
+          compensation_type: string | null
           contractor_assignment_id: string
           created_at: string
           id: string
@@ -987,11 +989,14 @@ export type Database = {
           review_notes: string | null
           reviewed_at: string | null
           reviewed_by: string | null
+          specific_time: string | null
           status: string
           time_period: string
           updated_at: string
         }
         Insert: {
+          compensation_note?: string | null
+          compensation_type?: string | null
           contractor_assignment_id: string
           created_at?: string
           id?: string
@@ -1002,11 +1007,14 @@ export type Database = {
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          specific_time?: string | null
           status?: string
           time_period: string
           updated_at?: string
         }
         Update: {
+          compensation_note?: string | null
+          compensation_type?: string | null
           contractor_assignment_id?: string
           created_at?: string
           id?: string
@@ -1017,6 +1025,7 @@ export type Database = {
           review_notes?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
+          specific_time?: string | null
           status?: string
           time_period?: string
           updated_at?: string

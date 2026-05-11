@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -25,12 +26,27 @@ const LEAVE_TYPES = [
   'Client Mandated Off',
 ] as const;
 
+const TIME_SLOTS: string[] = (() => {
+  const slots: string[] = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 30) {
+      const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+      const ampm = h < 12 ? 'AM' : 'PM';
+      slots.push(`${hour12}:${m === 0 ? '00' : '30'} ${ampm}`);
+    }
+  }
+  return slots;
+})();
+
 interface LeaveRow {
   id: string;
   leave_date: string;
   time_period: string;
+  specific_time: string | null;
   leave_type: string;
   leave_type_other: string | null;
+  compensation_type: string | null;
+  compensation_note: string | null;
   notes: string | null;
   status: string;
   created_at: string;
@@ -46,9 +62,12 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
   const [leaveDate, setLeaveDate] = useState<Date | undefined>(undefined);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [timePeriod, setTimePeriod] = useState<'AM' | 'PM' | 'All day'>('All day');
+  const [specificTime, setSpecificTime] = useState<string>('9:00 AM');
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [otherChecked, setOtherChecked] = useState(false);
   const [otherText, setOtherText] = useState('');
+  const [compensationType, setCompensationType] = useState<'Paid' | 'Unpaid' | 'Time compensation' | ''>('');
+  const [compensationNote, setCompensationNote] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [history, setHistory] = useState<LeaveRow[]>([]);
@@ -58,7 +77,7 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
     setLoading(true);
     const { data, error } = await supabase
       .from('contractor_leave_applications' as any)
-      .select('id, leave_date, time_period, leave_type, leave_type_other, notes, status, created_at, review_notes')
+      .select('id, leave_date, time_period, specific_time, leave_type, leave_type_other, compensation_type, compensation_note, notes, status, created_at, review_notes')
       .eq('contractor_assignment_id', contractorAssignmentId)
       .order('leave_date', { ascending: false });
     if (!error) setHistory((data as any) || []);
@@ -74,9 +93,12 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
   const reset = () => {
     setLeaveDate(undefined);
     setTimePeriod('All day');
+    setSpecificTime('9:00 AM');
     setSelectedTypes([]);
     setOtherChecked(false);
     setOtherText('');
+    setCompensationType('');
+    setCompensationNote('');
     setNotes('');
   };
 
@@ -98,14 +120,25 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
       toast({ title: 'Select at least one leave type', variant: 'destructive' });
       return;
     }
+    if (!compensationType) {
+      toast({ title: 'Please select a compensation type', variant: 'destructive' });
+      return;
+    }
+    if (compensationType === 'Time compensation' && !compensationNote.trim()) {
+      toast({ title: 'Please add a comment for time compensation', variant: 'destructive' });
+      return;
+    }
     setSubmitting(true);
     try {
       const { error } = await supabase.from('contractor_leave_applications' as any).insert({
         contractor_assignment_id: contractorAssignmentId,
         leave_date: format(leaveDate, 'yyyy-MM-dd'),
         time_period: timePeriod,
+        specific_time: timePeriod === 'All day' ? null : specificTime,
         leave_type: types.join('; '),
         leave_type_other: otherChecked ? otherText.trim() : null,
+        compensation_type: compensationType,
+        compensation_note: compensationType === 'Time compensation' ? compensationNote.trim() : null,
         notes: notes.trim() || null,
       });
       if (error) throw error;
@@ -172,6 +205,23 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
                     </div>
                   ))}
                 </RadioGroup>
+                {(timePeriod === 'AM' || timePeriod === 'PM') && (
+                  <div className="pt-2">
+                    <Label className="text-xs text-muted-foreground">Specific time (EST)</Label>
+                    <Select value={specificTime} onValueChange={setSpecificTime}>
+                      <SelectTrigger className="mt-1">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-[240px]">
+                        {TIME_SLOTS.filter((s) =>
+                          timePeriod === 'AM' ? s.endsWith('AM') : s.endsWith('PM')
+                        ).map((slot) => (
+                          <SelectItem key={slot} value={slot}>{slot} ET</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -199,6 +249,30 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
                   />
                 </div>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Compensation <span className="text-destructive">*</span></Label>
+              <div className="flex flex-wrap items-center gap-4 pt-1">
+                {(['Paid', 'Unpaid', 'Time compensation'] as const).map((c) => (
+                  <label key={c} className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={compensationType === c}
+                      onCheckedChange={(v) => setCompensationType(v === true ? c : '')}
+                    />
+                    <span className="text-sm">{c}</span>
+                  </label>
+                ))}
+              </div>
+              {compensationType === 'Time compensation' && (
+                <Textarea
+                  value={compensationNote}
+                  onChange={(e) => setCompensationNote(e.target.value)}
+                  placeholder="Add a comment about the time compensation arrangement"
+                  rows={2}
+                  className="mt-2"
+                />
+              )}
             </div>
 
             <div className="space-y-2">
@@ -239,6 +313,7 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
                   <TableHead>Date</TableHead>
                   <TableHead>Period</TableHead>
                   <TableHead>Type</TableHead>
+                  <TableHead>Compensation</TableHead>
                   <TableHead>Notes</TableHead>
                   <TableHead>Status</TableHead>
                 </TableRow>
@@ -247,8 +322,19 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
                 {history.map((r) => (
                   <TableRow key={r.id}>
                     <TableCell className="whitespace-nowrap">{format(new Date(r.leave_date + 'T00:00:00'), 'MMM/dd/yyyy')}</TableCell>
-                    <TableCell>{r.time_period}</TableCell>
+                    <TableCell className="whitespace-nowrap">
+                      {r.time_period}
+                      {r.specific_time && r.time_period !== 'All day' && (
+                        <div className="text-xs text-muted-foreground">{r.specific_time} ET</div>
+                      )}
+                    </TableCell>
                     <TableCell className="max-w-xs whitespace-normal text-sm">{r.leave_type}</TableCell>
+                    <TableCell className="text-sm whitespace-nowrap">
+                      {r.compensation_type || '—'}
+                      {r.compensation_note && (
+                        <div className="text-xs text-muted-foreground italic mt-1 whitespace-normal">{r.compensation_note}</div>
+                      )}
+                    </TableCell>
                     <TableCell className="max-w-xs whitespace-normal text-sm text-muted-foreground">
                       {r.notes || '—'}
                       {r.review_notes && (
