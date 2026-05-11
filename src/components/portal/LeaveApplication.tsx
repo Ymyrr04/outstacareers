@@ -74,6 +74,8 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
   const [submitting, setSubmitting] = useState(false);
   const [history, setHistory] = useState<LeaveRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [clientInformed, setClientInformed] = useState(false);
 
   const loadHistory = async () => {
     setLoading(true);
