@@ -1,0 +1,1 @@
+ALTER TABLE public.contractor_leave_applications ADD COLUMN IF NOT EXISTS client_informed_approved boolean NOT NULL DEFAULT false;

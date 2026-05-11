@@ -977,6 +977,7 @@ export type Database = {
       }
       contractor_leave_applications: {
         Row: {
+          client_informed_approved: boolean
           compensation_note: string | null
           compensation_type: string | null
           contractor_assignment_id: string
@@ -995,6 +996,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          client_informed_approved?: boolean
           compensation_note?: string | null
           compensation_type?: string | null
           contractor_assignment_id: string
@@ -1013,6 +1015,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          client_informed_approved?: boolean
           compensation_note?: string | null
           compensation_type?: string | null
           contractor_assignment_id?: string
