@@ -252,6 +252,31 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
             </div>
 
             <div className="space-y-2">
+            <div className="space-y-2">
+              <Label>Compensation <span className="text-destructive">*</span></Label>
+              <div className="flex flex-wrap items-center gap-4 pt-1">
+                {(['Paid', 'Unpaid', 'Time compensation'] as const).map((c) => (
+                  <label key={c} className="flex items-center gap-2 cursor-pointer">
+                    <Checkbox
+                      checked={compensationType === c}
+                      onCheckedChange={(v) => setCompensationType(v === true ? c : '')}
+                    />
+                    <span className="text-sm">{c}</span>
+                  </label>
+                ))}
+              </div>
+              {compensationType === 'Time compensation' && (
+                <Textarea
+                  value={compensationNote}
+                  onChange={(e) => setCompensationNote(e.target.value)}
+                  placeholder="Add a comment about the time compensation arrangement"
+                  rows={2}
+                  className="mt-2"
+                />
+              )}
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="leave-notes">Additional notes</Label>
               <Textarea
                 id="leave-notes"
