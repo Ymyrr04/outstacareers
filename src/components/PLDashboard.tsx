@@ -1113,6 +1113,42 @@ export const PLDashboard = () => {
           </CardContent>
         </Card>
       )}
+      </div>
+
+      <Dialog open={reorderOpen} onOpenChange={setReorderOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reorder Sections</DialogTitle>
+            <DialogDescription>Choose the order in which sections appear on your dashboard. Saved per browser.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2">
+            {sectionOrder.map((id, idx) => {
+              const def = SECTION_DEFS.find((s) => s.id === id);
+              if (!def) return null;
+              return (
+                <div key={id} className="flex items-center justify-between rounded-md border p-2">
+                  <div className="flex items-center gap-3">
+                    <span className="text-xs text-muted-foreground w-5 text-center">{idx + 1}</span>
+                    <span className="text-sm font-medium">{def.label}</span>
+                  </div>
+                  <div className="flex gap-1">
+                    <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={idx === 0} onClick={() => moveSection(idx, -1)}>
+                      <ArrowUp className="w-3.5 h-3.5" />
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-7 w-7 p-0" disabled={idx === sectionOrder.length - 1} onClick={() => moveSection(idx, 1)}>
+                      <ArrowDown className="w-3.5 h-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={resetSectionOrder}>Reset to default</Button>
+            <Button onClick={() => setReorderOpen(false)}>Done</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!viewTimesheet} onOpenChange={(o) => { if (!o) setViewTimesheet(null); }}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
