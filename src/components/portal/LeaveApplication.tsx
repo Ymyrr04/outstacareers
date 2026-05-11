@@ -26,12 +26,27 @@ const LEAVE_TYPES = [
   'Client Mandated Off',
 ] as const;
 
+const TIME_SLOTS: string[] = (() => {
+  const slots: string[] = [];
+  for (let h = 0; h < 24; h++) {
+    for (let m = 0; m < 60; m += 30) {
+      const hour12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+      const ampm = h < 12 ? 'AM' : 'PM';
+      slots.push(`${hour12}:${m === 0 ? '00' : '30'} ${ampm}`);
+    }
+  }
+  return slots;
+})();
+
 interface LeaveRow {
   id: string;
   leave_date: string;
   time_period: string;
+  specific_time: string | null;
   leave_type: string;
   leave_type_other: string | null;
+  compensation_type: string | null;
+  compensation_note: string | null;
   notes: string | null;
   status: string;
   created_at: string;
