@@ -107,7 +107,7 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
     setNotes('');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!leaveDate) {
       toast({ title: 'Leave date required', variant: 'destructive' });
@@ -133,6 +133,18 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
       toast({ title: 'Please add a comment for time compensation', variant: 'destructive' });
       return;
     }
+    setClientInformed(false);
+    setConfirmOpen(true);
+  };
+
+  const performSubmit = async () => {
+    if (!clientInformed) {
+      toast({ title: 'Please confirm the client has approved your leave', variant: 'destructive' });
+      return;
+    }
+    if (!leaveDate) return;
+    const types = [...selectedTypes];
+    if (otherChecked) types.push(`Other: ${otherText.trim()}`);
     setSubmitting(true);
     try {
       const { error } = await supabase.from('contractor_leave_applications' as any).insert({
@@ -145,9 +157,11 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
         compensation_type: compensationType,
         compensation_note: compensationType === 'Time compensation' ? compensationNote.trim() : null,
         notes: notes.trim() || null,
+        client_informed_approved: true,
       });
       if (error) throw error;
       toast({ title: 'Leave application submitted', description: 'Your request has been sent for review.' });
+      setConfirmOpen(false);
       reset();
       loadHistory();
     } catch (err: any) {
