@@ -745,10 +745,12 @@ export const PLDashboard = () => {
         </CardContent>
       </Card>
 
-      <AdminLeaveApplications />
+      <div style={{ order: sectionOrder.indexOf('leave') }}>
+        <AdminLeaveApplications />
+      </div>
 
       {filteredInternalContractors.length > 0 && (
-        <Card className="border-dashed">
+        <Card className="border-dashed" style={{ order: sectionOrder.indexOf('internalContractors') }}>
           <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <CardTitle className="text-base flex items-center gap-2">
               Internal Team — OutSta ({filteredInternalContractors.length})
