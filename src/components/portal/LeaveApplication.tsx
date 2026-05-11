@@ -62,7 +62,8 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
   const [leaveDate, setLeaveDate] = useState<Date | undefined>(undefined);
   const [datePickerOpen, setDatePickerOpen] = useState(false);
   const [timePeriod, setTimePeriod] = useState<'AM' | 'PM' | 'All day'>('All day');
-  const [specificTime, setSpecificTime] = useState<string>('9:00 AM');
+  const [timeFrom, setTimeFrom] = useState<string>('9:00 AM');
+  const [timeTo, setTimeTo] = useState<string>('12:00 PM');
   const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
   const [otherChecked, setOtherChecked] = useState(false);
   const [otherText, setOtherText] = useState('');
