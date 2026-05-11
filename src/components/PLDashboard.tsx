@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye, Mail } from 'lucide-react';
+import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye, Mail, Settings2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
@@ -87,6 +87,45 @@ export const PLDashboard = () => {
   const [tsSort, setTsSort] = useState<{ key: 'name' | 'company' | 'week' | 'hours' | 'ot' | 'incentives' | 'status' | 'submitted'; dir: 'asc' | 'desc' }>({ key: 'submitted', dir: 'desc' });
   const [stats, setStats] = useState({ portalUsers: 0, totalEligibleContractors: 0 });
   const [viewTimesheet, setViewTimesheet] = useState<TimesheetRow | null>(null);
+
+  // Section reordering (persisted per browser)
+  const SECTION_DEFS = [
+    { id: 'contractors', label: 'Contractors' },
+    { id: 'leave', label: 'Leave Applications' },
+    { id: 'internalContractors', label: 'Internal Team — OutSta' },
+    { id: 'timesheets', label: 'Timesheet Submissions' },
+    { id: 'internalTimesheets', label: 'Internal Team Submissions' },
+  ] as const;
+  const PL_ORDER_KEY = 'pl-dashboard-section-order';
+  const [sectionOrder, setSectionOrder] = useState<string[]>(() => {
+    try {
+      const stored = localStorage.getItem(PL_ORDER_KEY);
+      if (stored) {
+        const arr = JSON.parse(stored);
+        if (Array.isArray(arr)) {
+          const ids = SECTION_DEFS.map((s) => s.id);
+          const filtered = arr.filter((x: any) => ids.includes(x));
+          const missing = ids.filter((x) => !filtered.includes(x));
+          return [...filtered, ...missing];
+        }
+      }
+    } catch {}
+    return SECTION_DEFS.map((s) => s.id);
+  });
+  const [reorderOpen, setReorderOpen] = useState(false);
+  useEffect(() => {
+    try { localStorage.setItem(PL_ORDER_KEY, JSON.stringify(sectionOrder)); } catch {}
+  }, [sectionOrder]);
+  const moveSection = (idx: number, dir: -1 | 1) => {
+    setSectionOrder((prev) => {
+      const arr = [...prev];
+      const j = idx + dir;
+      if (j < 0 || j >= arr.length) return prev;
+      [arr[idx], arr[j]] = [arr[j], arr[idx]];
+      return arr;
+    });
+  };
+  const resetSectionOrder = () => setSectionOrder(SECTION_DEFS.map((s) => s.id));
 
   const fetchData = async () => {
     setLoading(true);
