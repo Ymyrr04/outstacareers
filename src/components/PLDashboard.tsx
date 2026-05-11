@@ -550,13 +550,20 @@ export const PLDashboard = () => {
 
       <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
         <Badge variant="outline" className="text-xs">Portal: <code className="ml-1">/portal/login</code> · Default password: <code className="ml-1">OutSta2026!</code></Badge>
-        <Button onClick={handleProvision} disabled={provisioning}>
-          {provisioning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UserPlus className="w-4 h-4 mr-2" />}
-          Provision Accounts
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setReorderOpen(true)}>
+            <Settings2 className="w-4 h-4 mr-2" />
+            Reorder Sections
+          </Button>
+          <Button onClick={handleProvision} disabled={provisioning}>
+            {provisioning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UserPlus className="w-4 h-4 mr-2" />}
+            Provision Accounts
+          </Button>
+        </div>
       </div>
 
-      <Card>
+      <div className="flex flex-col gap-6">
+      <Card style={{ order: sectionOrder.indexOf('contractors') }}>
         <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <CardTitle className="text-base">Contractors ({filteredContractors.length})</CardTitle>
           <div className="relative w-full sm:w-80">
