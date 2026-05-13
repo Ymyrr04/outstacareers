@@ -14,7 +14,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { CalendarIcon, Loader2 } from 'lucide-react';
+import { CalendarIcon, Loader2, HelpCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 
@@ -76,6 +76,7 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
   const [loading, setLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [clientInformed, setClientInformed] = useState(false);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
 
   const loadHistory = async () => {
     setLoading(true);
@@ -181,8 +182,16 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Apply for leave</CardTitle>
-          <CardDescription>Submit a leave request. All times are EST.</CardDescription>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <CardTitle>Apply for leave</CardTitle>
+              <CardDescription>Submit a leave request. All times are EST.</CardDescription>
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={() => setTutorialOpen(true)} className="shrink-0">
+              <HelpCircle className="w-4 h-4 mr-2" />
+              How it works
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -410,6 +419,84 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
               {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Confirm & submit
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={tutorialOpen} onOpenChange={setTutorialOpen}>
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>How leave applications work</DialogTitle>
+            <DialogDescription>
+              A quick walkthrough for submitting your leave the right way.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-5 text-sm leading-relaxed">
+            <div className="rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/30 dark:border-amber-900 p-3 text-amber-900 dark:text-amber-200">
+              <strong>Before you start:</strong> Inform your client and get their approval <em>first</em>.
+              This portal records your leave for HR and payroll &mdash; it is not how you ask the client for permission.
+            </div>
+
+            <section>
+              <h3 className="font-semibold text-foreground mb-1">Step 1 &mdash; Pick the date</h3>
+              <p className="text-muted-foreground">Choose the calendar date you'll be away. One application = one date. For multi-day leave, submit one per day.</p>
+            </section>
+
+            <section>
+              <h3 className="font-semibold text-foreground mb-1">Step 2 &mdash; Choose the time period (EST)</h3>
+              <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                <li><strong>AM</strong> &mdash; off in the morning only. Pick From/To times.</li>
+                <li><strong>PM</strong> &mdash; off in the afternoon only. Pick From/To times.</li>
+                <li><strong>All day</strong> &mdash; off the entire shift.</li>
+              </ul>
+              <p className="text-xs text-muted-foreground mt-1">All times are Eastern Time, in 30-min increments.</p>
+            </section>
+
+            <section>
+              <h3 className="font-semibold text-foreground mb-1">Step 3 &mdash; Type of leave</h3>
+              <p className="text-muted-foreground">Tick all that apply: Bereavement (Immediate Family / Other), Personal, Emergency, Medical, Client Mandated Off, or Other (with description).</p>
+            </section>
+
+            <section>
+              <h3 className="font-semibold text-foreground mb-1">Step 4 &mdash; Compensation</h3>
+              <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                <li><strong>Paid</strong> &mdash; you'll still be paid (e.g. PTO, client-mandated off).</li>
+                <li><strong>Unpaid</strong> &mdash; you won't be paid for this day.</li>
+                <li><strong>Time compensation</strong> &mdash; you'll make up the hours another day. Add a short note explaining the arrangement.</li>
+              </ul>
+            </section>
+
+            <section>
+              <h3 className="font-semibold text-foreground mb-1">Step 5 &mdash; Notes (optional)</h3>
+              <p className="text-muted-foreground">Add helpful context, e.g. <em>"Approved by Sarah on Slack"</em> or <em>"Reachable by email after 2pm"</em>.</p>
+            </section>
+
+            <section>
+              <h3 className="font-semibold text-foreground mb-1">Step 6 &mdash; Submit and confirm</h3>
+              <p className="text-muted-foreground">Click <strong>Submit leave application</strong>. A confirmation dialog appears &mdash; tick the box confirming the client has already approved, then click <strong>Confirm &amp; submit</strong>.</p>
+            </section>
+
+            <section>
+              <h3 className="font-semibold text-foreground mb-1">What happens next</h3>
+              <p className="text-muted-foreground">Your request appears under <strong>My leave applications</strong> below. Status will be:</p>
+              <ul className="list-disc pl-5 space-y-1 text-muted-foreground mt-1">
+                <li><Badge variant="secondary" className="mr-1">Pending</Badge> waiting for OutSta admin review</li>
+                <li><Badge className="bg-emerald-600 mr-1">Approved</Badge> recorded for HR and payroll</li>
+                <li><Badge variant="destructive" className="mr-1">Rejected</Badge> see the admin note for the reason</li>
+              </ul>
+            </section>
+
+            <section className="rounded-md border bg-muted/40 p-3">
+              <h3 className="font-semibold text-foreground mb-1">Quick tips</h3>
+              <ul className="list-disc pl-5 space-y-1 text-muted-foreground">
+                <li>Submit as soon as the client approves &mdash; don't wait.</li>
+                <li>Keep your client's approval message (Slack/email) for your own records.</li>
+                <li>Need to cancel? Message OutSta admin directly &mdash; there's no self-cancel button.</li>
+              </ul>
+            </section>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setTutorialOpen(false)}>Got it</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
