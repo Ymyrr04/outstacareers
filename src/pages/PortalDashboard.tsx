@@ -1405,6 +1405,7 @@ const PortalDashboard = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <TimesheetTutorialDialog open={tutorialOpen} onOpenChange={setTutorialOpen} />
     </div>
   );
 };
