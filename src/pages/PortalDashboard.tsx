@@ -216,6 +216,7 @@ const PortalDashboard = () => {
   const [missingReasonOpen, setMissingReasonOpen] = useState(false);
   const [missingDays, setMissingDays] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
 
   const emptyProfileForm: ProfileForm = {
     full_name: '', phone: '', whatsapp: '', location: '', country: '',
