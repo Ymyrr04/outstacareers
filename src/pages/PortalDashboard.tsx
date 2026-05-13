@@ -897,12 +897,20 @@ const PortalDashboard = () => {
           <TabsContent value="timesheet" className="space-y-6 mt-0">
         <Card>
           <CardHeader>
-            <CardTitle>{editingId ? 'Edit Weekly Hours' : 'Submit Weekly Hours'}</CardTitle>
-            <CardDescription>
-              {editingId
-                ? 'Update the entry below and click Save to confirm changes.'
-                : 'Pick the date range (From – To) and enter the hours you worked each day.'}
-            </CardDescription>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle>{editingId ? 'Edit Weekly Hours' : 'Submit Weekly Hours'}</CardTitle>
+                <CardDescription>
+                  {editingId
+                    ? 'Update the entry below and click Save to confirm changes.'
+                    : 'Pick the date range (From – To) and enter the hours you worked each day.'}
+                </CardDescription>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={() => setTutorialOpen(true)} className="shrink-0">
+                <HelpCircle className="w-4 h-4 mr-2" />
+                How it works
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmitClick} onKeyDown={handleFormKeyDown} className="space-y-6">
