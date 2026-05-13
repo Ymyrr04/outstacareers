@@ -8,13 +8,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, LogOut, Pencil, CalendarIcon, UserCircle2, Check, ChevronsUpDown } from 'lucide-react';
+import { Loader2, LogOut, Pencil, CalendarIcon, UserCircle2, Check, ChevronsUpDown, HelpCircle } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Helmet } from 'react-helmet-async';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { DailyCheckin } from '@/components/portal/DailyCheckin';
 import { LeaveApplication } from '@/components/portal/LeaveApplication';
+import { TimesheetTutorialDialog } from '@/components/portal/TimesheetTutorialDialog';
 import { addDays, format, startOfWeek } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -215,6 +216,7 @@ const PortalDashboard = () => {
   const [missingReasonOpen, setMissingReasonOpen] = useState(false);
   const [missingDays, setMissingDays] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [tutorialOpen, setTutorialOpen] = useState(false);
 
   const emptyProfileForm: ProfileForm = {
     full_name: '', phone: '', whatsapp: '', location: '', country: '',
@@ -895,12 +897,20 @@ const PortalDashboard = () => {
           <TabsContent value="timesheet" className="space-y-6 mt-0">
         <Card>
           <CardHeader>
-            <CardTitle>{editingId ? 'Edit Weekly Hours' : 'Submit Weekly Hours'}</CardTitle>
-            <CardDescription>
-              {editingId
-                ? 'Update the entry below and click Save to confirm changes.'
-                : 'Pick the date range (From – To) and enter the hours you worked each day.'}
-            </CardDescription>
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <CardTitle>{editingId ? 'Edit Weekly Hours' : 'Submit Weekly Hours'}</CardTitle>
+                <CardDescription>
+                  {editingId
+                    ? 'Update the entry below and click Save to confirm changes.'
+                    : 'Pick the date range (From – To) and enter the hours you worked each day.'}
+                </CardDescription>
+              </div>
+              <Button type="button" variant="outline" size="sm" onClick={() => setTutorialOpen(true)} className="shrink-0">
+                <HelpCircle className="w-4 h-4 mr-2" />
+                How it works
+              </Button>
+            </div>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmitClick} onKeyDown={handleFormKeyDown} className="space-y-6">
@@ -1395,6 +1405,7 @@ const PortalDashboard = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      <TimesheetTutorialDialog open={tutorialOpen} onOpenChange={setTutorialOpen} />
     </div>
   );
 };
