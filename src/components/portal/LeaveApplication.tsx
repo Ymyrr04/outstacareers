@@ -182,8 +182,16 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
     <div className="space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Apply for leave</CardTitle>
-          <CardDescription>Submit a leave request. All times are EST.</CardDescription>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <CardTitle>Apply for leave</CardTitle>
+              <CardDescription>Submit a leave request. All times are EST.</CardDescription>
+            </div>
+            <Button type="button" variant="outline" size="sm" onClick={() => setTutorialOpen(true)} className="shrink-0">
+              <HelpCircle className="w-4 h-4 mr-2" />
+              How it works
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-5">
