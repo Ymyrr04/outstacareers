@@ -84,7 +84,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { jobId } = await req.json();
+    const { jobId, onlyEmail } = await req.json();
     if (!jobId) {
       return new Response(JSON.stringify({ error: "jobId required" }), {
         status: 400,
