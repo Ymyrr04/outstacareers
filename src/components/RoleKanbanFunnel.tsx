@@ -623,7 +623,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     }
 
     toast.success(`Moved ${candidate.full_name} to ${newStage}`);
-  }, [updateCandidateStageInState]);
+    // Fire automated email (scheduled or immediate) per template config
+    triggerStatusEmail(candidate, newStage);
+  }, [updateCandidateStageInState, triggerStatusEmail]);
 
   // Bulk move: update every selected candidate to the target stage in one DB call,
   // then optimistically update local state. Skips "Hired" because that requires
