@@ -84,7 +84,7 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { jobId } = await req.json();
+    const { jobId, onlyEmail } = await req.json();
     if (!jobId) {
       return new Response(JSON.stringify({ error: "jobId required" }), {
         status: 400,
@@ -125,7 +125,11 @@ serve(async (req) => {
     const subject = `New Opportunity at OutSta: ${job.title}`;
     const results: Array<{ email: string; ok: boolean; error?: string }> = [];
 
-    for (const r of INTERNAL_RECIPIENTS) {
+    const recipients = onlyEmail
+      ? INTERNAL_RECIPIENTS.filter((r) => r.email.toLowerCase() === onlyEmail.toLowerCase())
+      : INTERNAL_RECIPIENTS;
+
+    for (const r of recipients) {
       try {
         const inner = buildEmailHtml({ firstName: r.firstName, job });
         const html = wrapShell(subject, inner);
