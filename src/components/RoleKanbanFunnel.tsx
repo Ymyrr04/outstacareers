@@ -661,8 +661,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     }
 
     toast.success(`Moved ${ids.length} candidate${ids.length === 1 ? '' : 's'} to ${newStage}`);
+    // Fire automated emails for each moved candidate
+    const movedCandidates = candidates.filter(c => ids.includes(c.id));
+    movedCandidates.forEach(c => triggerStatusEmail(c, newStage));
     clearSelection();
-  }, [selectedIds, candidates, updateCandidateStageInState, clearSelection]);
+  }, [selectedIds, candidates, updateCandidateStageInState, clearSelection, triggerStatusEmail]);
 
 
 
