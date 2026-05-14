@@ -278,6 +278,15 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
       title: 'Success',
       description: 'Job added successfully!',
     });
+
+    // Fire-and-forget: blast new job email to internal admins (test mode)
+    if (newJob) {
+      supabase.functions
+        .invoke('blast-new-job', { body: { jobId: newJob.id } })
+        .then(({ error: blastError }) => {
+          if (blastError) console.error('blast-new-job error:', blastError);
+        });
+    }
     setFormData({
       title: '',
       rate: '',

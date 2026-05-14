@@ -80,3 +80,6 @@ verify_jwt = false
 
 [functions.send-daily-checkin]
 verify_jwt = true
+
+[functions.blast-new-job]
+verify_jwt = false
