@@ -122,7 +122,7 @@ serve(async (req) => {
       },
     });
 
-    const subject = `[INTERNAL TEST] New Opportunity at OutSta: ${job.title}`;
+    const subject = `New Opportunity at OutSta: ${job.title}`;
     const results: Array<{ email: string; ok: boolean; error?: string }> = [];
 
     for (const r of INTERNAL_RECIPIENTS) {
