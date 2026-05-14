@@ -135,9 +135,14 @@ serve(async (req) => {
         await client.send({
           from: `OutSta Recruitment <${gmailUser}>`,
           to: r.email,
+          replyTo: "noreply@outsta.io",
           subject,
           content: "auto",
           html,
+          headers: {
+            "Auto-Submitted": "auto-generated",
+            "X-Auto-Response-Suppress": "All",
+          },
         });
         results.push({ email: r.email, ok: true });
       } catch (e) {
