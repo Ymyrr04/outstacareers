@@ -32,6 +32,8 @@ import { InterviewNotesDialog } from '@/components/InterviewNotesDialog';
 import { CandidateProfileDialog } from '@/components/CandidateProfileDialog';
 import { HiredAssignmentDialog } from '@/components/HiredAssignmentDialog';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
+import { useEmailTemplates, statusToTrigger } from '@/hooks/useEmailTemplates';
+import { addMinutes } from 'date-fns';
 
 const FUNNEL_STAGES = [
   'For Review',
