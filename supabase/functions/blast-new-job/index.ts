@@ -70,8 +70,11 @@ function buildEmailHtml(opts: {
 ${job.description ? `<p style="margin:0 0 28px;color:#334155;">${escapeHtml(job.description)}</p>` : ""}
 ${respHtml ? `<h2 style="font-size:20px;font-weight:700;color:#0f172a;margin:0 0 14px;">Key Responsibilities</h2><ul style="margin:0 0 28px;padding-left:20px;color:#334155;">${respHtml}</ul>` : ""}
 ${qualHtml ? `<h2 style="font-size:20px;font-weight:700;color:#0f172a;margin:0 0 14px;">Key Qualifications</h2><ul style="margin:0 0 32px;padding-left:20px;color:#334155;">${qualHtml}</ul>` : ""}
-<div style="text-align:center;margin:0 0 28px;"><a href="${applyUrl}" style="display:inline-block;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);color:#ffffff;text-decoration:none;padding:16px 40px;border-radius:8px;font-weight:600;font-size:16px;">Apply Now</a></div>
-<p style="margin:0 0 8px;color:#64748b;font-size:13px;text-align:center;">Or copy this link: <a href="${applyUrl}" style="color:#3b6fa0;">${applyUrl}</a></p>
+<div style="text-align:center;margin:0 0 20px;"><a href="${applyUrl}" style="display:inline-block;background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);color:#ffffff;text-decoration:none;padding:16px 40px;border-radius:8px;font-weight:600;font-size:16px;">Apply Now</a></div>
+<p style="margin:0 0 24px;color:#64748b;font-size:13px;text-align:center;">Or copy this link: <a href="${applyUrl}" style="color:#3b6fa0;">${applyUrl}</a></p>
+<div style="margin:0 0 24px;padding:14px 18px;background-color:#fef9e7;border-left:4px solid #d4a017;border-radius:6px;">
+<p style="margin:0;color:#5c4a14;font-size:13px;line-height:1.5;"><strong>Please note:</strong> This is an automated message and replies to this email will not be monitored or entertained. To be considered for this role, applications must be submitted exclusively through the assessment link above.</p>
+</div>
 <p style="margin:24px 0 0;">Best regards,<br>OutSta Recruitment Team</p>
 </div>`;
 }
