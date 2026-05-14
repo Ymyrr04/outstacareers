@@ -88,7 +88,7 @@ const STATUS_OPTIONS = [
   'Hired', 'Bench', 'Reject', 'Archive', 'Archived', 'Talent Pool'
 ];
 
-const DEFAULT_STATUSES = ['For Review', 'For Interview', 'SIV', 'Bench', 'Talent Pool', 'Archive', 'Archived'];
+const DEFAULT_STATUSES = ['Talent Pool', 'Bench'];
 
 const SCORE_CATEGORIES = [
   { key: 'experience_relevance', label: 'Experience Relevance', max: 35, color: 'bg-blue-500' },
