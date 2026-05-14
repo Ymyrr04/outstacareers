@@ -23,8 +23,8 @@ function escapeHtml(s: string): string {
 
 function formatRate(rate: string | null, region: string | null): string {
   if (!rate) return "Competitive compensation";
-  const symbol = region === "philippines" ? "₱" : region === "us" ? "$" : "";
-  return `${symbol}${rate}/month`;
+  if (region === "philippines") return `₱${rate}/month`;
+  return `$${rate}/hr`;
 }
 
 function buildEmailHtml(opts: {
