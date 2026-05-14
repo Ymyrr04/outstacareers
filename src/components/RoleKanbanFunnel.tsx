@@ -117,6 +117,58 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   const [sortOption, setSortOption] = useState<'score-desc' | 'score-asc' | 'name-asc' | 'name-desc' | 'newest' | 'oldest' | 'assessed'>('score-desc');
   const [hiredCandidate, setHiredCandidate] = useState<Candidate | null>(null);
   const [showHiredDialog, setShowHiredDialog] = useState(false);
+  const { getTemplateByTrigger } = useEmailTemplates();
+
+  // Trigger automated email for a status change (matching Admin.tsx behavior).
+  // Skips for_interview/siv (which need manual customization via dialog).
+  const triggerStatusEmail = useCallback(async (candidate: Candidate, newStatus: string) => {
+    const trigger = statusToTrigger[newStatus];
+    if (!trigger) return;
+    if (trigger === 'for_interview' || trigger === 'siv') return;
+    const template = getTemplateByTrigger(trigger);
+    if (!template || !template.is_enabled) return;
+
+    const firstName = (candidate.full_name || '').split(' ')[0];
+    const replacements: Record<string, string> = {
+      '{{applicant_name}}': candidate.full_name || '',
+      '{{first_name}}': firstName,
+      '{{full_name}}': candidate.full_name || '',
+      '{{job_title}}': (candidate as any).job_title || '',
+    };
+    const apply = (s: string) => Object.entries(replacements).reduce(
+      (acc, [k, v]) => acc.split(k).join(v),
+      s
+    );
+
+    const scheduleFor = template.delay_hours > 0
+      ? addMinutes(new Date(), template.delay_hours).toISOString()
+      : undefined;
+
+    try {
+      const { data, error } = await supabase.functions.invoke('send-applicant-email', {
+        body: {
+          applicantId: candidate.id,
+          templateId: template.id,
+          subject: apply(template.subject),
+          bodyHtml: apply(template.body_html),
+          recipientEmail: (candidate as any).email,
+          applicantStatusAtSend: newStatus,
+          isAutomated: true,
+          scheduleFor,
+        },
+      });
+      if (error) throw error;
+      if (data?.scheduled) {
+        toast.success(`Email scheduled for ${candidate.full_name}`);
+      } else {
+        toast.success(`Email sent to ${candidate.full_name}`);
+      }
+    } catch (err: any) {
+      console.error('Automated email failed:', err);
+      toast.error(`Status updated, but email failed for ${candidate.full_name}`);
+    }
+  }, [getTemplateByTrigger]);
+
 
   // ---- Multi-select (bulk action) state ----
   // Selection is locked to a single stage at a time. Switching to a card in a
