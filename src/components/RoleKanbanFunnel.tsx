@@ -1009,7 +1009,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                   }}
                 >
                   <div className={cn('px-3 py-2.5 flex items-center justify-between', colors.header)}>
-                    <span className="text-sm font-semibold text-white">{stage}</span>
+                    <span className="text-sm font-semibold text-white">{stage === 'Talent Pool' ? 'Talent Pipeline' : stage}</span>
                     <div className="flex items-center gap-1.5">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
