@@ -172,33 +172,66 @@ serve(async (req) => {
       }
     }
 
-    for (const r of recipients) {
-      try {
-        const inner = buildEmailHtml({ firstName: r.firstName, job });
-        const html = wrapShell(subject, inner);
-        await client.send({
-          from: `OutSta Recruitment <${gmailUser}>`,
-          to: r.email,
-          replyTo: "noreply@outsta.io",
-          subject,
-          content: "auto",
-          html,
-          headers: {
-            "Auto-Submitted": "auto-generated",
-            "X-Auto-Response-Suppress": "All",
-          },
-        });
-        results.push({ email: r.email, ok: true });
-      } catch (e) {
-        results.push({ email: r.email, ok: false, error: String(e) });
+    // Throttle: 30s between sends to improve deliverability and avoid spam filters.
+    // Run in the background so the HTTP request returns immediately (the loop can
+    // take much longer than the function's response timeout for large lists).
+    const SEND_INTERVAL_MS = 30_000;
+
+    const sendAll = async () => {
+      for (let i = 0; i < recipients.length; i++) {
+        const r = recipients[i];
+        try {
+          const inner = buildEmailHtml({ firstName: r.firstName, job });
+          const html = wrapShell(subject, inner);
+          await client.send({
+            from: `OutSta Recruitment <${gmailUser}>`,
+            to: r.email,
+            replyTo: "noreply@outsta.io",
+            subject,
+            content: "auto",
+            html,
+            headers: {
+              "Auto-Submitted": "auto-generated",
+              "X-Auto-Response-Suppress": "All",
+            },
+          });
+          results.push({ email: r.email, ok: true });
+          console.log(`[blast-new-job] sent ${i + 1}/${recipients.length} to ${r.email}`);
+        } catch (e) {
+          results.push({ email: r.email, ok: false, error: String(e) });
+          console.error(`[blast-new-job] failed ${i + 1}/${recipients.length} to ${r.email}:`, e);
+        }
+        // Wait 30s before next send (skip wait after the last one)
+        if (i < recipients.length - 1) {
+          await new Promise((res) => setTimeout(res, SEND_INTERVAL_MS));
+        }
       }
+      try { await client.close(); } catch (_) {}
+      console.log(`[blast-new-job] complete: ${results.filter((r) => r.ok).length}/${recipients.length} sent`);
+    };
+
+    // For single test sends (onlyEmail), run synchronously so caller gets the result.
+    if (onlyEmail) {
+      await sendAll();
+      return new Response(JSON.stringify({ success: true, results }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
-    await client.close();
+    // For broadcast, fire-and-forget in the background.
+    // @ts-ignore - EdgeRuntime is provided by the Supabase Edge runtime
+    EdgeRuntime.waitUntil(sendAll());
 
-    return new Response(JSON.stringify({ success: true, results }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        success: true,
+        queued: recipients.length,
+        intervalSeconds: 30,
+        estimatedMinutes: Math.ceil((recipients.length * SEND_INTERVAL_MS) / 60_000),
+        message: "Emails are being sent in the background at 30s intervals.",
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (e: any) {
     console.error("blast-new-job error:", e);
     return new Response(JSON.stringify({ error: e.message }), {
