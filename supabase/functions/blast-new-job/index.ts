@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// INTERNAL TEST MODE: only send to these admin emails (not real applicants)
+// Admin recipients used only when `onlyEmail` override is passed (for testing).
 const INTERNAL_RECIPIENTS: { email: string; firstName: string }[] = [
   { email: "czarina@outsta.io", firstName: "Czarina" },
   { email: "kristine@outsta.io", firstName: "Kristine" },
@@ -16,6 +16,15 @@ const INTERNAL_RECIPIENTS: { email: string; firstName: string }[] = [
   { email: "liezl@outsta.io", firstName: "Liezl" },
   { email: "jil@outsta.io", firstName: "Jil" },
 ];
+
+function firstNameFrom(fullName: string | null, email: string): string {
+  if (fullName && fullName.trim()) {
+    const part = fullName.trim().split(/\s+/)[0];
+    if (part) return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+  }
+  const local = (email.split("@")[0] || "there").replace(/[._-]+/g, " ").split(" ")[0];
+  return local.charAt(0).toUpperCase() + local.slice(1).toLowerCase();
+}
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
