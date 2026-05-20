@@ -134,9 +134,35 @@ serve(async (req) => {
     const subject = `New Opportunity at OutSta: ${job.title}`;
     const results: Array<{ email: string; ok: boolean; error?: string }> = [];
 
-    const recipients = onlyEmail
-      ? INTERNAL_RECIPIENTS.filter((r) => r.email.toLowerCase() === onlyEmail.toLowerCase())
-      : INTERNAL_RECIPIENTS;
+    let recipients: { email: string; firstName: string }[];
+    if (onlyEmail) {
+      const match = INTERNAL_RECIPIENTS.find(
+        (r) => r.email.toLowerCase() === String(onlyEmail).toLowerCase()
+      );
+      recipients = match
+        ? [match]
+        : [{ email: String(onlyEmail), firstName: firstNameFrom(null, String(onlyEmail)) }];
+    } else {
+      const { data: tp, error: tpErr } = await supabase
+        .from("applicants_prescreen")
+        .select("email, full_name")
+        .eq("status", "Talent Pool")
+        .not("email", "is", null);
+      if (tpErr) {
+        return new Response(JSON.stringify({ error: "Failed to load Talent Pool: " + tpErr.message }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const seen = new Set<string>();
+      recipients = [];
+      for (const row of tp || []) {
+        const email = (row.email || "").trim().toLowerCase();
+        if (!email || seen.has(email)) continue;
+        seen.add(email);
+        recipients.push({ email, firstName: firstNameFrom(row.full_name, email) });
+      }
+    }
 
     for (const r of recipients) {
       try {
