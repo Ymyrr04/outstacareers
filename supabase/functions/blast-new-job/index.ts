@@ -7,7 +7,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// INTERNAL TEST MODE: only send to these admin emails (not real applicants)
+// Admin recipients used only when `onlyEmail` override is passed (for testing).
 const INTERNAL_RECIPIENTS: { email: string; firstName: string }[] = [
   { email: "czarina@outsta.io", firstName: "Czarina" },
   { email: "kristine@outsta.io", firstName: "Kristine" },
@@ -16,6 +16,15 @@ const INTERNAL_RECIPIENTS: { email: string; firstName: string }[] = [
   { email: "liezl@outsta.io", firstName: "Liezl" },
   { email: "jil@outsta.io", firstName: "Jil" },
 ];
+
+function firstNameFrom(fullName: string | null, email: string): string {
+  if (fullName && fullName.trim()) {
+    const part = fullName.trim().split(/\s+/)[0];
+    if (part) return part.charAt(0).toUpperCase() + part.slice(1).toLowerCase();
+  }
+  const local = (email.split("@")[0] || "there").replace(/[._-]+/g, " ").split(" ")[0];
+  return local.charAt(0).toUpperCase() + local.slice(1).toLowerCase();
+}
 
 function escapeHtml(s: string): string {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -125,9 +134,35 @@ serve(async (req) => {
     const subject = `New Opportunity at OutSta: ${job.title}`;
     const results: Array<{ email: string; ok: boolean; error?: string }> = [];
 
-    const recipients = onlyEmail
-      ? INTERNAL_RECIPIENTS.filter((r) => r.email.toLowerCase() === onlyEmail.toLowerCase())
-      : INTERNAL_RECIPIENTS;
+    let recipients: { email: string; firstName: string }[];
+    if (onlyEmail) {
+      const match = INTERNAL_RECIPIENTS.find(
+        (r) => r.email.toLowerCase() === String(onlyEmail).toLowerCase()
+      );
+      recipients = match
+        ? [match]
+        : [{ email: String(onlyEmail), firstName: firstNameFrom(null, String(onlyEmail)) }];
+    } else {
+      const { data: tp, error: tpErr } = await supabase
+        .from("applicants_prescreen")
+        .select("email, full_name")
+        .eq("status", "Talent Pool")
+        .not("email", "is", null);
+      if (tpErr) {
+        return new Response(JSON.stringify({ error: "Failed to load Talent Pool: " + tpErr.message }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const seen = new Set<string>();
+      recipients = [];
+      for (const row of tp || []) {
+        const email = (row.email || "").trim().toLowerCase();
+        if (!email || seen.has(email)) continue;
+        seen.add(email);
+        recipients.push({ email, firstName: firstNameFrom(row.full_name, email) });
+      }
+    }
 
     for (const r of recipients) {
       try {
