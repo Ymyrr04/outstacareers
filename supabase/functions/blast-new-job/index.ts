@@ -162,6 +162,14 @@ serve(async (req) => {
         seen.add(email);
         recipients.push({ email, firstName: firstNameFrom(row.full_name, email) });
       }
+      // Always include admins (deduped against Talent Pool emails)
+      for (const admin of INTERNAL_RECIPIENTS) {
+        const email = admin.email.toLowerCase();
+        if (!seen.has(email)) {
+          seen.add(email);
+          recipients.push(admin);
+        }
+      }
     }
 
     for (const r of recipients) {
