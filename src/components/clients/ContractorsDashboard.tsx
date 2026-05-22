@@ -419,6 +419,25 @@ export const ContractorsDashboard = () => {
 
   useEffect(() => {
     fetchContractors();
+
+    const channel = supabase
+      .channel('contractors_dashboard_changes')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contractor_assignments' }, fetchContractors)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'applicants_prescreen' }, fetchContractors)
+      .subscribe();
+
+    const refreshWhenVisible = () => {
+      if (!document.hidden) fetchContractors();
+    };
+
+    window.addEventListener('focus', fetchContractors);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+
+    return () => {
+      supabase.removeChannel(channel);
+      window.removeEventListener('focus', fetchContractors);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
   }, []);
 
   // Internal team = OutSta company contractors. Excluded from external
