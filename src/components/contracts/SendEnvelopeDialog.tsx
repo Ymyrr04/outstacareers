@@ -95,8 +95,13 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
       for (const f of adminFields) {
         const key = (f.field_key || f.label || f.id).toString();
         if (key === "start_date") {
-          const v = formatStartDate(startDate);
-          if (v) next[key] = v;
+          // If template field is a date type, store ISO; otherwise store the long formatted string
+          if (f.field_type === "date") {
+            if (startDate) next[key] = startDate;
+          } else {
+            const v = formatStartDate(startDate);
+            if (v) next[key] = v;
+          }
         } else if (key === "start_time") {
           const v = formatStartTime(startTime);
           if (v) next[key] = v;
