@@ -189,11 +189,13 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail.trim())) return toast.error("Please enter a valid email address.");
     setSending(true);
     try {
+      const firstName = recipientName.trim().split(/\s+/)[0] || "";
       const { data, error } = await supabase.functions.invoke("send-contract-envelope", {
         body: {
           templateId, recipientName: recipientName.trim(), recipientEmail: recipientEmail.trim(),
           adminPrefill: prefill,
           message: message
+            .replace(/\{\{first_name\}\}/g, firstName || "{{first_name}}")
             .replace(/\{\{rate\}\}/g, formatRate(rate) || "{{rate}}")
             .replace(/\{\{start_date\}\}/g, formatStartDate(startDate) || "{{start_date}}")
             .replace(/\{\{start_time\}\}/g, formatStartTime(startTime) || "{{start_time}}"),
