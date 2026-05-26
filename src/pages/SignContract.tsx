@@ -185,7 +185,9 @@ const SignContract = () => {
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {data.envelope.message && (
-          <Card className="p-4 bg-background"><p className="text-sm whitespace-pre-wrap">{data.envelope.message}</p></Card>
+          <Card className="p-4 bg-background">
+            <div className="text-sm" dangerouslySetInnerHTML={{ __html: renderMessage(data.envelope.message) }} />
+          </Card>
         )}
 
         {pages.map((p) => {
