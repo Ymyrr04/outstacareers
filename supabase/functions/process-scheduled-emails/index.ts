@@ -137,15 +137,13 @@ const handler = async (req: Request): Promise<Response> => {
           .replace(/\n{3,}/g, '\n\n')
           .trim();
 
-        await client.send({
+        await transporter.sendMail({
           from: `OutSta Recruitment <${gmailUser}>`,
           to: email.recipient_email,
           subject: email.subject,
-          content: plainText,
+          text: plainText,
           html: emailHtml,
-          headers: {
-            "Message-ID": messageId,
-          },
+          messageId,
         });
 
         // Update scheduled email status
