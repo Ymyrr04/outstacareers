@@ -139,7 +139,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Send Contract for Signature</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div>
