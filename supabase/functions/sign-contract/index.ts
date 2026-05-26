@@ -233,7 +233,8 @@ Deno.serve(async (req) => {
       const aBold = await auditDoc.embedFont(StandardFonts.HelveticaBold);
       const ip = getClientIp(req);
       const ua = req.headers.get("user-agent") ?? "unknown";
-      const now = new Date().toISOString();
+      const nowObj = new Date();
+      const now = `${monthNames[nowObj.getMonth()]} ${nowObj.getDate()}, ${nowObj.getFullYear()}`;
       let yy = 800;
       const line = (t: string, bold = false, size = 11) => {
         aPage.drawText(t, { x: 40, y: yy, size, font: bold ? aBold : aFont, color: rgb(0, 0, 0) });
@@ -250,8 +251,12 @@ Deno.serve(async (req) => {
       line(`SHA-256 of signed PDF: ${signedHash}`); yy -= 6;
       line("Timeline", true, 13);
       const { data: events } = await admin.from("contract_audit_events").select("*").eq("envelope_id", envelope.id).order("created_at");
+      const fmtDate = (d: string) => {
+        const dt = new Date(d);
+        return `${monthNames[dt.getMonth()]} ${dt.getDate()}, ${dt.getFullYear()}`;
+      };
       for (const ev of (events ?? [])) {
-        line(`• ${ev.created_at}  ${ev.event_type}  ${ev.actor_email ?? ""}`, false, 9);
+        line(`• ${fmtDate(ev.created_at)}  ${ev.event_type}  ${ev.actor_email ?? ""}`, false, 9);
       }
       line(`• ${now}  signed  ${envelope.recipient_email}`, false, 9);
       const auditBytes = await auditDoc.save();
