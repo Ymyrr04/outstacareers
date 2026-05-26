@@ -213,10 +213,8 @@ Deno.serve(async (req) => {
         const { width: pw, height: ph } = lastPage.getSize();
         const newPage = pdfDoc.addPage([pw, ph]);
         const margin = 40;
-        const labelSize = 12;
-        newPage.drawText(att.label, { x: margin, y: ph - margin - labelSize, size: labelSize, font: helv, color: rgb(0, 0, 0) });
         const maxW = pw - margin * 2;
-        const maxH = ph - margin * 3 - labelSize;
+        const maxH = ph - margin * 2;
         let dw = img.width;
         let dh = img.height;
         if (dw > maxW || dh > maxH) {
@@ -224,7 +222,7 @@ Deno.serve(async (req) => {
           dw = scaled.width; dh = scaled.height;
         }
         const dx = (pw - dw) / 2;
-        const dy = margin;
+        const dy = (ph - dh) / 2;
         newPage.drawImage(img, { x: dx, y: dy, width: dw, height: dh });
       }
 
