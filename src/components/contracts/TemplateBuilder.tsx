@@ -132,6 +132,19 @@ export const TemplateBuilder = ({ templateId, onBack }: { templateId: string; on
     }));
   };
 
+  const handleResize = (id: string, dx: number, dy: number, pageW: number, pageH: number) => {
+    setFields((prev) => prev.map(f => {
+      if (f.id !== id) return f;
+      return {
+        ...f,
+        width_pct: Math.max(0.01, Math.min(1 - f.x_pct, f.width_pct + dx / pageW)),
+        height_pct: Math.max(0.01, Math.min(1 - f.y_pct, f.height_pct + dy / pageH)),
+        _dirty: true,
+      };
+    }));
+  };
+
+
   const saveAll = async () => {
     setSaving(true);
     try {
@@ -186,6 +199,7 @@ export const TemplateBuilder = ({ templateId, onBack }: { templateId: string; on
                 setSelectedId={setSelectedId}
                 onAdd={(type, e) => addField(p.index, type, e)}
                 onDrag={(id, dx, dy) => handleDrag(id, dx, dy, p.width, p.height)}
+                onResize={(id, dx, dy) => handleResize(id, dx, dy, p.width, p.height)}
                 registerRef={(el) => { pageRefs.current[p.index] = el; }}
               />
             ))}
@@ -256,7 +270,7 @@ export const TemplateBuilder = ({ templateId, onBack }: { templateId: string; on
 };
 
 function PageCanvas({
-  page, fields, selectedId, setSelectedId, onAdd, onDrag, registerRef,
+  page, fields, selectedId, setSelectedId, onAdd, onDrag, onResize, registerRef,
 }: {
   page: RenderedPage;
   fields: Field[];
@@ -264,10 +278,11 @@ function PageCanvas({
   setSelectedId: (id: string | null) => void;
   onAdd: (type: FieldType, e: React.MouseEvent) => void;
   onDrag: (id: string, dx: number, dy: number) => void;
+  onResize: (id: string, dx: number, dy: number) => void;
   registerRef: (el: HTMLDivElement | null) => void;
 }) {
   const { pending, setPending } = useContext(PendingCtx);
-  const dragRef = useRef<{ id: string; startX: number; startY: number } | null>(null);
+  const dragRef = useRef<{ id: string; startX: number; startY: number; mode: "move" | "resize" } | null>(null);
 
   const handleClick = (e: React.MouseEvent) => {
     if (pending) {
@@ -278,13 +293,17 @@ function PageCanvas({
     }
   };
 
-  const startDrag = (id: string, e: React.MouseEvent) => {
+  const startInteraction = (id: string, e: React.MouseEvent, mode: "move" | "resize") => {
     e.stopPropagation();
+    e.preventDefault();
     setSelectedId(id);
-    dragRef.current = { id, startX: e.clientX, startY: e.clientY };
+    dragRef.current = { id, startX: e.clientX, startY: e.clientY, mode };
     const move = (ev: MouseEvent) => {
       if (!dragRef.current) return;
-      onDrag(dragRef.current.id, ev.clientX - dragRef.current.startX, ev.clientY - dragRef.current.startY);
+      const dx = ev.clientX - dragRef.current.startX;
+      const dy = ev.clientY - dragRef.current.startY;
+      if (dragRef.current.mode === "move") onDrag(dragRef.current.id, dx, dy);
+      else onResize(dragRef.current.id, dx, dy);
       dragRef.current.startX = ev.clientX;
       dragRef.current.startY = ev.clientY;
     };
@@ -304,7 +323,7 @@ function PageCanvas({
       {fields.map(f => (
         <div
           key={f.id}
-          onMouseDown={(e) => startDrag(f.id, e)}
+          onMouseDown={(e) => startInteraction(f.id, e, "move")}
           onClick={(e) => e.stopPropagation()}
           className={`absolute border-2 cursor-move flex items-center justify-center text-[10px] font-medium ${selectedId === f.id ? "border-primary bg-primary/20" : "border-primary/50 bg-primary/10"}`}
           style={{
@@ -315,9 +334,17 @@ function PageCanvas({
           }}
           title={f.label || f.field_type}
         >
-          <span className="truncate px-1">{f.field_type}{f.assigned_to === "admin" ? " *" : ""}</span>
+          <span className="truncate px-1 pointer-events-none">{f.field_type}{f.assigned_to === "admin" ? " *" : ""}</span>
+          {selectedId === f.id && (
+            <div
+              onMouseDown={(e) => startInteraction(f.id, e, "resize")}
+              className="absolute -right-1.5 -bottom-1.5 w-3 h-3 bg-primary border border-background rounded-sm cursor-nwse-resize"
+              title="Drag to resize"
+            />
+          )}
         </div>
       ))}
     </div>
   );
+
 }
