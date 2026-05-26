@@ -151,7 +151,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
       }
       return next;
     });
-  }, [adminFields, startDate, startTime, rate]);
+  }, [adminFields, startDate, startTime, rate, recipientName]);
 
   const applyMsgTemplate = (id: string) => {
     setMsgTemplateId(id);
