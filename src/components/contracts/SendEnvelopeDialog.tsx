@@ -221,7 +221,19 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
                 </div>
                 <div>
                   <label className="text-[11px] text-muted-foreground">Start time</label>
-                  <Input type="time" className="h-8 text-sm" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+                  <Select value={startTime} onValueChange={setStartTime}>
+                    <SelectTrigger className="h-8 text-sm"><SelectValue placeholder="Select time" /></SelectTrigger>
+                    <SelectContent className="max-h-64">
+                      {Array.from({ length: 48 }, (_, i) => {
+                        const h24 = Math.floor(i / 2);
+                        const m = i % 2 === 0 ? "00" : "30";
+                        const val = `${String(h24).padStart(2, "0")}:${m}`;
+                        const ampm = h24 >= 12 ? "PM" : "AM";
+                        const h12 = h24 % 12 || 12;
+                        return <SelectItem key={val} value={val}>{`${h12}:${m} ${ampm}`}</SelectItem>;
+                      })}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
             </div>
