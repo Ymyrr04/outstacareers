@@ -199,6 +199,7 @@ export const TemplateBuilder = ({ templateId, onBack }: { templateId: string; on
                 setSelectedId={setSelectedId}
                 onAdd={(type, e) => addField(p.index, type, e)}
                 onDrag={(id, dx, dy) => handleDrag(id, dx, dy, p.width, p.height)}
+                onResize={(id, dx, dy) => handleResize(id, dx, dy, p.width, p.height)}
                 registerRef={(el) => { pageRefs.current[p.index] = el; }}
               />
             ))}
