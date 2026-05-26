@@ -197,7 +197,30 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
                 </Button>
               </div>
             </div>
-            <Textarea rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Hi — please review and sign the attached agreement." />
+            <Textarea ref={messageRef} rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Hi — please review and sign the attached agreement." />
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              <div>
+                <label className="text-xs text-muted-foreground">Rate</label>
+                <div className="flex gap-1">
+                  <Input className="h-8 text-sm" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="$25/hr" />
+                  <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => insertAtCursor(rate)} title="Insert rate"><Plus className="w-3.5 h-3.5" /></Button>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Start date</label>
+                <div className="flex gap-1">
+                  <Input type="date" className="h-8 text-sm" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                  <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => insertAtCursor(formatStartDate(startDate))} title="Insert start date"><Plus className="w-3.5 h-3.5" /></Button>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Start time</label>
+                <div className="flex gap-1">
+                  <Input type="time" className="h-8 text-sm" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+                  <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => insertAtCursor(formatStartTime(startTime))} title="Insert start time"><Plus className="w-3.5 h-3.5" /></Button>
+                </div>
+              </div>
+            </div>
           </div>
           <div>
             <label className="text-sm font-medium">Link expires in (days)</label>
