@@ -43,7 +43,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
     try {
       const { data, error } = await supabase.functions.invoke("send-contract-envelope", {
         body: {
-          templateId, recipientName, recipientEmail,
+          templateId, recipientName: recipientName.trim(), recipientEmail: recipientEmail.trim(),
           adminPrefill: prefill, message, expiresInDays,
         },
       });
