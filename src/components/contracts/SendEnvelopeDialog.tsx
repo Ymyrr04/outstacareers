@@ -142,6 +142,9 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
         } else if (key === "start_time") {
           const v = formatStartTime(startTime);
           if (v) next[key] = v;
+        } else if (key === "first_name") {
+          const fn = recipientName.trim().split(/\s+/)[0];
+          if (fn) next[key] = fn;
         } else if (key === "hourly_rate" || key === "monthly_rate" || key === "rate") {
           if (rate) next[key] = formatRate(rate);
         }
