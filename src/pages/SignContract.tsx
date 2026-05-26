@@ -95,7 +95,7 @@ const SignContract = () => {
   const signerFields = useMemo(() => (data?.fields ?? []).filter(f => f.assigned_to !== "admin"), [data]);
   const completedCount = signerFields.filter(f => {
     const v = values[f.id];
-    if (f.field_type === "checkbox") return v?.value === "true";
+    if (f.field_type === "attachment") return !!v?.signature_data_url;
     if (f.field_type === "signature" || f.field_type === "initials") return !!v?.signature_data_url;
     return !!v?.value;
   }).length;
