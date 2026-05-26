@@ -121,11 +121,9 @@ Deno.serve(async (req) => {
         }
         if (f.required && f.assigned_to === "signer") {
           const v = valueByFieldId.get(f.id);
-          const hasVal = (f.field_type === "checkbox")
-            ? v?.value === "true"
-            : (f.field_type === "signature" || f.field_type === "initials")
-              ? !!v?.signature_data_url
-              : !!v?.value;
+          const hasVal = (f.field_type === "signature" || f.field_type === "initials" || f.field_type === "attachment")
+            ? !!v?.signature_data_url
+            : !!v?.value;
           if (!hasVal) return new Response(JSON.stringify({ error: `Missing required field: ${f.label || f.field_type}` }), { status: 400, headers: corsHeaders });
         }
       }
@@ -150,18 +148,13 @@ Deno.serve(async (req) => {
         const h = Number(f.height_pct) * ph;
         const y = ph - (Number(f.y_pct) * ph + h);
 
-        if ((f.field_type === "signature" || f.field_type === "initials") && v.signature_data_url) {
+        if ((f.field_type === "signature" || f.field_type === "initials" || f.field_type === "attachment") && v.signature_data_url) {
           const m = v.signature_data_url.match(/^data:image\/(png|jpeg|jpg);base64,(.+)$/);
           if (m) {
             const imgBytes = Uint8Array.from(atob(m[2]), c => c.charCodeAt(0));
             const img = m[1] === "png" ? await pdfDoc.embedPng(imgBytes) : await pdfDoc.embedJpg(imgBytes);
             const scaled = img.scaleToFit(w, h);
             page.drawImage(img, { x: x + (w - scaled.width) / 2, y: y + (h - scaled.height) / 2, width: scaled.width, height: scaled.height });
-          }
-        } else if (f.field_type === "checkbox") {
-          if (v.value === "true") {
-            const size = Math.min(w, h) * 0.7;
-            page.drawText("X", { x: x + (w - size) / 2, y: y + (h - size) / 2, size, font: helv, color: rgb(0, 0, 0) });
           }
         } else {
           const text = v.value || "";

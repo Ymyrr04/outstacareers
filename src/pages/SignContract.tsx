@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 interface TemplateField {
   id: string;
-  field_type: "signature" | "initials" | "date" | "text" | "checkbox";
+  field_type: "signature" | "initials" | "date" | "text" | "attachment";
   page: number;
   x_pct: number;
   y_pct: number;
@@ -95,7 +95,7 @@ const SignContract = () => {
   const signerFields = useMemo(() => (data?.fields ?? []).filter(f => f.assigned_to !== "admin"), [data]);
   const completedCount = signerFields.filter(f => {
     const v = values[f.id];
-    if (f.field_type === "checkbox") return v?.value === "true";
+    if (f.field_type === "attachment") return !!v?.signature_data_url;
     if (f.field_type === "signature" || f.field_type === "initials") return !!v?.signature_data_url;
     return !!v?.value;
   }).length;
@@ -110,8 +110,8 @@ const SignContract = () => {
     for (const f of signerFields) {
       if (!f.required) continue;
       const v = values[f.id];
-      const ok = f.field_type === "checkbox" ? v?.value === "true"
-        : (f.field_type === "signature" || f.field_type === "initials") ? !!v?.signature_data_url
+      const ok = (f.field_type === "signature" || f.field_type === "initials" || f.field_type === "attachment")
+        ? !!v?.signature_data_url
         : !!v?.value;
       if (!ok) {
         toast.error(`Please complete: ${f.label || f.field_type}`);
@@ -262,16 +262,28 @@ function renderFieldOverlay(
     );
   }
 
-  if (f.field_type === "checkbox") {
+  if (f.field_type === "attachment") {
     return (
-      <button
-        type="button"
-        disabled={locked}
-        onClick={() => set({ value: v.value === "true" ? "false" : "true" })}
-        className={`${baseBox} justify-center text-base ${v.value === "true" ? "bg-emerald-500/10 border-emerald-500" : ""}`}
+      <label
+        className={`${baseBox} cursor-pointer justify-center px-2 overflow-hidden ${v.signature_data_url ? "border-emerald-500 bg-emerald-500/10" : ""} ${locked ? "pointer-events-none opacity-70" : ""}`}
       >
-        {v.value === "true" ? "✓" : ""}
-      </button>
+        {v.signature_data_url
+          ? <img src={v.signature_data_url} alt="attachment" className="max-h-full max-w-full object-contain" />
+          : <span className="text-primary font-medium">📎 {f.label || "Attach image"}</span>}
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/jpg"
+          className="hidden"
+          disabled={locked}
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => set({ signature_data_url: reader.result as string });
+            reader.readAsDataURL(file);
+          }}
+        />
+      </label>
     );
   }
 
