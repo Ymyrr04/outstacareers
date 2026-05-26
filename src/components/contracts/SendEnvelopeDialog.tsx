@@ -46,6 +46,12 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
     h = h % 12 || 12;
     return `${h}:${mStr} ${ampm} EST`;
   };
+  const formatRate = (r: string) => {
+    const trimmed = r.trim();
+    if (!trimmed) return "";
+    if (/per\s*hour|\/\s*hr|\/\s*hour|hourly/i.test(trimmed)) return trimmed;
+    return `${trimmed} per hour`;
+  };
   const insertAtCursor = (text: string) => {
     if (!text) return;
     const ta = messageRef.current;
@@ -95,7 +101,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
           const v = formatStartTime(startTime);
           if (v) next[key] = v;
         } else if (key === "hourly_rate" || key === "monthly_rate" || key === "rate") {
-          if (rate) next[key] = rate;
+          if (rate) next[key] = formatRate(rate);
         }
       }
       return next;
@@ -146,7 +152,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
           templateId, recipientName: recipientName.trim(), recipientEmail: recipientEmail.trim(),
           adminPrefill: prefill,
           message: message
-            .replace(/\{\{rate\}\}/g, rate || "{{rate}}")
+            .replace(/\{\{rate\}\}/g, formatRate(rate) || "{{rate}}")
             .replace(/\{\{start_date\}\}/g, formatStartDate(startDate) || "{{start_date}}")
             .replace(/\{\{start_time\}\}/g, formatStartTime(startTime) || "{{start_time}}"),
           expiresInDays,
