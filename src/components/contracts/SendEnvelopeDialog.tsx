@@ -81,6 +81,27 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
     });
   }, [templateId]);
 
+  // Auto-sync Start date / Start time / Rate inputs into matching admin prefill keys
+  useEffect(() => {
+    if (!adminFields.length) return;
+    setPrefill(prev => {
+      const next = { ...prev };
+      for (const f of adminFields) {
+        const key = (f.field_key || f.label || f.id).toString();
+        if (key === "start_date") {
+          const v = formatStartDate(startDate);
+          if (v) next[key] = v;
+        } else if (key === "start_time") {
+          const v = formatStartTime(startTime);
+          if (v) next[key] = v;
+        } else if (key === "hourly_rate" || key === "monthly_rate" || key === "rate") {
+          if (rate) next[key] = rate;
+        }
+      }
+      return next;
+    });
+  }, [adminFields, startDate, startTime, rate]);
+
   const applyMsgTemplate = (id: string) => {
     setMsgTemplateId(id);
     const t = msgTemplates.find(m => m.id === id);
