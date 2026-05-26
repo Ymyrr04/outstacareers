@@ -19,6 +19,7 @@ interface ContractorEmailRecipient {
   email: string;
   company: string;
   jobTitle: string;
+  hourlyRate?: number | null;
 }
 
 interface EmailTemplate {
