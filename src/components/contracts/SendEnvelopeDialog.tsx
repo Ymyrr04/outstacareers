@@ -25,6 +25,39 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
   const [sending, setSending] = useState(false);
   const [msgTemplates, setMsgTemplates] = useState<MsgTemplate[]>([]);
   const [msgTemplateId, setMsgTemplateId] = useState<string>("");
+  const [rate, setRate] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const messageRef = useRef<HTMLTextAreaElement>(null);
+
+  const formatStartDate = (iso: string) => {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-").map(Number);
+    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    return `${months[m - 1]} ${d}, ${y}`;
+  };
+  const formatStartTime = (t: string) => {
+    if (!t) return "";
+    const [hStr, mStr] = t.split(":");
+    let h = parseInt(hStr, 10);
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    return `${h}:${mStr} ${ampm}`;
+  };
+  const insertAtCursor = (text: string) => {
+    if (!text) return;
+    const ta = messageRef.current;
+    if (!ta) { setMessage(m => m + text); return; }
+    const start = ta.selectionStart ?? message.length;
+    const end = ta.selectionEnd ?? message.length;
+    const next = message.slice(0, start) + text + message.slice(end);
+    setMessage(next);
+    requestAnimationFrame(() => {
+      ta.focus();
+      const pos = start + text.length;
+      ta.setSelectionRange(pos, pos);
+    });
+  };
 
   const loadMsgTemplates = async () => {
     const { data } = await supabase.from("contract_message_templates").select("id, name, message").order("name");
