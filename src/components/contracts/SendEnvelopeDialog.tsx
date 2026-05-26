@@ -288,7 +288,22 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
                 </Button>
               </div>
             </div>
-            <Textarea ref={messageRef} rows={6} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Hi — please review and sign the attached agreement." />
+            <div className="flex items-center gap-1 rounded-t border border-b-0 bg-muted/30 px-1 py-1">
+              <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => wrapSelection("**")} title="Bold (**text**)">
+                <Bold className="w-3.5 h-3.5" />
+              </Button>
+              <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => wrapSelection("*")} title="Italic (*text*)">
+                <Italic className="w-3.5 h-3.5" />
+              </Button>
+              <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => wrapSelection("==")} title="Highlight (==text==)">
+                <Highlighter className="w-3.5 h-3.5" />
+              </Button>
+              <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={toggleBulletList} title="Bullet list">
+                <List className="w-3.5 h-3.5" />
+              </Button>
+              <span className="ml-auto text-[10px] text-muted-foreground pr-1">Markdown: **bold** *italic* ==highlight== - bullet</span>
+            </div>
+            <Textarea ref={messageRef} rows={6} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Hi — please review and sign the attached agreement." className="rounded-t-none" />
             <div className="mt-2 rounded border bg-muted/30 p-2 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs text-muted-foreground">Insert:</span>
