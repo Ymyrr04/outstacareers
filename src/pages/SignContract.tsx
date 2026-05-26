@@ -40,6 +40,8 @@ interface LoadResponse {
 }
 
 const FUNCTIONS_BASE = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1`;
+const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+const PUBLIC_HEADERS = { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` };
 
 const SignContract = () => {
   const { token } = useParams<{ token: string }>();
@@ -57,7 +59,7 @@ const SignContract = () => {
     (async () => {
       try {
         setLoading(true);
-        const r = await fetch(`${FUNCTIONS_BASE}/sign-contract?token=${encodeURIComponent(token)}`);
+        const r = await fetch(`${FUNCTIONS_BASE}/sign-contract?token=${encodeURIComponent(token)}`, { headers: PUBLIC_HEADERS });
         if (!r.ok) {
           const t = await r.text();
           throw new Error(t || `HTTP ${r.status}`);
@@ -127,7 +129,7 @@ const SignContract = () => {
       }));
       const r = await fetch(`${FUNCTIONS_BASE}/sign-contract`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...PUBLIC_HEADERS },
         body: JSON.stringify({ token, fieldValues, consent: true }),
       });
       if (!r.ok) {
