@@ -62,13 +62,11 @@ export const EnvelopesPanel = () => {
     const reason = prompt("Reason for voiding?") || null;
     if (reason === null && !confirm("Void without a reason?")) return;
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const r = await fetch(`https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/void-contract-envelope`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({ envelopeId: id, reason }),
+      const { error } = await supabase.functions.invoke("void-contract-envelope", {
+        body: { envelopeId: id, reason },
       });
-      if (!r.ok) throw new Error(await r.text());
+      if (error) throw error;
+
       toast.success("Voided");
       load();
     } catch (e) {
