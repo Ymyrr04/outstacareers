@@ -171,7 +171,14 @@ Deno.serve(async (req) => {
             page.drawImage(img, { x: x + (w - scaled.width) / 2, y: y + (h - scaled.height) / 2, width: scaled.width, height: scaled.height });
           }
         } else {
-          const text = v.value || "";
+          let text = v.value || "";
+          // Format ISO date values (yyyy-mm-dd) into "Dayname , Month D, YYYY" for date fields
+          if (f.field_type === "date" && /^\d{4}-\d{2}-\d{2}$/.test(text)) {
+            const [yy, mm, dd] = text.split("-").map(Number);
+            const dayNames = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+            const dow = dayNames[new Date(Date.UTC(yy, mm - 1, dd)).getUTCDay()];
+            text = `${dow} , ${monthNames[mm - 1]} ${dd}, ${yy}`;
+          }
           if (text) {
             // Auto-fit: scale font size to fill the box (centered), shrinking if needed
             const padX = 4;
