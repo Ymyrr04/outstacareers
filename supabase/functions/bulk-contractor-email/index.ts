@@ -237,17 +237,20 @@ const handler = async (req: Request): Promise<Response> => {
         }
 
         const firstName = applicant.full_name?.split(" ")[0] || "";
+        const rateStr = contractor.hourly_rate != null ? `$${contractor.hourly_rate}/hr` : "";
         const personalizedBody = bodyHtml
           .replace(/\{\{first_name\}\}/gi, firstName)
           .replace(/\{\{full_name\}\}/gi, applicant.full_name || "")
           .replace(/\{\{company\}\}/gi, clientData?.company_name || "")
-          .replace(/\{\{job_title\}\}/gi, contractor.job_title || "");
+          .replace(/\{\{job_title\}\}/gi, contractor.job_title || "")
+          .replace(/\{\{rate\}\}/gi, rateStr);
 
         const personalizedSubject = subject
           .replace(/\{\{first_name\}\}/gi, firstName)
           .replace(/\{\{full_name\}\}/gi, applicant.full_name || "")
           .replace(/\{\{company\}\}/gi, clientData?.company_name || "")
-          .replace(/\{\{job_title\}\}/gi, contractor.job_title || "");
+          .replace(/\{\{job_title\}\}/gi, contractor.job_title || "")
+          .replace(/\{\{rate\}\}/gi, rateStr);
 
         const formattedBody = personalizedBody
           .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" style="color: #1a73e8; text-decoration: underline;">$1</a>')
