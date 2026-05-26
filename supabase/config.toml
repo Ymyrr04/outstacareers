@@ -83,3 +83,12 @@ verify_jwt = true
 
 [functions.blast-new-job]
 verify_jwt = false
+
+[functions.sign-contract]
+verify_jwt = false
+
+[functions.send-contract-envelope]
+verify_jwt = true
+
+[functions.void-contract-envelope]
+verify_jwt = true
