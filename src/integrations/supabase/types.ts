@@ -827,6 +827,33 @@ export type Database = {
           },
         ]
       }
+      contract_message_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          message: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contract_template_fields: {
         Row: {
           assigned_to: string
