@@ -196,7 +196,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    await client.close();
+    transporter.close();
 
     console.log(`Processed ${processed} emails, ${failed} failed`);
 
