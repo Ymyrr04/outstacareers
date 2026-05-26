@@ -129,7 +129,7 @@ const SignContract = () => {
       }));
       const r = await fetch(`${FUNCTIONS_BASE}/sign-contract`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...PUBLIC_HEADERS },
         body: JSON.stringify({ token, fieldValues, consent: true }),
       });
       if (!r.ok) {
