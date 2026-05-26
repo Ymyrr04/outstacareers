@@ -95,7 +95,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
           const v = formatStartTime(startTime);
           if (v) next[key] = v;
         } else if (key === "hourly_rate" || key === "monthly_rate" || key === "rate") {
-          if (rate) next[key] = rate;
+          if (rate) next[key] = formatRate(rate);
         }
       }
       return next;
