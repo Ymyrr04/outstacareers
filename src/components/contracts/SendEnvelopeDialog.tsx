@@ -38,11 +38,12 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
 
   const send = async () => {
     if (!templateId || !recipientEmail || !recipientName) return toast.error("Template, name and email are required.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail.trim())) return toast.error("Please enter a valid email address.");
     setSending(true);
     try {
       const { data, error } = await supabase.functions.invoke("send-contract-envelope", {
         body: {
-          templateId, recipientName, recipientEmail,
+          templateId, recipientName: recipientName.trim(), recipientEmail: recipientEmail.trim(),
           adminPrefill: prefill, message, expiresInDays,
         },
       });
