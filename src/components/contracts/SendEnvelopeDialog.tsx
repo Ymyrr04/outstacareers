@@ -197,27 +197,26 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
                 </Button>
               </div>
             </div>
-            <Textarea ref={messageRef} rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Hi — please review and sign the attached agreement." />
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              <div>
-                <label className="text-xs text-muted-foreground">Rate</label>
-                <div className="flex gap-1">
+            <Textarea ref={messageRef} rows={6} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Hi — please review and sign the attached agreement." />
+            <div className="mt-2 rounded border bg-muted/30 p-2 space-y-2">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-xs text-muted-foreground">Insert:</span>
+                <button type="button" onClick={() => insertAtCursor(rate)} className="px-2 py-0.5 rounded border bg-background text-xs font-mono hover:bg-accent transition-colors">{`{{rate}}`}</button>
+                <button type="button" onClick={() => insertAtCursor(formatStartDate(startDate))} className="px-2 py-0.5 rounded border bg-background text-xs font-mono hover:bg-accent transition-colors">{`{{start_date}}`}</button>
+                <button type="button" onClick={() => insertAtCursor(formatStartTime(startTime))} className="px-2 py-0.5 rounded border bg-background text-xs font-mono hover:bg-accent transition-colors">{`{{start_time}}`}</button>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <label className="text-[11px] text-muted-foreground">Rate</label>
                   <Input className="h-8 text-sm" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="$25/hr" />
-                  <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => insertAtCursor(rate)} title="Insert rate"><Plus className="w-3.5 h-3.5" /></Button>
                 </div>
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Start date</label>
-                <div className="flex gap-1">
+                <div>
+                  <label className="text-[11px] text-muted-foreground">Start date</label>
                   <Input type="date" className="h-8 text-sm" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
-                  <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => insertAtCursor(formatStartDate(startDate))} title="Insert start date"><Plus className="w-3.5 h-3.5" /></Button>
                 </div>
-              </div>
-              <div>
-                <label className="text-xs text-muted-foreground">Start time</label>
-                <div className="flex gap-1">
+                <div>
+                  <label className="text-[11px] text-muted-foreground">Start time</label>
                   <Input type="time" className="h-8 text-sm" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
-                  <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => insertAtCursor(formatStartTime(startTime))} title="Insert start time"><Plus className="w-3.5 h-3.5" /></Button>
                 </div>
               </div>
             </div>
