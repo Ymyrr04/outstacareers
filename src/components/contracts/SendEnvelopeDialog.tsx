@@ -47,8 +47,9 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
     return `${h}:${mStr} ${ampm} EST`;
   };
   const formatRate = (r: string) => {
-    const trimmed = r.trim();
+    let trimmed = r.trim();
     if (!trimmed) return "";
+    if (!trimmed.startsWith("$")) trimmed = `$${trimmed.replace(/^\$+/, "")}`;
     if (/per\s*hour|\/\s*hr|\/\s*hour|hourly/i.test(trimmed)) return trimmed;
     return `${trimmed} per hour`;
   };
