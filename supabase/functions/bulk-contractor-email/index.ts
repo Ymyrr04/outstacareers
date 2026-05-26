@@ -63,7 +63,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     let contractorQuery = supabase
       .from("contractor_assignments")
-      .select("id, job_title, applicant:applicants_prescreen(full_name, email), client:clients(company_name)")
+      .select("id, job_title, hourly_rate, applicant:applicants_prescreen(full_name, email), client:clients(company_name)")
       .eq("status", "active")
       .order("id", { ascending: true });
 
