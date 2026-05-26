@@ -337,7 +337,7 @@ export const ContractorEmailTemplateManager = ({ open, onOpenChange }: Contracto
                     value={formBodyHtml}
                     onChange={setFormBodyHtml}
                     textareaRef={textareaRef as React.RefObject<HTMLTextAreaElement>}
-                    placeholders={['{{first_name}}', '{{full_name}}', '{{company}}', '{{job_title}}', '{{schedule}}']}
+                    placeholders={['{{first_name}}', '{{full_name}}', '{{company}}', '{{job_title}}', '{{schedule}}', '{{rate}}']}
                     onInsertPlaceholder={(p) => {
                       if (lastFocusedRef.current === 'subject') {
                         const el = subjectRef.current;
