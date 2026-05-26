@@ -209,7 +209,12 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
                 const current = prefill[key] ?? "";
                 return (
                   <div key={f.id}>
-                    <label className="text-xs">{f.label || key}</label>
+                    <label className="text-xs flex items-center gap-1.5">
+                      <span>{f.label || key}</span>
+                      {f.field_key && f.field_key !== f.label && (
+                        <span className="font-mono text-[10px] text-muted-foreground">{`{{${f.field_key}}}`}</span>
+                      )}
+                    </label>
                     {isDate ? (
                       <Input
                         type="date"
