@@ -151,6 +151,7 @@ export const EnvelopesPanel = () => {
                 {e.audit_pdf_path && (
                   <Button size="sm" variant="ghost" onClick={() => downloadPdf(e.audit_pdf_path!, `audit-${e.recipient_name}.pdf`)} className="gap-1"><Download className="w-3 h-3" /> Audit</Button>
                 )}
+                <Button size="sm" variant="ghost" onClick={() => deleteEnvelope(e)} title="Delete"><Trash2 className="w-4 h-4 text-destructive" /></Button>
               </div>
             </Card>
           ))}
