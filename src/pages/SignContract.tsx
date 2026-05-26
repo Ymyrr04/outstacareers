@@ -261,7 +261,7 @@ function renderFieldOverlay(
   set: (next: { value?: string; signature_data_url?: string }) => void,
   signerName: string,
 ) {
-  const baseBox = "w-full h-full border-2 border-dashed border-primary bg-primary/15 hover:bg-primary/25 ring-1 ring-primary/40 shadow-sm transition flex items-center text-xs";
+  const baseBox = "w-full h-full border-2 border-dashed border-amber-600 bg-amber-200/70 hover:bg-amber-300/80 ring-2 ring-amber-500/70 shadow-md transition flex items-center text-xs";
 
   if (f.field_type === "signature" || f.field_type === "initials") {
     return (
