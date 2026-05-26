@@ -149,11 +149,10 @@ Deno.serve(async (req) => {
         const y = ph - (Number(f.y_pct) * ph + h);
 
         if ((f.field_type === "signature" || f.field_type === "initials" || f.field_type === "attachment") && v.signature_data_url) {
-          const m = v.signature_data_url.match(/^data:image\/(png|jpeg|jpg|webp);base64,(.+)$/);
+          const m = v.signature_data_url.match(/^data:image\/(png|jpeg|jpg);base64,(.+)$/);
           if (m) {
             const imgBytes = Uint8Array.from(atob(m[2]), c => c.charCodeAt(0));
-            const fmt = m[1].toLowerCase();
-            const img = fmt === "png" || fmt === "webp" ? await pdfDoc.embedPng(imgBytes) : await pdfDoc.embedJpg(imgBytes);
+            const img = m[1] === "png" ? await pdfDoc.embedPng(imgBytes) : await pdfDoc.embedJpg(imgBytes);
             const scaled = img.scaleToFit(w, h);
             page.drawImage(img, { x: x + (w - scaled.width) / 2, y: y + (h - scaled.height) / 2, width: scaled.width, height: scaled.height });
           }
