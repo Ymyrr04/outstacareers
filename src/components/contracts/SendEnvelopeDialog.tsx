@@ -34,7 +34,9 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
     if (!iso) return "";
     const [y, m, d] = iso.split("-").map(Number);
     const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-    return `${months[m - 1]} ${d}, ${y}`;
+    const days = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+    const dow = days[new Date(Date.UTC(y, m - 1, d)).getUTCDay()];
+    return `${dow} , ${months[m - 1]} ${d}, ${y}`;
   };
   const formatStartTime = (t: string) => {
     if (!t) return "";
@@ -42,7 +44,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
     let h = parseInt(hStr, 10);
     const ampm = h >= 12 ? "PM" : "AM";
     h = h % 12 || 12;
-    return `${h}:${mStr} ${ampm}`;
+    return `${h}:${mStr} ${ampm} EST`;
   };
   const insertAtCursor = (text: string) => {
     if (!text) return;
