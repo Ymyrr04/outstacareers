@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Send, Copy, Download, Ban, FileSignature } from "lucide-react";
+import { Loader2, Send, Copy, Download, Ban, FileSignature, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { SendEnvelopeDialog } from "./SendEnvelopeDialog";
 
