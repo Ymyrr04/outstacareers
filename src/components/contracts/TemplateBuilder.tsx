@@ -248,7 +248,26 @@ export const TemplateBuilder = ({ templateId, onBack }: { templateId: string; on
                 {selected.assigned_to === "admin" && (
                   <div>
                     <label className="text-xs font-medium">Prefill key</label>
-                    <Input value={selected.field_key ?? ""} onChange={(e) => updateField(selected.id, { field_key: e.target.value })} placeholder="client_name" />
+                    <Select
+                      value={PREFILL_KEYS.some((k) => k.value === selected.field_key) ? selected.field_key ?? "" : "__custom__"}
+                      onValueChange={(v) => updateField(selected.id, { field_key: v === "__custom__" ? "" : v })}
+                    >
+                      <SelectTrigger><SelectValue placeholder="Select a prefill key" /></SelectTrigger>
+                      <SelectContent>
+                        {PREFILL_KEYS.map((k) => (
+                          <SelectItem key={k.value} value={k.value}>{k.label}</SelectItem>
+                        ))}
+                        <SelectItem value="__custom__">Custom…</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    {(!PREFILL_KEYS.some((k) => k.value === selected.field_key) || !selected.field_key) && (
+                      <Input
+                        className="mt-2"
+                        value={selected.field_key ?? ""}
+                        onChange={(e) => updateField(selected.id, { field_key: e.target.value })}
+                        placeholder="custom_key"
+                      />
+                    )}
                     <p className="text-[10px] text-muted-foreground mt-1">Used in send dialog to pre-fill this field.</p>
                   </div>
                 )}
