@@ -262,16 +262,28 @@ function renderFieldOverlay(
     );
   }
 
-  if (f.field_type === "checkbox") {
+  if (f.field_type === "attachment") {
     return (
-      <button
-        type="button"
-        disabled={locked}
-        onClick={() => set({ value: v.value === "true" ? "false" : "true" })}
-        className={`${baseBox} justify-center text-base ${v.value === "true" ? "bg-emerald-500/10 border-emerald-500" : ""}`}
+      <label
+        className={`${baseBox} cursor-pointer justify-center px-2 overflow-hidden ${v.signature_data_url ? "border-emerald-500 bg-emerald-500/10" : ""} ${locked ? "pointer-events-none opacity-70" : ""}`}
       >
-        {v.value === "true" ? "✓" : ""}
-      </button>
+        {v.signature_data_url
+          ? <img src={v.signature_data_url} alt="attachment" className="max-h-full max-w-full object-contain" />
+          : <span className="text-primary font-medium">📎 {f.label || "Attach image"}</span>}
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/jpg,image/webp"
+          className="hidden"
+          disabled={locked}
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => set({ signature_data_url: reader.result as string });
+            reader.readAsDataURL(file);
+          }}
+        />
+      </label>
     );
   }
 
