@@ -88,9 +88,9 @@ Deno.serve(async (req) => {
       metadata: { recipient: body.recipientEmail },
     });
 
-    // Build signing URL using request origin
-    const origin = req.headers.get("origin") || `https://${req.headers.get("host")}`;
-    const signUrl = `${origin}/sign/${token}`;
+    // Always use the public domain so external signers don't hit the Lovable preview auth wall
+    const PUBLIC_APP_URL = "https://outstahub.com";
+    const signUrl = `${PUBLIC_APP_URL}/sign/${token}`;
 
     // Send email via Gmail
     const client = new SMTPClient({
