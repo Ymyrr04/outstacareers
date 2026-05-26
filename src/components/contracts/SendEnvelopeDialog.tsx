@@ -67,6 +67,42 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
       ta.setSelectionRange(pos, pos);
     });
   };
+  const wrapSelection = (left: string, right: string = left, placeholder = "text") => {
+    const ta = messageRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart ?? message.length;
+    const end = ta.selectionEnd ?? message.length;
+    const selected = message.slice(start, end) || placeholder;
+    const next = message.slice(0, start) + left + selected + right + message.slice(end);
+    setMessage(next);
+    requestAnimationFrame(() => {
+      ta.focus();
+      const s = start + left.length;
+      ta.setSelectionRange(s, s + selected.length);
+    });
+  };
+  const toggleBulletList = () => {
+    const ta = messageRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart ?? 0;
+    const end = ta.selectionEnd ?? 0;
+    // Expand to full lines
+    const lineStart = message.lastIndexOf("\n", start - 1) + 1;
+    const lineEndIdx = message.indexOf("\n", end);
+    const lineEnd = lineEndIdx === -1 ? message.length : lineEndIdx;
+    const block = message.slice(lineStart, lineEnd) || "item";
+    const lines = block.split("\n");
+    const allBulleted = lines.every(l => /^\s*-\s+/.test(l));
+    const transformed = allBulleted
+      ? lines.map(l => l.replace(/^(\s*)-\s+/, "$1")).join("\n")
+      : lines.map(l => (l.trim() ? `- ${l.replace(/^\s*-\s+/, "")}` : "- item")).join("\n");
+    const next = message.slice(0, lineStart) + transformed + message.slice(lineEnd);
+    setMessage(next);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(lineStart, lineStart + transformed.length);
+    });
+  };
 
   const loadMsgTemplates = async () => {
     const { data } = await supabase.from("contract_message_templates").select("id, name, message").order("name");
