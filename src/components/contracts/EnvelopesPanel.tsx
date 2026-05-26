@@ -75,12 +75,20 @@ export const EnvelopesPanel = () => {
   };
 
   const downloadPdf = async (path: string, name: string) => {
-    const { data, error } = await supabase.storage.from("contract-signed").createSignedUrl(path, 300);
-    if (error || !data) return toast.error(error?.message || "Failed");
-    const a = document.createElement("a");
-    a.href = data.signedUrl;
-    a.download = name;
-    a.click();
+    try {
+      const { data, error } = await supabase.storage.from("contract-signed").download(path);
+      if (error || !data) throw new Error(error?.message || "Failed");
+      const url = URL.createObjectURL(data);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
   };
 
   return (
