@@ -32,14 +32,24 @@ Deno.serve(async (req) => {
     const gmailUser = Deno.env.get("MARK_GMAIL_USER")!;
     const gmailPassword = Deno.env.get("MARK_GMAIL_APP_PASSWORD")!;
 
-    // Auth check
+    // Auth check (signing-keys compatible)
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
-    const authedClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
-    const { data: userData } = await authedClient.auth.getUser();
-    if (!userData?.user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    }
+    const token = authHeader.replace("Bearer ", "");
+    const authedClient = createClient(supabaseUrl, anonKey);
+    const { data: claimsData, error: claimsErr } = await authedClient.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims?.sub) {
+      console.error("Auth failed:", claimsErr);
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    }
+    const userId = claimsData.claims.sub;
+    const userEmail = claimsData.claims.email as string | undefined;
 
     const admin = createClient(supabaseUrl, serviceKey);
+
+
     const body: SendEnvelopeRequest = await req.json();
 
     if (!body.templateId || !body.recipientEmail || !body.recipientName) {
@@ -63,8 +73,8 @@ Deno.serve(async (req) => {
         expires_at: expiresAt,
         status: "sent",
         sent_at: new Date().toISOString(),
-        sender_user_id: userData.user.id,
-        sender_email: userData.user.email,
+        sender_user_id: userId,
+        sender_email: userEmail,
       })
       .select()
       .single();
@@ -74,7 +84,7 @@ Deno.serve(async (req) => {
     await admin.from("contract_audit_events").insert({
       envelope_id: envelope.id,
       event_type: "sent",
-      actor_email: userData.user.email,
+      actor_email: userEmail,
       metadata: { recipient: body.recipientEmail },
     });
 
@@ -109,7 +119,7 @@ Deno.serve(async (req) => {
       to: body.recipientEmail,
       subject: "Action required: Please sign your contract",
       html,
-      replyTo: userData.user.email || gmailUser,
+      replyTo: userEmail || gmailUser,
     });
     await client.close();
 

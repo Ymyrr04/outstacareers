@@ -12,10 +12,17 @@ Deno.serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
-    const authed = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
-    const { data: userData } = await authed.auth.getUser();
-    if (!userData?.user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    }
+    const token = authHeader.replace("Bearer ", "");
+    const authed = createClient(supabaseUrl, anonKey);
+    const { data: claimsData, error: claimsErr } = await authed.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims?.sub) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    }
+    const userEmail = claimsData.claims.email as string | undefined;
+
 
     const admin = createClient(supabaseUrl, serviceKey);
     const { envelopeId, reason } = await req.json();
@@ -26,7 +33,7 @@ Deno.serve(async (req) => {
     }).eq("id", envelopeId);
 
     await admin.from("contract_audit_events").insert({
-      envelope_id: envelopeId, event_type: "voided", actor_email: userData.user.email, metadata: { reason },
+      envelope_id: envelopeId, event_type: "voided", actor_email: userEmail, metadata: { reason },
     });
 
     return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
