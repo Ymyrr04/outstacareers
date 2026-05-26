@@ -37,9 +37,9 @@ Deno.serve(async (req) => {
     if (!authHeader?.startsWith("Bearer ")) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
-    const token = authHeader.replace("Bearer ", "");
+    const jwt = authHeader.replace("Bearer ", "");
     const authedClient = createClient(supabaseUrl, anonKey);
-    const { data: claimsData, error: claimsErr } = await authedClient.auth.getClaims(token);
+    const { data: claimsData, error: claimsErr } = await authedClient.auth.getClaims(jwt);
     if (claimsErr || !claimsData?.claims?.sub) {
       console.error("Auth failed:", claimsErr);
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
