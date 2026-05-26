@@ -110,8 +110,8 @@ const SignContract = () => {
     for (const f of signerFields) {
       if (!f.required) continue;
       const v = values[f.id];
-      const ok = f.field_type === "checkbox" ? v?.value === "true"
-        : (f.field_type === "signature" || f.field_type === "initials") ? !!v?.signature_data_url
+      const ok = (f.field_type === "signature" || f.field_type === "initials" || f.field_type === "attachment")
+        ? !!v?.signature_data_url
         : !!v?.value;
       if (!ok) {
         toast.error(`Please complete: ${f.label || f.field_type}`);
