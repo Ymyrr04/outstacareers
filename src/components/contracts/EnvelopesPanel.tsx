@@ -1,0 +1,139 @@
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Loader2, Send, Copy, Download, Ban, FileSignature } from "lucide-react";
+import { toast } from "sonner";
+import { SendEnvelopeDialog } from "./SendEnvelopeDialog";
+
+interface Envelope {
+  id: string;
+  template_id: string;
+  recipient_name: string;
+  recipient_email: string;
+  status: string;
+  sent_at: string | null;
+  viewed_at: string | null;
+  signed_at: string | null;
+  expires_at: string;
+  signing_token: string;
+  signed_pdf_path: string | null;
+  audit_pdf_path: string | null;
+  created_at: string;
+  contract_templates?: { name: string } | null;
+}
+
+const STATUS_COLORS: Record<string, string> = {
+  draft: "bg-muted text-muted-foreground",
+  sent: "bg-blue-500/15 text-blue-700 dark:text-blue-300",
+  viewed: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  signed: "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300",
+  voided: "bg-red-500/15 text-red-700 dark:text-red-300",
+  expired: "bg-muted text-muted-foreground",
+};
+
+export const EnvelopesPanel = () => {
+  const [envelopes, setEnvelopes] = useState<Envelope[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sendOpen, setSendOpen] = useState(false);
+
+  const load = async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from("contract_envelopes")
+      .select("*, contract_templates(name)")
+      .order("created_at", { ascending: false })
+      .limit(200);
+    if (error) toast.error(error.message);
+    else setEnvelopes((data || []) as any);
+    setLoading(false);
+  };
+
+  useEffect(() => { load(); }, []);
+
+  const copyLink = (token: string) => {
+    const url = `${window.location.origin}/sign/${token}`;
+    navigator.clipboard.writeText(url);
+    toast.success("Signing link copied");
+  };
+
+  const voidEnvelope = async (id: string) => {
+    const reason = prompt("Reason for voiding?") || null;
+    if (reason === null && !confirm("Void without a reason?")) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      const r = await fetch(`https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/void-contract-envelope`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
+        body: JSON.stringify({ envelopeId: id, reason }),
+      });
+      if (!r.ok) throw new Error(await r.text());
+      toast.success("Voided");
+      load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    }
+  };
+
+  const downloadPdf = async (path: string, name: string) => {
+    const { data, error } = await supabase.storage.from("contract-signed").createSignedUrl(path, 300);
+    if (error || !data) return toast.error(error?.message || "Failed");
+    const a = document.createElement("a");
+    a.href = data.signedUrl;
+    a.download = name;
+    a.click();
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-end">
+        <Button onClick={() => setSendOpen(true)} className="gap-2"><Send className="w-4 h-4" /> Send New Contract</Button>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" /></div>
+      ) : envelopes.length === 0 ? (
+        <Card className="p-12 text-center text-muted-foreground">
+          <FileSignature className="w-12 h-12 mx-auto mb-3 opacity-40" />
+          <p>No contracts sent yet.</p>
+        </Card>
+      ) : (
+        <div className="grid gap-2">
+          {envelopes.map(e => (
+            <Card key={e.id} className="p-4 flex items-center justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <p className="font-medium truncate">{e.recipient_name}</p>
+                  <Badge className={STATUS_COLORS[e.status] || ""} variant="outline">{e.status}</Badge>
+                </div>
+                <p className="text-xs text-muted-foreground">{e.recipient_email} • {e.contract_templates?.name || "—"}</p>
+                <p className="text-xs text-muted-foreground">
+                  Sent {e.sent_at ? new Date(e.sent_at).toLocaleString() : "—"}
+                  {e.viewed_at && ` • Viewed ${new Date(e.viewed_at).toLocaleString()}`}
+                  {e.signed_at && ` • Signed ${new Date(e.signed_at).toLocaleString()}`}
+                </p>
+              </div>
+              <div className="flex gap-1 flex-shrink-0">
+                {["sent", "viewed", "draft"].includes(e.status) && (
+                  <>
+                    <Button size="sm" variant="outline" onClick={() => copyLink(e.signing_token)} className="gap-1"><Copy className="w-3 h-3" /> Link</Button>
+                    <Button size="sm" variant="ghost" onClick={() => voidEnvelope(e.id)}><Ban className="w-4 h-4 text-destructive" /></Button>
+                  </>
+                )}
+                {e.signed_pdf_path && (
+                  <Button size="sm" variant="outline" onClick={() => downloadPdf(e.signed_pdf_path!, `signed-${e.recipient_name}.pdf`)} className="gap-1"><Download className="w-3 h-3" /> Signed</Button>
+                )}
+                {e.audit_pdf_path && (
+                  <Button size="sm" variant="ghost" onClick={() => downloadPdf(e.audit_pdf_path!, `audit-${e.recipient_name}.pdf`)} className="gap-1"><Download className="w-3 h-3" /> Audit</Button>
+                )}
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
+
+      <SendEnvelopeDialog open={sendOpen} onOpenChange={setSendOpen} onSent={load} />
+    </div>
+  );
+};

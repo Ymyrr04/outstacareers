@@ -13,7 +13,8 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck, UserCircle, Target, Globe, TrendingDown } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck, UserCircle, Target, Globe, TrendingDown, FileSignature } from 'lucide-react';
+import { ContractsManager } from '@/components/contracts/ContractsManager';
 import { exportJobs, exportApplicants, exportAllData } from '@/lib/exportUtils';
 import { parseBooleanSearch } from '@/lib/booleanSearchParser';
 import { useBackgroundExport } from '@/hooks/useBackgroundExport';
@@ -340,7 +341,7 @@ const Admin = () => {
   const [isExporting, setIsExporting] = useState(false);
   
   // Main tab state for layout control
-  const validTabs = ['jobs', 'applicants', 'funnel', 'pipeline', 'post-hire', 'clients', 'contractors', 'analytics', 'talent-scout', 'external-scout', 'workflow', 'settings'];
+  const validTabs = ['jobs', 'applicants', 'funnel', 'pipeline', 'post-hire', 'clients', 'contractors', 'contracts', 'analytics', 'talent-scout', 'external-scout', 'workflow', 'settings'];
   const [activeMainTab, setActiveMainTab] = useState(() => {
     if (urlTab && validTabs.includes(urlTab)) return urlTab;
     return 'jobs';
@@ -1683,6 +1684,12 @@ const Admin = () => {
               <TabsTrigger value="workflow" className="flex items-center gap-2">
                 <ClipboardList className="w-4 h-4" />
                 Workflow
+              </TabsTrigger>
+            )}
+            {canViewTab('contracts') && (
+              <TabsTrigger value="contracts" className="flex items-center gap-2">
+                <FileSignature className="w-4 h-4" />
+                Contracts
               </TabsTrigger>
             )}
             {/* Settings tab - only for super admins (mark@outsta.io) */}
@@ -3669,6 +3676,10 @@ const Admin = () => {
           {/* Workflow Tab */}
           <TabsContent value="workflow" className="space-y-6">
             <WorkflowBoard />
+          </TabsContent>
+
+          <TabsContent value="contracts" className="space-y-6">
+            <ContractsManager />
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
