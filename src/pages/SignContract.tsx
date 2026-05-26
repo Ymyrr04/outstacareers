@@ -10,6 +10,25 @@ import { renderPdfPages, RenderedPage } from "@/lib/pdfRender";
 import { SignaturePad } from "@/components/contracts/SignaturePad";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 
+function renderMessage(raw: string): string {
+  const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  const inline = (s: string) =>
+    escape(s)
+      .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+      .replace(/(^|[^\*])\*(?!\s)([^\*\n]+?)\*(?!\*)/g, "$1<em>$2</em>")
+      .replace(/==(.+?)==/g, '<mark style="background:#fff176; padding:0 2px;">$1</mark>');
+  const blocks = raw.replace(/\r\n/g, "\n").split(/\n\s*\n/);
+  return blocks.map((block) => {
+    const lines = block.split("\n").filter((l) => l.trim().length);
+    const isList = lines.length > 0 && lines.every((l) => /^\s*-\s+/.test(l));
+    if (isList) {
+      const items = lines.map((l) => `<li style="margin:4px 0;">${inline(l.replace(/^\s*-\s+/, ""))}</li>`).join("");
+      return `<ul style="padding-left:22px; margin:8px 0;">${items}</ul>`;
+    }
+    return `<p style="margin:8px 0;">${lines.map(inline).join("<br/>")}</p>`;
+  }).join("");
+}
+
 interface TemplateField {
   id: string;
   field_type: "signature" | "initials" | "date" | "text" | "attachment";
@@ -185,7 +204,9 @@ const SignContract = () => {
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
         {data.envelope.message && (
-          <Card className="p-4 bg-background"><p className="text-sm whitespace-pre-wrap">{data.envelope.message}</p></Card>
+          <Card className="p-4 bg-background">
+            <div className="text-sm" dangerouslySetInnerHTML={{ __html: renderMessage(data.envelope.message) }} />
+          </Card>
         )}
 
         {pages.map((p) => {
