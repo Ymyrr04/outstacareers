@@ -97,11 +97,12 @@ Deno.serve(async (req) => {
       connection: { hostname: "smtp.gmail.com", port: 465, tls: true, auth: { username: gmailUser, password: gmailPassword } },
     });
 
+    const messageBody = (body.message || "Please review and sign the attached contract.")
+      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
     const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
-        <h2 style="color: #1a1a1a;">You have a document to sign</h2>
-        <p>Hi ${body.recipientName},</p>
-        <p>${body.message || "Please review and sign the attached contract."}</p>
+      <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; color:#1a1a1a; font-size:14px; line-height:1.6;">
+        <div style="white-space: pre-line;">${messageBody}</div>
         <p style="margin: 32px 0;">
           <a href="${signUrl}" style="background:#1a1a1a; color:#fff; padding:14px 28px; text-decoration:none; border-radius:6px; font-weight:600; display:inline-block;">
             Review &amp; Sign Document
@@ -115,9 +116,9 @@ Deno.serve(async (req) => {
     `;
 
     await client.send({
-      from: `OutSta Contracts <${gmailUser}>`,
+      from: `Mark Chua <${gmailUser}>`,
       to: body.recipientEmail,
-      subject: "Action required: Please sign your contract",
+      subject: "Welcome to OutSta",
       html,
       replyTo: userEmail || gmailUser,
     });
