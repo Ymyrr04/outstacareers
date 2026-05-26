@@ -33,7 +33,7 @@ Deno.serve(async (req) => {
     }).eq("id", envelopeId);
 
     await admin.from("contract_audit_events").insert({
-      envelope_id: envelopeId, event_type: "voided", actor_email: userData.user.email, metadata: { reason },
+      envelope_id: envelopeId, event_type: "voided", actor_email: userEmail, metadata: { reason },
     });
 
     return new Response(JSON.stringify({ success: true }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
