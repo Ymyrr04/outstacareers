@@ -107,7 +107,9 @@ Deno.serve(async (req) => {
 
       // Validate required fields filled (signer + system)
       const valueByFieldId = new Map(fieldValues.map(v => [v.template_field_id, v]));
-      const today = new Date().toISOString().slice(0, 10);
+      const todayObj = new Date();
+      const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      const today = `${monthNames[todayObj.getMonth()]} ${todayObj.getDate()}, ${todayObj.getFullYear()}`;
       for (const f of fields!) {
         if (f.assigned_to === "system" && f.field_type === "date") {
           valueByFieldId.set(f.id, { template_field_id: f.id, value: today });
@@ -231,7 +233,8 @@ Deno.serve(async (req) => {
       const aBold = await auditDoc.embedFont(StandardFonts.HelveticaBold);
       const ip = getClientIp(req);
       const ua = req.headers.get("user-agent") ?? "unknown";
-      const now = new Date().toISOString();
+      const nowObj = new Date();
+      const now = `${monthNames[nowObj.getMonth()]} ${nowObj.getDate()}, ${nowObj.getFullYear()}`;
       let yy = 800;
       const line = (t: string, bold = false, size = 11) => {
         aPage.drawText(t, { x: 40, y: yy, size, font: bold ? aBold : aFont, color: rgb(0, 0, 0) });
@@ -248,8 +251,12 @@ Deno.serve(async (req) => {
       line(`SHA-256 of signed PDF: ${signedHash}`); yy -= 6;
       line("Timeline", true, 13);
       const { data: events } = await admin.from("contract_audit_events").select("*").eq("envelope_id", envelope.id).order("created_at");
+      const fmtDate = (d: string) => {
+        const dt = new Date(d);
+        return `${monthNames[dt.getMonth()]} ${dt.getDate()}, ${dt.getFullYear()}`;
+      };
       for (const ev of (events ?? [])) {
-        line(`• ${ev.created_at}  ${ev.event_type}  ${ev.actor_email ?? ""}`, false, 9);
+        line(`• ${fmtDate(ev.created_at)}  ${ev.event_type}  ${ev.actor_email ?? ""}`, false, 9);
       }
       line(`• ${now}  signed  ${envelope.recipient_email}`, false, 9);
       const auditBytes = await auditDoc.save();
@@ -266,7 +273,7 @@ Deno.serve(async (req) => {
       if (rows.length) await admin.from("contract_envelope_field_values").upsert(rows, { onConflict: "envelope_id,template_field_id" });
 
       await admin.from("contract_envelopes").update({
-        status: "signed", signed_at: now, signed_pdf_path: signedPath, audit_pdf_path: auditPath, signed_pdf_sha256: signedHash,
+        status: "signed", signed_at: nowObj.toISOString(), signed_pdf_path: signedPath, audit_pdf_path: auditPath, signed_pdf_sha256: signedHash,
       }).eq("id", envelope.id);
 
       await admin.from("contract_audit_events").insert({
