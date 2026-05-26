@@ -121,11 +121,9 @@ Deno.serve(async (req) => {
         }
         if (f.required && f.assigned_to === "signer") {
           const v = valueByFieldId.get(f.id);
-          const hasVal = (f.field_type === "checkbox")
-            ? v?.value === "true"
-            : (f.field_type === "signature" || f.field_type === "initials")
-              ? !!v?.signature_data_url
-              : !!v?.value;
+          const hasVal = (f.field_type === "signature" || f.field_type === "initials" || f.field_type === "attachment")
+            ? !!v?.signature_data_url
+            : !!v?.value;
           if (!hasVal) return new Response(JSON.stringify({ error: `Missing required field: ${f.label || f.field_type}` }), { status: 400, headers: corsHeaders });
         }
       }
