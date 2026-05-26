@@ -309,6 +309,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
             <div className="mt-2 rounded border bg-muted/30 p-2 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs text-muted-foreground">Insert:</span>
+                <button type="button" onClick={() => insertAtCursor("{{first_name}}")} className="px-2 py-0.5 rounded border bg-background text-xs font-mono hover:bg-accent transition-colors">{`{{first_name}}`}</button>
                 <button type="button" onClick={() => insertAtCursor("{{rate}}")} className="px-2 py-0.5 rounded border bg-background text-xs font-mono hover:bg-accent transition-colors">{`{{rate}}`}</button>
                 <button type="button" onClick={() => insertAtCursor("{{start_date}}")} className="px-2 py-0.5 rounded border bg-background text-xs font-mono hover:bg-accent transition-colors">{`{{start_date}}`}</button>
                 <button type="button" onClick={() => insertAtCursor("{{start_time}}")} className="px-2 py-0.5 rounded border bg-background text-xs font-mono hover:bg-accent transition-colors">{`{{start_time}}`}</button>
