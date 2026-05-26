@@ -46,6 +46,12 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
     h = h % 12 || 12;
     return `${h}:${mStr} ${ampm} EST`;
   };
+  const formatRate = (r: string) => {
+    const trimmed = r.trim();
+    if (!trimmed) return "";
+    if (/per\s*hour|\/\s*hr|\/\s*hour|hourly/i.test(trimmed)) return trimmed;
+    return `${trimmed} per hour`;
+  };
   const insertAtCursor = (text: string) => {
     if (!text) return;
     const ta = messageRef.current;
