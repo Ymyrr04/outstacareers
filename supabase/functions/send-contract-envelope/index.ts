@@ -102,6 +102,7 @@ Deno.serve(async (req) => {
     const inline = (s: string) =>
       escape(s)
         .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+        .replace(/(^|[^\*])\*(?!\s)([^\*\n]+?)\*(?!\*)/g, "$1<em>$2</em>")
         .replace(/==(.+?)==/g, '<mark style="background:#fff176; padding:0 2px;">$1</mark>');
 
     const raw = body.message || "Please review and sign the attached contract.";

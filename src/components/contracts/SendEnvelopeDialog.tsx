@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Save, Trash2, Plus } from "lucide-react";
+import { Loader2, Save, Trash2, Plus, Bold, Italic, List, Highlighter } from "lucide-react";
 
 import { toast } from "sonner";
 
@@ -65,6 +65,42 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
       ta.focus();
       const pos = start + text.length;
       ta.setSelectionRange(pos, pos);
+    });
+  };
+  const wrapSelection = (left: string, right: string = left, placeholder = "text") => {
+    const ta = messageRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart ?? message.length;
+    const end = ta.selectionEnd ?? message.length;
+    const selected = message.slice(start, end) || placeholder;
+    const next = message.slice(0, start) + left + selected + right + message.slice(end);
+    setMessage(next);
+    requestAnimationFrame(() => {
+      ta.focus();
+      const s = start + left.length;
+      ta.setSelectionRange(s, s + selected.length);
+    });
+  };
+  const toggleBulletList = () => {
+    const ta = messageRef.current;
+    if (!ta) return;
+    const start = ta.selectionStart ?? 0;
+    const end = ta.selectionEnd ?? 0;
+    // Expand to full lines
+    const lineStart = message.lastIndexOf("\n", start - 1) + 1;
+    const lineEndIdx = message.indexOf("\n", end);
+    const lineEnd = lineEndIdx === -1 ? message.length : lineEndIdx;
+    const block = message.slice(lineStart, lineEnd) || "item";
+    const lines = block.split("\n");
+    const allBulleted = lines.every(l => /^\s*-\s+/.test(l));
+    const transformed = allBulleted
+      ? lines.map(l => l.replace(/^(\s*)-\s+/, "$1")).join("\n")
+      : lines.map(l => (l.trim() ? `- ${l.replace(/^\s*-\s+/, "")}` : "- item")).join("\n");
+    const next = message.slice(0, lineStart) + transformed + message.slice(lineEnd);
+    setMessage(next);
+    requestAnimationFrame(() => {
+      ta.focus();
+      ta.setSelectionRange(lineStart, lineStart + transformed.length);
     });
   };
 
@@ -252,7 +288,22 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
                 </Button>
               </div>
             </div>
-            <Textarea ref={messageRef} rows={6} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Hi — please review and sign the attached agreement." />
+            <div className="flex items-center gap-1 rounded-t border border-b-0 bg-muted/30 px-1 py-1">
+              <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => wrapSelection("**")} title="Bold (**text**)">
+                <Bold className="w-3.5 h-3.5" />
+              </Button>
+              <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => wrapSelection("*")} title="Italic (*text*)">
+                <Italic className="w-3.5 h-3.5" />
+              </Button>
+              <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={() => wrapSelection("==")} title="Highlight (==text==)">
+                <Highlighter className="w-3.5 h-3.5" />
+              </Button>
+              <Button type="button" variant="ghost" size="icon" className="h-7 w-7" onClick={toggleBulletList} title="Bullet list">
+                <List className="w-3.5 h-3.5" />
+              </Button>
+              <span className="ml-auto text-[10px] text-muted-foreground pr-1">Markdown: **bold** *italic* ==highlight== - bullet</span>
+            </div>
+            <Textarea ref={messageRef} rows={6} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Hi — please review and sign the attached agreement." className="rounded-t-none" />
             <div className="mt-2 rounded border bg-muted/30 p-2 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs text-muted-foreground">Insert:</span>
