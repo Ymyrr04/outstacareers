@@ -34,7 +34,7 @@ const FIELD_DEFAULTS: Record<FieldType, { w: number; h: number; label: string; i
   initials: { w: 0.08, h: 0.04, label: "Initials", icon: Hash },
   date: { w: 0.12, h: 0.03, label: "Date", icon: Calendar },
   text: { w: 0.2, h: 0.03, label: "Text", icon: Type },
-  checkbox: { w: 0.025, h: 0.025, label: "Checkbox", icon: CheckSquare },
+  attachment: { w: 0.18, h: 0.08, label: "Attachment", icon: Paperclip },
 };
 
 const PREFILL_KEYS: { value: string; label: string }[] = [
