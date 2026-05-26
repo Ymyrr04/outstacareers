@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Send, Copy, Download, Ban, FileSignature, Trash2 } from "lucide-react";
+import { Loader2, Send, Copy, Download, Ban, FileSignature, Trash2, RefreshCw } from "lucide-react";
 import { toast } from "sonner";
 import { SendEnvelopeDialog } from "./SendEnvelopeDialog";
 
@@ -52,10 +52,51 @@ export const EnvelopesPanel = () => {
 
   useEffect(() => { load(); }, []);
 
+  const [resendingId, setResendingId] = useState<string | null>(null);
+
   const copyLink = (token: string) => {
     const url = `${window.location.origin}/sign/${token}`;
     navigator.clipboard.writeText(url);
     toast.success("Signing link copied");
+  };
+
+  const resendEnvelope = async (env: Envelope) => {
+    if (!confirm(`Send a new signing link to ${env.recipient_name} (${env.recipient_email})? This creates a fresh envelope with a unique link so they can re-fill the contract.`)) return;
+    setResendingId(env.id);
+    try {
+      // Fetch full envelope row to preserve applicant/contractor links, admin prefill, and message
+      const { data: full, error: fetchErr } = await supabase
+        .from("contract_envelopes")
+        .select("template_id, recipient_name, recipient_email, applicant_id, contractor_assignment_id, admin_prefill, message")
+        .eq("id", env.id)
+        .single();
+      if (fetchErr) throw fetchErr;
+
+      const { data, error } = await supabase.functions.invoke("send-contract-envelope", {
+        body: {
+          templateId: full.template_id,
+          recipientName: full.recipient_name,
+          recipientEmail: full.recipient_email,
+          applicantId: full.applicant_id,
+          contractorAssignmentId: full.contractor_assignment_id,
+          adminPrefill: full.admin_prefill || {},
+          message: full.message,
+        },
+      });
+      if (error) throw error;
+      const signUrl = (data as any)?.signUrl;
+      if (signUrl) {
+        try { await navigator.clipboard.writeText(signUrl); } catch {}
+        toast.success("New contract sent — link copied to clipboard");
+      } else {
+        toast.success("New contract sent");
+      }
+      load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setResendingId(null);
+    }
   };
 
   const voidEnvelope = async (id: string) => {
@@ -139,11 +180,12 @@ export const EnvelopesPanel = () => {
                 </p>
               </div>
               <div className="flex gap-1 flex-shrink-0">
+                <Button size="sm" variant="outline" onClick={() => copyLink(e.signing_token)} className="gap-1" title="Copy signing link"><Copy className="w-3 h-3" /> Link</Button>
+                <Button size="sm" variant="outline" onClick={() => resendEnvelope(e)} disabled={resendingId === e.id} className="gap-1" title="Resend with a new unique link">
+                  {resendingId === e.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />} Resend
+                </Button>
                 {["sent", "viewed", "draft"].includes(e.status) && (
-                  <>
-                    <Button size="sm" variant="outline" onClick={() => copyLink(e.signing_token)} className="gap-1"><Copy className="w-3 h-3" /> Link</Button>
-                    <Button size="sm" variant="ghost" onClick={() => voidEnvelope(e.id)}><Ban className="w-4 h-4 text-destructive" /></Button>
-                  </>
+                  <Button size="sm" variant="ghost" onClick={() => voidEnvelope(e.id)} title="Void"><Ban className="w-4 h-4 text-destructive" /></Button>
                 )}
                 {e.signed_pdf_path && (
                   <Button size="sm" variant="outline" onClick={() => downloadPdf(e.signed_pdf_path!, `signed-${e.recipient_name}.pdf`)} className="gap-1"><Download className="w-3 h-3" /> Signed</Button>
