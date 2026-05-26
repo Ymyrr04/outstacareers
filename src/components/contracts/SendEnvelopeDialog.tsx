@@ -152,7 +152,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
           templateId, recipientName: recipientName.trim(), recipientEmail: recipientEmail.trim(),
           adminPrefill: prefill,
           message: message
-            .replace(/\{\{rate\}\}/g, rate || "{{rate}}")
+            .replace(/\{\{rate\}\}/g, formatRate(rate) || "{{rate}}")
             .replace(/\{\{start_date\}\}/g, formatStartDate(startDate) || "{{start_date}}")
             .replace(/\{\{start_time\}\}/g, formatStartTime(startTime) || "{{start_time}}"),
           expiresInDays,
