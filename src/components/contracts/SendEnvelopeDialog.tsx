@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Save, Trash2, Plus } from "lucide-react";
+import { Loader2, Save, Trash2, Plus, Bold, Italic, List, Highlighter } from "lucide-react";
 
 import { toast } from "sonner";
 
