@@ -137,6 +137,8 @@ Deno.serve(async (req) => {
       const helv = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const pages = pdfDoc.getPages();
 
+      const attachmentImages: Array<{ bytes: Uint8Array; kind: "png" | "jpg"; label: string }> = [];
+
       for (const f of fields!) {
         const v = valueByFieldId.get(f.id);
         if (!v) continue;
@@ -148,7 +150,17 @@ Deno.serve(async (req) => {
         const h = Number(f.height_pct) * ph;
         const y = ph - (Number(f.y_pct) * ph + h);
 
-        if ((f.field_type === "signature" || f.field_type === "initials" || f.field_type === "attachment") && v.signature_data_url) {
+        if (f.field_type === "attachment" && v.signature_data_url) {
+          // Defer attachments to dedicated pages at the end, original size
+          const m = v.signature_data_url.match(/^data:image\/(png|jpeg|jpg);base64,(.+)$/);
+          if (m) {
+            const imgBytes = Uint8Array.from(atob(m[2]), c => c.charCodeAt(0));
+            attachmentImages.push({ bytes: imgBytes, kind: m[1] === "png" ? "png" : "jpg", label: f.label || "Attachment" });
+          }
+          continue;
+        }
+
+        if ((f.field_type === "signature" || f.field_type === "initials") && v.signature_data_url) {
           const m = v.signature_data_url.match(/^data:image\/(png|jpeg|jpg);base64,(.+)$/);
           if (m) {
             const imgBytes = Uint8Array.from(atob(m[2]), c => c.charCodeAt(0));
@@ -161,6 +173,28 @@ Deno.serve(async (req) => {
           const fontSize = Math.min(h * 0.7, 12);
           page.drawText(text, { x: x + 2, y: y + (h - fontSize) / 2, size: fontSize, font: helv, color: rgb(0, 0, 0), maxWidth: w - 4 });
         }
+      }
+
+      // Append attachments at the end, each on its own page, at original size (scaled down only if larger than page)
+      for (const att of attachmentImages) {
+        const img = att.kind === "png" ? await pdfDoc.embedPng(att.bytes) : await pdfDoc.embedJpg(att.bytes);
+        const lastPage = pages[pages.length - 1];
+        const { width: pw, height: ph } = lastPage.getSize();
+        const newPage = pdfDoc.addPage([pw, ph]);
+        const margin = 40;
+        const labelSize = 12;
+        newPage.drawText(att.label, { x: margin, y: ph - margin - labelSize, size: labelSize, font: helv, color: rgb(0, 0, 0) });
+        const maxW = pw - margin * 2;
+        const maxH = ph - margin * 3 - labelSize;
+        let dw = img.width;
+        let dh = img.height;
+        if (dw > maxW || dh > maxH) {
+          const scaled = img.scaleToFit(maxW, maxH);
+          dw = scaled.width; dh = scaled.height;
+        }
+        const dx = (pw - dw) / 2;
+        const dy = margin;
+        newPage.drawImage(img, { x: dx, y: dy, width: dw, height: dh });
       }
 
       const signedBytes = await pdfDoc.save();
