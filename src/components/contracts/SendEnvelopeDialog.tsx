@@ -5,11 +5,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2 } from "lucide-react";
+import { Loader2, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
 interface Template { id: string; name: string; }
 interface AdminField { id: string; label: string | null; field_key: string | null; }
+interface MsgTemplate { id: string; name: string; message: string; }
 
 export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boolean; onOpenChange: (o: boolean) => void; onSent: () => void; }) => {
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -21,12 +22,20 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
   const [message, setMessage] = useState("");
   const [expiresInDays, setExpiresInDays] = useState(14);
   const [sending, setSending] = useState(false);
+  const [msgTemplates, setMsgTemplates] = useState<MsgTemplate[]>([]);
+  const [msgTemplateId, setMsgTemplateId] = useState<string>("");
+
+  const loadMsgTemplates = async () => {
+    const { data } = await supabase.from("contract_message_templates").select("id, name, message").order("name");
+    setMsgTemplates((data || []) as MsgTemplate[]);
+  };
 
   useEffect(() => {
     if (!open) return;
     supabase.from("contract_templates").select("id, name").eq("is_active", true).order("name").then(({ data }) => {
       setTemplates((data || []) as Template[]);
     });
+    loadMsgTemplates();
   }, [open]);
 
   useEffect(() => {
@@ -35,6 +44,40 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
       setAdminFields((data || []) as AdminField[]);
     });
   }, [templateId]);
+
+  const applyMsgTemplate = (id: string) => {
+    setMsgTemplateId(id);
+    const t = msgTemplates.find(m => m.id === id);
+    if (t) setMessage(t.message);
+  };
+
+  const saveAsTemplate = async () => {
+    const trimmed = message.trim();
+    if (!trimmed) return toast.error("Message is empty.");
+    const name = window.prompt("Template name?")?.trim();
+    if (!name) return;
+    const { data, error } = await supabase
+      .from("contract_message_templates")
+      .insert({ name, message: trimmed })
+      .select("id, name, message")
+      .single();
+    if (error) return toast.error(error.message);
+    toast.success("Template saved");
+    setMsgTemplates(prev => [...prev, data as MsgTemplate].sort((a, b) => a.name.localeCompare(b.name)));
+    setMsgTemplateId((data as MsgTemplate).id);
+  };
+
+  const deleteTemplate = async () => {
+    if (!msgTemplateId) return;
+    const t = msgTemplates.find(m => m.id === msgTemplateId);
+    if (!t) return;
+    if (!confirm(`Delete template "${t.name}"?`)) return;
+    const { error } = await supabase.from("contract_message_templates").delete().eq("id", msgTemplateId);
+    if (error) return toast.error(error.message);
+    setMsgTemplates(prev => prev.filter(m => m.id !== msgTemplateId));
+    setMsgTemplateId("");
+    toast.success("Template deleted");
+  };
 
   const send = async () => {
     if (!templateId || !recipientEmail || !recipientName) return toast.error("Template, name and email are required.");
@@ -51,7 +94,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
 
       toast.success(`Contract sent to ${recipientEmail}`);
       onOpenChange(false);
-      setTemplateId(""); setRecipientName(""); setRecipientEmail(""); setMessage(""); setPrefill({});
+      setTemplateId(""); setRecipientName(""); setRecipientEmail(""); setMessage(""); setPrefill({}); setMsgTemplateId("");
       onSent();
     } catch (e) {
       toast.error((e as Error).message);
@@ -99,7 +142,27 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
             </div>
           )}
           <div>
-            <label className="text-sm font-medium">Message (optional)</label>
+            <div className="flex items-center justify-between gap-2 mb-1">
+              <label className="text-sm font-medium">Message (optional)</label>
+              <div className="flex items-center gap-1">
+                <Select value={msgTemplateId} onValueChange={applyMsgTemplate}>
+                  <SelectTrigger className="h-8 w-44 text-xs">
+                    <SelectValue placeholder={msgTemplates.length ? "Use template…" : "No templates yet"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {msgTemplates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+                {msgTemplateId && (
+                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={deleteTemplate} title="Delete template">
+                    <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                  </Button>
+                )}
+                <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={saveAsTemplate} title="Save as template">
+                  <Save className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            </div>
             <Textarea rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Hi — please review and sign the attached agreement." />
           </div>
           <div>
