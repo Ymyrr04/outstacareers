@@ -52,10 +52,51 @@ export const EnvelopesPanel = () => {
 
   useEffect(() => { load(); }, []);
 
+  const [resendingId, setResendingId] = useState<string | null>(null);
+
   const copyLink = (token: string) => {
     const url = `${window.location.origin}/sign/${token}`;
     navigator.clipboard.writeText(url);
     toast.success("Signing link copied");
+  };
+
+  const resendEnvelope = async (env: Envelope) => {
+    if (!confirm(`Send a new signing link to ${env.recipient_name} (${env.recipient_email})? This creates a fresh envelope with a unique link so they can re-fill the contract.`)) return;
+    setResendingId(env.id);
+    try {
+      // Fetch full envelope row to preserve applicant/contractor links, admin prefill, and message
+      const { data: full, error: fetchErr } = await supabase
+        .from("contract_envelopes")
+        .select("template_id, recipient_name, recipient_email, applicant_id, contractor_assignment_id, admin_prefill, message")
+        .eq("id", env.id)
+        .single();
+      if (fetchErr) throw fetchErr;
+
+      const { data, error } = await supabase.functions.invoke("send-contract-envelope", {
+        body: {
+          templateId: full.template_id,
+          recipientName: full.recipient_name,
+          recipientEmail: full.recipient_email,
+          applicantId: full.applicant_id,
+          contractorAssignmentId: full.contractor_assignment_id,
+          adminPrefill: full.admin_prefill || {},
+          message: full.message,
+        },
+      });
+      if (error) throw error;
+      const signUrl = (data as any)?.signUrl;
+      if (signUrl) {
+        try { await navigator.clipboard.writeText(signUrl); } catch {}
+        toast.success("New contract sent — link copied to clipboard");
+      } else {
+        toast.success("New contract sent");
+      }
+      load();
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setResendingId(null);
+    }
   };
 
   const voidEnvelope = async (id: string) => {
