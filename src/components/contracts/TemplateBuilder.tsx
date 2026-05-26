@@ -8,7 +8,7 @@ import { Loader2, ArrowLeft, Trash2, PenLine, Type, Calendar, Paperclip, Hash } 
 import { toast } from "sonner";
 import { renderPdfPages, RenderedPage } from "@/lib/pdfRender";
 
-type FieldType = "signature" | "initials" | "date" | "text" | "checkbox";
+type FieldType = "signature" | "initials" | "date" | "text" | "attachment";
 type AssignedTo = "signer" | "admin" | "system";
 
 interface Field {
