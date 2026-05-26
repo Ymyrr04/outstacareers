@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import nodemailer from "npm:nodemailer@6.9.16";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { crypto } from "https://deno.land/std@0.190.0/crypto/mod.ts";
 
@@ -60,16 +60,11 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const client = new SMTPClient({
-      connection: {
-        hostname: "smtp.gmail.com",
-        port: 465,
-        tls: true,
-        auth: {
-          username: gmailUser,
-          password: gmailPassword,
-        },
-      },
+    const transporter = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: { user: gmailUser, pass: gmailPassword },
     });
 
     let processed = 0;
@@ -142,15 +137,13 @@ const handler = async (req: Request): Promise<Response> => {
           .replace(/\n{3,}/g, '\n\n')
           .trim();
 
-        await client.send({
+        await transporter.sendMail({
           from: `OutSta Recruitment <${gmailUser}>`,
           to: email.recipient_email,
           subject: email.subject,
-          content: plainText,
+          text: plainText,
           html: emailHtml,
-          headers: {
-            "Message-ID": messageId,
-          },
+          messageId,
         });
 
         // Update scheduled email status
@@ -203,7 +196,7 @@ const handler = async (req: Request): Promise<Response> => {
       }
     }
 
-    await client.close();
+    transporter.close();
 
     console.log(`Processed ${processed} emails, ${failed} failed`);
 
