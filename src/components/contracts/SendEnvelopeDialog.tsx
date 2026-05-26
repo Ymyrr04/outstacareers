@@ -121,7 +121,12 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
       const { data, error } = await supabase.functions.invoke("send-contract-envelope", {
         body: {
           templateId, recipientName: recipientName.trim(), recipientEmail: recipientEmail.trim(),
-          adminPrefill: prefill, message, expiresInDays,
+          adminPrefill: prefill,
+          message: message
+            .replace(/\{\{rate\}\}/g, rate || "{{rate}}")
+            .replace(/\{\{start_date\}\}/g, formatStartDate(startDate) || "{{start_date}}")
+            .replace(/\{\{start_time\}\}/g, formatStartTime(startTime) || "{{start_time}}"),
+          expiresInDays,
         },
       });
       if (error) throw error;
