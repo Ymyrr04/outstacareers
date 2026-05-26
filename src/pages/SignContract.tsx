@@ -40,6 +40,8 @@ interface LoadResponse {
 }
 
 const FUNCTIONS_BASE = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1`;
+const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
+const PUBLIC_HEADERS = { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` };
 
 const SignContract = () => {
   const { token } = useParams<{ token: string }>();
