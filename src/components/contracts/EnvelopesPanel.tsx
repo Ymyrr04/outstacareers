@@ -91,6 +91,24 @@ export const EnvelopesPanel = () => {
     }
   };
 
+  const deleteEnvelope = async (e: Envelope) => {
+    if (!confirm(`Delete contract for ${e.recipient_name}? This permanently removes the envelope and any signed PDFs.`)) return;
+    try {
+      const paths = [e.signed_pdf_path, e.audit_pdf_path].filter(Boolean) as string[];
+      if (paths.length) {
+        await supabase.storage.from("contract-signed").remove(paths);
+      }
+      await supabase.from("contract_envelope_field_values").delete().eq("envelope_id", e.id);
+      await supabase.from("contract_audit_events").delete().eq("envelope_id", e.id);
+      const { error } = await supabase.from("contract_envelopes").delete().eq("id", e.id);
+      if (error) throw error;
+      toast.success("Deleted");
+      setEnvelopes(prev => prev.filter(x => x.id !== e.id));
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
