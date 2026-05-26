@@ -71,8 +71,8 @@ Deno.serve(async (req) => {
         expires_at: expiresAt,
         status: "sent",
         sent_at: new Date().toISOString(),
-        sender_user_id: userData.user.id,
-        sender_email: userData.user.email,
+        sender_user_id: userId,
+        sender_email: userEmail,
       })
       .select()
       .single();
@@ -82,7 +82,7 @@ Deno.serve(async (req) => {
     await admin.from("contract_audit_events").insert({
       envelope_id: envelope.id,
       event_type: "sent",
-      actor_email: userData.user.email,
+      actor_email: userEmail,
       metadata: { recipient: body.recipientEmail },
     });
 
@@ -117,7 +117,7 @@ Deno.serve(async (req) => {
       to: body.recipientEmail,
       subject: "Action required: Please sign your contract",
       html,
-      replyTo: userData.user.email || gmailUser,
+      replyTo: userEmail || gmailUser,
     });
     await client.close();
 
