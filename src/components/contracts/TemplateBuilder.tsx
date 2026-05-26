@@ -37,6 +37,20 @@ const FIELD_DEFAULTS: Record<FieldType, { w: number; h: number; label: string; i
   checkbox: { w: 0.025, h: 0.025, label: "Checkbox", icon: CheckSquare },
 };
 
+const PREFILL_KEYS: { value: string; label: string }[] = [
+  { value: "date_entered_into", label: "Date entered into" },
+  { value: "effective_date", label: "Effective date" },
+  { value: "client_name", label: "Client name" },
+  { value: "contractor_name", label: "Contractor name" },
+  { value: "contractor_address", label: "Contractor address" },
+  { value: "role_title", label: "Role title" },
+  { value: "duration_months", label: "Duration (months)" },
+  { value: "hourly_rate", label: "Hourly rate" },
+  { value: "monthly_rate", label: "Monthly rate" },
+  { value: "start_date", label: "Start date" },
+  { value: "end_date", label: "End date" },
+];
+
 const PendingCtx = createContext<{ pending: FieldType | null; setPending: (v: FieldType | null) => void }>({ pending: null, setPending: () => {} });
 
 export const TemplateBuilder = ({ templateId, onBack }: { templateId: string; onBack: () => void }) => {
