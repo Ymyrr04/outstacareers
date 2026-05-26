@@ -658,6 +658,270 @@ export type Database = {
         }
         Relationships: []
       }
+      contract_audit_events: {
+        Row: {
+          actor_email: string | null
+          created_at: string
+          envelope_id: string
+          event_type: string
+          id: string
+          ip_address: string | null
+          metadata: Json
+          user_agent: string | null
+        }
+        Insert: {
+          actor_email?: string | null
+          created_at?: string
+          envelope_id: string
+          event_type: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          user_agent?: string | null
+        }
+        Update: {
+          actor_email?: string | null
+          created_at?: string
+          envelope_id?: string
+          event_type?: string
+          id?: string
+          ip_address?: string | null
+          metadata?: Json
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_audit_events_envelope_id_fkey"
+            columns: ["envelope_id"]
+            isOneToOne: false
+            referencedRelation: "contract_envelopes"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_envelope_field_values: {
+        Row: {
+          envelope_id: string
+          filled_at: string
+          id: string
+          signature_data_url: string | null
+          template_field_id: string
+          value: string | null
+        }
+        Insert: {
+          envelope_id: string
+          filled_at?: string
+          id?: string
+          signature_data_url?: string | null
+          template_field_id: string
+          value?: string | null
+        }
+        Update: {
+          envelope_id?: string
+          filled_at?: string
+          id?: string
+          signature_data_url?: string | null
+          template_field_id?: string
+          value?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_envelope_field_values_envelope_id_fkey"
+            columns: ["envelope_id"]
+            isOneToOne: false
+            referencedRelation: "contract_envelopes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contract_envelope_field_values_template_field_id_fkey"
+            columns: ["template_field_id"]
+            isOneToOne: false
+            referencedRelation: "contract_template_fields"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_envelopes: {
+        Row: {
+          admin_prefill: Json
+          applicant_id: string | null
+          audit_pdf_path: string | null
+          contractor_assignment_id: string | null
+          created_at: string
+          expires_at: string
+          id: string
+          message: string | null
+          recipient_email: string
+          recipient_name: string
+          sender_email: string | null
+          sender_user_id: string | null
+          sent_at: string | null
+          signed_at: string | null
+          signed_pdf_path: string | null
+          signed_pdf_sha256: string | null
+          signing_token: string
+          status: string
+          template_id: string
+          updated_at: string
+          viewed_at: string | null
+          voided_at: string | null
+          voided_reason: string | null
+        }
+        Insert: {
+          admin_prefill?: Json
+          applicant_id?: string | null
+          audit_pdf_path?: string | null
+          contractor_assignment_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          message?: string | null
+          recipient_email: string
+          recipient_name: string
+          sender_email?: string | null
+          sender_user_id?: string | null
+          sent_at?: string | null
+          signed_at?: string | null
+          signed_pdf_path?: string | null
+          signed_pdf_sha256?: string | null
+          signing_token: string
+          status?: string
+          template_id: string
+          updated_at?: string
+          viewed_at?: string | null
+          voided_at?: string | null
+          voided_reason?: string | null
+        }
+        Update: {
+          admin_prefill?: Json
+          applicant_id?: string | null
+          audit_pdf_path?: string | null
+          contractor_assignment_id?: string | null
+          created_at?: string
+          expires_at?: string
+          id?: string
+          message?: string | null
+          recipient_email?: string
+          recipient_name?: string
+          sender_email?: string | null
+          sender_user_id?: string | null
+          sent_at?: string | null
+          signed_at?: string | null
+          signed_pdf_path?: string | null
+          signed_pdf_sha256?: string | null
+          signing_token?: string
+          status?: string
+          template_id?: string
+          updated_at?: string
+          viewed_at?: string | null
+          voided_at?: string | null
+          voided_reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_envelopes_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "contract_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_template_fields: {
+        Row: {
+          assigned_to: string
+          created_at: string
+          field_key: string | null
+          field_type: string
+          height_pct: number
+          id: string
+          label: string | null
+          page: number
+          required: boolean
+          sort_order: number
+          template_id: string
+          width_pct: number
+          x_pct: number
+          y_pct: number
+        }
+        Insert: {
+          assigned_to?: string
+          created_at?: string
+          field_key?: string | null
+          field_type: string
+          height_pct: number
+          id?: string
+          label?: string | null
+          page?: number
+          required?: boolean
+          sort_order?: number
+          template_id: string
+          width_pct: number
+          x_pct: number
+          y_pct: number
+        }
+        Update: {
+          assigned_to?: string
+          created_at?: string
+          field_key?: string | null
+          field_type?: string
+          height_pct?: number
+          id?: string
+          label?: string | null
+          page?: number
+          required?: boolean
+          sort_order?: number
+          template_id?: string
+          width_pct?: number
+          x_pct?: number
+          y_pct?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contract_template_fields_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "contract_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contract_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          is_active: boolean
+          name: string
+          page_count: number
+          pdf_path: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          page_count?: number
+          pdf_path: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          page_count?: number
+          pdf_path?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contractor_assignments: {
         Row: {
           applicant_id: string
