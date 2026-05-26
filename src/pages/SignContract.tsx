@@ -59,7 +59,7 @@ const SignContract = () => {
     (async () => {
       try {
         setLoading(true);
-        const r = await fetch(`${FUNCTIONS_BASE}/sign-contract?token=${encodeURIComponent(token)}`);
+        const r = await fetch(`${FUNCTIONS_BASE}/sign-contract?token=${encodeURIComponent(token)}`, { headers: PUBLIC_HEADERS });
         if (!r.ok) {
           const t = await r.text();
           throw new Error(t || `HTTP ${r.status}`);
