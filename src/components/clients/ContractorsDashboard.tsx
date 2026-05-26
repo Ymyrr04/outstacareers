@@ -141,6 +141,7 @@ export const ContractorsDashboard = () => {
     email: string;
     company: string;
     jobTitle: string;
+    hourlyRate?: number | null;
   } | null>(null);
   const [pendingStatusChange, setPendingStatusChange] = useState<{
     contractorId: string;
