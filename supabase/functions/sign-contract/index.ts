@@ -170,8 +170,30 @@ Deno.serve(async (req) => {
           }
         } else {
           const text = v.value || "";
-          const fontSize = Math.min(h * 0.7, 12);
-          page.drawText(text, { x: x + 2, y: y + (h - fontSize) / 2, size: fontSize, font: helv, color: rgb(0, 0, 0), maxWidth: w - 4 });
+          if (text) {
+            // Auto-fit: scale font size to fill the box (centered), shrinking if needed
+            const padX = 4;
+            const padY = 2;
+            const maxW = Math.max(w - padX * 2, 1);
+            const maxH = Math.max(h - padY * 2, 1);
+            let fontSize = Math.min(maxH, 48);
+            const minSize = 4;
+            while (fontSize > minSize) {
+              const tw = helv.widthOfTextAtSize(text, fontSize);
+              const th = helv.heightAtSize(fontSize);
+              if (tw <= maxW && th <= maxH) break;
+              fontSize -= 0.5;
+            }
+            const tw = helv.widthOfTextAtSize(text, fontSize);
+            const th = helv.heightAtSize(fontSize);
+            page.drawText(text, {
+              x: x + (w - tw) / 2,
+              y: y + (h - th) / 2,
+              size: fontSize,
+              font: helv,
+              color: rgb(0, 0, 0),
+            });
+          }
         }
       }
 
