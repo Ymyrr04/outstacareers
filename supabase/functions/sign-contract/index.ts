@@ -107,7 +107,9 @@ Deno.serve(async (req) => {
 
       // Validate required fields filled (signer + system)
       const valueByFieldId = new Map(fieldValues.map(v => [v.template_field_id, v]));
-      const today = new Date().toISOString().slice(0, 10);
+      const todayObj = new Date();
+      const monthNames = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+      const today = `${monthNames[todayObj.getMonth()]} ${todayObj.getDate()}, ${todayObj.getFullYear()}`;
       for (const f of fields!) {
         if (f.assigned_to === "system" && f.field_type === "date") {
           valueByFieldId.set(f.id, { template_field_id: f.id, value: today });
