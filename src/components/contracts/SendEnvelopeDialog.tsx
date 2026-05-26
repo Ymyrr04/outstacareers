@@ -202,31 +202,14 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
                 const key = f.field_key || f.label || f.id;
                 const isDate = f.field_type === "date";
                 const current = prefill[key] ?? "";
-                // For date fields, mirror an ISO yyyy-mm-dd value but store the formatted display string in prefill
-                const isoForDate = (() => {
-                  if (!isDate || !current) return "";
-                  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-                  const m = current.match(/^([A-Za-z]+) (\d{1,2}), (\d{4})$/);
-                  if (!m) return "";
-                  const mi = months.indexOf(m[1]);
-                  if (mi < 0) return "";
-                  return `${m[3]}-${String(mi + 1).padStart(2, "0")}-${String(parseInt(m[2], 10)).padStart(2, "0")}`;
-                })();
                 return (
                   <div key={f.id}>
                     <label className="text-xs">{f.label || key}</label>
                     {isDate ? (
                       <Input
                         type="date"
-                        value={isoForDate}
-                        onChange={(e) => {
-                          const iso = e.target.value;
-                          if (!iso) { setPrefill(p => ({ ...p, [key]: "" })); return; }
-                          const [y, mo, d] = iso.split("-").map(Number);
-                          const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
-                          const formatted = `${months[mo - 1]} ${d}, ${y}`;
-                          setPrefill(p => ({ ...p, [key]: formatted }));
-                        }}
+                        value={current}
+                        onChange={(e) => setPrefill(p => ({ ...p, [key]: e.target.value }))}
                       />
                     ) : (
                       <Input value={current} onChange={(e) => setPrefill(p => ({ ...p, [key]: e.target.value }))} />
