@@ -45,8 +45,10 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
     }
     const userId = claimsData.claims.sub;
+    const userEmail = claimsData.claims.email as string | undefined;
 
     const admin = createClient(supabaseUrl, serviceKey);
+
 
     const body: SendEnvelopeRequest = await req.json();
 
