@@ -1,11 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Save, Trash2 } from "lucide-react";
+import { Loader2, Save, Trash2, Plus } from "lucide-react";
+
 import { toast } from "sonner";
 
 interface Template { id: string; name: string; }
@@ -24,6 +25,39 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
   const [sending, setSending] = useState(false);
   const [msgTemplates, setMsgTemplates] = useState<MsgTemplate[]>([]);
   const [msgTemplateId, setMsgTemplateId] = useState<string>("");
+  const [rate, setRate] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const messageRef = useRef<HTMLTextAreaElement>(null);
+
+  const formatStartDate = (iso: string) => {
+    if (!iso) return "";
+    const [y, m, d] = iso.split("-").map(Number);
+    const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+    return `${months[m - 1]} ${d}, ${y}`;
+  };
+  const formatStartTime = (t: string) => {
+    if (!t) return "";
+    const [hStr, mStr] = t.split(":");
+    let h = parseInt(hStr, 10);
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12 || 12;
+    return `${h}:${mStr} ${ampm}`;
+  };
+  const insertAtCursor = (text: string) => {
+    if (!text) return;
+    const ta = messageRef.current;
+    if (!ta) { setMessage(m => m + text); return; }
+    const start = ta.selectionStart ?? message.length;
+    const end = ta.selectionEnd ?? message.length;
+    const next = message.slice(0, start) + text + message.slice(end);
+    setMessage(next);
+    requestAnimationFrame(() => {
+      ta.focus();
+      const pos = start + text.length;
+      ta.setSelectionRange(pos, pos);
+    });
+  };
 
   const loadMsgTemplates = async () => {
     const { data } = await supabase.from("contract_message_templates").select("id, name, message").order("name");
@@ -163,7 +197,30 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
                 </Button>
               </div>
             </div>
-            <Textarea rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Hi — please review and sign the attached agreement." />
+            <Textarea ref={messageRef} rows={3} value={message} onChange={(e) => setMessage(e.target.value)} placeholder="Hi — please review and sign the attached agreement." />
+            <div className="mt-2 grid grid-cols-3 gap-2">
+              <div>
+                <label className="text-xs text-muted-foreground">Rate</label>
+                <div className="flex gap-1">
+                  <Input className="h-8 text-sm" value={rate} onChange={(e) => setRate(e.target.value)} placeholder="$25/hr" />
+                  <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => insertAtCursor(rate)} title="Insert rate"><Plus className="w-3.5 h-3.5" /></Button>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Start date</label>
+                <div className="flex gap-1">
+                  <Input type="date" className="h-8 text-sm" value={startDate} onChange={(e) => setStartDate(e.target.value)} />
+                  <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => insertAtCursor(formatStartDate(startDate))} title="Insert start date"><Plus className="w-3.5 h-3.5" /></Button>
+                </div>
+              </div>
+              <div>
+                <label className="text-xs text-muted-foreground">Start time</label>
+                <div className="flex gap-1">
+                  <Input type="time" className="h-8 text-sm" value={startTime} onChange={(e) => setStartTime(e.target.value)} />
+                  <Button type="button" variant="outline" size="icon" className="h-8 w-8 shrink-0" onClick={() => insertAtCursor(formatStartTime(startTime))} title="Insert start time"><Plus className="w-3.5 h-3.5" /></Button>
+                </div>
+              </div>
+            </div>
           </div>
           <div>
             <label className="text-sm font-medium">Link expires in (days)</label>
