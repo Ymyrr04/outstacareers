@@ -986,6 +986,7 @@ export const ContractorsDashboard = () => {
                                       email: contractor.applicant?.email || '',
                                       company: contractor.client?.company_name || '',
                                       jobTitle: contractor.job_title || '',
+                                      hourlyRate: contractor.hourly_rate,
                                     });
                                     setEmailDialogOpen(true);
                                   }}
