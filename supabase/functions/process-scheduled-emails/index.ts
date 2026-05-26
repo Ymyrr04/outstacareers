@@ -126,11 +126,27 @@ const handler = async (req: Request): Promise<Response> => {
         const domain = gmailUser!.split('@')[1] || 'outsta.io';
         const messageId = generateMessageId(domain);
 
+        // Build plain-text fallback so receivers preferring text/plain
+        // don't see the raw multipart MIME structure.
+        const plainText = email.body_html
+          .replace(/<br\s*\/?>(\n)?/gi, '\n')
+          .replace(/<\/(p|div|h[1-6]|li)>/gi, '\n')
+          .replace(/<li[^>]*>/gi, '• ')
+          .replace(/<[^>]+>/g, '')
+          .replace(/&nbsp;/g, ' ')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/&quot;/g, '"')
+          .replace(/&#39;|&apos;/g, "'")
+          .replace(/\n{3,}/g, '\n\n')
+          .trim();
+
         await client.send({
           from: `OutSta Recruitment <${gmailUser}>`,
           to: email.recipient_email,
           subject: email.subject,
-          content: "auto",
+          content: plainText,
           html: emailHtml,
           headers: {
             "Message-ID": messageId,
