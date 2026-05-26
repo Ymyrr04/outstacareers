@@ -1686,7 +1686,7 @@ const Admin = () => {
                 Workflow
               </TabsTrigger>
             )}
-            {canViewTab('contracts' as any) && (
+            {canViewTab('contracts') && (
               <TabsTrigger value="contracts" className="flex items-center gap-2">
                 <FileSignature className="w-4 h-4" />
                 Contracts
