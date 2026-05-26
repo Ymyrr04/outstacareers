@@ -132,6 +132,19 @@ export const TemplateBuilder = ({ templateId, onBack }: { templateId: string; on
     }));
   };
 
+  const handleResize = (id: string, dx: number, dy: number, pageW: number, pageH: number) => {
+    setFields((prev) => prev.map(f => {
+      if (f.id !== id) return f;
+      return {
+        ...f,
+        width_pct: Math.max(0.01, Math.min(1 - f.x_pct, f.width_pct + dx / pageW)),
+        height_pct: Math.max(0.01, Math.min(1 - f.y_pct, f.height_pct + dy / pageH)),
+        _dirty: true,
+      };
+    }));
+  };
+
+
   const saveAll = async () => {
     setSaving(true);
     try {
