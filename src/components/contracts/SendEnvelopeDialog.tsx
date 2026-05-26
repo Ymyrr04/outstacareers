@@ -76,7 +76,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
 
   useEffect(() => {
     if (!templateId) { setAdminFields([]); setPrefill({}); return; }
-    supabase.from("contract_template_fields").select("id, label, field_key").eq("template_id", templateId).eq("assigned_to", "admin").then(({ data }) => {
+    supabase.from("contract_template_fields").select("id, label, field_key, field_type").eq("template_id", templateId).eq("assigned_to", "admin").then(({ data }) => {
       setAdminFields((data || []) as AdminField[]);
     });
   }, [templateId]);
