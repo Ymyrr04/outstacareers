@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Send, Copy, Download, Ban, FileSignature } from "lucide-react";
+import { Loader2, Send, Copy, Download, Ban, FileSignature, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { SendEnvelopeDialog } from "./SendEnvelopeDialog";
 
@@ -91,6 +91,24 @@ export const EnvelopesPanel = () => {
     }
   };
 
+  const deleteEnvelope = async (e: Envelope) => {
+    if (!confirm(`Delete contract for ${e.recipient_name}? This permanently removes the envelope and any signed PDFs.`)) return;
+    try {
+      const paths = [e.signed_pdf_path, e.audit_pdf_path].filter(Boolean) as string[];
+      if (paths.length) {
+        await supabase.storage.from("contract-signed").remove(paths);
+      }
+      await supabase.from("contract_envelope_field_values").delete().eq("envelope_id", e.id);
+      await supabase.from("contract_audit_events").delete().eq("envelope_id", e.id);
+      const { error } = await supabase.from("contract_envelopes").delete().eq("id", e.id);
+      if (error) throw error;
+      toast.success("Deleted");
+      setEnvelopes(prev => prev.filter(x => x.id !== e.id));
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  };
+
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
@@ -133,6 +151,7 @@ export const EnvelopesPanel = () => {
                 {e.audit_pdf_path && (
                   <Button size="sm" variant="ghost" onClick={() => downloadPdf(e.audit_pdf_path!, `audit-${e.recipient_name}.pdf`)} className="gap-1"><Download className="w-3 h-3" /> Audit</Button>
                 )}
+                <Button size="sm" variant="ghost" onClick={() => deleteEnvelope(e)} title="Delete"><Trash2 className="w-4 h-4 text-destructive" /></Button>
               </div>
             </Card>
           ))}
