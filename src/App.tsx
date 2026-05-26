@@ -23,6 +23,7 @@ import AiUsage from "./pages/AiUsage";
 import PortalLogin from "./pages/PortalLogin";
 import PortalChangePassword from "./pages/PortalChangePassword";
 import PortalDashboard from "./pages/PortalDashboard";
+import SignContract from "./pages/SignContract";
 
 const queryClient = new QueryClient();
 
