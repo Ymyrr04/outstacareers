@@ -219,7 +219,8 @@ export const TemplateBuilder = ({ templateId, onBack }: { templateId: string; on
             ))}
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-4 sticky top-20 self-start max-h-[calc(100vh-6rem)] overflow-y-auto">
+
             <Card className="p-3">
               <p className="text-sm font-semibold mb-2">Field types</p>
               <p className="text-xs text-muted-foreground mb-3">Select, then click on the PDF.</p>
