@@ -368,7 +368,7 @@ function PageCanvas({
           }}
           title={f.label || f.field_type}
         >
-          <span className="truncate px-1 pointer-events-none">{f.field_type}{f.assigned_to === "admin" ? " *" : ""}</span>
+          <span className="truncate px-1 pointer-events-none">{f.label || f.field_type}{f.assigned_to === "admin" ? " *" : ""}</span>
           {selectedId === f.id && (
             <div
               onMouseDown={(e) => startInteraction(f.id, e, "resize")}
