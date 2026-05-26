@@ -10,7 +10,7 @@ import { Loader2, Save, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 interface Template { id: string; name: string; }
-interface AdminField { id: string; label: string | null; field_key: string | null; }
+interface AdminField { id: string; label: string | null; field_key: string | null; field_type: string | null; }
 interface MsgTemplate { id: string; name: string; message: string; }
 
 export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boolean; onOpenChange: (o: boolean) => void; onSent: () => void; }) => {
@@ -76,7 +76,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
 
   useEffect(() => {
     if (!templateId) { setAdminFields([]); setPrefill({}); return; }
-    supabase.from("contract_template_fields").select("id, label, field_key").eq("template_id", templateId).eq("assigned_to", "admin").then(({ data }) => {
+    supabase.from("contract_template_fields").select("id, label, field_key, field_type").eq("template_id", templateId).eq("assigned_to", "admin").then(({ data }) => {
       setAdminFields((data || []) as AdminField[]);
     });
   }, [templateId]);
@@ -173,10 +173,37 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
               <p className="text-xs font-semibold text-muted-foreground">Admin pre-fill</p>
               {adminFields.map(f => {
                 const key = f.field_key || f.label || f.id;
+                const isDate = f.field_type === "date";
+                const current = prefill[key] ?? "";
+                // For date fields, mirror an ISO yyyy-mm-dd value but store the formatted display string in prefill
+                const isoForDate = (() => {
+                  if (!isDate || !current) return "";
+                  const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+                  const m = current.match(/^([A-Za-z]+) (\d{1,2}), (\d{4})$/);
+                  if (!m) return "";
+                  const mi = months.indexOf(m[1]);
+                  if (mi < 0) return "";
+                  return `${m[3]}-${String(mi + 1).padStart(2, "0")}-${String(parseInt(m[2], 10)).padStart(2, "0")}`;
+                })();
                 return (
                   <div key={f.id}>
                     <label className="text-xs">{f.label || key}</label>
-                    <Input value={prefill[key] ?? ""} onChange={(e) => setPrefill(p => ({ ...p, [key]: e.target.value }))} />
+                    {isDate ? (
+                      <Input
+                        type="date"
+                        value={isoForDate}
+                        onChange={(e) => {
+                          const iso = e.target.value;
+                          if (!iso) { setPrefill(p => ({ ...p, [key]: "" })); return; }
+                          const [y, mo, d] = iso.split("-").map(Number);
+                          const months = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+                          const formatted = `${months[mo - 1]} ${d}, ${y}`;
+                          setPrefill(p => ({ ...p, [key]: formatted }));
+                        }}
+                      />
+                    ) : (
+                      <Input value={current} onChange={(e) => setPrefill(p => ({ ...p, [key]: e.target.value }))} />
+                    )}
                   </div>
                 );
               })}
