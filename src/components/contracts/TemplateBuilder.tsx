@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, ArrowLeft, Trash2, PenLine, Type, Calendar, CheckSquare, Hash } from "lucide-react";
+import { Loader2, ArrowLeft, Trash2, PenLine, Type, Calendar, Paperclip, Hash } from "lucide-react";
 import { toast } from "sonner";
 import { renderPdfPages, RenderedPage } from "@/lib/pdfRender";
 
