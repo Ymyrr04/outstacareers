@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 
 interface TemplateField {
   id: string;
-  field_type: "signature" | "initials" | "date" | "text" | "checkbox";
+  field_type: "signature" | "initials" | "date" | "text" | "attachment";
   page: number;
   x_pct: number;
   y_pct: number;
