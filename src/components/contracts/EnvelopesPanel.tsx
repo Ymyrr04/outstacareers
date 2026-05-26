@@ -180,11 +180,12 @@ export const EnvelopesPanel = () => {
                 </p>
               </div>
               <div className="flex gap-1 flex-shrink-0">
+                <Button size="sm" variant="outline" onClick={() => copyLink(e.signing_token)} className="gap-1" title="Copy signing link"><Copy className="w-3 h-3" /> Link</Button>
+                <Button size="sm" variant="outline" onClick={() => resendEnvelope(e)} disabled={resendingId === e.id} className="gap-1" title="Resend with a new unique link">
+                  {resendingId === e.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />} Resend
+                </Button>
                 {["sent", "viewed", "draft"].includes(e.status) && (
-                  <>
-                    <Button size="sm" variant="outline" onClick={() => copyLink(e.signing_token)} className="gap-1"><Copy className="w-3 h-3" /> Link</Button>
-                    <Button size="sm" variant="ghost" onClick={() => voidEnvelope(e.id)}><Ban className="w-4 h-4 text-destructive" /></Button>
-                  </>
+                  <Button size="sm" variant="ghost" onClick={() => voidEnvelope(e.id)} title="Void"><Ban className="w-4 h-4 text-destructive" /></Button>
                 )}
                 {e.signed_pdf_path && (
                   <Button size="sm" variant="outline" onClick={() => downloadPdf(e.signed_pdf_path!, `signed-${e.recipient_name}.pdf`)} className="gap-1"><Download className="w-3 h-3" /> Signed</Button>
