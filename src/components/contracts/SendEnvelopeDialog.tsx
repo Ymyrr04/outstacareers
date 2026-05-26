@@ -40,16 +40,14 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
     if (!templateId || !recipientEmail || !recipientName) return toast.error("Template, name and email are required.");
     setSending(true);
     try {
-      const { data: { session } } = await supabase.auth.getSession();
-      const r = await fetch(`https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1/send-contract-envelope`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${session?.access_token}` },
-        body: JSON.stringify({
+      const { data, error } = await supabase.functions.invoke("send-contract-envelope", {
+        body: {
           templateId, recipientName, recipientEmail,
           adminPrefill: prefill, message, expiresInDays,
-        }),
+        },
       });
-      if (!r.ok) throw new Error(await r.text());
+      if (error) throw error;
+
       toast.success(`Contract sent to ${recipientEmail}`);
       onOpenChange(false);
       setTemplateId(""); setRecipientName(""); setRecipientEmail(""); setMessage(""); setPrefill({});
