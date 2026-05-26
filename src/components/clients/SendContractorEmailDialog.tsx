@@ -120,11 +120,13 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
   const applyPlaceholders = (text: string): string => {
     if (!contractor) return text;
     const firstName = contractor.name.split(' ')[0];
+    const rateStr = contractor.hourlyRate != null ? `$${contractor.hourlyRate}/hr` : '';
     return text
       .replace(/\{\{first_name\}\}/gi, firstName)
       .replace(/\{\{full_name\}\}/gi, contractor.name)
       .replace(/\{\{company\}\}/gi, contractor.company)
-      .replace(/\{\{job_title\}\}/gi, contractor.jobTitle);
+      .replace(/\{\{job_title\}\}/gi, contractor.jobTitle)
+      .replace(/\{\{rate\}\}/gi, rateStr);
   };
 
   const handleSend = async () => {
