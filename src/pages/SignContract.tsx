@@ -272,7 +272,7 @@ function renderFieldOverlay(
           : <span className="text-primary font-medium">📎 {f.label || "Attach image"}</span>}
         <input
           type="file"
-          accept="image/png,image/jpeg,image/jpg,image/webp"
+          accept="image/png,image/jpeg,image/jpg"
           className="hidden"
           disabled={locked}
           onChange={async (e) => {
