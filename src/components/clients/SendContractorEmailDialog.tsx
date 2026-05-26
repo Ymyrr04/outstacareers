@@ -19,6 +19,7 @@ interface ContractorEmailRecipient {
   email: string;
   company: string;
   jobTitle: string;
+  hourlyRate?: number | null;
 }
 
 interface EmailTemplate {
@@ -119,11 +120,13 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
   const applyPlaceholders = (text: string): string => {
     if (!contractor) return text;
     const firstName = contractor.name.split(' ')[0];
+    const rateStr = contractor.hourlyRate != null ? `$${contractor.hourlyRate}/hr` : '';
     return text
       .replace(/\{\{first_name\}\}/gi, firstName)
       .replace(/\{\{full_name\}\}/gi, contractor.name)
       .replace(/\{\{company\}\}/gi, contractor.company)
-      .replace(/\{\{job_title\}\}/gi, contractor.jobTitle);
+      .replace(/\{\{job_title\}\}/gi, contractor.jobTitle)
+      .replace(/\{\{rate\}\}/gi, rateStr);
   };
 
   const handleSend = async () => {
@@ -253,7 +256,7 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
             {/* Clickable placeholders */}
             <div className="text-xs text-muted-foreground bg-muted/30 rounded p-2 flex flex-wrap items-center gap-1.5">
               <span>Insert placeholder:</span>
-              {['{{first_name}}', '{{full_name}}', '{{company}}', '{{job_title}}', '{{schedule}}'].map(p => (
+              {['{{first_name}}', '{{full_name}}', '{{company}}', '{{job_title}}', '{{schedule}}', '{{rate}}'].map(p => (
                 <button
                   key={p}
                   type="button"
@@ -310,7 +313,7 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
                 value={bodyHtml} 
                 onChange={setBodyHtml} 
                 textareaRef={textareaRef as React.RefObject<HTMLTextAreaElement>}
-                placeholders={['{{first_name}}', '{{full_name}}', '{{company}}', '{{job_title}}', '{{schedule}}']}
+                placeholders={['{{first_name}}', '{{full_name}}', '{{company}}', '{{job_title}}', '{{schedule}}', '{{rate}}']}
               />
               <textarea
                 ref={textareaRef}

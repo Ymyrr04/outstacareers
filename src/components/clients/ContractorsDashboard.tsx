@@ -141,6 +141,7 @@ export const ContractorsDashboard = () => {
     email: string;
     company: string;
     jobTitle: string;
+    hourlyRate?: number | null;
   } | null>(null);
   const [pendingStatusChange, setPendingStatusChange] = useState<{
     contractorId: string;
@@ -985,6 +986,7 @@ export const ContractorsDashboard = () => {
                                       email: contractor.applicant?.email || '',
                                       company: contractor.client?.company_name || '',
                                       jobTitle: contractor.job_title || '',
+                                      hourlyRate: contractor.hourly_rate,
                                     });
                                     setEmailDialogOpen(true);
                                   }}
@@ -1313,6 +1315,7 @@ export const ContractorsDashboard = () => {
                                         email: contractor.applicant?.email || '',
                                         company: contractor.client?.company_name || '',
                                         jobTitle: contractor.job_title || '',
+                                        hourlyRate: contractor.hourly_rate,
                                       });
                                       setEmailDialogOpen(true);
                                     }}
