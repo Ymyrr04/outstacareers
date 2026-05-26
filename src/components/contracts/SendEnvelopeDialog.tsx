@@ -10,7 +10,7 @@ import { Loader2, Save, Trash2, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 interface Template { id: string; name: string; }
-interface AdminField { id: string; label: string | null; field_key: string | null; }
+interface AdminField { id: string; label: string | null; field_key: string | null; field_type: string | null; }
 interface MsgTemplate { id: string; name: string; message: string; }
 
 export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boolean; onOpenChange: (o: boolean) => void; onSent: () => void; }) => {
