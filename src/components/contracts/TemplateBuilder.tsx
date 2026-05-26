@@ -305,6 +305,7 @@ function PageCanvas({
         <div
           key={f.id}
           onMouseDown={(e) => startDrag(f.id, e)}
+          onClick={(e) => e.stopPropagation()}
           className={`absolute border-2 cursor-move flex items-center justify-center text-[10px] font-medium ${selectedId === f.id ? "border-primary bg-primary/20" : "border-primary/50 bg-primary/10"}`}
           style={{
             left: `${f.x_pct * 100}%`,
