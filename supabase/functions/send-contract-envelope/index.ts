@@ -32,14 +32,22 @@ Deno.serve(async (req) => {
     const gmailUser = Deno.env.get("MARK_GMAIL_USER")!;
     const gmailPassword = Deno.env.get("MARK_GMAIL_APP_PASSWORD")!;
 
-    // Auth check
+    // Auth check (signing-keys compatible)
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
-    const authedClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
-    const { data: userData } = await authedClient.auth.getUser();
-    if (!userData?.user) return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    if (!authHeader?.startsWith("Bearer ")) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    }
+    const token = authHeader.replace("Bearer ", "");
+    const authedClient = createClient(supabaseUrl, anonKey);
+    const { data: claimsData, error: claimsErr } = await authedClient.auth.getClaims(token);
+    if (claimsErr || !claimsData?.claims?.sub) {
+      console.error("Auth failed:", claimsErr);
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: corsHeaders });
+    }
+    const userId = claimsData.claims.sub;
 
     const admin = createClient(supabaseUrl, serviceKey);
+
     const body: SendEnvelopeRequest = await req.json();
 
     if (!body.templateId || !body.recipientEmail || !body.recipientName) {
