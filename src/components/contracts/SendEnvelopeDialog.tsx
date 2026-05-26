@@ -189,11 +189,13 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(recipientEmail.trim())) return toast.error("Please enter a valid email address.");
     setSending(true);
     try {
+      const firstName = recipientName.trim().split(/\s+/)[0] || "";
       const { data, error } = await supabase.functions.invoke("send-contract-envelope", {
         body: {
           templateId, recipientName: recipientName.trim(), recipientEmail: recipientEmail.trim(),
           adminPrefill: prefill,
           message: message
+            .replace(/\{\{first_name\}\}/g, firstName || "{{first_name}}")
             .replace(/\{\{rate\}\}/g, formatRate(rate) || "{{rate}}")
             .replace(/\{\{start_date\}\}/g, formatStartDate(startDate) || "{{start_date}}")
             .replace(/\{\{start_time\}\}/g, formatStartTime(startTime) || "{{start_time}}"),
@@ -307,6 +309,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
             <div className="mt-2 rounded border bg-muted/30 p-2 space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-xs text-muted-foreground">Insert:</span>
+                <button type="button" onClick={() => insertAtCursor("{{first_name}}")} className="px-2 py-0.5 rounded border bg-background text-xs font-mono hover:bg-accent transition-colors">{`{{first_name}}`}</button>
                 <button type="button" onClick={() => insertAtCursor("{{rate}}")} className="px-2 py-0.5 rounded border bg-background text-xs font-mono hover:bg-accent transition-colors">{`{{rate}}`}</button>
                 <button type="button" onClick={() => insertAtCursor("{{start_date}}")} className="px-2 py-0.5 rounded border bg-background text-xs font-mono hover:bg-accent transition-colors">{`{{start_date}}`}</button>
                 <button type="button" onClick={() => insertAtCursor("{{start_time}}")} className="px-2 py-0.5 rounded border bg-background text-xs font-mono hover:bg-accent transition-colors">{`{{start_time}}`}</button>
