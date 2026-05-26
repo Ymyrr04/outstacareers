@@ -273,7 +273,7 @@ Deno.serve(async (req) => {
       if (rows.length) await admin.from("contract_envelope_field_values").upsert(rows, { onConflict: "envelope_id,template_field_id" });
 
       await admin.from("contract_envelopes").update({
-        status: "signed", signed_at: now, signed_pdf_path: signedPath, audit_pdf_path: auditPath, signed_pdf_sha256: signedHash,
+        status: "signed", signed_at: nowObj.toISOString(), signed_pdf_path: signedPath, audit_pdf_path: auditPath, signed_pdf_sha256: signedHash,
       }).eq("id", envelope.id);
 
       await admin.from("contract_audit_events").insert({
