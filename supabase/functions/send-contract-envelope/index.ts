@@ -97,12 +97,28 @@ Deno.serve(async (req) => {
       connection: { hostname: "smtp.gmail.com", port: 465, tls: true, auth: { username: gmailUser, password: gmailPassword } },
     });
 
-    const messageBody = (body.message || "Please review and sign the attached contract.")
-      .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    // Escape, then apply light markdown: **bold**, ==highlight==, "- " bullets, paragraphs from blank lines.
+    const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    const inline = (s: string) =>
+      escape(s)
+        .replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>")
+        .replace(/==(.+?)==/g, '<mark style="background:#fff176; padding:0 2px;">$1</mark>');
+
+    const raw = body.message || "Please review and sign the attached contract.";
+    const blocks = raw.replace(/\r\n/g, "\n").split(/\n\s*\n/);
+    const renderedBlocks = blocks.map((block) => {
+      const lines = block.split("\n").filter((l) => l.trim().length);
+      const isList = lines.length > 0 && lines.every((l) => /^\s*-\s+/.test(l));
+      if (isList) {
+        const items = lines.map((l) => `<li style="margin:6px 0;">${inline(l.replace(/^\s*-\s+/, ""))}</li>`).join("");
+        return `<ul style="padding-left:22px; margin:12px 0;">${items}</ul>`;
+      }
+      return `<p style="margin:12px 0;">${lines.map(inline).join("<br/>")}</p>`;
+    }).join("");
 
     const html = `
       <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; color:#1a1a1a; font-size:14px; line-height:1.6;">
-        <div style="white-space: pre-line;">${messageBody}</div>
+        ${renderedBlocks}
         <p style="margin: 32px 0;">
           <a href="${signUrl}" style="background:#1a1a1a; color:#fff; padding:14px 28px; text-decoration:none; border-radius:6px; font-weight:600; display:inline-block;">
             Review &amp; Sign Document
