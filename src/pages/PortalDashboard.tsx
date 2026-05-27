@@ -1016,7 +1016,7 @@ const PortalDashboard = () => {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+      <main className="max-w-[1600px] mx-auto px-4 py-6 space-y-6">
         <Dialog
           open={profileOpen || profileIncomplete}
           onOpenChange={(open) => {
