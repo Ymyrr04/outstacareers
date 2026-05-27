@@ -1355,7 +1355,7 @@ const PortalDashboard = () => {
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs font-medium text-muted-foreground">Total hours</Label>
-                          <div className={`h-10 flex items-center justify-center rounded-md border-2 text-sm font-semibold ${needsReason ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200' : 'border-blue-300 dark:border-blue-700 bg-muted/40'}`}>
+                          <div className={`h-14 flex items-center justify-center rounded-md border-2 text-lg font-semibold ${needsReason ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200' : 'border-blue-300 dark:border-blue-700 bg-muted/40'}`}>
                             {hoursNum > 0 ? hoursNum.toFixed(2) : '0.00'}
                           </div>
                         </div>
