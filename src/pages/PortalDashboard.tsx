@@ -149,7 +149,9 @@ interface ProfileForm {
 }
 
 interface DayEntry {
-  hours: string; // string for input control
+  time_in: string;  // "HH:MM" 24h
+  time_out: string; // "HH:MM" 24h
+  hours: string;    // computed string e.g. "8.50"
   reason: string;
 }
 
@@ -162,8 +164,22 @@ interface Timesheet {
   notes: string | null;
   status: string;
   submitted_at: string;
-  daily_hours: Record<string, { hours: number; reason?: string }> | null;
+  daily_hours: Record<string, { hours: number; time_in?: string; time_out?: string; reason?: string }> | null;
 }
+
+// Compute decimal hours between two "HH:MM" times. If time_out <= time_in, treat as overnight (+24h).
+const computeHours = (timeIn: string, timeOut: string): number => {
+  if (!timeIn || !timeOut) return 0;
+  const [ih, im] = timeIn.split(':').map(Number);
+  const [oh, om] = timeOut.split(':').map(Number);
+  if ([ih, im, oh, om].some((n) => isNaN(n))) return 0;
+  let start = ih * 60 + im;
+  let end = oh * 60 + om;
+  if (end <= start) end += 24 * 60; // overnight shift
+  return Math.round(((end - start) / 60) * 100) / 100;
+};
+
+const formatHoursLabel = (h: number) => (h > 0 ? h.toFixed(2) : '0.00');
 
 const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
