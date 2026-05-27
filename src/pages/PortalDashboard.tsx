@@ -1319,7 +1319,7 @@ const PortalDashboard = () => {
                       ? 'e.g. half day, left early, sick'
                       : 'Optional — e.g. day off, holiday, sick';
                     const label = dayLabel(k);
-                    const timeInputClass = `bg-background border-2 ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`;
+                    const timeInputClass = `bg-background border-2 h-14 text-lg font-medium ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`;
                     return (
                       <div
                         key={k}
