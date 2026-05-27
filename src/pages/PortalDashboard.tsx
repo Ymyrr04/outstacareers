@@ -252,9 +252,12 @@ const emptyDaysFor = (keys: string[]): Record<string, DayEntry> =>
   Object.fromEntries(keys.map((k) => [k, { time_in: '', time_out: '', hours: '', reason: '' }]));
 
 
+// Detect whether the user typed an explicit am/pm marker
+const hasAmPmMarker = (raw: string) => /[ap]\.?m?\.?\s*$/i.test(raw.trim());
+
 // Flexible time input: lets the user type freely (e.g. "9:25 PM", "21:25", "925")
-// and emits a parsed "HH:MM" 24h value live as they type. Reformats to a clean
-// 12-hour display on blur. Empty input clears the parsed value.
+// and emits a parsed "HH:MM" 24h value live as they type. If the user enters a
+// 12-hour-ambiguous value (hour 1-12) without AM/PM, a mini popup asks which.
 const FlexibleTimeInput = ({
   id,
   value,
@@ -270,45 +273,121 @@ const FlexibleTimeInput = ({
 }) => {
   const [text, setText] = useState<string>(formatTimeDisplay(value));
   const [focused, setFocused] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [pending, setPending] = useState<{ h: number; m: number } | null>(null);
 
   // Sync external value -> displayed text when not actively editing
   useEffect(() => {
-    if (!focused) setText(formatTimeDisplay(value));
-  }, [value, focused]);
+    if (!focused && !pickerOpen) setText(formatTimeDisplay(value));
+  }, [value, focused, pickerOpen]);
+
+  const commitWithMeridiem = (meridiem: 'am' | 'pm') => {
+    if (!pending) return;
+    let h = pending.h;
+    if (meridiem === 'pm' && h < 12) h += 12;
+    if (meridiem === 'am' && h === 12) h = 0;
+    const hhmm = `${String(h).padStart(2, '0')}:${String(pending.m).padStart(2, '0')}`;
+    onChange(hhmm);
+    setText(formatTimeDisplay(hhmm));
+    setPending(null);
+    setPickerOpen(false);
+  };
+
+  const handleBlur = () => {
+    setFocused(false);
+    const raw = text.trim();
+    if (raw === '') {
+      onChange('');
+      setText('');
+      return;
+    }
+    // If user typed explicit am/pm, just parse normally
+    if (hasAmPmMarker(raw)) {
+      const parsed = parseFlexibleTime(raw);
+      if (parsed) {
+        onChange(parsed);
+        setText(formatTimeDisplay(parsed));
+      }
+      return;
+    }
+    // Extract hour/minute from raw digits (no am/pm)
+    const core = raw.replace(/[^\d:]/g, '');
+    if (!core) return;
+    let h: number, m: number;
+    if (core.includes(':')) {
+      const [hStr, mStr = '0'] = core.split(':');
+      h = parseInt(hStr, 10);
+      m = parseInt(mStr, 10);
+    } else if (core.length <= 2) {
+      h = parseInt(core, 10); m = 0;
+    } else if (core.length === 3) {
+      h = parseInt(core.slice(0, 1), 10); m = parseInt(core.slice(1), 10);
+    } else {
+      h = parseInt(core.slice(0, core.length - 2), 10); m = parseInt(core.slice(-2), 10);
+    }
+    if (isNaN(h) || isNaN(m) || m < 0 || m > 59 || h < 0 || h > 23) return;
+    // Unambiguous: hour is 0 or 13-23 -> commit directly
+    if (h === 0 || h > 12) {
+      const hhmm = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+      onChange(hhmm);
+      setText(formatTimeDisplay(hhmm));
+      return;
+    }
+    // Ambiguous (1-12): open AM/PM mini picker
+    setPending({ h, m });
+    setPickerOpen(true);
+  };
 
   return (
-    <Input
-      id={id}
-      type="text"
-      inputMode="text"
-      autoComplete="off"
-      placeholder="e.g. 9:00 AM"
-      value={text}
-      aria-label={ariaLabel}
-      className={className}
-      onFocus={() => setFocused(true)}
-      onChange={(e) => {
-        const raw = e.target.value;
-        setText(raw);
-        if (raw.trim() === '') {
-          onChange('');
-          return;
-        }
-        const parsed = parseFlexibleTime(raw);
-        if (parsed) onChange(parsed);
-      }}
-      onBlur={() => {
-        setFocused(false);
-        const parsed = parseFlexibleTime(text);
-        if (parsed) {
-          onChange(parsed);
-          setText(formatTimeDisplay(parsed));
-        } else if (text.trim() === '') {
-          onChange('');
-          setText('');
-        }
-      }}
-    />
+    <Popover open={pickerOpen} onOpenChange={(o) => { if (!o) { setPickerOpen(false); setPending(null); } }}>
+      <PopoverTrigger asChild>
+        <Input
+          id={id}
+          type="text"
+          inputMode="text"
+          autoComplete="off"
+          placeholder="e.g. 9:00 AM"
+          value={text}
+          aria-label={ariaLabel}
+          className={className}
+          onFocus={() => setFocused(true)}
+          onChange={(e) => {
+            const raw = e.target.value;
+            setText(raw);
+            if (raw.trim() === '') {
+              onChange('');
+              return;
+            }
+            // Live-update only when user typed explicit am/pm so we never silently
+            // assume the wrong meridiem.
+            if (hasAmPmMarker(raw)) {
+              const parsed = parseFlexibleTime(raw);
+              if (parsed) onChange(parsed);
+            }
+          }}
+          onBlur={(e) => {
+            // Don't trigger blur logic if focus moved into the AM/PM popover
+            const next = e.relatedTarget as HTMLElement | null;
+            if (next && next.closest('[data-ampm-picker]')) return;
+            handleBlur();
+          }}
+        />
+      </PopoverTrigger>
+      <PopoverContent
+        data-ampm-picker
+        align="start"
+        className="w-auto p-2"
+        onOpenAutoFocus={(e) => e.preventDefault()}
+      >
+        <div className="text-xs text-muted-foreground mb-2 px-1">
+          {pending ? `${pending.h}:${String(pending.m).padStart(2, '0')} — AM or PM?` : 'AM or PM?'}
+        </div>
+        <div className="flex gap-2">
+          <Button type="button" size="sm" variant="outline" onClick={() => commitWithMeridiem('am')}>AM</Button>
+          <Button type="button" size="sm" variant="outline" onClick={() => commitWithMeridiem('pm')}>PM</Button>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 };
 
