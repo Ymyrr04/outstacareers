@@ -773,7 +773,15 @@ const PortalDashboard = () => {
   };
 
   const updateDay = (k: string, patch: Partial<DayEntry>) => {
-    setDays((prev) => ({ ...prev, [k]: { ...prev[k], ...patch } }));
+    setDays((prev) => {
+      const merged = { ...prev[k], ...patch };
+      // Recompute hours whenever either time field is touched
+      if ('time_in' in patch || 'time_out' in patch) {
+        const h = computeHours(merged.time_in, merged.time_out);
+        merged.hours = h > 0 ? String(h) : '';
+      }
+      return { ...prev, [k]: merged };
+    });
   };
 
   if (loading) {
