@@ -550,11 +550,19 @@ const PortalDashboard = () => {
     if (!validateNumbers()) return;
     const ot = parseFloat(overtimeHours || '0');
 
-    const dailyPayload: Record<string, { hours: number; reason?: string; weekday?: string }> = {};
+    const dailyPayload: Record<string, { hours: number; time_in?: string; time_out?: string; reason?: string; weekday?: string }> = {};
     dateKeys.forEach((k) => {
       const h = parseFloat(days[k]?.hours || '0') || 0;
       const reason = days[k]?.reason?.trim() || '';
-      dailyPayload[k] = { hours: h, weekday: dayLabel(k), ...(reason ? { reason } : {}) };
+      const time_in = days[k]?.time_in || '';
+      const time_out = days[k]?.time_out || '';
+      dailyPayload[k] = {
+        hours: h,
+        weekday: dayLabel(k),
+        ...(time_in ? { time_in } : {}),
+        ...(time_out ? { time_out } : {}),
+        ...(reason ? { reason } : {}),
+      };
     });
 
     setSubmitting(true);
