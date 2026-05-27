@@ -8,7 +8,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, LogOut, Pencil, CalendarIcon, UserCircle2, Check, ChevronsUpDown, HelpCircle } from 'lucide-react';
+import { Loader2, LogOut, Pencil, CalendarIcon, UserCircle2, Check, ChevronsUpDown, HelpCircle, ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle } from 'lucide-react';
+import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Helmet } from 'react-helmet-async';
@@ -968,6 +969,27 @@ const PortalDashboard = () => {
     setDatePickerOpen(false);
   };
 
+  const shiftWeek = (direction: -1 | 1) => {
+    let from: Date;
+    let to: Date;
+    if (weekStart && weekEnd) {
+      from = addDays(new Date(weekStart + 'T00:00:00'), direction * 7);
+      to = addDays(new Date(weekEnd + 'T00:00:00'), direction * 7);
+    } else {
+      const today = new Date();
+      const monday = startOfWeek(today, { weekStartsOn: 1 });
+      from = addDays(monday, direction * 7);
+      to = addDays(from, 6);
+    }
+    const fromKey = format(from, 'yyyy-MM-dd');
+    const toKey = format(to, 'yyyy-MM-dd');
+    const range = { from, to };
+    setDateRange(range);
+    setDraftDateRange(range);
+    setWeekStart(fromKey);
+    setWeekEnd(toKey);
+  };
+
   const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
     const target = e.target as HTMLElement;
     if (e.key === 'Enter' && target.tagName !== 'TEXTAREA') {
@@ -995,7 +1017,7 @@ const PortalDashboard = () => {
     <div className="min-h-screen bg-muted/30">
       <Helmet><title>My Timesheets | OutSta PL Portal</title></Helmet>
       <header className="border-b bg-background">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-[1600px] mx-auto px-4 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold">OutSta PL Portal</h1>
             <p className="text-xs text-muted-foreground">{info?.full_name} · {info?.company_name} · {info?.job_title}</p>
@@ -1016,7 +1038,7 @@ const PortalDashboard = () => {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+      <main className="max-w-[1600px] mx-auto px-4 py-6 space-y-6">
         <Dialog
           open={profileOpen || profileIncomplete}
           onOpenChange={(open) => {
@@ -1154,228 +1176,322 @@ const PortalDashboard = () => {
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label>Date range</Label>
-                  <Popover
-                    open={datePickerOpen}
-                    onOpenChange={(open) => {
-                      setDatePickerOpen(open);
-                      setDraftDateRange(open ? dateRange : dateRange);
-                    }}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className={cn(
-                          'w-full justify-start text-left font-normal',
-                          !weekStart && 'text-muted-foreground'
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {weekStart && weekEnd ? (
-                          <>
-                            {format(new Date(weekStart + 'T00:00:00'), 'MMM d, yyyy')} – {format(new Date(weekEnd + 'T00:00:00'), 'MMM d, yyyy')}
-                          </>
-                        ) : weekStart ? (
-                          <>{format(new Date(weekStart + 'T00:00:00'), 'MMM d, yyyy')} – pick end date</>
-                        ) : (
-                          <span>Pick a date range</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
-                      <div className="space-y-2 p-2">
-                        <Calendar
-                          mode="range"
-                          numberOfMonths={2}
-                          showOutsideDays={false}
-                          defaultMonth={draftDateRange?.from ?? dateRange?.from ?? new Date()}
-                          selected={draftDateRange}
-                          onSelect={setDraftDateRange}
-                          initialFocus
-                          className={cn('p-3 pointer-events-auto')}
-                          classNames={{
-                            cell: 'h-9 w-9 text-center text-sm p-0 relative focus-within:relative focus-within:z-20',
-                            day_today: 'text-primary font-semibold',
-                            day_range_start: 'day-range-start rounded-l-md bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
-                            day_range_end: 'day-range-end rounded-r-md bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
-                            day_range_middle: 'aria-selected:bg-accent aria-selected:text-accent-foreground rounded-none',
-                          }}
-                        />
-                        <div className="flex items-center justify-end gap-2 border-t px-3 py-2">
-                          <Button type="button" variant="ghost" size="sm" onClick={handleClearDateRange}>
-                            Clear
-                          </Button>
-                          <Button type="button" size="sm" onClick={handleApplyDateRange} disabled={!draftDateRange?.from || !draftDateRange?.to}>
-                            Apply
-                          </Button>
+                  <div className="flex items-stretch gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => shiftWeek(-1)}
+                      aria-label="Previous week"
+                      className="shrink-0"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Popover
+                      open={datePickerOpen}
+                      onOpenChange={(open) => {
+                        setDatePickerOpen(open);
+                        setDraftDateRange(open ? dateRange : dateRange);
+                      }}
+                    >
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className={cn(
+                            'flex-1 justify-start text-left font-normal',
+                            !weekStart && 'text-muted-foreground'
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {weekStart && weekEnd ? (
+                            <>
+                              {format(new Date(weekStart + 'T00:00:00'), 'MMM d, yyyy')} – {format(new Date(weekEnd + 'T00:00:00'), 'MMM d, yyyy')}
+                            </>
+                          ) : weekStart ? (
+                            <>{format(new Date(weekStart + 'T00:00:00'), 'MMM d, yyyy')} – pick end date</>
+                          ) : (
+                            <span>Pick a date range</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
+                        <div className="space-y-2 p-2">
+                          <Calendar
+                            mode="range"
+                            numberOfMonths={2}
+                            showOutsideDays={false}
+                            defaultMonth={draftDateRange?.from ?? dateRange?.from ?? new Date()}
+                            selected={draftDateRange}
+                            onSelect={setDraftDateRange}
+                            initialFocus
+                            className={cn('p-3 pointer-events-auto')}
+                            classNames={{
+                              cell: 'h-9 w-9 text-center text-sm p-0 relative focus-within:relative focus-within:z-20',
+                              day_today: 'text-primary font-semibold',
+                              day_range_start: 'day-range-start rounded-l-md bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
+                              day_range_end: 'day-range-end rounded-r-md bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
+                              day_range_middle: 'aria-selected:bg-accent aria-selected:text-accent-foreground rounded-none',
+                            }}
+                          />
+                          <div className="flex items-center justify-end gap-2 border-t px-3 py-2">
+                            <Button type="button" variant="ghost" size="sm" onClick={handleClearDateRange}>
+                              Clear
+                            </Button>
+                            <Button type="button" size="sm" onClick={handleApplyDateRange} disabled={!draftDateRange?.from || !draftDateRange?.to}>
+                              Apply
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                      </PopoverContent>
+                    </Popover>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => shiftWeek(1)}
+                      aria-label="Next week"
+                      className="shrink-0"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                   {weekStart && weekEnd && !dateRangeValid && (
                     <p className="text-xs text-destructive">"To" must be on or after "From".</p>
                   )}
                 </div>
               </div>
 
-              <div className="space-y-3">
-                <div className="flex items-end justify-between gap-4 flex-wrap">
-                  <div className="space-y-1">
-                    <Label htmlFor="ot" className="text-xs">Incentives ($)</Label>
-                    <Input
-                      id="ot"
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      value={overtimeHours}
-                      onChange={(e) => setOvertimeHours(e.target.value)}
-                      placeholder="0.00"
-                      className="h-9 w-28 text-base"
-                    />
-                  </div>
-                  <div className="flex items-center gap-4 text-lg pb-1">
-                    <div>
-                      Total: <span className="font-semibold">{totalHours.toFixed(2)}</span> hrs
-                    </div>
-                    <div className="text-muted-foreground">|</div>
-                    <div>
-                      Invoice total:{' '}
-                      <span className="font-semibold text-primary">
-                        {info?.hourly_rate != null
-                          ? `$${(totalHours * Number(info.hourly_rate) + (parseFloat(overtimeHours || '0') || 0)).toFixed(2)}`
-                          : '—'}
-                      </span>
-                      {info?.hourly_rate != null && (
-                        <span className="text-muted-foreground ml-1 text-sm">
-                          (@ ${Number(info.hourly_rate).toFixed(2)}/hr{parseFloat(overtimeHours || '0') > 0 ? ` + $${parseFloat(overtimeHours).toFixed(2)} incentive` : ''})
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-                {parseFloat(overtimeHours || '0') > 0 && (
-                  <Textarea
-                    rows={2}
-                    value={incentiveNote}
-                    onChange={(e) => setIncentiveNote(e.target.value)}
-                    placeholder="Reason for incentive (e.g. performance bonus, project completion)"
-                    className="text-sm"
-                  />
-                )}
-                {expectedHours != null && dateKeys.length > 0 && (
-                  hoursMatch ? (
-                    <div className="rounded-md border border-emerald-300 bg-emerald-50 text-emerald-900 px-3 py-2 text-xs">
-                      ✓ Matches your weekly target ({expectedHours.toFixed(2)} hrs/week from your profile).
-                    </div>
-                  ) : (
-                    <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 px-3 py-2 text-xs">
-                      <span className="font-semibold">
-                        {hoursDiff < 0
-                          ? `Missing ${Math.abs(hoursDiff).toFixed(2)} hrs`
-                          : `Over by ${hoursDiff.toFixed(2)} hrs`}
-                      </span>{' '}
-                      — Expected {expectedHours.toFixed(2)} hrs/week (from your profile).{' '}
-                      {hoursDiff < 0
-                        ? 'Please add a Reason on the day(s) where hours are missing (e.g. day off, holiday, sick).'
-                        : 'Please add a Reason on the day(s) where you worked extra hours.'}
-                    </div>
-                  )
-                )}
-                <Label className="block pt-1">Time in / Time out per day</Label>
-                <p className="text-xs text-muted-foreground -mt-1">Enter your log-in and log-out times — total hours are calculated automatically. Overnight shifts (log-out before log-in) are handled automatically.</p>
-                <div className="space-y-2">
-                  {dateKeys.length === 0 && (
-                    <p className="text-sm text-muted-foreground p-3 border rounded-md">
-                      Select a valid date range to enter your times.
+              <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
+                {/* LEFT: daily entries */}
+                <div className="space-y-3 min-w-0">
+                  <div>
+                    <Label className="block">Time in / Time out per day</Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Enter your log-in and log-out times — total hours are calculated automatically. Overnight shifts (log-out before log-in) are handled automatically.
                     </p>
-                  )}
-                  {dateKeys.map((k) => {
-                    const date = new Date(k + 'T00:00:00');
-                    const entry = days[k] || { time_in: '', time_out: '', hours: '', reason: '' };
-                    const hoursNum = parseFloat(entry.hours || '0');
-                    const isOvertime = !isNaN(hoursNum) && hoursNum > 10;
-                    const isOverTarget =
-                      perDayExpected != null && !isNaN(hoursNum) && hoursNum > 0 && hoursNum >= perDayExpected && hoursDiff > 0.25;
-                    const isUnderTarget =
-                      perDayExpected != null &&
-                      entry.hours !== '' &&
-                      !isNaN(hoursNum) &&
-                      hoursNum > 0 &&
-                      hoursNum < perDayExpected &&
-                      hoursDiff < -0.25;
-                    const needsReason = isOvertime || isOverTarget || isUnderTarget;
-                    const reasonLabel = isOvertime
-                      ? '(required — overtime)'
-                      : isOverTarget
-                      ? '(required — over target)'
-                      : isUnderTarget
-                      ? '(required — under target)'
-                      : '(only if no hours)';
-                    const reasonPlaceholder = isOvertime
-                      ? 'e.g. urgent deadline'
-                      : isOverTarget
-                      ? 'e.g. compensation, extra workload'
-                      : isUnderTarget
-                      ? 'e.g. half day, left early, sick'
-                      : 'Optional — e.g. day off, holiday, sick';
-                    const label = dayLabel(k);
-                    const timeInputClass = `bg-background border-2 h-14 text-lg font-medium ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`;
-                    return (
-                      <div
-                        key={k}
-                        className={`grid grid-cols-1 md:grid-cols-[160px_180px_180px_140px_1fr] gap-4 p-4 items-center rounded-lg border-2 shadow-sm bg-background ${
-                          needsReason
-                            ? 'border-amber-500/50'
-                            : 'border-blue-300/10 dark:border-blue-800/10'
-                        }`}
-                      >
-                        <div>
-                          <div className="font-semibold text-sm">{label}</div>
-                          <div className="text-xs text-muted-foreground">{format(date, 'MMM d, yyyy')}</div>
-                        </div>
-                        <div className="space-y-1">
-                          <Label htmlFor={`tin-${k}`} className="text-xs font-medium text-muted-foreground">Time in</Label>
-                          <FlexibleTimeInput
-                            id={`tin-${k}`}
-                            value={entry.time_in}
-                            onChange={(v) => updateDay(k, { time_in: v })}
-                            ariaLabel={`${label} ${format(date, 'MMM d')} time in`}
-                            className={timeInputClass}
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label htmlFor={`tout-${k}`} className="text-xs font-medium text-muted-foreground">Time out</Label>
-                          <FlexibleTimeInput
-                            id={`tout-${k}`}
-                            value={entry.time_out}
-                            onChange={(v) => updateDay(k, { time_out: v })}
-                            ariaLabel={`${label} ${format(date, 'MMM d')} time out`}
-                            className={timeInputClass}
-                          />
-                        </div>
-                        <div className="space-y-1">
-                          <Label className="text-xs font-medium text-muted-foreground">Total hours</Label>
-                          <div className={`h-14 flex items-center justify-center rounded-md border-2 text-lg font-semibold ${needsReason ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200' : 'border-blue-300 dark:border-blue-700 bg-muted/40'}`}>
-                            {hoursNum > 0 ? hoursNum.toFixed(2) : '0.00'}
+                  </div>
+                  <div className="rounded-lg border bg-card overflow-hidden">
+                    {dateKeys.length === 0 && (
+                      <p className="text-sm text-muted-foreground p-4">
+                        Select a valid date range to enter your times.
+                      </p>
+                    )}
+                    {dateKeys.map((k, idx) => {
+                      const date = new Date(k + 'T00:00:00');
+                      const entry = days[k] || { time_in: '', time_out: '', hours: '', reason: '' };
+                      const hoursNum = parseFloat(entry.hours || '0');
+                      const isOvertime = !isNaN(hoursNum) && hoursNum > 10;
+                      const isOverTarget =
+                        perDayExpected != null && !isNaN(hoursNum) && hoursNum > 0 && hoursNum >= perDayExpected && hoursDiff > 0.25;
+                      const isUnderTarget =
+                        perDayExpected != null &&
+                        entry.hours !== '' &&
+                        !isNaN(hoursNum) &&
+                        hoursNum > 0 &&
+                        hoursNum < perDayExpected &&
+                        hoursDiff < -0.25;
+                      const needsReason = isOvertime || isOverTarget || isUnderTarget;
+                      const reasonLabel = isOvertime
+                        ? '(required — overtime)'
+                        : isOverTarget
+                        ? '(required — over target)'
+                        : isUnderTarget
+                        ? '(required — under target)'
+                        : '(only if no hours)';
+                      const reasonPlaceholder = isOvertime
+                        ? 'e.g. urgent deadline'
+                        : isOverTarget
+                        ? 'e.g. compensation, extra workload'
+                        : isUnderTarget
+                        ? 'e.g. half day, left early, sick'
+                        : 'Optional — e.g. day off, holiday, sick';
+                      const label = dayLabel(k);
+                      const timeInputClass = `bg-background border-2 h-12 text-base font-medium ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`;
+                      const rowBg = needsReason
+                        ? 'bg-amber-50/60 dark:bg-amber-950/20'
+                        : idx % 2 === 0
+                        ? 'bg-background'
+                        : 'bg-muted/40';
+                      return (
+                        <div
+                          key={k}
+                          className={`grid grid-cols-1 md:grid-cols-[140px_160px_160px_110px_minmax(0,1fr)] gap-3 px-4 py-3 items-center border-b last:border-b-0 ${
+                            needsReason ? 'border-l-4 border-l-amber-500' : ''
+                          } ${rowBg}`}
+                        >
+                          <div>
+                            <div className="font-semibold text-sm">{label}</div>
+                            <div className="text-xs text-muted-foreground">{format(date, 'MMM d, yyyy')}</div>
+                          </div>
+                          <div className="space-y-1">
+                            <Label htmlFor={`tin-${k}`} className="text-[11px] font-medium text-muted-foreground">Time in</Label>
+                            <FlexibleTimeInput
+                              id={`tin-${k}`}
+                              value={entry.time_in}
+                              onChange={(v) => updateDay(k, { time_in: v })}
+                              ariaLabel={`${label} ${format(date, 'MMM d')} time in`}
+                              className={timeInputClass}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label htmlFor={`tout-${k}`} className="text-[11px] font-medium text-muted-foreground">Time out</Label>
+                            <FlexibleTimeInput
+                              id={`tout-${k}`}
+                              value={entry.time_out}
+                              onChange={(v) => updateDay(k, { time_out: v })}
+                              ariaLabel={`${label} ${format(date, 'MMM d')} time out`}
+                              className={timeInputClass}
+                            />
+                          </div>
+                          <div className="space-y-1">
+                            <Label className="text-[11px] font-medium text-muted-foreground">Total hours</Label>
+                            <div className={`h-12 flex items-center justify-center rounded-md border-2 text-base font-semibold ${needsReason ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200' : 'border-blue-300 dark:border-blue-700 bg-muted/40'}`}>
+                              {hoursNum > 0 ? hoursNum.toFixed(2) : '0.00'}
+                            </div>
+                          </div>
+                          <div className="space-y-1 min-w-0">
+                            <Label htmlFor={`reason-${k}`} className="text-[11px] font-medium text-muted-foreground">
+                              Reason {reasonLabel}
+                            </Label>
+                            <Input
+                              id={`reason-${k}`}
+                              placeholder={reasonPlaceholder}
+                              value={entry.reason}
+                              onChange={(e) => updateDay(k, { reason: e.target.value })}
+                              className={`bg-background border-2 h-10 ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`}
+                            />
                           </div>
                         </div>
-                        <div className="space-y-1">
-                          <Label htmlFor={`reason-${k}`} className="text-xs font-medium text-muted-foreground">
-                            Reason {reasonLabel}
-                          </Label>
-                          <Input
-                            id={`reason-${k}`}
-                            placeholder={reasonPlaceholder}
-                            value={entry.reason}
-                            onChange={(e) => updateDay(k, { reason: e.target.value })}
-                            className={`bg-background border-2 ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`}
-                          />
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* RIGHT: sticky summary */}
+                <aside className="lg:sticky lg:top-6 self-start">
+                  {(() => {
+                    const expected = expectedHours ?? 0;
+                    const pct = expected > 0 ? Math.min(100, (totalHours / expected) * 100) : 0;
+                    const incentiveAmt = parseFloat(overtimeHours || '0') || 0;
+                    const rate = info?.hourly_rate != null ? Number(info.hourly_rate) : null;
+                    const invoiceTotal = rate != null ? totalHours * rate + incentiveAmt : null;
+                    const showStatus = expectedHours != null && dateKeys.length > 0;
+                    return (
+                      <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
+                        <div className="px-5 py-4 border-b bg-muted/30 flex items-center justify-between gap-3">
+                          <div>
+                            <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Week summary</div>
+                            <div className="text-sm font-semibold mt-0.5">
+                              {weekStart && weekEnd
+                                ? `${format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – ${format(new Date(weekEnd + 'T00:00:00'), 'MMM d, yyyy')}`
+                                : 'No week selected'}
+                            </div>
+                          </div>
+                          {showStatus && (
+                            hoursMatch ? (
+                              <CheckCircle2 className="w-7 h-7 text-emerald-500 shrink-0" />
+                            ) : (
+                              <AlertTriangle className="w-7 h-7 text-amber-500 shrink-0" />
+                            )
+                          )}
+                        </div>
+                        <div className="p-5 space-y-5">
+                          {expected > 0 && (
+                            <div className="space-y-2">
+                              <div className="flex items-baseline justify-between text-sm">
+                                <span className="text-muted-foreground">Hours logged</span>
+                                <span className="font-semibold">
+                                  {totalHours.toFixed(2)} <span className="text-muted-foreground font-normal">/ {expected.toFixed(0)} hrs</span>
+                                </span>
+                              </div>
+                              <Progress value={pct} className="h-2" />
+                            </div>
+                          )}
+
+                          <dl className="space-y-2.5 text-sm">
+                            <div className="flex items-center justify-between">
+                              <dt className="text-muted-foreground">Total hours</dt>
+                              <dd className="font-semibold">{totalHours.toFixed(2)} hrs</dd>
+                            </div>
+                            {expected > 0 && (
+                              <div className="flex items-center justify-between">
+                                <dt className="text-muted-foreground">Expected</dt>
+                                <dd className="font-medium">{expected.toFixed(2)} hrs</dd>
+                              </div>
+                            )}
+                            {showStatus && !hoursMatch && (
+                              <div className="flex items-center justify-between">
+                                <dt className="text-muted-foreground">
+                                  {hoursDiff < 0 ? 'Missing' : 'Over'}
+                                </dt>
+                                <dd className={`font-semibold ${hoursDiff < 0 ? 'text-amber-600' : 'text-blue-600'}`}>
+                                  {Math.abs(hoursDiff).toFixed(2)} hrs
+                                </dd>
+                              </div>
+                            )}
+                            {rate != null && (
+                              <div className="flex items-center justify-between">
+                                <dt className="text-muted-foreground">Hourly rate</dt>
+                                <dd className="font-medium">${rate.toFixed(2)}/hr</dd>
+                              </div>
+                            )}
+                            {incentiveAmt > 0 && (
+                              <div className="flex items-center justify-between">
+                                <dt className="text-muted-foreground">Incentives</dt>
+                                <dd className="font-medium">${incentiveAmt.toFixed(2)}</dd>
+                              </div>
+                            )}
+                            <div className="flex items-center justify-between pt-2 border-t">
+                              <dt className="font-medium">Invoice total</dt>
+                              <dd className="text-lg font-bold text-primary">
+                                {invoiceTotal != null ? `$${invoiceTotal.toFixed(2)}` : '—'}
+                              </dd>
+                            </div>
+                          </dl>
+
+                          {showStatus && !hoursMatch && (
+                            <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200 px-3 py-2 text-xs leading-relaxed">
+                              {hoursDiff < 0
+                                ? `Add a reason on day(s) where hours are missing (e.g. day off, holiday, sick).`
+                                : `Add a reason on day(s) where you worked extra hours.`}
+                            </div>
+                          )}
+                          {showStatus && hoursMatch && (
+                            <div className="rounded-md border border-emerald-300 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-200 px-3 py-2 text-xs">
+                              ✓ Matches your weekly target.
+                            </div>
+                          )}
+
+                          <div className="space-y-2 pt-1 border-t">
+                            <Label htmlFor="ot" className="text-xs font-medium">Incentives ($)</Label>
+                            <Input
+                              id="ot"
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={overtimeHours}
+                              onChange={(e) => setOvertimeHours(e.target.value)}
+                              placeholder="0.00"
+                              className="h-9 text-base"
+                            />
+                            {incentiveAmt > 0 && (
+                              <Textarea
+                                rows={2}
+                                value={incentiveNote}
+                                onChange={(e) => setIncentiveNote(e.target.value)}
+                                placeholder="Reason for incentive (e.g. performance bonus, project completion)"
+                                className="text-sm"
+                              />
+                            )}
+                          </div>
                         </div>
                       </div>
                     );
-                  })}
-                </div>
+                  })()}
+                </aside>
               </div>
+
 
               <div className="space-y-2">
                 <Label htmlFor="notes">Please attach your Payoneer request link here <span className="text-destructive">*</span></Label>
