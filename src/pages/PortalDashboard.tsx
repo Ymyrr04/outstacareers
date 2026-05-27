@@ -181,6 +181,46 @@ const computeHours = (timeIn: string, timeOut: string): number => {
 
 const formatHoursLabel = (h: number) => (h > 0 ? h.toFixed(2) : '0.00');
 
+// Parse a wide variety of user-typed time strings into "HH:MM" (24h). Returns '' if not parseable yet.
+// Accepts: "11:25 AM", "9:25pm", "21:25", "9", "925", "0925", "9:5", etc.
+const parseFlexibleTime = (raw: string): string => {
+  if (!raw) return '';
+  const s = raw.trim().toLowerCase().replace(/\s+/g, '');
+  if (!s) return '';
+  // Detect am/pm suffix
+  let ampm: 'am' | 'pm' | null = null;
+  let core = s;
+  if (s.endsWith('am') || s.endsWith('a')) { ampm = 'am'; core = s.replace(/a\.?m?\.?$/, ''); }
+  else if (s.endsWith('pm') || s.endsWith('p')) { ampm = 'pm'; core = s.replace(/p\.?m?\.?$/, ''); }
+  core = core.replace(/[^\d:]/g, '');
+  if (!core) return '';
+  let h: number, m: number;
+  if (core.includes(':')) {
+    const [hStr, mStr = '0'] = core.split(':');
+    h = parseInt(hStr, 10);
+    m = parseInt(mStr, 10);
+  } else {
+    // pure digits: 9 -> 9:00, 925 -> 9:25, 0925 -> 09:25, 1430 -> 14:30
+    if (core.length <= 2) { h = parseInt(core, 10); m = 0; }
+    else if (core.length === 3) { h = parseInt(core.slice(0, 1), 10); m = parseInt(core.slice(1), 10); }
+    else { h = parseInt(core.slice(0, core.length - 2), 10); m = parseInt(core.slice(-2), 10); }
+  }
+  if (isNaN(h) || isNaN(m)) return '';
+  if (ampm === 'pm' && h < 12) h += 12;
+  if (ampm === 'am' && h === 12) h = 0;
+  if (h < 0 || h > 23 || m < 0 || m > 59) return '';
+  return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+};
+
+// Format "HH:MM" 24h as "h:mm AM/PM" for display
+const formatTimeDisplay = (hhmm: string): string => {
+  if (!hhmm || !/^\d{2}:\d{2}$/.test(hhmm)) return '';
+  const [h, m] = hhmm.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12 = h === 0 ? 12 : h > 12 ? h - 12 : h;
+  return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+};
+
 const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
 // Returns the Monday of the current week (week starts Monday)
