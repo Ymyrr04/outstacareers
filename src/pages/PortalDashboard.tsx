@@ -1086,16 +1086,17 @@ const PortalDashboard = () => {
                     </div>
                   )
                 )}
-                <Label className="block pt-1">Hours per day</Label>
+                <Label className="block pt-1">Time in / Time out per day</Label>
+                <p className="text-xs text-muted-foreground -mt-1">Enter your log-in and log-out times — total hours are calculated automatically. Overnight shifts (log-out before log-in) are handled automatically.</p>
                 <div className="space-y-2">
                   {dateKeys.length === 0 && (
                     <p className="text-sm text-muted-foreground p-3 border rounded-md">
-                      Select a valid date range to enter hours.
+                      Select a valid date range to enter your times.
                     </p>
                   )}
                   {dateKeys.map((k) => {
                     const date = new Date(k + 'T00:00:00');
-                    const entry = days[k] || { hours: '', reason: '' };
+                    const entry = days[k] || { time_in: '', time_out: '', hours: '', reason: '' };
                     const hoursNum = parseFloat(entry.hours || '0');
                     const isOvertime = !isNaN(hoursNum) && hoursNum > 10;
                     const isOverTarget =
@@ -1123,10 +1124,11 @@ const PortalDashboard = () => {
                       ? 'e.g. half day, left early, sick'
                       : 'Optional — e.g. day off, holiday, sick';
                     const label = dayLabel(k);
+                    const timeInputClass = `bg-background border-2 ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`;
                     return (
                       <div
                         key={k}
-                        className={`grid grid-cols-1 md:grid-cols-[180px_180px_1fr] gap-4 p-4 items-center rounded-lg border-2 shadow-sm bg-background ${
+                        className={`grid grid-cols-1 md:grid-cols-[160px_1fr_1fr_110px_1fr] gap-4 p-4 items-center rounded-lg border-2 shadow-sm bg-background ${
                           needsReason
                             ? 'border-amber-500/50'
                             : 'border-blue-300/10 dark:border-blue-800/10'
@@ -1137,19 +1139,32 @@ const PortalDashboard = () => {
                           <div className="text-xs text-muted-foreground">{format(date, 'MMM d, yyyy')}</div>
                         </div>
                         <div className="space-y-1">
-                          <Label htmlFor={`hrs-${k}`} className="text-xs font-medium text-muted-foreground">Hours worked</Label>
+                          <Label htmlFor={`tin-${k}`} className="text-xs font-medium text-muted-foreground">Time in</Label>
                           <Input
-                            id={`hrs-${k}`}
-                            type="number"
-                            step="0.25"
-                            min="0"
-                            max="24"
-                            placeholder="0"
-                            value={entry.hours}
-                            onChange={(e) => updateDay(k, { hours: e.target.value })}
-                            aria-label={`${label} ${format(date, 'MMM d')} hours`}
-                            className={`bg-background border-2 ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`}
+                            id={`tin-${k}`}
+                            type="time"
+                            value={entry.time_in}
+                            onChange={(e) => updateDay(k, { time_in: e.target.value })}
+                            aria-label={`${label} ${format(date, 'MMM d')} time in`}
+                            className={timeInputClass}
                           />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor={`tout-${k}`} className="text-xs font-medium text-muted-foreground">Time out</Label>
+                          <Input
+                            id={`tout-${k}`}
+                            type="time"
+                            value={entry.time_out}
+                            onChange={(e) => updateDay(k, { time_out: e.target.value })}
+                            aria-label={`${label} ${format(date, 'MMM d')} time out`}
+                            className={timeInputClass}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs font-medium text-muted-foreground">Total hours</Label>
+                          <div className={`h-10 flex items-center justify-center rounded-md border-2 text-sm font-semibold ${needsReason ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200' : 'border-blue-300 dark:border-blue-700 bg-muted/40'}`}>
+                            {hoursNum > 0 ? hoursNum.toFixed(2) : '0.00'}
+                          </div>
                         </div>
                         <div className="space-y-1">
                           <Label htmlFor={`reason-${k}`} className="text-xs font-medium text-muted-foreground">
