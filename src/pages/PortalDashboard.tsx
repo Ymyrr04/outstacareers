@@ -1307,7 +1307,7 @@ const PortalDashboard = () => {
                         ? 'e.g. half day, left early, sick'
                         : 'Optional — e.g. day off, holiday, sick';
                       const label = dayLabel(k);
-                      const timeInputClass = `bg-background border-2 h-12 text-base font-medium ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`;
+                      const timeInputClass = `bg-background border-2 h-12 text-base font-medium w-[120px] ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`;
                       const rowBg = needsReason
                         ? 'bg-amber-50/60 dark:bg-amber-950/20'
                         : idx % 2 === 0
@@ -1316,7 +1316,7 @@ const PortalDashboard = () => {
                       return (
                         <div
                           key={k}
-                          className={`grid grid-cols-1 md:grid-cols-[140px_160px_160px_110px_minmax(0,1fr)] gap-3 px-4 py-3 items-center border-b last:border-b-0 ${
+                          className={`grid grid-cols-1 md:grid-cols-[140px_auto_auto_auto_minmax(160px,1fr)] gap-3 px-4 py-3 items-center border-b last:border-b-0 ${
                             needsReason ? 'border-l-4 border-l-amber-500' : ''
                           } ${rowBg}`}
                         >
@@ -1346,9 +1346,11 @@ const PortalDashboard = () => {
                           </div>
                           <div className="space-y-1">
                             <Label className="text-[11px] font-medium text-muted-foreground">Total hours</Label>
-                            <div className={`h-12 flex items-center justify-center rounded-md border-2 text-base font-semibold ${needsReason ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200' : 'border-blue-300 dark:border-blue-700 bg-muted/40'}`}>
-                              {hoursNum > 0 ? hoursNum.toFixed(2) : '0.00'}
-                            </div>
+                            <Input
+                              readOnly
+                              value={hoursNum > 0 ? hoursNum.toFixed(2) : '0.00'}
+                              className={`h-12 w-[80px] text-center text-base font-semibold border-2 bg-muted/40 ${needsReason ? 'border-amber-500 text-amber-900 dark:text-amber-200' : 'border-blue-300 dark:border-blue-700'}`}
+                            />
                           </div>
                           <div className="space-y-1 min-w-0">
                             <Label htmlFor={`reason-${k}`} className="text-[11px] font-medium text-muted-foreground">
@@ -1359,7 +1361,7 @@ const PortalDashboard = () => {
                               placeholder={reasonPlaceholder}
                               value={entry.reason}
                               onChange={(e) => updateDay(k, { reason: e.target.value })}
-                              className={`bg-background border-2 h-10 ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`}
+                              className={`bg-background border-2 h-10 max-w-[260px] ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`}
                             />
                           </div>
                         </div>
