@@ -969,6 +969,27 @@ const PortalDashboard = () => {
     setDatePickerOpen(false);
   };
 
+  const shiftWeek = (direction: -1 | 1) => {
+    let from: Date;
+    let to: Date;
+    if (weekStart && weekEnd) {
+      from = addDays(new Date(weekStart + 'T00:00:00'), direction * 7);
+      to = addDays(new Date(weekEnd + 'T00:00:00'), direction * 7);
+    } else {
+      const today = new Date();
+      const monday = startOfWeek(today, { weekStartsOn: 1 });
+      from = addDays(monday, direction * 7);
+      to = addDays(from, 6);
+    }
+    const fromKey = format(from, 'yyyy-MM-dd');
+    const toKey = format(to, 'yyyy-MM-dd');
+    const range = { from, to };
+    setDateRange(range);
+    setDraftDateRange(range);
+    setWeekStart(fromKey);
+    setWeekEnd(toKey);
+  };
+
   const handleFormKeyDown = (e: React.KeyboardEvent<HTMLFormElement>) => {
     const target = e.target as HTMLElement;
     if (e.key === 'Enter' && target.tagName !== 'TEXTAREA') {
