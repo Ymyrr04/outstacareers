@@ -339,7 +339,11 @@ const FlexibleTimeInput = ({
   };
 
   return (
-    <Popover open={pickerOpen} onOpenChange={(o) => { if (!o) { setPickerOpen(false); setPending(null); } }}>
+    <Popover
+      open={pickerOpen}
+      onOpenChange={(o) => { if (!o) { setPickerOpen(false); setPending(null); } }}
+      modal
+    >
       <PopoverTrigger asChild>
         <Input
           id={id}
@@ -358,15 +362,18 @@ const FlexibleTimeInput = ({
               onChange('');
               return;
             }
-            // Live-update only when user typed explicit am/pm so we never silently
-            // assume the wrong meridiem.
             if (hasAmPmMarker(raw)) {
               const parsed = parseFlexibleTime(raw);
               if (parsed) onChange(parsed);
             }
           }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault();
+              handleBlur();
+            }
+          }}
           onBlur={(e) => {
-            // Don't trigger blur logic if focus moved into the AM/PM popover
             const next = e.relatedTarget as HTMLElement | null;
             if (next && next.closest('[data-ampm-picker]')) return;
             handleBlur();
@@ -378,6 +385,15 @@ const FlexibleTimeInput = ({
         align="start"
         className="w-auto p-2"
         onOpenAutoFocus={(e) => e.preventDefault()}
+        onCloseAutoFocus={(e) => e.preventDefault()}
+        onPointerDownOutside={(e) => {
+          // Keep open if clicking the input itself; otherwise still keep open
+          // until the user picks AM or PM.
+          e.preventDefault();
+        }}
+        onInteractOutside={(e) => e.preventDefault()}
+        onFocusOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={() => { setPickerOpen(false); setPending(null); }}
       >
         <div className="text-xs text-muted-foreground mb-2 px-1">
           {pending ? `${pending.h}:${String(pending.m).padStart(2, '0')} — AM or PM?` : 'AM or PM?'}
