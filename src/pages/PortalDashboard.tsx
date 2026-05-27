@@ -995,7 +995,7 @@ const PortalDashboard = () => {
     <div className="min-h-screen bg-muted/30">
       <Helmet><title>My Timesheets | OutSta PL Portal</title></Helmet>
       <header className="border-b bg-background">
-        <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="max-w-[1600px] mx-auto px-4 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-lg font-semibold">OutSta PL Portal</h1>
             <p className="text-xs text-muted-foreground">{info?.full_name} · {info?.company_name} · {info?.job_title}</p>
