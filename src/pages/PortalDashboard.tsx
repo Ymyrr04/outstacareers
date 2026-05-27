@@ -209,7 +209,7 @@ const buildDateKeys = (from: string, to: string): string[] => {
 };
 
 const emptyDaysFor = (keys: string[]): Record<string, DayEntry> =>
-  Object.fromEntries(keys.map((k) => [k, { hours: '', reason: '' }]));
+  Object.fromEntries(keys.map((k) => [k, { time_in: '', time_out: '', hours: '', reason: '' }]));
 
 
 const ProfileField = ({ label, value }: { label: string; value: string | number | null | undefined }) => (
