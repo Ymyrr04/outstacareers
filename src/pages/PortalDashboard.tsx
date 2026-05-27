@@ -1319,11 +1319,11 @@ const PortalDashboard = () => {
                       ? 'e.g. half day, left early, sick'
                       : 'Optional — e.g. day off, holiday, sick';
                     const label = dayLabel(k);
-                    const timeInputClass = `bg-background border-2 ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`;
+                    const timeInputClass = `bg-background border-2 h-14 text-lg font-medium ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`;
                     return (
                       <div
                         key={k}
-                        className={`grid grid-cols-1 md:grid-cols-[160px_120px_120px_110px_1fr] gap-4 p-4 items-center rounded-lg border-2 shadow-sm bg-background ${
+                        className={`grid grid-cols-1 md:grid-cols-[160px_180px_180px_140px_1fr] gap-4 p-4 items-center rounded-lg border-2 shadow-sm bg-background ${
                           needsReason
                             ? 'border-amber-500/50'
                             : 'border-blue-300/10 dark:border-blue-800/10'
@@ -1355,7 +1355,7 @@ const PortalDashboard = () => {
                         </div>
                         <div className="space-y-1">
                           <Label className="text-xs font-medium text-muted-foreground">Total hours</Label>
-                          <div className={`h-10 flex items-center justify-center rounded-md border-2 text-sm font-semibold ${needsReason ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200' : 'border-blue-300 dark:border-blue-700 bg-muted/40'}`}>
+                          <div className={`h-14 flex items-center justify-center rounded-md border-2 text-lg font-semibold ${needsReason ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200' : 'border-blue-300 dark:border-blue-700 bg-muted/40'}`}>
                             {hoursNum > 0 ? hoursNum.toFixed(2) : '0.00'}
                           </div>
                         </div>
