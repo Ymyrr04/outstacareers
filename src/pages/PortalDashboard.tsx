@@ -149,7 +149,9 @@ interface ProfileForm {
 }
 
 interface DayEntry {
-  hours: string; // string for input control
+  time_in: string;  // "HH:MM" 24h
+  time_out: string; // "HH:MM" 24h
+  hours: string;    // computed string e.g. "8.50"
   reason: string;
 }
 
@@ -162,8 +164,22 @@ interface Timesheet {
   notes: string | null;
   status: string;
   submitted_at: string;
-  daily_hours: Record<string, { hours: number; reason?: string }> | null;
+  daily_hours: Record<string, { hours: number; time_in?: string; time_out?: string; reason?: string }> | null;
 }
+
+// Compute decimal hours between two "HH:MM" times. If time_out <= time_in, treat as overnight (+24h).
+const computeHours = (timeIn: string, timeOut: string): number => {
+  if (!timeIn || !timeOut) return 0;
+  const [ih, im] = timeIn.split(':').map(Number);
+  const [oh, om] = timeOut.split(':').map(Number);
+  if ([ih, im, oh, om].some((n) => isNaN(n))) return 0;
+  let start = ih * 60 + im;
+  let end = oh * 60 + om;
+  if (end <= start) end += 24 * 60; // overnight shift
+  return Math.round(((end - start) / 60) * 100) / 100;
+};
+
+const formatHoursLabel = (h: number) => (h > 0 ? h.toFixed(2) : '0.00');
 
 const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
@@ -193,7 +209,7 @@ const buildDateKeys = (from: string, to: string): string[] => {
 };
 
 const emptyDaysFor = (keys: string[]): Record<string, DayEntry> =>
-  Object.fromEntries(keys.map((k) => [k, { hours: '', reason: '' }]));
+  Object.fromEntries(keys.map((k) => [k, { time_in: '', time_out: '', hours: '', reason: '' }]));
 
 
 const ProfileField = ({ label, value }: { label: string; value: string | number | null | undefined }) => (
@@ -265,7 +281,7 @@ const PortalDashboard = () => {
     setDays((prev) => {
       const next: Record<string, DayEntry> = {};
       dateKeys.forEach((k) => {
-        next[k] = prev[k] || { hours: '', reason: '' };
+        next[k] = prev[k] || { time_in: '', time_out: '', hours: '', reason: '' };
       });
       return next;
     });
@@ -534,11 +550,19 @@ const PortalDashboard = () => {
     if (!validateNumbers()) return;
     const ot = parseFloat(overtimeHours || '0');
 
-    const dailyPayload: Record<string, { hours: number; reason?: string; weekday?: string }> = {};
+    const dailyPayload: Record<string, { hours: number; time_in?: string; time_out?: string; reason?: string; weekday?: string }> = {};
     dateKeys.forEach((k) => {
       const h = parseFloat(days[k]?.hours || '0') || 0;
       const reason = days[k]?.reason?.trim() || '';
-      dailyPayload[k] = { hours: h, weekday: dayLabel(k), ...(reason ? { reason } : {}) };
+      const time_in = days[k]?.time_in || '';
+      const time_out = days[k]?.time_out || '';
+      dailyPayload[k] = {
+        hours: h,
+        weekday: dayLabel(k),
+        ...(time_in ? { time_in } : {}),
+        ...(time_out ? { time_out } : {}),
+        ...(reason ? { reason } : {}),
+      };
     });
 
     setSubmitting(true);
@@ -608,14 +632,24 @@ const PortalDashboard = () => {
     if (dateLikeKeys.length > 0) {
       keys.forEach((k) => {
         const d = dh[k];
-        if (d) next[k] = { hours: d.hours != null ? String(d.hours) : '', reason: d.reason || '' };
+        if (d) next[k] = {
+          time_in: d.time_in || '',
+          time_out: d.time_out || '',
+          hours: d.hours != null ? String(d.hours) : '',
+          reason: d.reason || '',
+        };
       });
     } else {
       // Legacy: map mon/tue/... in order onto the 7 generated keys
       const legacy = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
       keys.forEach((k, i) => {
         const d = dh[legacy[i]];
-        if (d) next[k] = { hours: d.hours != null ? String(d.hours) : '', reason: d.reason || '' };
+        if (d) next[k] = {
+          time_in: d.time_in || '',
+          time_out: d.time_out || '',
+          hours: d.hours != null ? String(d.hours) : '',
+          reason: d.reason || '',
+        };
       });
     }
 
@@ -747,7 +781,15 @@ const PortalDashboard = () => {
   };
 
   const updateDay = (k: string, patch: Partial<DayEntry>) => {
-    setDays((prev) => ({ ...prev, [k]: { ...prev[k], ...patch } }));
+    setDays((prev) => {
+      const merged = { ...prev[k], ...patch };
+      // Recompute hours whenever either time field is touched
+      if ('time_in' in patch || 'time_out' in patch) {
+        const h = computeHours(merged.time_in, merged.time_out);
+        merged.hours = h > 0 ? String(h) : '';
+      }
+      return { ...prev, [k]: merged };
+    });
   };
 
   if (loading) {
@@ -1044,16 +1086,17 @@ const PortalDashboard = () => {
                     </div>
                   )
                 )}
-                <Label className="block pt-1">Hours per day</Label>
+                <Label className="block pt-1">Time in / Time out per day</Label>
+                <p className="text-xs text-muted-foreground -mt-1">Enter your log-in and log-out times — total hours are calculated automatically. Overnight shifts (log-out before log-in) are handled automatically.</p>
                 <div className="space-y-2">
                   {dateKeys.length === 0 && (
                     <p className="text-sm text-muted-foreground p-3 border rounded-md">
-                      Select a valid date range to enter hours.
+                      Select a valid date range to enter your times.
                     </p>
                   )}
                   {dateKeys.map((k) => {
                     const date = new Date(k + 'T00:00:00');
-                    const entry = days[k] || { hours: '', reason: '' };
+                    const entry = days[k] || { time_in: '', time_out: '', hours: '', reason: '' };
                     const hoursNum = parseFloat(entry.hours || '0');
                     const isOvertime = !isNaN(hoursNum) && hoursNum > 10;
                     const isOverTarget =
@@ -1081,10 +1124,11 @@ const PortalDashboard = () => {
                       ? 'e.g. half day, left early, sick'
                       : 'Optional — e.g. day off, holiday, sick';
                     const label = dayLabel(k);
+                    const timeInputClass = `bg-background border-2 ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`;
                     return (
                       <div
                         key={k}
-                        className={`grid grid-cols-1 md:grid-cols-[180px_180px_1fr] gap-4 p-4 items-center rounded-lg border-2 shadow-sm bg-background ${
+                        className={`grid grid-cols-1 md:grid-cols-[160px_1fr_1fr_110px_1fr] gap-4 p-4 items-center rounded-lg border-2 shadow-sm bg-background ${
                           needsReason
                             ? 'border-amber-500/50'
                             : 'border-blue-300/10 dark:border-blue-800/10'
@@ -1095,19 +1139,32 @@ const PortalDashboard = () => {
                           <div className="text-xs text-muted-foreground">{format(date, 'MMM d, yyyy')}</div>
                         </div>
                         <div className="space-y-1">
-                          <Label htmlFor={`hrs-${k}`} className="text-xs font-medium text-muted-foreground">Hours worked</Label>
+                          <Label htmlFor={`tin-${k}`} className="text-xs font-medium text-muted-foreground">Time in</Label>
                           <Input
-                            id={`hrs-${k}`}
-                            type="number"
-                            step="0.25"
-                            min="0"
-                            max="24"
-                            placeholder="0"
-                            value={entry.hours}
-                            onChange={(e) => updateDay(k, { hours: e.target.value })}
-                            aria-label={`${label} ${format(date, 'MMM d')} hours`}
-                            className={`bg-background border-2 ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`}
+                            id={`tin-${k}`}
+                            type="time"
+                            value={entry.time_in}
+                            onChange={(e) => updateDay(k, { time_in: e.target.value })}
+                            aria-label={`${label} ${format(date, 'MMM d')} time in`}
+                            className={timeInputClass}
                           />
+                        </div>
+                        <div className="space-y-1">
+                          <Label htmlFor={`tout-${k}`} className="text-xs font-medium text-muted-foreground">Time out</Label>
+                          <Input
+                            id={`tout-${k}`}
+                            type="time"
+                            value={entry.time_out}
+                            onChange={(e) => updateDay(k, { time_out: e.target.value })}
+                            aria-label={`${label} ${format(date, 'MMM d')} time out`}
+                            className={timeInputClass}
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <Label className="text-xs font-medium text-muted-foreground">Total hours</Label>
+                          <div className={`h-10 flex items-center justify-center rounded-md border-2 text-sm font-semibold ${needsReason ? 'border-amber-500 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200' : 'border-blue-300 dark:border-blue-700 bg-muted/40'}`}>
+                            {hoursNum > 0 ? hoursNum.toFixed(2) : '0.00'}
+                          </div>
                         </div>
                         <div className="space-y-1">
                           <Label htmlFor={`reason-${k}`} className="text-xs font-medium text-muted-foreground">
