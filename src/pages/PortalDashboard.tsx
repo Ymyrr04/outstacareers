@@ -1240,23 +1240,21 @@ const PortalDashboard = () => {
                         </div>
                         <div className="space-y-1">
                           <Label htmlFor={`tin-${k}`} className="text-xs font-medium text-muted-foreground">Time in</Label>
-                          <Input
+                          <FlexibleTimeInput
                             id={`tin-${k}`}
-                            type="time"
                             value={entry.time_in}
-                            onChange={(e) => updateDay(k, { time_in: e.target.value })}
-                            aria-label={`${label} ${format(date, 'MMM d')} time in`}
+                            onChange={(v) => updateDay(k, { time_in: v })}
+                            ariaLabel={`${label} ${format(date, 'MMM d')} time in`}
                             className={timeInputClass}
                           />
                         </div>
                         <div className="space-y-1">
                           <Label htmlFor={`tout-${k}`} className="text-xs font-medium text-muted-foreground">Time out</Label>
-                          <Input
+                          <FlexibleTimeInput
                             id={`tout-${k}`}
-                            type="time"
                             value={entry.time_out}
-                            onChange={(e) => updateDay(k, { time_out: e.target.value })}
-                            aria-label={`${label} ${format(date, 'MMM d')} time out`}
+                            onChange={(v) => updateDay(k, { time_out: v })}
+                            ariaLabel={`${label} ${format(date, 'MMM d')} time out`}
                             className={timeInputClass}
                           />
                         </div>
