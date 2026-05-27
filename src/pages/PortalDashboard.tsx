@@ -252,6 +252,66 @@ const emptyDaysFor = (keys: string[]): Record<string, DayEntry> =>
   Object.fromEntries(keys.map((k) => [k, { time_in: '', time_out: '', hours: '', reason: '' }]));
 
 
+// Flexible time input: lets the user type freely (e.g. "9:25 PM", "21:25", "925")
+// and emits a parsed "HH:MM" 24h value live as they type. Reformats to a clean
+// 12-hour display on blur. Empty input clears the parsed value.
+const FlexibleTimeInput = ({
+  id,
+  value,
+  onChange,
+  className,
+  ariaLabel,
+}: {
+  id: string;
+  value: string; // parsed "HH:MM" 24h
+  onChange: (parsed: string) => void;
+  className?: string;
+  ariaLabel?: string;
+}) => {
+  const [text, setText] = useState<string>(formatTimeDisplay(value));
+  const [focused, setFocused] = useState(false);
+
+  // Sync external value -> displayed text when not actively editing
+  useEffect(() => {
+    if (!focused) setText(formatTimeDisplay(value));
+  }, [value, focused]);
+
+  return (
+    <Input
+      id={id}
+      type="text"
+      inputMode="text"
+      autoComplete="off"
+      placeholder="e.g. 9:00 AM"
+      value={text}
+      aria-label={ariaLabel}
+      className={className}
+      onFocus={() => setFocused(true)}
+      onChange={(e) => {
+        const raw = e.target.value;
+        setText(raw);
+        if (raw.trim() === '') {
+          onChange('');
+          return;
+        }
+        const parsed = parseFlexibleTime(raw);
+        if (parsed) onChange(parsed);
+      }}
+      onBlur={() => {
+        setFocused(false);
+        const parsed = parseFlexibleTime(text);
+        if (parsed) {
+          onChange(parsed);
+          setText(formatTimeDisplay(parsed));
+        } else if (text.trim() === '') {
+          onChange('');
+          setText('');
+        }
+      }}
+    />
+  );
+};
+
 const ProfileField = ({ label, value }: { label: string; value: string | number | null | undefined }) => (
   <div>
     <div className="text-xs font-medium text-muted-foreground">{label}</div>
