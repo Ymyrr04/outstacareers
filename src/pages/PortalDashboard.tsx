@@ -624,14 +624,24 @@ const PortalDashboard = () => {
     if (dateLikeKeys.length > 0) {
       keys.forEach((k) => {
         const d = dh[k];
-        if (d) next[k] = { hours: d.hours != null ? String(d.hours) : '', reason: d.reason || '' };
+        if (d) next[k] = {
+          time_in: d.time_in || '',
+          time_out: d.time_out || '',
+          hours: d.hours != null ? String(d.hours) : '',
+          reason: d.reason || '',
+        };
       });
     } else {
       // Legacy: map mon/tue/... in order onto the 7 generated keys
       const legacy = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
       keys.forEach((k, i) => {
         const d = dh[legacy[i]];
-        if (d) next[k] = { hours: d.hours != null ? String(d.hours) : '', reason: d.reason || '' };
+        if (d) next[k] = {
+          time_in: d.time_in || '',
+          time_out: d.time_out || '',
+          hours: d.hours != null ? String(d.hours) : '',
+          reason: d.reason || '',
+        };
       });
     }
 
