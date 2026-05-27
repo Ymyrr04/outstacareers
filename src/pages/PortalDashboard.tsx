@@ -1176,64 +1176,86 @@ const PortalDashboard = () => {
               <div className="grid grid-cols-1 gap-4">
                 <div className="space-y-2">
                   <Label>Date range</Label>
-                  <Popover
-                    open={datePickerOpen}
-                    onOpenChange={(open) => {
-                      setDatePickerOpen(open);
-                      setDraftDateRange(open ? dateRange : dateRange);
-                    }}
-                  >
-                    <PopoverTrigger asChild>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        className={cn(
-                          'w-full justify-start text-left font-normal',
-                          !weekStart && 'text-muted-foreground'
-                        )}
-                      >
-                        <CalendarIcon className="mr-2 h-4 w-4" />
-                        {weekStart && weekEnd ? (
-                          <>
-                            {format(new Date(weekStart + 'T00:00:00'), 'MMM d, yyyy')} – {format(new Date(weekEnd + 'T00:00:00'), 'MMM d, yyyy')}
-                          </>
-                        ) : weekStart ? (
-                          <>{format(new Date(weekStart + 'T00:00:00'), 'MMM d, yyyy')} – pick end date</>
-                        ) : (
-                          <span>Pick a date range</span>
-                        )}
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
-                      <div className="space-y-2 p-2">
-                        <Calendar
-                          mode="range"
-                          numberOfMonths={2}
-                          showOutsideDays={false}
-                          defaultMonth={draftDateRange?.from ?? dateRange?.from ?? new Date()}
-                          selected={draftDateRange}
-                          onSelect={setDraftDateRange}
-                          initialFocus
-                          className={cn('p-3 pointer-events-auto')}
-                          classNames={{
-                            cell: 'h-9 w-9 text-center text-sm p-0 relative focus-within:relative focus-within:z-20',
-                            day_today: 'text-primary font-semibold',
-                            day_range_start: 'day-range-start rounded-l-md bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
-                            day_range_end: 'day-range-end rounded-r-md bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
-                            day_range_middle: 'aria-selected:bg-accent aria-selected:text-accent-foreground rounded-none',
-                          }}
-                        />
-                        <div className="flex items-center justify-end gap-2 border-t px-3 py-2">
-                          <Button type="button" variant="ghost" size="sm" onClick={handleClearDateRange}>
-                            Clear
-                          </Button>
-                          <Button type="button" size="sm" onClick={handleApplyDateRange} disabled={!draftDateRange?.from || !draftDateRange?.to}>
-                            Apply
-                          </Button>
+                  <div className="flex items-stretch gap-2">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => shiftWeek(-1)}
+                      aria-label="Previous week"
+                      className="shrink-0"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <Popover
+                      open={datePickerOpen}
+                      onOpenChange={(open) => {
+                        setDatePickerOpen(open);
+                        setDraftDateRange(open ? dateRange : dateRange);
+                      }}
+                    >
+                      <PopoverTrigger asChild>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className={cn(
+                            'flex-1 justify-start text-left font-normal',
+                            !weekStart && 'text-muted-foreground'
+                          )}
+                        >
+                          <CalendarIcon className="mr-2 h-4 w-4" />
+                          {weekStart && weekEnd ? (
+                            <>
+                              {format(new Date(weekStart + 'T00:00:00'), 'MMM d, yyyy')} – {format(new Date(weekEnd + 'T00:00:00'), 'MMM d, yyyy')}
+                            </>
+                          ) : weekStart ? (
+                            <>{format(new Date(weekStart + 'T00:00:00'), 'MMM d, yyyy')} – pick end date</>
+                          ) : (
+                            <span>Pick a date range</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
+                        <div className="space-y-2 p-2">
+                          <Calendar
+                            mode="range"
+                            numberOfMonths={2}
+                            showOutsideDays={false}
+                            defaultMonth={draftDateRange?.from ?? dateRange?.from ?? new Date()}
+                            selected={draftDateRange}
+                            onSelect={setDraftDateRange}
+                            initialFocus
+                            className={cn('p-3 pointer-events-auto')}
+                            classNames={{
+                              cell: 'h-9 w-9 text-center text-sm p-0 relative focus-within:relative focus-within:z-20',
+                              day_today: 'text-primary font-semibold',
+                              day_range_start: 'day-range-start rounded-l-md bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
+                              day_range_end: 'day-range-end rounded-r-md bg-primary text-primary-foreground hover:bg-primary hover:text-primary-foreground focus:bg-primary focus:text-primary-foreground',
+                              day_range_middle: 'aria-selected:bg-accent aria-selected:text-accent-foreground rounded-none',
+                            }}
+                          />
+                          <div className="flex items-center justify-end gap-2 border-t px-3 py-2">
+                            <Button type="button" variant="ghost" size="sm" onClick={handleClearDateRange}>
+                              Clear
+                            </Button>
+                            <Button type="button" size="sm" onClick={handleApplyDateRange} disabled={!draftDateRange?.from || !draftDateRange?.to}>
+                              Apply
+                            </Button>
+                          </div>
                         </div>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                      </PopoverContent>
+                    </Popover>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={() => shiftWeek(1)}
+                      aria-label="Next week"
+                      className="shrink-0"
+                    >
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </div>
                   {weekStart && weekEnd && !dateRangeValid && (
                     <p className="text-xs text-destructive">"To" must be on or after "From".</p>
                   )}
