@@ -281,7 +281,7 @@ const PortalDashboard = () => {
     setDays((prev) => {
       const next: Record<string, DayEntry> = {};
       dateKeys.forEach((k) => {
-        next[k] = prev[k] || { hours: '', reason: '' };
+        next[k] = prev[k] || { time_in: '', time_out: '', hours: '', reason: '' };
       });
       return next;
     });
