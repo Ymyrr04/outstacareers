@@ -271,7 +271,23 @@ const ClientPortalSetup = () => {
               </Button>
             </div>
           )}
+
+          {step !== 3 && (
+            <div className="text-center pt-4 mt-4 border-t">
+              <button
+                type="button"
+                onClick={async () => {
+                  try { await supabase.auth.signOut(); } catch {}
+                  navigate('/client-portal/login');
+                }}
+                className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+              >
+                Having trouble? Back to sign in
+              </button>
+            </div>
+          )}
         </CardContent>
+
       </Card>
     </div>
   );
