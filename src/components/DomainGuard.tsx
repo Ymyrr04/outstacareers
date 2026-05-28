@@ -26,12 +26,9 @@ const DomainGuard = ({ children }: DomainGuardProps) => {
 
   if (
     workforce &&
-    (location.pathname === "/" || !location.pathname.startsWith("/client-portal"))
-  ) {
-    return <Navigate to="/client-portal/login" replace />;
+  if (workforce && !location.pathname.startsWith("/client-portal")) {
+    return <Navigate to="/client-portal" replace />;
   }
-
-  return <>{children}</>;
 };
 
 
