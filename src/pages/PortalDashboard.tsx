@@ -597,13 +597,19 @@ const PortalDashboard = () => {
   };
 
   // Computed: profile is missing required fields
+  // Has the contractor configured their weekly work schedule?
+  const hasWorkDays = (info?.work_days?.length || 0) > 0;
+
+  // Computed: profile is missing required fields
   const profileIncomplete = !info
     ? false
     : (!info.full_name ||
        !info.phone ||
        !info.regular_work_shift ||
        info.hours_per_week == null ||
-       info.hourly_rate == null);
+       info.hourly_rate == null ||
+       !hasWorkDays);
+
 
   useEffect(() => { loadAll(); }, []);
 
