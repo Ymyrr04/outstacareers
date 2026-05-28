@@ -1822,9 +1822,13 @@ const PortalDashboard = () => {
                                 <Pencil className="w-3.5 h-3.5 mr-1" />Edit
                               </Button>
                               {isFlagged && (
-                                <span className="inline-flex items-center rounded-full border border-amber-500 bg-amber-50 text-amber-700 px-2 py-0.5 text-[10px] font-medium">
-                                  Flagged — edit requested
-                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setFlagDialogTimesheet(t)}
+                                  className="inline-flex items-center rounded-full border border-amber-500 bg-amber-50 text-amber-700 hover:bg-amber-100 px-2 py-0.5 text-[10px] font-medium cursor-pointer transition-colors"
+                                >
+                                  🚩 See comment
+                                </button>
                               )}
                             </div>
                           ) : (
