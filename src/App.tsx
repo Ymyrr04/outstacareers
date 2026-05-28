@@ -50,7 +50,8 @@ const App = () => (
                 <Route path="/auth" element={guard(<Auth />)} />
                 <Route path="/reset-password" element={guard(<ResetPassword />)} />
                 <Route path="/admin" element={guard(<Admin />)} />
-                <Route path="/admin/ai-usage" element={guard(<AiUsage />)} />
+                <Route path="/admin/stage-settings" element={guard(<StageSettings />)} />
+                <Route path="/admin/:tab" element={guard(<Admin />)} />
                 <Route path="/admin/:tab" element={guard(<Admin />)} />
                 <Route path="/jobs/:company/:titleSlug/:jobId" element={guard(<JobApplication />)} />
                 <Route path="/job/:jobId" element={guard(<JobDetails />)} />
