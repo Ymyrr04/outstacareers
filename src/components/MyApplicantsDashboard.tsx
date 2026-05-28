@@ -1059,6 +1059,8 @@ export const MyApplicantsDashboard = () => {
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Clock className="w-3 h-3" />
                           {formatDate(applicant.submitted_at)}
+                        </div>
+                      </TableCell>
                       <TableCell>
                         <Select
                           value={applicant.status}
@@ -1076,8 +1078,6 @@ export const MyApplicantsDashboard = () => {
                           </SelectContent>
                         </Select>
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center justify-end gap-1">
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
                           <Button
