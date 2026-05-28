@@ -538,6 +538,11 @@ export const PLDashboard = () => {
           if (submitted > to) return false;
         }
       }
+      if (statusFilter && statusFilter !== 'all') {
+        const [scope, val] = statusFilter.split(':');
+        const field = scope === 'client' ? (r.client_approval_status || 'pending') : (r.outsta_status || 'pending');
+        if (field !== val) return false;
+      }
       return true;
     })
     .sort((a, b) => {
