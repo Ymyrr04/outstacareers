@@ -52,7 +52,6 @@ const Index = () => {
       <FooterAboutSection />
     </div>
   );
-  );
 };
 
 export default Index;
