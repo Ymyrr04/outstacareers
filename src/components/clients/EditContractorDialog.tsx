@@ -97,7 +97,7 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
     source: '',
     timezone: '',
     notes: '',
-    work_days: [...DEFAULT_WORK_DAYS_ADMIN] as string[],
+    work_days: [] as string[],
   });
 
 
