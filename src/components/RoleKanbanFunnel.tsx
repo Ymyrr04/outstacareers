@@ -992,6 +992,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
 
               return (
                 <div
+                  key={stage}
                   className={cn(
                     'flex flex-col w-[248px] shrink-0 rounded-lg border-2 overflow-hidden transition-all duration-150',
                     dropTargetStage === stage && draggedCandidate
@@ -1000,15 +1001,12 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                     !colorOverride && colors.bg
                   )}
                   style={colorOverride ? { backgroundColor: colorOverride + '14' } : undefined}
-
-                  )}
                   onDragOver={(e) => {
                     e.preventDefault();
                     e.dataTransfer.dropEffect = 'move';
                     setDropTargetStage(stage);
                   }}
                   onDragLeave={(e) => {
-                    // Only clear if leaving the column entirely
                     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
                       setDropTargetStage(null);
                     }
@@ -1022,7 +1020,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                     setDraggedCandidate(null);
                   }}
                 >
-                  <div className={cn('px-3 py-2.5 flex items-center justify-between', colors.header)}>
+                  <div
+                    className={cn('px-3 py-2.5 flex items-center justify-between', !colorOverride && colors.header)}
+                    style={colorOverride ? { backgroundColor: colorOverride } : undefined}
+                  >
+
                     <span className="text-sm font-semibold text-white">{getStageDisplayName(stage)}</span>
                     <div className="flex items-center gap-1.5">
                       <DropdownMenu>
