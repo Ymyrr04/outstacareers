@@ -568,37 +568,53 @@ export const PLDashboard = () => {
   const totalIncentivesAll = filtered.reduce((s, r) => s + Number(r.incentive_amount || 0), 0);
   const totalDepositAll = filtered.reduce((s, r) => s + computeDeposit(r).depositHours, 0);
 
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Portal Accounts</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold">{stats.portalUsers} <span className="text-sm text-muted-foreground font-normal">/ {stats.totalEligibleContractors} eligible</span></p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Submissions</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold">{filtered.length}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Total Hours</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold">{totalHoursAll.toFixed(2)}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Overtime Hours</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold">{totalOTAll.toFixed(2)}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Deposit Hours</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold text-amber-600">{totalDepositAll.toFixed(2)}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Bonus</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold">${totalIncentivesAll.toFixed(2)}</p></CardContent>
-        </Card>
+  const StatTile = ({
+    label,
+    value,
+    sub,
+    accent,
+  }: {
+    label: string;
+    value: string | number;
+    sub?: string;
+    accent?: string;
+  }) => (
+    <div className="rounded-md border bg-card px-3 py-2 flex flex-col justify-center min-h-[60px]">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+        {label}
       </div>
+      <div className={`text-lg font-bold leading-tight ${accent || ''}`}>
+        {value}
+        {sub && (
+          <span className="ml-1 text-[11px] font-normal text-muted-foreground">{sub}</span>
+        )}
+      </div>
+    </div>
+  );
 
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <Badge variant="outline" className="text-xs">Portal: <code className="ml-1">/portal/login</code> · Default password: <code className="ml-1">OutSta2026!</code></Badge>
+  return (
+    <div className="space-y-3">
+      <CollapsibleSection
+        storageKey="pl_section_stats"
+        title="Overview"
+        collapsedSummary={`${stats.portalUsers}/${stats.totalEligibleContractors} portal · ${filtered.length} submissions · ${totalHoursAll.toFixed(0)}h`}
+      >
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 p-3">
+          <StatTile label="Portal Accounts" value={stats.portalUsers} sub={`/ ${stats.totalEligibleContractors} eligible`} />
+          <StatTile label="Submissions" value={filtered.length} />
+          <StatTile label="Total Hours" value={totalHoursAll.toFixed(2)} />
+          <StatTile label="Overtime Hours" value={totalOTAll.toFixed(2)} />
+          <StatTile label="Deposit Hours" value={totalDepositAll.toFixed(2)} accent={totalDepositAll > 0 ? 'text-amber-600' : ''} />
+          <StatTile label="Bonus" value={`$${totalIncentivesAll.toFixed(2)}`} />
+        </div>
+      </CollapsibleSection>
+
+      <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between px-1">
+        <p className="text-xs text-muted-foreground">
+          Portal: <code className="text-foreground/70">/portal/login</code>
+          <span className="mx-1.5">·</span>
+          Default password: <code className="text-foreground/70">OutSta2026!</code>
+        </p>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setReorderOpen(true)}>
             <Settings2 className="w-4 h-4 mr-2" />
