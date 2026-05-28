@@ -33,7 +33,6 @@ const Index = () => {
       }, 100);
     }
   }, [location.hash]);
-
   if (isWorkforceDomain) {
     return <ClientPortalLogin />;
   }
