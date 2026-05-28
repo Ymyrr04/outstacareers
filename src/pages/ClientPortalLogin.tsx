@@ -23,7 +23,6 @@ const ClientPortalLogin = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
-  const [loading, setLoading] = useState(false);
 
   const [mode, setMode] = useState<RecoveryMode>(null);
   const [recoveryInput, setRecoveryInput] = useState('');
