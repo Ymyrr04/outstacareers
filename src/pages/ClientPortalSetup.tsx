@@ -192,11 +192,9 @@ const ClientPortalSetup = () => {
             </form>
           )}
 
-          {step === 2 && (
-            <form onSubmit={submitProfile} className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full name *</Label>
-                <Input id="fullName" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                <Label htmlFor="fullName">Full name</Label>
+                <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Optional" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="username">Username *</Label>
@@ -223,7 +221,10 @@ const ClientPortalSetup = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="company">Company</Label>
-                <Input id="company" value={companyName} readOnly disabled className="bg-muted/50" />
+                <Input id="company" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+                <p className="text-xs text-muted-foreground">Pre-filled from your account. You can update it if needed.</p>
+              </div>
+
                 <p className="text-xs text-muted-foreground">Managed by your account manager.</p>
               </div>
               <Button type="submit" className="w-full" disabled={saving}>
