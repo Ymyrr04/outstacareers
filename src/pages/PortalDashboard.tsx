@@ -519,7 +519,15 @@ const PortalDashboard = () => {
     if (!portal) {
       await supabase.auth.signOut();
       navigate('/portal/login');
+      return;
+    }
+    if (portal.must_change_password) {
+      navigate('/portal/change-password');
+      return;
+    }
+
     const { data: assignment } = await supabase
+
       .from('contractor_assignments')
       .select('id, applicant_id, job_title, hourly_rate, hours_per_week, regular_work_shift, contact_number, emergency_number, country, work_days, applicant:applicants_prescreen(full_name, email, phone, whatsapp, location), client:clients(company_name)')
       .eq('id', portal.contractor_assignment_id)
