@@ -1457,7 +1457,7 @@ const PortalDashboard = () => {
                               placeholder={reasonPlaceholder}
                               value={entry.reason}
                               onChange={(e) => updateDay(k, { reason: e.target.value })}
-                              className={`bg-background border-2 h-10 ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`}
+                              className={`bg-background border-2 h-10 ${borderTone}`}
                             />
                           </div>
                         </div>
