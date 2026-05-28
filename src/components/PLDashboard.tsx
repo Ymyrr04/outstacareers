@@ -471,7 +471,38 @@ export const PLDashboard = () => {
     fetchData();
   };
 
-  const cmp = (a: any, b: any, dir: 'asc' | 'desc') => {
+  const handleOutstaStatusChange = async (r: TimesheetRow, newStatus: 'pending' | 'approved' | 'flagged') => {
+    if (r.outsta_status === newStatus) return;
+    setUpdatingOutstaId(r.id);
+    const { error } = await supabase
+      .from('contractor_timesheets')
+      .update({ outsta_status: newStatus })
+      .eq('id', r.id);
+    setUpdatingOutstaId(null);
+    if (error) {
+      toast({ title: 'Update failed', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, outsta_status: newStatus } : x)));
+    toast({ title: `OutSta status: ${newStatus}` });
+  };
+
+  const STATUS_PILL: Record<string, string> = {
+    pending: 'bg-muted text-foreground/80 border-border',
+    approved: 'bg-emerald-600 text-white border-emerald-600',
+    flagged: 'bg-amber-500 text-white border-amber-500',
+  };
+  const StatusPill = ({ status, prefix }: { status: string; prefix: string }) => {
+    const label = status.charAt(0).toUpperCase() + status.slice(1);
+    return (
+      <span
+        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap ${STATUS_PILL[status] || STATUS_PILL.pending}`}
+      >
+        {prefix}: {label}
+      </span>
+    );
+  };
+
     if (a == null && b == null) return 0;
     if (a == null) return 1;
     if (b == null) return -1;
