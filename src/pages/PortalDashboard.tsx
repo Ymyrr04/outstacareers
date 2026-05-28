@@ -642,8 +642,9 @@ const PortalDashboard = () => {
   };
 
   // Helper: is the given date key a scheduled workday for this contractor?
-  const workDaysSet = useMemo(() => new Set(info?.work_days || DEFAULT_WORK_DAYS), [info?.work_days]);
+  const workDaysSet = useMemo(() => new Set(info?.work_days || []), [info?.work_days]);
   const isScheduledDay = (k: string) => {
+    if (!hasWorkDays) return false;
     const dow = new Date(k + 'T00:00:00').getDay();
     return workDaysSet.has(DOW_TO_SHORT[dow]);
   };
@@ -651,7 +652,7 @@ const PortalDashboard = () => {
   // Per-day expected hours = weekly target / number of scheduled work days
   const perDayExpected = useMemo(() => {
     const hpw = info?.hours_per_week ? Number(info.hours_per_week) : null;
-    const numDays = (info?.work_days?.length || DEFAULT_WORK_DAYS.length);
+    const numDays = info?.work_days?.length || 0;
     if (!hpw || numDays <= 0) return null;
     return hpw / numDays;
   }, [info?.hours_per_week, info?.work_days]);
