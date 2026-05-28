@@ -9,6 +9,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye, Mail, Settings2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 import { AdminLeaveApplications } from '@/components/AdminLeaveApplications';
 
@@ -70,19 +71,43 @@ const ProfileField = ({ label, value }: { label: string; value: string | null | 
   </div>
 );
 
-const ClientApprovalBadge = ({ status, reason }: { status: string; reason?: string | null }) => {
+const ClientApprovalBadge = ({
+  status,
+  reason,
+  reviewedAt,
+}: {
+  status: string;
+  reason?: string | null;
+  reviewedAt?: string | null;
+}) => {
   if (status === 'approved') {
     return <Badge variant="outline" className="border-emerald-500 text-emerald-600 w-fit">Approved</Badge>;
   }
   if (status === 'flagged') {
     return (
-      <Badge
-        variant="outline"
-        className="border-amber-500 text-amber-700 bg-amber-50 w-fit"
-        title={reason || 'Flagged by client'}
-      >
-        Flagged
-      </Badge>
+      <Popover>
+        <PopoverTrigger asChild>
+          <button
+            type="button"
+            className="inline-flex items-center rounded-full border border-amber-500 bg-amber-50 px-2.5 py-0.5 text-xs font-semibold text-amber-700 hover:bg-amber-100 transition-colors"
+          >
+            Flagged
+          </button>
+        </PopoverTrigger>
+        <PopoverContent align="start" className="w-80">
+          <div className="space-y-2">
+            <div className="text-sm font-semibold text-amber-700">Flag reason</div>
+            <div className="text-sm whitespace-pre-wrap text-foreground">
+              {reason && reason.trim() ? reason : <span className="text-muted-foreground italic">No reason provided.</span>}
+            </div>
+            {reviewedAt && (
+              <div className="text-xs text-muted-foreground pt-1 border-t">
+                Flagged {format(new Date(reviewedAt), 'MMM d, yyyy h:mm a')}
+              </div>
+            )}
+          </div>
+        </PopoverContent>
+      </Popover>
     );
   }
   return <Badge variant="outline" className="text-muted-foreground w-fit">Pending</Badge>;
@@ -697,7 +722,7 @@ export const PLDashboard = () => {
                     </TableCell>
                     <TableCell>
                       {c.latestTimesheet ? (
-                        <ClientApprovalBadge status={c.latestTimesheet.client_approval_status} reason={c.latestTimesheet.client_flag_reason} />
+                        <ClientApprovalBadge status={c.latestTimesheet.client_approval_status} reason={c.latestTimesheet.client_flag_reason} reviewedAt={c.latestTimesheet.client_reviewed_at} />
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
@@ -885,7 +910,7 @@ export const PLDashboard = () => {
                     </TableCell>
                     <TableCell>
                       {c.latestTimesheet ? (
-                        <ClientApprovalBadge status={c.latestTimesheet.client_approval_status} reason={c.latestTimesheet.client_flag_reason} />
+                        <ClientApprovalBadge status={c.latestTimesheet.client_approval_status} reason={c.latestTimesheet.client_flag_reason} reviewedAt={c.latestTimesheet.client_reviewed_at} />
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
