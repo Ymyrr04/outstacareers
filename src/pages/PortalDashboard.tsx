@@ -175,6 +175,7 @@ interface Timesheet {
   daily_hours: Record<string, { hours: number; time_in?: string; time_out?: string; reason?: string }> | null;
   client_approval_status?: string | null;
   client_flag_reason?: string | null;
+  client_reviewed_at?: string | null;
 }
 
 // Compute decimal hours between two "HH:MM" times. If time_out <= time_in, treat as overnight (+24h).
