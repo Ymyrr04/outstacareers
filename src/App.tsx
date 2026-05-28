@@ -20,6 +20,7 @@ import CalendlyCallback from "./pages/CalendlyCallback";
 import TalentPool from "./pages/TalentPool";
 import NotFound from "./pages/NotFound";
 import AiUsage from "./pages/AiUsage";
+import StageSettings from "./pages/StageSettings";
 import PortalLogin from "./pages/PortalLogin";
 import PortalChangePassword from "./pages/PortalChangePassword";
 import PortalDashboard from "./pages/PortalDashboard";
