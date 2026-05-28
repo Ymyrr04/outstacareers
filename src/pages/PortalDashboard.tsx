@@ -974,7 +974,9 @@ const PortalDashboard = () => {
           hourly_rate: rate,
           hours_per_week: hpw,
           regular_work_shift: profileForm.regular_work_shift.trim() || null,
-        })
+          work_days: profileForm.work_days.length > 0 ? profileForm.work_days : [...DEFAULT_WORK_DAYS],
+        } as any)
+
         .eq('id', info.contractor_assignment_id);
       if (aErr) throw aErr;
 
