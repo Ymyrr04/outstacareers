@@ -14,12 +14,15 @@ import { Helmet } from 'react-helmet-async';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 type RecoveryMode = null | 'username' | 'password';
-
 const ClientPortalLogin = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const setupExpired = searchParams.get('setup_expired') === '1';
   const { toast } = useToast();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+
   const [loading, setLoading] = useState(false);
 
   const [mode, setMode] = useState<RecoveryMode>(null);
