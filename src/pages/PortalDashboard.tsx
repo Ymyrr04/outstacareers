@@ -1580,6 +1580,7 @@ const PortalDashboard = () => {
             {timesheets.length === 0 ? (
               <div className="p-8 text-center text-sm text-muted-foreground">No submissions yet.</div>
             ) : (
+              <TooltipProvider delayDuration={150}>
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -1587,41 +1588,93 @@ const PortalDashboard = () => {
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead className="text-right">OT</TableHead>
                     <TableHead className="text-right">Incentives</TableHead>
-                    <TableHead>Status</TableHead>
+                    <TableHead>Client Status</TableHead>
+                    <TableHead>OutSta Status</TableHead>
                     <TableHead>Notes</TableHead>
                     <TableHead>Submitted</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {timesheets.map((t) => (
-                    <TableRow key={t.id} className={editingId === t.id ? 'bg-muted/40' : ''}>
-                      <TableCell>{format(new Date(t.week_ending_date), 'MMM d, yyyy')}</TableCell>
-                      <TableCell className="text-right font-medium">{Number(t.total_hours).toFixed(2)}</TableCell>
-                      <TableCell className="text-right">{Number(t.overtime_hours).toFixed(2)}</TableCell>
-                      <TableCell className="text-right">${Number(t.incentive_amount || 0).toFixed(2)}</TableCell>
-                      <TableCell>
-                        {t.status === 'pending_approval' ? (
-                          <span className="inline-flex items-center rounded-full border border-amber-500 text-amber-600 px-2 py-0.5 text-xs font-medium">Pending approval</span>
-                        ) : t.status === 'approved' ? (
-                          <span className="inline-flex items-center rounded-full border border-emerald-500 text-emerald-600 px-2 py-0.5 text-xs font-medium">Approved</span>
-                        ) : t.status === 'rejected' ? (
-                          <span className="inline-flex items-center rounded-full border border-destructive text-destructive px-2 py-0.5 text-xs font-medium">Rejected</span>
-                        ) : (
-                          <span className="inline-flex items-center rounded-full border border-muted-foreground/30 text-muted-foreground px-2 py-0.5 text-xs font-medium capitalize">{t.status}</span>
-                        )}
-                      </TableCell>
-                      <TableCell className="text-sm max-w-xs truncate">{t.notes || '—'}</TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{format(new Date(t.submitted_at), 'MMM d, h:mm a')}</TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" onClick={() => handleEdit(t)}>
-                          <Pencil className="w-3.5 h-3.5 mr-1" />Edit
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
+                  {timesheets.map((t) => {
+                    const clientStatus = (t.client_approval_status || 'pending') as 'pending' | 'approved' | 'flagged';
+                    const outstaStatus: 'pending' | 'approved' | 'flagged' =
+                      t.status === 'approved' ? 'approved'
+                      : (t.status === 'rejected' || t.status === 'flagged') ? 'flagged'
+                      : 'pending';
+                    const submittedAt = t.submitted_at ? new Date(t.submitted_at).getTime() : 0;
+                    const minsSince = (Date.now() - submittedAt) / 60000;
+                    const withinGrace = minsSince < 3;
+                    const isFlagged = clientStatus === 'flagged' || outstaStatus === 'flagged';
+                    const bothApproved = clientStatus === 'approved' && outstaStatus === 'approved';
+                    const canEdit = !bothApproved && (withinGrace || isFlagged);
+
+                    const renderStatus = (s: 'pending' | 'approved' | 'flagged', who: 'client' | 'outsta') => {
+                      const tip = who === 'client'
+                        ? (s === 'approved' ? 'Approved by your client' : s === 'flagged' ? 'Flagged by your client for revision' : 'Awaiting client review')
+                        : (s === 'approved' ? 'Processed by OutSta' : s === 'flagged' ? 'Flagged by OutSta for revision' : 'Awaiting OutSta review');
+                      const cls = s === 'approved'
+                        ? 'border-emerald-500 text-emerald-600'
+                        : s === 'flagged'
+                          ? 'border-amber-500 text-amber-600'
+                          : 'border-muted-foreground/30 text-muted-foreground';
+                      const label = s === 'approved' ? 'Approved ✅' : s === 'flagged' ? 'Flagged 🚩' : 'Pending';
+                      return (
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <span className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium cursor-help ${cls}`}>
+                              {label}
+                              <Info className="w-3 h-3 opacity-60" />
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent>{tip}</TooltipContent>
+                        </Tooltip>
+                      );
+                    };
+
+                    return (
+                      <TableRow key={t.id} className={editingId === t.id ? 'bg-muted/40' : ''}>
+                        <TableCell>{format(new Date(t.week_ending_date), 'MMM d, yyyy')}</TableCell>
+                        <TableCell className="text-right font-medium">{Number(t.total_hours).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{Number(t.overtime_hours).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">${Number(t.incentive_amount || 0).toFixed(2)}</TableCell>
+                        <TableCell>{renderStatus(clientStatus, 'client')}</TableCell>
+                        <TableCell>{renderStatus(outstaStatus, 'outsta')}</TableCell>
+                        <TableCell className="text-sm max-w-xs truncate">{t.notes || '—'}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{format(new Date(t.submitted_at), 'MMM d, h:mm a')}</TableCell>
+                        <TableCell className="text-right">
+                          {canEdit ? (
+                            <div className="inline-flex items-center gap-2 justify-end">
+                              <Button variant="ghost" size="sm" onClick={() => handleEdit(t)}>
+                                <Pencil className="w-3.5 h-3.5 mr-1" />Edit
+                              </Button>
+                              {isFlagged && (
+                                <span className="inline-flex items-center rounded-full border border-amber-500 bg-amber-50 text-amber-700 px-2 py-0.5 text-[10px] font-medium">
+                                  Flagged — edit requested
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="inline-flex items-center justify-end text-muted-foreground">
+                                  <Lock className="w-3.5 h-3.5" />
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent>
+                                {bothApproved
+                                  ? 'Locked — fully approved'
+                                  : 'Locked — 3-minute edit window has passed. Ask your client or OutSta to flag it if changes are needed.'}
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
                 </TableBody>
               </Table>
+              </TooltipProvider>
             )}
           </CardContent>
         </Card>
