@@ -2588,7 +2588,7 @@ const Admin = () => {
                         <Card>
                           <CardContent className="py-12 text-center">
                             <FolderOpen className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                            <p className="text-muted-foreground">No applicants in "{status}" folder.</p>
+                            <p className="text-muted-foreground">No applicants in "{getStageDisplayName(status)}" folder.</p>
                           </CardContent>
                         </Card>
                       ) : (
