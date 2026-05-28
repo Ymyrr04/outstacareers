@@ -24,6 +24,9 @@ import PortalLogin from "./pages/PortalLogin";
 import PortalChangePassword from "./pages/PortalChangePassword";
 import PortalDashboard from "./pages/PortalDashboard";
 import SignContract from "./pages/SignContract";
+import ClientPortalLogin from "./pages/ClientPortalLogin";
+import ClientPortalChangePassword from "./pages/ClientPortalChangePassword";
+import ClientPortalDashboard from "./pages/ClientPortalDashboard";
 
 const queryClient = new QueryClient();
 
@@ -55,6 +58,9 @@ const App = () => (
                 <Route path="/portal/change-password" element={<PortalChangePassword />} />
                 <Route path="/portal" element={<PortalDashboard />} />
                 <Route path="/sign/:token" element={<SignContract />} />
+                <Route path="/client-portal/login" element={<ClientPortalLogin />} />
+                <Route path="/client-portal/change-password" element={<ClientPortalChangePassword />} />
+                <Route path="/client-portal" element={<ClientPortalDashboard />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>

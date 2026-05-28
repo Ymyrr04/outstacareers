@@ -34,6 +34,7 @@ interface ContractorData {
   applicant_id: string;
   job_title: string | null;
   hourly_rate: number | null;
+  client_rate?: number | null;
   hours_per_week: number | null;
   start_date: string | null;
   end_date: string | null;
@@ -80,6 +81,7 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
     status: 'active',
     job_title: '',
     hourly_rate: '',
+    client_rate: '',
     hours_per_week: '',
     start_date: '',
     end_date: '',
@@ -125,6 +127,7 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
         status: contractor.status || 'active',
         job_title: contractor.job_title || '',
         hourly_rate: contractor.hourly_rate?.toString() || '',
+        client_rate: contractor.client_rate?.toString() || '',
         hours_per_week: contractor.hours_per_week?.toString() || '',
         start_date: contractor.start_date || '',
         end_date: contractor.end_date || '',
@@ -165,6 +168,7 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
           status: formData.status,
           job_title: formData.job_title || null,
           hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
+          client_rate: formData.client_rate ? parseFloat(formData.client_rate) : null,
           hours_per_week: formData.hours_per_week ? parseFloat(formData.hours_per_week) : null,
           start_date: formData.start_date || null,
           end_date: formData.end_date || null,
@@ -345,6 +349,21 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
               onChange={(e) => setFormData(prev => ({ ...prev, hours_per_week: e.target.value }))}
               className="col-span-1"
             />
+          </div>
+
+          {/* Client Rate (shown to clients in the Client Portal) */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="client_rate" className="text-right">Client Rate ($)</Label>
+            <Input
+              id="client_rate"
+              type="number"
+              step="0.01"
+              value={formData.client_rate}
+              onChange={(e) => setFormData(prev => ({ ...prev, client_rate: e.target.value }))}
+              className="col-span-1"
+              placeholder="0.00"
+            />
+            <span className="col-span-2 text-xs text-muted-foreground">Rate billed to the client. Hidden from contractor.</span>
           </div>
 
           {/* Dates */}

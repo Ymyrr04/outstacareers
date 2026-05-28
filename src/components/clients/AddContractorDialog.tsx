@@ -34,6 +34,7 @@ export const AddContractorDialog = ({ open, onOpenChange, clientId, onContractor
     applicant_id: '',
     job_title: '',
     hourly_rate: '',
+    client_rate: '',
     start_date: '',
     status: 'active',
     notes: '',
@@ -88,6 +89,7 @@ export const AddContractorDialog = ({ open, onOpenChange, clientId, onContractor
         applicant_id: form.applicant_id,
         job_title: form.job_title.trim() || null,
         hourly_rate: form.hourly_rate ? parseFloat(form.hourly_rate) : null,
+        client_rate: form.client_rate ? parseFloat(form.client_rate) : null,
         start_date: form.start_date || null,
         status: form.status,
         notes: form.notes.trim() || null,
@@ -101,6 +103,7 @@ export const AddContractorDialog = ({ open, onOpenChange, clientId, onContractor
         applicant_id: '',
         job_title: '',
         hourly_rate: '',
+        client_rate: '',
         start_date: '',
         status: 'active',
         notes: '',
@@ -193,6 +196,17 @@ export const AddContractorDialog = ({ open, onOpenChange, clientId, onContractor
                 step="0.01"
                 value={form.hourly_rate}
                 onChange={(e) => setForm({ ...form, hourly_rate: e.target.value })}
+                placeholder="0.00"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="client_rate">Client Rate ($)</Label>
+              <Input
+                id="client_rate"
+                type="number"
+                step="0.01"
+                value={form.client_rate}
+                onChange={(e) => setForm({ ...form, client_rate: e.target.value })}
                 placeholder="0.00"
               />
             </div>
