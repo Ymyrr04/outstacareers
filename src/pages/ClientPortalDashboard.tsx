@@ -146,7 +146,6 @@ const ClientPortalDashboard = () => {
       .from('contractor_assignments')
       .select('id, job_title, hours_per_week, timezone, start_date, status, applicant:applicants_prescreen(full_name, email)')
       .eq('client_id', cid);
-      .eq('client_id', cid);
     if (caErr) console.error(caErr);
     setAssignments((ca || []) as any);
 
