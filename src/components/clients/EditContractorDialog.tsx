@@ -140,6 +140,7 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
         is_replacement: contractor.is_replacement || false,
         country: contractor.country || '',
         source: contractor.source || '',
+        timezone: (contractor as any).timezone || '',
         notes: contractor.notes || '',
       });
     }
