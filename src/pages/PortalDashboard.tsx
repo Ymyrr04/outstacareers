@@ -920,7 +920,9 @@ const PortalDashboard = () => {
       hours_per_week: info.hours_per_week != null ? String(info.hours_per_week) : '',
       hourly_rate: info.hourly_rate != null ? String(info.hourly_rate) : '',
       regular_work_shift: info.regular_work_shift || '',
+      work_days: [...info.work_days],
     });
+
     setProfileEditing(false);
   };
 
