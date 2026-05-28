@@ -446,6 +446,17 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
             />
           </div>
 
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="timezone" className="text-right">Timezone</Label>
+            <Input
+              id="timezone"
+              placeholder="e.g. PHT (UTC+8)"
+              value={formData.timezone}
+              onChange={(e) => setFormData(prev => ({ ...prev, timezone: e.target.value }))}
+              className="col-span-3"
+            />
+          </div>
+
           {/* Type Toggle */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="is_replacement" className="text-right">Type</Label>
