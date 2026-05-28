@@ -1059,22 +1059,23 @@ export const MyApplicantsDashboard = () => {
                         <div className="flex items-center gap-1 text-sm text-muted-foreground">
                           <Clock className="w-3 h-3" />
                           {formatDate(applicant.submitted_at)}
-                        </div>
-                      </TableCell>
                       <TableCell>
                         <Select
                           value={applicant.status}
                           onValueChange={(v) => handleStatusChange(applicant.id, v)}
                         >
-                                {getStageDisplayName(status)}
+                          <SelectTrigger className="h-7 text-xs w-[120px]">
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
                             {APPLICANT_STATUS_FOLDERS.map(status => (
                               <SelectItem key={status} value={status}>
-                                {status}
+                                {getStageDisplayName(status)}
                               </SelectItem>
                             ))}
+                          </SelectContent>
+                        </Select>
+                      </TableCell>
                           </SelectContent>
                         </Select>
                       </TableCell>
