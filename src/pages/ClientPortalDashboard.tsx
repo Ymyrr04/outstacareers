@@ -77,6 +77,10 @@ const statusBadge = (status: string) => {
 };
 
 const fmtMoney = (n: number) => `$${n.toFixed(2)}`;
+const fmtHours = (n: number) => {
+  const v = Number(n) || 0;
+  return Number.isInteger(v) ? v.toString() : v.toFixed(2).replace(/\.?0+$/, '');
+};
 
 const ClientPortalDashboard = () => {
   const navigate = useNavigate();
