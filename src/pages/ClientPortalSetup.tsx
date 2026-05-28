@@ -139,14 +139,21 @@ const ClientPortalSetup = () => {
       if (error) throw error;
       setStep(3);
     } catch (err: any) {
+      const msg = await getErrorMessage(err, "We couldn't save your profile due to a server error. Please try again in a moment. If the problem persists, contact support.");
       toast({
         title: 'Could not save profile',
-        description: await getErrorMessage(err, "We couldn't save your profile due to a server error. Please try again in a moment. If the problem persists, contact support."),
+        description: msg,
         variant: 'destructive',
       });
+      // If session expired, bounce back to login
+      if (/session has expired|not authorized|sign in again/i.test(msg)) {
+        try { await supabase.auth.signOut(); } catch {}
+        setTimeout(() => navigate('/client-portal/login'), 1200);
+      }
     } finally {
       setSaving(false);
     }
+
   };
 
 
@@ -264,7 +271,23 @@ const ClientPortalSetup = () => {
               </Button>
             </div>
           )}
+
+          {step !== 3 && (
+            <div className="text-center pt-4 mt-4 border-t">
+              <button
+                type="button"
+                onClick={async () => {
+                  try { await supabase.auth.signOut(); } catch {}
+                  navigate('/client-portal/login');
+                }}
+                className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+              >
+                Having trouble? Back to sign in
+              </button>
+            </div>
+          )}
         </CardContent>
+
       </Card>
     </div>
   );
