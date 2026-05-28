@@ -610,6 +610,69 @@ export type Database = {
           },
         ]
       }
+      client_portal_users: {
+        Row: {
+          client_id: string
+          created_at: string
+          email: string
+          id: string
+          must_change_password: boolean
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          email: string
+          id?: string
+          must_change_password?: boolean
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          email?: string
+          id?: string
+          must_change_password?: boolean
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      client_timesheet_review_events: {
+        Row: {
+          client_id: string
+          created_at: string
+          event_type: string
+          id: string
+          reason: string | null
+          reviewer_email: string | null
+          reviewer_user_id: string | null
+          timesheet_id: string
+        }
+        Insert: {
+          client_id: string
+          created_at?: string
+          event_type: string
+          id?: string
+          reason?: string | null
+          reviewer_email?: string | null
+          reviewer_user_id?: string | null
+          timesheet_id: string
+        }
+        Update: {
+          client_id?: string
+          created_at?: string
+          event_type?: string
+          id?: string
+          reason?: string | null
+          reviewer_email?: string | null
+          reviewer_user_id?: string | null
+          timesheet_id?: string
+        }
+        Relationships: []
+      }
       clients: {
         Row: {
           address: string | null
@@ -953,6 +1016,7 @@ export type Database = {
         Row: {
           applicant_id: string
           client_id: string
+          client_rate: number | null
           contact_number: string | null
           country: string | null
           created_at: string
@@ -976,6 +1040,7 @@ export type Database = {
         Insert: {
           applicant_id: string
           client_id: string
+          client_rate?: number | null
           contact_number?: string | null
           country?: string | null
           created_at?: string
@@ -999,6 +1064,7 @@ export type Database = {
         Update: {
           applicant_id?: string
           client_id?: string
+          client_rate?: number | null
           contact_number?: string | null
           country?: string | null
           created_at?: string
@@ -1465,11 +1531,16 @@ export type Database = {
       }
       contractor_timesheets: {
         Row: {
+          client_approval_status: string
+          client_flag_reason: string | null
+          client_reviewed_at: string | null
+          client_reviewed_by: string | null
           contractor_assignment_id: string
           created_at: string
           daily_hours: Json | null
           id: string
           incentive_amount: number
+          locked: boolean
           notes: string | null
           overtime_hours: number
           status: string
@@ -1479,11 +1550,16 @@ export type Database = {
           week_ending_date: string
         }
         Insert: {
+          client_approval_status?: string
+          client_flag_reason?: string | null
+          client_reviewed_at?: string | null
+          client_reviewed_by?: string | null
           contractor_assignment_id: string
           created_at?: string
           daily_hours?: Json | null
           id?: string
           incentive_amount?: number
+          locked?: boolean
           notes?: string | null
           overtime_hours?: number
           status?: string
@@ -1493,11 +1569,16 @@ export type Database = {
           week_ending_date: string
         }
         Update: {
+          client_approval_status?: string
+          client_flag_reason?: string | null
+          client_reviewed_at?: string | null
+          client_reviewed_by?: string | null
           contractor_assignment_id?: string
           created_at?: string
           daily_hours?: Json | null
           id?: string
           incentive_amount?: number
+          locked?: boolean
           notes?: string | null
           overtime_hours?: number
           status?: string
@@ -2504,6 +2585,7 @@ export type Database = {
     Functions: {
       applicant_exists: { Args: { _applicant_id: string }; Returns: boolean }
       get_my_applicant_id: { Args: never; Returns: string }
+      get_my_client_id: { Args: never; Returns: string }
       get_my_contractor_assignment_id: { Args: never; Returns: string }
       has_active_interview_session: {
         Args: { _applicant_id: string }
