@@ -96,10 +96,11 @@ Deno.serve(async (req) => {
     }
 
     const syntheticEmail = `${newUsername}@portal.outsta.local`;
-
     const { error: upErr } = await admin
       .from("client_portal_users")
       .update({
+        full_name: fullName || null,
+
         full_name: fullName,
         username: newUsername,
         email: syntheticEmail,
