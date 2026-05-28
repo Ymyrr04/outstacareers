@@ -1027,7 +1027,6 @@ const PortalDashboard = () => {
           work_days: profileForm.work_days,
         } as any)
 
-        } as any)
 
         .eq('id', info.contractor_assignment_id);
       if (aErr) throw aErr;
