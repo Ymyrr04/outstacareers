@@ -321,10 +321,7 @@ const ClientPortalDashboard = () => {
               <ContractorProfilePanel assignments={assignments} clientName={clientName} />
             </div>
             <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Submitted Timesheets</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-6">
               {/* Filters */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <div className="space-y-1">
