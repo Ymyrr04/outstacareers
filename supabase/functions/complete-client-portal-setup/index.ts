@@ -115,6 +115,15 @@ Deno.serve(async (req) => {
       .eq("id", current.id);
     if (upErr) throw upErr;
 
+    // Update client company name if changed
+    if (companyName && current.client_id) {
+      await admin
+        .from("clients")
+        .update({ company_name: companyName, updated_at: new Date().toISOString() })
+        .eq("id", current.client_id);
+    }
+
+
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
