@@ -16,12 +16,23 @@ interface DomainGuardProps {
 
 const DomainGuard = ({ children }: DomainGuardProps) => {
   const location = useLocation();
+  const hostname = typeof window !== "undefined" ? window.location.hostname : "";
+  const workforce = hostname.includes("outstaworkforce");
 
-  if (isWorkforceDomain() && !location.pathname.startsWith("/client-portal")) {
+  // Debug: surface which hostname the browser actually sees.
+  // If this never logs "outstaworkforce.com", the domain is being
+  // redirected at the DNS/CDN level before React loads.
+  console.log("[DomainGuard] hostname:", hostname, "path:", location.pathname);
+
+  if (
+    workforce &&
+    (location.pathname === "/" || !location.pathname.startsWith("/client-portal"))
+  ) {
     return <Navigate to="/client-portal/login" replace />;
   }
 
   return <>{children}</>;
 };
+
 
 export default DomainGuard;
