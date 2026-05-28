@@ -538,7 +538,7 @@ const PortalDashboard = () => {
       ? ((assignment as any).work_days as string[])
       : [];
 
-      : [...DEFAULT_WORK_DAYS];
+
     const nextInfo: ContractorInfo = {
       contractor_assignment_id: portal.contractor_assignment_id,
       applicant_id: assignment?.applicant_id || '',
