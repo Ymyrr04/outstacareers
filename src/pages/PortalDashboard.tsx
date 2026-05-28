@@ -534,9 +534,10 @@ const PortalDashboard = () => {
       .eq('id', portal.contractor_assignment_id)
       .maybeSingle();
 
-    const applicant = (assignment?.applicant as any) || {};
-    const wd = Array.isArray((assignment as any)?.work_days) && (assignment as any).work_days.length > 0
+    const wd = Array.isArray((assignment as any)?.work_days)
       ? ((assignment as any).work_days as string[])
+      : [];
+
       : [...DEFAULT_WORK_DAYS];
     const nextInfo: ContractorInfo = {
       contractor_assignment_id: portal.contractor_assignment_id,
