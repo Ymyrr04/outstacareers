@@ -478,7 +478,7 @@ const TimesheetDetail = ({
                         </TableCell>
                         <TableCell className="text-sm">{to12h(val?.time_in)}</TableCell>
                         <TableCell className="text-sm">{to12h(val?.time_out)}</TableCell>
-                        <TableCell className="text-right">{Number(val?.hours || 0).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{fmtHours(val?.hours || 0)}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{val?.reason || ''}</TableCell>
                       </TableRow>
                     ))}
