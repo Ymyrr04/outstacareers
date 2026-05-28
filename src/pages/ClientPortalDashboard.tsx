@@ -22,6 +22,8 @@ interface Assignment {
   hours_per_week: number | null;
   client_rate: number | null;
   timezone: string | null;
+  start_date: string | null;
+  status: string | null;
   applicant: { full_name: string; email: string } | null;
 }
 
