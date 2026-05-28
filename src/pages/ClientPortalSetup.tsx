@@ -224,9 +224,6 @@ const ClientPortalSetup = () => {
                 <Input id="company" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
                 <p className="text-xs text-muted-foreground">Pre-filled from your account. You can update it if needed.</p>
               </div>
-
-                <p className="text-xs text-muted-foreground">Managed by your account manager.</p>
-              </div>
               <Button type="submit" className="w-full" disabled={saving}>
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save profile'}
               </Button>
