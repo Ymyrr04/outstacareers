@@ -161,7 +161,8 @@ const ClientPortalSetup = () => {
       // If session expired, bounce back to login
       if (/session has expired|not authorized|sign in again/i.test(msg)) {
         try { await supabase.auth.signOut(); } catch {}
-        setTimeout(() => navigate('/client-portal/login'), 1200);
+        setTimeout(() => navigate('/client-portal/login?setup_expired=1'), 1200);
+
       }
     } finally {
       setSaving(false);
