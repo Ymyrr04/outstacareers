@@ -182,6 +182,7 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
           is_replacement: formData.is_replacement,
           country: formData.country || null,
           source: formData.source || null,
+          timezone: formData.timezone || null,
           notes: formData.notes || null,
         })
         .eq('id', contractor.id);
