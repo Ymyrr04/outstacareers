@@ -1024,38 +1024,42 @@ export const PLDashboard = () => {
         </CollapsibleSection>
       )}
 
-      <Card style={{ order: sectionOrder.indexOf('timesheets') }}>
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <div className="flex items-center gap-2">
-              <Input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="h-9 w-[150px]"
-                aria-label="From date"
-              />
-              <span className="text-muted-foreground text-sm">to</span>
-              <Input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="h-9 w-[150px]"
-                aria-label="To date"
-              />
-              {(dateFrom || dateTo) && (
-                <Button variant="ghost" size="sm" className="h-9" onClick={() => { setDateFrom(''); setDateTo(''); }}>
-                  Clear
-                </Button>
-              )}
-            </div>
-            <div className="relative w-full sm:w-72">
+      <CollapsibleSection
+        storageKey="pl_section_timesheets"
+        title="Timesheet Submissions"
+        badge={<Badge variant="secondary" className="text-[10px] ml-1">{filtered.length}</Badge>}
+        collapsedSummary={`${filtered.length} submissions · ${totalHoursAll.toFixed(2)}h`}
+        style={{ order: sectionOrder.indexOf('timesheets') }}
+        rightSlot={
+          <div className="flex items-center gap-2">
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="h-8 w-[140px] text-sm"
+              aria-label="From date"
+            />
+            <span className="text-muted-foreground text-xs">to</span>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="h-8 w-[140px] text-sm"
+              aria-label="To date"
+            />
+            {(dateFrom || dateTo) && (
+              <Button variant="ghost" size="sm" className="h-8" onClick={() => { setDateFrom(''); setDateTo(''); }}>
+                Clear
+              </Button>
+            )}
+            <div className="relative w-60">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Search submissions..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9" />
+              <Input placeholder="Search submissions..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 text-sm" />
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="p-0">
+        }
+      >
+        <div className="p-0">
           {loading ? (
             <div className="p-12 text-center text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
           ) : filtered.length === 0 ? (
