@@ -135,6 +135,7 @@ interface ContractorInfo {
   phone: string | null;
   whatsapp: string | null;
   location: string | null;
+  work_days: string[];
 }
 
 interface ProfileForm {
@@ -148,7 +149,13 @@ interface ProfileForm {
   hours_per_week: string;
   hourly_rate: string;
   regular_work_shift: string;
+  work_days: string[];
 }
+
+const WORK_DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
+const DOW_TO_SHORT: Record<number, string> = { 0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat' };
+const DEFAULT_WORK_DAYS: string[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+
 
 interface DayEntry {
   time_in: string;  // "HH:MM" 24h
