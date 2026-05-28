@@ -102,7 +102,8 @@ const ClientPortalSetup = () => {
         .eq('user_id', userId);
       setStep(2);
     } catch (err: any) {
-      toast({ title: 'Could not set password', description: err.message, variant: 'destructive' });
+      toast({ title: 'Could not set password', description: await getErrorMessage(err), variant: 'destructive' });
+
     } finally {
       setSaving(false);
     }
