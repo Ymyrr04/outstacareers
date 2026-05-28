@@ -10,6 +10,7 @@ import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, E
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 import { AdminLeaveApplications } from '@/components/AdminLeaveApplications';
 import { CollapsibleSection } from '@/components/pl/CollapsibleSection';
@@ -23,6 +24,10 @@ interface TimesheetRow {
   incentive_amount: number;
   notes: string | null;
   status: string;
+  outsta_status: string;
+  client_approval_status: string;
+  client_flag_reason: string | null;
+  client_reviewed_at: string | null;
   submitted_at: string;
   daily_hours: Record<string, { hours: number; reason?: string }> | null;
   contractor: {
@@ -129,6 +134,9 @@ export const PLDashboard = () => {
   const [search, setSearch] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [clientPortalClientIds, setClientPortalClientIds] = useState<Set<string>>(new Set());
+  const [updatingOutstaId, setUpdatingOutstaId] = useState<string | null>(null);
   const [contractorSearch, setContractorSearch] = useState('');
   const [contractorSort, setContractorSort] = useState<{ key: 'name' | 'company' | 'status' | 'rate' | 'hpw'; dir: 'asc' | 'desc' }>({ key: 'company', dir: 'asc' });
   const [tsSort, setTsSort] = useState<{ key: 'name' | 'company' | 'week' | 'hours' | 'ot' | 'incentives' | 'status' | 'submitted'; dir: 'asc' | 'desc' }>({ key: 'submitted', dir: 'desc' });
@@ -177,11 +185,11 @@ export const PLDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
 
-    const [{ data: timesheets }, { data: assignments }, { data: portalUsers }] = await Promise.all([
+    const [{ data: timesheets }, { data: assignments }, { data: portalUsers }, { data: clientPortals }] = await Promise.all([
       supabase
         .from('contractor_timesheets')
         .select(`
-          id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, submitted_at, daily_hours, client_approval_status, client_flag_reason, client_reviewed_at,
+          id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, outsta_status, submitted_at, daily_hours, client_approval_status, client_flag_reason, client_reviewed_at,
           contractor:contractor_assignments(
             job_title,
             start_date,
@@ -205,7 +213,12 @@ export const PLDashboard = () => {
       supabase
         .from('contractor_portal_users')
         .select('contractor_assignment_id, must_change_password'),
+      supabase
+        .from('client_portal_users')
+        .select('client_id'),
     ]);
+
+    setClientPortalClientIds(new Set(((clientPortals as any[]) || []).map((c) => c.client_id).filter(Boolean)));
 
     const portalMap = new Map<string, boolean>(
       (portalUsers || []).map((p: any) => [p.contractor_assignment_id, p.must_change_password])
@@ -458,6 +471,38 @@ export const PLDashboard = () => {
     fetchData();
   };
 
+  const handleOutstaStatusChange = async (r: TimesheetRow, newStatus: 'pending' | 'approved' | 'flagged') => {
+    if (r.outsta_status === newStatus) return;
+    setUpdatingOutstaId(r.id);
+    const { error } = await supabase
+      .from('contractor_timesheets')
+      .update({ outsta_status: newStatus })
+      .eq('id', r.id);
+    setUpdatingOutstaId(null);
+    if (error) {
+      toast({ title: 'Update failed', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, outsta_status: newStatus } : x)));
+    toast({ title: `OutSta status: ${newStatus}` });
+  };
+
+  const STATUS_PILL: Record<string, string> = {
+    pending: 'bg-muted text-foreground/80 border-border',
+    approved: 'bg-emerald-600 text-white border-emerald-600',
+    flagged: 'bg-amber-500 text-white border-amber-500',
+  };
+  const StatusPill = ({ status, prefix }: { status: string; prefix: string }) => {
+    const label = status.charAt(0).toUpperCase() + status.slice(1);
+    return (
+      <span
+        className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-semibold whitespace-nowrap ${STATUS_PILL[status] || STATUS_PILL.pending}`}
+      >
+        {prefix}: {label}
+      </span>
+    );
+  };
+
   const cmp = (a: any, b: any, dir: 'asc' | 'desc') => {
     if (a == null && b == null) return 0;
     if (a == null) return 1;
@@ -492,6 +537,11 @@ export const PLDashboard = () => {
           const to = new Date(dateTo + 'T23:59:59').getTime();
           if (submitted > to) return false;
         }
+      }
+      if (statusFilter && statusFilter !== 'all') {
+        const [scope, val] = statusFilter.split(':');
+        const field = scope === 'client' ? (r.client_approval_status || 'pending') : (r.outsta_status || 'pending');
+        if (field !== val) return false;
       }
       return true;
     })
@@ -1056,6 +1106,20 @@ export const PLDashboard = () => {
                 Clear
               </Button>
             )}
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="h-8 w-[170px] text-xs">
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="client:pending">Client: Pending</SelectItem>
+                <SelectItem value="client:approved">Client: Approved</SelectItem>
+                <SelectItem value="client:flagged">Client: Flagged</SelectItem>
+                <SelectItem value="outsta:pending">OutSta: Pending</SelectItem>
+                <SelectItem value="outsta:approved">OutSta: Approved</SelectItem>
+                <SelectItem value="outsta:flagged">OutSta: Flagged</SelectItem>
+              </SelectContent>
+            </Select>
             <div className="relative w-60">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input placeholder="Search submissions..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 text-sm" />
@@ -1113,34 +1177,54 @@ export const PLDashboard = () => {
                       <TableCell className="text-right">{Number(r.overtime_hours).toFixed(2)}</TableCell>
                       <TableCell className="text-right">${Number(r.incentive_amount || 0).toFixed(2)}</TableCell>
                       <TableCell>
-                        {r.status === 'pending_approval' ? (
-                          <Badge variant="outline" className="border-amber-500 text-amber-600">Pending approval</Badge>
-                        ) : r.status === 'approved' ? (
-                          <Badge variant="outline" className="border-emerald-500 text-emerald-600">Approved</Badge>
-                        ) : r.status === 'rejected' ? (
-                          <Badge variant="outline" className="border-destructive text-destructive">Rejected</Badge>
-                        ) : (
-                          <Badge variant="secondary" className="capitalize">{r.status}</Badge>
-                        )}
+                        {(() => {
+                          const clientHasPortal = r.contractor?.client_id
+                            ? clientPortalClientIds.has(r.contractor.client_id)
+                            : false;
+                          const cs = r.client_approval_status || 'pending';
+                          const os = r.outsta_status || 'pending';
+                          return (
+                            <div className="flex flex-col gap-1 items-start">
+                              {clientHasPortal ? (
+                                <StatusPill status={cs} prefix="Client" />
+                              ) : (
+                                <span className="text-[10px] italic text-muted-foreground">No client portal</span>
+                              )}
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button
+                                    type="button"
+                                    disabled={updatingOutstaId === r.id}
+                                    className="focus:outline-none focus:ring-2 focus:ring-ring rounded-full"
+                                    title="Click to change OutSta status"
+                                  >
+                                    <StatusPill status={os} prefix="OutSta" />
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent align="start" className="w-40 p-1">
+                                  {(['pending', 'approved', 'flagged'] as const).map((opt) => (
+                                    <button
+                                      key={opt}
+                                      type="button"
+                                      onClick={() => handleOutstaStatusChange(r, opt)}
+                                      className={`w-full text-left px-2 py-1.5 rounded text-xs hover:bg-accent flex items-center justify-between ${os === opt ? 'bg-accent/60 font-medium' : ''}`}
+                                    >
+                                      <span className="capitalize">{opt}</span>
+                                      {os === opt && <Check className="w-3 h-3" />}
+                                    </button>
+                                  ))}
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell className="text-sm max-w-xs truncate">{r.notes || '—'}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{format(new Date(r.submitted_at), 'MMM d, h:mm a')}</TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setViewTimesheet(r)}>
-                            <Eye className="w-3 h-3 mr-1" />View
-                          </Button>
-                          {r.status === 'pending_approval' && (
-                            <>
-                              <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-emerald-500 text-emerald-600 hover:bg-emerald-50" onClick={() => handleDecision(r, 'approved')}>
-                                <Check className="w-3 h-3 mr-1" />Approve
-                              </Button>
-                              <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-destructive text-destructive hover:bg-destructive/10" onClick={() => handleDecision(r, 'rejected')}>
-                                <X className="w-3 h-3 mr-1" />Reject
-                              </Button>
-                            </>
-                          )}
-                        </div>
+                        <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setViewTimesheet(r)}>
+                          <Eye className="w-3 h-3 mr-1" />View
+                        </Button>
                       </TableCell>
                     </TableRow>
                   );

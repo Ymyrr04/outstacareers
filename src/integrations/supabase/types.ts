@@ -1548,6 +1548,7 @@ export type Database = {
           incentive_amount: number
           locked: boolean
           notes: string | null
+          outsta_status: string
           overtime_hours: number
           status: string
           submitted_at: string
@@ -1567,6 +1568,7 @@ export type Database = {
           incentive_amount?: number
           locked?: boolean
           notes?: string | null
+          outsta_status?: string
           overtime_hours?: number
           status?: string
           submitted_at?: string
@@ -1586,6 +1588,7 @@ export type Database = {
           incentive_amount?: number
           locked?: boolean
           notes?: string | null
+          outsta_status?: string
           overtime_hours?: number
           status?: string
           submitted_at?: string
