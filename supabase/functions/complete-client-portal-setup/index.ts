@@ -30,16 +30,20 @@ Deno.serve(async (req) => {
     const userId = userData.user.id;
 
     const body = await req.json().catch(() => ({}));
+    const body = await req.json().catch(() => ({}));
     const fullName: string = (body.full_name || "").trim();
     const newUsername: string = (body.username || "").trim().toLowerCase();
     const primaryEmail: string = (body.primary_email || "").trim().toLowerCase();
     const secondaryEmail: string = (body.secondary_email || "").trim().toLowerCase();
     const phone: string = (body.phone || "").trim();
+    const companyName: string = (body.company_name || "").trim();
 
-    if (!fullName || !newUsername || !primaryEmail) {
-      return new Response(JSON.stringify({ error: "full_name, username, and primary_email are required" }), {
+    if (!newUsername || !primaryEmail) {
+      return new Response(JSON.stringify({ error: "username and primary_email are required" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
     }
     if (!/^[a-z0-9._-]{3,40}$/.test(newUsername)) {
       return new Response(JSON.stringify({ error: "Username must be 3-40 chars, lowercase letters/numbers/._-" }), {
@@ -63,9 +67,10 @@ Deno.serve(async (req) => {
     // Get current row
     const { data: current } = await admin
       .from("client_portal_users")
-      .select("id, username")
+      .select("id, username, client_id")
       .eq("user_id", userId)
       .maybeSingle();
+
     if (!current) {
       return new Response(JSON.stringify({ error: "Portal user not found" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
@@ -91,10 +96,11 @@ Deno.serve(async (req) => {
     }
 
     const syntheticEmail = `${newUsername}@portal.outsta.local`;
-
     const { error: upErr } = await admin
       .from("client_portal_users")
       .update({
+        full_name: fullName || null,
+
         full_name: fullName,
         username: newUsername,
         email: syntheticEmail,
@@ -108,6 +114,15 @@ Deno.serve(async (req) => {
       })
       .eq("id", current.id);
     if (upErr) throw upErr;
+
+    // Update client company name if changed
+    if (companyName && current.client_id) {
+      await admin
+        .from("clients")
+        .update({ company_name: companyName, updated_at: new Date().toISOString() })
+        .eq("id", current.client_id);
+    }
+
 
     return new Response(JSON.stringify({ success: true }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },

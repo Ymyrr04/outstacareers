@@ -108,7 +108,7 @@ const ClientPortalSetup = () => {
 
   const submitProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim() || !username.trim() || !primaryEmail.trim()) {
+    if (!username.trim() || !primaryEmail.trim()) {
       toast({ title: 'Please fill in all required fields', variant: 'destructive' });
       return;
     }
@@ -116,11 +116,12 @@ const ClientPortalSetup = () => {
     try {
       const { data, error } = await supabase.functions.invoke('complete-client-portal-setup', {
         body: {
-          full_name: fullName.trim(),
+          full_name: fullName.trim() || null,
           username: username.trim().toLowerCase(),
           primary_email: primaryEmail.trim(),
           secondary_email: secondaryEmail.trim() || null,
           phone: phone.trim() || null,
+          company_name: companyName.trim() || null,
         },
       });
       if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
@@ -131,6 +132,7 @@ const ClientPortalSetup = () => {
       setSaving(false);
     }
   };
+
 
   if (loading) {
     return (
@@ -192,9 +194,10 @@ const ClientPortalSetup = () => {
 
           {step === 2 && (
             <form onSubmit={submitProfile} className="space-y-4">
+
               <div className="space-y-2">
-                <Label htmlFor="fullName">Full name *</Label>
-                <Input id="fullName" required value={fullName} onChange={(e) => setFullName(e.target.value)} />
+                <Label htmlFor="fullName">Full name</Label>
+                <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Optional" />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="username">Username *</Label>
@@ -221,8 +224,8 @@ const ClientPortalSetup = () => {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="company">Company</Label>
-                <Input id="company" value={companyName} readOnly disabled className="bg-muted/50" />
-                <p className="text-xs text-muted-foreground">Managed by your account manager.</p>
+                <Input id="company" value={companyName} onChange={(e) => setCompanyName(e.target.value)} />
+                <p className="text-xs text-muted-foreground">Pre-filled from your account. You can update it if needed.</p>
               </div>
               <Button type="submit" className="w-full" disabled={saving}>
                 {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save profile'}
