@@ -614,29 +614,32 @@ export type Database = {
         Row: {
           client_id: string
           created_at: string
-          email: string
+          email: string | null
           id: string
           must_change_password: boolean
           updated_at: string
           user_id: string
+          username: string | null
         }
         Insert: {
           client_id: string
           created_at?: string
-          email: string
+          email?: string | null
           id?: string
           must_change_password?: boolean
           updated_at?: string
           user_id: string
+          username?: string | null
         }
         Update: {
           client_id?: string
           created_at?: string
-          email?: string
+          email?: string | null
           id?: string
           must_change_password?: boolean
           updated_at?: string
           user_id?: string
+          username?: string | null
         }
         Relationships: []
       }
