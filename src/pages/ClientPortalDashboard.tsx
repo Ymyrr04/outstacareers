@@ -482,7 +482,6 @@ const TimesheetDetail = ({
                 </Table>
               </div>
             )}
-            )}
 
             {row.notes && (
               <div className="mt-4 p-3 bg-muted/40 rounded-md">
