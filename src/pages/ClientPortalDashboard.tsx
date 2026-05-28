@@ -44,12 +44,11 @@ interface Timesheet {
 }
 
 type RowView = Timesheet & {
+type RowView = Timesheet & {
   contractor_name: string;
   contractor_email: string;
-  client_rate: number | null;
   hours_per_week: number | null;
   timezone: string | null;
-  invoice_total: number;
 };
 
 // Convert "HH:MM" (24h) to "h:MM AM/PM"
