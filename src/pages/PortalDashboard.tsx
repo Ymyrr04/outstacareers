@@ -1320,6 +1320,23 @@ const PortalDashboard = () => {
             </div>
           </CardHeader>
           <CardContent>
+            {!hasWorkDays && (
+              <div className="mb-4 flex items-start justify-between gap-3 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-100 px-4 py-3">
+                <div className="text-sm">
+                  <div className="font-medium">Your work schedule is not set.</div>
+                  <div className="text-xs opacity-90">Please update your profile before submitting hours.</div>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0 border-amber-400 bg-white hover:bg-amber-100"
+                  onClick={() => { setProfileEditing(true); setProfileOpen(true); }}
+                >
+                  Set up my schedule →
+                </Button>
+              </div>
+            )}
             <form onSubmit={handleSubmitClick} onKeyDown={handleFormKeyDown} className="space-y-6">
               <div className="space-y-2">
                 <div className="flex justify-center items-center gap-2">
