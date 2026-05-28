@@ -722,7 +722,7 @@ export const PLDashboard = () => {
                     </TableCell>
                     <TableCell>
                       {c.latestTimesheet ? (
-                        <ClientApprovalBadge status={c.latestTimesheet.client_approval_status} reason={c.latestTimesheet.client_flag_reason} />
+                        <ClientApprovalBadge status={c.latestTimesheet.client_approval_status} reason={c.latestTimesheet.client_flag_reason} reviewedAt={c.latestTimesheet.client_reviewed_at} />
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
@@ -910,7 +910,7 @@ export const PLDashboard = () => {
                     </TableCell>
                     <TableCell>
                       {c.latestTimesheet ? (
-                        <ClientApprovalBadge status={c.latestTimesheet.client_approval_status} reason={c.latestTimesheet.client_flag_reason} />
+                        <ClientApprovalBadge status={c.latestTimesheet.client_approval_status} reason={c.latestTimesheet.client_flag_reason} reviewedAt={c.latestTimesheet.client_reviewed_at} />
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
