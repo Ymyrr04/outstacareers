@@ -46,6 +46,7 @@ interface ContractorData {
   is_replacement: boolean | null;
   country: string | null;
   source: string | null;
+  timezone?: string | null;
   applicant: {
     full_name: string;
     email: string;
