@@ -1641,13 +1641,16 @@ const PortalDashboard = () => {
         </Tabs>
       </main>
 
+      <AlertDialog open={missingReasonOpen} onOpenChange={setMissingReasonOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Reason required</AlertDialogTitle>
             <AlertDialogDescription>
               Provide a reason for any missed workdays or overtime hours logged beyond your weekly target.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-3 py-2">
             {missingDays.map((k, idx) => {
-              const hoursNum = parseFloat(days[k]?.hours || '0');
               const isOT = (rowOtMap[k]?.otHours || 0) > 0.001;
               const reasonType = isOT ? 'overtime' : 'no hours';
               return (
@@ -1667,13 +1670,8 @@ const PortalDashboard = () => {
                 </div>
               );
             })}
-
-                    onChange={(e) => updateDay(k, { reason: e.target.value })}
-                  />
-                </div>
-              );
-            })}
           </div>
+
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
