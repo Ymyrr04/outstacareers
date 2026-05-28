@@ -986,7 +986,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
           <div className="flex gap-3 pb-4 min-w-max">
             {orderedFunnelStages.map((stage) => {
               const colors = STAGE_COLORS[stage];
+              const colorOverride = getStageColorOverride(stage);
               const stageCandidates = stageGroups[stage];
+
 
               return (
                 <div
