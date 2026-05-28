@@ -60,11 +60,12 @@ const STAGE_COLORS: Record<string, { bg: string; header: string; dot: string }> 
   'Talent Pool': { bg: 'bg-teal-50 dark:bg-teal-950/20', header: 'bg-teal-500', dot: 'bg-teal-400' },
 };
 
-const getStageDisplayName = (stage: string): string => {
+const defaultStageDisplayName = (stage: string): string => {
   if (stage === 'Talent Pool') return 'Bench';
   if (stage === 'Bench') return 'Talent Pipeline';
   return stage;
 };
+
 
 interface Candidate {
   id: string;
