@@ -632,57 +632,104 @@ const PortalDashboard = () => {
     return true;
   };
 
-  // Returns list of scheduled workday keys (Mon–Fri) with no hours entered.
-  // Weekend days with 0 hours are intentionally excluded — no reason needed.
+  // Helper: is the given date key a scheduled workday for this contractor?
+  const workDaysSet = useMemo(() => new Set(info?.work_days || DEFAULT_WORK_DAYS), [info?.work_days]);
+  const isScheduledDay = (k: string) => {
+    const dow = new Date(k + 'T00:00:00').getDay();
+    return workDaysSet.has(DOW_TO_SHORT[dow]);
+  };
+
+  // Per-day expected hours = weekly target / number of scheduled work days
+  const perDayExpected = useMemo(() => {
+    const hpw = info?.hours_per_week ? Number(info.hours_per_week) : null;
+    const numDays = (info?.work_days?.length || DEFAULT_WORK_DAYS.length);
+    if (!hpw || numDays <= 0) return null;
+    return hpw / numDays;
+  }, [info?.hours_per_week, info?.work_days]);
+
+  // Returns scheduled workday keys with no hours entered (require a reason).
   const getEmptyDays = (): string[] =>
     dateKeys.filter((k) => {
       const raw = days[k]?.hours;
       const isEmpty = raw === '' || raw == null || parseFloat(raw) === 0;
       if (!isEmpty) return false;
-      const dow = new Date(k + 'T00:00:00').getDay(); // 0=Sun, 6=Sat
-      return dow >= 1 && dow <= 5;
+      return isScheduledDay(k);
     });
 
 
-  // Per-row OT calculation based on cumulative weekly total vs weekly target.
-  // Walks days in chronological order and splits each row into regular vs OT hours
-  // once the running total crosses the weekly target.
+  // Per-row OT/regular split.
+  // - Non-scheduled day with hours → all OT
+  // - Scheduled day → hours count as regular until cumulative weekly target is reached;
+  //   any excess becomes OT.
   const rowOtMap = useMemo(() => {
-    const map: Record<string, { regularHours: number; otHours: number; isFullOT: boolean; isPartialOT: boolean }> = {};
+    const map: Record<string, { regularHours: number; otHours: number; isFullOT: boolean; isPartialOT: boolean; isScheduled: boolean }> = {};
     const hpw = info?.hours_per_week ? Number(info.hours_per_week) : null;
-    let running = 0;
+    let regularRunning = 0;
     const sortedKeys = [...dateKeys].sort();
     for (const k of sortedKeys) {
       const h = parseFloat(days[k]?.hours || '0');
       const dayHours = !isNaN(h) && h > 0 ? h : 0;
-      let regular = dayHours;
+      const scheduled = isScheduledDay(k);
+      let regular = 0;
       let ot = 0;
-      if (hpw != null && hpw > 0 && dayHours > 0) {
-        const remainingToTarget = Math.max(0, hpw - running);
-        regular = Math.min(dayHours, remainingToTarget);
-        ot = Math.max(0, dayHours - regular);
+      if (dayHours > 0) {
+        if (!scheduled) {
+          ot = dayHours;
+        } else if (hpw != null && hpw > 0) {
+          const remainingToTarget = Math.max(0, hpw - regularRunning);
+          regular = Math.min(dayHours, remainingToTarget);
+          ot = Math.max(0, dayHours - regular);
+        } else {
+          regular = dayHours;
+        }
       }
       map[k] = {
         regularHours: Number(regular.toFixed(2)),
         otHours: Number(ot.toFixed(2)),
         isFullOT: dayHours > 0 && regular === 0 && ot > 0,
         isPartialOT: regular > 0 && ot > 0,
+        isScheduled: scheduled,
       };
-      running += dayHours;
+      regularRunning += regular;
     }
     return map;
-  }, [days, dateKeys, info?.hours_per_week]);
+  }, [days, dateKeys, info?.hours_per_week, workDaysSet]);
 
-  // Returns list of day keys that have any OT hours (cumulative beyond weekly target)
+  // Returns list of day keys that have any OT hours
   const getOvertimeDays = (): string[] =>
     dateKeys.filter((k) => (rowOtMap[k]?.otHours || 0) > 0.001);
 
-  // Expected hours = the contractor's weekly target from their profile (always, regardless of date range)
+  // Expected hours = the contractor's weekly target from their profile
   const expectedHours = useMemo(() => {
     const hpw = info?.hours_per_week ? Number(info.hours_per_week) : null;
     if (!hpw || dateKeys.length === 0) return null;
     return hpw;
   }, [info?.hours_per_week, dateKeys]);
+
+  // Regular hours = sum of regular portions
+  const regularHoursTotal = useMemo(
+    () => Number(dateKeys.reduce((s, k) => s + (rowOtMap[k]?.regularHours || 0), 0).toFixed(2)),
+    [dateKeys, rowOtMap]
+  );
+
+  // OT hours = sum of OT portions
+  const otHours = useMemo(
+    () => Number(dateKeys.reduce((s, k) => s + (rowOtMap[k]?.otHours || 0), 0).toFixed(2)),
+    [dateKeys, rowOtMap]
+  );
+
+  // Missing hours = sum, over scheduled days, of (perDayExpected - hoursLogged), clamped at 0
+  const missingHoursTotal = useMemo(() => {
+    if (perDayExpected == null) return 0;
+    let missing = 0;
+    for (const k of dateKeys) {
+      if (!isScheduledDay(k)) continue;
+      const v = parseFloat(days[k]?.hours || '0');
+      const dayHours = !isNaN(v) && v > 0 ? v : 0;
+      if (dayHours < perDayExpected) missing += perDayExpected - dayHours;
+    }
+    return Number(missing.toFixed(2));
+  }, [dateKeys, days, perDayExpected, workDaysSet]);
 
   const hoursDiff = useMemo(() => {
     if (expectedHours == null) return 0;
@@ -692,32 +739,21 @@ const PortalDashboard = () => {
   // Tolerance: anything within ±0.25h is considered matching
   const hoursMatch = expectedHours == null ? true : Math.abs(hoursDiff) <= 0.25;
 
-  // OT hours = anything worked beyond the weekly target
-  const otHours = useMemo(() => {
-    if (expectedHours == null) return 0;
-    return Math.max(0, Number((totalHours - expectedHours).toFixed(2)));
-  }, [totalHours, expectedHours]);
-
-  // Per-day expected (used only for the under-target reason flagging)
-  const perDayExpected = useMemo(() => {
-    const hpw = info?.hours_per_week ? Number(info.hours_per_week) : null;
-    if (!hpw) return null;
-    return hpw / 5;
-  }, [info?.hours_per_week]);
-
-  // When under expected: days with hours entered but below per-day target need a reason
+  // Scheduled days where hours logged are below per-day expected
   const getUnderHoursDays = (): string[] => {
-    if (expectedHours == null || hoursDiff >= -0.25 || perDayExpected == null) return [];
+    if (perDayExpected == null) return [];
     return dateKeys.filter((k) => {
+      if (!isScheduledDay(k)) return false;
       const raw = days[k]?.hours;
       if (raw === '' || raw == null) return false;
       const v = parseFloat(raw);
-      return !isNaN(v) && v > 0 && v < perDayExpected;
+      return !isNaN(v) && v > 0 && v < perDayExpected - 0.01;
     });
   };
 
   // Kept for backwards compat with submit handler; over-hours rows = OT rows now
   const getOverHoursDays = (): string[] => getOvertimeDays();
+
 
 
   const hasPendingApproval = useMemo(() => getOvertimeDays().length > 0, [days, dateKeys]);
