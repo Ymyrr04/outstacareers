@@ -35,6 +35,12 @@ const FUNNEL_STAGES = [
 
 const RECRUITMENT_STATUSES = new Set(FUNNEL_STAGES);
 
+const getStageDisplayName = (stage: string): string => {
+  if (stage === 'Talent Pool') return 'Bench';
+  if (stage === 'Bench') return 'Talent Pipeline';
+  return stage;
+};
+
 // Stages where a candidate is no longer actively progressing through the pipeline.
 // Time spent here (and transitions into them) is excluded from "active pipeline" timing metrics.
 const TERMINAL_STAGES = new Set<string>(['Hired', 'Reject', 'Archived', 'Talent Pool', 'Bench']);
