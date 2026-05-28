@@ -857,16 +857,18 @@ export const MyApplicantsDashboard = () => {
           {APPLICANT_STATUS_FOLDERS.map(folder => (
             <Button
               key={folder}
-               size="sm"
-               onClick={() => setActiveStatusFolder(folder)}
-               onDragOver={(e) => handleDragOver(e, folder)}
-               onDragLeave={handleDragLeave}
-               onDrop={(e) => handleDrop(e, folder)}
-               className={`transition-all ${
-                 dragOverFolder === folder ? 'ring-2 ring-primary ring-offset-2' : ''
-               }`}
-             >
-               {getStageDisplayName(folder)}
+              variant={activeStatusFolder === folder ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setActiveStatusFolder(folder)}
+              onDragOver={(e) => handleDragOver(e, folder)}
+              onDragLeave={handleDragLeave}
+              onDrop={(e) => handleDrop(e, folder)}
+              className={`transition-all ${
+                dragOverFolder === folder ? 'ring-2 ring-primary ring-offset-2' : ''
+              }`}
+            >
+              {getStageDisplayName(folder)}
+              {folderCounts[folder] > 0 && (
                 <Badge variant="secondary" className="ml-2">
                   {folderCounts[folder]}
                 </Badge>
