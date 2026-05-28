@@ -138,7 +138,7 @@ const ClientPortalDashboard = () => {
     // IMPORTANT: never select contractor pay rate (`hourly_rate`) — only `client_rate`.
     const { data: ca, error: caErr } = await supabase
       .from('contractor_assignments')
-      .select('id, job_title, hours_per_week, client_rate, applicant:applicants_prescreen(full_name, email)')
+      .select('id, job_title, hours_per_week, client_rate, timezone, applicant:applicants_prescreen(full_name, email)')
       .eq('client_id', cid);
     if (caErr) console.error(caErr);
     setAssignments((ca || []) as any);
