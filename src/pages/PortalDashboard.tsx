@@ -1734,8 +1734,8 @@ const PortalDashboard = () => {
                     }
                     handleSubmitClick();
                   }}
-                  disabled={submitting || profileIncomplete}
-                  title={profileIncomplete ? 'Complete your profile to enable submitting' : undefined}
+                  disabled={submitting || profileIncomplete || !hasWorkDays}
+                  title={!hasWorkDays ? 'Set your work days in your profile to enable submission' : (profileIncomplete ? 'Complete your profile to enable submitting' : undefined)}
                 >
                   {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                   {editingId ? 'Save changes' : 'Submit'}
