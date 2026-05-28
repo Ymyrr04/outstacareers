@@ -476,8 +476,8 @@ const TimesheetDetail = ({
                           <div className="font-medium">{format(new Date(date), 'EEEE')}</div>
                           <div className="text-xs text-muted-foreground">{format(new Date(date), 'MMM d, yyyy')}</div>
                         </TableCell>
-                        <TableCell className="text-sm">{to12h(val?.time_in)}</TableCell>
-                        <TableCell className="text-sm">{to12h(val?.time_out)}</TableCell>
+                        <TableCell className="text-sm">{val?.time_in ? `${to12h(val.time_in)} EST` : '—'}</TableCell>
+                        <TableCell className="text-sm">{val?.time_out ? `${to12h(val.time_out)} EST` : '—'}</TableCell>
                         <TableCell className="text-right">{fmtHours(val?.hours || 0)}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{val?.reason || ''}</TableCell>
                       </TableRow>
