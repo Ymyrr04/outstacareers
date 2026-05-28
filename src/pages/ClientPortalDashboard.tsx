@@ -315,7 +315,12 @@ const ClientPortalDashboard = () => {
             actionLoading={actionLoading}
           />
         ) : (
-          <Card>
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-xl font-semibold mb-3">Submitted Timesheets</h1>
+              <ContractorProfilePanel assignments={assignments} clientName={clientName} />
+            </div>
+            <Card>
             <CardHeader>
               <CardTitle className="text-base">Submitted Timesheets</CardTitle>
             </CardHeader>
