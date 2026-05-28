@@ -2492,7 +2492,7 @@ const Admin = () => {
                               }}
                             >
                               <FolderOpen className={`w-4 h-4 ${isDragOver ? 'text-primary' : ''}`} />
-                              {status}
+                              {getStageDisplayName(status)}
                               {/* Only show count badge on "For Review" folder */}
                               {status === 'For Review' && count > 0 && (
                                 <Badge variant="secondary" className="ml-1 text-xs">
