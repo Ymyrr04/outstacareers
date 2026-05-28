@@ -287,10 +287,8 @@ const ClientPortalDashboard = () => {
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-blue-600" />
-            <div>
-              <div className="text-sm font-semibold">{clientName || 'OutStaWorkforce'}</div>
-              <div className="text-xs text-muted-foreground">{userEmail}</div>
-            </div>
+            <div className="text-sm font-semibold">{clientName || 'OutStaWorkforce'}</div>
+
           </div>
           <Button variant="outline" size="sm" onClick={handleSignOut}>
             <LogOut className="w-4 h-4 mr-1" /> Sign out
