@@ -771,6 +771,12 @@ const PortalDashboard = () => {
   const handleSubmitClick = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!info) return;
+    if (!hasWorkDays) {
+      toast({ title: 'Work days not set', description: 'Please set your scheduled work days in your profile before submitting.', variant: 'destructive' });
+      setProfileEditing(true);
+      setProfileOpen(true);
+      return;
+    }
     if (!dateRangeValid) {
       toast({ title: 'Invalid date range', description: '"To" date must be on or after "From" date.', variant: 'destructive' });
       return;
