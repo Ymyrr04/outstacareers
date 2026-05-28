@@ -430,15 +430,6 @@ const TimesheetDetail = ({
   const expected = row.hours_per_week ?? 40;
   const pct = Math.min(100, Math.round((Number(row.total_hours) / expected) * 100));
   const dailyEntries = row.daily_hours ? Object.entries(row.daily_hours).sort(([a], [b]) => a.localeCompare(b)) : [];
-  const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>(() => {
-    if (typeof window === 'undefined') return '12h';
-    return (localStorage.getItem('tsTimeFormat') as '12h' | '24h') || '12h';
-  });
-  const setFmt = (f: '12h' | '24h') => {
-    setTimeFormat(f);
-    try { localStorage.setItem('tsTimeFormat', f); } catch {}
-  };
-  const tz = row.timezone || 'PHT (UTC+8)';
 
   return (
     <div className="space-y-4">
