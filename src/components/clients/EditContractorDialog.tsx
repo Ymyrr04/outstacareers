@@ -168,6 +168,7 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
           status: formData.status,
           job_title: formData.job_title || null,
           hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
+          client_rate: formData.client_rate ? parseFloat(formData.client_rate) : null,
           hours_per_week: formData.hours_per_week ? parseFloat(formData.hours_per_week) : null,
           start_date: formData.start_date || null,
           end_date: formData.end_date || null,
