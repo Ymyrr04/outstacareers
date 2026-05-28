@@ -57,6 +57,9 @@ interface ContractorRow {
     depositHours: number;
     isDeposit: boolean;
     weekIndex: number | null;
+    client_approval_status: string;
+    client_flag_reason: string | null;
+    client_reviewed_at: string | null;
   } | null;
 }
 
@@ -66,6 +69,24 @@ const ProfileField = ({ label, value }: { label: string; value: string | null | 
     <div className="font-medium">{value && String(value).trim() ? value : '—'}</div>
   </div>
 );
+
+const ClientApprovalBadge = ({ status, reason }: { status: string; reason?: string | null }) => {
+  if (status === 'approved') {
+    return <Badge variant="outline" className="border-emerald-500 text-emerald-600 w-fit">Approved</Badge>;
+  }
+  if (status === 'flagged') {
+    return (
+      <Badge
+        variant="outline"
+        className="border-amber-500 text-amber-700 bg-amber-50 w-fit"
+        title={reason || 'Flagged by client'}
+      >
+        Flagged
+      </Badge>
+    );
+  }
+  return <Badge variant="outline" className="text-muted-foreground w-fit">Pending</Badge>;
+};
 
 export const PLDashboard = () => {
   const { toast } = useToast();
@@ -134,7 +155,7 @@ export const PLDashboard = () => {
       supabase
         .from('contractor_timesheets')
         .select(`
-          id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, submitted_at, daily_hours,
+          id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, submitted_at, daily_hours, client_approval_status, client_flag_reason, client_reviewed_at,
           contractor:contractor_assignments(
             job_title,
             start_date,
@@ -199,6 +220,9 @@ export const PLDashboard = () => {
           depositHours: dep.depositHours,
           isDeposit: dep.isDeposit,
           weekIndex: dep.weekIndex,
+          client_approval_status: ts.client_approval_status || 'pending',
+          client_flag_reason: ts.client_flag_reason ?? null,
+          client_reviewed_at: ts.client_reviewed_at ?? null,
         };
       }
       return {
@@ -590,6 +614,7 @@ export const PLDashboard = () => {
                   <TableHead className="text-right">OT</TableHead>
                   <TableHead className="text-right">Bonus</TableHead>
                   <TableHead className="text-right">Deposit</TableHead>
+                  <TableHead>Client Approval</TableHead>
                   <TableHead>Portal Account</TableHead>
                 </TableRow>
               </TableHeader>
@@ -666,6 +691,13 @@ export const PLDashboard = () => {
                             Wk {(c.latestTimesheet.weekIndex ?? 0) + 1}
                           </Badge>
                         </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {c.latestTimesheet ? (
+                        <ClientApprovalBadge status={c.latestTimesheet.client_approval_status} reason={c.latestTimesheet.client_flag_reason} />
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
@@ -771,6 +803,7 @@ export const PLDashboard = () => {
                   <TableHead className="text-right">OT</TableHead>
                   <TableHead className="text-right">Bonus</TableHead>
                   <TableHead className="text-right">Deposit</TableHead>
+                  <TableHead>Client Approval</TableHead>
                   <TableHead>Portal Account</TableHead>
                 </TableRow>
               </TableHeader>
@@ -846,6 +879,13 @@ export const PLDashboard = () => {
                             Wk {(c.latestTimesheet.weekIndex ?? 0) + 1}
                           </Badge>
                         </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {c.latestTimesheet ? (
+                        <ClientApprovalBadge status={c.latestTimesheet.client_approval_status} reason={c.latestTimesheet.client_flag_reason} />
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
