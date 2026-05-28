@@ -2984,7 +2984,7 @@ const Admin = () => {
                             <SelectContent>
                               {APPLICANT_STATUS_OPTIONS.map((status) => (
                                 <SelectItem key={status} value={status}>
-                                  {status}
+                                  {getStageDisplayName(status)}
                                 </SelectItem>
                               ))}
                             </SelectContent>
