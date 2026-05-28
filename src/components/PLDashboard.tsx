@@ -1148,14 +1148,20 @@ export const PLDashboard = () => {
       </CollapsibleSection>
 
       {filteredInternal.length > 0 && (
-        <Card className="border-dashed" style={{ order: sectionOrder.indexOf('internalTimesheets') }}>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              Internal Team Submissions — OutSta ({filteredInternal.length})
-              <Badge variant="outline" className="text-[10px]">Excluded from analytics</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
+        <CollapsibleSection
+          storageKey="pl_section_internal_timesheets"
+          title="Internal Team Submissions — OutSta"
+          badge={
+            <>
+              <Badge variant="secondary" className="text-[10px] ml-1">{filteredInternal.length}</Badge>
+              <Badge variant="outline" className="text-[10px] ml-1">Excluded from analytics</Badge>
+            </>
+          }
+          collapsedSummary={`${filteredInternal.length} internal submissions`}
+          className="border-dashed"
+          style={{ order: sectionOrder.indexOf('internalTimesheets') }}
+        >
+          <div className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
