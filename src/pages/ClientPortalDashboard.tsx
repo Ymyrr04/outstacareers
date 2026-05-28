@@ -20,7 +20,6 @@ interface Assignment {
   id: string;
   job_title: string | null;
   hours_per_week: number | null;
-  client_rate: number | null;
   timezone: string | null;
   start_date: string | null;
   status: string | null;
