@@ -432,6 +432,7 @@ const PortalDashboard = () => {
   const [submitting, setSubmitting] = useState(false);
   const [info, setInfo] = useState<ContractorInfo | null>(null);
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
+  const [flagDialogTimesheet, setFlagDialogTimesheet] = useState<Timesheet | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [clientNotified, setClientNotified] = useState(false);
   const [invoiceMatches, setInvoiceMatches] = useState(false);
