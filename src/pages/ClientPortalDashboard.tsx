@@ -598,21 +598,6 @@ const TimesheetDetail = ({
               </div>
               <Progress value={pct} className="mt-2" />
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Hourly rate</span>
-              <span className="font-medium">{row.client_rate == null ? '—' : fmtMoney(Number(row.client_rate))}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Incentives</span>
-              <span className="font-medium">{fmtMoney(Number(row.incentive_amount) || 0)}</span>
-            </div>
-            <div className="flex items-center justify-between border-t pt-3">
-              <span className="text-sm font-medium">Invoice total</span>
-              <span className="text-lg font-semibold text-blue-600">
-                {row.client_rate == null ? '—' : fmtMoney(row.invoice_total)}
-              </span>
-            </div>
-
             <div className="space-y-2 pt-2">
               <Button
                 className="w-full bg-green-600 hover:bg-green-700"
