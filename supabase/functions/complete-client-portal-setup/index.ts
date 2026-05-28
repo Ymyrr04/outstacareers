@@ -7,12 +7,24 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+async function getUserIdFromBearer(supabaseUrl: string, serviceKey: string, authHeader: string): Promise<string | null> {
+  const response = await fetch(`${supabaseUrl}/auth/v1/user`, {
+    headers: {
+      Authorization: authHeader,
+      apikey: serviceKey,
+    },
+  });
+
+  if (!response.ok) return null;
+  const user = await response.json().catch(() => null);
+  return typeof user?.id === "string" ? user.id : null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 
     const authHeader = req.headers.get("Authorization") ?? "";
     if (!authHeader.startsWith("Bearer ")) {
@@ -20,14 +32,12 @@ Deno.serve(async (req) => {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userClient = createClient(supabaseUrl, anonKey, { global: { headers: { Authorization: authHeader } } });
-    const { data: userData, error: uErr } = await userClient.auth.getUser();
-    if (uErr || !userData.user) {
+    const userId = await getUserIdFromBearer(supabaseUrl, serviceKey, authHeader);
+    if (!userId) {
       return new Response(JSON.stringify({ error: "Invalid session" }), {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const userId = userData.user.id;
 
     const body = await req.json().catch(() => ({}));
     const fullName: string = (body.full_name || "").trim();
