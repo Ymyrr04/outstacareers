@@ -141,10 +141,11 @@ const ClientPortalDashboard = () => {
       .maybeSingle();
     if (client) setClientName(client.company_name);
 
-    // IMPORTANT: never select contractor pay rate (`hourly_rate`) — only `client_rate`.
+    // Client portal must NEVER expose any pay or rate fields (hourly_rate, client_rate, invoice_total, incentives).
     const { data: ca, error: caErr } = await supabase
       .from('contractor_assignments')
-      .select('id, job_title, hours_per_week, client_rate, timezone, start_date, status, applicant:applicants_prescreen(full_name, email)')
+      .select('id, job_title, hours_per_week, timezone, start_date, status, applicant:applicants_prescreen(full_name, email)')
+      .eq('client_id', cid);
       .eq('client_id', cid);
     if (caErr) console.error(caErr);
     setAssignments((ca || []) as any);
