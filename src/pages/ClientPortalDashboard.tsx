@@ -77,6 +77,10 @@ const statusBadge = (status: string) => {
 };
 
 const fmtMoney = (n: number) => `$${n.toFixed(2)}`;
+const fmtHours = (n: number) => {
+  const v = Number(n) || 0;
+  return Number.isInteger(v) ? v.toString() : v.toFixed(2).replace(/\.?0+$/, '');
+};
 
 const ClientPortalDashboard = () => {
   const navigate = useNavigate();
@@ -370,7 +374,7 @@ const ClientPortalDashboard = () => {
                             <div className="text-xs text-muted-foreground">{r.contractor_email}</div>
                           </TableCell>
                           <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
-                          <TableCell className="text-right">{Number(r.total_hours).toFixed(2)}</TableCell>
+                          <TableCell className="text-right">{fmtHours(r.total_hours)}</TableCell>
                           <TableCell className="text-right font-medium">
                             {r.client_rate == null ? <span className="text-muted-foreground">—</span> : fmtMoney(r.invoice_total)}
                           </TableCell>
@@ -474,7 +478,7 @@ const TimesheetDetail = ({
                         </TableCell>
                         <TableCell className="text-sm">{to12h(val?.time_in)}</TableCell>
                         <TableCell className="text-sm">{to12h(val?.time_out)}</TableCell>
-                        <TableCell className="text-right">{Number(val?.hours || 0).toFixed(2)}</TableCell>
+                        <TableCell className="text-right">{fmtHours(val?.hours || 0)}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{val?.reason || ''}</TableCell>
                       </TableRow>
                     ))}
@@ -507,7 +511,7 @@ const TimesheetDetail = ({
             <div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Hours logged</span>
-                <span className="font-medium">{Number(row.total_hours).toFixed(2)} / {expected}</span>
+                <span className="font-medium">{fmtHours(row.total_hours)} / {expected}</span>
               </div>
               <Progress value={pct} className="mt-2" />
             </div>
