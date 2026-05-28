@@ -57,6 +57,10 @@ const STAGE_COLORS: Record<string, { bg: string; header: string; dot: string }> 
   'Bench': { bg: 'bg-amber-50 dark:bg-amber-950/20', header: 'bg-amber-500', dot: 'bg-amber-400' },
   'Reject': { bg: 'bg-red-50 dark:bg-red-950/20', header: 'bg-red-400', dot: 'bg-red-400' },
   'Talent Pool': { bg: 'bg-teal-50 dark:bg-teal-950/20', header: 'bg-teal-500', dot: 'bg-teal-400' },
+const getStageDisplayName = (stage: string): string => {
+  if (stage === 'Talent Pool') return 'Bench';
+  if (stage === 'Bench') return 'Talent Pipeline';
+  return stage;
 };
 
 interface Candidate {
