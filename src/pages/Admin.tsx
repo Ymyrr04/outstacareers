@@ -94,6 +94,12 @@ const APPLICANT_STATUS_OPTIONS = [
   'Talent Pool'
 ] as const;
 
+const getStageDisplayName = (stage: string): string => {
+  if (stage === 'Talent Pool') return 'Bench';
+  if (stage === 'Bench') return 'Talent Pipeline';
+  return stage;
+};
+
 type ApplicantStatusFolder = typeof APPLICANT_STATUS_FOLDERS[number];
 type ApplicantStatusOption = typeof APPLICANT_STATUS_OPTIONS[number];
 
