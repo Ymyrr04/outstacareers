@@ -285,7 +285,7 @@ const ClientPortalDashboard = () => {
 
   return (
     <div className="min-h-screen bg-muted/20">
-      <Helmet><title>{clientName ? `${clientName} — Client Portal` : 'Client Portal'}</title></Helmet>
+      <Helmet><title>{clientName ? `${clientName} — OutStaWorkforce` : 'OutStaWorkforce'}</title></Helmet>
 
       {/* Header */}
       <header className="bg-background border-b">
@@ -293,7 +293,7 @@ const ClientPortalDashboard = () => {
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-blue-600" />
             <div>
-              <div className="text-sm font-semibold">{clientName || 'Client Portal'}</div>
+              <div className="text-sm font-semibold">{clientName || 'OutStaWorkforce'}</div>
               <div className="text-xs text-muted-foreground">{userEmail}</div>
             </div>
           </div>

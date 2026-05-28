@@ -58,7 +58,7 @@ const ClientPortalChangePassword = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-      <Helmet><title>Set New Password | OutSta Client Portal</title></Helmet>
+      <Helmet><title>Set New Password | OutStaWorkforce</title></Helmet>
       <Card className="w-full max-w-md">
         <CardHeader>
           <CardTitle>Set a new password</CardTitle>
