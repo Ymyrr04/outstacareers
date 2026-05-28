@@ -615,12 +615,17 @@ const PortalDashboard = () => {
     return true;
   };
 
-  // Returns list of day keys that are empty (no hours entered)
+  // Returns list of scheduled workday keys (Mon–Fri) with no hours entered.
+  // Weekend days with 0 hours are intentionally excluded — no reason needed.
   const getEmptyDays = (): string[] =>
     dateKeys.filter((k) => {
       const raw = days[k]?.hours;
-      return raw === '' || raw == null || parseFloat(raw) === 0;
+      const isEmpty = raw === '' || raw == null || parseFloat(raw) === 0;
+      if (!isEmpty) return false;
+      const dow = new Date(k + 'T00:00:00').getDay(); // 0=Sun, 6=Sat
+      return dow >= 1 && dow <= 5;
     });
+
 
   // Per-row OT calculation based on cumulative weekly total vs weekly target.
   // Walks days in chronological order and splits each row into regular vs OT hours
