@@ -138,7 +138,18 @@ const ClientPortalSetup = () => {
     }
     setSaving(true);
     try {
+      // Ensure we have a fresh session (password change earlier may have rotated tokens)
+      let { data: sess } = await supabase.auth.getSession();
+      if (!sess?.session) {
+        const { data: r } = await supabase.auth.refreshSession();
+        sess = r as any;
+      }
+      if (!sess?.session) throw new Error('Your session has expired. Please sign in again.');
+      console.log('[setup] saving profile with session user:', sess.session.user?.id);
+
       const { data, error } = await supabase.functions.invoke('complete-client-portal-setup', {
+        body: {
+
         body: {
           full_name: fullName.trim() || null,
           username: username.trim().toLowerCase(),
