@@ -43,8 +43,8 @@ const FUNNEL_STAGES = [
   'Pitch',
   'Client Interview',
   'Hired',
-  'Bench',
   'Reject',
+  'Bench',
   'Talent Pool',
 ] as const;
 
