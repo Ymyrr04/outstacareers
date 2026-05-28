@@ -191,7 +191,7 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
           source: formData.source || null,
           timezone: formData.timezone || null,
           notes: formData.notes || null,
-          work_days: formData.work_days.length > 0 ? formData.work_days : [...DEFAULT_WORK_DAYS_ADMIN],
+          work_days: formData.work_days,
         } as any)
         .eq('id', contractor.id);
 
