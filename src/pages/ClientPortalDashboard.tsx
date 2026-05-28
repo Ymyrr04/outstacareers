@@ -511,7 +511,7 @@ const TimesheetDetail = ({
             <div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Hours logged</span>
-                <span className="font-medium">{Number(row.total_hours).toFixed(2)} / {expected}</span>
+                <span className="font-medium">{fmtHours(row.total_hours)} / {expected}</span>
               </div>
               <Progress value={pct} className="mt-2" />
             </div>
