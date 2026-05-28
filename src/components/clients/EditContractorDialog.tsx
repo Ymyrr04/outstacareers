@@ -367,6 +367,35 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
             />
           </div>
 
+          {/* Work days */}
+          <div className="grid grid-cols-4 items-start gap-4">
+            <Label className="text-right pt-2">Work Days</Label>
+            <div className="col-span-3 space-y-1">
+              <div className="flex flex-wrap gap-1.5">
+                {WORK_DAY_SHORT_ADMIN.map((d) => {
+                  const on = formData.work_days.includes(d);
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => {
+                        const set = new Set(formData.work_days);
+                        if (set.has(d)) set.delete(d); else set.add(d);
+                        const ordered = WORK_DAY_SHORT_ADMIN.filter((x) => set.has(x));
+                        setFormData(prev => ({ ...prev, work_days: ordered }));
+                      }}
+                      className={`px-3 py-1 rounded-full text-xs font-medium border-2 transition-colors ${on ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground border-border hover:border-primary/50'}`}
+                      aria-pressed={on}
+                    >
+                      {d}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground">Days the contractor is expected to work each week. Used for OT and undertime detection.</p>
+            </div>
+          </div>
+
           {/* Client Rate (shown to clients in the Client Portal) */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="client_rate" className="text-right">Client Rate ($)</Label>
