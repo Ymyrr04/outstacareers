@@ -108,7 +108,7 @@ const ClientPortalSetup = () => {
 
   const submitProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!fullName.trim() || !username.trim() || !primaryEmail.trim()) {
+    if (!username.trim() || !primaryEmail.trim()) {
       toast({ title: 'Please fill in all required fields', variant: 'destructive' });
       return;
     }
@@ -116,11 +116,12 @@ const ClientPortalSetup = () => {
     try {
       const { data, error } = await supabase.functions.invoke('complete-client-portal-setup', {
         body: {
-          full_name: fullName.trim(),
+          full_name: fullName.trim() || null,
           username: username.trim().toLowerCase(),
           primary_email: primaryEmail.trim(),
           secondary_email: secondaryEmail.trim() || null,
           phone: phone.trim() || null,
+          company_name: companyName.trim() || null,
         },
       });
       if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
@@ -131,6 +132,7 @@ const ClientPortalSetup = () => {
       setSaving(false);
     }
   };
+
 
   if (loading) {
     return (
