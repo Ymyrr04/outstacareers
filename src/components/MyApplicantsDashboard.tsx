@@ -73,6 +73,12 @@ const APPLICANT_STATUS_FOLDERS = [
   'Archive',
 ] as const;
 
+const getStageDisplayName = (stage: string): string => {
+  if (stage === 'Talent Pool') return 'Bench';
+  if (stage === 'Bench') return 'Talent Pipeline';
+  return stage;
+};
+
 type ApplicantStatusFolder = (typeof APPLICANT_STATUS_FOLDERS)[number];
 
 interface Job {
