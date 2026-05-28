@@ -1076,9 +1076,8 @@ export const MyApplicantsDashboard = () => {
                           </SelectContent>
                         </Select>
                       </TableCell>
-                          </SelectContent>
-                        </Select>
-                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center justify-end gap-1">
                       <TableCell>
                         <div className="flex items-center justify-end gap-1">
                           <Button
