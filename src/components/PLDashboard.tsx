@@ -185,11 +185,11 @@ export const PLDashboard = () => {
   const fetchData = async () => {
     setLoading(true);
 
-    const [{ data: timesheets }, { data: assignments }, { data: portalUsers }] = await Promise.all([
+    const [{ data: timesheets }, { data: assignments }, { data: portalUsers }, { data: clientPortals }] = await Promise.all([
       supabase
         .from('contractor_timesheets')
         .select(`
-          id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, submitted_at, daily_hours, client_approval_status, client_flag_reason, client_reviewed_at,
+          id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, outsta_status, submitted_at, daily_hours, client_approval_status, client_flag_reason, client_reviewed_at,
           contractor:contractor_assignments(
             job_title,
             start_date,
@@ -213,7 +213,12 @@ export const PLDashboard = () => {
       supabase
         .from('contractor_portal_users')
         .select('contractor_assignment_id, must_change_password'),
+      supabase
+        .from('client_portal_users')
+        .select('client_id'),
     ]);
+
+    setClientPortalClientIds(new Set(((clientPortals as any[]) || []).map((c) => c.client_id).filter(Boolean)));
 
     const portalMap = new Map<string, boolean>(
       (portalUsers || []).map((p: any) => [p.contractor_assignment_id, p.must_change_password])
