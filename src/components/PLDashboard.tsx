@@ -1219,8 +1219,8 @@ export const PLDashboard = () => {
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+          </div>
+        </CollapsibleSection>
       )}
       </div>
 
