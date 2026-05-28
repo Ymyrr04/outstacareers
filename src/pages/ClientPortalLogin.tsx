@@ -81,7 +81,6 @@ const ClientPortalLogin = () => {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sign in'}
             </Button>
-            <p className="text-xs text-muted-foreground text-center">First time? Use the default password provided by your account manager.</p>
           </form>
         </CardContent>
       </Card>
