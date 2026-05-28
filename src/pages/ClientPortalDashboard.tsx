@@ -466,12 +466,11 @@ const ContractorProfilePanel = ({ assignments, clientName }: { assignments: Assi
               </div>
               <div className="min-w-0 flex-1 pr-16">
                 <div className="font-semibold text-sm truncate">{name}</div>
-                <div className="text-xs text-muted-foreground truncate">{email}</div>
               </div>
             </div>
             <div className="mt-3 space-y-1 text-xs">
               <div><span className="text-muted-foreground">Role:</span> <span className="font-medium">{a.job_title || '—'}</span></div>
-              <div><span className="text-muted-foreground">Company:</span> <span className="font-medium">{clientName || '—'}</span></div>
+
               <div>
                 {a.start_date ? (
                   <span className="text-muted-foreground">Hired: <span className="font-medium text-foreground">{format(new Date(a.start_date), 'MMM d, yyyy')}</span></span>
