@@ -1,0 +1,1 @@
+ALTER TABLE public.contractor_assignments ALTER COLUMN work_days SET DEFAULT '{}'::text[];
