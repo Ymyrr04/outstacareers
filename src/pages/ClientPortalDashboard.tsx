@@ -20,7 +20,6 @@ interface Assignment {
   id: string;
   job_title: string | null;
   hours_per_week: number | null;
-  client_rate: number | null;
   timezone: string | null;
   start_date: string | null;
   status: string | null;
@@ -47,10 +46,8 @@ interface Timesheet {
 type RowView = Timesheet & {
   contractor_name: string;
   contractor_email: string;
-  client_rate: number | null;
   hours_per_week: number | null;
   timezone: string | null;
-  invoice_total: number;
 };
 
 // Convert "HH:MM" (24h) to "h:MM AM/PM"
@@ -141,10 +138,10 @@ const ClientPortalDashboard = () => {
       .maybeSingle();
     if (client) setClientName(client.company_name);
 
-    // IMPORTANT: never select contractor pay rate (`hourly_rate`) — only `client_rate`.
+    // Client portal must NEVER expose any pay or rate fields (hourly_rate, client_rate, invoice_total, incentives).
     const { data: ca, error: caErr } = await supabase
       .from('contractor_assignments')
-      .select('id, job_title, hours_per_week, client_rate, timezone, start_date, status, applicant:applicants_prescreen(full_name, email)')
+      .select('id, job_title, hours_per_week, timezone, start_date, status, applicant:applicants_prescreen(full_name, email)')
       .eq('client_id', cid);
     if (caErr) console.error(caErr);
     setAssignments((ca || []) as any);
@@ -165,16 +162,12 @@ const ClientPortalDashboard = () => {
     const assignmentMap = new Map(assignments.map(a => [a.id, a]));
     return timesheets.map(t => {
       const a = assignmentMap.get(t.contractor_assignment_id);
-      const rate = a?.client_rate ?? 0;
-      const invoice = (Number(t.total_hours) || 0) * Number(rate) + (Number(t.incentive_amount) || 0);
       return {
         ...t,
         contractor_name: a?.applicant?.full_name || 'Unknown',
         contractor_email: a?.applicant?.email || '',
-        client_rate: a?.client_rate ?? null,
         hours_per_week: a?.hours_per_week ?? null,
         timezone: (a as any)?.timezone ?? null,
-        invoice_total: invoice,
       };
     });
   }, [timesheets, assignments]);
@@ -598,21 +591,6 @@ const TimesheetDetail = ({
               </div>
               <Progress value={pct} className="mt-2" />
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Hourly rate</span>
-              <span className="font-medium">{row.client_rate == null ? '—' : fmtMoney(Number(row.client_rate))}</span>
-            </div>
-            <div className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">Incentives</span>
-              <span className="font-medium">{fmtMoney(Number(row.incentive_amount) || 0)}</span>
-            </div>
-            <div className="flex items-center justify-between border-t pt-3">
-              <span className="text-sm font-medium">Invoice total</span>
-              <span className="text-lg font-semibold text-blue-600">
-                {row.client_rate == null ? '—' : fmtMoney(row.invoice_total)}
-              </span>
-            </div>
-
             <div className="space-y-2 pt-2">
               <Button
                 className="w-full bg-green-600 hover:bg-green-700"
