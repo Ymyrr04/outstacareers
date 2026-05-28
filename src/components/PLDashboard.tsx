@@ -672,13 +672,17 @@ export const PLDashboard = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredContractors.map((c) => (
-                  <TableRow key={c.id}>
+                {filteredContractors.map((c, idx) => (
+                  <TableRow key={c.id} className={idx % 2 === 1 ? 'bg-muted/20' : ''}>
                     <TableCell>
                       <div className="font-medium">{c.applicant?.full_name || '—'}</div>
                       <div className="text-xs text-muted-foreground">{c.applicant?.email || '—'}</div>
                     </TableCell>
-                    <TableCell>{c.client?.company_name || '—'}</TableCell>
+                    <TableCell className="max-w-[160px]">
+                      <div className="truncate" title={c.client?.company_name || ''}>
+                        {c.client?.company_name || '—'}
+                      </div>
+                    </TableCell>
                     
                     <TableCell>
                       <Badge variant={c.status === 'active' ? 'default' : 'secondary'} className="capitalize">
