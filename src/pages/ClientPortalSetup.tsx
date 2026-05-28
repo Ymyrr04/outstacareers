@@ -192,6 +192,9 @@ const ClientPortalSetup = () => {
             </form>
           )}
 
+          {step === 2 && (
+            <form onSubmit={submitProfile} className="space-y-4">
+
               <div className="space-y-2">
                 <Label htmlFor="fullName">Full name</Label>
                 <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} placeholder="Optional" />
