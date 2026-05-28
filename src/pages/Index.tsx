@@ -11,10 +11,14 @@ import ValuesSection from "@/components/ValuesSection";
 import JobsSection from "@/components/JobsSection";
 import FooterAboutSection from "@/components/FooterAboutSection";
 import { usePageViewTracking } from "@/hooks/useAnalytics";
+import ClientPortalLogin from "./ClientPortalLogin";
 
 const Index = () => {
   usePageViewTracking();
   const location = useLocation();
+
+  const isWorkforceDomain = typeof window !== 'undefined' &&
+    window.location.hostname.includes('outstaworkforce.com');
 
   // Handle hash navigation (e.g., /#positions)
   useEffect(() => {
@@ -29,6 +33,10 @@ const Index = () => {
       }, 100);
     }
   }, [location.hash]);
+
+  if (isWorkforceDomain) {
+    return <ClientPortalLogin />;
+  }
 
   return (
     <div className="min-h-screen">
@@ -46,4 +54,5 @@ const Index = () => {
   );
 };
 
+export default Index;
 export default Index;
