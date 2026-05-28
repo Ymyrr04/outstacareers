@@ -127,6 +127,7 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
         status: contractor.status || 'active',
         job_title: contractor.job_title || '',
         hourly_rate: contractor.hourly_rate?.toString() || '',
+        client_rate: contractor.client_rate?.toString() || '',
         hours_per_week: contractor.hours_per_week?.toString() || '',
         start_date: contractor.start_date || '',
         end_date: contractor.end_date || '',
