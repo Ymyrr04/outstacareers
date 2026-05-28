@@ -861,7 +861,7 @@ export const MyApplicantsDashboard = () => {
               size="sm"
               onClick={() => setActiveStatusFolder(folder)}
               onDragOver={(e) => handleDragOver(e, folder)}
-              onDragLeave={handleDragLeave}
+              {getStageDisplayName(folder)}
               onDrop={(e) => handleDrop(e, folder)}
               className={`transition-all ${
                 dragOverFolder === folder ? 'ring-2 ring-primary ring-offset-2' : ''
@@ -1066,7 +1066,7 @@ export const MyApplicantsDashboard = () => {
                           value={applicant.status}
                           onValueChange={(v) => handleStatusChange(applicant.id, v)}
                         >
-                          <SelectTrigger className="h-7 text-xs w-[120px]">
+                                {getStageDisplayName(status)}
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
