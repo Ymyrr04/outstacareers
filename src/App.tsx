@@ -24,6 +24,9 @@ import PortalLogin from "./pages/PortalLogin";
 import PortalChangePassword from "./pages/PortalChangePassword";
 import PortalDashboard from "./pages/PortalDashboard";
 import SignContract from "./pages/SignContract";
+import ClientPortalLogin from "./pages/ClientPortalLogin";
+import ClientPortalChangePassword from "./pages/ClientPortalChangePassword";
+import ClientPortalDashboard from "./pages/ClientPortalDashboard";
 
 const queryClient = new QueryClient();
 
