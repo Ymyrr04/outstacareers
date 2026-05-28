@@ -659,7 +659,7 @@ export const RecruitmentFunnel = () => {
                       return (
                         <TableHead key={stage} className="min-w-[120px] text-center">
                           <div className="flex flex-col items-center gap-0.5 py-1">
-                            <span className="text-xs font-semibold text-foreground">{stage}</span>
+                            <span className="text-xs font-semibold text-foreground">{getStageDisplayName(stage)}</span>
                             <div className="flex items-center gap-1">
                               <Badge variant="secondary" className="text-[10px]">
                                 {totals.current}
