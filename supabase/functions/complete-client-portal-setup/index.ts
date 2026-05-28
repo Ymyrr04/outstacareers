@@ -67,9 +67,10 @@ Deno.serve(async (req) => {
     // Get current row
     const { data: current } = await admin
       .from("client_portal_users")
-      .select("id, username")
+      .select("id, username, client_id")
       .eq("user_id", userId)
       .maybeSingle();
+
     if (!current) {
       return new Response(JSON.stringify({ error: "Portal user not found" }), {
         status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
