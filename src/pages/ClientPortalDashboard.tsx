@@ -487,12 +487,22 @@ const TimesheetDetail = ({
               </div>
             )}
 
-            {row.notes && (
-              <div className="mt-4 p-3 bg-muted/40 rounded-md">
-                <div className="text-xs font-medium text-muted-foreground mb-1">Contractor notes</div>
-                <div className="text-sm whitespace-pre-wrap">{row.notes}</div>
-              </div>
-            )}
+            {(() => {
+              // Strip any payoneer links (contractor payment info) before showing notes to client
+              const cleaned = (row.notes || '')
+                .split(/\r?\n/)
+                .map(line => line.replace(/\bhttps?:\/\/\S*payoneer\S*/gi, '').trim())
+                .filter(line => line.length > 0)
+                .join('\n')
+                .trim();
+              if (!cleaned) return null;
+              return (
+                <div className="mt-4 p-3 bg-muted/40 rounded-md">
+                  <div className="text-xs font-medium text-muted-foreground mb-1">Contractor notes</div>
+                  <div className="text-sm whitespace-pre-wrap">{cleaned}</div>
+                </div>
+              );
+            })()}
 
             {row.client_flag_reason && row.client_approval_status === 'flagged' && (
               <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md">
