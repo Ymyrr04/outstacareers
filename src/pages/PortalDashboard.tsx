@@ -1277,31 +1277,11 @@ const PortalDashboard = () => {
                 </div>
                 {weekStart && weekEnd && !dateRangeValid && (
                   <p className="text-xs text-destructive text-center">"To" must be on or after "From".</p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
-                {/* LEFT: daily entries */}
-                <div className="space-y-3 min-w-0">
-                  <div>
-                    <Label className="block">Time in / Time out per day</Label>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Enter your log-in and log-out times — total hours are calculated automatically. Overnight shifts (log-out before log-in) are handled automatically.
-                    </p>
-                  </div>
-                  <div className="rounded-lg border bg-card overflow-hidden">
-                    {dateKeys.length === 0 && (
-                      <p className="text-sm text-muted-foreground p-4">
-                        Select a valid date range to enter your times.
-                      </p>
-                    )}
-                    {dateKeys.map((k, idx) => {
-                      const date = new Date(k + 'T00:00:00');
-                      const entry = days[k] || { time_in: '', time_out: '', hours: '', reason: '' };
                       const hoursNum = parseFloat(entry.hours || '0');
-                      const isOvertime = !isNaN(hoursNum) && hoursNum > 10;
-                      const isOverTarget =
-                        perDayExpected != null && !isNaN(hoursNum) && hoursNum > 0 && hoursNum >= perDayExpected && hoursDiff > 0.25;
+                      const ot = rowOtMap[k] || { regularHours: 0, otHours: 0, isFullOT: false, isPartialOT: false };
+                      const isFullOT = ot.isFullOT;
+                      const isPartialOT = ot.isPartialOT;
+                      const isOTRow = isFullOT || isPartialOT;
                       const isUnderTarget =
                         perDayExpected != null &&
                         entry.hours !== '' &&
@@ -1309,7 +1289,27 @@ const PortalDashboard = () => {
                         hoursNum > 0 &&
                         hoursNum < perDayExpected &&
                         hoursDiff < -0.25;
-                      const needsReason = isOvertime || isOverTarget || isUnderTarget;
+                      const needsReason = isOTRow || isUnderTarget;
+                      const reasonLabel = isPartialOT
+                        ? `(required — overtime, includes ${ot.otHours} hrs OT)`
+                        : isFullOT
+                        ? '(required — overtime)'
+                        : isUnderTarget
+                        ? '(required — under target)'
+                        : '(only if no hours)';
+                      const reasonPlaceholder = isOTRow
+                        ? 'e.g. urgent deadline, extra workload'
+                        : isUnderTarget
+                        ? 'e.g. half day, left early, sick'
+                        : 'Optional — e.g. day off, holiday, sick';
+                      const label = dayLabel(k);
+                      const timeInputClass = `bg-background border-2 h-12 text-base font-medium w-[100px] text-center ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`;
+                      const rowBg = needsReason
+                        ? 'bg-amber-50/60 dark:bg-amber-950/20'
+                        : idx % 2 === 0
+                        ? 'bg-background'
+                        : 'bg-muted/40';
+
                       const reasonLabel = isOvertime
                         ? '(required — overtime)'
                         : isOverTarget
