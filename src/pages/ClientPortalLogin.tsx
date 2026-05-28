@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
+
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -13,13 +14,15 @@ import { Helmet } from 'react-helmet-async';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 type RecoveryMode = null | 'username' | 'password';
-
 const ClientPortalLogin = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const setupExpired = searchParams.get('setup_expired') === '1';
   const { toast } = useToast();
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+
 
   const [mode, setMode] = useState<RecoveryMode>(null);
   const [recoveryInput, setRecoveryInput] = useState('');
@@ -114,6 +117,12 @@ const ClientPortalLogin = () => {
           <CardDescription>Review and approve your contractors' weekly hours.</CardDescription>
         </CardHeader>
         <CardContent>
+          {setupExpired && (
+            <div className="mb-4 rounded-md border border-amber-300 bg-amber-50 text-amber-900 px-3 py-2 text-sm">
+              Your session ended during setup. Please sign in again to continue.
+            </div>
+          )}
+
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="identifier">Username or email</Label>

@@ -96,18 +96,31 @@ const ClientPortalSetup = () => {
     try {
       const { error } = await supabase.auth.updateUser({ password: pw1 });
       if (error) throw error;
+      // Password change rotates the session — force-refresh so subsequent calls
+      // (profile save edge function) get a valid access token.
+      const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
+      if (refreshErr || !refreshed?.session) {
+        // fall back to getSession; if still nothing, treat as expired
+        const { data: s } = await supabase.auth.getSession();
+        if (!s?.session) throw new Error('Session lost after password update');
+      }
       await supabase
         .from('client_portal_users')
         .update({ password_reset_required: false })
         .eq('user_id', userId);
       setStep(2);
     } catch (err: any) {
-      toast({ title: 'Could not set password', description: await getErrorMessage(err), variant: 'destructive' });
-
+      const msg = await getErrorMessage(err);
+      toast({ title: 'Could not set password', description: msg, variant: 'destructive' });
+      if (/session/i.test(msg)) {
+        try { await supabase.auth.signOut(); } catch {}
+        setTimeout(() => navigate('/client-portal/login?setup_expired=1'), 1200);
+      }
     } finally {
       setSaving(false);
     }
   };
+
   const submitProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !primaryEmail.trim()) {
@@ -125,8 +138,18 @@ const ClientPortalSetup = () => {
     }
     setSaving(true);
     try {
+      // Ensure we have a fresh session (password change earlier may have rotated tokens)
+      let { data: sess } = await supabase.auth.getSession();
+      if (!sess?.session) {
+        const { data: r } = await supabase.auth.refreshSession();
+        sess = r as any;
+      }
+      if (!sess?.session) throw new Error('Your session has expired. Please sign in again.');
+      console.log('[setup] saving profile with session user:', sess.session.user?.id);
+
       const { data, error } = await supabase.functions.invoke('complete-client-portal-setup', {
         body: {
+
           full_name: fullName.trim() || null,
           username: username.trim().toLowerCase(),
           primary_email: primaryEmail.trim(),
@@ -148,7 +171,8 @@ const ClientPortalSetup = () => {
       // If session expired, bounce back to login
       if (/session has expired|not authorized|sign in again/i.test(msg)) {
         try { await supabase.auth.signOut(); } catch {}
-        setTimeout(() => navigate('/client-portal/login'), 1200);
+        setTimeout(() => navigate('/client-portal/login?setup_expired=1'), 1200);
+
       }
     } finally {
       setSaving(false);
