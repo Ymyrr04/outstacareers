@@ -1163,15 +1163,47 @@ export const PLDashboard = () => {
                       <TableCell className="text-right">{Number(r.overtime_hours).toFixed(2)}</TableCell>
                       <TableCell className="text-right">${Number(r.incentive_amount || 0).toFixed(2)}</TableCell>
                       <TableCell>
-                        {r.status === 'pending_approval' ? (
-                          <Badge variant="outline" className="border-amber-500 text-amber-600">Pending approval</Badge>
-                        ) : r.status === 'approved' ? (
-                          <Badge variant="outline" className="border-emerald-500 text-emerald-600">Approved</Badge>
-                        ) : r.status === 'rejected' ? (
-                          <Badge variant="outline" className="border-destructive text-destructive">Rejected</Badge>
-                        ) : (
-                          <Badge variant="secondary" className="capitalize">{r.status}</Badge>
-                        )}
+                        {(() => {
+                          const clientHasPortal = r.contractor?.client_id
+                            ? clientPortalClientIds.has(r.contractor.client_id)
+                            : false;
+                          const cs = r.client_approval_status || 'pending';
+                          const os = r.outsta_status || 'pending';
+                          return (
+                            <div className="flex flex-col gap-1 items-start">
+                              {clientHasPortal ? (
+                                <StatusPill status={cs} prefix="Client" />
+                              ) : (
+                                <span className="text-[10px] italic text-muted-foreground">No client portal</span>
+                              )}
+                              <Popover>
+                                <PopoverTrigger asChild>
+                                  <button
+                                    type="button"
+                                    disabled={updatingOutstaId === r.id}
+                                    className="focus:outline-none focus:ring-2 focus:ring-ring rounded-full"
+                                    title="Click to change OutSta status"
+                                  >
+                                    <StatusPill status={os} prefix="OutSta" />
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent align="start" className="w-40 p-1">
+                                  {(['pending', 'approved', 'flagged'] as const).map((opt) => (
+                                    <button
+                                      key={opt}
+                                      type="button"
+                                      onClick={() => handleOutstaStatusChange(r, opt)}
+                                      className={`w-full text-left px-2 py-1.5 rounded text-xs hover:bg-accent flex items-center justify-between ${os === opt ? 'bg-accent/60 font-medium' : ''}`}
+                                    >
+                                      <span className="capitalize">{opt}</span>
+                                      {os === opt && <Check className="w-3 h-3" />}
+                                    </button>
+                                  ))}
+                                </PopoverContent>
+                              </Popover>
+                            </div>
+                          );
+                        })()}
                       </TableCell>
                       <TableCell className="text-sm max-w-xs truncate">{r.notes || '—'}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{format(new Date(r.submitted_at), 'MMM d, h:mm a')}</TableCell>
