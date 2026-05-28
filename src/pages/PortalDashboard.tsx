@@ -1445,7 +1445,8 @@ const PortalDashboard = () => {
                                 <dt className="text-muted-foreground">
                                   {hoursDiff < 0 ? 'Missing' : 'Over'}
                                 </dt>
-                                <dd className={`font-semibold ${hoursDiff < 0 ? 'text-amber-600' : 'text-blue-600'}`}>
+                                <dd className={`font-semibold ${hoursDiff < 0 ? 'text-amber-600' : 'text-amber-600'}`}>
+
                                   {Math.abs(hoursDiff).toFixed(2)} hrs
                                 </dd>
                               </div>
