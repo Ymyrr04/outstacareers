@@ -162,16 +162,12 @@ const ClientPortalDashboard = () => {
     const assignmentMap = new Map(assignments.map(a => [a.id, a]));
     return timesheets.map(t => {
       const a = assignmentMap.get(t.contractor_assignment_id);
-      const rate = a?.client_rate ?? 0;
-      const invoice = (Number(t.total_hours) || 0) * Number(rate) + (Number(t.incentive_amount) || 0);
       return {
         ...t,
         contractor_name: a?.applicant?.full_name || 'Unknown',
         contractor_email: a?.applicant?.email || '',
-        client_rate: a?.client_rate ?? null,
         hours_per_week: a?.hours_per_week ?? null,
         timezone: (a as any)?.timezone ?? null,
-        invoice_total: invoice,
       };
     });
   }, [timesheets, assignments]);
