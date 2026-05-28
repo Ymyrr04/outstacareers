@@ -21,6 +21,7 @@ interface Assignment {
   job_title: string | null;
   hours_per_week: number | null;
   client_rate: number | null;
+  timezone: string | null;
   applicant: { full_name: string; email: string } | null;
 }
 
@@ -46,8 +47,28 @@ type RowView = Timesheet & {
   contractor_email: string;
   client_rate: number | null;
   hours_per_week: number | null;
+  timezone: string | null;
   invoice_total: number;
 };
+
+// Convert "HH:MM" (24h) to "h:MM AM/PM"
+const to12h = (t?: string | null) => {
+  if (!t) return '—';
+  const m = /^(\d{1,2}):(\d{2})/.exec(t);
+  if (!m) return t;
+  let h = parseInt(m[1], 10);
+  const mm = m[2];
+  const period = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${h}:${mm} ${period}`;
+};
+
+const formatTime = (t: string | null | undefined, fmt: '12h' | '24h') => {
+  if (!t) return '—';
+  return fmt === '12h' ? to12h(t) : t;
+};
+
 
 const statusBadge = (status: string) => {
   if (status === 'approved') return <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Approved</Badge>;
@@ -117,7 +138,7 @@ const ClientPortalDashboard = () => {
     // IMPORTANT: never select contractor pay rate (`hourly_rate`) — only `client_rate`.
     const { data: ca, error: caErr } = await supabase
       .from('contractor_assignments')
-      .select('id, job_title, hours_per_week, client_rate, applicant:applicants_prescreen(full_name, email)')
+      .select('id, job_title, hours_per_week, client_rate, timezone, applicant:applicants_prescreen(full_name, email)')
       .eq('client_id', cid);
     if (caErr) console.error(caErr);
     setAssignments((ca || []) as any);
@@ -146,6 +167,7 @@ const ClientPortalDashboard = () => {
         contractor_email: a?.applicant?.email || '',
         client_rate: a?.client_rate ?? null,
         hours_per_week: a?.hours_per_week ?? null,
+        timezone: (a as any)?.timezone ?? null,
         invoice_total: invoice,
       };
     });
@@ -408,6 +430,15 @@ const TimesheetDetail = ({
   const expected = row.hours_per_week ?? 40;
   const pct = Math.min(100, Math.round((Number(row.total_hours) / expected) * 100));
   const dailyEntries = row.daily_hours ? Object.entries(row.daily_hours).sort(([a], [b]) => a.localeCompare(b)) : [];
+  const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>(() => {
+    if (typeof window === 'undefined') return '12h';
+    return (localStorage.getItem('tsTimeFormat') as '12h' | '24h') || '12h';
+  });
+  const setFmt = (f: '12h' | '24h') => {
+    setTimeFormat(f);
+    try { localStorage.setItem('tsTimeFormat', f); } catch {}
+  };
+  const tz = row.timezone || 'PHT (UTC+8)';
 
   return (
     <div className="space-y-4">
@@ -424,38 +455,62 @@ const TimesheetDetail = ({
             <CardTitle className="text-base">
               {row.contractor_name} <span className="text-muted-foreground font-normal">— week ending {format(new Date(row.week_ending_date), 'MMM d, yyyy')}</span>
             </CardTitle>
+            <div className="text-xs text-muted-foreground mt-1">
+              Times shown in contractor's local time ({tz})
+            </div>
           </CardHeader>
           <CardContent>
             {dailyEntries.length === 0 ? (
               <div className="text-sm text-muted-foreground">No daily breakdown provided.</div>
             ) : (
-              <div className="border rounded-md overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Time in</TableHead>
-                      <TableHead>Time out</TableHead>
-                      <TableHead className="text-right">Hours</TableHead>
-                      <TableHead>Reason</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {dailyEntries.map(([date, val]: [string, any]) => (
-                      <TableRow key={date}>
-                        <TableCell>
-                          <div className="font-medium">{format(new Date(date), 'EEEE')}</div>
-                          <div className="text-xs text-muted-foreground">{format(new Date(date), 'MMM d, yyyy')}</div>
-                        </TableCell>
-                        <TableCell className="text-sm">{val?.time_in || '—'}</TableCell>
-                        <TableCell className="text-sm">{val?.time_out || '—'}</TableCell>
-                        <TableCell className="text-right">{Number(val?.hours || 0).toFixed(2)}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{val?.reason || ''}</TableCell>
+              <>
+                <div className="flex items-center justify-end gap-2 mb-2">
+                  <span className="text-xs text-muted-foreground">Time format</span>
+                  <div className="inline-flex rounded-full border border-border p-0.5 bg-background">
+                    <button
+                      type="button"
+                      onClick={() => setFmt('12h')}
+                      className={`px-2.5 py-0.5 text-xs rounded-full transition-colors ${timeFormat === '12h' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      12h
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFmt('24h')}
+                      className={`px-2.5 py-0.5 text-xs rounded-full transition-colors ${timeFormat === '24h' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      24h
+                    </button>
+                  </div>
+                </div>
+                <div className="border rounded-md overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Time in</TableHead>
+                        <TableHead>Time out</TableHead>
+                        <TableHead className="text-right">Hours</TableHead>
+                        <TableHead>Reason</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {dailyEntries.map(([date, val]: [string, any]) => (
+                        <TableRow key={date}>
+                          <TableCell>
+                            <div className="font-medium">{format(new Date(date), 'EEEE')}</div>
+                            <div className="text-xs text-muted-foreground">{format(new Date(date), 'MMM d, yyyy')}</div>
+                          </TableCell>
+                          <TableCell className="text-sm">{formatTime(val?.time_in, timeFormat)}</TableCell>
+                          <TableCell className="text-sm">{formatTime(val?.time_out, timeFormat)}</TableCell>
+                          <TableCell className="text-right">{Number(val?.hours || 0).toFixed(2)}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{val?.reason || ''}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
 
             {row.notes && (

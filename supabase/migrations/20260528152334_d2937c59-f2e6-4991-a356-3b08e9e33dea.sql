@@ -1,0 +1,1 @@
+ALTER TABLE public.contractor_assignments ADD COLUMN IF NOT EXISTS timezone TEXT DEFAULT 'PHT (UTC+8)';

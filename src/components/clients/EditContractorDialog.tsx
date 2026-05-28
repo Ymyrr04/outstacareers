@@ -46,6 +46,7 @@ interface ContractorData {
   is_replacement: boolean | null;
   country: string | null;
   source: string | null;
+  timezone?: string | null;
   applicant: {
     full_name: string;
     email: string;
@@ -91,8 +92,10 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
     is_replacement: false,
     country: '',
     source: '',
+    timezone: '',
     notes: '',
   });
+
 
   // Fetch clients list
   useEffect(() => {
@@ -137,6 +140,7 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
         is_replacement: contractor.is_replacement || false,
         country: contractor.country || '',
         source: contractor.source || '',
+        timezone: (contractor as any).timezone || '',
         notes: contractor.notes || '',
       });
     }
@@ -178,6 +182,7 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
           is_replacement: formData.is_replacement,
           country: formData.country || null,
           source: formData.source || null,
+          timezone: formData.timezone || null,
           notes: formData.notes || null,
         })
         .eq('id', contractor.id);
@@ -437,6 +442,17 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
               id="source"
               value={formData.source}
               onChange={(e) => setFormData(prev => ({ ...prev, source: e.target.value }))}
+              className="col-span-3"
+            />
+          </div>
+
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="timezone" className="text-right">Timezone</Label>
+            <Input
+              id="timezone"
+              placeholder="e.g. PHT (UTC+8)"
+              value={formData.timezone}
+              onChange={(e) => setFormData(prev => ({ ...prev, timezone: e.target.value }))}
               className="col-span-3"
             />
           </div>

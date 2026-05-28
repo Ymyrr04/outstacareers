@@ -1038,6 +1038,7 @@ export type Database = {
           status: string | null
           status_changed_at: string | null
           timesheet_link: string | null
+          timezone: string | null
           updated_at: string
         }
         Insert: {
@@ -1062,6 +1063,7 @@ export type Database = {
           status?: string | null
           status_changed_at?: string | null
           timesheet_link?: string | null
+          timezone?: string | null
           updated_at?: string
         }
         Update: {
@@ -1086,6 +1088,7 @@ export type Database = {
           status?: string | null
           status_changed_at?: string | null
           timesheet_link?: string | null
+          timezone?: string | null
           updated_at?: string
         }
         Relationships: [
