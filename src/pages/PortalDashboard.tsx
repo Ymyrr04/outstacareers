@@ -1222,6 +1222,31 @@ const PortalDashboard = () => {
                   <Label htmlFor="p-rate">Current rate (per hour) <span className="text-destructive">*</span></Label>
                   <Input id="p-rate" type="number" step="0.01" min="0" value={profileForm.hourly_rate} onChange={(e) => setProfileForm({ ...profileForm, hourly_rate: e.target.value })} />
                 </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Work days <span className="text-destructive">*</span></Label>
+                  <p className="text-xs text-muted-foreground">Select the days you are expected to work each week.</p>
+                  <div className="flex flex-wrap gap-2">
+                    {WORK_DAY_SHORT.map((d) => {
+                      const on = profileForm.work_days.includes(d);
+                      return (
+                        <button
+                          key={d}
+                          type="button"
+                          onClick={() => {
+                            const set = new Set(profileForm.work_days);
+                            if (set.has(d)) set.delete(d); else set.add(d);
+                            const ordered = WORK_DAY_SHORT.filter((x) => set.has(x));
+                            setProfileForm({ ...profileForm, work_days: ordered });
+                          }}
+                          className={`px-3.5 py-1.5 rounded-full text-sm font-medium border-2 transition-colors ${on ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground border-border hover:border-primary/50'}`}
+                          aria-pressed={on}
+                        >
+                          {d}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             )}
             <DialogFooter className="gap-2">
