@@ -22,6 +22,8 @@ interface Assignment {
   hours_per_week: number | null;
   client_rate: number | null;
   timezone: string | null;
+  start_date: string | null;
+  status: string | null;
   applicant: { full_name: string; email: string } | null;
 }
 
@@ -142,7 +144,7 @@ const ClientPortalDashboard = () => {
     // IMPORTANT: never select contractor pay rate (`hourly_rate`) — only `client_rate`.
     const { data: ca, error: caErr } = await supabase
       .from('contractor_assignments')
-      .select('id, job_title, hours_per_week, client_rate, timezone, applicant:applicants_prescreen(full_name, email)')
+      .select('id, job_title, hours_per_week, client_rate, timezone, start_date, status, applicant:applicants_prescreen(full_name, email)')
       .eq('client_id', cid);
     if (caErr) console.error(caErr);
     setAssignments((ca || []) as any);
@@ -313,11 +315,13 @@ const ClientPortalDashboard = () => {
             actionLoading={actionLoading}
           />
         ) : (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">Submitted Timesheets</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-xl font-semibold mb-3">Submitted Timesheets</h1>
+              <ContractorProfilePanel assignments={assignments} clientName={clientName} />
+            </div>
+            <Card>
+            <CardContent className="space-y-4 pt-6">
               {/* Filters */}
               <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
                 <div className="space-y-1">
@@ -360,8 +364,7 @@ const ClientPortalDashboard = () => {
                       <TableRow>
                         <TableHead>Contractor</TableHead>
                         <TableHead>Week ending</TableHead>
-                        <TableHead className="text-right">Hours</TableHead>
-                        <TableHead className="text-right">Invoice</TableHead>
+                        <TableHead className="text-right">Total Hours</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Action</TableHead>
                       </TableRow>
@@ -375,9 +378,6 @@ const ClientPortalDashboard = () => {
                           </TableCell>
                           <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
                           <TableCell className="text-right">{fmtHours(r.total_hours)}</TableCell>
-                          <TableCell className="text-right font-medium">
-                            {r.client_rate == null ? <span className="text-muted-foreground">—</span> : fmtMoney(r.invoice_total)}
-                          </TableCell>
                           <TableCell>{statusBadge(r.client_approval_status)}</TableCell>
                           <TableCell className="text-right">
                             <Button size="sm" variant="outline" onClick={() => setSelected(r)}>
@@ -391,7 +391,8 @@ const ClientPortalDashboard = () => {
                 </div>
               )}
             </CardContent>
-          </Card>
+            </Card>
+          </div>
         )}
       </main>
 
@@ -421,6 +422,78 @@ const ClientPortalDashboard = () => {
     </div>
   );
 };
+
+const initialsOf = (name: string) => {
+  const parts = (name || '').trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return '?';
+  const first = parts[0][0];
+  const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
+  return (first + last).toUpperCase();
+};
+
+const avatarColors = [
+  'bg-blue-500', 'bg-emerald-500', 'bg-purple-500', 'bg-amber-500',
+  'bg-pink-500', 'bg-teal-500', 'bg-indigo-500', 'bg-rose-500',
+];
+const colorFor = (s: string) => {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return avatarColors[h % avatarColors.length];
+};
+
+const ContractorProfilePanel = ({ assignments, clientName }: { assignments: Assignment[]; clientName: string }) => {
+  if (!assignments || assignments.length === 0) return null;
+  // Dedupe by applicant + job_title in case of multiple assignment rows
+  const seen = new Set<string>();
+  const list = assignments.filter(a => {
+    const key = `${a.applicant?.email || a.id}-${a.job_title || ''}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  return (
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+      {list.map((a) => {
+        const name = a.applicant?.full_name || 'Unnamed contractor';
+        const email = a.applicant?.email || '';
+        const isActive = (a.status || 'active').toLowerCase() === 'active';
+        return (
+          <div key={a.id} className="relative bg-background border rounded-lg shadow-sm p-4">
+            <div className="absolute top-3 right-3">
+              {isActive ? (
+                <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Active</Badge>
+              ) : (
+                <Badge variant="secondary" className="bg-gray-100 text-gray-600">Inactive</Badge>
+              )}
+            </div>
+            <div className="flex items-start gap-3">
+              <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-sm shrink-0 ${colorFor(name)}`}>
+                {initialsOf(name)}
+              </div>
+              <div className="min-w-0 flex-1 pr-16">
+                <div className="font-semibold text-sm truncate">{name}</div>
+                <div className="text-xs text-muted-foreground truncate">{email}</div>
+              </div>
+            </div>
+            <div className="mt-3 space-y-1 text-xs">
+              <div><span className="text-muted-foreground">Role:</span> <span className="font-medium">{a.job_title || '—'}</span></div>
+              <div><span className="text-muted-foreground">Company:</span> <span className="font-medium">{clientName || '—'}</span></div>
+              <div>
+                {a.start_date ? (
+                  <span className="text-muted-foreground">Hired: <span className="font-medium text-foreground">{format(new Date(a.start_date), 'MMM d, yyyy')}</span></span>
+                ) : (
+                  <span className="italic text-muted-foreground">Hire date not set</span>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 
 const TimesheetDetail = ({
   row, onBack, onApprove, onOpenFlag, actionLoading,
