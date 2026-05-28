@@ -44,7 +44,6 @@ interface Timesheet {
 }
 
 type RowView = Timesheet & {
-type RowView = Timesheet & {
   contractor_name: string;
   contractor_email: string;
   hours_per_week: number | null;
