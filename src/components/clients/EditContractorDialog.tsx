@@ -149,6 +149,9 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
         source: contractor.source || '',
         timezone: (contractor as any).timezone || '',
         notes: contractor.notes || '',
+        work_days: Array.isArray(contractor.work_days) && contractor.work_days.length > 0
+          ? contractor.work_days
+          : [...DEFAULT_WORK_DAYS_ADMIN],
       });
     }
   }, [contractor]);
