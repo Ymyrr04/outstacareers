@@ -8,6 +8,9 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+
+type RecoveryMode = null | 'username' | 'password';
 
 const ClientPortalLogin = () => {
   const navigate = useNavigate();
@@ -16,16 +19,23 @@ const ClientPortalLogin = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const [mode, setMode] = useState<RecoveryMode>(null);
+  const [recoveryInput, setRecoveryInput] = useState('');
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const [recoverySent, setRecoverySent] = useState<string | null>(null);
+
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
       if (data.session) {
         const { data: cpu } = await supabase
           .from('client_portal_users')
-          .select('must_change_password')
+          .select('must_change_password, is_first_login')
           .eq('user_id', data.session.user.id)
           .maybeSingle();
         if (cpu) {
-          navigate(cpu.must_change_password ? '/client-portal/change-password' : '/client-portal');
+          if ((cpu as any).is_first_login) navigate('/client-portal/setup');
+          else if (cpu.must_change_password) navigate('/client-portal/change-password');
+          else navigate('/client-portal');
         }
       }
     });
@@ -43,7 +53,7 @@ const ClientPortalLogin = () => {
 
       const { data: cpu, error: pErr } = await supabase
         .from('client_portal_users')
-        .select('must_change_password')
+        .select('must_change_password, is_first_login')
         .eq('user_id', data.user!.id)
         .maybeSingle();
 
@@ -52,11 +62,43 @@ const ClientPortalLogin = () => {
         throw new Error('This account is not registered as a client portal user. Contact your account manager.');
       }
 
-      navigate(cpu.must_change_password ? '/client-portal/change-password' : '/client-portal');
+      if ((cpu as any).is_first_login) navigate('/client-portal/setup');
+      else if (cpu.must_change_password) navigate('/client-portal/change-password');
+      else navigate('/client-portal');
     } catch (err: any) {
       toast({ title: 'Login failed', description: err.message, variant: 'destructive' });
     } finally {
       setLoading(false);
+    }
+  };
+
+  const openRecovery = (m: RecoveryMode) => {
+    setMode(m);
+    setRecoveryInput('');
+    setRecoverySent(null);
+  };
+
+  const submitRecovery = async () => {
+    if (!recoveryInput.trim()) return;
+    setRecoveryBusy(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('client-portal-recovery', {
+        body: {
+          action: mode === 'username' ? 'forgot_username' : 'forgot_password',
+          identifier: recoveryInput.trim(),
+        },
+      });
+      if (error) throw error;
+      setRecoverySent((data as any)?.message || 'If that account exists, an email has been sent.');
+    } catch (err: any) {
+      // Still show generic message to avoid leaking info
+      setRecoverySent(
+        mode === 'username'
+          ? 'If that email is associated with an account, your username has been sent.'
+          : 'If that account exists, a reset link has been sent to your email.'
+      );
+    } finally {
+      setRecoveryBusy(false);
     }
   };
 
@@ -81,9 +123,54 @@ const ClientPortalLogin = () => {
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Sign in'}
             </Button>
+            <div className="flex justify-between text-xs text-muted-foreground pt-1">
+              <button type="button" onClick={() => openRecovery('username')} className="hover:underline hover:text-foreground">
+                Forgot username?
+              </button>
+              <button type="button" onClick={() => openRecovery('password')} className="hover:underline hover:text-foreground">
+                Forgot password?
+              </button>
+            </div>
           </form>
         </CardContent>
       </Card>
+
+      <Dialog open={mode !== null} onOpenChange={(o) => !o && setMode(null)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{mode === 'username' ? 'Recover your username' : 'Reset your password'}</DialogTitle>
+            <DialogDescription>
+              {mode === 'username'
+                ? 'Enter your primary or secondary email address and we will send your username.'
+                : 'Enter your username or email address and we will send you a reset link.'}
+            </DialogDescription>
+          </DialogHeader>
+
+          {recoverySent ? (
+            <div className="text-sm text-muted-foreground py-2">{recoverySent}</div>
+          ) : (
+            <div className="space-y-3 py-1">
+              <Input
+                autoFocus
+                placeholder={mode === 'username' ? 'you@example.com' : 'username or email'}
+                value={recoveryInput}
+                onChange={(e) => setRecoveryInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') submitRecovery(); }}
+              />
+            </div>
+          )}
+
+          <DialogFooter>
+            {recoverySent ? (
+              <Button onClick={() => setMode(null)} className="w-full">Close</Button>
+            ) : (
+              <Button onClick={submitRecovery} disabled={recoveryBusy || !recoveryInput.trim()} className="w-full">
+                {recoveryBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : (mode === 'username' ? 'Send username' : 'Send reset link')}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -615,8 +615,14 @@ export type Database = {
           client_id: string
           created_at: string
           email: string | null
+          full_name: string | null
           id: string
+          is_first_login: boolean
           must_change_password: boolean
+          password_reset_required: boolean
+          phone: string | null
+          primary_email: string | null
+          secondary_email: string | null
           updated_at: string
           user_id: string
           username: string | null
@@ -625,8 +631,14 @@ export type Database = {
           client_id: string
           created_at?: string
           email?: string | null
+          full_name?: string | null
           id?: string
+          is_first_login?: boolean
           must_change_password?: boolean
+          password_reset_required?: boolean
+          phone?: string | null
+          primary_email?: string | null
+          secondary_email?: string | null
           updated_at?: string
           user_id: string
           username?: string | null
@@ -635,8 +647,14 @@ export type Database = {
           client_id?: string
           created_at?: string
           email?: string | null
+          full_name?: string | null
           id?: string
+          is_first_login?: boolean
           must_change_password?: boolean
+          password_reset_required?: boolean
+          phone?: string | null
+          primary_email?: string | null
+          secondary_email?: string | null
           updated_at?: string
           user_id?: string
           username?: string | null

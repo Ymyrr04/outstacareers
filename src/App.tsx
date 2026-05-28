@@ -28,6 +28,8 @@ import SignContract from "./pages/SignContract";
 import ClientPortalLogin from "./pages/ClientPortalLogin";
 import ClientPortalChangePassword from "./pages/ClientPortalChangePassword";
 import ClientPortalDashboard from "./pages/ClientPortalDashboard";
+import ClientPortalSetup from "./pages/ClientPortalSetup";
+import ClientPortalResetPassword from "./pages/ClientPortalResetPassword";
 import DomainGuard from "./components/DomainGuard";
 
 const queryClient = new QueryClient();
@@ -68,7 +70,10 @@ const App = () => (
                 {/* Client portal routes are accessible from BOTH domains */}
                 <Route path="/client-portal/login" element={<ClientPortalLogin />} />
                 <Route path="/client-portal/change-password" element={<ClientPortalChangePassword />} />
+                <Route path="/client-portal/reset-password" element={<ClientPortalResetPassword />} />
+                <Route path="/client-portal/setup" element={<ClientPortalSetup />} />
                 <Route path="/client-portal" element={<ClientPortalDashboard />} />
+                <Route path="/client-portal/timesheets" element={<ClientPortalDashboard />} />
 
                 {/* Catch-all also guarded so unknown paths on workforce domain bounce */}
                 <Route path="*" element={guard(<NotFound />)} />

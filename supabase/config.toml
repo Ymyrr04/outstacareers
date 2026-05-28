@@ -92,3 +92,9 @@ verify_jwt = true
 
 [functions.void-contract-envelope]
 verify_jwt = true
+
+[functions.client-portal-recovery]
+verify_jwt = false
+
+[functions.complete-client-portal-setup]
+verify_jwt = true

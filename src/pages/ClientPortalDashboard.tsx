@@ -110,7 +110,7 @@ const ClientPortalDashboard = () => {
 
       const { data: cpu } = await supabase
         .from('client_portal_users')
-        .select('must_change_password, client_id')
+        .select('must_change_password, client_id, is_first_login')
         .eq('user_id', uid)
         .maybeSingle();
 
@@ -119,10 +119,15 @@ const ClientPortalDashboard = () => {
         navigate('/client-portal/login');
         return;
       }
+      if ((cpu as any).is_first_login) {
+        navigate('/client-portal/setup');
+        return;
+      }
       if (cpu.must_change_password) {
         navigate('/client-portal/change-password');
         return;
       }
+
       setClientId(cpu.client_id);
       await loadData(cpu.client_id);
       setLoading(false);
