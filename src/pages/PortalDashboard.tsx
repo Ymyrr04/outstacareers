@@ -534,6 +534,7 @@ const PortalDashboard = () => {
       .eq('id', portal.contractor_assignment_id)
       .maybeSingle();
 
+    const applicant = (assignment?.applicant as any) || {};
     const wd = Array.isArray((assignment as any)?.work_days)
       ? ((assignment as any).work_days as string[])
       : [];
