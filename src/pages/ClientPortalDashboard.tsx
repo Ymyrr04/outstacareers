@@ -430,6 +430,15 @@ const TimesheetDetail = ({
   const expected = row.hours_per_week ?? 40;
   const pct = Math.min(100, Math.round((Number(row.total_hours) / expected) * 100));
   const dailyEntries = row.daily_hours ? Object.entries(row.daily_hours).sort(([a], [b]) => a.localeCompare(b)) : [];
+  const [timeFormat, setTimeFormat] = useState<'12h' | '24h'>(() => {
+    if (typeof window === 'undefined') return '12h';
+    return (localStorage.getItem('tsTimeFormat') as '12h' | '24h') || '12h';
+  });
+  const setFmt = (f: '12h' | '24h') => {
+    setTimeFormat(f);
+    try { localStorage.setItem('tsTimeFormat', f); } catch {}
+  };
+  const tz = row.timezone || 'PHT (UTC+8)';
 
   return (
     <div className="space-y-4">
@@ -446,38 +455,62 @@ const TimesheetDetail = ({
             <CardTitle className="text-base">
               {row.contractor_name} <span className="text-muted-foreground font-normal">— week ending {format(new Date(row.week_ending_date), 'MMM d, yyyy')}</span>
             </CardTitle>
+            <div className="text-xs text-muted-foreground mt-1">
+              Times shown in contractor's local time ({tz})
+            </div>
           </CardHeader>
           <CardContent>
             {dailyEntries.length === 0 ? (
               <div className="text-sm text-muted-foreground">No daily breakdown provided.</div>
             ) : (
-              <div className="border rounded-md overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Time in</TableHead>
-                      <TableHead>Time out</TableHead>
-                      <TableHead className="text-right">Hours</TableHead>
-                      <TableHead>Reason</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {dailyEntries.map(([date, val]: [string, any]) => (
-                      <TableRow key={date}>
-                        <TableCell>
-                          <div className="font-medium">{format(new Date(date), 'EEEE')}</div>
-                          <div className="text-xs text-muted-foreground">{format(new Date(date), 'MMM d, yyyy')}</div>
-                        </TableCell>
-                        <TableCell className="text-sm">{val?.time_in || '—'}</TableCell>
-                        <TableCell className="text-sm">{val?.time_out || '—'}</TableCell>
-                        <TableCell className="text-right">{Number(val?.hours || 0).toFixed(2)}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{val?.reason || ''}</TableCell>
+              <>
+                <div className="flex items-center justify-end gap-2 mb-2">
+                  <span className="text-xs text-muted-foreground">Time format</span>
+                  <div className="inline-flex rounded-full border border-border p-0.5 bg-background">
+                    <button
+                      type="button"
+                      onClick={() => setFmt('12h')}
+                      className={`px-2.5 py-0.5 text-xs rounded-full transition-colors ${timeFormat === '12h' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      12h
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFmt('24h')}
+                      className={`px-2.5 py-0.5 text-xs rounded-full transition-colors ${timeFormat === '24h' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground'}`}
+                    >
+                      24h
+                    </button>
+                  </div>
+                </div>
+                <div className="border rounded-md overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Date</TableHead>
+                        <TableHead>Time in</TableHead>
+                        <TableHead>Time out</TableHead>
+                        <TableHead className="text-right">Hours</TableHead>
+                        <TableHead>Reason</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
+                    </TableHeader>
+                    <TableBody>
+                      {dailyEntries.map(([date, val]: [string, any]) => (
+                        <TableRow key={date}>
+                          <TableCell>
+                            <div className="font-medium">{format(new Date(date), 'EEEE')}</div>
+                            <div className="text-xs text-muted-foreground">{format(new Date(date), 'MMM d, yyyy')}</div>
+                          </TableCell>
+                          <TableCell className="text-sm">{formatTime(val?.time_in, timeFormat)}</TableCell>
+                          <TableCell className="text-sm">{formatTime(val?.time_out, timeFormat)}</TableCell>
+                          <TableCell className="text-right">{Number(val?.hours || 0).toFixed(2)}</TableCell>
+                          <TableCell className="text-sm text-muted-foreground">{val?.reason || ''}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </>
             )}
 
             {row.notes && (
