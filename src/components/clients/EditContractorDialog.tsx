@@ -351,6 +351,21 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
             />
           </div>
 
+          {/* Client Rate (shown to clients in the Client Portal) */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="client_rate" className="text-right">Client Rate ($)</Label>
+            <Input
+              id="client_rate"
+              type="number"
+              step="0.01"
+              value={formData.client_rate}
+              onChange={(e) => setFormData(prev => ({ ...prev, client_rate: e.target.value }))}
+              className="col-span-1"
+              placeholder="0.00"
+            />
+            <span className="col-span-2 text-xs text-muted-foreground">Rate billed to the client. Hidden from contractor.</span>
+          </div>
+
           {/* Dates */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="start_date" className="text-right">Start Date</Label>
