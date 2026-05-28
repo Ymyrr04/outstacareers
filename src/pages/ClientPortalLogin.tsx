@@ -62,10 +62,10 @@ const ClientPortalLogin = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-      <Helmet><title>Client Login | OutSta Client Portal</title></Helmet>
+      <Helmet><title>Client Login | OutStaWorkforce</title></Helmet>
       <Card className="w-full max-w-md">
         <CardHeader>
-          <CardTitle>OutSta Client Portal</CardTitle>
+          <CardTitle>OutStaWorkforce</CardTitle>
           <CardDescription>Review and approve your contractors' weekly hours.</CardDescription>
         </CardHeader>
         <CardContent>
