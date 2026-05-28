@@ -94,6 +94,12 @@ const APPLICANT_STATUS_OPTIONS = [
   'Talent Pool'
 ] as const;
 
+const getStageDisplayName = (stage: string): string => {
+  if (stage === 'Talent Pool') return 'Bench';
+  if (stage === 'Bench') return 'Talent Pipeline';
+  return stage;
+};
+
 type ApplicantStatusFolder = typeof APPLICANT_STATUS_FOLDERS[number];
 type ApplicantStatusOption = typeof APPLICANT_STATUS_OPTIONS[number];
 
@@ -2486,7 +2492,7 @@ const Admin = () => {
                               }}
                             >
                               <FolderOpen className={`w-4 h-4 ${isDragOver ? 'text-primary' : ''}`} />
-                              {status}
+                              {getStageDisplayName(status)}
                               {/* Only show count badge on "For Review" folder */}
                               {status === 'For Review' && count > 0 && (
                                 <Badge variant="secondary" className="ml-1 text-xs">
@@ -2582,7 +2588,7 @@ const Admin = () => {
                         <Card>
                           <CardContent className="py-12 text-center">
                             <FolderOpen className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-                            <p className="text-muted-foreground">No applicants in "{status}" folder.</p>
+                            <p className="text-muted-foreground">No applicants in "{getStageDisplayName(status)}" folder.</p>
                           </CardContent>
                         </Card>
                       ) : (
@@ -2978,7 +2984,7 @@ const Admin = () => {
                             <SelectContent>
                               {APPLICANT_STATUS_OPTIONS.map((status) => (
                                 <SelectItem key={status} value={status}>
-                                  {status}
+                                  {getStageDisplayName(status)}
                                 </SelectItem>
                               ))}
                             </SelectContent>

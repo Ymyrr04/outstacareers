@@ -59,6 +59,12 @@ const STAGE_COLORS: Record<string, { bg: string; header: string; dot: string }> 
   'Talent Pool': { bg: 'bg-teal-50 dark:bg-teal-950/20', header: 'bg-teal-500', dot: 'bg-teal-400' },
 };
 
+const getStageDisplayName = (stage: string): string => {
+  if (stage === 'Talent Pool') return 'Bench';
+  if (stage === 'Bench') return 'Talent Pipeline';
+  return stage;
+};
+
 interface Candidate {
   id: string;
   full_name: string;
@@ -1009,7 +1015,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                   }}
                 >
                   <div className={cn('px-3 py-2.5 flex items-center justify-between', colors.header)}>
-                    <span className="text-sm font-semibold text-white">{stage === 'Talent Pool' ? 'Talent Pipeline' : stage}</span>
+                    <span className="text-sm font-semibold text-white">{getStageDisplayName(stage)}</span>
                     <div className="flex items-center gap-1.5">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
@@ -1216,7 +1222,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                   onClick={() => handleBulkMoveToStage(stage)}
                 >
                   <span className={cn('w-2 h-2 rounded-full mr-2', STAGE_COLORS[stage]?.dot)} />
-                  {stage}
+                  {getStageDisplayName(stage)}
                   {stage === 'Hired' && (
                     <span className="ml-auto text-[10px] text-muted-foreground">single only</span>
                   )}
@@ -1475,7 +1481,7 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
               {FUNNEL_STAGES.filter((s) => s !== currentStage).map((stage) => (
                 <ContextMenuItem key={stage} onClick={() => onMoveToStage(candidate, stage)}>
                   <div className={cn('w-2 h-2 rounded-full mr-2', STAGE_COLORS[stage]?.dot)} />
-                  {stage}
+                  {getStageDisplayName(stage)}
                 </ContextMenuItem>
               ))}
             </ContextMenuSubContent>

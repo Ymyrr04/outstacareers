@@ -35,6 +35,12 @@ const FUNNEL_STAGES = [
 
 const RECRUITMENT_STATUSES = new Set(FUNNEL_STAGES);
 
+const getStageDisplayName = (stage: string): string => {
+  if (stage === 'Talent Pool') return 'Bench';
+  if (stage === 'Bench') return 'Talent Pipeline';
+  return stage;
+};
+
 // Stages where a candidate is no longer actively progressing through the pipeline.
 // Time spent here (and transitions into them) is excluded from "active pipeline" timing metrics.
 const TERMINAL_STAGES = new Set<string>(['Hired', 'Reject', 'Archived', 'Talent Pool', 'Bench']);
@@ -653,7 +659,7 @@ export const RecruitmentFunnel = () => {
                       return (
                         <TableHead key={stage} className="min-w-[120px] text-center">
                           <div className="flex flex-col items-center gap-0.5 py-1">
-                            <span className="text-xs font-semibold text-foreground">{stage}</span>
+                            <span className="text-xs font-semibold text-foreground">{getStageDisplayName(stage)}</span>
                             <div className="flex items-center gap-1">
                               <Badge variant="secondary" className="text-[10px]">
                                 {totals.current}

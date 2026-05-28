@@ -73,6 +73,12 @@ const APPLICANT_STATUS_FOLDERS = [
   'Archive',
 ] as const;
 
+const getStageDisplayName = (stage: string): string => {
+  if (stage === 'Talent Pool') return 'Bench';
+  if (stage === 'Bench') return 'Talent Pipeline';
+  return stage;
+};
+
 type ApplicantStatusFolder = (typeof APPLICANT_STATUS_FOLDERS)[number];
 
 interface Job {
@@ -861,7 +867,7 @@ export const MyApplicantsDashboard = () => {
                 dragOverFolder === folder ? 'ring-2 ring-primary ring-offset-2' : ''
               }`}
             >
-              {folder}
+              {getStageDisplayName(folder)}
               {folderCounts[folder] > 0 && (
                 <Badge variant="secondary" className="ml-2">
                   {folderCounts[folder]}
@@ -1066,7 +1072,7 @@ export const MyApplicantsDashboard = () => {
                           <SelectContent>
                             {APPLICANT_STATUS_FOLDERS.map(status => (
                               <SelectItem key={status} value={status}>
-                                {status}
+                                {getStageDisplayName(status)}
                               </SelectItem>
                             ))}
                           </SelectContent>
