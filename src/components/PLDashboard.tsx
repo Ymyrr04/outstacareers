@@ -835,14 +835,20 @@ export const PLDashboard = () => {
       </div>
 
       {filteredInternalContractors.length > 0 && (
-        <Card className="border-dashed" style={{ order: sectionOrder.indexOf('internalContractors') }}>
-          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              Internal Team — OutSta ({filteredInternalContractors.length})
-              <Badge variant="outline" className="text-[10px]">Excluded from analytics</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
+        <CollapsibleSection
+          storageKey="pl_section_internal_contractors"
+          title="Internal Team — OutSta"
+          badge={
+            <>
+              <Badge variant="secondary" className="text-[10px] ml-1">{filteredInternalContractors.length}</Badge>
+              <Badge variant="outline" className="text-[10px] ml-1">Excluded from analytics</Badge>
+            </>
+          }
+          collapsedSummary={`${filteredInternalContractors.length} internal members`}
+          className="border-dashed"
+          style={{ order: sectionOrder.indexOf('internalContractors') }}
+        >
+          <div className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
