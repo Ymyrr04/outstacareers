@@ -43,9 +43,9 @@ const FUNNEL_STAGES = [
   'Pitch',
   'Client Interview',
   'Hired',
-  'Talent Pool',
-  'Reject',
   'Bench',
+  'Reject',
+  'Talent Pool',
 ] as const;
 
 const STAGE_COLORS: Record<string, { bg: string; header: string; dot: string }> = {
