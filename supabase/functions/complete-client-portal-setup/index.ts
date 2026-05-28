@@ -30,7 +30,6 @@ Deno.serve(async (req) => {
     const userId = userData.user.id;
 
     const body = await req.json().catch(() => ({}));
-    const body = await req.json().catch(() => ({}));
     const fullName: string = (body.full_name || "").trim();
     const newUsername: string = (body.username || "").trim().toLowerCase();
     const primaryEmail: string = (body.primary_email || "").trim().toLowerCase();
@@ -44,7 +43,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    }
     if (!/^[a-z0-9._-]{3,40}$/.test(newUsername)) {
       return new Response(JSON.stringify({ error: "Username must be 3-40 chars, lowercase letters/numbers/._-" }), {
         status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
