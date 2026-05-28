@@ -385,7 +385,6 @@ const ClientPortalDashboard = () => {
                         </TableRow>
                       ))}
                     </TableBody>
-                    </TableBody>
                   </Table>
                 </div>
               )}
