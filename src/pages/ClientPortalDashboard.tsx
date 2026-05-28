@@ -362,8 +362,7 @@ const ClientPortalDashboard = () => {
                       <TableRow>
                         <TableHead>Contractor</TableHead>
                         <TableHead>Week ending</TableHead>
-                        <TableHead className="text-right">Hours</TableHead>
-                        <TableHead className="text-right">Invoice</TableHead>
+                        <TableHead className="text-right">Total Hours</TableHead>
                         <TableHead>Status</TableHead>
                         <TableHead className="text-right">Action</TableHead>
                       </TableRow>
@@ -377,9 +376,6 @@ const ClientPortalDashboard = () => {
                           </TableCell>
                           <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
                           <TableCell className="text-right">{fmtHours(r.total_hours)}</TableCell>
-                          <TableCell className="text-right font-medium">
-                            {r.client_rate == null ? <span className="text-muted-foreground">—</span> : fmtMoney(r.invoice_total)}
-                          </TableCell>
                           <TableCell>{statusBadge(r.client_approval_status)}</TableCell>
                           <TableCell className="text-right">
                             <Button size="sm" variant="outline" onClick={() => setSelected(r)}>
@@ -388,6 +384,7 @@ const ClientPortalDashboard = () => {
                           </TableCell>
                         </TableRow>
                       ))}
+                    </TableBody>
                     </TableBody>
                   </Table>
                 </div>
