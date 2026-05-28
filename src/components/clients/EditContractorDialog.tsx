@@ -95,7 +95,7 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
     timezone: '',
     notes: '',
   });
-  });
+
 
   // Fetch clients list
   useEffect(() => {
