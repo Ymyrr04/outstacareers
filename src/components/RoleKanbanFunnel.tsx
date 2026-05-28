@@ -992,13 +992,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
 
               return (
                 <div
-                  key={stage}
                   className={cn(
                     'flex flex-col w-[248px] shrink-0 rounded-lg border-2 overflow-hidden transition-all duration-150',
                     dropTargetStage === stage && draggedCandidate
                       ? 'border-primary ring-2 ring-primary/30 scale-[1.02]'
                       : 'border-border/60',
-                    colors.bg
+                    !colorOverride && colors.bg
+                  )}
+                  style={colorOverride ? { backgroundColor: colorOverride + '14' } : undefined}
+
                   )}
                   onDragOver={(e) => {
                     e.preventDefault();
