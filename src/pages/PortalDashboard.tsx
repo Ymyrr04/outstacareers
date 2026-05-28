@@ -622,12 +622,38 @@ const PortalDashboard = () => {
       return raw === '' || raw == null || parseFloat(raw) === 0;
     });
 
-  // Returns list of day keys that exceed 10 hours (require overtime justification)
+  // Per-row OT calculation based on cumulative weekly total vs weekly target.
+  // Walks days in chronological order and splits each row into regular vs OT hours
+  // once the running total crosses the weekly target.
+  const rowOtMap = useMemo(() => {
+    const map: Record<string, { regularHours: number; otHours: number; isFullOT: boolean; isPartialOT: boolean }> = {};
+    const hpw = info?.hours_per_week ? Number(info.hours_per_week) : null;
+    let running = 0;
+    const sortedKeys = [...dateKeys].sort();
+    for (const k of sortedKeys) {
+      const h = parseFloat(days[k]?.hours || '0');
+      const dayHours = !isNaN(h) && h > 0 ? h : 0;
+      let regular = dayHours;
+      let ot = 0;
+      if (hpw != null && hpw > 0 && dayHours > 0) {
+        const remainingToTarget = Math.max(0, hpw - running);
+        regular = Math.min(dayHours, remainingToTarget);
+        ot = Math.max(0, dayHours - regular);
+      }
+      map[k] = {
+        regularHours: Number(regular.toFixed(2)),
+        otHours: Number(ot.toFixed(2)),
+        isFullOT: dayHours > 0 && regular === 0 && ot > 0,
+        isPartialOT: regular > 0 && ot > 0,
+      };
+      running += dayHours;
+    }
+    return map;
+  }, [days, dateKeys, info?.hours_per_week]);
+
+  // Returns list of day keys that have any OT hours (cumulative beyond weekly target)
   const getOvertimeDays = (): string[] =>
-    dateKeys.filter((k) => {
-      const v = parseFloat(days[k]?.hours || '0');
-      return !isNaN(v) && v > 10;
-    });
+    dateKeys.filter((k) => (rowOtMap[k]?.otHours || 0) > 0.001);
 
   // Expected hours = the contractor's weekly target from their profile (always, regardless of date range)
   const expectedHours = useMemo(() => {
@@ -650,21 +676,12 @@ const PortalDashboard = () => {
     return Math.max(0, Number((totalHours - expectedHours).toFixed(2)));
   }, [totalHours, expectedHours]);
 
-  // Per-day expected hours (e.g., 50hrs/week ÷ 5 = 10hrs/day)
+  // Per-day expected (used only for the under-target reason flagging)
   const perDayExpected = useMemo(() => {
     const hpw = info?.hours_per_week ? Number(info.hours_per_week) : null;
     if (!hpw) return null;
     return hpw / 5;
   }, [info?.hours_per_week]);
-
-  // When over expected: days with > per-day target need a reason explaining the extra time
-  const getOverHoursDays = (): string[] => {
-    if (expectedHours == null || hoursDiff <= 0.25 || perDayExpected == null) return [];
-    return dateKeys.filter((k) => {
-      const v = parseFloat(days[k]?.hours || '0');
-      return !isNaN(v) && v > 0 && v >= perDayExpected;
-    });
-  };
 
   // When under expected: days with hours entered but below per-day target need a reason
   const getUnderHoursDays = (): string[] => {
@@ -676,6 +693,10 @@ const PortalDashboard = () => {
       return !isNaN(v) && v > 0 && v < perDayExpected;
     });
   };
+
+  // Kept for backwards compat with submit handler; over-hours rows = OT rows now
+  const getOverHoursDays = (): string[] => getOvertimeDays();
+
 
   const hasPendingApproval = useMemo(() => getOvertimeDays().length > 0, [days, dateKeys]);
 
@@ -1278,9 +1299,10 @@ const PortalDashboard = () => {
                       const date = new Date(k + 'T00:00:00');
                       const entry = days[k] || { time_in: '', time_out: '', hours: '', reason: '' };
                       const hoursNum = parseFloat(entry.hours || '0');
-                      const isOvertime = !isNaN(hoursNum) && hoursNum > 10;
-                      const isOverTarget =
-                        perDayExpected != null && !isNaN(hoursNum) && hoursNum > 0 && hoursNum >= perDayExpected && hoursDiff > 0.25;
+                      const ot = rowOtMap[k] || { regularHours: 0, otHours: 0, isFullOT: false, isPartialOT: false };
+                      const isFullOT = ot.isFullOT;
+                      const isPartialOT = ot.isPartialOT;
+                      const isOTRow = isFullOT || isPartialOT;
                       const isUnderTarget =
                         perDayExpected != null &&
                         entry.hours !== '' &&
@@ -1288,18 +1310,16 @@ const PortalDashboard = () => {
                         hoursNum > 0 &&
                         hoursNum < perDayExpected &&
                         hoursDiff < -0.25;
-                      const needsReason = isOvertime || isOverTarget || isUnderTarget;
-                      const reasonLabel = isOvertime
+                      const needsReason = isOTRow || isUnderTarget;
+                      const reasonLabel = isPartialOT
+                        ? `(required — overtime, includes ${ot.otHours} hrs OT)`
+                        : isFullOT
                         ? '(required — overtime)'
-                        : isOverTarget
-                        ? '(required — over target)'
                         : isUnderTarget
                         ? '(required — under target)'
                         : '(only if no hours)';
-                      const reasonPlaceholder = isOvertime
-                        ? 'e.g. urgent deadline'
-                        : isOverTarget
-                        ? 'e.g. compensation, extra workload'
+                      const reasonPlaceholder = isOTRow
+                        ? 'e.g. urgent deadline, extra workload'
                         : isUnderTarget
                         ? 'e.g. half day, left early, sick'
                         : 'Optional — e.g. day off, holiday, sick';
@@ -1310,6 +1330,7 @@ const PortalDashboard = () => {
                         : idx % 2 === 0
                         ? 'bg-background'
                         : 'bg-muted/40';
+
                       return (
                         <div
                           key={k}
@@ -1424,7 +1445,8 @@ const PortalDashboard = () => {
                                 <dt className="text-muted-foreground">
                                   {hoursDiff < 0 ? 'Missing' : 'Over'}
                                 </dt>
-                                <dd className={`font-semibold ${hoursDiff < 0 ? 'text-amber-600' : 'text-blue-600'}`}>
+                                <dd className={`font-semibold ${hoursDiff < 0 ? 'text-amber-600' : 'text-amber-600'}`}>
+
                                   {Math.abs(hoursDiff).toFixed(2)} hrs
                                 </dd>
                               </div>
