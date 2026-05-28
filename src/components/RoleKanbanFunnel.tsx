@@ -101,6 +101,8 @@ interface RoleKanbanFunnelProps {
 const ALL_ROLES_KEY = '__all__';
 
 export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange }: RoleKanbanFunnelProps) => {
+  const { getDisplayName: getStageDisplayName, getColor: getStageColorOverride, orderStages } = useStageSettings();
+  const orderedFunnelStages = useMemo(() => orderStages(FUNNEL_STAGES), [orderStages]);
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
   const [allRoles, setAllRoles] = useState<string[]>([]);
