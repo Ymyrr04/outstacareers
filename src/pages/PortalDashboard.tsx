@@ -1427,17 +1427,18 @@ const PortalDashboard = () => {
                       const entry = days[k] || { time_in: '', time_out: '', hours: '', reason: '' };
                       const hoursNum = parseFloat(entry.hours || '0');
                       const validHours = !isNaN(hoursNum) && hoursNum > 0 ? hoursNum : 0;
-                      const ot = rowOtMap[k] || { regularHours: 0, otHours: 0, isFullOT: false, isPartialOT: false, isScheduled: true };
-                      const scheduled = ot.isScheduled;
+                      const ot = rowOtMap[k] || { regularHours: 0, otHours: 0, isFullOT: false, isPartialOT: false, isScheduled: false };
+                      const scheduled = hasWorkDays && ot.isScheduled;
                       const isUnderTarget =
+                        hasWorkDays &&
                         scheduled &&
                         perDayExpected != null &&
                         validHours > 0 &&
                         validHours < perDayExpected - 0.01;
-                      const isEmptyScheduled = scheduled && validHours === 0;
-                      const isOTRow = (ot.otHours || 0) > 0.001;
-                      const isPartialOT = ot.isPartialOT;
-                      const isFullOT = ot.isFullOT;
+                      const isEmptyScheduled = hasWorkDays && scheduled && validHours === 0;
+                      const isOTRow = hasWorkDays && (ot.otHours || 0) > 0.001;
+                      const isPartialOT = hasWorkDays && ot.isPartialOT;
+                      const isFullOT = hasWorkDays && ot.isFullOT;
                       // Severity: undertime/missing = red; overtime = amber; otherwise none.
                       const isMissing = isUnderTarget || isEmptyScheduled;
                       const needsReason = isOTRow || isUnderTarget || isEmptyScheduled;
