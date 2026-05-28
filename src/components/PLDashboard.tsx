@@ -1208,21 +1208,9 @@ export const PLDashboard = () => {
                       <TableCell className="text-sm max-w-xs truncate">{r.notes || '—'}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{format(new Date(r.submitted_at), 'MMM d, h:mm a')}</TableCell>
                       <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setViewTimesheet(r)}>
-                            <Eye className="w-3 h-3 mr-1" />View
-                          </Button>
-                          {r.status === 'pending_approval' && (
-                            <>
-                              <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-emerald-500 text-emerald-600 hover:bg-emerald-50" onClick={() => handleDecision(r, 'approved')}>
-                                <Check className="w-3 h-3 mr-1" />Approve
-                              </Button>
-                              <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-destructive text-destructive hover:bg-destructive/10" onClick={() => handleDecision(r, 'rejected')}>
-                                <X className="w-3 h-3 mr-1" />Reject
-                              </Button>
-                            </>
-                          )}
-                        </div>
+                        <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setViewTimesheet(r)}>
+                          <Eye className="w-3 h-3 mr-1" />View
+                        </Button>
                       </TableCell>
                     </TableRow>
                   );
