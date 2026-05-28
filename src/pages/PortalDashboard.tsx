@@ -135,6 +135,7 @@ interface ContractorInfo {
   phone: string | null;
   whatsapp: string | null;
   location: string | null;
+  work_days: string[];
 }
 
 interface ProfileForm {
@@ -148,7 +149,13 @@ interface ProfileForm {
   hours_per_week: string;
   hourly_rate: string;
   regular_work_shift: string;
+  work_days: string[];
 }
+
+const WORK_DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
+const DOW_TO_SHORT: Record<number, string> = { 0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 'Wed', 4: 'Thu', 5: 'Fri', 6: 'Sat' };
+const DEFAULT_WORK_DAYS: string[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+
 
 interface DayEntry {
   time_in: string;  // "HH:MM" 24h
@@ -435,8 +442,9 @@ const PortalDashboard = () => {
   const emptyProfileForm: ProfileForm = {
     full_name: '', phone: '', whatsapp: '', location: '', country: '',
     contact_number: '', emergency_number: '', hours_per_week: '',
-    hourly_rate: '', regular_work_shift: '',
+    hourly_rate: '', regular_work_shift: '', work_days: [...DEFAULT_WORK_DAYS],
   };
+
   const [profileForm, setProfileForm] = useState<ProfileForm>(emptyProfileForm);
   const [profileEditing, setProfileEditing] = useState(false);
   const [profileOpen, setProfileOpen] = useState(false);
@@ -519,12 +527,16 @@ const PortalDashboard = () => {
     }
 
     const { data: assignment } = await supabase
+
       .from('contractor_assignments')
-      .select('id, applicant_id, job_title, hourly_rate, hours_per_week, regular_work_shift, contact_number, emergency_number, country, applicant:applicants_prescreen(full_name, email, phone, whatsapp, location), client:clients(company_name)')
+      .select('id, applicant_id, job_title, hourly_rate, hours_per_week, regular_work_shift, contact_number, emergency_number, country, work_days, applicant:applicants_prescreen(full_name, email, phone, whatsapp, location), client:clients(company_name)')
       .eq('id', portal.contractor_assignment_id)
       .maybeSingle();
 
     const applicant = (assignment?.applicant as any) || {};
+    const wd = Array.isArray((assignment as any)?.work_days) && (assignment as any).work_days.length > 0
+      ? ((assignment as any).work_days as string[])
+      : [...DEFAULT_WORK_DAYS];
     const nextInfo: ContractorInfo = {
       contractor_assignment_id: portal.contractor_assignment_id,
       applicant_id: assignment?.applicant_id || '',
@@ -541,6 +553,7 @@ const PortalDashboard = () => {
       phone: applicant.phone || null,
       whatsapp: applicant.whatsapp || null,
       location: applicant.location || null,
+      work_days: wd,
     };
     setInfo(nextInfo);
     setProfileForm({
@@ -554,7 +567,10 @@ const PortalDashboard = () => {
       hours_per_week: nextInfo.hours_per_week != null ? String(nextInfo.hours_per_week) : '',
       hourly_rate: nextInfo.hourly_rate != null ? String(nextInfo.hourly_rate) : '',
       regular_work_shift: nextInfo.regular_work_shift || '9:00 AM – 6:00 PM EST',
+      work_days: [...nextInfo.work_days],
     });
+
+
 
     // Force profile completion on first login if any required field is missing.
     const incomplete =
@@ -616,57 +632,104 @@ const PortalDashboard = () => {
     return true;
   };
 
-  // Returns list of scheduled workday keys (Mon–Fri) with no hours entered.
-  // Weekend days with 0 hours are intentionally excluded — no reason needed.
+  // Helper: is the given date key a scheduled workday for this contractor?
+  const workDaysSet = useMemo(() => new Set(info?.work_days || DEFAULT_WORK_DAYS), [info?.work_days]);
+  const isScheduledDay = (k: string) => {
+    const dow = new Date(k + 'T00:00:00').getDay();
+    return workDaysSet.has(DOW_TO_SHORT[dow]);
+  };
+
+  // Per-day expected hours = weekly target / number of scheduled work days
+  const perDayExpected = useMemo(() => {
+    const hpw = info?.hours_per_week ? Number(info.hours_per_week) : null;
+    const numDays = (info?.work_days?.length || DEFAULT_WORK_DAYS.length);
+    if (!hpw || numDays <= 0) return null;
+    return hpw / numDays;
+  }, [info?.hours_per_week, info?.work_days]);
+
+  // Returns scheduled workday keys with no hours entered (require a reason).
   const getEmptyDays = (): string[] =>
     dateKeys.filter((k) => {
       const raw = days[k]?.hours;
       const isEmpty = raw === '' || raw == null || parseFloat(raw) === 0;
       if (!isEmpty) return false;
-      const dow = new Date(k + 'T00:00:00').getDay(); // 0=Sun, 6=Sat
-      return dow >= 1 && dow <= 5;
+      return isScheduledDay(k);
     });
 
 
-  // Per-row OT calculation based on cumulative weekly total vs weekly target.
-  // Walks days in chronological order and splits each row into regular vs OT hours
-  // once the running total crosses the weekly target.
+  // Per-row OT/regular split.
+  // - Non-scheduled day with hours → all OT
+  // - Scheduled day → hours count as regular until cumulative weekly target is reached;
+  //   any excess becomes OT.
   const rowOtMap = useMemo(() => {
-    const map: Record<string, { regularHours: number; otHours: number; isFullOT: boolean; isPartialOT: boolean }> = {};
+    const map: Record<string, { regularHours: number; otHours: number; isFullOT: boolean; isPartialOT: boolean; isScheduled: boolean }> = {};
     const hpw = info?.hours_per_week ? Number(info.hours_per_week) : null;
-    let running = 0;
+    let regularRunning = 0;
     const sortedKeys = [...dateKeys].sort();
     for (const k of sortedKeys) {
       const h = parseFloat(days[k]?.hours || '0');
       const dayHours = !isNaN(h) && h > 0 ? h : 0;
-      let regular = dayHours;
+      const scheduled = isScheduledDay(k);
+      let regular = 0;
       let ot = 0;
-      if (hpw != null && hpw > 0 && dayHours > 0) {
-        const remainingToTarget = Math.max(0, hpw - running);
-        regular = Math.min(dayHours, remainingToTarget);
-        ot = Math.max(0, dayHours - regular);
+      if (dayHours > 0) {
+        if (!scheduled) {
+          ot = dayHours;
+        } else if (hpw != null && hpw > 0) {
+          const remainingToTarget = Math.max(0, hpw - regularRunning);
+          regular = Math.min(dayHours, remainingToTarget);
+          ot = Math.max(0, dayHours - regular);
+        } else {
+          regular = dayHours;
+        }
       }
       map[k] = {
         regularHours: Number(regular.toFixed(2)),
         otHours: Number(ot.toFixed(2)),
         isFullOT: dayHours > 0 && regular === 0 && ot > 0,
         isPartialOT: regular > 0 && ot > 0,
+        isScheduled: scheduled,
       };
-      running += dayHours;
+      regularRunning += regular;
     }
     return map;
-  }, [days, dateKeys, info?.hours_per_week]);
+  }, [days, dateKeys, info?.hours_per_week, workDaysSet]);
 
-  // Returns list of day keys that have any OT hours (cumulative beyond weekly target)
+  // Returns list of day keys that have any OT hours
   const getOvertimeDays = (): string[] =>
     dateKeys.filter((k) => (rowOtMap[k]?.otHours || 0) > 0.001);
 
-  // Expected hours = the contractor's weekly target from their profile (always, regardless of date range)
+  // Expected hours = the contractor's weekly target from their profile
   const expectedHours = useMemo(() => {
     const hpw = info?.hours_per_week ? Number(info.hours_per_week) : null;
     if (!hpw || dateKeys.length === 0) return null;
     return hpw;
   }, [info?.hours_per_week, dateKeys]);
+
+  // Regular hours = sum of regular portions
+  const regularHoursTotal = useMemo(
+    () => Number(dateKeys.reduce((s, k) => s + (rowOtMap[k]?.regularHours || 0), 0).toFixed(2)),
+    [dateKeys, rowOtMap]
+  );
+
+  // OT hours = sum of OT portions
+  const otHours = useMemo(
+    () => Number(dateKeys.reduce((s, k) => s + (rowOtMap[k]?.otHours || 0), 0).toFixed(2)),
+    [dateKeys, rowOtMap]
+  );
+
+  // Missing hours = sum, over scheduled days, of (perDayExpected - hoursLogged), clamped at 0
+  const missingHoursTotal = useMemo(() => {
+    if (perDayExpected == null) return 0;
+    let missing = 0;
+    for (const k of dateKeys) {
+      if (!isScheduledDay(k)) continue;
+      const v = parseFloat(days[k]?.hours || '0');
+      const dayHours = !isNaN(v) && v > 0 ? v : 0;
+      if (dayHours < perDayExpected) missing += perDayExpected - dayHours;
+    }
+    return Number(missing.toFixed(2));
+  }, [dateKeys, days, perDayExpected, workDaysSet]);
 
   const hoursDiff = useMemo(() => {
     if (expectedHours == null) return 0;
@@ -676,32 +739,21 @@ const PortalDashboard = () => {
   // Tolerance: anything within ±0.25h is considered matching
   const hoursMatch = expectedHours == null ? true : Math.abs(hoursDiff) <= 0.25;
 
-  // OT hours = anything worked beyond the weekly target
-  const otHours = useMemo(() => {
-    if (expectedHours == null) return 0;
-    return Math.max(0, Number((totalHours - expectedHours).toFixed(2)));
-  }, [totalHours, expectedHours]);
-
-  // Per-day expected (used only for the under-target reason flagging)
-  const perDayExpected = useMemo(() => {
-    const hpw = info?.hours_per_week ? Number(info.hours_per_week) : null;
-    if (!hpw) return null;
-    return hpw / 5;
-  }, [info?.hours_per_week]);
-
-  // When under expected: days with hours entered but below per-day target need a reason
+  // Scheduled days where hours logged are below per-day expected
   const getUnderHoursDays = (): string[] => {
-    if (expectedHours == null || hoursDiff >= -0.25 || perDayExpected == null) return [];
+    if (perDayExpected == null) return [];
     return dateKeys.filter((k) => {
+      if (!isScheduledDay(k)) return false;
       const raw = days[k]?.hours;
       if (raw === '' || raw == null) return false;
       const v = parseFloat(raw);
-      return !isNaN(v) && v > 0 && v < perDayExpected;
+      return !isNaN(v) && v > 0 && v < perDayExpected - 0.01;
     });
   };
 
   // Kept for backwards compat with submit handler; over-hours rows = OT rows now
   const getOverHoursDays = (): string[] => getOvertimeDays();
+
 
 
   const hasPendingApproval = useMemo(() => getOvertimeDays().length > 0, [days, dateKeys]);
@@ -912,7 +964,9 @@ const PortalDashboard = () => {
       hours_per_week: info.hours_per_week != null ? String(info.hours_per_week) : '',
       hourly_rate: info.hourly_rate != null ? String(info.hourly_rate) : '',
       regular_work_shift: info.regular_work_shift || '',
+      work_days: [...info.work_days],
     });
+
     setProfileEditing(false);
   };
 
@@ -956,7 +1010,9 @@ const PortalDashboard = () => {
           hourly_rate: rate,
           hours_per_week: hpw,
           regular_work_shift: profileForm.regular_work_shift.trim() || null,
-        })
+          work_days: profileForm.work_days.length > 0 ? profileForm.work_days : [...DEFAULT_WORK_DAYS],
+        } as any)
+
         .eq('id', info.contractor_assignment_id);
       if (aErr) throw aErr;
 
@@ -1103,6 +1159,23 @@ const PortalDashboard = () => {
                 <ProfileField label="Regular work shift" value={info?.regular_work_shift} />
                 <ProfileField label="Hours per week" value={info?.hours_per_week != null ? `${info.hours_per_week} hrs` : null} />
                 <ProfileField label="Current rate" value={info?.hourly_rate != null ? `$${Number(info.hourly_rate).toFixed(2)}/hr` : null} />
+                <div className="md:col-span-2 lg:col-span-3">
+                  <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Work days</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {WORK_DAY_SHORT.map((d) => {
+                      const on = (info?.work_days || []).includes(d);
+                      return (
+                        <span
+                          key={d}
+                          className={`px-2.5 py-1 rounded-full text-xs font-medium border ${on ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border'}`}
+                        >
+                          {d}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
@@ -1148,6 +1221,31 @@ const PortalDashboard = () => {
                 <div className="space-y-2">
                   <Label htmlFor="p-rate">Current rate (per hour) <span className="text-destructive">*</span></Label>
                   <Input id="p-rate" type="number" step="0.01" min="0" value={profileForm.hourly_rate} onChange={(e) => setProfileForm({ ...profileForm, hourly_rate: e.target.value })} />
+                </div>
+                <div className="space-y-2 md:col-span-2">
+                  <Label>Work days <span className="text-destructive">*</span></Label>
+                  <p className="text-xs text-muted-foreground">Select the days you are expected to work each week.</p>
+                  <div className="flex flex-wrap gap-2">
+                    {WORK_DAY_SHORT.map((d) => {
+                      const on = profileForm.work_days.includes(d);
+                      return (
+                        <button
+                          key={d}
+                          type="button"
+                          onClick={() => {
+                            const set = new Set(profileForm.work_days);
+                            if (set.has(d)) set.delete(d); else set.add(d);
+                            const ordered = WORK_DAY_SHORT.filter((x) => set.has(x));
+                            setProfileForm({ ...profileForm, work_days: ordered });
+                          }}
+                          className={`px-3.5 py-1.5 rounded-full text-sm font-medium border-2 transition-colors ${on ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground border-border hover:border-primary/50'}`}
+                          aria-pressed={on}
+                        >
+                          {d}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
             )}
@@ -1305,45 +1403,61 @@ const PortalDashboard = () => {
                       const date = new Date(k + 'T00:00:00');
                       const entry = days[k] || { time_in: '', time_out: '', hours: '', reason: '' };
                       const hoursNum = parseFloat(entry.hours || '0');
-                      const ot = rowOtMap[k] || { regularHours: 0, otHours: 0, isFullOT: false, isPartialOT: false };
-                      const isFullOT = ot.isFullOT;
-                      const isPartialOT = ot.isPartialOT;
-                      const isOTRow = isFullOT || isPartialOT;
+                      const validHours = !isNaN(hoursNum) && hoursNum > 0 ? hoursNum : 0;
+                      const ot = rowOtMap[k] || { regularHours: 0, otHours: 0, isFullOT: false, isPartialOT: false, isScheduled: true };
+                      const scheduled = ot.isScheduled;
                       const isUnderTarget =
+                        scheduled &&
                         perDayExpected != null &&
-                        entry.hours !== '' &&
-                        !isNaN(hoursNum) &&
-                        hoursNum > 0 &&
-                        hoursNum < perDayExpected &&
-                        hoursDiff < -0.25;
-                      const needsReason = isOTRow || isUnderTarget;
-                      const reasonLabel = isPartialOT
+                        validHours > 0 &&
+                        validHours < perDayExpected - 0.01;
+                      const isEmptyScheduled = scheduled && validHours === 0;
+                      const isOTRow = (ot.otHours || 0) > 0.001;
+                      const isPartialOT = ot.isPartialOT;
+                      const isFullOT = ot.isFullOT;
+                      // Severity: undertime/missing = red; overtime = amber; otherwise none.
+                      const isMissing = isUnderTarget || isEmptyScheduled;
+                      const needsReason = isOTRow || isUnderTarget || isEmptyScheduled;
+                      const reasonLabel = isEmptyScheduled
+                        ? '(required — no hours logged)'
+                        : isUnderTarget
+                        ? `(required — undertime, ${(perDayExpected! - validHours).toFixed(2)} hrs short)`
+                        : isPartialOT
                         ? `(required — overtime, includes ${ot.otHours} hrs OT)`
                         : isFullOT
                         ? '(required — overtime)'
-                        : isUnderTarget
-                        ? '(required — under target)'
                         : '(only if no hours)';
                       const reasonPlaceholder = isOTRow
                         ? 'e.g. urgent deadline, extra workload'
-                        : isUnderTarget
-                        ? 'e.g. half day, left early, sick'
+                        : isMissing
+                        ? 'e.g. half day, left early, sick, day off'
                         : 'Optional — e.g. day off, holiday, sick';
                       const label = dayLabel(k);
-                      const timeInputClass = `bg-background border-2 h-12 text-base font-medium w-[100px] text-center ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`;
-                      const rowBg = needsReason
+                      const borderTone = isMissing
+                        ? 'border-red-500 focus-visible:ring-red-500'
+                        : isOTRow
+                        ? 'border-amber-500 focus-visible:ring-amber-500'
+                        : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500';
+                      const timeInputClass = `bg-background border-2 h-12 text-base font-medium w-[100px] text-center ${borderTone}`;
+                      const rowBg = isMissing
+                        ? 'bg-red-50/60 dark:bg-red-950/20'
+                        : isOTRow
                         ? 'bg-amber-50/60 dark:bg-amber-950/20'
                         : idx % 2 === 0
                         ? 'bg-background'
                         : 'bg-muted/40';
+                      const leftBorder = isMissing
+                        ? 'border-l-4 border-l-red-500'
+                        : isOTRow
+                        ? 'border-l-4 border-l-amber-500'
+                        : '';
 
                       return (
                         <div
                           key={k}
-                          className={`grid grid-cols-1 md:grid-cols-[110px_100px_100px_72px_1fr] gap-2.5 md:gap-3 px-4 py-3 items-center border-b last:border-b-0 ${
-                            needsReason ? 'border-l-4 border-l-amber-500' : ''
-                          } ${rowBg}`}
+                          className={`grid grid-cols-1 md:grid-cols-[110px_100px_100px_72px_1fr] gap-2.5 md:gap-3 px-4 py-3 items-center border-b last:border-b-0 ${leftBorder} ${rowBg}`}
                         >
+
                           <div>
                             <div className="font-semibold text-sm">{label}</div>
                             <div className="text-xs text-muted-foreground">{format(date, 'MMM d, yyyy')}</div>
@@ -1373,7 +1487,7 @@ const PortalDashboard = () => {
                             <Input
                               readOnly
                               value={hoursNum > 0 ? hoursNum.toFixed(2) : '0.00'}
-                              className={`h-12 w-[72px] text-center text-base font-semibold border-2 bg-muted/40 ${needsReason ? 'border-amber-500 text-amber-900 dark:text-amber-200' : 'border-blue-300 dark:border-blue-700'}`}
+                              className={`h-12 w-[72px] text-center text-base font-semibold border-2 bg-muted/40 ${isMissing ? 'border-red-500 text-red-900 dark:text-red-200' : isOTRow ? 'border-amber-500 text-amber-900 dark:text-amber-200' : 'border-blue-300 dark:border-blue-700'}`}
                             />
                           </div>
                           <div className="space-y-1 min-w-0">
@@ -1385,7 +1499,7 @@ const PortalDashboard = () => {
                               placeholder={reasonPlaceholder}
                               value={entry.reason}
                               onChange={(e) => updateDay(k, { reason: e.target.value })}
-                              className={`bg-background border-2 h-10 ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`}
+                              className={`bg-background border-2 h-10 ${borderTone}`}
                             />
                           </div>
                         </div>
@@ -1431,51 +1545,61 @@ const PortalDashboard = () => {
                                   {totalHours.toFixed(2)} <span className="text-muted-foreground font-normal">/ {expected.toFixed(0)} hrs</span>
                                 </span>
                               </div>
-                              <Progress value={pct} className="h-2" />
+                              <Progress value={expected > 0 ? Math.min(100, (regularHoursTotal / expected) * 100) : 0} className="h-2" />
+                              <p className="text-[11px] text-muted-foreground">Progress reflects regular hours toward your weekly target.</p>
                             </div>
                           )}
 
                           <dl className="space-y-2.5 text-sm">
                             <div className="flex items-center justify-between">
-                              <dt className="text-muted-foreground">Total hours</dt>
-                              <dd className="font-semibold">{totalHours.toFixed(2)} hrs</dd>
+                              <dt className="text-muted-foreground">Regular hours</dt>
+                              <dd className="font-semibold">{regularHoursTotal.toFixed(2)} hrs</dd>
                             </div>
-                            {expected > 0 && (
+                            <div className="flex items-center justify-between">
+                              <dt className="text-muted-foreground">OT hours</dt>
+                              <dd className={`font-semibold ${otHours > 0 ? 'text-amber-600' : ''}`}>{otHours.toFixed(2)} hrs</dd>
+                            </div>
+                            {missingHoursTotal > 0 && (
                               <div className="flex items-center justify-between">
-                                <dt className="text-muted-foreground">Expected</dt>
+                                <dt className="text-muted-foreground">Missing hours</dt>
+                                <dd className="font-semibold text-red-600">{missingHoursTotal.toFixed(2)} hrs</dd>
+                              </div>
+                            )}
+                            {expected > 0 && (
+                              <div className="flex items-center justify-between pt-2 border-t">
+                                <dt className="text-muted-foreground">Weekly target</dt>
                                 <dd className="font-medium">{expected.toFixed(2)} hrs</dd>
                               </div>
                             )}
-                            {showStatus && !hoursMatch && (
-                              <div className="flex items-center justify-between">
-                                <dt className="text-muted-foreground">
-                                  {hoursDiff < 0 ? 'Missing' : 'Over'}
-                                </dt>
-                                <dd className={`font-semibold ${hoursDiff < 0 ? 'text-amber-600' : 'text-amber-600'}`}>
-
-                                  {Math.abs(hoursDiff).toFixed(2)} hrs
-                                </dd>
-                              </div>
-                            )}
-                            {rate != null && (
-                              <div className="flex items-center justify-between">
-                                <dt className="text-muted-foreground">Hourly rate</dt>
-                                <dd className="font-medium">${rate.toFixed(2)}/hr</dd>
-                              </div>
-                            )}
-                            {incentiveAmt > 0 && (
-                              <div className="flex items-center justify-between">
-                                <dt className="text-muted-foreground">Incentives</dt>
-                                <dd className="font-medium">${incentiveAmt.toFixed(2)}</dd>
-                              </div>
-                            )}
-                            <div className="flex items-center justify-between pt-2 border-t">
-                              <dt className="font-medium">Invoice total</dt>
-                              <dd className="text-lg font-bold text-primary">
-                                {invoiceTotal != null ? `$${invoiceTotal.toFixed(2)}` : '—'}
-                              </dd>
+                            <div className="flex items-center justify-between">
+                              <dt className="font-medium">Total hours</dt>
+                              <dd className="text-base font-bold">{totalHours.toFixed(2)} hrs</dd>
                             </div>
                           </dl>
+
+                          {(rate != null || incentiveAmt > 0) && (
+                            <dl className="space-y-2.5 text-sm pt-2 border-t">
+                              {rate != null && (
+                                <div className="flex items-center justify-between">
+                                  <dt className="text-muted-foreground">Hourly rate</dt>
+                                  <dd className="font-medium">${rate.toFixed(2)}/hr</dd>
+                                </div>
+                              )}
+                              {incentiveAmt > 0 && (
+                                <div className="flex items-center justify-between">
+                                  <dt className="text-muted-foreground">Incentives</dt>
+                                  <dd className="font-medium">${incentiveAmt.toFixed(2)}</dd>
+                                </div>
+                              )}
+                              {invoiceTotal != null && (
+                                <div className="flex items-center justify-between pt-2 border-t">
+                                  <dt className="font-medium">Invoice total</dt>
+                                  <dd className="text-lg font-bold text-primary">${invoiceTotal.toFixed(2)}</dd>
+                                </div>
+                              )}
+                            </dl>
+                          )}
+
 
                           {showStatus && !hoursMatch && (
                             <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200 px-3 py-2 text-xs leading-relaxed">

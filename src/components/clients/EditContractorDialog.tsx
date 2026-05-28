@@ -47,6 +47,7 @@ interface ContractorData {
   country: string | null;
   source: string | null;
   timezone?: string | null;
+  work_days?: string[] | null;
   applicant: {
     full_name: string;
     email: string;
@@ -58,6 +59,9 @@ interface ContractorData {
     industry: string | null;
   } | null;
 }
+
+const WORK_DAY_SHORT_ADMIN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
+const DEFAULT_WORK_DAYS_ADMIN: string[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
 interface EditContractorDialogProps {
   contractor: ContractorData | null;
@@ -94,7 +98,10 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
     source: '',
     timezone: '',
     notes: '',
+    work_days: [...DEFAULT_WORK_DAYS_ADMIN] as string[],
   });
+
+
 
 
   // Fetch clients list
@@ -142,6 +149,9 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
         source: contractor.source || '',
         timezone: (contractor as any).timezone || '',
         notes: contractor.notes || '',
+        work_days: Array.isArray(contractor.work_days) && contractor.work_days.length > 0
+          ? contractor.work_days
+          : [...DEFAULT_WORK_DAYS_ADMIN],
       });
     }
   }, [contractor]);
@@ -184,7 +194,8 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
           source: formData.source || null,
           timezone: formData.timezone || null,
           notes: formData.notes || null,
-        })
+          work_days: formData.work_days.length > 0 ? formData.work_days : [...DEFAULT_WORK_DAYS_ADMIN],
+        } as any)
         .eq('id', contractor.id);
 
       if (error) throw error;
@@ -354,6 +365,35 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
               onChange={(e) => setFormData(prev => ({ ...prev, hours_per_week: e.target.value }))}
               className="col-span-1"
             />
+          </div>
+
+          {/* Work days */}
+          <div className="grid grid-cols-4 items-start gap-4">
+            <Label className="text-right pt-2">Work Days</Label>
+            <div className="col-span-3 space-y-1">
+              <div className="flex flex-wrap gap-1.5">
+                {WORK_DAY_SHORT_ADMIN.map((d) => {
+                  const on = formData.work_days.includes(d);
+                  return (
+                    <button
+                      key={d}
+                      type="button"
+                      onClick={() => {
+                        const set = new Set(formData.work_days);
+                        if (set.has(d)) set.delete(d); else set.add(d);
+                        const ordered = WORK_DAY_SHORT_ADMIN.filter((x) => set.has(x));
+                        setFormData(prev => ({ ...prev, work_days: ordered }));
+                      }}
+                      className={`px-3 py-1 rounded-full text-xs font-medium border-2 transition-colors ${on ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground border-border hover:border-primary/50'}`}
+                      aria-pressed={on}
+                    >
+                      {d}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground">Days the contractor is expected to work each week. Used for OT and undertime detection.</p>
+            </div>
           </div>
 
           {/* Client Rate (shown to clients in the Client Portal) */}

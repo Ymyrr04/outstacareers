@@ -1040,6 +1040,7 @@ export type Database = {
           timesheet_link: string | null
           timezone: string | null
           updated_at: string
+          work_days: string[]
         }
         Insert: {
           applicant_id: string
@@ -1065,6 +1066,7 @@ export type Database = {
           timesheet_link?: string | null
           timezone?: string | null
           updated_at?: string
+          work_days?: string[]
         }
         Update: {
           applicant_id?: string
@@ -1090,6 +1092,7 @@ export type Database = {
           timesheet_link?: string | null
           timezone?: string | null
           updated_at?: string
+          work_days?: string[]
         }
         Relationships: [
           {
