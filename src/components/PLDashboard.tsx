@@ -70,6 +70,24 @@ const ProfileField = ({ label, value }: { label: string; value: string | null | 
   </div>
 );
 
+const ClientApprovalBadge = ({ status, reason }: { status: string; reason?: string | null }) => {
+  if (status === 'approved') {
+    return <Badge variant="outline" className="border-emerald-500 text-emerald-600 w-fit">Approved</Badge>;
+  }
+  if (status === 'flagged') {
+    return (
+      <Badge
+        variant="outline"
+        className="border-amber-500 text-amber-700 bg-amber-50 w-fit"
+        title={reason || 'Flagged by client'}
+      >
+        Flagged
+      </Badge>
+    );
+  }
+  return <Badge variant="outline" className="text-muted-foreground w-fit">Pending</Badge>;
+};
+
 export const PLDashboard = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
