@@ -442,8 +442,9 @@ const PortalDashboard = () => {
   const emptyProfileForm: ProfileForm = {
     full_name: '', phone: '', whatsapp: '', location: '', country: '',
     contact_number: '', emergency_number: '', hours_per_week: '',
-    hourly_rate: '', regular_work_shift: '', work_days: [...DEFAULT_WORK_DAYS],
+    hourly_rate: '', regular_work_shift: '', work_days: [],
   };
+
 
   const [profileForm, setProfileForm] = useState<ProfileForm>(emptyProfileForm);
   const [profileEditing, setProfileEditing] = useState(false);
