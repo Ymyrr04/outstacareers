@@ -23,6 +23,10 @@ interface TimesheetRow {
   incentive_amount: number;
   notes: string | null;
   status: string;
+  outsta_status: string;
+  client_approval_status: string;
+  client_flag_reason: string | null;
+  client_reviewed_at: string | null;
   submitted_at: string;
   daily_hours: Record<string, { hours: number; reason?: string }> | null;
   contractor: {
