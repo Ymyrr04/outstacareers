@@ -39,32 +39,52 @@ const App = () => (
             <Toaster />
             <Sonner />
             <BrowserRouter>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/careers" element={<Index />} />
-                <Route path="/auth" element={<Auth />} />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route path="/admin" element={<Admin />} />
-                <Route path="/admin/ai-usage" element={<AiUsage />} />
-                <Route path="/admin/:tab" element={<Admin />} />
-                <Route path="/jobs/:company/:titleSlug/:jobId" element={<JobApplication />} />
-                <Route path="/job/:jobId" element={<JobDetails />} />
-                <Route path="/apply/:jobId" element={<ApplyJob />} />
-                <Route path="/interview/:sessionId" element={<ResumeInterview />} />
-                <Route path="/image-editor" element={<ImageEditor />} />
-                <Route path="/auth/calendly/callback" element={<CalendlyCallback />} />
-                <Route path="/talent-pool" element={<TalentPool />} />
-                <Route path="/portal/login" element={<PortalLogin />} />
-                <Route path="/portal/change-password" element={<PortalChangePassword />} />
-                <Route path="/portal" element={<PortalDashboard />} />
-                <Route path="/sign/:token" element={<SignContract />} />
-                <Route path="/client-portal/login" element={<ClientPortalLogin />} />
-                <Route path="/client-portal/change-password" element={<ClientPortalChangePassword />} />
-                <Route path="/client-portal" element={<ClientPortalDashboard />} />
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-                <Route path="*" element={<NotFound />} />
-              </Routes>
+              {(() => {
+                const isWorkforceDomain =
+                  typeof window !== 'undefined' &&
+                  window.location.hostname.includes('outstaworkforce.com');
+
+                if (isWorkforceDomain) {
+                  return (
+                    <Routes>
+                      <Route path="/client-portal/login" element={<ClientPortalLogin />} />
+                      <Route path="/client-portal/change-password" element={<ClientPortalChangePassword />} />
+                      <Route path="/client-portal" element={<ClientPortalDashboard />} />
+                      <Route path="*" element={<ClientPortalLogin />} />
+                    </Routes>
+                  );
+                }
+
+                return (
+                  <Routes>
+                    <Route path="/" element={<Index />} />
+                    <Route path="/careers" element={<Index />} />
+                    <Route path="/auth" element={<Auth />} />
+                    <Route path="/reset-password" element={<ResetPassword />} />
+                    <Route path="/admin" element={<Admin />} />
+                    <Route path="/admin/ai-usage" element={<AiUsage />} />
+                    <Route path="/admin/:tab" element={<Admin />} />
+                    <Route path="/jobs/:company/:titleSlug/:jobId" element={<JobApplication />} />
+                    <Route path="/job/:jobId" element={<JobDetails />} />
+                    <Route path="/apply/:jobId" element={<ApplyJob />} />
+                    <Route path="/interview/:sessionId" element={<ResumeInterview />} />
+                    <Route path="/image-editor" element={<ImageEditor />} />
+                    <Route path="/auth/calendly/callback" element={<CalendlyCallback />} />
+                    <Route path="/talent-pool" element={<TalentPool />} />
+                    <Route path="/portal/login" element={<PortalLogin />} />
+                    <Route path="/portal/change-password" element={<PortalChangePassword />} />
+                    <Route path="/portal" element={<PortalDashboard />} />
+                    <Route path="/sign/:token" element={<SignContract />} />
+                    <Route path="/client-portal/login" element={<ClientPortalLogin />} />
+                    <Route path="/client-portal/change-password" element={<ClientPortalChangePassword />} />
+                    <Route path="/client-portal" element={<ClientPortalDashboard />} />
+                    {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+                    <Route path="*" element={<NotFound />} />
+                  </Routes>
+                );
+              })()}
             </BrowserRouter>
+
           </TooltipProvider>
         </AuthProvider>
       </QueryClientProvider>
