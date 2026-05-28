@@ -150,7 +150,6 @@ const ClientPortalSetup = () => {
       const { data, error } = await supabase.functions.invoke('complete-client-portal-setup', {
         body: {
 
-        body: {
           full_name: fullName.trim() || null,
           username: username.trim().toLowerCase(),
           primary_email: primaryEmail.trim(),
