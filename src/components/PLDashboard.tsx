@@ -1144,8 +1144,8 @@ export const PLDashboard = () => {
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </CollapsibleSection>
 
       {filteredInternal.length > 0 && (
         <Card className="border-dashed" style={{ order: sectionOrder.indexOf('internalTimesheets') }}>
