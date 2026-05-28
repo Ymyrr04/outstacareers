@@ -61,7 +61,6 @@ interface ContractorData {
 }
 
 const WORK_DAY_SHORT_ADMIN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
-const DEFAULT_WORK_DAYS_ADMIN: string[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
 interface EditContractorDialogProps {
   contractor: ContractorData | null;
