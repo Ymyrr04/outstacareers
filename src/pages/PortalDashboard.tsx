@@ -1159,6 +1159,23 @@ const PortalDashboard = () => {
                 <ProfileField label="Regular work shift" value={info?.regular_work_shift} />
                 <ProfileField label="Hours per week" value={info?.hours_per_week != null ? `${info.hours_per_week} hrs` : null} />
                 <ProfileField label="Current rate" value={info?.hourly_rate != null ? `$${Number(info.hourly_rate).toFixed(2)}/hr` : null} />
+                <div className="md:col-span-2 lg:col-span-3">
+                  <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Work days</div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {WORK_DAY_SHORT.map((d) => {
+                      const on = (info?.work_days || []).includes(d);
+                      return (
+                        <span
+                          key={d}
+                          className={`px-2.5 py-1 rounded-full text-xs font-medium border ${on ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border'}`}
+                        >
+                          {d}
+                        </span>
+                      );
+                    })}
+                  </div>
+                </div>
+
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-2">
