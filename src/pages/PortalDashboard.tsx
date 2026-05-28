@@ -1012,6 +1012,10 @@ const PortalDashboard = () => {
       toast({ title: 'Invalid rate', description: 'Rate must be a non-negative number.', variant: 'destructive' });
       return;
     }
+    if (profileForm.work_days.length === 0) {
+      toast({ title: 'Work days required', description: 'Please select your scheduled work days.', variant: 'destructive' });
+      return;
+    }
     setProfileSaving(true);
     try {
       const { error: aErr } = await supabase
@@ -1020,7 +1024,9 @@ const PortalDashboard = () => {
           hourly_rate: rate,
           hours_per_week: hpw,
           regular_work_shift: profileForm.regular_work_shift.trim() || null,
-          work_days: profileForm.work_days.length > 0 ? profileForm.work_days : [...DEFAULT_WORK_DAYS],
+          work_days: profileForm.work_days,
+        } as any)
+
         } as any)
 
         .eq('id', info.contractor_assignment_id);
