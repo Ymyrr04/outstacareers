@@ -20,6 +20,7 @@ const ClientPortalSetup = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [userId, setUserId] = useState<string>('');
+  const [sessionEmail, setSessionEmail] = useState<string>('');
 
   // Step 1 - password
   const [pw1, setPw1] = useState('');
@@ -39,6 +40,7 @@ const ClientPortalSetup = () => {
       if (!session.session) { navigate('/client-portal/login'); return; }
       const uid = session.session.user.id;
       setUserId(uid);
+      setSessionEmail(session.session.user.email || '');
 
       const { data: cpu } = await supabase
         .from('client_portal_users')
@@ -94,20 +96,33 @@ const ClientPortalSetup = () => {
     }
     setSaving(true);
     try {
+      const loginEmail = sessionEmail || (username ? `${username}@portal.outsta.local` : '');
       const { error } = await supabase.auth.updateUser({ password: pw1 });
       if (error) throw error;
-      // Password change rotates the session — force-refresh so subsequent calls
-      // (profile save edge function) get a valid access token.
-      const { data: refreshed, error: refreshErr } = await supabase.auth.refreshSession();
-      if (refreshErr || !refreshed?.session) {
-        // fall back to getSession; if still nothing, treat as expired
-        const { data: s } = await supabase.auth.getSession();
-        if (!s?.session) throw new Error('Session lost after password update');
+
+      // Password changes can leave the browser holding an old token. Sign in again
+      // immediately with the new password so Step 2 uses a freshly issued session.
+      let activeSession = null as Awaited<ReturnType<typeof supabase.auth.getSession>>['data']['session'];
+      if (loginEmail) {
+        const { data: signedIn, error: signInErr } = await supabase.auth.signInWithPassword({ email: loginEmail, password: pw1 });
+        if (!signInErr && signedIn?.session) activeSession = signedIn.session;
       }
+      if (!activeSession) {
+        const { data: refreshed } = await supabase.auth.refreshSession();
+        activeSession = refreshed?.session ?? null;
+      }
+      if (!activeSession) {
+        const { data: s } = await supabase.auth.getSession();
+        activeSession = s?.session ?? null;
+      }
+      if (!activeSession) throw new Error('Session lost after password update');
+      setUserId(activeSession.user.id);
+      setSessionEmail(activeSession.user.email || loginEmail);
+
       await supabase
         .from('client_portal_users')
         .update({ password_reset_required: false })
-        .eq('user_id', userId);
+        .eq('user_id', activeSession.user.id);
       setStep(2);
     } catch (err: any) {
       const msg = await getErrorMessage(err);
@@ -144,10 +159,18 @@ const ClientPortalSetup = () => {
         const { data: r } = await supabase.auth.refreshSession();
         sess = r as any;
       }
+      if (sess?.session) {
+        const { error: userErr } = await supabase.auth.getUser(sess.session.access_token);
+        if (userErr && sessionEmail && pw1) {
+          const { data: signedIn } = await supabase.auth.signInWithPassword({ email: sessionEmail, password: pw1 });
+          sess = { session: signedIn.session } as any;
+        }
+      }
       if (!sess?.session) throw new Error('Your session has expired. Please sign in again.');
       console.log('[setup] saving profile with session user:', sess.session.user?.id);
 
       const { data, error } = await supabase.functions.invoke('complete-client-portal-setup', {
+        headers: { Authorization: `Bearer ${sess.session.access_token}` },
         body: {
 
           full_name: fullName.trim() || null,
