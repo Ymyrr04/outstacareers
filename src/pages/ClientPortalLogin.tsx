@@ -12,7 +12,7 @@ import { Helmet } from 'react-helmet-async';
 const ClientPortalLogin = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const [email, setEmail] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -35,7 +35,10 @@ const ClientPortalLogin = () => {
     e.preventDefault();
     setLoading(true);
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+      const raw = identifier.trim().toLowerCase();
+      const loginEmail = raw.includes('@') ? raw : `${raw}@portal.outsta.local`;
+
+      const { data, error } = await supabase.auth.signInWithPassword({ email: loginEmail, password });
       if (error) throw error;
 
       const { data: cpu, error: pErr } = await supabase
@@ -68,8 +71,8 @@ const ClientPortalLogin = () => {
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Label htmlFor="identifier">Username or email</Label>
+              <Input id="identifier" type="text" autoComplete="username" required value={identifier} onChange={(e) => setIdentifier(e.target.value)} placeholder="yourname" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
