@@ -34,6 +34,7 @@ import { HiredAssignmentDialog } from '@/components/HiredAssignmentDialog';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import { useEmailTemplates, statusToTrigger } from '@/hooks/useEmailTemplates';
 import { addMinutes } from 'date-fns';
+import { useStageSettings } from '@/hooks/useStageSettings';
 
 const FUNNEL_STAGES = [
   'For Review',
@@ -59,11 +60,12 @@ const STAGE_COLORS: Record<string, { bg: string; header: string; dot: string }> 
   'Talent Pool': { bg: 'bg-teal-50 dark:bg-teal-950/20', header: 'bg-teal-500', dot: 'bg-teal-400' },
 };
 
-const getStageDisplayName = (stage: string): string => {
+const defaultStageDisplayName = (stage: string): string => {
   if (stage === 'Talent Pool') return 'Bench';
   if (stage === 'Bench') return 'Talent Pipeline';
   return stage;
 };
+
 
 interface Candidate {
   id: string;
@@ -99,6 +101,8 @@ interface RoleKanbanFunnelProps {
 const ALL_ROLES_KEY = '__all__';
 
 export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange }: RoleKanbanFunnelProps) => {
+  const { getDisplayName: getStageDisplayName, getColor: getStageColorOverride, orderStages } = useStageSettings();
+  const orderedFunnelStages = useMemo(() => orderStages(FUNNEL_STAGES), [orderStages]);
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeRoles, setActiveRoles] = useState<string[]>([]);
   const [allRoles, setAllRoles] = useState<string[]>([]);
@@ -801,7 +805,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
 
   const stageGroups = useMemo(() => {
     const groups: Record<string, Candidate[]> = {};
-    for (const stage of FUNNEL_STAGES) {
+    for (const stage of orderedFunnelStages) {
       groups[stage] = [];
     }
 
@@ -833,7 +837,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
         default: return 0;
       }
     };
-    for (const stage of FUNNEL_STAGES) {
+    for (const stage of orderedFunnelStages) {
       groups[stage].sort(sortFn);
     }
 
@@ -980,9 +984,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       ) : (
         <div className="w-full overflow-x-auto">
           <div className="flex gap-3 pb-4 min-w-max">
-            {FUNNEL_STAGES.map((stage) => {
+            {orderedFunnelStages.map((stage) => {
               const colors = STAGE_COLORS[stage];
+              const colorOverride = getStageColorOverride(stage);
               const stageCandidates = stageGroups[stage];
+
 
               return (
                 <div
@@ -992,15 +998,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                     dropTargetStage === stage && draggedCandidate
                       ? 'border-primary ring-2 ring-primary/30 scale-[1.02]'
                       : 'border-border/60',
-                    colors.bg
+                    !colorOverride && colors.bg
                   )}
+                  style={colorOverride ? { backgroundColor: colorOverride + '14' } : undefined}
                   onDragOver={(e) => {
                     e.preventDefault();
                     e.dataTransfer.dropEffect = 'move';
                     setDropTargetStage(stage);
                   }}
                   onDragLeave={(e) => {
-                    // Only clear if leaving the column entirely
                     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
                       setDropTargetStage(null);
                     }
@@ -1014,7 +1020,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                     setDraggedCandidate(null);
                   }}
                 >
-                  <div className={cn('px-3 py-2.5 flex items-center justify-between', colors.header)}>
+                  <div
+                    className={cn('px-3 py-2.5 flex items-center justify-between', !colorOverride && colors.header)}
+                    style={colorOverride ? { backgroundColor: colorOverride } : undefined}
+                  >
+
                     <span className="text-sm font-semibold text-white">{getStageDisplayName(stage)}</span>
                     <div className="flex items-center gap-1.5">
                       <DropdownMenu>
@@ -1215,19 +1225,26 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center" className="w-48">
-              {FUNNEL_STAGES.filter(s => s !== selectionStage).map(stage => (
+              {orderedFunnelStages.filter(s => s !== selectionStage).map(stage => {
+                const dotOverride = getStageColorOverride(stage);
+                return (
                 <DropdownMenuItem
                   key={stage}
                   disabled={stage === 'Hired'}
                   onClick={() => handleBulkMoveToStage(stage)}
                 >
-                  <span className={cn('w-2 h-2 rounded-full mr-2', STAGE_COLORS[stage]?.dot)} />
+                  <span
+                    className={cn('w-2 h-2 rounded-full mr-2', !dotOverride && STAGE_COLORS[stage]?.dot)}
+                    style={dotOverride ? { backgroundColor: dotOverride } : undefined}
+                  />
                   {getStageDisplayName(stage)}
                   {stage === 'Hired' && (
                     <span className="ml-auto text-[10px] text-muted-foreground">single only</span>
                   )}
                 </DropdownMenuItem>
-              ))}
+                );
+              })}
+
             </DropdownMenuContent>
           </DropdownMenu>
           <button
@@ -1261,6 +1278,7 @@ interface CandidateCardProps {
 }
 
 const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle }: CandidateCardProps) => {
+  const { getDisplayName: getStageDisplayName } = useStageSettings();
   const [showDetails, setShowDetails] = useState(false);
   const [showDetailsTab, setShowDetailsTab] = useState<string | undefined>(undefined); // eslint-disable-line @typescript-eslint/no-unused-vars
   const [showSendEmail, setShowSendEmail] = useState(false);

@@ -2569,6 +2569,39 @@ export type Database = {
           },
         ]
       }
+      stage_settings: {
+        Row: {
+          color: string | null
+          created_at: string
+          display_name: string | null
+          id: string
+          sort_order: number | null
+          stage_key: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          sort_order?: number | null
+          stage_key: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          display_name?: string | null
+          id?: string
+          sort_order?: number | null
+          stage_key?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

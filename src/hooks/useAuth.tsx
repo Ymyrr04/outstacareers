@@ -6,6 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUp: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -18,6 +19,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const checkAdminRole = async (userId: string) => {
@@ -26,9 +28,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       .select('role')
       .eq('user_id', userId)
       .in('role', ['admin', 'super_admin']);
-    
-    setIsAdmin(!!data && data.length > 0);
+
+    const roles = (data ?? []).map((r: any) => r.role);
+    setIsAdmin(roles.length > 0);
+    setIsSuperAdmin(roles.includes('super_admin'));
   };
+
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
@@ -74,18 +79,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     });
     return { error };
   };
-
   const signOut = async () => {
     await supabase.auth.signOut();
     setIsAdmin(false);
+    setIsSuperAdmin(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, isAdmin, loading, signIn, signUp, signOut }}>
+    <AuthContext.Provider value={{ user, session, isAdmin, isSuperAdmin, loading, signIn, signUp, signOut }}>
       {children}
     </AuthContext.Provider>
   );
 };
+
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
