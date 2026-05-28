@@ -1020,8 +1020,8 @@ export const PLDashboard = () => {
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+          </div>
+        </CollapsibleSection>
       )}
 
       <Card style={{ order: sectionOrder.indexOf('timesheets') }}>
