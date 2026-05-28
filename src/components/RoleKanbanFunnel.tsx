@@ -805,7 +805,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
 
   const stageGroups = useMemo(() => {
     const groups: Record<string, Candidate[]> = {};
-    for (const stage of FUNNEL_STAGES) {
+    for (const stage of orderedFunnelStages) {
       groups[stage] = [];
     }
 
@@ -837,7 +837,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
         default: return 0;
       }
     };
-    for (const stage of FUNNEL_STAGES) {
+    for (const stage of orderedFunnelStages) {
       groups[stage].sort(sortFn);
     }
 
