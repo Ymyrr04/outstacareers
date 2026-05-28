@@ -34,6 +34,7 @@ import { HiredAssignmentDialog } from '@/components/HiredAssignmentDialog';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import { useEmailTemplates, statusToTrigger } from '@/hooks/useEmailTemplates';
 import { addMinutes } from 'date-fns';
+import { useStageSettings } from '@/hooks/useStageSettings';
 
 const FUNNEL_STAGES = [
   'For Review',
