@@ -1641,31 +1641,33 @@ const PortalDashboard = () => {
         </Tabs>
       </main>
 
-      {/* Missing reason prompt — collect reasons inline */}
-      <AlertDialog open={missingReasonOpen} onOpenChange={setMissingReasonOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Reason required</AlertDialogTitle>
             <AlertDialogDescription>
-              Please provide a short reason for the day(s) below. Empty days need a reason, and days over 10 hours require admin approval.
+              Provide a reason for any missed workdays or overtime hours logged beyond your weekly target.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <div className="space-y-3 py-2">
             {missingDays.map((k, idx) => {
               const hoursNum = parseFloat(days[k]?.hours || '0');
-              const isOvertime = !isNaN(hoursNum) && hoursNum > 10;
+              const isOT = (rowOtMap[k]?.otHours || 0) > 0.001;
+              const reasonType = isOT ? 'overtime' : 'no hours';
               return (
                 <div key={k} className="space-y-1">
                   <Label className="text-sm">
                     {dayLabel(k)} <span className="text-xs text-muted-foreground">({format(new Date(k + 'T00:00:00'), 'MMM d')})</span>{' '}
-                    <span className={`text-xs ${isOvertime ? 'text-amber-600' : 'text-muted-foreground'}`}>
-                      ({isOvertime ? `${hoursNum} hrs — needs approval` : 'no hours'})
+                    <span className={`text-xs ${isOT ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                      ({reasonType})
                     </span>
                   </Label>
                   <Input
                     autoFocus={idx === 0}
-                    placeholder={isOvertime ? 'Reason for overtime (e.g. urgent deadline)' : 'Reason (e.g. day off, holiday, sick)'}
+                    placeholder={isOT ? 'Reason for overtime (e.g. urgent deadline)' : 'Reason (e.g. day off, holiday, sick)'}
                     value={days[k]?.reason || ''}
+                    onChange={(e) => updateDay(k, { reason: e.target.value })}
+                  />
+                </div>
+              );
+            })}
+
                     onChange={(e) => updateDay(k, { reason: e.target.value })}
                   />
                 </div>
