@@ -15,12 +15,13 @@ import { format } from 'date-fns';
 import { 
   Building2, Users, Briefcase, MessageSquare, Globe, MapPin, 
   Edit2, Save, Trash2, Plus, Loader2, Phone, Mail, Star, User,
-  Calendar, DollarSign, FileText, TrendingUp, Link, Hash
+  Calendar, DollarSign, FileText, TrendingUp, Link, Hash, KeyRound
 } from 'lucide-react';
 import type { Client, ClientContact, ContractorAssignment, ClientCommunication } from './ClientsDashboard';
 import { AddContactDialog } from './AddContactDialog';
 import { AddContractorDialog } from './AddContractorDialog';
 import { AddCommunicationDialog } from './AddCommunicationDialog';
+import { ClientPortalAccountsSection } from './ClientPortalAccountsSection';
 
 // Hiring Toggle Component
 const HiringToggle = ({ clientId, isHiring, onUpdate }: { clientId: string; isHiring: boolean; onUpdate: () => void }) => {
@@ -580,7 +581,7 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
 
           {/* Tabs */}
           <Tabs defaultValue="contacts" className="space-y-4">
-            <TabsList className="grid w-full grid-cols-3">
+            <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="contacts" className="flex items-center gap-1">
                 <Users className="w-4 h-4" />
                 Contacts ({contacts.length})
@@ -592,6 +593,10 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
               <TabsTrigger value="communications" className="flex items-center gap-1">
                 <MessageSquare className="w-4 h-4" />
                 Comms ({communications.length})
+              </TabsTrigger>
+              <TabsTrigger value="portal" className="flex items-center gap-1">
+                <KeyRound className="w-4 h-4" />
+                Portal
               </TabsTrigger>
             </TabsList>
 
@@ -920,6 +925,11 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                   ))}
                 </div>
               )}
+            </TabsContent>
+
+            {/* Portal Tab */}
+            <TabsContent value="portal" className="space-y-3">
+              <ClientPortalAccountsSection clientId={client.id} />
             </TabsContent>
           </Tabs>
         </div>
