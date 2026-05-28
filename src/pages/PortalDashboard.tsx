@@ -442,8 +442,9 @@ const PortalDashboard = () => {
   const emptyProfileForm: ProfileForm = {
     full_name: '', phone: '', whatsapp: '', location: '', country: '',
     contact_number: '', emergency_number: '', hours_per_week: '',
-    hourly_rate: '', regular_work_shift: '', work_days: [...DEFAULT_WORK_DAYS],
+    hourly_rate: '', regular_work_shift: '', work_days: [],
   };
+
 
   const [profileForm, setProfileForm] = useState<ProfileForm>(emptyProfileForm);
   const [profileEditing, setProfileEditing] = useState(false);
@@ -534,9 +535,11 @@ const PortalDashboard = () => {
       .maybeSingle();
 
     const applicant = (assignment?.applicant as any) || {};
-    const wd = Array.isArray((assignment as any)?.work_days) && (assignment as any).work_days.length > 0
+    const wd = Array.isArray((assignment as any)?.work_days)
       ? ((assignment as any).work_days as string[])
-      : [...DEFAULT_WORK_DAYS];
+      : [];
+
+
     const nextInfo: ContractorInfo = {
       contractor_assignment_id: portal.contractor_assignment_id,
       applicant_id: assignment?.applicant_id || '',
@@ -594,13 +597,19 @@ const PortalDashboard = () => {
   };
 
   // Computed: profile is missing required fields
+  // Has the contractor configured their weekly work schedule?
+  const hasWorkDays = (info?.work_days?.length || 0) > 0;
+
+  // Computed: profile is missing required fields
   const profileIncomplete = !info
     ? false
     : (!info.full_name ||
        !info.phone ||
        !info.regular_work_shift ||
        info.hours_per_week == null ||
-       info.hourly_rate == null);
+       info.hourly_rate == null ||
+       !hasWorkDays);
+
 
   useEffect(() => { loadAll(); }, []);
 
@@ -633,8 +642,9 @@ const PortalDashboard = () => {
   };
 
   // Helper: is the given date key a scheduled workday for this contractor?
-  const workDaysSet = useMemo(() => new Set(info?.work_days || DEFAULT_WORK_DAYS), [info?.work_days]);
+  const workDaysSet = useMemo(() => new Set(info?.work_days || []), [info?.work_days]);
   const isScheduledDay = (k: string) => {
+    if (!hasWorkDays) return false;
     const dow = new Date(k + 'T00:00:00').getDay();
     return workDaysSet.has(DOW_TO_SHORT[dow]);
   };
@@ -642,7 +652,7 @@ const PortalDashboard = () => {
   // Per-day expected hours = weekly target / number of scheduled work days
   const perDayExpected = useMemo(() => {
     const hpw = info?.hours_per_week ? Number(info.hours_per_week) : null;
-    const numDays = (info?.work_days?.length || DEFAULT_WORK_DAYS.length);
+    const numDays = info?.work_days?.length || 0;
     if (!hpw || numDays <= 0) return null;
     return hpw / numDays;
   }, [info?.hours_per_week, info?.work_days]);
@@ -761,6 +771,12 @@ const PortalDashboard = () => {
   const handleSubmitClick = (e?: React.FormEvent) => {
     e?.preventDefault();
     if (!info) return;
+    if (!hasWorkDays) {
+      toast({ title: 'Work days not set', description: 'Please set your scheduled work days in your profile before submitting.', variant: 'destructive' });
+      setProfileEditing(true);
+      setProfileOpen(true);
+      return;
+    }
     if (!dateRangeValid) {
       toast({ title: 'Invalid date range', description: '"To" date must be on or after "From" date.', variant: 'destructive' });
       return;
@@ -1002,6 +1018,10 @@ const PortalDashboard = () => {
       toast({ title: 'Invalid rate', description: 'Rate must be a non-negative number.', variant: 'destructive' });
       return;
     }
+    if (profileForm.work_days.length === 0) {
+      toast({ title: 'Work days required', description: 'Please select your scheduled work days.', variant: 'destructive' });
+      return;
+    }
     setProfileSaving(true);
     try {
       const { error: aErr } = await supabase
@@ -1010,8 +1030,9 @@ const PortalDashboard = () => {
           hourly_rate: rate,
           hours_per_week: hpw,
           regular_work_shift: profileForm.regular_work_shift.trim() || null,
-          work_days: profileForm.work_days.length > 0 ? profileForm.work_days : [...DEFAULT_WORK_DAYS],
+          work_days: profileForm.work_days,
         } as any)
+
 
         .eq('id', info.contractor_assignment_id);
       if (aErr) throw aErr;
@@ -1146,7 +1167,7 @@ const PortalDashboard = () => {
             </DialogHeader>
             {profileIncomplete && (
               <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 px-3 py-2 text-xs">
-                Required: Full name, Phone, Regular work shift, Hours per week, and Current rate.
+                Required: Full name, Phone, Regular work shift, Hours per week, Current rate, and Work days.
               </div>
             )}
             {(!profileEditing && !profileIncomplete) ? (
@@ -1161,19 +1182,25 @@ const PortalDashboard = () => {
                 <ProfileField label="Current rate" value={info?.hourly_rate != null ? `$${Number(info.hourly_rate).toFixed(2)}/hr` : null} />
                 <div className="md:col-span-2 lg:col-span-3">
                   <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Work days</div>
-                  <div className="flex flex-wrap gap-1.5">
-                    {WORK_DAY_SHORT.map((d) => {
-                      const on = (info?.work_days || []).includes(d);
-                      return (
-                        <span
-                          key={d}
-                          className={`px-2.5 py-1 rounded-full text-xs font-medium border ${on ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border'}`}
-                        >
-                          {d}
-                        </span>
-                      );
-                    })}
-                  </div>
+                  {hasWorkDays ? (
+                    <div className="flex flex-wrap gap-1.5">
+                      {WORK_DAY_SHORT.map((d) => {
+                        const on = (info?.work_days || []).includes(d);
+                        return (
+                          <span
+                            key={d}
+                            className={`px-2.5 py-1 rounded-full text-xs font-medium border ${on ? 'bg-primary text-primary-foreground border-primary' : 'bg-muted text-muted-foreground border-border'}`}
+                          >
+                            {d}
+                          </span>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-xs font-medium text-destructive">
+                      ⚠ Work days not set — please update your profile
+                    </div>
+                  )}
                 </div>
 
               </div>
@@ -1224,7 +1251,6 @@ const PortalDashboard = () => {
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label>Work days <span className="text-destructive">*</span></Label>
-                  <p className="text-xs text-muted-foreground">Select the days you are expected to work each week.</p>
                   <div className="flex flex-wrap gap-2">
                     {WORK_DAY_SHORT.map((d) => {
                       const on = profileForm.work_days.includes(d);
@@ -1246,6 +1272,9 @@ const PortalDashboard = () => {
                       );
                     })}
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Select the days you are expected to work each week. This determines when undertime and overtime are tracked.
+                  </p>
                 </div>
               </div>
             )}
@@ -1297,6 +1326,23 @@ const PortalDashboard = () => {
             </div>
           </CardHeader>
           <CardContent>
+            {!hasWorkDays && (
+              <div className="mb-4 flex items-start justify-between gap-3 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-100 px-4 py-3">
+                <div className="text-sm">
+                  <div className="font-medium">Your work schedule is not set.</div>
+                  <div className="text-xs opacity-90">Please update your profile before submitting hours.</div>
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="shrink-0 border-amber-400 bg-white hover:bg-amber-100"
+                  onClick={() => { setProfileEditing(true); setProfileOpen(true); }}
+                >
+                  Set up my schedule →
+                </Button>
+              </div>
+            )}
             <form onSubmit={handleSubmitClick} onKeyDown={handleFormKeyDown} className="space-y-6">
               <div className="space-y-2">
                 <div className="flex justify-center items-center gap-2">
@@ -1404,17 +1450,18 @@ const PortalDashboard = () => {
                       const entry = days[k] || { time_in: '', time_out: '', hours: '', reason: '' };
                       const hoursNum = parseFloat(entry.hours || '0');
                       const validHours = !isNaN(hoursNum) && hoursNum > 0 ? hoursNum : 0;
-                      const ot = rowOtMap[k] || { regularHours: 0, otHours: 0, isFullOT: false, isPartialOT: false, isScheduled: true };
-                      const scheduled = ot.isScheduled;
+                      const ot = rowOtMap[k] || { regularHours: 0, otHours: 0, isFullOT: false, isPartialOT: false, isScheduled: false };
+                      const scheduled = hasWorkDays && ot.isScheduled;
                       const isUnderTarget =
+                        hasWorkDays &&
                         scheduled &&
                         perDayExpected != null &&
                         validHours > 0 &&
                         validHours < perDayExpected - 0.01;
-                      const isEmptyScheduled = scheduled && validHours === 0;
-                      const isOTRow = (ot.otHours || 0) > 0.001;
-                      const isPartialOT = ot.isPartialOT;
-                      const isFullOT = ot.isFullOT;
+                      const isEmptyScheduled = hasWorkDays && scheduled && validHours === 0;
+                      const isOTRow = hasWorkDays && (ot.otHours || 0) > 0.001;
+                      const isPartialOT = hasWorkDays && ot.isPartialOT;
+                      const isFullOT = hasWorkDays && ot.isFullOT;
                       // Severity: undertime/missing = red; overtime = amber; otherwise none.
                       const isMissing = isUnderTarget || isEmptyScheduled;
                       const needsReason = isOTRow || isUnderTarget || isEmptyScheduled;
@@ -1687,8 +1734,8 @@ const PortalDashboard = () => {
                     }
                     handleSubmitClick();
                   }}
-                  disabled={submitting || profileIncomplete}
-                  title={profileIncomplete ? 'Complete your profile to enable submitting' : undefined}
+                  disabled={submitting || profileIncomplete || !hasWorkDays}
+                  title={!hasWorkDays ? 'Set your work days in your profile to enable submission' : (profileIncomplete ? 'Complete your profile to enable submitting' : undefined)}
                 >
                   {submitting ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
                   {editingId ? 'Save changes' : 'Submit'}

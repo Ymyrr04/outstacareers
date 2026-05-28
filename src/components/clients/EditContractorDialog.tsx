@@ -61,7 +61,6 @@ interface ContractorData {
 }
 
 const WORK_DAY_SHORT_ADMIN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
-const DEFAULT_WORK_DAYS_ADMIN: string[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
 interface EditContractorDialogProps {
   contractor: ContractorData | null;
@@ -98,7 +97,7 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
     source: '',
     timezone: '',
     notes: '',
-    work_days: [...DEFAULT_WORK_DAYS_ADMIN] as string[],
+    work_days: [] as string[],
   });
 
 
@@ -149,9 +148,7 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
         source: contractor.source || '',
         timezone: (contractor as any).timezone || '',
         notes: contractor.notes || '',
-        work_days: Array.isArray(contractor.work_days) && contractor.work_days.length > 0
-          ? contractor.work_days
-          : [...DEFAULT_WORK_DAYS_ADMIN],
+        work_days: Array.isArray(contractor.work_days) ? contractor.work_days : [],
       });
     }
   }, [contractor]);
@@ -194,7 +191,7 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
           source: formData.source || null,
           timezone: formData.timezone || null,
           notes: formData.notes || null,
-          work_days: formData.work_days.length > 0 ? formData.work_days : [...DEFAULT_WORK_DAYS_ADMIN],
+          work_days: formData.work_days,
         } as any)
         .eq('id', contractor.id);
 
@@ -393,6 +390,7 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
                 })}
               </div>
               <p className="text-xs text-muted-foreground">Days the contractor is expected to work each week. Used for OT and undertime detection.</p>
+              <p className="text-xs text-muted-foreground italic">Work days can be overridden here. The contractor can also update this from their profile.</p>
             </div>
           </div>
 
