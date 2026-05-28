@@ -167,6 +167,7 @@ const ClientPortalDashboard = () => {
         contractor_email: a?.applicant?.email || '',
         client_rate: a?.client_rate ?? null,
         hours_per_week: a?.hours_per_week ?? null,
+        timezone: (a as any)?.timezone ?? null,
         invoice_total: invoice,
       };
     });
