@@ -1872,6 +1872,32 @@ const PortalDashboard = () => {
         </Tabs>
       </main>
 
+      <Dialog open={!!flagDialogTimesheet} onOpenChange={(o) => { if (!o) setFlagDialogTimesheet(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Flag from client</DialogTitle>
+            {flagDialogTimesheet?.client_reviewed_at && (
+              <DialogDescription>
+                Flagged on {format(new Date(flagDialogTimesheet.client_reviewed_at), "MMMM d, yyyy 'at' h:mm a")}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm whitespace-pre-wrap text-amber-900">
+              {flagDialogTimesheet?.client_flag_reason?.trim()
+                ? flagDialogTimesheet.client_flag_reason
+                : 'The client flagged this submission but did not leave a comment.'}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Please edit your submission to address this comment, then resubmit.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFlagDialogTimesheet(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <AlertDialog open={missingReasonOpen} onOpenChange={setMissingReasonOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
