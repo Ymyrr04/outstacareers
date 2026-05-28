@@ -1361,45 +1361,61 @@ const PortalDashboard = () => {
                       const date = new Date(k + 'T00:00:00');
                       const entry = days[k] || { time_in: '', time_out: '', hours: '', reason: '' };
                       const hoursNum = parseFloat(entry.hours || '0');
-                      const ot = rowOtMap[k] || { regularHours: 0, otHours: 0, isFullOT: false, isPartialOT: false };
-                      const isFullOT = ot.isFullOT;
-                      const isPartialOT = ot.isPartialOT;
-                      const isOTRow = isFullOT || isPartialOT;
+                      const validHours = !isNaN(hoursNum) && hoursNum > 0 ? hoursNum : 0;
+                      const ot = rowOtMap[k] || { regularHours: 0, otHours: 0, isFullOT: false, isPartialOT: false, isScheduled: true };
+                      const scheduled = ot.isScheduled;
                       const isUnderTarget =
+                        scheduled &&
                         perDayExpected != null &&
-                        entry.hours !== '' &&
-                        !isNaN(hoursNum) &&
-                        hoursNum > 0 &&
-                        hoursNum < perDayExpected &&
-                        hoursDiff < -0.25;
-                      const needsReason = isOTRow || isUnderTarget;
-                      const reasonLabel = isPartialOT
+                        validHours > 0 &&
+                        validHours < perDayExpected - 0.01;
+                      const isEmptyScheduled = scheduled && validHours === 0;
+                      const isOTRow = (ot.otHours || 0) > 0.001;
+                      const isPartialOT = ot.isPartialOT;
+                      const isFullOT = ot.isFullOT;
+                      // Severity: undertime/missing = red; overtime = amber; otherwise none.
+                      const isMissing = isUnderTarget || isEmptyScheduled;
+                      const needsReason = isOTRow || isUnderTarget || isEmptyScheduled;
+                      const reasonLabel = isEmptyScheduled
+                        ? '(required — no hours logged)'
+                        : isUnderTarget
+                        ? `(required — undertime, ${(perDayExpected! - validHours).toFixed(2)} hrs short)`
+                        : isPartialOT
                         ? `(required — overtime, includes ${ot.otHours} hrs OT)`
                         : isFullOT
                         ? '(required — overtime)'
-                        : isUnderTarget
-                        ? '(required — under target)'
                         : '(only if no hours)';
                       const reasonPlaceholder = isOTRow
                         ? 'e.g. urgent deadline, extra workload'
-                        : isUnderTarget
-                        ? 'e.g. half day, left early, sick'
+                        : isMissing
+                        ? 'e.g. half day, left early, sick, day off'
                         : 'Optional — e.g. day off, holiday, sick';
                       const label = dayLabel(k);
-                      const timeInputClass = `bg-background border-2 h-12 text-base font-medium w-[100px] text-center ${needsReason ? 'border-amber-500 focus-visible:ring-amber-500' : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500'}`;
-                      const rowBg = needsReason
+                      const borderTone = isMissing
+                        ? 'border-red-500 focus-visible:ring-red-500'
+                        : isOTRow
+                        ? 'border-amber-500 focus-visible:ring-amber-500'
+                        : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500';
+                      const timeInputClass = `bg-background border-2 h-12 text-base font-medium w-[100px] text-center ${borderTone}`;
+                      const rowBg = isMissing
+                        ? 'bg-red-50/60 dark:bg-red-950/20'
+                        : isOTRow
                         ? 'bg-amber-50/60 dark:bg-amber-950/20'
                         : idx % 2 === 0
                         ? 'bg-background'
                         : 'bg-muted/40';
+                      const leftBorder = isMissing
+                        ? 'border-l-4 border-l-red-500'
+                        : isOTRow
+                        ? 'border-l-4 border-l-amber-500'
+                        : '';
 
                       return (
                         <div
                           key={k}
-                          className={`grid grid-cols-1 md:grid-cols-[110px_100px_100px_72px_1fr] gap-2.5 md:gap-3 px-4 py-3 items-center border-b last:border-b-0 ${
-                            needsReason ? 'border-l-4 border-l-amber-500' : ''
-                          } ${rowBg}`}
+                          className={`grid grid-cols-1 md:grid-cols-[110px_100px_100px_72px_1fr] gap-2.5 md:gap-3 px-4 py-3 items-center border-b last:border-b-0 ${leftBorder} ${rowBg}`}
                         >
+
                           <div>
                             <div className="font-semibold text-sm">{label}</div>
                             <div className="text-xs text-muted-foreground">{format(date, 'MMM d, yyyy')}</div>
