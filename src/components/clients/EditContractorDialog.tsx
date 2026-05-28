@@ -390,6 +390,7 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
                 })}
               </div>
               <p className="text-xs text-muted-foreground">Days the contractor is expected to work each week. Used for OT and undertime detection.</p>
+              <p className="text-xs text-muted-foreground italic">Work days can be overridden here. The contractor can also update this from their profile.</p>
             </div>
           </div>
 
