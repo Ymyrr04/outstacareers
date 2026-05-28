@@ -109,15 +109,17 @@ Deno.serve(async (req) => {
         must_change_password: false,
         updated_at: new Date().toISOString(),
       })
+      .eq("user_id", userId);
 
     if (upErr) throw upErr;
 
     // Update client company name if changed
     if (companyName && current.client_id) {
-      await admin
+      const { error: cErr } = await admin
         .from("clients")
         .update({ company_name: companyName, updated_at: new Date().toISOString() })
         .eq("id", current.client_id);
+      if (cErr) throw cErr;
     }
 
 
