@@ -147,9 +147,8 @@ const ClientPortalSetup = () => {
     } finally {
       setSaving(false);
     }
-
-    }
   };
+
 
 
   if (loading) {
