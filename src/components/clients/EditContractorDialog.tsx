@@ -93,11 +93,11 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
     contact_number: '',
     emergency_number: '',
     timesheet_link: '',
-    is_replacement: false,
-    country: '',
-    source: '',
     timezone: '',
     notes: '',
+    work_days: [...DEFAULT_WORK_DAYS_ADMIN] as string[],
+  });
+
   });
 
 
