@@ -81,6 +81,7 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
     status: 'active',
     job_title: '',
     hourly_rate: '',
+    client_rate: '',
     hours_per_week: '',
     start_date: '',
     end_date: '',
