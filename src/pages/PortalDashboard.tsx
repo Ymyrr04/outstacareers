@@ -175,6 +175,7 @@ interface Timesheet {
   daily_hours: Record<string, { hours: number; time_in?: string; time_out?: string; reason?: string }> | null;
   client_approval_status?: string | null;
   client_flag_reason?: string | null;
+  client_reviewed_at?: string | null;
 }
 
 // Compute decimal hours between two "HH:MM" times. If time_out <= time_in, treat as overnight (+24h).
@@ -431,6 +432,7 @@ const PortalDashboard = () => {
   const [submitting, setSubmitting] = useState(false);
   const [info, setInfo] = useState<ContractorInfo | null>(null);
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
+  const [flagDialogTimesheet, setFlagDialogTimesheet] = useState<Timesheet | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [clientNotified, setClientNotified] = useState(false);
   const [invoiceMatches, setInvoiceMatches] = useState(false);
@@ -588,7 +590,7 @@ const PortalDashboard = () => {
     }
     const { data: ts } = await supabase
       .from('contractor_timesheets')
-      .select('id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, submitted_at, daily_hours, client_approval_status, client_flag_reason')
+      .select('id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, submitted_at, daily_hours, client_approval_status, client_flag_reason, client_reviewed_at')
       .eq('contractor_assignment_id', portal.contractor_assignment_id)
       .order('week_ending_date', { ascending: false });
 
@@ -1820,9 +1822,13 @@ const PortalDashboard = () => {
                                 <Pencil className="w-3.5 h-3.5 mr-1" />Edit
                               </Button>
                               {isFlagged && (
-                                <span className="inline-flex items-center rounded-full border border-amber-500 bg-amber-50 text-amber-700 px-2 py-0.5 text-[10px] font-medium">
-                                  Flagged — edit requested
-                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => setFlagDialogTimesheet(t)}
+                                  className="inline-flex items-center rounded-full border border-amber-500 bg-amber-50 text-amber-700 hover:bg-amber-100 px-2 py-0.5 text-[10px] font-medium cursor-pointer transition-colors"
+                                >
+                                  🚩 See comment
+                                </button>
                               )}
                             </div>
                           ) : (
@@ -1865,6 +1871,32 @@ const PortalDashboard = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      <Dialog open={!!flagDialogTimesheet} onOpenChange={(o) => { if (!o) setFlagDialogTimesheet(null); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Flag from client</DialogTitle>
+            {flagDialogTimesheet?.client_reviewed_at && (
+              <DialogDescription>
+                Flagged on {format(new Date(flagDialogTimesheet.client_reviewed_at), "MMMM d, yyyy 'at' h:mm a")}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-sm whitespace-pre-wrap text-amber-900">
+              {flagDialogTimesheet?.client_flag_reason?.trim()
+                ? flagDialogTimesheet.client_flag_reason
+                : 'The client flagged this submission but did not leave a comment.'}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Please edit your submission to address this comment, then resubmit.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setFlagDialogTimesheet(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <AlertDialog open={missingReasonOpen} onOpenChange={setMissingReasonOpen}>
         <AlertDialogContent>
