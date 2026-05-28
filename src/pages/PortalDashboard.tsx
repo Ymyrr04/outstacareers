@@ -1503,51 +1503,38 @@ const PortalDashboard = () => {
                                   {totalHours.toFixed(2)} <span className="text-muted-foreground font-normal">/ {expected.toFixed(0)} hrs</span>
                                 </span>
                               </div>
-                              <Progress value={pct} className="h-2" />
+                              <Progress value={expected > 0 ? Math.min(100, (regularHoursTotal / expected) * 100) : 0} className="h-2" />
+                              <p className="text-[11px] text-muted-foreground">Progress reflects regular hours toward your weekly target.</p>
                             </div>
                           )}
 
                           <dl className="space-y-2.5 text-sm">
                             <div className="flex items-center justify-between">
-                              <dt className="text-muted-foreground">Total hours</dt>
-                              <dd className="font-semibold">{totalHours.toFixed(2)} hrs</dd>
+                              <dt className="text-muted-foreground">Regular hours</dt>
+                              <dd className="font-semibold">{regularHoursTotal.toFixed(2)} hrs</dd>
                             </div>
-                            {expected > 0 && (
+                            <div className="flex items-center justify-between">
+                              <dt className="text-muted-foreground">OT hours</dt>
+                              <dd className={`font-semibold ${otHours > 0 ? 'text-amber-600' : ''}`}>{otHours.toFixed(2)} hrs</dd>
+                            </div>
+                            {missingHoursTotal > 0 && (
                               <div className="flex items-center justify-between">
-                                <dt className="text-muted-foreground">Expected</dt>
+                                <dt className="text-muted-foreground">Missing hours</dt>
+                                <dd className="font-semibold text-red-600">{missingHoursTotal.toFixed(2)} hrs</dd>
+                              </div>
+                            )}
+                            {expected > 0 && (
+                              <div className="flex items-center justify-between pt-2 border-t">
+                                <dt className="text-muted-foreground">Weekly target</dt>
                                 <dd className="font-medium">{expected.toFixed(2)} hrs</dd>
                               </div>
                             )}
-                            {showStatus && !hoursMatch && (
-                              <div className="flex items-center justify-between">
-                                <dt className="text-muted-foreground">
-                                  {hoursDiff < 0 ? 'Missing' : 'Over'}
-                                </dt>
-                                <dd className={`font-semibold ${hoursDiff < 0 ? 'text-amber-600' : 'text-amber-600'}`}>
-
-                                  {Math.abs(hoursDiff).toFixed(2)} hrs
-                                </dd>
-                              </div>
-                            )}
-                            {rate != null && (
-                              <div className="flex items-center justify-between">
-                                <dt className="text-muted-foreground">Hourly rate</dt>
-                                <dd className="font-medium">${rate.toFixed(2)}/hr</dd>
-                              </div>
-                            )}
-                            {incentiveAmt > 0 && (
-                              <div className="flex items-center justify-between">
-                                <dt className="text-muted-foreground">Incentives</dt>
-                                <dd className="font-medium">${incentiveAmt.toFixed(2)}</dd>
-                              </div>
-                            )}
-                            <div className="flex items-center justify-between pt-2 border-t">
-                              <dt className="font-medium">Invoice total</dt>
-                              <dd className="text-lg font-bold text-primary">
-                                {invoiceTotal != null ? `$${invoiceTotal.toFixed(2)}` : '—'}
-                              </dd>
+                            <div className="flex items-center justify-between">
+                              <dt className="font-medium">Total hours</dt>
+                              <dd className="text-base font-bold">{totalHours.toFixed(2)} hrs</dd>
                             </div>
                           </dl>
+
 
                           {showStatus && !hoursMatch && (
                             <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 dark:bg-amber-950/30 dark:text-amber-200 px-3 py-2 text-xs leading-relaxed">
