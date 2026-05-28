@@ -200,6 +200,17 @@ export const AddContractorDialog = ({ open, onOpenChange, clientId, onContractor
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="client_rate">Client Rate ($)</Label>
+              <Input
+                id="client_rate"
+                type="number"
+                step="0.01"
+                value={form.client_rate}
+                onChange={(e) => setForm({ ...form, client_rate: e.target.value })}
+                placeholder="0.00"
+              />
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="start_date">Start Date</Label>
               <Input
                 id="start_date"
