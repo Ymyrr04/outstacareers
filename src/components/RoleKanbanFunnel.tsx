@@ -1225,19 +1225,26 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="center" className="w-48">
-              {FUNNEL_STAGES.filter(s => s !== selectionStage).map(stage => (
+              {orderedFunnelStages.filter(s => s !== selectionStage).map(stage => {
+                const dotOverride = getStageColorOverride(stage);
+                return (
                 <DropdownMenuItem
                   key={stage}
                   disabled={stage === 'Hired'}
                   onClick={() => handleBulkMoveToStage(stage)}
                 >
-                  <span className={cn('w-2 h-2 rounded-full mr-2', STAGE_COLORS[stage]?.dot)} />
+                  <span
+                    className={cn('w-2 h-2 rounded-full mr-2', !dotOverride && STAGE_COLORS[stage]?.dot)}
+                    style={dotOverride ? { backgroundColor: dotOverride } : undefined}
+                  />
                   {getStageDisplayName(stage)}
                   {stage === 'Hired' && (
                     <span className="ml-auto text-[10px] text-muted-foreground">single only</span>
                   )}
                 </DropdownMenuItem>
-              ))}
+                );
+              })}
+
             </DropdownMenuContent>
           </DropdownMenu>
           <button
