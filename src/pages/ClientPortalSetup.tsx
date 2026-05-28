@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Check, Lock, User, Sparkles } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { getErrorMessage } from '@/lib/errors';
+
 
 type Step = 1 | 2 | 3;
 
@@ -100,16 +102,25 @@ const ClientPortalSetup = () => {
         .eq('user_id', userId);
       setStep(2);
     } catch (err: any) {
-      toast({ title: 'Could not set password', description: err.message, variant: 'destructive' });
+      toast({ title: 'Could not set password', description: await getErrorMessage(err), variant: 'destructive' });
+
     } finally {
       setSaving(false);
     }
   };
-
   const submitProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !primaryEmail.trim()) {
-      toast({ title: 'Please fill in all required fields', variant: 'destructive' });
+      toast({ title: 'Missing required fields', description: 'Please fill in your username and primary email.', variant: 'destructive' });
+      return;
+    }
+    const emailRe = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRe.test(primaryEmail.trim())) {
+      toast({ title: 'Invalid email', description: 'Please enter a valid email address (e.g. name@example.com).', variant: 'destructive' });
+      return;
+    }
+    if (secondaryEmail.trim() && secondaryEmail.trim().toLowerCase() === primaryEmail.trim().toLowerCase()) {
+      toast({ title: 'Emails must differ', description: 'Secondary email must be different from your primary email.', variant: 'destructive' });
       return;
     }
     setSaving(true);
@@ -124,14 +135,20 @@ const ClientPortalSetup = () => {
           company_name: companyName.trim() || null,
         },
       });
-      if (error || (data as any)?.error) throw new Error((data as any)?.error || error?.message);
+      if ((data as any)?.error) throw new Error((data as any).error);
+      if (error) throw error;
       setStep(3);
     } catch (err: any) {
-      toast({ title: 'Could not save profile', description: err.message, variant: 'destructive' });
+      toast({
+        title: 'Could not save profile',
+        description: await getErrorMessage(err, "We couldn't save your profile due to a server error. Please try again in a moment. If the problem persists, contact support."),
+        variant: 'destructive',
+      });
     } finally {
       setSaving(false);
     }
   };
+
 
 
   if (loading) {
