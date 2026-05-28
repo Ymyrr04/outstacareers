@@ -628,16 +628,27 @@ export const PLDashboard = () => {
         </div>
       </div>
 
-      <div className="flex flex-col gap-6">
-      <Card style={{ order: sectionOrder.indexOf('contractors') }}>
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <CardTitle className="text-base">Contractors ({filteredContractors.length})</CardTitle>
-          <div className="relative w-full sm:w-80">
+      <div className="flex flex-col gap-3">
+      <CollapsibleSection
+        storageKey="pl_section_contractors"
+        title="Contractors"
+        badge={<Badge variant="secondary" className="text-[10px] ml-1">{filteredContractors.length}</Badge>}
+        collapsedSummary={`${filteredContractors.length} active contractors`}
+        style={{ order: sectionOrder.indexOf('contractors') }}
+        rightSlot={
+          <div className="relative w-72">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search contractor, company, role..." value={contractorSearch} onChange={(e) => setContractorSearch(e.target.value)} className="pl-9 h-9" />
+            <Input
+              placeholder="Search contractor, company, role..."
+              value={contractorSearch}
+              onChange={(e) => setContractorSearch(e.target.value)}
+              className="pl-9 h-8 text-sm"
+            />
           </div>
-        </CardHeader>
-        <CardContent className="p-0">
+        }
+      >
+        <div className="p-0">
+          {/* contractors body */}
           {loading ? (
             <div className="p-12 text-center text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
           ) : filteredContractors.length === 0 ? (
