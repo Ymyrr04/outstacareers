@@ -827,8 +827,8 @@ export const PLDashboard = () => {
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </CollapsibleSection>
 
       <div style={{ order: sectionOrder.indexOf('leave') }}>
         <AdminLeaveApplications />
