@@ -1445,7 +1445,7 @@ const PortalDashboard = () => {
                             <Input
                               readOnly
                               value={hoursNum > 0 ? hoursNum.toFixed(2) : '0.00'}
-                              className={`h-12 w-[72px] text-center text-base font-semibold border-2 bg-muted/40 ${needsReason ? 'border-amber-500 text-amber-900 dark:text-amber-200' : 'border-blue-300 dark:border-blue-700'}`}
+                              className={`h-12 w-[72px] text-center text-base font-semibold border-2 bg-muted/40 ${isMissing ? 'border-red-500 text-red-900 dark:text-red-200' : isOTRow ? 'border-amber-500 text-amber-900 dark:text-amber-200' : 'border-blue-300 dark:border-blue-700'}`}
                             />
                           </div>
                           <div className="space-y-1 min-w-0">
