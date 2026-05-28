@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 import { AdminLeaveApplications } from '@/components/AdminLeaveApplications';
+import { CollapsibleSection } from '@/components/pl/CollapsibleSection';
 
 interface TimesheetRow {
   id: string;
@@ -568,37 +569,53 @@ export const PLDashboard = () => {
   const totalIncentivesAll = filtered.reduce((s, r) => s + Number(r.incentive_amount || 0), 0);
   const totalDepositAll = filtered.reduce((s, r) => s + computeDeposit(r).depositHours, 0);
 
-  return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-6 gap-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Portal Accounts</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold">{stats.portalUsers} <span className="text-sm text-muted-foreground font-normal">/ {stats.totalEligibleContractors} eligible</span></p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Submissions</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold">{filtered.length}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Total Hours</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold">{totalHoursAll.toFixed(2)}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Overtime Hours</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold">{totalOTAll.toFixed(2)}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Deposit Hours</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold text-amber-600">{totalDepositAll.toFixed(2)}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Bonus</CardTitle></CardHeader>
-          <CardContent><p className="text-2xl font-bold">${totalIncentivesAll.toFixed(2)}</p></CardContent>
-        </Card>
+  const StatTile = ({
+    label,
+    value,
+    sub,
+    accent,
+  }: {
+    label: string;
+    value: string | number;
+    sub?: string;
+    accent?: string;
+  }) => (
+    <div className="rounded-md border bg-card px-3 py-2 flex flex-col justify-center min-h-[60px]">
+      <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
+        {label}
       </div>
+      <div className={`text-lg font-bold leading-tight ${accent || ''}`}>
+        {value}
+        {sub && (
+          <span className="ml-1 text-[11px] font-normal text-muted-foreground">{sub}</span>
+        )}
+      </div>
+    </div>
+  );
 
-      <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center justify-between">
-        <Badge variant="outline" className="text-xs">Portal: <code className="ml-1">/portal/login</code> · Default password: <code className="ml-1">OutSta2026!</code></Badge>
+  return (
+    <div className="space-y-3">
+      <CollapsibleSection
+        storageKey="pl_section_stats"
+        title="Overview"
+        collapsedSummary={`${stats.portalUsers}/${stats.totalEligibleContractors} portal · ${filtered.length} submissions · ${totalHoursAll.toFixed(0)}h`}
+      >
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 p-3">
+          <StatTile label="Portal Accounts" value={stats.portalUsers} sub={`/ ${stats.totalEligibleContractors} eligible`} />
+          <StatTile label="Submissions" value={filtered.length} />
+          <StatTile label="Total Hours" value={totalHoursAll.toFixed(2)} />
+          <StatTile label="Overtime Hours" value={totalOTAll.toFixed(2)} />
+          <StatTile label="Deposit Hours" value={totalDepositAll.toFixed(2)} accent={totalDepositAll > 0 ? 'text-amber-600' : ''} />
+          <StatTile label="Bonus" value={`$${totalIncentivesAll.toFixed(2)}`} />
+        </div>
+      </CollapsibleSection>
+
+      <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center justify-between px-1">
+        <p className="text-xs text-muted-foreground">
+          Portal: <code className="text-foreground/70">/portal/login</code>
+          <span className="mx-1.5">·</span>
+          Default password: <code className="text-foreground/70">OutSta2026!</code>
+        </p>
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setReorderOpen(true)}>
             <Settings2 className="w-4 h-4 mr-2" />
@@ -611,16 +628,27 @@ export const PLDashboard = () => {
         </div>
       </div>
 
-      <div className="flex flex-col gap-6">
-      <Card style={{ order: sectionOrder.indexOf('contractors') }}>
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <CardTitle className="text-base">Contractors ({filteredContractors.length})</CardTitle>
-          <div className="relative w-full sm:w-80">
+      <div className="flex flex-col gap-3">
+      <CollapsibleSection
+        storageKey="pl_section_contractors"
+        title="Contractors"
+        badge={<Badge variant="secondary" className="text-[10px] ml-1">{filteredContractors.length}</Badge>}
+        collapsedSummary={`${filteredContractors.length} active contractors`}
+        style={{ order: sectionOrder.indexOf('contractors') }}
+        rightSlot={
+          <div className="relative w-72">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-            <Input placeholder="Search contractor, company, role..." value={contractorSearch} onChange={(e) => setContractorSearch(e.target.value)} className="pl-9 h-9" />
+            <Input
+              placeholder="Search contractor, company, role..."
+              value={contractorSearch}
+              onChange={(e) => setContractorSearch(e.target.value)}
+              className="pl-9 h-8 text-sm"
+            />
           </div>
-        </CardHeader>
-        <CardContent className="p-0">
+        }
+      >
+        <div className="p-0">
+          {/* contractors body */}
           {loading ? (
             <div className="p-12 text-center text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
           ) : filteredContractors.length === 0 ? (
@@ -636,21 +664,25 @@ export const PLDashboard = () => {
                   <TableHead>Latest Submission</TableHead>
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('hpw')}>Regular Work Hours<SortIcon active={contractorSort.key === 'hpw'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead className="text-right">Work Hours</TableHead>
-                  <TableHead className="text-right">OT</TableHead>
-                  <TableHead className="text-right">Bonus</TableHead>
-                  <TableHead className="text-right">Deposit</TableHead>
-                  <TableHead>Client Approval</TableHead>
+                  <TableHead className="text-right w-14">OT</TableHead>
+                  <TableHead className="text-right w-16">Bonus</TableHead>
+                  <TableHead className="text-right w-20">Deposit</TableHead>
+                  <TableHead className="w-28">Client Approval</TableHead>
                   <TableHead>Portal Account</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredContractors.map((c) => (
-                  <TableRow key={c.id}>
+                {filteredContractors.map((c, idx) => (
+                  <TableRow key={c.id} className={idx % 2 === 1 ? 'bg-muted/20' : ''}>
                     <TableCell>
                       <div className="font-medium">{c.applicant?.full_name || '—'}</div>
                       <div className="text-xs text-muted-foreground">{c.applicant?.email || '—'}</div>
                     </TableCell>
-                    <TableCell>{c.client?.company_name || '—'}</TableCell>
+                    <TableCell className="max-w-[160px]">
+                      <div className="truncate" title={c.client?.company_name || ''}>
+                        {c.client?.company_name || '—'}
+                      </div>
+                    </TableCell>
                     
                     <TableCell>
                       <Badge variant={c.status === 'active' ? 'default' : 'secondary'} className="capitalize">
@@ -799,22 +831,28 @@ export const PLDashboard = () => {
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </CollapsibleSection>
 
       <div style={{ order: sectionOrder.indexOf('leave') }}>
         <AdminLeaveApplications />
       </div>
 
       {filteredInternalContractors.length > 0 && (
-        <Card className="border-dashed" style={{ order: sectionOrder.indexOf('internalContractors') }}>
-          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <CardTitle className="text-base flex items-center gap-2">
-              Internal Team — OutSta ({filteredInternalContractors.length})
-              <Badge variant="outline" className="text-[10px]">Excluded from analytics</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
+        <CollapsibleSection
+          storageKey="pl_section_internal_contractors"
+          title="Internal Team — OutSta"
+          badge={
+            <>
+              <Badge variant="secondary" className="text-[10px] ml-1">{filteredInternalContractors.length}</Badge>
+              <Badge variant="outline" className="text-[10px] ml-1">Excluded from analytics</Badge>
+            </>
+          }
+          collapsedSummary={`${filteredInternalContractors.length} internal members`}
+          className="border-dashed"
+          style={{ order: sectionOrder.indexOf('internalContractors') }}
+        >
+          <div className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -986,42 +1024,46 @@ export const PLDashboard = () => {
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+          </div>
+        </CollapsibleSection>
       )}
 
-      <Card style={{ order: sectionOrder.indexOf('timesheets') }}>
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
-            <div className="flex items-center gap-2">
-              <Input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                className="h-9 w-[150px]"
-                aria-label="From date"
-              />
-              <span className="text-muted-foreground text-sm">to</span>
-              <Input
-                type="date"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                className="h-9 w-[150px]"
-                aria-label="To date"
-              />
-              {(dateFrom || dateTo) && (
-                <Button variant="ghost" size="sm" className="h-9" onClick={() => { setDateFrom(''); setDateTo(''); }}>
-                  Clear
-                </Button>
-              )}
-            </div>
-            <div className="relative w-full sm:w-72">
+      <CollapsibleSection
+        storageKey="pl_section_timesheets"
+        title="Timesheet Submissions"
+        badge={<Badge variant="secondary" className="text-[10px] ml-1">{filtered.length}</Badge>}
+        collapsedSummary={`${filtered.length} submissions · ${totalHoursAll.toFixed(2)}h`}
+        style={{ order: sectionOrder.indexOf('timesheets') }}
+        rightSlot={
+          <div className="flex items-center gap-2">
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="h-8 w-[140px] text-sm"
+              aria-label="From date"
+            />
+            <span className="text-muted-foreground text-xs">to</span>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="h-8 w-[140px] text-sm"
+              aria-label="To date"
+            />
+            {(dateFrom || dateTo) && (
+              <Button variant="ghost" size="sm" className="h-8" onClick={() => { setDateFrom(''); setDateTo(''); }}>
+                Clear
+              </Button>
+            )}
+            <div className="relative w-60">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
-              <Input placeholder="Search submissions..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-9" />
+              <Input placeholder="Search submissions..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 text-sm" />
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="p-0">
+        }
+      >
+        <div className="p-0">
           {loading ? (
             <div className="p-12 text-center text-muted-foreground"><Loader2 className="w-6 h-6 animate-spin mx-auto" /></div>
           ) : filtered.length === 0 ? (
@@ -1106,18 +1148,24 @@ export const PLDashboard = () => {
               </TableBody>
             </Table>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </CollapsibleSection>
 
       {filteredInternal.length > 0 && (
-        <Card className="border-dashed" style={{ order: sectionOrder.indexOf('internalTimesheets') }}>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              Internal Team Submissions — OutSta ({filteredInternal.length})
-              <Badge variant="outline" className="text-[10px]">Excluded from analytics</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-0">
+        <CollapsibleSection
+          storageKey="pl_section_internal_timesheets"
+          title="Internal Team Submissions — OutSta"
+          badge={
+            <>
+              <Badge variant="secondary" className="text-[10px] ml-1">{filteredInternal.length}</Badge>
+              <Badge variant="outline" className="text-[10px] ml-1">Excluded from analytics</Badge>
+            </>
+          }
+          collapsedSummary={`${filteredInternal.length} internal submissions`}
+          className="border-dashed"
+          style={{ order: sectionOrder.indexOf('internalTimesheets') }}
+        >
+          <div className="p-0">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -1175,8 +1223,8 @@ export const PLDashboard = () => {
                 ))}
               </TableBody>
             </Table>
-          </CardContent>
-        </Card>
+          </div>
+        </CollapsibleSection>
       )}
       </div>
 
