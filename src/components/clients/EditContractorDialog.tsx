@@ -92,7 +92,9 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
     is_replacement: false,
     country: '',
     source: '',
+    timezone: '',
     notes: '',
+  });
   });
 
   // Fetch clients list
