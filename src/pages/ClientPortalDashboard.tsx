@@ -394,7 +394,8 @@ const ClientPortalDashboard = () => {
                 </div>
               )}
             </CardContent>
-          </Card>
+            </Card>
+          </div>
         )}
       </main>
 
