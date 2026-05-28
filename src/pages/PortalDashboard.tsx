@@ -1245,7 +1245,6 @@ const PortalDashboard = () => {
                 </div>
                 <div className="space-y-2 md:col-span-2">
                   <Label>Work days <span className="text-destructive">*</span></Label>
-                  <p className="text-xs text-muted-foreground">Select the days you are expected to work each week.</p>
                   <div className="flex flex-wrap gap-2">
                     {WORK_DAY_SHORT.map((d) => {
                       const on = profileForm.work_days.includes(d);
@@ -1267,6 +1266,9 @@ const PortalDashboard = () => {
                       );
                     })}
                   </div>
+                  <p className="text-xs text-muted-foreground">
+                    Select the days you are expected to work each week. This determines when undertime and overtime are tracked.
+                  </p>
                 </div>
               </div>
             )}
