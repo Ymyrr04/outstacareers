@@ -55,9 +55,9 @@ const STAGE_COLORS: Record<string, { bg: string; header: string; dot: string }> 
   'Pitch': { bg: 'bg-fuchsia-50 dark:bg-fuchsia-950/20', header: 'bg-fuchsia-500', dot: 'bg-fuchsia-400' },
   'Client Interview': { bg: 'bg-purple-50 dark:bg-purple-950/20', header: 'bg-purple-500', dot: 'bg-purple-400' },
   'Hired': { bg: 'bg-emerald-50 dark:bg-emerald-950/20', header: 'bg-emerald-500', dot: 'bg-emerald-400' },
-  'Bench': { bg: 'bg-amber-50 dark:bg-amber-950/20', header: 'bg-amber-500', dot: 'bg-amber-400' },
+  'Bench': { bg: 'bg-teal-50 dark:bg-teal-950/20', header: 'bg-teal-500', dot: 'bg-teal-400' },
   'Reject': { bg: 'bg-red-50 dark:bg-red-950/20', header: 'bg-red-400', dot: 'bg-red-400' },
-  'Talent Pool': { bg: 'bg-teal-50 dark:bg-teal-950/20', header: 'bg-teal-500', dot: 'bg-teal-400' },
+  'Talent Pool': { bg: 'bg-amber-50 dark:bg-amber-950/20', header: 'bg-amber-500', dot: 'bg-amber-400' },
 };
 
 const defaultStageDisplayName = (stage: string): string => {
