@@ -8,6 +8,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Check, Lock, User, Sparkles } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { getErrorMessage } from '@/lib/errors';
+
 
 type Step = 1 | 2 | 3;
 
