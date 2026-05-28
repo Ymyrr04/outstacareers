@@ -374,7 +374,7 @@ const ClientPortalDashboard = () => {
                             <div className="text-xs text-muted-foreground">{r.contractor_email}</div>
                           </TableCell>
                           <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
-                          <TableCell className="text-right">{Number(r.total_hours).toFixed(2)}</TableCell>
+                          <TableCell className="text-right">{fmtHours(r.total_hours)}</TableCell>
                           <TableCell className="text-right font-medium">
                             {r.client_rate == null ? <span className="text-muted-foreground">—</span> : fmtMoney(r.invoice_total)}
                           </TableCell>
