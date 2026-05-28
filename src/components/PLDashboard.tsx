@@ -1106,6 +1106,20 @@ export const PLDashboard = () => {
                 Clear
               </Button>
             )}
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="h-8 w-[170px] text-xs">
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="client:pending">Client: Pending</SelectItem>
+                <SelectItem value="client:approved">Client: Approved</SelectItem>
+                <SelectItem value="client:flagged">Client: Flagged</SelectItem>
+                <SelectItem value="outsta:pending">OutSta: Pending</SelectItem>
+                <SelectItem value="outsta:approved">OutSta: Approved</SelectItem>
+                <SelectItem value="outsta:flagged">OutSta: Flagged</SelectItem>
+              </SelectContent>
+            </Select>
             <div className="relative w-60">
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input placeholder="Search submissions..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 text-sm" />
