@@ -36,7 +36,6 @@ const Index = () => {
   if (isWorkforceDomain) {
     return <ClientPortalLogin />;
   }
-  }
 
   return (
     <div className="min-h-screen">
