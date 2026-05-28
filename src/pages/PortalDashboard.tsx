@@ -519,20 +519,16 @@ const PortalDashboard = () => {
     if (!portal) {
       await supabase.auth.signOut();
       navigate('/portal/login');
-      return;
-    }
-    if (portal.must_change_password) {
-      navigate('/portal/change-password');
-      return;
-    }
-
     const { data: assignment } = await supabase
       .from('contractor_assignments')
-      .select('id, applicant_id, job_title, hourly_rate, hours_per_week, regular_work_shift, contact_number, emergency_number, country, applicant:applicants_prescreen(full_name, email, phone, whatsapp, location), client:clients(company_name)')
+      .select('id, applicant_id, job_title, hourly_rate, hours_per_week, regular_work_shift, contact_number, emergency_number, country, work_days, applicant:applicants_prescreen(full_name, email, phone, whatsapp, location), client:clients(company_name)')
       .eq('id', portal.contractor_assignment_id)
       .maybeSingle();
 
     const applicant = (assignment?.applicant as any) || {};
+    const wd = Array.isArray((assignment as any)?.work_days) && (assignment as any).work_days.length > 0
+      ? ((assignment as any).work_days as string[])
+      : [...DEFAULT_WORK_DAYS];
     const nextInfo: ContractorInfo = {
       contractor_assignment_id: portal.contractor_assignment_id,
       applicant_id: assignment?.applicant_id || '',
@@ -549,6 +545,7 @@ const PortalDashboard = () => {
       phone: applicant.phone || null,
       whatsapp: applicant.whatsapp || null,
       location: applicant.location || null,
+      work_days: wd,
     };
     setInfo(nextInfo);
     setProfileForm({
@@ -556,6 +553,15 @@ const PortalDashboard = () => {
       phone: nextInfo.phone || '',
       whatsapp: nextInfo.whatsapp || '',
       location: nextInfo.location || '',
+      country: nextInfo.country || '',
+      contact_number: nextInfo.contact_number || '',
+      emergency_number: nextInfo.emergency_number || '',
+      hours_per_week: nextInfo.hours_per_week != null ? String(nextInfo.hours_per_week) : '',
+      hourly_rate: nextInfo.hourly_rate != null ? String(nextInfo.hourly_rate) : '',
+      regular_work_shift: nextInfo.regular_work_shift || '9:00 AM – 6:00 PM EST',
+      work_days: [...nextInfo.work_days],
+    });
+
       country: nextInfo.country || '',
       contact_number: nextInfo.contact_number || '',
       emergency_number: nextInfo.emergency_number || '',
