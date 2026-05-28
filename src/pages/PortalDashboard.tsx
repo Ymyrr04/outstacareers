@@ -169,7 +169,6 @@ interface Timesheet {
   client_approval_status?: string | null;
   client_flag_reason?: string | null;
 }
-}
 
 // Compute decimal hours between two "HH:MM" times. If time_out <= time_in, treat as overnight (+24h).
 const computeHours = (timeIn: string, timeOut: string): number => {
