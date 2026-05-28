@@ -34,6 +34,7 @@ export const AddContractorDialog = ({ open, onOpenChange, clientId, onContractor
     applicant_id: '',
     job_title: '',
     hourly_rate: '',
+    client_rate: '',
     start_date: '',
     status: 'active',
     notes: '',
