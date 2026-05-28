@@ -34,6 +34,7 @@ interface ContractorData {
   applicant_id: string;
   job_title: string | null;
   hourly_rate: number | null;
+  client_rate: number | null;
   hours_per_week: number | null;
   start_date: string | null;
   end_date: string | null;
