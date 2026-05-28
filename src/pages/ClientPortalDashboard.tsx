@@ -21,6 +21,7 @@ interface Assignment {
   job_title: string | null;
   hours_per_week: number | null;
   client_rate: number | null;
+  timezone: string | null;
   applicant: { full_name: string; email: string } | null;
 }
 
@@ -46,8 +47,28 @@ type RowView = Timesheet & {
   contractor_email: string;
   client_rate: number | null;
   hours_per_week: number | null;
+  timezone: string | null;
   invoice_total: number;
 };
+
+// Convert "HH:MM" (24h) to "h:MM AM/PM"
+const to12h = (t?: string | null) => {
+  if (!t) return '—';
+  const m = /^(\d{1,2}):(\d{2})/.exec(t);
+  if (!m) return t;
+  let h = parseInt(m[1], 10);
+  const mm = m[2];
+  const period = h >= 12 ? 'PM' : 'AM';
+  h = h % 12;
+  if (h === 0) h = 12;
+  return `${h}:${mm} ${period}`;
+};
+
+const formatTime = (t: string | null | undefined, fmt: '12h' | '24h') => {
+  if (!t) return '—';
+  return fmt === '12h' ? to12h(t) : t;
+};
+
 
 const statusBadge = (status: string) => {
   if (status === 'approved') return <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Approved</Badge>;
