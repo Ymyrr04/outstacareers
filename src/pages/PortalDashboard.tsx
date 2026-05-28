@@ -568,7 +568,7 @@ const PortalDashboard = () => {
       setProfileOpen(true);
     }
 
-    const { data: ts } = await supabase
+      .select('id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, submitted_at, daily_hours, client_approval_status, client_flag_reason')
       .from('contractor_timesheets')
       .select('id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, submitted_at, daily_hours')
       .eq('contractor_assignment_id', portal.contractor_assignment_id)
