@@ -57,6 +57,9 @@ interface ContractorRow {
     depositHours: number;
     isDeposit: boolean;
     weekIndex: number | null;
+    client_approval_status: string;
+    client_flag_reason: string | null;
+    client_reviewed_at: string | null;
   } | null;
 }
 
@@ -134,7 +137,7 @@ export const PLDashboard = () => {
       supabase
         .from('contractor_timesheets')
         .select(`
-          id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, submitted_at, daily_hours,
+          id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, submitted_at, daily_hours, client_approval_status, client_flag_reason, client_reviewed_at,
           contractor:contractor_assignments(
             job_title,
             start_date,
@@ -199,6 +202,9 @@ export const PLDashboard = () => {
           depositHours: dep.depositHours,
           isDeposit: dep.isDeposit,
           weekIndex: dep.weekIndex,
+          client_approval_status: ts.client_approval_status || 'pending',
+          client_flag_reason: ts.client_flag_reason ?? null,
+          client_reviewed_at: ts.client_reviewed_at ?? null,
         };
       }
       return {
