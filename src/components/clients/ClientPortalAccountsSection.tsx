@@ -39,7 +39,7 @@ export function ClientPortalAccountsSection({ clientId }: { clientId: string }) 
     setLoading(true);
     const { data, error } = await supabase
       .from('client_portal_users')
-      .select('id, username, email, must_change_password, created_at')
+      .select('id, username, email, must_change_password, created_at, full_name, primary_email, secondary_email, phone, is_first_login')
       .eq('client_id', clientId)
       .order('created_at', { ascending: false });
     if (error) toast({ title: 'Failed to load accounts', description: error.message, variant: 'destructive' });
