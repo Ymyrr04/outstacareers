@@ -575,6 +575,7 @@ const PortalDashboard = () => {
       whatsapp: applicant.whatsapp || null,
       location: applicant.location || null,
       work_days: wd,
+      sunday_hours_excluded: Boolean((assignment as any).sunday_hours_excluded),
     };
     setInfo(nextInfo);
     setProfileForm({
