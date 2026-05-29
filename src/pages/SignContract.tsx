@@ -278,7 +278,6 @@ function renderFieldOverlay(
           <SignaturePad
             value={v.signature_data_url || null}
             onChange={(d) => set({ signature_data_url: d || undefined })}
-            signerName={f.field_type === "initials" ? signerName.split(" ").map(p => p[0]).join("") : signerName}
           />
         </PopoverContent>
       </Popover>
