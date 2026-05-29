@@ -477,6 +477,7 @@ const PortalDashboard = () => {
     full_name: '', phone: '', whatsapp: '', location: '', country: '',
     contact_number: '', emergency_number: '', hours_per_week: '',
     hourly_rate: '', regular_work_shift: '', work_days: [],
+    break_duration: '', break_unit: 'minutes', break_is_paid: false, break_enabled: false,
   };
 
 
