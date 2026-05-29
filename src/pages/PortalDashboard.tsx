@@ -853,8 +853,8 @@ const PortalDashboard = () => {
 
   const hoursDiff = useMemo(() => {
     if (expectedHours == null) return 0;
-    return Number((totalHours - expectedHours).toFixed(2));
-  }, [totalHours, expectedHours]);
+    return Number((billableHours - expectedHours).toFixed(2));
+  }, [billableHours, expectedHours]);
 
   // Tolerance: anything within ±0.25h is considered matching
   const hoursMatch = expectedHours == null ? true : Math.abs(hoursDiff) <= 0.25;
