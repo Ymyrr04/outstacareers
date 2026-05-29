@@ -388,11 +388,9 @@ const ClientPortalDashboard = () => {
                             </TableCell>
                             <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
                             <TableCell className="text-right">
-                              <div>{fmtHours(r.total_hours)}</div>
-                              {sundayHrs > 0 && (
-                                <div className="text-xs text-muted-foreground">Sunday {fmtHours(sundayHrs)}</div>
-                              )}
+                              <div>{fmtHours((Number(r.total_hours) || 0) + sundayHrs)}</div>
                             </TableCell>
+
                             <TableCell>{statusBadge(r.client_approval_status)}</TableCell>
                             <TableCell className="text-right">
                               <Button size="sm" variant="outline" onClick={() => setSelected(r)}>
