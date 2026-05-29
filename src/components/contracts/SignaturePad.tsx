@@ -1,7 +1,5 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 interface SignaturePadProps {
   value?: string | null;
@@ -9,19 +7,10 @@ interface SignaturePadProps {
   signerName: string;
 }
 
-// Captures signature as PNG data URL. Two modes: draw or type.
-export const SignaturePad = ({ value, onChange, signerName }: SignaturePadProps) => {
+// Captures signature as PNG data URL. Draw-only mode.
+export const SignaturePad = ({ value, onChange }: SignaturePadProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [drawing, setDrawing] = useState(false);
-  const [typed, setTyped] = useState(signerName);
-  const [mode, setMode] = useState<"draw" | "type">("type");
-
-  useEffect(() => {
-    if (mode === "type") {
-      renderTyped(typed);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [mode, typed]);
 
   const getCtx = () => {
     const c = canvasRef.current;
@@ -50,7 +39,6 @@ export const SignaturePad = ({ value, onChange, signerName }: SignaturePadProps)
   };
 
   const start = (e: React.PointerEvent) => {
-    if (mode !== "draw") return;
     setDrawing(true);
     const ctx = getCtx();
     const p = pointerPos(e);
@@ -58,7 +46,7 @@ export const SignaturePad = ({ value, onChange, signerName }: SignaturePadProps)
     ctx?.moveTo(p.x, p.y);
   };
   const move = (e: React.PointerEvent) => {
-    if (!drawing || mode !== "draw") return;
+    if (!drawing) return;
     const ctx = getCtx();
     const p = pointerPos(e);
     ctx?.lineTo(p.x, p.y);
@@ -71,33 +59,9 @@ export const SignaturePad = ({ value, onChange, signerName }: SignaturePadProps)
     if (c) onChange(c.toDataURL("image/png"));
   };
 
-  const renderTyped = (txt: string) => {
-    const c = canvasRef.current;
-    if (!c) return;
-    const ctx = c.getContext("2d");
-    if (!ctx) return;
-    ctx.clearRect(0, 0, c.width, c.height);
-    ctx.fillStyle = "#0a0a0a";
-    ctx.font = "italic 600 56px 'Dancing Script', 'Brush Script MT', cursive";
-    ctx.textBaseline = "middle";
-    ctx.fillText(txt || "", 16, c.height / 2);
-    onChange(c.toDataURL("image/png"));
-  };
-
   return (
     <div className="space-y-2">
-      <Tabs value={mode} onValueChange={(v) => setMode(v as "draw" | "type")}>
-        <TabsList>
-          <TabsTrigger value="type">Type</TabsTrigger>
-          <TabsTrigger value="draw">Draw</TabsTrigger>
-        </TabsList>
-        <TabsContent value="type" className="pt-2">
-          <Input value={typed} onChange={(e) => setTyped(e.target.value)} placeholder="Type your full name" />
-        </TabsContent>
-        <TabsContent value="draw" className="pt-2">
-          <p className="text-xs text-muted-foreground">Draw your signature in the box below</p>
-        </TabsContent>
-      </Tabs>
+      <p className="text-xs text-muted-foreground">Draw your signature in the box below</p>
       <div className="border rounded-md bg-white">
         <canvas
           ref={canvasRef}
