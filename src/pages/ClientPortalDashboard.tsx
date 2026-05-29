@@ -23,8 +23,10 @@ interface Assignment {
   timezone: string | null;
   start_date: string | null;
   status: string | null;
+  sunday_hours_excluded: boolean | null;
   applicant: { full_name: string; email: string } | null;
 }
+
 
 interface Timesheet {
   id: string;
@@ -48,7 +50,9 @@ type RowView = Timesheet & {
   contractor_email: string;
   hours_per_week: number | null;
   timezone: string | null;
+  sunday_hours_excluded: boolean;
 };
+
 
 // Convert "HH:MM" (24h) to "h:MM AM/PM"
 const to12h = (t?: string | null) => {
@@ -146,10 +150,11 @@ const ClientPortalDashboard = () => {
     // Client portal must NEVER expose any pay or rate fields (hourly_rate, client_rate, invoice_total, incentives).
     const { data: ca, error: caErr } = await supabase
       .from('contractor_assignments')
-      .select('id, job_title, hours_per_week, timezone, start_date, status, applicant:applicants_prescreen(full_name, email)')
+      .select('id, job_title, hours_per_week, timezone, start_date, status, sunday_hours_excluded, applicant:applicants_prescreen(full_name, email)')
       .eq('client_id', cid);
     if (caErr) console.error(caErr);
     setAssignments((ca || []) as any);
+
 
     const ids = (ca || []).map((c: any) => c.id);
     if (ids.length === 0) { setTimesheets([]); return; }
@@ -173,9 +178,11 @@ const ClientPortalDashboard = () => {
         contractor_email: a?.applicant?.email || '',
         hours_per_week: a?.hours_per_week ?? null,
         timezone: (a as any)?.timezone ?? null,
+        sunday_hours_excluded: !!(a as any)?.sunday_hours_excluded,
       };
     });
   }, [timesheets, assignments]);
+
 
   const filteredRows = useMemo(() => {
     return rows.filter(r => {
@@ -500,8 +507,18 @@ const TimesheetDetail = ({
   actionLoading: boolean;
 }) => {
   const expected = row.hours_per_week ?? 40;
-  const pct = Math.min(100, Math.round((Number(row.total_hours) / expected) * 100));
   const dailyEntries = row.daily_hours ? Object.entries(row.daily_hours).sort(([a], [b]) => a.localeCompare(b)) : [];
+  const excludeSunday = row.sunday_hours_excluded;
+  const sundayHours = excludeSunday
+    ? dailyEntries.reduce((s, [date, val]: [string, any]) => {
+        const isSunday = new Date(`${date}T00:00:00`).getDay() === 0;
+        return s + (isSunday ? (parseFloat(val?.hours) || 0) : 0);
+      }, 0)
+    : 0;
+  const totalAll = Number(row.total_hours) || 0;
+  const billable = Math.max(0, totalAll - sundayHours);
+  const pct = Math.min(100, Math.round((billable / expected) * 100));
+
 
   return (
     <div className="space-y-4">
@@ -589,10 +606,17 @@ const TimesheetDetail = ({
             <div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Hours logged</span>
-                <span className="font-medium">{fmtHours(row.total_hours)} / {expected}</span>
+                <span className="font-medium">{fmtHours(totalAll)} / {expected}</span>
               </div>
               <Progress value={pct} className="mt-2" />
+              {excludeSunday && sundayHours > 0 && (
+                <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
+                  <span>Sunday hours (not billed)</span>
+                  <span>{fmtHours(sundayHours)}</span>
+                </div>
+              )}
             </div>
+
             <div className="space-y-2 pt-2">
               <Button
                 className="w-full bg-green-600 hover:bg-green-700"
