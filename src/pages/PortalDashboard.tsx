@@ -1849,11 +1849,11 @@ const PortalDashboard = () => {
                               <div className="flex items-baseline justify-between text-sm">
                                 <span className="text-muted-foreground">Hours logged</span>
                                 <span className="font-semibold">
-                                  {totalHours.toFixed(2)} <span className="text-muted-foreground font-normal">/ {expected.toFixed(0)} hrs</span>
+                                  {billableHours.toFixed(2)} <span className="text-muted-foreground font-normal">/ {expected.toFixed(0)} hrs</span>
                                 </span>
                               </div>
                               <Progress value={expected > 0 ? Math.min(100, (regularHoursTotal / expected) * 100) : 0} className="h-2" />
-                              <p className="text-[11px] text-muted-foreground">Progress reflects regular hours toward your weekly target.</p>
+                              <p className="text-[11px] text-muted-foreground">Progress reflects billable regular hours toward your weekly target.</p>
                             </div>
                           )}
 
@@ -1866,6 +1866,12 @@ const PortalDashboard = () => {
                               <dt className="text-muted-foreground">OT hours</dt>
                               <dd className={`font-semibold ${otHours > 0 ? 'text-amber-600' : ''}`}>{otHours.toFixed(2)} hrs</dd>
                             </div>
+                            {excludedHours > 0 && (
+                              <div className="flex items-center justify-between">
+                                <dt className="text-muted-foreground">Sunday hours <span className="text-[11px]">(not billed)</span></dt>
+                                <dd className="font-semibold text-muted-foreground">{excludedHours.toFixed(2)} hrs</dd>
+                              </div>
+                            )}
                             {missingHoursTotal > 0 && (
                               <div className="flex items-center justify-between">
                                 <dt className="text-muted-foreground">Missing hours</dt>
@@ -1883,6 +1889,7 @@ const PortalDashboard = () => {
                               <dd className="text-base font-bold">{totalHours.toFixed(2)} hrs</dd>
                             </div>
                           </dl>
+
 
                           {(rate != null || incentiveAmt > 0) && (
                             <dl className="space-y-2.5 text-sm pt-2 border-t">
