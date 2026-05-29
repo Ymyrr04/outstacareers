@@ -553,13 +553,31 @@ const PortalDashboard = () => {
     return new Date(k + 'T00:00:00').getDay() === 0;
   };
 
+  // Total hours INCLUDES Sunday hours (so the contractor sees their full effort).
+  // Billing/invoice math uses `billableHours` below, which excludes Sunday when
+  // the sunday-exclusion exception is enabled.
   const totalHours = useMemo(() => {
     return dateKeys.reduce((sum, k) => {
-      if (isExcludedDay(k)) return sum;
+      const v = parseFloat(days[k]?.hours || '0');
+      return sum + (isNaN(v) ? 0 : v);
+    }, 0);
+  }, [days, dateKeys]);
+
+  // Sum of hours logged on excluded (Sunday) days — shown for transparency,
+  // but NOT billed and NOT counted as OT.
+  const excludedHours = useMemo(() => {
+    return dateKeys.reduce((sum, k) => {
+      if (!isExcludedDay(k)) return sum;
       const v = parseFloat(days[k]?.hours || '0');
       return sum + (isNaN(v) ? 0 : v);
     }, 0);
   }, [days, dateKeys, info?.sunday_hours_excluded]);
+
+  // Billable hours = total minus the silently-excluded (Sunday) hours.
+  const billableHours = useMemo(
+    () => Number((totalHours - excludedHours).toFixed(2)),
+    [totalHours, excludedHours]
+  );
 
 
   const loadAll = async () => {
@@ -835,8 +853,8 @@ const PortalDashboard = () => {
 
   const hoursDiff = useMemo(() => {
     if (expectedHours == null) return 0;
-    return Number((totalHours - expectedHours).toFixed(2));
-  }, [totalHours, expectedHours]);
+    return Number((billableHours - expectedHours).toFixed(2));
+  }, [billableHours, expectedHours]);
 
   // Tolerance: anything within ±0.25h is considered matching
   const hoursMatch = expectedHours == null ? true : Math.abs(hoursDiff) <= 0.25;
@@ -961,7 +979,7 @@ const PortalDashboard = () => {
       const { error } = await supabase.from('contractor_timesheets').upsert({
         contractor_assignment_id: info.contractor_assignment_id,
         week_ending_date: weekEnding,
-        total_hours: totalHours,
+        total_hours: billableHours,
         overtime_hours: otHours,
         incentive_amount: ot,
         notes: combinedNotes || null,
@@ -1801,10 +1819,10 @@ const PortalDashboard = () => {
                 <aside className="lg:sticky lg:top-6 self-start">
                   {(() => {
                     const expected = expectedHours ?? 0;
-                    const pct = expected > 0 ? Math.min(100, (totalHours / expected) * 100) : 0;
+                    const pct = expected > 0 ? Math.min(100, (billableHours / expected) * 100) : 0;
                     const incentiveAmt = parseFloat(overtimeHours || '0') || 0;
                     const rate = info?.hourly_rate != null ? Number(info.hourly_rate) : null;
-                    const invoiceTotal = rate != null ? totalHours * rate + incentiveAmt : null;
+                    const invoiceTotal = rate != null ? billableHours * rate + incentiveAmt : null;
                     const showStatus = expectedHours != null && dateKeys.length > 0;
                     return (
                       <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
@@ -1831,11 +1849,11 @@ const PortalDashboard = () => {
                               <div className="flex items-baseline justify-between text-sm">
                                 <span className="text-muted-foreground">Hours logged</span>
                                 <span className="font-semibold">
-                                  {totalHours.toFixed(2)} <span className="text-muted-foreground font-normal">/ {expected.toFixed(0)} hrs</span>
+                                  {billableHours.toFixed(2)} <span className="text-muted-foreground font-normal">/ {expected.toFixed(0)} hrs</span>
                                 </span>
                               </div>
                               <Progress value={expected > 0 ? Math.min(100, (regularHoursTotal / expected) * 100) : 0} className="h-2" />
-                              <p className="text-[11px] text-muted-foreground">Progress reflects regular hours toward your weekly target.</p>
+                              <p className="text-[11px] text-muted-foreground">Progress reflects billable regular hours toward your weekly target.</p>
                             </div>
                           )}
 
@@ -1848,6 +1866,12 @@ const PortalDashboard = () => {
                               <dt className="text-muted-foreground">OT hours</dt>
                               <dd className={`font-semibold ${otHours > 0 ? 'text-amber-600' : ''}`}>{otHours.toFixed(2)} hrs</dd>
                             </div>
+                            {excludedHours > 0 && (
+                              <div className="flex items-center justify-between">
+                                <dt className="text-muted-foreground">Sunday hours <span className="text-[11px]">(not billed)</span></dt>
+                                <dd className="font-semibold text-muted-foreground">{excludedHours.toFixed(2)} hrs</dd>
+                              </div>
+                            )}
                             {missingHoursTotal > 0 && (
                               <div className="flex items-center justify-between">
                                 <dt className="text-muted-foreground">Missing hours</dt>
@@ -1865,6 +1889,7 @@ const PortalDashboard = () => {
                               <dd className="text-base font-bold">{totalHours.toFixed(2)} hrs</dd>
                             </div>
                           </dl>
+
 
                           {(rate != null || incentiveAmt > 0) && (
                             <dl className="space-y-2.5 text-sm pt-2 border-t">
@@ -2210,9 +2235,9 @@ const PortalDashboard = () => {
               <div className="space-y-4 text-lg">
                 <div className="text-lg">
                   Week of <strong>{weekStart && format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – {weekEnding && format(new Date(weekEnding + 'T00:00:00'), 'MMM d, yyyy')}</strong> ·{' '}
-                  <strong>{totalHours.toFixed(2)}</strong> total hours{otHours > 0 && <> (incl. <strong>{otHours.toFixed(2)}</strong> OT hrs)</>} · <strong>${parseFloat(overtimeHours || '0').toFixed(2)}</strong> incentives.
+                  <strong>{totalHours.toFixed(2)}</strong> total hours{excludedHours > 0 && <> (incl. <strong>{excludedHours.toFixed(2)}</strong> Sunday hrs not billed)</>}{otHours > 0 && <> · <strong>{otHours.toFixed(2)}</strong> OT hrs</>} · <strong>${parseFloat(overtimeHours || '0').toFixed(2)}</strong> incentives.
                   {info?.hourly_rate != null && (
-                    <> · Invoice total <strong className="text-primary">${(totalHours * Number(info.hourly_rate) + (parseFloat(overtimeHours || '0') || 0)).toFixed(2)}</strong></>
+                    <> · Invoice total <strong className="text-primary">${(billableHours * Number(info.hourly_rate) + (parseFloat(overtimeHours || '0') || 0)).toFixed(2)}</strong></>
                   )}
                 </div>
                 {hasPendingApproval && (
@@ -2239,7 +2264,7 @@ const PortalDashboard = () => {
                     />
                     <span className="text-base">
                       The total amount{info?.hourly_rate != null && (
-                        <> (<strong className="text-primary">${(totalHours * Number(info.hourly_rate) + (parseFloat(overtimeHours || '0') || 0)).toFixed(2)}</strong>)</>
+                        <> (<strong className="text-primary">${(billableHours * Number(info.hourly_rate) + (parseFloat(overtimeHours || '0') || 0)).toFixed(2)}</strong>)</>
                       )} <strong>matches my Payoneer invoice</strong> request.
                     </span>
                   </label>
