@@ -179,8 +179,49 @@ export function ClientPortalAccountsSection({ clientId }: { clientId: string }) 
                     </button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
+                    {a.full_name ? <span className="font-medium text-foreground">{a.full_name} · </span> : null}
                     Created {format(new Date(a.created_at), 'MMM d, yyyy')}
+                    {a.is_first_login === false && <span className="ml-2 text-[10px] uppercase tracking-wide bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">Profile complete</span>}
                   </p>
+
+                  <button
+                    type="button"
+                    onClick={() => setExpanded((s) => ({ ...s, [a.id]: !s[a.id] }))}
+                    className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    {expanded[a.id] ? <><ChevronUp className="w-3 h-3" /> Hide profile details</> : <><ChevronDown className="w-3 h-3" /> View profile details</>}
+                  </button>
+
+                  {expanded[a.id] && (
+                    <div className="mt-2 rounded-md border bg-muted/30 p-3 space-y-1.5 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+                        <div>
+                          <div className="text-muted-foreground">Full name</div>
+                          <div className="font-medium">{a.full_name || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Username</div>
+                          <div className="font-medium">{a.username || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground flex items-center gap-1"><Mail className="w-3 h-3" /> Primary email</div>
+                          <div className="font-medium break-all">{a.primary_email || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground flex items-center gap-1"><Mail className="w-3 h-3" /> Secondary email</div>
+                          <div className="font-medium break-all">{a.secondary_email || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground flex items-center gap-1"><Phone className="w-3 h-3" /> Phone</div>
+                          <div className="font-medium">{a.phone || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Setup status</div>
+                          <div className="font-medium">{a.is_first_login === false ? 'Completed' : 'Pending first login'}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {resetFor === a.id && (
                     <div className="mt-3 flex items-end gap-2">
