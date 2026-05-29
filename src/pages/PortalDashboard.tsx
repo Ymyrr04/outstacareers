@@ -687,8 +687,7 @@ const PortalDashboard = () => {
        !info.regular_work_shift ||
        info.hours_per_week == null ||
        info.hourly_rate == null ||
-       !hasWorkDays ||
-       info.break_duration_minutes == null);
+       !hasWorkDays);
 
 
   useEffect(() => { loadAll(); }, []);
