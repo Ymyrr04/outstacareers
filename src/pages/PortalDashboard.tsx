@@ -513,47 +513,62 @@ const PortalDashboard = () => {
       return;
     }
 
-    const { data: portal } = await supabase
+    // A contractor may have multiple assignments (across clients, past + present).
+    // Fetch ALL their portal mappings, then pick the active/current one for the dashboard.
+    const { data: portalRows } = await supabase
       .from('contractor_portal_users')
       .select('contractor_assignment_id, must_change_password')
-      .eq('user_id', session.session.user.id)
-      .maybeSingle();
+      .eq('user_id', session.session.user.id);
 
-    if (!portal) {
+    if (!portalRows || portalRows.length === 0) {
       await supabase.auth.signOut();
       navigate('/portal/login');
       return;
     }
-    if (portal.must_change_password) {
+    if (portalRows.some((r: any) => r.must_change_password)) {
       navigate('/portal/change-password');
       return;
     }
 
-    const { data: assignment } = await supabase
+    const allAssignmentIds = portalRows.map((r: any) => r.contractor_assignment_id);
 
+    // Pull every assignment the user is linked to so we can (a) pick the active one
+    // for the dashboard view and (b) join client/job info to past timesheets.
+    const { data: assignmentsAll } = await supabase
       .from('contractor_assignments')
-      .select('id, applicant_id, job_title, hourly_rate, hours_per_week, regular_work_shift, contact_number, emergency_number, country, work_days, applicant:applicants_prescreen(full_name, email, phone, whatsapp, location), client:clients(company_name)')
-      .eq('id', portal.contractor_assignment_id)
-      .maybeSingle();
+      .select('id, applicant_id, job_title, hourly_rate, hours_per_week, regular_work_shift, contact_number, emergency_number, country, work_days, status, start_date, applicant:applicants_prescreen(full_name, email, phone, whatsapp, location), client:clients(company_name)')
+      .in('id', allAssignmentIds);
 
-    const applicant = (assignment?.applicant as any) || {};
-    const wd = Array.isArray((assignment as any)?.work_days)
-      ? ((assignment as any).work_days as string[])
-      : [];
+    // Pick the active assignment first; otherwise the most recently started.
+    const sorted = [...(assignmentsAll || [])].sort((a: any, b: any) => {
+      const aActive = ['active', 'rendering'].includes(a.status) ? 0 : 1;
+      const bActive = ['active', 'rendering'].includes(b.status) ? 0 : 1;
+      if (aActive !== bActive) return aActive - bActive;
+      const aDate = a.start_date ? new Date(a.start_date).getTime() : 0;
+      const bDate = b.start_date ? new Date(b.start_date).getTime() : 0;
+      return bDate - aDate;
+    });
+    const assignment: any = sorted[0];
+    if (!assignment) {
+      setLoading(false);
+      return;
+    }
 
+    const applicant = (assignment.applicant as any) || {};
+    const wd = Array.isArray(assignment.work_days) ? (assignment.work_days as string[]) : [];
 
     const nextInfo: ContractorInfo = {
-      contractor_assignment_id: portal.contractor_assignment_id,
-      applicant_id: assignment?.applicant_id || '',
-      job_title: assignment?.job_title || null,
-      company_name: (assignment?.client as any)?.company_name || null,
+      contractor_assignment_id: assignment.id,
+      applicant_id: assignment.applicant_id || '',
+      job_title: assignment.job_title || null,
+      company_name: (assignment.client as any)?.company_name || null,
       full_name: applicant.full_name || null,
-      hourly_rate: assignment?.hourly_rate ?? null,
-      hours_per_week: assignment?.hours_per_week ?? null,
-      regular_work_shift: assignment?.regular_work_shift || null,
-      contact_number: assignment?.contact_number || null,
-      emergency_number: assignment?.emergency_number || null,
-      country: assignment?.country || null,
+      hourly_rate: assignment.hourly_rate ?? null,
+      hours_per_week: assignment.hours_per_week ?? null,
+      regular_work_shift: assignment.regular_work_shift || null,
+      contact_number: assignment.contact_number || null,
+      emergency_number: assignment.emergency_number || null,
+      country: assignment.country || null,
       email: applicant.email || null,
       phone: applicant.phone || null,
       whatsapp: applicant.whatsapp || null,
@@ -575,8 +590,6 @@ const PortalDashboard = () => {
       work_days: [...nextInfo.work_days],
     });
 
-
-
     // Force profile completion on first login if any required field is missing.
     const incomplete =
       !nextInfo.full_name ||
@@ -588,10 +601,13 @@ const PortalDashboard = () => {
       setProfileEditing(true);
       setProfileOpen(true);
     }
+
+    // Pull timesheets from ALL of the contractor's assignments (current + previous),
+    // so they can review historical invoices even after switching clients.
     const { data: ts } = await supabase
       .from('contractor_timesheets')
       .select('id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, submitted_at, daily_hours, client_approval_status, client_flag_reason, client_reviewed_at')
-      .eq('contractor_assignment_id', portal.contractor_assignment_id)
+      .in('contractor_assignment_id', allAssignmentIds)
       .order('week_ending_date', { ascending: false });
 
     setTimesheets((ts as any) || []);
