@@ -681,12 +681,17 @@ const PortalDashboard = () => {
   };
 
   // Per-day expected hours = weekly target / number of scheduled work days
+  // (excluding any days that are silently excluded from billing, e.g. Sunday)
   const perDayExpected = useMemo(() => {
     const hpw = info?.hours_per_week ? Number(info.hours_per_week) : null;
-    const numDays = info?.work_days?.length || 0;
+    const workDays = info?.work_days || [];
+    const effectiveDays = info?.sunday_hours_excluded
+      ? workDays.filter((d) => d !== 'Sun')
+      : workDays;
+    const numDays = effectiveDays.length;
     if (!hpw || numDays <= 0) return null;
     return hpw / numDays;
-  }, [info?.hours_per_week, info?.work_days]);
+  }, [info?.hours_per_week, info?.work_days, info?.sunday_hours_excluded]);
 
   // Returns scheduled workday keys with no hours entered (require a reason).
   const getEmptyDays = (): string[] =>
