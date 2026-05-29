@@ -1115,6 +1115,28 @@ const PortalDashboard = () => {
       toast({ title: 'Work days required', description: 'Please select your scheduled work days.', variant: 'destructive' });
       return;
     }
+    // Break / Lunch: validate and convert to minutes for storage
+    let breakMinutesToSave: number | null = null;
+    let breakIsPaidToSave: boolean | null = null;
+    if (profileForm.break_enabled) {
+      const rawDur = profileForm.break_duration.trim();
+      if (rawDur === '') {
+        toast({ title: 'Break duration required', description: 'Enter a break duration or turn off the break setting.', variant: 'destructive' });
+        return;
+      }
+      const num = Number(rawDur);
+      if (isNaN(num) || num < 0) {
+        toast({ title: 'Invalid break duration', description: 'Break duration must be a non-negative number.', variant: 'destructive' });
+        return;
+      }
+      const minutes = profileForm.break_unit === 'hours' ? Math.round(num * 60) : Math.round(num);
+      if (minutes > 24 * 60) {
+        toast({ title: 'Break too long', description: 'Break duration cannot exceed 24 hours.', variant: 'destructive' });
+        return;
+      }
+      breakMinutesToSave = minutes;
+      breakIsPaidToSave = profileForm.break_is_paid;
+    }
     setProfileSaving(true);
     try {
       const { error: aErr } = await supabase
@@ -1124,6 +1146,8 @@ const PortalDashboard = () => {
           hours_per_week: hpw,
           regular_work_shift: profileForm.regular_work_shift.trim() || null,
           work_days: profileForm.work_days,
+          break_duration_minutes: breakMinutesToSave,
+          break_is_paid: breakIsPaidToSave,
         } as any)
 
 
