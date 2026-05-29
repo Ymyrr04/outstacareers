@@ -671,9 +671,11 @@ const PortalDashboard = () => {
   };
 
   // Helper: is the given date key a scheduled workday for this contractor?
+  // Excluded days (e.g. Sunday when sunday_hours_excluded is on) are treated as not scheduled.
   const workDaysSet = useMemo(() => new Set(info?.work_days || []), [info?.work_days]);
   const isScheduledDay = (k: string) => {
     if (!hasWorkDays) return false;
+    if (isExcludedDay(k)) return false;
     const dow = new Date(k + 'T00:00:00').getDay();
     return workDaysSet.has(DOW_TO_SHORT[dow]);
   };
