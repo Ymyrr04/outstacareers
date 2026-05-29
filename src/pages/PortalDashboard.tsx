@@ -1819,10 +1819,10 @@ const PortalDashboard = () => {
                 <aside className="lg:sticky lg:top-6 self-start">
                   {(() => {
                     const expected = expectedHours ?? 0;
-                    const pct = expected > 0 ? Math.min(100, (totalHours / expected) * 100) : 0;
+                    const pct = expected > 0 ? Math.min(100, (billableHours / expected) * 100) : 0;
                     const incentiveAmt = parseFloat(overtimeHours || '0') || 0;
                     const rate = info?.hourly_rate != null ? Number(info.hourly_rate) : null;
-                    const invoiceTotal = rate != null ? totalHours * rate + incentiveAmt : null;
+                    const invoiceTotal = rate != null ? billableHours * rate + incentiveAmt : null;
                     const showStatus = expectedHours != null && dateKeys.length > 0;
                     return (
                       <div className="rounded-lg border bg-card shadow-sm overflow-hidden">
