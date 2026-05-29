@@ -527,9 +527,10 @@ const TimesheetDetail = ({
         return s + (isSunday ? (parseFloat(val?.hours) || 0) : 0);
       }, 0)
     : 0;
-  const totalAll = Number(row.total_hours) || 0;
-  const billable = Math.max(0, totalAll - sundayHours);
+  const billable = Number(row.total_hours) || 0;
+  const totalAll = billable + sundayHours;
   const pct = Math.min(100, Math.round((billable / expected) * 100));
+
 
 
   return (
