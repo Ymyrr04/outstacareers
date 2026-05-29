@@ -277,6 +277,7 @@ function renderFieldOverlay(
           <SignaturePad
             value={v.signature_data_url || null}
             onChange={(d) => set({ signature_data_url: d || undefined })}
+            allowType={f.field_type === "initials"}
           />
         </PopoverContent>
       </Popover>
