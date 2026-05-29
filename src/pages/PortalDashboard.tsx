@@ -136,6 +136,7 @@ interface ContractorInfo {
   whatsapp: string | null;
   location: string | null;
   work_days: string[];
+  sunday_hours_excluded: boolean;
 }
 
 interface ProfileForm {
@@ -497,12 +498,21 @@ const PortalDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekStart, weekEnd]);
 
+  // Sunday-exclusion exception: when enabled on the contractor profile, hours
+  // logged on Sundays are silently excluded from invoice totals and OT detection.
+  // The contractor can still log hours on Sunday — nothing changes visually.
+  const isExcludedDay = (k: string): boolean => {
+    if (!info?.sunday_hours_excluded) return false;
+    return new Date(k + 'T00:00:00').getDay() === 0;
+  };
+
   const totalHours = useMemo(() => {
     return dateKeys.reduce((sum, k) => {
+      if (isExcludedDay(k)) return sum;
       const v = parseFloat(days[k]?.hours || '0');
       return sum + (isNaN(v) ? 0 : v);
     }, 0);
-  }, [days, dateKeys]);
+  }, [days, dateKeys, info?.sunday_hours_excluded]);
 
 
   const loadAll = async () => {
@@ -536,7 +546,7 @@ const PortalDashboard = () => {
     // for the dashboard view and (b) join client/job info to past timesheets.
     const { data: assignmentsAll } = await supabase
       .from('contractor_assignments')
-      .select('id, applicant_id, job_title, hourly_rate, hours_per_week, regular_work_shift, contact_number, emergency_number, country, work_days, status, start_date, applicant:applicants_prescreen(full_name, email, phone, whatsapp, location), client:clients(company_name)')
+      .select('id, applicant_id, job_title, hourly_rate, hours_per_week, regular_work_shift, contact_number, emergency_number, country, work_days, status, start_date, sunday_hours_excluded, applicant:applicants_prescreen(full_name, email, phone, whatsapp, location), client:clients(company_name)')
       .in('id', allAssignmentIds);
 
     // Pick the active assignment first; otherwise the most recently started.
@@ -574,6 +584,7 @@ const PortalDashboard = () => {
       whatsapp: applicant.whatsapp || null,
       location: applicant.location || null,
       work_days: wd,
+      sunday_hours_excluded: Boolean((assignment as any).sunday_hours_excluded),
     };
     setInfo(nextInfo);
     setProfileForm({
@@ -695,6 +706,12 @@ const PortalDashboard = () => {
     let regularRunning = 0;
     const sortedKeys = [...dateKeys].sort();
     for (const k of sortedKeys) {
+      // Sunday-exclusion exception: silently ignore Sunday hours when enabled.
+      // The row reads as if no hours were entered — no OT badge, no regular hours.
+      if (isExcludedDay(k)) {
+        map[k] = { regularHours: 0, otHours: 0, isFullOT: false, isPartialOT: false, isScheduled: false };
+        continue;
+      }
       const h = parseFloat(days[k]?.hours || '0');
       const dayHours = !isNaN(h) && h > 0 ? h : 0;
       const scheduled = isScheduledDay(k);
@@ -721,7 +738,7 @@ const PortalDashboard = () => {
       regularRunning += regular;
     }
     return map;
-  }, [days, dateKeys, info?.hours_per_week, workDaysSet]);
+  }, [days, dateKeys, info?.hours_per_week, workDaysSet, info?.sunday_hours_excluded]);
 
   // Returns list of day keys that have any OT hours
   const getOvertimeDays = (): string[] =>

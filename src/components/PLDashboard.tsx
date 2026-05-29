@@ -11,6 +11,8 @@ import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 import { AdminLeaveApplications } from '@/components/AdminLeaveApplications';
 import { CollapsibleSection } from '@/components/pl/CollapsibleSection';
@@ -1468,6 +1470,35 @@ export const PLDashboard = () => {
                 <ProfileField label="Hours per week" value={profileContractor.hours_per_week != null ? `${profileContractor.hours_per_week} hrs` : null} />
                 <ProfileField label="Current rate" value={profileContractor.hourly_rate != null ? `$${Number(profileContractor.hourly_rate).toFixed(2)}/hr` : null} />
                 <ProfileField label="Start date" value={profileContractor.start_date ? format(new Date(profileContractor.start_date), 'MMM d, yyyy') : null} />
+              </div>
+
+              <div className="mt-4 flex items-start justify-between gap-4 rounded-md border p-3 bg-muted/30">
+                <div className="space-y-0.5">
+                  <Label htmlFor="sunday-exclude-toggle" className="text-sm font-medium cursor-pointer">
+                    Exclude Sunday from billing
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    When on, hours this contractor logs on Sundays are silently excluded from invoice totals and overtime detection.
+                  </p>
+                </div>
+                <Switch
+                  id="sunday-exclude-toggle"
+                  checked={Boolean(profileContractor.sunday_hours_excluded)}
+                  onCheckedChange={async (checked) => {
+                    const prev = Boolean(profileContractor.sunday_hours_excluded);
+                    setProfileContractor({ ...profileContractor, sunday_hours_excluded: checked });
+                    const { error } = await supabase
+                      .from('contractor_assignments')
+                      .update({ sunday_hours_excluded: checked })
+                      .eq('id', profileContractor.id);
+                    if (error) {
+                      setProfileContractor({ ...profileContractor, sunday_hours_excluded: prev });
+                      toast({ title: 'Failed to update', description: error.message, variant: 'destructive' });
+                    } else {
+                      toast({ title: checked ? 'Sunday excluded from billing' : 'Sunday included in billing' });
+                    }
+                  }}
+                />
               </div>
 
               <div className="mt-4">
