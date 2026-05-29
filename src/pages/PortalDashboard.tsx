@@ -617,6 +617,8 @@ const PortalDashboard = () => {
       location: applicant.location || null,
       work_days: wd,
       sunday_hours_excluded: Boolean((assignment as any).sunday_hours_excluded),
+      break_duration_minutes: (assignment as any).break_duration_minutes ?? null,
+      break_is_paid: (assignment as any).break_is_paid ?? null,
     };
     setInfo(nextInfo);
     setProfileForm({
