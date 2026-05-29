@@ -979,7 +979,7 @@ const PortalDashboard = () => {
       const { error } = await supabase.from('contractor_timesheets').upsert({
         contractor_assignment_id: info.contractor_assignment_id,
         week_ending_date: weekEnding,
-        total_hours: totalHours,
+        total_hours: billableHours,
         overtime_hours: otHours,
         incentive_amount: ot,
         notes: combinedNotes || null,
