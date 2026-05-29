@@ -613,12 +613,6 @@ const TimesheetDetail = ({
                 <span className="font-medium">{fmtHours(totalAll)} / {expected}</span>
               </div>
               <Progress value={pct} className="mt-2" />
-              {excludeSunday && sundayHours > 0 && (
-                <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
-                  <span>Sunday hours (not billed)</span>
-                  <span>{fmtHours(sundayHours)}</span>
-                </div>
-              )}
             </div>
 
             <div className="space-y-2 pt-2">
