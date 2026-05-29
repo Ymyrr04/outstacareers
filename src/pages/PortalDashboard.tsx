@@ -1742,7 +1742,37 @@ const PortalDashboard = () => {
                             />
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-[11px] font-medium text-muted-foreground">Total hours</Label>
+                            <div className="flex items-center gap-1">
+                              <Label className="text-[11px] font-medium text-muted-foreground">Total hours</Label>
+                              {(() => {
+                                const breakOn = info?.break_is_paid === false && (info?.break_duration_minutes || 0) > 0;
+                                if (!breakOn) return null;
+                                const raw = computeRawHours(entry.time_in, entry.time_out);
+                                if (raw <= 0) return null;
+                                const mins = info!.break_duration_minutes!;
+                                const breakLabel = mins % 60 === 0 ? `${mins / 60} hr` : `${mins} min`;
+                                const formatTime = (t: string) => {
+                                  if (!t) return '';
+                                  const [hh, mm] = t.split(':').map(Number);
+                                  if (isNaN(hh)) return t;
+                                  const period = hh < 12 ? 'AM' : 'PM';
+                                  const h12 = hh % 12 === 0 ? 12 : hh % 12;
+                                  return `${h12}:${String(mm).padStart(2, '0')} ${period}`;
+                                };
+                                return (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button type="button" className="text-muted-foreground hover:text-foreground" aria-label="Break deduction info">
+                                        <Info className="w-3 h-3" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-xs text-xs">
+                                      Includes {breakLabel} unpaid break deduction ({formatTime(entry.time_in)} – {formatTime(entry.time_out)} = {raw.toFixed(2)} hrs raw)
+                                    </TooltipContent>
+                                  </Tooltip>
+                                );
+                              })()}
+                            </div>
                             <Input
                               readOnly
                               value={hoursNum > 0 ? hoursNum.toFixed(2) : '0.00'}
