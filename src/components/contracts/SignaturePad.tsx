@@ -11,6 +11,14 @@ export const SignaturePad = ({ value, onChange }: SignaturePadProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [drawing, setDrawing] = useState(false);
 
+  useEffect(() => {
+    const c = canvasRef.current;
+    if (!c) return;
+    const ctx = c.getContext("2d");
+    ctx?.clearRect(0, 0, c.width, c.height);
+    onChange(null);
+  }, []);
+
   const getCtx = () => {
     const c = canvasRef.current;
     if (!c) return null;
