@@ -178,9 +178,11 @@ const ClientPortalDashboard = () => {
         contractor_email: a?.applicant?.email || '',
         hours_per_week: a?.hours_per_week ?? null,
         timezone: (a as any)?.timezone ?? null,
+        sunday_hours_excluded: !!(a as any)?.sunday_hours_excluded,
       };
     });
   }, [timesheets, assignments]);
+
 
   const filteredRows = useMemo(() => {
     return rows.filter(r => {
