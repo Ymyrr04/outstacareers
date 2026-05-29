@@ -71,6 +71,25 @@ export const TimesheetTutorialDialog: React.FC<Props> = ({ open, onOpenChange })
           </section>
 
           <section>
+            <h3 className="font-semibold text-foreground mb-1">Break / Lunch deduction</h3>
+            <p className="text-muted-foreground">
+              In your <strong>Profile</strong> under <strong>Break / Lunch</strong>, set your usual break duration
+              (e.g. <em>30 min</em> or <em>1 hr</em>) and mark it as <strong>Paid</strong> or <strong>Unpaid</strong>:
+            </p>
+            <ul className="list-disc pl-5 space-y-1 text-muted-foreground mt-1">
+              <li><strong>Unpaid</strong> &mdash; the break is automatically deducted from each day's billable hours
+                whenever you fill in both <em>Time in</em> and <em>Time out</em>.</li>
+              <li><strong>Paid</strong> &mdash; nothing is deducted; your raw hours stay as-is.</li>
+              <li>If your logged hours are shorter than the break, billable hours show <strong>0</strong> (never negative).</li>
+            </ul>
+            <p className="text-xs text-muted-foreground mt-1">
+              Hover the <strong>ℹ</strong> on the <strong>Total hours</strong> column to see the raw hours and the deduction applied.
+            </p>
+          </section>
+
+
+
+          <section>
             <h3 className="font-semibold text-foreground mb-1">Step 5 &mdash; Submit and confirm</h3>
             <p className="text-muted-foreground">
               Click <strong>Submit timesheet</strong>. A confirmation dialog appears with two checkboxes &mdash; tick both:
