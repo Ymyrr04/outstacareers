@@ -50,7 +50,9 @@ type RowView = Timesheet & {
   contractor_email: string;
   hours_per_week: number | null;
   timezone: string | null;
+  sunday_hours_excluded: boolean;
 };
+
 
 // Convert "HH:MM" (24h) to "h:MM AM/PM"
 const to12h = (t?: string | null) => {
