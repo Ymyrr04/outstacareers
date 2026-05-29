@@ -1501,6 +1501,126 @@ export const PLDashboard = () => {
                 />
               </div>
 
+              {/* Break / Lunch admin controls */}
+              {(() => {
+                const mins: number | null = profileContractor.break_duration_minutes ?? null;
+                const isPaid: boolean | null = profileContractor.break_is_paid ?? null;
+                const enabled = mins != null && mins > 0;
+                const showHours = enabled && mins! % 60 === 0;
+                const displayValue = enabled ? (showHours ? mins! / 60 : mins!) : '';
+                const unit: 'minutes' | 'hours' = showHours ? 'hours' : 'minutes';
+
+                const saveBreak = async (nextMinutes: number | null, nextIsPaid: boolean | null) => {
+                  const prev = { mins, isPaid };
+                  setProfileContractor({
+                    ...profileContractor,
+                    break_duration_minutes: nextMinutes,
+                    break_is_paid: nextIsPaid,
+                  });
+                  const { error } = await supabase
+                    .from('contractor_assignments')
+                    .update({ break_duration_minutes: nextMinutes, break_is_paid: nextIsPaid })
+                    .eq('id', profileContractor.id);
+                  if (error) {
+                    setProfileContractor({
+                      ...profileContractor,
+                      break_duration_minutes: prev.mins,
+                      break_is_paid: prev.isPaid,
+                    });
+                    toast({ title: 'Failed to update break', description: error.message, variant: 'destructive' });
+                  } else {
+                    toast({ title: 'Break setting saved' });
+                  }
+                };
+
+                return (
+                  <div className="mt-4 space-y-3 rounded-md border p-3 bg-muted/30">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="space-y-0.5">
+                        <Label className="text-sm font-medium">Break / Lunch</Label>
+                        <p className="text-xs text-muted-foreground">
+                          If unpaid, this break is automatically deducted from each day's billable hours when the contractor logs time.
+                        </p>
+                      </div>
+                      <Switch
+                        checked={enabled}
+                        onCheckedChange={(checked) => {
+                          if (checked) {
+                            // Default: 60 minutes, unpaid
+                            saveBreak(60, false);
+                          } else {
+                            saveBreak(null, null);
+                          }
+                        }}
+                      />
+                    </div>
+                    {enabled && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Break duration</Label>
+                          <div className="flex items-center gap-2">
+                            <Input
+                              type="number"
+                              min="0"
+                              step={unit === 'hours' ? '0.25' : '1'}
+                              value={displayValue}
+                              onChange={(e) => {
+                                const num = Number(e.target.value);
+                                if (isNaN(num) || num < 0) return;
+                                const newMins = unit === 'hours' ? Math.round(num * 60) : Math.round(num);
+                                saveBreak(newMins, isPaid ?? false);
+                              }}
+                              className="w-28"
+                            />
+                            <div className="inline-flex rounded-md border overflow-hidden">
+                              {(['minutes', 'hours'] as const).map((u) => (
+                                <button
+                                  key={u}
+                                  type="button"
+                                  onClick={() => {
+                                    if (u === unit) return;
+                                    // Convert current minutes to new unit display, but keep stored minutes the same
+                                    // (toggle only changes input scale on next render via showHours derivation).
+                                    // To force the unit, nudge the stored minutes to be non-divisible/divisible.
+                                    if (u === 'hours' && mins != null && mins % 60 !== 0) {
+                                      saveBreak(Math.round(mins / 60) * 60, isPaid ?? false);
+                                    } else if (u === 'minutes' && mins != null && mins % 60 === 0) {
+                                      // keep value; just force minutes display by adding 0 — no-op, so leave as is
+                                    }
+                                  }}
+                                  className={`px-3 py-1.5 text-xs font-medium transition-colors ${unit === u ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                                >
+                                  {u}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs">Break type</Label>
+                          <div className="inline-flex rounded-md border overflow-hidden">
+                            <button
+                              type="button"
+                              onClick={() => saveBreak(mins, false)}
+                              className={`px-3 py-1.5 text-xs font-medium transition-colors ${isPaid === false ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                            >
+                              Unpaid (deducted)
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => saveBreak(mins, true)}
+                              className={`px-3 py-1.5 text-xs font-medium transition-colors ${isPaid === true ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                            >
+                              Paid (included)
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
               <div className="mt-4">
                 <h4 className="font-semibold text-sm mb-2">Invoice History</h4>
                 {profileInvoices.length === 0 ? (
