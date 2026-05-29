@@ -1470,6 +1470,14 @@ export const PLDashboard = () => {
                 <ProfileField label="Hours per week" value={profileContractor.hours_per_week != null ? `${profileContractor.hours_per_week} hrs` : null} />
                 <ProfileField label="Current rate" value={profileContractor.hourly_rate != null ? `$${Number(profileContractor.hourly_rate).toFixed(2)}/hr` : null} />
                 <ProfileField label="Start date" value={profileContractor.start_date ? format(new Date(profileContractor.start_date), 'MMM d, yyyy') : null} />
+                <ProfileField
+                  label="Break / Lunch"
+                  value={
+                    profileContractor.break_duration_minutes && profileContractor.break_duration_minutes > 0
+                      ? `${profileContractor.break_duration_minutes % 60 === 0 ? profileContractor.break_duration_minutes / 60 + ' hr' : profileContractor.break_duration_minutes + ' min'} · ${profileContractor.break_is_paid ? 'Paid (included)' : 'Unpaid (deducted)'}`
+                      : null
+                  }
+                />
               </div>
 
               <div className="mt-4 flex items-start justify-between gap-4 rounded-md border p-3 bg-muted/30">
