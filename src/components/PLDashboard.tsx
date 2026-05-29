@@ -1472,6 +1472,35 @@ export const PLDashboard = () => {
                 <ProfileField label="Start date" value={profileContractor.start_date ? format(new Date(profileContractor.start_date), 'MMM d, yyyy') : null} />
               </div>
 
+              <div className="mt-4 flex items-start justify-between gap-4 rounded-md border p-3 bg-muted/30">
+                <div className="space-y-0.5">
+                  <Label htmlFor="sunday-exclude-toggle" className="text-sm font-medium cursor-pointer">
+                    Exclude Sunday from billing
+                  </Label>
+                  <p className="text-xs text-muted-foreground">
+                    When on, hours this contractor logs on Sundays are silently excluded from invoice totals and overtime detection.
+                  </p>
+                </div>
+                <Switch
+                  id="sunday-exclude-toggle"
+                  checked={Boolean(profileContractor.sunday_hours_excluded)}
+                  onCheckedChange={async (checked) => {
+                    const prev = Boolean(profileContractor.sunday_hours_excluded);
+                    setProfileContractor({ ...profileContractor, sunday_hours_excluded: checked });
+                    const { error } = await supabase
+                      .from('contractor_assignments')
+                      .update({ sunday_hours_excluded: checked })
+                      .eq('id', profileContractor.id);
+                    if (error) {
+                      setProfileContractor({ ...profileContractor, sunday_hours_excluded: prev });
+                      toast({ title: 'Failed to update', description: error.message, variant: 'destructive' });
+                    } else {
+                      toast({ title: checked ? 'Sunday excluded from billing' : 'Sunday included in billing' });
+                    }
+                  }}
+                />
+              </div>
+
               <div className="mt-4">
                 <h4 className="font-semibold text-sm mb-2">Invoice History</h4>
                 {profileInvoices.length === 0 ? (
