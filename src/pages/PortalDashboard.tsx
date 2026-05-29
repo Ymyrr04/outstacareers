@@ -1339,6 +1339,14 @@ const PortalDashboard = () => {
                     </div>
                   )}
                 </div>
+                <ProfileField
+                  label="Break / Lunch"
+                  value={
+                    info?.break_duration_minutes && info.break_duration_minutes > 0
+                      ? `${info.break_duration_minutes % 60 === 0 ? info.break_duration_minutes / 60 + ' hr' : info.break_duration_minutes + ' min'} · ${info.break_is_paid ? 'Paid (included)' : 'Unpaid (deducted)'}`
+                      : null
+                  }
+                />
 
               </div>
             ) : (
