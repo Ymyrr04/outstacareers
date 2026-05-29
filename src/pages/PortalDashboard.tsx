@@ -706,6 +706,12 @@ const PortalDashboard = () => {
     let regularRunning = 0;
     const sortedKeys = [...dateKeys].sort();
     for (const k of sortedKeys) {
+      // Sunday-exclusion exception: silently ignore Sunday hours when enabled.
+      // The row reads as if no hours were entered — no OT badge, no regular hours.
+      if (isExcludedDay(k)) {
+        map[k] = { regularHours: 0, otHours: 0, isFullOT: false, isPartialOT: false, isScheduled: false };
+        continue;
+      }
       const h = parseFloat(days[k]?.hours || '0');
       const dayHours = !isNaN(h) && h > 0 ? h : 0;
       const scheduled = isScheduledDay(k);
@@ -732,7 +738,7 @@ const PortalDashboard = () => {
       regularRunning += regular;
     }
     return map;
-  }, [days, dateKeys, info?.hours_per_week, workDaysSet]);
+  }, [days, dateKeys, info?.hours_per_week, workDaysSet, info?.sunday_hours_excluded]);
 
   // Returns list of day keys that have any OT hours
   const getOvertimeDays = (): string[] =>
