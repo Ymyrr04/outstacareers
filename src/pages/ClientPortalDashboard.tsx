@@ -374,12 +374,6 @@ const ClientPortalDashboard = () => {
                     </TableHeader>
                     <TableBody>
                       {filteredRows.map(r => {
-                        const sundayHrs = r.sunday_hours_excluded && r.daily_hours
-                          ? Object.entries(r.daily_hours).reduce((s, [date, val]: [string, any]) => {
-                              const isSunday = new Date(`${date}T00:00:00`).getDay() === 0;
-                              return s + (isSunday ? (parseFloat(val?.hours) || 0) : 0);
-                            }, 0)
-                          : 0;
                         return (
                           <TableRow key={r.id}>
                             <TableCell>
@@ -389,11 +383,6 @@ const ClientPortalDashboard = () => {
                             <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
                             <TableCell className="text-right">
                               <div>{fmtHours(r.total_hours)}</div>
-                              {sundayHrs > 0 && (
-                                <div className="text-[11px] text-muted-foreground">
-                                  Sunday {fmtHours(sundayHrs)} (not billed)
-                                </div>
-                              )}
                             </TableCell>
                             <TableCell>{statusBadge(r.client_approval_status)}</TableCell>
                             <TableCell className="text-right">
