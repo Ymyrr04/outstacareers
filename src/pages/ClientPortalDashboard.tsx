@@ -410,9 +410,21 @@ const ClientPortalDashboard = () => {
 
                             <TableCell>{statusBadge(r.client_approval_status)}</TableCell>
                             <TableCell className="text-right">
-                              <Button size="sm" variant="outline" onClick={() => setSelected(r)}>
-                                <Eye className="w-3.5 h-3.5 mr-1" /> View
-                              </Button>
+                              <div className="flex justify-end gap-1">
+                                <Button size="sm" variant="outline" onClick={() => setSelected(r)}>
+                                  <Eye className="w-3.5 h-3.5 mr-1" /> View
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleDelete(r)}
+                                  disabled={actionLoading}
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  title="Delete timesheet"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         );
