@@ -72,8 +72,6 @@ const ClientPortalLogin = () => {
       else navigate('/client-portal');
     } catch (err: any) {
       toast({ title: 'Login failed', description: await getErrorMessage(err, 'Incorrect username or password. Please try again.'), variant: 'destructive' });
-
-      toast({ title: 'Login failed', description: err.message, variant: 'destructive' });
     } finally {
       setLoading(false);
     }
