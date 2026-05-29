@@ -498,12 +498,21 @@ const PortalDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [weekStart, weekEnd]);
 
+  // Sunday-exclusion exception: when enabled on the contractor profile, hours
+  // logged on Sundays are silently excluded from invoice totals and OT detection.
+  // The contractor can still log hours on Sunday — nothing changes visually.
+  const isExcludedDay = (k: string): boolean => {
+    if (!info?.sunday_hours_excluded) return false;
+    return new Date(k + 'T00:00:00').getDay() === 0;
+  };
+
   const totalHours = useMemo(() => {
     return dateKeys.reduce((sum, k) => {
+      if (isExcludedDay(k)) return sum;
       const v = parseFloat(days[k]?.hours || '0');
       return sum + (isNaN(v) ? 0 : v);
     }, 0);
-  }, [days, dateKeys]);
+  }, [days, dateKeys, info?.sunday_hours_excluded]);
 
 
   const loadAll = async () => {
