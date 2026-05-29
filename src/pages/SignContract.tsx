@@ -227,7 +227,7 @@ const SignContract = () => {
                   const adminLocked = f.assigned_to === "admin" || f.assigned_to === "system";
                   return (
                     <div key={f.id} style={style} className="group">
-                      {renderFieldOverlay(f, v, adminLocked, (next) => setValues((prev) => ({ ...prev, [f.id]: { ...prev[f.id], ...next } })), data.envelope.recipient_name)}
+                      {renderFieldOverlay(f, v, adminLocked, (next) => setValues((prev) => ({ ...prev, [f.id]: { ...prev[f.id], ...next } })))}
                     </div>
                   );
                 })}
@@ -259,7 +259,6 @@ function renderFieldOverlay(
   v: { value?: string; signature_data_url?: string },
   locked: boolean,
   set: (next: { value?: string; signature_data_url?: string }) => void,
-  signerName: string,
 ) {
   const baseBox = "w-full h-full border-2 border-dashed border-amber-600 bg-amber-200/70 hover:bg-amber-300/80 ring-2 ring-amber-500/70 shadow-md transition flex items-center text-xs";
 
@@ -278,7 +277,6 @@ function renderFieldOverlay(
           <SignaturePad
             value={v.signature_data_url || null}
             onChange={(d) => set({ signature_data_url: d || undefined })}
-            signerName={f.field_type === "initials" ? signerName.split(" ").map(p => p[0]).join("") : signerName}
           />
         </PopoverContent>
       </Popover>
