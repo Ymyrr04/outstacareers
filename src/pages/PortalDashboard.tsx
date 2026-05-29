@@ -179,8 +179,8 @@ interface Timesheet {
   client_reviewed_at?: string | null;
 }
 
-// Compute decimal hours between two "HH:MM" times. If time_out <= time_in, treat as overnight (+24h).
-const computeHours = (timeIn: string, timeOut: string): number => {
+// Compute raw decimal hours between two "HH:MM" times. If time_out <= time_in, treat as overnight (+24h).
+const computeRawHours = (timeIn: string, timeOut: string): number => {
   if (!timeIn || !timeOut) return 0;
   const [ih, im] = timeIn.split(':').map(Number);
   const [oh, om] = timeOut.split(':').map(Number);
@@ -189,6 +189,31 @@ const computeHours = (timeIn: string, timeOut: string): number => {
   let end = oh * 60 + om;
   if (end <= start) end += 24 * 60; // overnight shift
   return Math.round(((end - start) / 60) * 100) / 100;
+};
+
+// Apply unpaid-break deduction (if configured) to a raw hours value.
+// Never goes below 0.
+const applyBreakDeduction = (
+  rawHours: number,
+  breakMinutes: number | null | undefined,
+  breakIsPaid: boolean | null | undefined
+): number => {
+  if (rawHours <= 0) return 0;
+  if (breakIsPaid !== false) return rawHours; // paid or unconfigured = no deduction
+  if (!breakMinutes || breakMinutes <= 0) return rawHours;
+  const deducted = rawHours - breakMinutes / 60;
+  return Math.max(0, Math.round(deducted * 100) / 100);
+};
+
+// Compute billable hours (after unpaid break deduction, if any).
+const computeHours = (
+  timeIn: string,
+  timeOut: string,
+  breakMinutes?: number | null,
+  breakIsPaid?: boolean | null
+): number => {
+  const raw = computeRawHours(timeIn, timeOut);
+  return applyBreakDeduction(raw, breakMinutes, breakIsPaid);
 };
 
 const formatHoursLabel = (h: number) => (h > 0 ? h.toFixed(2) : '0.00');
