@@ -507,8 +507,18 @@ const TimesheetDetail = ({
   actionLoading: boolean;
 }) => {
   const expected = row.hours_per_week ?? 40;
-  const pct = Math.min(100, Math.round((Number(row.total_hours) / expected) * 100));
   const dailyEntries = row.daily_hours ? Object.entries(row.daily_hours).sort(([a], [b]) => a.localeCompare(b)) : [];
+  const excludeSunday = row.sunday_hours_excluded;
+  const sundayHours = excludeSunday
+    ? dailyEntries.reduce((s, [date, val]: [string, any]) => {
+        const isSunday = new Date(`${date}T00:00:00`).getDay() === 0;
+        return s + (isSunday ? (parseFloat(val?.hours) || 0) : 0);
+      }, 0)
+    : 0;
+  const totalAll = Number(row.total_hours) || 0;
+  const billable = Math.max(0, totalAll - sundayHours);
+  const pct = Math.min(100, Math.round((billable / expected) * 100));
+
 
   return (
     <div className="space-y-4">
