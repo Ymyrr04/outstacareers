@@ -1073,6 +1073,7 @@ const PortalDashboard = () => {
       hourly_rate: info.hourly_rate != null ? String(info.hourly_rate) : '',
       regular_work_shift: info.regular_work_shift || '',
       work_days: [...info.work_days],
+      ...breakStateToForm(info.break_duration_minutes, info.break_is_paid),
     });
 
     setProfileEditing(false);
