@@ -136,6 +136,7 @@ interface ContractorInfo {
   whatsapp: string | null;
   location: string | null;
   work_days: string[];
+  sunday_hours_excluded: boolean;
 }
 
 interface ProfileForm {
