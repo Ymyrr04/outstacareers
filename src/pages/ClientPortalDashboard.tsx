@@ -606,10 +606,17 @@ const TimesheetDetail = ({
             <div>
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Hours logged</span>
-                <span className="font-medium">{fmtHours(row.total_hours)} / {expected}</span>
+                <span className="font-medium">{fmtHours(totalAll)} / {expected}</span>
               </div>
               <Progress value={pct} className="mt-2" />
+              {excludeSunday && sundayHours > 0 && (
+                <div className="flex items-center justify-between text-xs text-muted-foreground mt-2">
+                  <span>Sunday hours (not billed)</span>
+                  <span>{fmtHours(sundayHours)}</span>
+                </div>
+              )}
             </div>
+
             <div className="space-y-2 pt-2">
               <Button
                 className="w-full bg-green-600 hover:bg-green-700"
