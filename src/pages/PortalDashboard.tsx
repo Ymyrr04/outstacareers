@@ -137,6 +137,8 @@ interface ContractorInfo {
   location: string | null;
   work_days: string[];
   sunday_hours_excluded: boolean;
+  break_duration_minutes: number | null;
+  break_is_paid: boolean | null;
 }
 
 interface ProfileForm {
@@ -151,6 +153,10 @@ interface ProfileForm {
   hourly_rate: string;
   regular_work_shift: string;
   work_days: string[];
+  break_duration: string;       // numeric, in the selected unit
+  break_unit: 'minutes' | 'hours';
+  break_is_paid: boolean;       // true = paid, false = unpaid
+  break_enabled: boolean;       // true if contractor has configured a break at all
 }
 
 const WORK_DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
