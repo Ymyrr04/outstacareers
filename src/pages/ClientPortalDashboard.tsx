@@ -388,11 +388,9 @@ const ClientPortalDashboard = () => {
                             </TableCell>
                             <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
                             <TableCell className="text-right">
-                              <div>{fmtHours(r.total_hours)}</div>
-                              {sundayHrs > 0 && (
-                                <div className="text-xs text-muted-foreground">Sunday {fmtHours(sundayHrs)}</div>
-                              )}
+                              <div>{fmtHours((Number(r.total_hours) || 0) + sundayHrs)}</div>
                             </TableCell>
+
                             <TableCell>{statusBadge(r.client_approval_status)}</TableCell>
                             <TableCell className="text-right">
                               <Button size="sm" variant="outline" onClick={() => setSelected(r)}>
@@ -529,9 +527,10 @@ const TimesheetDetail = ({
         return s + (isSunday ? (parseFloat(val?.hours) || 0) : 0);
       }, 0)
     : 0;
-  const totalAll = Number(row.total_hours) || 0;
-  const billable = Math.max(0, totalAll - sundayHours);
+  const billable = Number(row.total_hours) || 0;
+  const totalAll = billable + sundayHours;
   const pct = Math.min(100, Math.round((billable / expected) * 100));
+
 
 
   return (
@@ -622,12 +621,6 @@ const TimesheetDetail = ({
                 <span className="text-muted-foreground">Hours logged</span>
                 <span className="font-medium">{fmtHours(totalAll)} / {expected}</span>
               </div>
-              {excludeSunday && sundayHours > 0 && (
-                <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
-                  <span>Sunday hours</span>
-                  <span>{fmtHours(sundayHours)}</span>
-                </div>
-              )}
               <Progress value={pct} className="mt-2" />
             </div>
 
