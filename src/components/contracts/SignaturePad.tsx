@@ -1,10 +1,9 @@
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 
 interface SignaturePadProps {
   value?: string | null;
   onChange: (dataUrl: string | null) => void;
-  signerName: string;
 }
 
 // Captures signature as PNG data URL. Draw-only mode.
