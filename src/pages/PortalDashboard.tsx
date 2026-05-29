@@ -1056,10 +1056,29 @@ const PortalDashboard = () => {
 
     setDays(next);
     setOvertimeHours(String(t.incentive_amount ?? 0));
-    setIncentiveNote('');
-    setExtraAmount('');
-    setExtraReason('');
-    setNotes(t.notes || '');
+    // Parse existing Incentive / Extra amount lines out of notes so they
+    // are not re-appended (duplicated) when the contractor re-submits.
+    const rawNotes = t.notes || '';
+    let incNote = '';
+    let extraAmt = '';
+    let extraRsn = '';
+    const remaining: string[] = [];
+    rawNotes.split(/\n+/).forEach((line) => {
+      const incMatch = line.match(/^\s*Incentive\s*\(\$[\d.]+\)\s*:\s*(.*)$/i);
+      const extraMatch = line.match(/^\s*Extra amount\s*\(\$([\d.]+)\)\s*:\s*(.*)$/i);
+      if (incMatch) {
+        incNote = incMatch[1].trim();
+      } else if (extraMatch) {
+        extraAmt = extraMatch[1];
+        extraRsn = extraMatch[2].trim();
+      } else if (line.trim()) {
+        remaining.push(line);
+      }
+    });
+    setIncentiveNote(incNote);
+    setExtraAmount(extraAmt);
+    setExtraReason(extraRsn);
+    setNotes(remaining.join('\n\n'));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
