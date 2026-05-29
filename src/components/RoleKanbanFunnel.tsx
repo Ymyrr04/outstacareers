@@ -775,7 +775,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     });
 
     if (insertError) {
-      toast.error(getErrorMessageSync(error, 'Failed to delete applicant'));
+      toast.error(getErrorMessageSync(insertError, 'Failed to delete applicant'));
       return;
     }
 

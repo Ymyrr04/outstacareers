@@ -120,7 +120,7 @@ export function CandidateDetailDialog({ open, onOpenChange, applicantId, initial
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Download error:', err);
-      toast.error(getErrorMessageSync(error, 'Failed to download CV'));
+      toast.error(getErrorMessageSync(err, 'Failed to download CV'));
     } finally {
       setDownloadingCv(null);
     }

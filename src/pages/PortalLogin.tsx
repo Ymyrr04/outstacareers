@@ -19,13 +19,13 @@ const PortalLogin = () => {
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
       if (data.session) {
-        const { data: portal } = await supabase
+        const { data: portalRows } = await supabase
           .from('contractor_portal_users')
           .select('must_change_password')
-          .eq('user_id', data.session.user.id)
-          .maybeSingle();
-        if (portal) {
-          navigate(portal.must_change_password ? '/portal/change-password' : '/portal');
+          .eq('user_id', data.session.user.id);
+        if (portalRows && portalRows.length > 0) {
+          const mustChange = portalRows.some((r: any) => r.must_change_password);
+          navigate(mustChange ? '/portal/change-password' : '/portal');
         }
       }
     });
@@ -38,19 +38,20 @@ const PortalLogin = () => {
       const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
       if (error) throw error;
 
-      // Verify this user is a contractor portal user (not an admin)
-      const { data: portal, error: pErr } = await supabase
+      // Verify this user is a contractor portal user (not an admin). A contractor
+      // may be linked to multiple assignments, so use a list query, not .maybeSingle().
+      const { data: portalRows, error: pErr } = await supabase
         .from('contractor_portal_users')
         .select('must_change_password')
-        .eq('user_id', data.user!.id)
-        .maybeSingle();
+        .eq('user_id', data.user!.id);
 
-      if (pErr || !portal) {
+      if (pErr || !portalRows || portalRows.length === 0) {
         await supabase.auth.signOut();
         throw new Error('This account is not registered as a contractor. Contact your admin.');
       }
 
-      navigate(portal.must_change_password ? '/portal/change-password' : '/portal');
+      const mustChange = portalRows.some((r: any) => r.must_change_password);
+      navigate(mustChange ? '/portal/change-password' : '/portal');
     } catch (err: any) {
       toast({ title: 'Login failed', description: err.message, variant: 'destructive' });
     } finally {
