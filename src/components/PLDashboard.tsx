@@ -1464,6 +1464,7 @@ export const PLDashboard = () => {
                 <ProfileField label="Job title" value={profileContractor.job_title} />
                 <ProfileField label="Company" value={profileContractor.client?.company_name} />
                 <ProfileField label="Regular work shift" value={profileContractor.regular_work_shift} />
+                <ProfileField label="Work days" value={Array.isArray(profileContractor.work_days) && profileContractor.work_days.length > 0 ? profileContractor.work_days.join(', ') : null} />
                 <ProfileField label="Hours per week" value={profileContractor.hours_per_week != null ? `${profileContractor.hours_per_week} hrs` : null} />
                 <ProfileField label="Current rate" value={profileContractor.hourly_rate != null ? `$${Number(profileContractor.hourly_rate).toFixed(2)}/hr` : null} />
                 <ProfileField label="Start date" value={profileContractor.start_date ? format(new Date(profileContractor.start_date), 'MMM d, yyyy') : null} />
