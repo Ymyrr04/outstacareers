@@ -150,10 +150,11 @@ const ClientPortalDashboard = () => {
     // Client portal must NEVER expose any pay or rate fields (hourly_rate, client_rate, invoice_total, incentives).
     const { data: ca, error: caErr } = await supabase
       .from('contractor_assignments')
-      .select('id, job_title, hours_per_week, timezone, start_date, status, applicant:applicants_prescreen(full_name, email)')
+      .select('id, job_title, hours_per_week, timezone, start_date, status, sunday_hours_excluded, applicant:applicants_prescreen(full_name, email)')
       .eq('client_id', cid);
     if (caErr) console.error(caErr);
     setAssignments((ca || []) as any);
+
 
     const ids = (ca || []).map((c: any) => c.id);
     if (ids.length === 0) { setTimesheets([]); return; }
