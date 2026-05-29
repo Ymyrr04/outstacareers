@@ -137,6 +137,8 @@ interface ContractorInfo {
   location: string | null;
   work_days: string[];
   sunday_hours_excluded: boolean;
+  break_duration_minutes: number | null;
+  break_is_paid: boolean | null;
 }
 
 interface ProfileForm {
@@ -151,6 +153,10 @@ interface ProfileForm {
   hourly_rate: string;
   regular_work_shift: string;
   work_days: string[];
+  break_duration: string;       // numeric, in the selected unit
+  break_unit: 'minutes' | 'hours';
+  break_is_paid: boolean;       // true = paid, false = unpaid
+  break_enabled: boolean;       // true if contractor has configured a break at all
 }
 
 const WORK_DAY_SHORT = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'] as const;
@@ -179,8 +185,8 @@ interface Timesheet {
   client_reviewed_at?: string | null;
 }
 
-// Compute decimal hours between two "HH:MM" times. If time_out <= time_in, treat as overnight (+24h).
-const computeHours = (timeIn: string, timeOut: string): number => {
+// Compute raw decimal hours between two "HH:MM" times. If time_out <= time_in, treat as overnight (+24h).
+const computeRawHours = (timeIn: string, timeOut: string): number => {
   if (!timeIn || !timeOut) return 0;
   const [ih, im] = timeIn.split(':').map(Number);
   const [oh, om] = timeOut.split(':').map(Number);
@@ -189,6 +195,46 @@ const computeHours = (timeIn: string, timeOut: string): number => {
   let end = oh * 60 + om;
   if (end <= start) end += 24 * 60; // overnight shift
   return Math.round(((end - start) / 60) * 100) / 100;
+};
+
+// Apply unpaid-break deduction (if configured) to a raw hours value.
+// Never goes below 0.
+const applyBreakDeduction = (
+  rawHours: number,
+  breakMinutes: number | null | undefined,
+  breakIsPaid: boolean | null | undefined
+): number => {
+  if (rawHours <= 0) return 0;
+  if (breakIsPaid !== false) return rawHours; // paid or unconfigured = no deduction
+  if (!breakMinutes || breakMinutes <= 0) return rawHours;
+  const deducted = rawHours - breakMinutes / 60;
+  return Math.max(0, Math.round(deducted * 100) / 100);
+};
+
+// Compute billable hours (after unpaid break deduction, if any).
+const computeHours = (
+  timeIn: string,
+  timeOut: string,
+  breakMinutes?: number | null,
+  breakIsPaid?: boolean | null
+): number => {
+  const raw = computeRawHours(timeIn, timeOut);
+  return applyBreakDeduction(raw, breakMinutes, breakIsPaid);
+};
+
+// Convert stored break (always minutes) into the profile form's display unit.
+const breakStateToForm = (
+  minutes: number | null | undefined,
+  isPaid: boolean | null | undefined
+): { break_duration: string; break_unit: 'minutes' | 'hours'; break_is_paid: boolean; break_enabled: boolean } => {
+  if (minutes == null || minutes <= 0) {
+    return { break_duration: '', break_unit: 'minutes', break_is_paid: false, break_enabled: false };
+  }
+  // Prefer hours display when divisible
+  if (minutes % 60 === 0) {
+    return { break_duration: String(minutes / 60), break_unit: 'hours', break_is_paid: !!isPaid, break_enabled: true };
+  }
+  return { break_duration: String(minutes), break_unit: 'minutes', break_is_paid: !!isPaid, break_enabled: true };
 };
 
 const formatHoursLabel = (h: number) => (h > 0 ? h.toFixed(2) : '0.00');
@@ -446,6 +492,7 @@ const PortalDashboard = () => {
     full_name: '', phone: '', whatsapp: '', location: '', country: '',
     contact_number: '', emergency_number: '', hours_per_week: '',
     hourly_rate: '', regular_work_shift: '', work_days: [],
+    break_duration: '', break_unit: 'minutes', break_is_paid: false, break_enabled: false,
   };
 
 
@@ -546,7 +593,7 @@ const PortalDashboard = () => {
     // for the dashboard view and (b) join client/job info to past timesheets.
     const { data: assignmentsAll } = await supabase
       .from('contractor_assignments')
-      .select('id, applicant_id, job_title, hourly_rate, hours_per_week, regular_work_shift, contact_number, emergency_number, country, work_days, status, start_date, sunday_hours_excluded, applicant:applicants_prescreen(full_name, email, phone, whatsapp, location), client:clients(company_name)')
+      .select('id, applicant_id, job_title, hourly_rate, hours_per_week, regular_work_shift, contact_number, emergency_number, country, work_days, status, start_date, sunday_hours_excluded, break_duration_minutes, break_is_paid, applicant:applicants_prescreen(full_name, email, phone, whatsapp, location), client:clients(company_name)')
       .in('id', allAssignmentIds);
 
     // Pick the active assignment first; otherwise the most recently started.
@@ -585,6 +632,8 @@ const PortalDashboard = () => {
       location: applicant.location || null,
       work_days: wd,
       sunday_hours_excluded: Boolean((assignment as any).sunday_hours_excluded),
+      break_duration_minutes: (assignment as any).break_duration_minutes ?? null,
+      break_is_paid: (assignment as any).break_is_paid ?? null,
     };
     setInfo(nextInfo);
     setProfileForm({
@@ -599,6 +648,7 @@ const PortalDashboard = () => {
       hourly_rate: nextInfo.hourly_rate != null ? String(nextInfo.hourly_rate) : '',
       regular_work_shift: nextInfo.regular_work_shift || '9:00 AM – 6:00 PM EST',
       work_days: [...nextInfo.work_days],
+      ...breakStateToForm(nextInfo.break_duration_minutes, nextInfo.break_is_paid),
     });
 
     // Force profile completion on first login if any required field is missing.
@@ -1023,6 +1073,7 @@ const PortalDashboard = () => {
       hourly_rate: info.hourly_rate != null ? String(info.hourly_rate) : '',
       regular_work_shift: info.regular_work_shift || '',
       work_days: [...info.work_days],
+      ...breakStateToForm(info.break_duration_minutes, info.break_is_paid),
     });
 
     setProfileEditing(false);
@@ -1064,6 +1115,28 @@ const PortalDashboard = () => {
       toast({ title: 'Work days required', description: 'Please select your scheduled work days.', variant: 'destructive' });
       return;
     }
+    // Break / Lunch: validate and convert to minutes for storage
+    let breakMinutesToSave: number | null = null;
+    let breakIsPaidToSave: boolean | null = null;
+    if (profileForm.break_enabled) {
+      const rawDur = profileForm.break_duration.trim();
+      if (rawDur === '') {
+        toast({ title: 'Break duration required', description: 'Enter a break duration or turn off the break setting.', variant: 'destructive' });
+        return;
+      }
+      const num = Number(rawDur);
+      if (isNaN(num) || num < 0) {
+        toast({ title: 'Invalid break duration', description: 'Break duration must be a non-negative number.', variant: 'destructive' });
+        return;
+      }
+      const minutes = profileForm.break_unit === 'hours' ? Math.round(num * 60) : Math.round(num);
+      if (minutes > 24 * 60) {
+        toast({ title: 'Break too long', description: 'Break duration cannot exceed 24 hours.', variant: 'destructive' });
+        return;
+      }
+      breakMinutesToSave = minutes;
+      breakIsPaidToSave = profileForm.break_is_paid;
+    }
     setProfileSaving(true);
     try {
       const { error: aErr } = await supabase
@@ -1073,6 +1146,8 @@ const PortalDashboard = () => {
           hours_per_week: hpw,
           regular_work_shift: profileForm.regular_work_shift.trim() || null,
           work_days: profileForm.work_days,
+          break_duration_minutes: breakMinutesToSave,
+          break_is_paid: breakIsPaidToSave,
         } as any)
 
 
@@ -1148,12 +1223,32 @@ const PortalDashboard = () => {
       const merged = { ...prev[k], ...patch };
       // Recompute hours whenever either time field is touched
       if ('time_in' in patch || 'time_out' in patch) {
-        const h = computeHours(merged.time_in, merged.time_out);
+        const h = computeHours(merged.time_in, merged.time_out, info?.break_duration_minutes, info?.break_is_paid);
         merged.hours = h > 0 ? String(h) : '';
       }
       return { ...prev, [k]: merged };
     });
   };
+
+  // If the contractor's break configuration changes, recompute every day's billable hours
+  // so the timesheet and totals stay in sync without requiring a re-entry of times.
+  useEffect(() => {
+    setDays((prev) => {
+      const next: Record<string, DayEntry> = {};
+      let changed = false;
+      Object.entries(prev).forEach(([k, entry]) => {
+        if (entry?.time_in && entry?.time_out) {
+          const h = computeHours(entry.time_in, entry.time_out, info?.break_duration_minutes, info?.break_is_paid);
+          const newHours = h > 0 ? String(h) : '';
+          if (newHours !== entry.hours) changed = true;
+          next[k] = { ...entry, hours: newHours };
+        } else {
+          next[k] = entry;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [info?.break_duration_minutes, info?.break_is_paid]);
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>;
@@ -1244,6 +1339,14 @@ const PortalDashboard = () => {
                     </div>
                   )}
                 </div>
+                <ProfileField
+                  label="Break / Lunch"
+                  value={
+                    info?.break_duration_minutes && info.break_duration_minutes > 0
+                      ? `${info.break_duration_minutes % 60 === 0 ? info.break_duration_minutes / 60 + ' hr' : info.break_duration_minutes + ' min'} · ${info.break_is_paid ? 'Paid (included)' : 'Unpaid (deducted)'}`
+                      : null
+                  }
+                />
 
               </div>
             ) : (
@@ -1317,6 +1420,73 @@ const PortalDashboard = () => {
                   <p className="text-xs text-muted-foreground">
                     Select the days you are expected to work each week. This determines when undertime and overtime are tracked.
                   </p>
+                </div>
+                {/* Break / Lunch */}
+                <div className="space-y-3 md:col-span-2 rounded-md border p-3 bg-muted/30">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <Label className="text-sm font-medium">Break / Lunch</Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        If your break is unpaid, it will be automatically deducted from your total billable hours each day you log time.
+                      </p>
+                    </div>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer shrink-0">
+                      <Checkbox
+                        checked={profileForm.break_enabled}
+                        onCheckedChange={(v) => setProfileForm({ ...profileForm, break_enabled: !!v })}
+                      />
+                      <span>Enable</span>
+                    </label>
+                  </div>
+                  {profileForm.break_enabled && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Break duration</Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min="0"
+                            step={profileForm.break_unit === 'hours' ? '0.25' : '1'}
+                            value={profileForm.break_duration}
+                            onChange={(e) => setProfileForm({ ...profileForm, break_duration: e.target.value })}
+                            className="w-28"
+                            placeholder={profileForm.break_unit === 'hours' ? '1' : '60'}
+                          />
+                          <div className="inline-flex rounded-md border overflow-hidden">
+                            {(['minutes', 'hours'] as const).map((u) => (
+                              <button
+                                key={u}
+                                type="button"
+                                onClick={() => setProfileForm({ ...profileForm, break_unit: u })}
+                                className={`px-3 py-1.5 text-xs font-medium transition-colors ${profileForm.break_unit === u ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                              >
+                                {u}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Break type</Label>
+                        <div className="inline-flex rounded-md border overflow-hidden">
+                          <button
+                            type="button"
+                            onClick={() => setProfileForm({ ...profileForm, break_is_paid: false })}
+                            className={`px-3 py-1.5 text-xs font-medium transition-colors ${!profileForm.break_is_paid ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                          >
+                            Unpaid (deducted)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setProfileForm({ ...profileForm, break_is_paid: true })}
+                            className={`px-3 py-1.5 text-xs font-medium transition-colors ${profileForm.break_is_paid ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                          >
+                            Paid (included)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
@@ -1572,7 +1742,37 @@ const PortalDashboard = () => {
                             />
                           </div>
                           <div className="space-y-1">
-                            <Label className="text-[11px] font-medium text-muted-foreground">Total hours</Label>
+                            <div className="flex items-center gap-1">
+                              <Label className="text-[11px] font-medium text-muted-foreground">Total hours</Label>
+                              {(() => {
+                                const breakOn = info?.break_is_paid === false && (info?.break_duration_minutes || 0) > 0;
+                                if (!breakOn) return null;
+                                const raw = computeRawHours(entry.time_in, entry.time_out);
+                                if (raw <= 0) return null;
+                                const mins = info!.break_duration_minutes!;
+                                const breakLabel = mins % 60 === 0 ? `${mins / 60} hr` : `${mins} min`;
+                                const formatTime = (t: string) => {
+                                  if (!t) return '';
+                                  const [hh, mm] = t.split(':').map(Number);
+                                  if (isNaN(hh)) return t;
+                                  const period = hh < 12 ? 'AM' : 'PM';
+                                  const h12 = hh % 12 === 0 ? 12 : hh % 12;
+                                  return `${h12}:${String(mm).padStart(2, '0')} ${period}`;
+                                };
+                                return (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <button type="button" className="text-muted-foreground hover:text-foreground" aria-label="Break deduction info">
+                                        <Info className="w-3 h-3" />
+                                      </button>
+                                    </TooltipTrigger>
+                                    <TooltipContent className="max-w-xs text-xs">
+                                      Includes {breakLabel} unpaid break deduction ({formatTime(entry.time_in)} – {formatTime(entry.time_out)} = {raw.toFixed(2)} hrs raw)
+                                    </TooltipContent>
+                                  </Tooltip>
+                                );
+                              })()}
+                            </div>
                             <Input
                               readOnly
                               value={hoursNum > 0 ? hoursNum.toFixed(2) : '0.00'}

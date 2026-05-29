@@ -1036,6 +1036,8 @@ export type Database = {
       contractor_assignments: {
         Row: {
           applicant_id: string
+          break_duration_minutes: number | null
+          break_is_paid: boolean | null
           client_id: string
           client_rate: number | null
           contact_number: string | null
@@ -1063,6 +1065,8 @@ export type Database = {
         }
         Insert: {
           applicant_id: string
+          break_duration_minutes?: number | null
+          break_is_paid?: boolean | null
           client_id: string
           client_rate?: number | null
           contact_number?: string | null
@@ -1090,6 +1094,8 @@ export type Database = {
         }
         Update: {
           applicant_id?: string
+          break_duration_minutes?: number | null
+          break_is_paid?: boolean | null
           client_id?: string
           client_rate?: number | null
           contact_number?: string | null
