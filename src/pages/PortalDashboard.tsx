@@ -222,6 +222,21 @@ const computeHours = (
   return applyBreakDeduction(raw, breakMinutes, breakIsPaid);
 };
 
+// Convert stored break (always minutes) into the profile form's display unit.
+const breakStateToForm = (
+  minutes: number | null | undefined,
+  isPaid: boolean | null | undefined
+): { break_duration: string; break_unit: 'minutes' | 'hours'; break_is_paid: boolean; break_enabled: boolean } => {
+  if (minutes == null || minutes <= 0) {
+    return { break_duration: '', break_unit: 'minutes', break_is_paid: false, break_enabled: false };
+  }
+  // Prefer hours display when divisible
+  if (minutes % 60 === 0) {
+    return { break_duration: String(minutes / 60), break_unit: 'hours', break_is_paid: !!isPaid, break_enabled: true };
+  }
+  return { break_duration: String(minutes), break_unit: 'minutes', break_is_paid: !!isPaid, break_enabled: true };
+};
+
 const formatHoursLabel = (h: number) => (h > 0 ? h.toFixed(2) : '0.00');
 
 // Parse a wide variety of user-typed time strings into "HH:MM" (24h). Returns '' if not parseable yet.
