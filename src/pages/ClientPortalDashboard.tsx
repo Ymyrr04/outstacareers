@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Helmet } from 'react-helmet-async';
 import { format } from 'date-fns';
-import { Loader2, LogOut, ArrowLeft, CheckCircle2, Flag, Search, Eye, Building2 } from 'lucide-react';
+import { Loader2, LogOut, ArrowLeft, CheckCircle2, Flag, Search, Eye, Building2, Trash2 } from 'lucide-react';
 
 interface Assignment {
   id: string;
@@ -282,6 +282,23 @@ const ClientPortalDashboard = () => {
     }
   };
 
+  const handleDelete = async (row: RowView) => {
+    if (!clientId || !userId) return;
+    if (!confirm(`Delete timesheet for ${row.contractor_name} (week ending ${row.week_ending_date})? This cannot be undone.`)) return;
+    setActionLoading(true);
+    try {
+      const { error } = await supabase.from('contractor_timesheets').delete().eq('id', row.id);
+      if (error) throw error;
+      toast({ title: 'Timesheet deleted' });
+      if (selected?.id === row.id) setSelected(null);
+      await loadData(clientId);
+    } catch (err: any) {
+      toast({ title: 'Delete failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -393,9 +410,21 @@ const ClientPortalDashboard = () => {
 
                             <TableCell>{statusBadge(r.client_approval_status)}</TableCell>
                             <TableCell className="text-right">
-                              <Button size="sm" variant="outline" onClick={() => setSelected(r)}>
-                                <Eye className="w-3.5 h-3.5 mr-1" /> View
-                              </Button>
+                              <div className="flex justify-end gap-1">
+                                <Button size="sm" variant="outline" onClick={() => setSelected(r)}>
+                                  <Eye className="w-3.5 h-3.5 mr-1" /> View
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  variant="outline"
+                                  onClick={() => handleDelete(r)}
+                                  disabled={actionLoading}
+                                  className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                                  title="Delete timesheet"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </Button>
+                              </div>
                             </TableCell>
                           </TableRow>
                         );
