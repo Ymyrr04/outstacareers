@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getErrorMessageSync } from "@/lib/errors";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { SearchApplicantExpandedView } from '@/components/SearchApplicantExpandedView';
@@ -119,7 +120,7 @@ export function CandidateDetailDialog({ open, onOpenChange, applicantId, initial
       URL.revokeObjectURL(url);
     } catch (err) {
       console.error('Download error:', err);
-      toast.error('Failed to download CV');
+      toast.error(getErrorMessageSync(error, 'Failed to download CV'));
     } finally {
       setDownloadingCv(null);
     }

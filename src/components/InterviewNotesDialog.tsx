@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getErrorMessageSync } from "@/lib/errors";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   AlertDialog,
@@ -93,7 +94,7 @@ export function InterviewNotesDialog({ open, onOpenChange, applicantId, applican
     setSaving(false);
 
     if (error) {
-      toast.error('Failed to add note');
+      toast.error(getErrorMessageSync(error, 'Failed to add note'));
     } else {
       setNewContent('');
       setIsAddingNew(false);
@@ -116,7 +117,7 @@ export function InterviewNotesDialog({ open, onOpenChange, applicantId, applican
     setSaving(false);
 
     if (error) {
-      toast.error('Failed to update note');
+      toast.error(getErrorMessageSync(error, 'Failed to update note'));
     } else {
       setEditingNoteId(null);
       toast.success('Note updated');
@@ -132,7 +133,7 @@ export function InterviewNotesDialog({ open, onOpenChange, applicantId, applican
       .eq('id', noteId);
 
     if (error) {
-      toast.error('Failed to delete note');
+      toast.error(getErrorMessageSync(error, 'Failed to delete note'));
     } else {
       toast.success('Note deleted');
       fetchNotes();

@@ -1,95 +1,157 @@
-// Centralized human-readable error mapping.
-// Always log the raw error to the console; show only the friendly string in UI.
+// Centralized error extraction.
+// Goal: surface the REAL underlying error message to the user.
+// Generic fallback is used ONLY when no readable message exists anywhere on the error object.
 
-const GENERIC = "Something went wrong on our end. Please try again. If the issue continues, contact OutSta support.";
+const GENERIC = "Unexpected error. Please try again.";
 
-const KNOWN: Array<{ test: RegExp; message: string }> = [
-  // Auth / session
-  { test: /invalid login|invalid credentials|invalid grant/i, message: "Incorrect username or password. Please try again." },
-  { test: /user not found|no user found/i, message: "No account found with that username or email." },
-  { test: /user.*(disabled|banned)|account.*(disabled|banned)/i, message: "Your account has been disabled. Please contact your account manager." },
-  { test: /jwt|expired|no authorization|invalid session/i, message: "Your session has expired. Please sign in again." },
-  { test: /unauthorized/i, message: "You are not authorized to do that. Please sign in again." },
-  { test: /forbidden|permission/i, message: "You don't have permission to perform this action." },
-  { test: /not found/i, message: "The requested item could not be found. It may have been deleted or moved." },
+// Noise filters — these strings mean "an error happened but no real reason was attached".
+// We refuse to show them; we keep digging for something more specific.
+const NOISE = /non-2xx|status code|failed to fetch|undefined|edge function returned|networkerror/i;
 
-  // Profile / setup
-  { test: /username.*(taken|in use|exists|duplicate)/i, message: "That username is already in use. Please choose a different one." },
-  { test: /email.*(taken|in use|already.*registered|duplicate|exists)/i, message: "That email is already linked to another account. Please use a different email." },
-  { test: /secondary.*primary|same.*email/i, message: "Secondary email must be different from your primary email." },
-  { test: /invalid.*email|email.*invalid/i, message: "Please enter a valid email address (e.g. name@example.com)." },
-  { test: /username must be|3-40/i, message: "Username must be 3-40 characters and use lowercase letters, numbers, dot, underscore, or hyphen." },
+function clean(text: unknown): string | null {
+  if (text == null) return null;
+  const s = String(text).trim();
+  if (!s) return null;
+  if (NOISE.test(s)) return null;
+  if (s.length > 500) return s.slice(0, 500);
+  return s;
+}
 
-  // Network
-  { test: /failed to fetch|network|networkerror|timeout|timed out/i, message: "Unable to connect. Please check your internet connection and try again." },
-];
+function fromJsonBlob(blob: unknown): string | null {
+  if (!blob || typeof blob !== "object") return null;
+  const b = blob as any;
+  return (
+    clean(b?.message) ||
+    clean(b?.error) ||
+    clean(b?.error_description) ||
+    clean(b?.details) ||
+    clean(b?.hint) ||
+    clean(b?.msg) ||
+    null
+  );
+}
 
-function pickMessage(text: string | undefined | null): string | null {
-  if (!text) return null;
-  for (const { test, message } of KNOWN) {
-    if (test.test(text)) return message;
+function tryParseJson(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return null;
   }
-  return null;
 }
 
 /**
- * Returns a human-readable error message. Always logs the raw error.
- * Reads supabase-js FunctionsHttpError bodies via `error.context.json()` when possible.
+ * Extract the most specific error message available, in this priority order:
+ *   1. error.response.data.message / .error                (axios-style)
+ *   2. error.context body (Supabase FunctionsHttpError)    — JSON .error / .message
+ *   3. error.message                                       (if not noise)
+ *   4. error.error_description                             (Supabase auth)
+ *   5. error.details / .hint                               (Postgres)
+ *   6. String(error)
+ *   7. Generic fallback
  */
 export async function getErrorMessage(err: unknown, fallback = GENERIC): Promise<string> {
-  // Always log raw for debugging
   // eslint-disable-next-line no-console
   console.error("[error]", err);
 
-  if (!err) return fallback;
-  const anyErr = err as any;
+  if (err == null) return fallback;
+  if (typeof err === "string") return clean(err) || fallback;
 
-  // Try Supabase Edge Function response body
+  const e = err as any;
+
+  // 1. axios-style: error.response.data.{message|error}
+  const fromResponse = fromJsonBlob(e?.response?.data);
+  if (fromResponse) return fromResponse;
+
+  // 2. Supabase FunctionsHttpError — context holds the Response object
   try {
-    if (anyErr?.context && typeof anyErr.context.json === "function") {
-      const body = await anyErr.context.json().catch(() => null);
-      const fromBody = pickMessage(body?.error || body?.message);
-      if (fromBody) return fromBody;
-      if (body?.error || body?.message) {
-        // Use server-provided message verbatim when it's already user-facing
-        const raw = String(body.error || body.message);
-        if (raw.length < 240 && !/non-2xx|fetch/i.test(raw)) return raw;
+    const ctx = e?.context;
+    if (ctx) {
+      if (typeof ctx.json === "function") {
+        const body = await ctx.json().catch(() => null);
+        const fromBody = fromJsonBlob(body);
+        if (fromBody) return fromBody;
+      }
+      if (typeof ctx.text === "function") {
+        const text = await ctx.text().catch(() => null);
+        if (text) {
+          const parsed = tryParseJson(text);
+          const fromParsed = fromJsonBlob(parsed);
+          if (fromParsed) return fromParsed;
+          const cleaned = clean(text);
+          if (cleaned) return cleaned;
+        }
+      }
+      // Some shapes expose context.responseText directly
+      if (typeof ctx.responseText === "string") {
+        const parsed = tryParseJson(ctx.responseText);
+        const fromParsed = fromJsonBlob(parsed);
+        if (fromParsed) return fromParsed;
+        const cleaned = clean(ctx.responseText);
+        if (cleaned) return cleaned;
       }
     }
   } catch {
-    /* ignore */
+    /* keep digging */
   }
 
-  const msg = typeof anyErr === "string" ? anyErr : anyErr?.message || anyErr?.error_description || anyErr?.error || "";
-  const status = anyErr?.status ?? anyErr?.statusCode;
+  // 3-5. error.message / error_description / details / hint
+  const direct =
+    clean(e?.message) ||
+    clean(e?.error_description) ||
+    clean(e?.details) ||
+    clean(e?.hint) ||
+    clean(e?.error);
+  if (direct) return direct;
 
-  const fromMsg = pickMessage(msg);
-  if (fromMsg) return fromMsg;
-
-  if (status === 401) return "You are not authorized to do that. Please sign in again.";
+  // 6. Status-code based hints (last resort before stringifying)
+  const status = e?.status ?? e?.statusCode;
+  if (status === 401) return "You are not signed in or your session has expired.";
   if (status === 403) return "You don't have permission to perform this action.";
-  if (status === 404) return "The requested item could not be found. It may have been deleted or moved.";
-  if (status === 408 || status === 504) return "The request timed out. Please check your connection and try again.";
-  if (typeof status === "number" && status >= 500) return fallback;
+  if (status === 404) return "The requested item could not be found.";
+  if (status === 408 || status === 504) return "The request timed out. Please try again.";
 
-  if (msg && !/non-2xx|fetch|edge function/i.test(msg) && msg.length < 240) return msg;
+  // 7. Final stringification attempt
+  const stringified = clean(String(e));
+  if (stringified && stringified !== "[object Object]") return stringified;
+
   return fallback;
 }
 
-/** Sync version for places that can't await (logs raw, returns best-guess). */
+/** Sync version — same priority order but skips async body parsing. */
 export function getErrorMessageSync(err: unknown, fallback = GENERIC): string {
   // eslint-disable-next-line no-console
   console.error("[error]", err);
-  if (!err) return fallback;
-  const anyErr = err as any;
-  const msg = typeof anyErr === "string" ? anyErr : anyErr?.message || anyErr?.error_description || anyErr?.error || "";
-  const status = anyErr?.status ?? anyErr?.statusCode;
-  const fromMsg = pickMessage(msg);
-  if (fromMsg) return fromMsg;
-  if (status === 401) return "You are not authorized to do that. Please sign in again.";
+  if (err == null) return fallback;
+  if (typeof err === "string") return clean(err) || fallback;
+
+  const e = err as any;
+
+  const fromResponse = fromJsonBlob(e?.response?.data);
+  if (fromResponse) return fromResponse;
+
+  // Sync read of context.responseText if present
+  if (typeof e?.context?.responseText === "string") {
+    const parsed = tryParseJson(e.context.responseText);
+    const fromParsed = fromJsonBlob(parsed);
+    if (fromParsed) return fromParsed;
+    const cleaned = clean(e.context.responseText);
+    if (cleaned) return cleaned;
+  }
+
+  const direct =
+    clean(e?.message) ||
+    clean(e?.error_description) ||
+    clean(e?.details) ||
+    clean(e?.hint) ||
+    clean(e?.error);
+  if (direct) return direct;
+
+  const status = e?.status ?? e?.statusCode;
+  if (status === 401) return "You are not signed in or your session has expired.";
   if (status === 403) return "You don't have permission to perform this action.";
-  if (status === 404) return "The requested item could not be found. It may have been deleted or moved.";
-  if (typeof status === "number" && status >= 500) return fallback;
-  if (msg && !/non-2xx|fetch|edge function/i.test(msg) && msg.length < 240) return msg;
+  if (status === 404) return "The requested item could not be found.";
+
+  const stringified = clean(String(e));
+  if (stringified && stringified !== "[object Object]") return stringified;
   return fallback;
 }

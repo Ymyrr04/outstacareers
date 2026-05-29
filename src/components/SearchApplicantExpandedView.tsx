@@ -1,4 +1,5 @@
 import { useState, useCallback } from 'react';
+import { getErrorMessageSync } from "@/lib/errors";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -66,7 +67,7 @@ export const SearchApplicantExpandedView = ({
       setEditingContact(false);
       onApplicantUpdated?.();
     } catch (err: any) {
-      toast.error('Failed to update: ' + err.message);
+      toast.error(getErrorMessageSync(err, 'Failed to update applicant'));
     } finally {
       setSavingContact(false);
     }

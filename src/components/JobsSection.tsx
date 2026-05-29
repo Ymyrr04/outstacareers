@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { getErrorMessageSync } from "@/lib/errors";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -327,7 +328,7 @@ const JobsSection = () => {
         toast.success("Link copied to clipboard!");
         setTimeout(() => setCopied(false), 2000);
       } catch (err) {
-        toast.error("Failed to copy link");
+        toast.error(getErrorMessageSync(err, "Failed to copy link"));
       }
     };
 
