@@ -1199,12 +1199,32 @@ const PortalDashboard = () => {
       const merged = { ...prev[k], ...patch };
       // Recompute hours whenever either time field is touched
       if ('time_in' in patch || 'time_out' in patch) {
-        const h = computeHours(merged.time_in, merged.time_out);
+        const h = computeHours(merged.time_in, merged.time_out, info?.break_duration_minutes, info?.break_is_paid);
         merged.hours = h > 0 ? String(h) : '';
       }
       return { ...prev, [k]: merged };
     });
   };
+
+  // If the contractor's break configuration changes, recompute every day's billable hours
+  // so the timesheet and totals stay in sync without requiring a re-entry of times.
+  useEffect(() => {
+    setDays((prev) => {
+      const next: Record<string, DayEntry> = {};
+      let changed = false;
+      Object.entries(prev).forEach(([k, entry]) => {
+        if (entry?.time_in && entry?.time_out) {
+          const h = computeHours(entry.time_in, entry.time_out, info?.break_duration_minutes, info?.break_is_paid);
+          const newHours = h > 0 ? String(h) : '';
+          if (newHours !== entry.hours) changed = true;
+          next[k] = { ...entry, hours: newHours };
+        } else {
+          next[k] = entry;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, [info?.break_duration_minutes, info?.break_is_paid]);
 
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>;
