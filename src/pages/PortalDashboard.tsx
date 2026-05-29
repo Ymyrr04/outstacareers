@@ -1413,6 +1413,73 @@ const PortalDashboard = () => {
                     Select the days you are expected to work each week. This determines when undertime and overtime are tracked.
                   </p>
                 </div>
+                {/* Break / Lunch */}
+                <div className="space-y-3 md:col-span-2 rounded-md border p-3 bg-muted/30">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <Label className="text-sm font-medium">Break / Lunch</Label>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        If your break is unpaid, it will be automatically deducted from your total billable hours each day you log time.
+                      </p>
+                    </div>
+                    <label className="flex items-center gap-2 text-sm cursor-pointer shrink-0">
+                      <Checkbox
+                        checked={profileForm.break_enabled}
+                        onCheckedChange={(v) => setProfileForm({ ...profileForm, break_enabled: !!v })}
+                      />
+                      <span>Enable</span>
+                    </label>
+                  </div>
+                  {profileForm.break_enabled && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Break duration</Label>
+                        <div className="flex items-center gap-2">
+                          <Input
+                            type="number"
+                            min="0"
+                            step={profileForm.break_unit === 'hours' ? '0.25' : '1'}
+                            value={profileForm.break_duration}
+                            onChange={(e) => setProfileForm({ ...profileForm, break_duration: e.target.value })}
+                            className="w-28"
+                            placeholder={profileForm.break_unit === 'hours' ? '1' : '60'}
+                          />
+                          <div className="inline-flex rounded-md border overflow-hidden">
+                            {(['minutes', 'hours'] as const).map((u) => (
+                              <button
+                                key={u}
+                                type="button"
+                                onClick={() => setProfileForm({ ...profileForm, break_unit: u })}
+                                className={`px-3 py-1.5 text-xs font-medium transition-colors ${profileForm.break_unit === u ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                              >
+                                {u}
+                              </button>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs">Break type</Label>
+                        <div className="inline-flex rounded-md border overflow-hidden">
+                          <button
+                            type="button"
+                            onClick={() => setProfileForm({ ...profileForm, break_is_paid: false })}
+                            className={`px-3 py-1.5 text-xs font-medium transition-colors ${!profileForm.break_is_paid ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                          >
+                            Unpaid (deducted)
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setProfileForm({ ...profileForm, break_is_paid: true })}
+                            className={`px-3 py-1.5 text-xs font-medium transition-colors ${profileForm.break_is_paid ? 'bg-primary text-primary-foreground' : 'bg-background text-muted-foreground hover:bg-muted'}`}
+                          >
+                            Paid (included)
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             )}
             <DialogFooter className="gap-2">
