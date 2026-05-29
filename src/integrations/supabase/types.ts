@@ -1055,6 +1055,7 @@ export type Database = {
           start_date: string | null
           status: string | null
           status_changed_at: string | null
+          sunday_hours_excluded: boolean
           timesheet_link: string | null
           timezone: string | null
           updated_at: string
@@ -1081,6 +1082,7 @@ export type Database = {
           start_date?: string | null
           status?: string | null
           status_changed_at?: string | null
+          sunday_hours_excluded?: boolean
           timesheet_link?: string | null
           timezone?: string | null
           updated_at?: string
@@ -1107,6 +1109,7 @@ export type Database = {
           start_date?: string | null
           status?: string | null
           status_changed_at?: string | null
+          sunday_hours_excluded?: boolean
           timesheet_link?: string | null
           timezone?: string | null
           updated_at?: string
