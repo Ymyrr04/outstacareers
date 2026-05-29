@@ -553,13 +553,31 @@ const PortalDashboard = () => {
     return new Date(k + 'T00:00:00').getDay() === 0;
   };
 
+  // Total hours INCLUDES Sunday hours (so the contractor sees their full effort).
+  // Billing/invoice math uses `billableHours` below, which excludes Sunday when
+  // the sunday-exclusion exception is enabled.
   const totalHours = useMemo(() => {
     return dateKeys.reduce((sum, k) => {
-      if (isExcludedDay(k)) return sum;
+      const v = parseFloat(days[k]?.hours || '0');
+      return sum + (isNaN(v) ? 0 : v);
+    }, 0);
+  }, [days, dateKeys]);
+
+  // Sum of hours logged on excluded (Sunday) days — shown for transparency,
+  // but NOT billed and NOT counted as OT.
+  const excludedHours = useMemo(() => {
+    return dateKeys.reduce((sum, k) => {
+      if (!isExcludedDay(k)) return sum;
       const v = parseFloat(days[k]?.hours || '0');
       return sum + (isNaN(v) ? 0 : v);
     }, 0);
   }, [days, dateKeys, info?.sunday_hours_excluded]);
+
+  // Billable hours = total minus the silently-excluded (Sunday) hours.
+  const billableHours = useMemo(
+    () => Number((totalHours - excludedHours).toFixed(2)),
+    [totalHours, excludedHours]
+  );
 
 
   const loadAll = async () => {
