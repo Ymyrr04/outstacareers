@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Trash2, KeyRound, User as UserIcon, Copy } from 'lucide-react';
+import { Loader2, Plus, Trash2, KeyRound, User as UserIcon, Copy, Mail, Phone, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface PortalUser {
@@ -14,6 +14,11 @@ interface PortalUser {
   email: string | null;
   must_change_password: boolean;
   created_at: string;
+  full_name: string | null;
+  primary_email: string | null;
+  secondary_email: string | null;
+  phone: string | null;
+  is_first_login: boolean | null;
 }
 
 const DEFAULT_PASSWORD = 'OutSta2026!';
@@ -28,12 +33,13 @@ export function ClientPortalAccountsSection({ clientId }: { clientId: string }) 
   const [busy, setBusy] = useState(false);
   const [resetFor, setResetFor] = useState<string | null>(null);
   const [resetPwd, setResetPwd] = useState(DEFAULT_PASSWORD);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const fetchAccounts = async () => {
     setLoading(true);
     const { data, error } = await supabase
       .from('client_portal_users')
-      .select('id, username, email, must_change_password, created_at')
+      .select('id, username, email, must_change_password, created_at, full_name, primary_email, secondary_email, phone, is_first_login')
       .eq('client_id', clientId)
       .order('created_at', { ascending: false });
     if (error) toast({ title: 'Failed to load accounts', description: error.message, variant: 'destructive' });
@@ -173,8 +179,49 @@ export function ClientPortalAccountsSection({ clientId }: { clientId: string }) 
                     </button>
                   </div>
                   <p className="text-xs text-muted-foreground mt-0.5">
+                    {a.full_name ? <span className="font-medium text-foreground">{a.full_name} · </span> : null}
                     Created {format(new Date(a.created_at), 'MMM d, yyyy')}
+                    {a.is_first_login === false && <span className="ml-2 text-[10px] uppercase tracking-wide bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">Profile complete</span>}
                   </p>
+
+                  <button
+                    type="button"
+                    onClick={() => setExpanded((s) => ({ ...s, [a.id]: !s[a.id] }))}
+                    className="mt-2 inline-flex items-center gap-1 text-xs text-primary hover:underline"
+                  >
+                    {expanded[a.id] ? <><ChevronUp className="w-3 h-3" /> Hide profile details</> : <><ChevronDown className="w-3 h-3" /> View profile details</>}
+                  </button>
+
+                  {expanded[a.id] && (
+                    <div className="mt-2 rounded-md border bg-muted/30 p-3 space-y-1.5 text-xs">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
+                        <div>
+                          <div className="text-muted-foreground">Full name</div>
+                          <div className="font-medium">{a.full_name || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Username</div>
+                          <div className="font-medium">{a.username || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground flex items-center gap-1"><Mail className="w-3 h-3" /> Primary email</div>
+                          <div className="font-medium break-all">{a.primary_email || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground flex items-center gap-1"><Mail className="w-3 h-3" /> Secondary email</div>
+                          <div className="font-medium break-all">{a.secondary_email || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground flex items-center gap-1"><Phone className="w-3 h-3" /> Phone</div>
+                          <div className="font-medium">{a.phone || '—'}</div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Setup status</div>
+                          <div className="font-medium">{a.is_first_login === false ? 'Completed' : 'Pending first login'}</div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
                   {resetFor === a.id && (
                     <div className="mt-3 flex items-end gap-2">
