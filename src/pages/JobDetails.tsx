@@ -117,7 +117,7 @@ const JobDetails = () => {
       toast.success("Link copied to clipboard!");
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      toast.error(getErrorMessageSync(error, "Failed to copy link"));
+      toast.error(getErrorMessageSync(err, "Failed to copy link"));
     }
   };
 
