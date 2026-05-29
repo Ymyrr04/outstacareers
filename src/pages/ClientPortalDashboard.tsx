@@ -282,6 +282,23 @@ const ClientPortalDashboard = () => {
     }
   };
 
+  const handleDelete = async (row: RowView) => {
+    if (!clientId || !userId) return;
+    if (!confirm(`Delete timesheet for ${row.contractor_name} (week ending ${row.week_ending_date})? This cannot be undone.`)) return;
+    setActionLoading(true);
+    try {
+      const { error } = await supabase.from('contractor_timesheets').delete().eq('id', row.id);
+      if (error) throw error;
+      toast({ title: 'Timesheet deleted' });
+      if (selected?.id === row.id) setSelected(null);
+      await loadData(clientId);
+    } catch (err: any) {
+      toast({ title: 'Delete failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
