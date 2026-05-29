@@ -5,7 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Trash2, KeyRound, User as UserIcon, Copy } from 'lucide-react';
+import { Loader2, Plus, Trash2, KeyRound, User as UserIcon, Copy, Mail, Phone, ChevronDown, ChevronUp } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface PortalUser {
@@ -14,6 +14,11 @@ interface PortalUser {
   email: string | null;
   must_change_password: boolean;
   created_at: string;
+  full_name: string | null;
+  primary_email: string | null;
+  secondary_email: string | null;
+  phone: string | null;
+  is_first_login: boolean | null;
 }
 
 const DEFAULT_PASSWORD = 'OutSta2026!';
