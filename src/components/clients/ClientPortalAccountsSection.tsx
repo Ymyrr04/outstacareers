@@ -33,6 +33,7 @@ export function ClientPortalAccountsSection({ clientId }: { clientId: string }) 
   const [busy, setBusy] = useState(false);
   const [resetFor, setResetFor] = useState<string | null>(null);
   const [resetPwd, setResetPwd] = useState(DEFAULT_PASSWORD);
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
 
   const fetchAccounts = async () => {
     setLoading(true);
