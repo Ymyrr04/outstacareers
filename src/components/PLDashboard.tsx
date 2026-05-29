@@ -11,6 +11,8 @@ import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 import { AdminLeaveApplications } from '@/components/AdminLeaveApplications';
 import { CollapsibleSection } from '@/components/pl/CollapsibleSection';
