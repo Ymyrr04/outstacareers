@@ -69,6 +69,7 @@ const ClientPortalLogin = () => {
 
       if ((cpu as any).is_first_login) navigate('/client-portal/setup');
       else if (cpu.must_change_password) navigate('/client-portal/change-password');
+      else navigate('/client-portal');
     } catch (err: any) {
       toast({ title: 'Login failed', description: await getErrorMessage(err, 'Incorrect username or password. Please try again.'), variant: 'destructive' });
 
