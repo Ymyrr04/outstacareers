@@ -23,8 +23,10 @@ interface Assignment {
   timezone: string | null;
   start_date: string | null;
   status: string | null;
+  sunday_hours_excluded: boolean | null;
   applicant: { full_name: string; email: string } | null;
 }
+
 
 interface Timesheet {
   id: string;
