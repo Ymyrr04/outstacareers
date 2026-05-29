@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { getErrorMessageSync } from "@/lib/errors";
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
@@ -628,7 +629,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
 
     if (error) {
       updateCandidateStageInState(candidate.id, previousStage);
-      toast.error('Failed to move candidate');
+      toast.error(getErrorMessageSync(error, 'Failed to move candidate'));
       return;
     }
 
@@ -666,7 +667,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     if (error) {
       // Rollback
       prevById.forEach((prevStatus, id) => updateCandidateStageInState(id, prevStatus));
-      toast.error('Failed to move selected candidates');
+      toast.error(getErrorMessageSync(error, 'Failed to move selected candidates'));
       return;
     }
 
@@ -774,7 +775,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     });
 
     if (insertError) {
-      toast.error('Failed to delete applicant');
+      toast.error(getErrorMessageSync(error, 'Failed to delete applicant'));
       return;
     }
 

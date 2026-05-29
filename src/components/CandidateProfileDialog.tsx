@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { getErrorMessageSync } from "@/lib/errors";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -69,7 +70,7 @@ export function CandidateProfileDialog({ open, onOpenChange, applicantId, applic
     });
     setSaving(false);
     if (error) {
-      toast.error('Failed to add profile');
+      toast.error(getErrorMessageSync(error, 'Failed to add profile'));
     } else {
       toast.success('Additional profile added');
       setIsAddingNew(false);
@@ -90,7 +91,7 @@ export function CandidateProfileDialog({ open, onOpenChange, applicantId, applic
       .eq('id', profileId);
     setSaving(false);
     if (error) {
-      toast.error('Failed to update profile');
+      toast.error(getErrorMessageSync(error, 'Failed to update profile'));
     } else {
       toast.success('Profile updated');
       setEditingId(null);
@@ -101,7 +102,7 @@ export function CandidateProfileDialog({ open, onOpenChange, applicantId, applic
   const handleDeleteProfile = async (profileId: string) => {
     const { error } = await supabase.from('candidate_additional_profiles').delete().eq('id', profileId);
     if (error) {
-      toast.error('Failed to delete profile');
+      toast.error(getErrorMessageSync(error, 'Failed to delete profile'));
     } else {
       toast.success('Profile deleted');
       fetchData();

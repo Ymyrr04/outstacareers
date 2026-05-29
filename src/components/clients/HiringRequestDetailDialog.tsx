@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { getErrorMessageSync } from "@/lib/errors";
 import { format } from 'date-fns';
 import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -224,7 +225,7 @@ export const HiringRequestDetailDialog = ({
       });
     
     if (error) {
-      toast.error('Failed to add comment');
+      toast.error(getErrorMessageSync(error, 'Failed to add comment'));
     } else {
       // Check for @mentions and send email + Slack notifications
       const mentionPattern = /@(\w+)/g;
@@ -334,7 +335,7 @@ export const HiringRequestDetailDialog = ({
       .eq('id', commentId);
     
     if (error) {
-      toast.error('Failed to update comment');
+      toast.error(getErrorMessageSync(error, 'Failed to update comment'));
     } else {
       setEditingCommentId(null);
       setEditingCommentContent('');
@@ -353,7 +354,7 @@ export const HiringRequestDetailDialog = ({
       .eq('id', commentId);
     
     if (error) {
-      toast.error('Failed to delete comment');
+      toast.error(getErrorMessageSync(error, 'Failed to delete comment'));
     } else {
       fetchComments(request.id);
       // Sync comment count from actual database records
