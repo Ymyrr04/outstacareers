@@ -633,6 +633,7 @@ const PortalDashboard = () => {
       hourly_rate: nextInfo.hourly_rate != null ? String(nextInfo.hourly_rate) : '',
       regular_work_shift: nextInfo.regular_work_shift || '9:00 AM – 6:00 PM EST',
       work_days: [...nextInfo.work_days],
+      ...breakStateToForm(nextInfo.break_duration_minutes, nextInfo.break_is_paid),
     });
 
     // Force profile completion on first login if any required field is missing.
