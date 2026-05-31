@@ -32,7 +32,15 @@ import ClientPortalSetup from "./pages/ClientPortalSetup";
 import ClientPortalResetPassword from "./pages/ClientPortalResetPassword";
 import DomainGuard from "./components/DomainGuard";
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      refetchOnReconnect: false,
+      staleTime: 5 * 60 * 1000,
+    },
+  },
+});
 
 const guard = (element: React.ReactNode) => <DomainGuard>{element}</DomainGuard>;
 
