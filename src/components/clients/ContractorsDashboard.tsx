@@ -427,17 +427,8 @@ export const ContractorsDashboard = () => {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'applicants_prescreen' }, fetchContractors)
       .subscribe();
 
-    const refreshWhenVisible = () => {
-      if (!document.hidden) fetchContractors();
-    };
-
-    window.addEventListener('focus', fetchContractors);
-    document.addEventListener('visibilitychange', refreshWhenVisible);
-
     return () => {
       supabase.removeChannel(channel);
-      window.removeEventListener('focus', fetchContractors);
-      document.removeEventListener('visibilitychange', refreshWhenVisible);
     };
   }, []);
 
