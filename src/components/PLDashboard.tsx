@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 import { AdminLeaveApplications } from '@/components/AdminLeaveApplications';
 import { CollapsibleSection } from '@/components/pl/CollapsibleSection';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface TimesheetRow {
   id: string;
