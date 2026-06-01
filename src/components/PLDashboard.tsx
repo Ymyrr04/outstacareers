@@ -572,16 +572,11 @@ export const PLDashboard = () => {
           r.contractor?.client?.company_name?.toLowerCase().includes(q);
         if (!match) return false;
       }
-      if (dateFrom || dateTo) {
-        const submitted = r.submitted_at ? new Date(r.submitted_at).getTime() : 0;
-        if (dateFrom) {
-          const from = new Date(dateFrom + 'T00:00:00').getTime();
-          if (submitted < from) return false;
-        }
-        if (dateTo) {
-          const to = new Date(dateTo + 'T23:59:59').getTime();
-          if (submitted > to) return false;
-        }
+      if (weekMonday) {
+        const start = new Date(weekMonday); start.setHours(0,0,0,0);
+        const end = new Date(weekMonday); end.setDate(end.getDate() + 6); end.setHours(23,59,59,999);
+        const we = r.week_ending_date ? new Date(r.week_ending_date + 'T12:00:00').getTime() : 0;
+        if (we < start.getTime() || we > end.getTime()) return false;
       }
       if (statusFilter && statusFilter !== 'all') {
         const [scope, val] = statusFilter.split(':');
