@@ -1003,14 +1003,14 @@ export const PLDashboard = () => {
                   <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('company')}>Company<SortIcon active={contractorSort.key === 'company'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('status')}>Status<SortIcon active={contractorSort.key === 'status'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('rate')}>Rate<SortIcon active={contractorSort.key === 'rate'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead>Latest Submission</TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('latest')}>Latest Submission<SortIcon active={contractorSort.key === 'latest'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('hpw')}>Regular Work Hours<SortIcon active={contractorSort.key === 'hpw'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead className="text-right">Work Hours</TableHead>
-                  <TableHead className="text-right">OT</TableHead>
-                  <TableHead className="text-right">Bonus</TableHead>
-                  <TableHead className="text-right">Deposit</TableHead>
-                  <TableHead>Client Approval</TableHead>
-                  <TableHead>Portal Account</TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('workHours')}>Work Hours<SortIcon active={contractorSort.key === 'workHours'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('ot')}>OT<SortIcon active={contractorSort.key === 'ot'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('bonus')}>Bonus<SortIcon active={contractorSort.key === 'bonus'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('deposit')}>Deposit<SortIcon active={contractorSort.key === 'deposit'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('approval')}>Client Approval<SortIcon active={contractorSort.key === 'approval'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('portal')}>Portal Account<SortIcon active={contractorSort.key === 'portal'} dir={contractorSort.dir} /></button></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
