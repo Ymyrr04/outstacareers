@@ -101,6 +101,7 @@ const SCORE_CATEGORIES = [
 
 export const TalentScoutDashboard = () => {
   const { toast } = useToast();
+  const { getDisplayName, orderStages } = useStageSettings();
   const [jobTitle, setJobTitle] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [requirements, setRequirements] = useState<string[]>(['']);
