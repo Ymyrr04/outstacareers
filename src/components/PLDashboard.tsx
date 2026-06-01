@@ -307,6 +307,22 @@ export const PLDashboard = () => {
 
   useEffect(() => { fetchData(); }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+    const loadLeaveCount = async () => {
+      const { count } = await supabase
+        .from('contractor_leave_applications' as any)
+        .select('*', { count: 'exact', head: true });
+      if (!cancelled) setLeaveCount(count || 0);
+    };
+    loadLeaveCount();
+    const channel = supabase
+      .channel('pl_leave_count')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contractor_leave_applications' }, loadLeaveCount)
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+  }, []);
+
   const callProvision = async (payload?: Record<string, unknown>) => {
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
     if (sessionError) throw new Error(`Unable to read admin session: ${sessionError.message}`);
