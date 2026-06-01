@@ -160,7 +160,7 @@ export const PLDashboard = () => {
   const [clientPortalClientIds, setClientPortalClientIds] = useState<Set<string>>(new Set());
   const [updatingOutstaId, setUpdatingOutstaId] = useState<string | null>(null);
   const [contractorSearch, setContractorSearch] = useState('');
-  const [contractorSort, setContractorSort] = useState<{ key: 'name' | 'company' | 'status' | 'rate' | 'hpw'; dir: 'asc' | 'desc' }>({ key: 'company', dir: 'asc' });
+  const [contractorSort, setContractorSort] = useState<{ key: 'name' | 'company' | 'status' | 'rate' | 'hpw' | 'latest' | 'workHours' | 'ot' | 'bonus' | 'deposit' | 'approval' | 'portal'; dir: 'asc' | 'desc' }>({ key: 'company', dir: 'asc' });
   const [tsSort, setTsSort] = useState<{ key: 'name' | 'company' | 'week' | 'hours' | 'ot' | 'incentives' | 'status' | 'submitted'; dir: 'asc' | 'desc' }>({ key: 'submitted', dir: 'desc' });
   const [stats, setStats] = useState({ portalUsers: 0, totalEligibleContractors: 0 });
   const [viewTimesheet, setViewTimesheet] = useState<TimesheetRow | null>(null);
@@ -624,6 +624,37 @@ export const PLDashboard = () => {
         case 'status': return cmp(a.status, b.status, d);
         case 'rate': return cmp(a.hourly_rate != null ? Number(a.hourly_rate) : null, b.hourly_rate != null ? Number(b.hourly_rate) : null, d);
         case 'hpw': return cmp(a.hours_per_week, b.hours_per_week, d);
+        case 'latest': return cmp(
+          a.latestTimesheet ? new Date(a.latestTimesheet.week_ending_date).getTime() : null,
+          b.latestTimesheet ? new Date(b.latestTimesheet.week_ending_date).getTime() : null,
+          d
+        );
+        case 'workHours': return cmp(
+          a.latestTimesheet ? Number(a.latestTimesheet.total_hours) : null,
+          b.latestTimesheet ? Number(b.latestTimesheet.total_hours) : null,
+          d
+        );
+        case 'ot': return cmp(
+          a.latestTimesheet ? Number(a.latestTimesheet.overtime_hours) : null,
+          b.latestTimesheet ? Number(b.latestTimesheet.overtime_hours) : null,
+          d
+        );
+        case 'bonus': return cmp(
+          a.latestTimesheet ? Number(a.latestTimesheet.incentive_amount || 0) : null,
+          b.latestTimesheet ? Number(b.latestTimesheet.incentive_amount || 0) : null,
+          d
+        );
+        case 'deposit': return cmp(
+          a.latestTimesheet?.isDeposit ? Number(a.latestTimesheet.depositHours) : null,
+          b.latestTimesheet?.isDeposit ? Number(b.latestTimesheet.depositHours) : null,
+          d
+        );
+        case 'approval': return cmp(a.latestTimesheet?.client_approval_status ?? null, b.latestTimesheet?.client_approval_status ?? null, d);
+        case 'portal': return cmp(
+          a.hasPortal ? (a.mustChange ? 1 : 2) : 0,
+          b.hasPortal ? (b.mustChange ? 1 : 2) : 0,
+          d
+        );
       }
     });
 
@@ -775,14 +806,14 @@ export const PLDashboard = () => {
                   <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('company')}>Company<SortIcon active={contractorSort.key === 'company'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('status')}>Status<SortIcon active={contractorSort.key === 'status'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('rate')}>Rate<SortIcon active={contractorSort.key === 'rate'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead>Latest Submission</TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('latest')}>Latest Submission<SortIcon active={contractorSort.key === 'latest'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('hpw')}>Regular Work Hours<SortIcon active={contractorSort.key === 'hpw'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead className="text-right">Work Hours</TableHead>
-                  <TableHead className="text-right w-14">OT</TableHead>
-                  <TableHead className="text-right w-16">Bonus</TableHead>
-                  <TableHead className="text-right w-20">Deposit</TableHead>
-                  <TableHead className="w-28">Client Approval</TableHead>
-                  <TableHead>Portal Account</TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('workHours')}>Work Hours<SortIcon active={contractorSort.key === 'workHours'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead className="text-right w-14"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('ot')}>OT<SortIcon active={contractorSort.key === 'ot'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead className="text-right w-16"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('bonus')}>Bonus<SortIcon active={contractorSort.key === 'bonus'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead className="text-right w-20"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('deposit')}>Deposit<SortIcon active={contractorSort.key === 'deposit'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead className="w-28"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('approval')}>Client Approval<SortIcon active={contractorSort.key === 'approval'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('portal')}>Portal Account<SortIcon active={contractorSort.key === 'portal'} dir={contractorSort.dir} /></button></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -972,14 +1003,14 @@ export const PLDashboard = () => {
                   <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('company')}>Company<SortIcon active={contractorSort.key === 'company'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('status')}>Status<SortIcon active={contractorSort.key === 'status'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('rate')}>Rate<SortIcon active={contractorSort.key === 'rate'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead>Latest Submission</TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('latest')}>Latest Submission<SortIcon active={contractorSort.key === 'latest'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('hpw')}>Regular Work Hours<SortIcon active={contractorSort.key === 'hpw'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead className="text-right">Work Hours</TableHead>
-                  <TableHead className="text-right">OT</TableHead>
-                  <TableHead className="text-right">Bonus</TableHead>
-                  <TableHead className="text-right">Deposit</TableHead>
-                  <TableHead>Client Approval</TableHead>
-                  <TableHead>Portal Account</TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('workHours')}>Work Hours<SortIcon active={contractorSort.key === 'workHours'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('ot')}>OT<SortIcon active={contractorSort.key === 'ot'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('bonus')}>Bonus<SortIcon active={contractorSort.key === 'bonus'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('deposit')}>Deposit<SortIcon active={contractorSort.key === 'deposit'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('approval')}>Client Approval<SortIcon active={contractorSort.key === 'approval'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('portal')}>Portal Account<SortIcon active={contractorSort.key === 'portal'} dir={contractorSort.dir} /></button></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
