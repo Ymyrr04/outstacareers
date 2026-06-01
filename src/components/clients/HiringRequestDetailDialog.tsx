@@ -161,7 +161,7 @@ export const HiringRequestDetailDialog = ({
 
   const fetchSources = async () => {
     const { data } = await supabase
-      .from('hiring_requests')
+      .from('client_hiring_requests')
       .select('source')
       .not('source', 'is', null);
     if (data) {
