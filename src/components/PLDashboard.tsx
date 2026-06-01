@@ -933,12 +933,10 @@ export const PLDashboard = () => {
           )}
         </div>
       </CollapsibleSection>
+      )}
 
-      <div style={{ order: sectionOrder.indexOf('leave') }}>
-        <AdminLeaveApplications />
-      </div>
+      {activeSubtab === 'contractors' && filteredInternalContractors.length > 0 && (
 
-      {filteredInternalContractors.length > 0 && (
         <CollapsibleSection
           storageKey="pl_section_internal_contractors"
           title="Internal Team — OutSta"
