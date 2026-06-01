@@ -721,17 +721,52 @@ export const HiringRequestDetailDialog = ({
               <div className="flex-1">
                 {editingField === 'source' ? (
                   <div className="flex items-center gap-2">
-                    <Input
-                      autoFocus
-                      value={formData.source}
-                      onChange={(e) => setFormData(prev => ({ ...prev, source: e.target.value }))}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') handleFieldUpdate('source', formData.source);
-                        if (e.key === 'Escape') setEditingField(null);
-                      }}
-                      className="h-7 text-sm"
-                      placeholder="e.g., BNI Revival, LinkedIn"
-                    />
+                    <div className="relative flex-1">
+                      <Input
+                        autoFocus
+                        value={formData.source}
+                        onChange={(e) => setFormData(prev => ({ ...prev, source: e.target.value }))}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') handleFieldUpdate('source', formData.source);
+                          if (e.key === 'Escape') setEditingField(null);
+                        }}
+                        className="h-7 text-sm pr-7"
+                        placeholder="e.g., BNI Revival, LinkedIn"
+                      />
+                      <Popover open={sourcePickerOpen} onOpenChange={setSourcePickerOpen}>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className="absolute right-1 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground"
+                            onMouseDown={(e) => e.preventDefault()}
+                          >
+                            <ChevronDown className="w-3 h-3" />
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-64 p-1 max-h-64 overflow-y-auto" align="end">
+                          {sources.length === 0 ? (
+                            <div className="px-2 py-1.5 text-xs text-muted-foreground">No existing sources</div>
+                          ) : (
+                            sources
+                              .filter(s => !formData.source || s.toLowerCase().includes(formData.source.toLowerCase()))
+                              .map(s => (
+                                <button
+                                  key={s}
+                                  type="button"
+                                  className="w-full text-left px-2 py-1.5 text-sm rounded hover:bg-muted"
+                                  onClick={() => {
+                                    setFormData(prev => ({ ...prev, source: s }));
+                                    setSourcePickerOpen(false);
+                                    handleFieldUpdate('source', s);
+                                  }}
+                                >
+                                  {s}
+                                </button>
+                              ))
+                          )}
+                        </PopoverContent>
+                      </Popover>
+                    </div>
                     <Button 
                       size="sm" 
                       variant="ghost" 
