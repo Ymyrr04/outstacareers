@@ -160,16 +160,18 @@ export const HiringRequestDetailDialog = ({
   }, [request]);
 
   const fetchSources = async () => {
-    const { data } = await supabase
-      .from('client_hiring_requests')
-      .select('source')
-      .not('source', 'is', null);
-    if (data) {
-      const unique = [...new Set(
-        data.map((r: any) => (r.source || '').trim()).filter((s: string) => s.length > 0)
-      )].sort((a, b) => a.localeCompare(b));
-      setSources(unique);
-    }
+    const [hr, ca] = await Promise.all([
+      supabase.from('client_hiring_requests').select('source').not('source', 'is', null),
+      supabase.from('contractor_assignments').select('source').not('source', 'is', null),
+    ]);
+    const all: string[] = [
+      ...((hr.data as any[]) || []).map(r => r.source),
+      ...((ca.data as any[]) || []).map(r => r.source),
+    ];
+    const unique = [...new Set(
+      all.map(s => (s || '').trim()).filter(s => s.length > 0)
+    )].sort((a, b) => a.localeCompare(b));
+    setSources(unique);
   };
 
   const fetchClients = async () => {
@@ -747,9 +749,7 @@ export const HiringRequestDetailDialog = ({
                           {sources.length === 0 ? (
                             <div className="px-2 py-1.5 text-xs text-muted-foreground">No existing sources</div>
                           ) : (
-                            sources
-                              .filter(s => !formData.source || s.toLowerCase().includes(formData.source.toLowerCase()))
-                              .map(s => (
+                            sources.map(s => (
                                 <button
                                   key={s}
                                   type="button"
