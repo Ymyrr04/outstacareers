@@ -145,6 +145,14 @@ export const PLDashboard = () => {
   const [tsSort, setTsSort] = useState<{ key: 'name' | 'company' | 'week' | 'hours' | 'ot' | 'incentives' | 'status' | 'submitted'; dir: 'asc' | 'desc' }>({ key: 'submitted', dir: 'desc' });
   const [stats, setStats] = useState({ portalUsers: 0, totalEligibleContractors: 0 });
   const [viewTimesheet, setViewTimesheet] = useState<TimesheetRow | null>(null);
+  const [leaveCount, setLeaveCount] = useState(0);
+  const PL_SUBTAB_KEY = 'pl_active_subtab';
+  const [activeSubtab, setActiveSubtab] = useState<string>(() => {
+    try { return localStorage.getItem(PL_SUBTAB_KEY) || 'submissions'; } catch { return 'submissions'; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(PL_SUBTAB_KEY, activeSubtab); } catch {}
+  }, [activeSubtab]);
 
   // Section reordering (persisted per browser)
   const SECTION_DEFS = [
