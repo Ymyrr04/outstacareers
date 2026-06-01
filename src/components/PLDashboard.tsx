@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye, Mail, Settings2 } from 'lucide-react';
+import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye, Mail, Settings2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover';
@@ -135,8 +136,26 @@ export const PLDashboard = () => {
   const [rows, setRows] = useState<TimesheetRow[]>([]);
   const [contractors, setContractors] = useState<ContractorRow[]>([]);
   const [search, setSearch] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const getLastCompletedMonday = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dow = today.getDay(); // 0 = Sunday
+    const lastSunday = new Date(today);
+    lastSunday.setDate(today.getDate() - (dow === 0 ? 0 : dow));
+    const lastMonday = new Date(lastSunday);
+    lastMonday.setDate(lastSunday.getDate() - 6);
+    return lastMonday;
+  };
+  const mondayOf = (d: Date) => {
+    const x = new Date(d);
+    x.setHours(0, 0, 0, 0);
+    const dow = x.getDay();
+    const diff = dow === 0 ? -6 : 1 - dow;
+    x.setDate(x.getDate() + diff);
+    return x;
+  };
+  const [weekMonday, setWeekMonday] = useState<Date | null>(() => getLastCompletedMonday());
+  const [weekPickerOpen, setWeekPickerOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [clientPortalClientIds, setClientPortalClientIds] = useState<Set<string>>(new Set());
   const [updatingOutstaId, setUpdatingOutstaId] = useState<string | null>(null);
@@ -554,16 +573,11 @@ export const PLDashboard = () => {
           r.contractor?.client?.company_name?.toLowerCase().includes(q);
         if (!match) return false;
       }
-      if (dateFrom || dateTo) {
-        const submitted = r.submitted_at ? new Date(r.submitted_at).getTime() : 0;
-        if (dateFrom) {
-          const from = new Date(dateFrom + 'T00:00:00').getTime();
-          if (submitted < from) return false;
-        }
-        if (dateTo) {
-          const to = new Date(dateTo + 'T23:59:59').getTime();
-          if (submitted > to) return false;
-        }
+      if (weekMonday) {
+        const start = new Date(weekMonday); start.setHours(0,0,0,0);
+        const end = new Date(weekMonday); end.setDate(end.getDate() + 6); end.setHours(23,59,59,999);
+        const we = r.week_ending_date ? new Date(r.week_ending_date + 'T12:00:00').getTime() : 0;
+        if (we < start.getTime() || we > end.getTime()) return false;
       }
       if (statusFilter && statusFilter !== 'all') {
         const [scope, val] = statusFilter.split(':');
@@ -1135,26 +1149,62 @@ export const PLDashboard = () => {
         style={{ order: sectionOrder.indexOf('timesheets') }}
         rightSlot={
           <div className="flex items-center gap-2">
-            <Input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="h-8 w-[140px] text-sm"
-              aria-label="From date"
-            />
-            <span className="text-muted-foreground text-xs">to</span>
-            <Input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="h-8 w-[140px] text-sm"
-              aria-label="To date"
-            />
-            {(dateFrom || dateTo) && (
-              <Button variant="ghost" size="sm" className="h-8" onClick={() => { setDateFrom(''); setDateTo(''); }}>
-                Clear
-              </Button>
-            )}
+            <div className="inline-flex items-center rounded-full border border-primary/30 bg-primary/5 text-primary h-8 overflow-hidden">
+              <button
+                type="button"
+                className="px-2 h-full hover:bg-primary/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                onClick={() => {
+                  const base = weekMonday ?? getLastCompletedMonday();
+                  const prev = new Date(base); prev.setDate(prev.getDate() - 7);
+                  setWeekMonday(prev);
+                }}
+                aria-label="Previous week"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <Popover open={weekPickerOpen} onOpenChange={setWeekPickerOpen}>
+                <PopoverTrigger asChild>
+                  <button type="button" className="px-3 h-full text-xs font-medium whitespace-nowrap hover:bg-primary/10 min-w-[200px]">
+                    {weekMonday
+                      ? `${format(weekMonday, 'EEE MMM d')} – ${format(new Date(weekMonday.getTime() + 6 * 86400000), 'EEE MMM d, yyyy')}`
+                      : 'All weeks'}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 pointer-events-auto" align="end">
+                  <div className="p-2 border-b flex items-center justify-between gap-2">
+                    <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setWeekMonday(null); setWeekPickerOpen(false); }}>
+                      All weeks
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setWeekMonday(getLastCompletedMonday()); setWeekPickerOpen(false); }}>
+                      Last week
+                    </Button>
+                  </div>
+                  <Calendar
+                    mode="single"
+                    selected={weekMonday ?? undefined}
+                    onSelect={(d) => { if (d) { setWeekMonday(mondayOf(d)); setWeekPickerOpen(false); } }}
+                    disabled={(d) => mondayOf(d).getTime() > mondayOf(new Date()).getTime()}
+                    weekStartsOn={1}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              <button
+                type="button"
+                className="px-2 h-full hover:bg-primary/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                disabled={!weekMonday || mondayOf(new Date()).getTime() <= weekMonday.getTime()}
+                onClick={() => {
+                  if (!weekMonday) return;
+                  const next = new Date(weekMonday); next.setDate(next.getDate() + 7);
+                  if (next.getTime() > mondayOf(new Date()).getTime()) return;
+                  setWeekMonday(next);
+                }}
+                aria-label="Next week"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="h-8 w-[170px] text-xs">
                 <SelectValue placeholder="All statuses" />
