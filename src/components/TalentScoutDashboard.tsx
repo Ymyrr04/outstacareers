@@ -16,6 +16,7 @@ import { CopyableText } from '@/components/CopyableText';
 import { CandidateDetailDialog } from '@/components/CandidateDetailDialog';
 import { CVImagePreview } from '@/components/CVImagePreview';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useStageSettings } from '@/hooks/useStageSettings';
 
 interface ScoreBreakdown {
   experience_relevance: number;
