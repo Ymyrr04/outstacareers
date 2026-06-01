@@ -154,9 +154,23 @@ export const HiringRequestDetailDialog = ({
       fetchComments(request.id);
       fetchAdminUsers();
       fetchIndustries();
+      fetchSources();
       fetchClients();
     }
   }, [request]);
+
+  const fetchSources = async () => {
+    const { data } = await supabase
+      .from('hiring_requests')
+      .select('source')
+      .not('source', 'is', null);
+    if (data) {
+      const unique = [...new Set(
+        data.map((r: any) => (r.source || '').trim()).filter((s: string) => s.length > 0)
+      )].sort((a, b) => a.localeCompare(b));
+      setSources(unique);
+    }
+  };
 
   const fetchClients = async () => {
     const { data } = await supabase
