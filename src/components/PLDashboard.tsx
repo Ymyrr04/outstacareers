@@ -1126,6 +1126,7 @@ export const PLDashboard = () => {
         </CollapsibleSection>
       )}
 
+      {activeSubtab === 'submissions' && (
       <CollapsibleSection
         storageKey="pl_section_timesheets"
         title="Timesheet Submissions"
