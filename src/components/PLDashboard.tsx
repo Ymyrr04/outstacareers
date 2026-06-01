@@ -1148,26 +1148,62 @@ export const PLDashboard = () => {
         style={{ order: sectionOrder.indexOf('timesheets') }}
         rightSlot={
           <div className="flex items-center gap-2">
-            <Input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="h-8 w-[140px] text-sm"
-              aria-label="From date"
-            />
-            <span className="text-muted-foreground text-xs">to</span>
-            <Input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="h-8 w-[140px] text-sm"
-              aria-label="To date"
-            />
-            {(dateFrom || dateTo) && (
-              <Button variant="ghost" size="sm" className="h-8" onClick={() => { setDateFrom(''); setDateTo(''); }}>
-                Clear
-              </Button>
-            )}
+            <div className="inline-flex items-center rounded-full border border-primary/30 bg-primary/5 text-primary h-8 overflow-hidden">
+              <button
+                type="button"
+                className="px-2 h-full hover:bg-primary/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                onClick={() => {
+                  const base = weekMonday ?? getLastCompletedMonday();
+                  const prev = new Date(base); prev.setDate(prev.getDate() - 7);
+                  setWeekMonday(prev);
+                }}
+                aria-label="Previous week"
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </button>
+              <Popover open={weekPickerOpen} onOpenChange={setWeekPickerOpen}>
+                <PopoverTrigger asChild>
+                  <button type="button" className="px-3 h-full text-xs font-medium whitespace-nowrap hover:bg-primary/10 min-w-[200px]">
+                    {weekMonday
+                      ? `${format(weekMonday, 'EEE MMM d')} – ${format(new Date(weekMonday.getTime() + 6 * 86400000), 'EEE MMM d, yyyy')}`
+                      : 'All weeks'}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 pointer-events-auto" align="end">
+                  <div className="p-2 border-b flex items-center justify-between gap-2">
+                    <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setWeekMonday(null); setWeekPickerOpen(false); }}>
+                      All weeks
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setWeekMonday(getLastCompletedMonday()); setWeekPickerOpen(false); }}>
+                      Last week
+                    </Button>
+                  </div>
+                  <Calendar
+                    mode="single"
+                    selected={weekMonday ?? undefined}
+                    onSelect={(d) => { if (d) { setWeekMonday(mondayOf(d)); setWeekPickerOpen(false); } }}
+                    disabled={(d) => mondayOf(d).getTime() > mondayOf(new Date()).getTime()}
+                    weekStartsOn={1}
+                    initialFocus
+                    className="p-3 pointer-events-auto"
+                  />
+                </PopoverContent>
+              </Popover>
+              <button
+                type="button"
+                className="px-2 h-full hover:bg-primary/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                disabled={!weekMonday || mondayOf(new Date()).getTime() <= weekMonday.getTime()}
+                onClick={() => {
+                  if (!weekMonday) return;
+                  const next = new Date(weekMonday); next.setDate(next.getDate() + 7);
+                  if (next.getTime() > mondayOf(new Date()).getTime()) return;
+                  setWeekMonday(next);
+                }}
+                aria-label="Next week"
+              >
+                <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="h-8 w-[170px] text-xs">
                 <SelectValue placeholder="All statuses" />
