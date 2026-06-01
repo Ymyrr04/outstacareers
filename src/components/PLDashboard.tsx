@@ -624,6 +624,37 @@ export const PLDashboard = () => {
         case 'status': return cmp(a.status, b.status, d);
         case 'rate': return cmp(a.hourly_rate != null ? Number(a.hourly_rate) : null, b.hourly_rate != null ? Number(b.hourly_rate) : null, d);
         case 'hpw': return cmp(a.hours_per_week, b.hours_per_week, d);
+        case 'latest': return cmp(
+          a.latestTimesheet ? new Date(a.latestTimesheet.week_ending_date).getTime() : null,
+          b.latestTimesheet ? new Date(b.latestTimesheet.week_ending_date).getTime() : null,
+          d
+        );
+        case 'workHours': return cmp(
+          a.latestTimesheet ? Number(a.latestTimesheet.total_hours) : null,
+          b.latestTimesheet ? Number(b.latestTimesheet.total_hours) : null,
+          d
+        );
+        case 'ot': return cmp(
+          a.latestTimesheet ? Number(a.latestTimesheet.overtime_hours) : null,
+          b.latestTimesheet ? Number(b.latestTimesheet.overtime_hours) : null,
+          d
+        );
+        case 'bonus': return cmp(
+          a.latestTimesheet ? Number(a.latestTimesheet.incentive_amount || 0) : null,
+          b.latestTimesheet ? Number(b.latestTimesheet.incentive_amount || 0) : null,
+          d
+        );
+        case 'deposit': return cmp(
+          a.latestTimesheet?.isDeposit ? Number(a.latestTimesheet.depositHours) : null,
+          b.latestTimesheet?.isDeposit ? Number(b.latestTimesheet.depositHours) : null,
+          d
+        );
+        case 'approval': return cmp(a.latestTimesheet?.client_approval_status ?? null, b.latestTimesheet?.client_approval_status ?? null, d);
+        case 'portal': return cmp(
+          a.hasPortal ? (a.mustChange ? 1 : 2) : 0,
+          b.hasPortal ? (b.mustChange ? 1 : 2) : 0,
+          d
+        );
       }
     });
 
