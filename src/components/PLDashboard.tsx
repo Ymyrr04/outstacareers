@@ -698,14 +698,49 @@ export const PLDashboard = () => {
             <Settings2 className="w-4 h-4 mr-2" />
             Reorder Sections
           </Button>
-          <Button onClick={handleProvision} disabled={provisioning}>
-            {provisioning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UserPlus className="w-4 h-4 mr-2" />}
-            Provision Accounts
-          </Button>
+          {activeSubtab === 'contractors' && (
+            <Button onClick={handleProvision} disabled={provisioning}>
+              {provisioning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UserPlus className="w-4 h-4 mr-2" />}
+              Provision Accounts
+            </Button>
+          )}
         </div>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <Tabs value={activeSubtab} onValueChange={setActiveSubtab} className="w-full">
+        <TabsList className="h-auto">
+          <TabsTrigger value="submissions" className="gap-2">
+            Weekly Submissions
+            <Badge variant="secondary" className="text-[10px]">{filtered.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="contractors" className="gap-2">
+            Contractors
+            <Badge variant="secondary" className="text-[10px]">{filteredContractors.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="leave" className="gap-2">
+            Leave Requests
+            {leaveCount > 0 && <Badge variant="secondary" className="text-[10px]">{leaveCount}</Badge>}
+          </TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="submissions" className="mt-3">
+          <div className="flex flex-col gap-3" data-pl-tab="submissions">
+            {/* submissions sections injected below via marker */}
+          </div>
+        </TabsContent>
+        <TabsContent value="contractors" className="mt-3">
+          <div className="flex flex-col gap-3" data-pl-tab="contractors">
+            {/* contractors sections injected below via marker */}
+          </div>
+        </TabsContent>
+        <TabsContent value="leave" className="mt-3">
+          <AdminLeaveApplications />
+        </TabsContent>
+      </Tabs>
+
+      {/* legacy wrapper kept hidden to preserve order vars; sections now rendered above per tab */}
+      <div className="hidden">
+
       <CollapsibleSection
         storageKey="pl_section_contractors"
         title="Contractors"
