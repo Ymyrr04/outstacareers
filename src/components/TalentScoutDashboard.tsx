@@ -16,6 +16,7 @@ import { CopyableText } from '@/components/CopyableText';
 import { CandidateDetailDialog } from '@/components/CandidateDetailDialog';
 import { CVImagePreview } from '@/components/CVImagePreview';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useStageSettings } from '@/hooks/useStageSettings';
 
 interface ScoreBreakdown {
   experience_relevance: number;
@@ -100,6 +101,7 @@ const SCORE_CATEGORIES = [
 
 export const TalentScoutDashboard = () => {
   const { toast } = useToast();
+  const { getDisplayName, orderStages } = useStageSettings();
   const [jobTitle, setJobTitle] = useState('');
   const [jobDescription, setJobDescription] = useState('');
   const [requirements, setRequirements] = useState<string[]>(['']);
@@ -593,13 +595,13 @@ export const TalentScoutDashboard = () => {
                 <div>
                   <Label className="text-sm font-medium">Search in statuses:</Label>
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {STATUS_OPTIONS.filter(s => s !== 'Reject').map(status => (
+                    {orderStages(STATUS_OPTIONS.filter(s => s !== 'Reject')).map(status => (
                       <label key={status} className="flex items-center gap-1.5 text-sm cursor-pointer">
                         <Checkbox
                           checked={statusFilter.includes(status)}
                           onCheckedChange={() => toggleStatus(status)}
                         />
-                        {status}
+                        {getDisplayName(status)}
                       </label>
                     ))}
                   </div>
