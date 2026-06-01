@@ -1283,8 +1283,10 @@ export const PLDashboard = () => {
           )}
         </div>
       </CollapsibleSection>
+      )}
 
-      {filteredInternal.length > 0 && (
+      {activeSubtab === 'submissions' && filteredInternal.length > 0 && (
+
         <CollapsibleSection
           storageKey="pl_section_internal_timesheets"
           title="Internal Team Submissions — OutSta"
