@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 import { AdminLeaveApplications } from '@/components/AdminLeaveApplications';
 import { CollapsibleSection } from '@/components/pl/CollapsibleSection';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 interface TimesheetRow {
   id: string;
@@ -144,6 +145,14 @@ export const PLDashboard = () => {
   const [tsSort, setTsSort] = useState<{ key: 'name' | 'company' | 'week' | 'hours' | 'ot' | 'incentives' | 'status' | 'submitted'; dir: 'asc' | 'desc' }>({ key: 'submitted', dir: 'desc' });
   const [stats, setStats] = useState({ portalUsers: 0, totalEligibleContractors: 0 });
   const [viewTimesheet, setViewTimesheet] = useState<TimesheetRow | null>(null);
+  const [leaveCount, setLeaveCount] = useState(0);
+  const PL_SUBTAB_KEY = 'pl_active_subtab';
+  const [activeSubtab, setActiveSubtab] = useState<string>(() => {
+    try { return localStorage.getItem(PL_SUBTAB_KEY) || 'submissions'; } catch { return 'submissions'; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem(PL_SUBTAB_KEY, activeSubtab); } catch {}
+  }, [activeSubtab]);
 
   // Section reordering (persisted per browser)
   const SECTION_DEFS = [
@@ -297,6 +306,22 @@ export const PLDashboard = () => {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    const loadLeaveCount = async () => {
+      const { count } = await supabase
+        .from('contractor_leave_applications' as any)
+        .select('*', { count: 'exact', head: true });
+      if (!cancelled) setLeaveCount(count || 0);
+    };
+    loadLeaveCount();
+    const channel = supabase
+      .channel('pl_leave_count')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'contractor_leave_applications' }, loadLeaveCount)
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(channel); };
+  }, []);
 
   const callProvision = async (payload?: Record<string, unknown>) => {
     const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
@@ -673,14 +698,37 @@ export const PLDashboard = () => {
             <Settings2 className="w-4 h-4 mr-2" />
             Reorder Sections
           </Button>
-          <Button onClick={handleProvision} disabled={provisioning}>
-            {provisioning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UserPlus className="w-4 h-4 mr-2" />}
-            Provision Accounts
-          </Button>
+          {activeSubtab === 'contractors' && (
+            <Button onClick={handleProvision} disabled={provisioning}>
+              {provisioning ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <UserPlus className="w-4 h-4 mr-2" />}
+              Provision Accounts
+            </Button>
+          )}
         </div>
       </div>
 
+      <Tabs value={activeSubtab} onValueChange={setActiveSubtab} className="w-full">
+        <TabsList className="h-auto">
+          <TabsTrigger value="submissions" className="gap-2">
+            Weekly Submissions
+            <Badge variant="secondary" className="text-[10px]">{filtered.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="contractors" className="gap-2">
+            Contractors
+            <Badge variant="secondary" className="text-[10px]">{filteredContractors.length}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="leave" className="gap-2">
+            Leave Requests
+            {leaveCount > 0 && <Badge variant="secondary" className="text-[10px]">{leaveCount}</Badge>}
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       <div className="flex flex-col gap-3">
+      {activeSubtab === 'leave' && <AdminLeaveApplications />}
+      {activeSubtab === 'contractors' && (
+
+
       <CollapsibleSection
         storageKey="pl_section_contractors"
         title="Contractors"
@@ -885,12 +933,10 @@ export const PLDashboard = () => {
           )}
         </div>
       </CollapsibleSection>
+      )}
 
-      <div style={{ order: sectionOrder.indexOf('leave') }}>
-        <AdminLeaveApplications />
-      </div>
+      {activeSubtab === 'contractors' && filteredInternalContractors.length > 0 && (
 
-      {filteredInternalContractors.length > 0 && (
         <CollapsibleSection
           storageKey="pl_section_internal_contractors"
           title="Internal Team — OutSta"
@@ -1080,6 +1126,7 @@ export const PLDashboard = () => {
         </CollapsibleSection>
       )}
 
+      {activeSubtab === 'submissions' && (
       <CollapsibleSection
         storageKey="pl_section_timesheets"
         title="Timesheet Submissions"
@@ -1236,8 +1283,10 @@ export const PLDashboard = () => {
           )}
         </div>
       </CollapsibleSection>
+      )}
 
-      {filteredInternal.length > 0 && (
+      {activeSubtab === 'submissions' && filteredInternal.length > 0 && (
+
         <CollapsibleSection
           storageKey="pl_section_internal_timesheets"
           title="Internal Team Submissions — OutSta"
