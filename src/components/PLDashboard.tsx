@@ -722,24 +722,12 @@ export const PLDashboard = () => {
             {leaveCount > 0 && <Badge variant="secondary" className="text-[10px]">{leaveCount}</Badge>}
           </TabsTrigger>
         </TabsList>
-
-        <TabsContent value="submissions" className="mt-3">
-          <div className="flex flex-col gap-3" data-pl-tab="submissions">
-            {/* submissions sections injected below via marker */}
-          </div>
-        </TabsContent>
-        <TabsContent value="contractors" className="mt-3">
-          <div className="flex flex-col gap-3" data-pl-tab="contractors">
-            {/* contractors sections injected below via marker */}
-          </div>
-        </TabsContent>
-        <TabsContent value="leave" className="mt-3">
-          <AdminLeaveApplications />
-        </TabsContent>
       </Tabs>
 
-      {/* legacy wrapper kept hidden to preserve order vars; sections now rendered above per tab */}
-      <div className="hidden">
+      <div className="flex flex-col gap-3">
+      {activeSubtab === 'leave' && <AdminLeaveApplications />}
+      {activeSubtab === 'contractors' && (
+
 
       <CollapsibleSection
         storageKey="pl_section_contractors"
