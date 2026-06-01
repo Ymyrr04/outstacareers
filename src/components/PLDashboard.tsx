@@ -135,8 +135,26 @@ export const PLDashboard = () => {
   const [rows, setRows] = useState<TimesheetRow[]>([]);
   const [contractors, setContractors] = useState<ContractorRow[]>([]);
   const [search, setSearch] = useState('');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const getLastCompletedMonday = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const dow = today.getDay(); // 0 = Sunday
+    const lastSunday = new Date(today);
+    lastSunday.setDate(today.getDate() - (dow === 0 ? 0 : dow));
+    const lastMonday = new Date(lastSunday);
+    lastMonday.setDate(lastSunday.getDate() - 6);
+    return lastMonday;
+  };
+  const mondayOf = (d: Date) => {
+    const x = new Date(d);
+    x.setHours(0, 0, 0, 0);
+    const dow = x.getDay();
+    const diff = dow === 0 ? -6 : 1 - dow;
+    x.setDate(x.getDate() + diff);
+    return x;
+  };
+  const [weekMonday, setWeekMonday] = useState<Date | null>(() => getLastCompletedMonday());
+  const [weekPickerOpen, setWeekPickerOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [clientPortalClientIds, setClientPortalClientIds] = useState<Set<string>>(new Set());
   const [updatingOutstaId, setUpdatingOutstaId] = useState<string | null>(null);
