@@ -749,9 +749,7 @@ export const HiringRequestDetailDialog = ({
                           {sources.length === 0 ? (
                             <div className="px-2 py-1.5 text-xs text-muted-foreground">No existing sources</div>
                           ) : (
-                            sources
-                              .filter(s => !formData.source || s.toLowerCase().includes(formData.source.toLowerCase()))
-                              .map(s => (
+                            sources.map(s => (
                                 <button
                                   key={s}
                                   type="button"
