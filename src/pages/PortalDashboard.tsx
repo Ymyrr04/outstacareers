@@ -68,6 +68,19 @@ const parseShift = (raw: string | null | undefined): { start: string; end: strin
 const composeShift = (start: string, end: string): string =>
   start && end ? `${start} – ${end} EST` : '';
 
+// Convert "9:00 AM" / "6:00 PM" -> "HH:MM" 24h, the format FlexibleTimeInput expects.
+const to24h = (s: string): string => {
+  if (!s) return '';
+  const m = s.trim().toUpperCase().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
+  if (!m) return '';
+  let h = parseInt(m[1], 10);
+  const mm = parseInt(m[2], 10);
+  const period = m[3];
+  if (period === 'PM' && h < 12) h += 12;
+  if (period === 'AM' && h === 12) h = 0;
+  return `${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+};
+
 function TimeCombobox({
   value,
   onChange,
