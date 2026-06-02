@@ -368,25 +368,25 @@ export const PLDashboard = () => {
   };
 
   const handleProvision = async () => {
-    // Eligible = active/rendering + has email + (no portal yet OR portal exists but never logged in / hasn't changed password)
-    // Skipped = inactive statuses, no email, or already activated (must_change_password = false)
+    // Strict filter: only contractors who have a portal account AND have not yet activated
+    // (still on temporary password / must_change_password = true), and are still active/rendering.
     const eligible = contractors.filter((c) => {
       if (!c.applicant?.email) return false;
       if (!['active', 'rendering'].includes((c.status || '').toLowerCase())) return false;
-      if (c.hasPortal && c.mustChange === false) return false; // already activated
+      if (!c.hasPortal) return false; // no portal account yet
+      if (c.mustChange !== true) return false; // already activated
       return true;
     });
-    const skippedActivated = contractors.filter((c) => c.hasPortal && c.mustChange === false).length;
-    const skippedInactive = contractors.filter((c) => !['active', 'rendering'].includes((c.status || '').toLowerCase())).length;
 
     if (eligible.length === 0) {
-      toast({ title: 'Nothing to send', description: `All contractors are already activated or inactive. Skipped ${skippedActivated} activated, ${skippedInactive} inactive.` });
+      toast({ title: 'Nothing to send', description: 'No unactivated portal accounts found.' });
       return;
     }
     if (!confirm(
-      `Send portal activation emails to ${eligible.length} contractor(s)?\n\n` +
-      `Will skip:\n• ${skippedActivated} already-activated (changed password)\n• ${skippedInactive} no longer active\n\n` +
-      `Default password: OutSta2026!`
+      `Send Activation Emails\n\n` +
+      `This will send a portal activation email to all contractors who have an account but have not yet logged in or changed their password.\n\n` +
+      `Only unactivated accounts will receive an email — contractors who have already set up their account will not be contacted again.\n\n` +
+      `${eligible.length} contractor account(s) will receive an activation email.`
     )) return;
 
     setProvisioning(true);
@@ -428,7 +428,7 @@ export const PLDashboard = () => {
 
       toast({
         title: 'Provisioning complete',
-        description: `Sent ${sent} activation email(s). ${failed ? `${failed} failed — see console. ` : ''}Skipped ${skippedActivated} already-activated, ${skippedInactive} inactive.`,
+        description: `Sent ${sent} activation email(s).${failed ? ` ${failed} failed — see console.` : ''}`,
       });
       fetchData();
     } catch (e: any) {
