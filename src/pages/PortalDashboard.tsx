@@ -68,6 +68,19 @@ const parseShift = (raw: string | null | undefined): { start: string; end: strin
 const composeShift = (start: string, end: string): string =>
   start && end ? `${start} – ${end} EST` : '';
 
+// Convert "9:00 AM" / "6:00 PM" -> "HH:MM" 24h, the format FlexibleTimeInput expects.
+const to24h = (s: string): string => {
+  if (!s) return '';
+  const m = s.trim().toUpperCase().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/);
+  if (!m) return '';
+  let h = parseInt(m[1], 10);
+  const mm = parseInt(m[2], 10);
+  const period = m[3];
+  if (period === 'PM' && h < 12) h += 12;
+  if (period === 'AM' && h === 12) h = 0;
+  return `${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+};
+
 function TimeCombobox({
   value,
   onChange,
@@ -1255,6 +1268,37 @@ const PortalDashboard = () => {
     }
   };
 
+  // Regular shift parsed from the contractor's profile, in "HH:MM" 24h format.
+  const regularShift24 = useMemo(() => {
+    const { start, end } = parseShift(info?.regular_work_shift);
+    return { start: to24h(start), end: to24h(end) };
+  }, [info?.regular_work_shift]);
+  const hasRegularShift = !!(regularShift24.start && regularShift24.end);
+
+  const fillRegular = (k: string) => {
+    if (!hasRegularShift) return;
+    updateDay(k, { time_in: regularShift24.start, time_out: regularShift24.end });
+  };
+
+  const fillAllRegular = () => {
+    if (!hasRegularShift) return;
+    setDays((prev) => {
+      const next = { ...prev };
+      dateKeys.forEach((k) => {
+        if (!isScheduledDay(k)) return;
+        const merged: DayEntry = {
+          ...(next[k] || { time_in: '', time_out: '', hours: '', reason: '' }),
+          time_in: regularShift24.start,
+          time_out: regularShift24.end,
+        };
+        const h = computeHours(merged.time_in, merged.time_out, info?.break_duration_minutes, info?.break_is_paid);
+        merged.hours = h > 0 ? String(h) : '';
+        next[k] = merged;
+      });
+      return next;
+    });
+  };
+
   const updateDay = (k: string, patch: Partial<DayEntry>) => {
     setDays((prev) => {
       const merged = { ...prev[k], ...patch };
@@ -1682,11 +1726,25 @@ const PortalDashboard = () => {
               <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
                 {/* LEFT: daily entries */}
                 <div className="space-y-3 min-w-0">
-                  <div>
-                    <Label className="block">Time in / Time out per day</Label>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Enter your log-in and log-out times — total hours are calculated automatically. Overnight shifts (log-out before log-in) are handled automatically.
-                    </p>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <Label className="block">Time in / Time out per day</Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Enter your log-in and log-out times — total hours are calculated automatically. Overnight shifts (log-out before log-in) are handled automatically.
+                      </p>
+                    </div>
+                    {dateKeys.length > 0 && hasRegularShift && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={fillAllRegular}
+                        className="h-8 border-teal-500/60 text-teal-700 hover:bg-teal-50 hover:text-teal-800 dark:text-teal-300 dark:hover:bg-teal-950/40"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Fill all with regular hours
+                      </Button>
+                    )}
                   </div>
                   <div className="rounded-lg border bg-card overflow-hidden">
                     {dateKeys.length === 0 && (
@@ -1757,6 +1815,33 @@ const PortalDashboard = () => {
                           <div>
                             <div className="font-semibold text-sm">{label}</div>
                             <div className="text-xs text-muted-foreground">{format(date, 'MMM d, yyyy')}</div>
+                            {scheduled && (
+                              hasRegularShift ? (
+                                <button
+                                  type="button"
+                                  onClick={() => fillRegular(k)}
+                                  className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-teal-500/60 px-2 py-0.5 text-[10px] font-medium text-teal-700 hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-950/40"
+                                  aria-label={`Fill ${label} with regular hours`}
+                                >
+                                  <Check className="h-3 w-3" />
+                                  Regular
+                                </button>
+                              ) : (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span
+                                      className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground/70 cursor-help"
+                                    >
+                                      <Check className="h-3 w-3" />
+                                      Regular
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-xs text-xs">
+                                    Set your regular work shift in your profile to use this feature
+                                  </TooltipContent>
+                                </Tooltip>
+                              )
+                            )}
                           </div>
                           <div className="space-y-1">
                             <Label htmlFor={`tin-${k}`} className="text-[11px] font-medium text-muted-foreground">Time in</Label>
