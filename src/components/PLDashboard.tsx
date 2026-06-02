@@ -428,7 +428,7 @@ export const PLDashboard = () => {
 
       toast({
         title: 'Provisioning complete',
-        description: `Sent ${sent} activation email(s). ${failed ? `${failed} failed — see console. ` : ''}Skipped ${skippedActivated} already-activated, ${skippedInactive} inactive.`,
+        description: `Sent ${sent} activation email(s).${failed ? ` ${failed} failed — see console.` : ''}`,
       });
       fetchData();
     } catch (e: any) {
