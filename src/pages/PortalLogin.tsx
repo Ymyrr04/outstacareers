@@ -35,6 +35,9 @@ const PortalLogin = () => {
     e.preventDefault();
     setLoading(true);
     try {
+      // Clear any stale session (e.g. from a previously deleted account with
+      // the same email) before signing in fresh.
+      await supabase.auth.signOut();
       const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
       if (error) throw error;
 

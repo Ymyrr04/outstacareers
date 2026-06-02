@@ -18,14 +18,20 @@ const PortalChangePassword = () => {
   const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => {
-      if (!data.session) {
+    (async () => {
+      // Validate session against the server (not just localStorage). A stale
+      // token from a previously deleted account would pass getSession but then
+      // fail updateUser with "Auth session missing".
+      const { data: userData, error } = await supabase.auth.getUser();
+      if (error || !userData.user) {
+        await supabase.auth.signOut();
+        toast({ title: 'Session expired', description: 'Please sign in again.', variant: 'destructive' });
         navigate('/portal/login');
-      } else {
-        setUserId(data.session.user.id);
+        return;
       }
-    });
-  }, [navigate]);
+      setUserId(userData.user.id);
+    })();
+  }, [navigate, toast]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
