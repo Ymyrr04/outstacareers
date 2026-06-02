@@ -1268,6 +1268,37 @@ const PortalDashboard = () => {
     }
   };
 
+  // Regular shift parsed from the contractor's profile, in "HH:MM" 24h format.
+  const regularShift24 = useMemo(() => {
+    const { start, end } = parseShift(info?.regular_work_shift);
+    return { start: to24h(start), end: to24h(end) };
+  }, [info?.regular_work_shift]);
+  const hasRegularShift = !!(regularShift24.start && regularShift24.end);
+
+  const fillRegular = (k: string) => {
+    if (!hasRegularShift) return;
+    updateDay(k, { time_in: regularShift24.start, time_out: regularShift24.end });
+  };
+
+  const fillAllRegular = () => {
+    if (!hasRegularShift) return;
+    setDays((prev) => {
+      const next = { ...prev };
+      dateKeys.forEach((k) => {
+        if (!isScheduledDay(k)) return;
+        const merged: DayEntry = {
+          ...(next[k] || { time_in: '', time_out: '', hours: '', reason: '' }),
+          time_in: regularShift24.start,
+          time_out: regularShift24.end,
+        };
+        const h = computeHours(merged.time_in, merged.time_out, info?.break_duration_minutes, info?.break_is_paid);
+        merged.hours = h > 0 ? String(h) : '';
+        next[k] = merged;
+      });
+      return next;
+    });
+  };
+
   const updateDay = (k: string, patch: Partial<DayEntry>) => {
     setDays((prev) => {
       const merged = { ...prev[k], ...patch };
