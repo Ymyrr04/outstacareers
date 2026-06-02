@@ -368,15 +368,66 @@ export const PLDashboard = () => {
   };
 
   const handleProvision = async () => {
-    if (!confirm(`Create login accounts for all active & rendering contractors who don't have one yet?\n\nDefault password: OutSta2026!\n\nNo emails will be sent — share the password manually for testing.`)) return;
+    // Eligible = active/rendering + has email + (no portal yet OR portal exists but never logged in / hasn't changed password)
+    // Skipped = inactive statuses, no email, or already activated (must_change_password = false)
+    const eligible = contractors.filter((c) => {
+      if (!c.applicant?.email) return false;
+      if (!['active', 'rendering'].includes((c.status || '').toLowerCase())) return false;
+      if (c.hasPortal && c.mustChange === false) return false; // already activated
+      return true;
+    });
+    const skippedActivated = contractors.filter((c) => c.hasPortal && c.mustChange === false).length;
+    const skippedInactive = contractors.filter((c) => !['active', 'rendering'].includes((c.status || '').toLowerCase())).length;
+
+    if (eligible.length === 0) {
+      toast({ title: 'Nothing to send', description: `All contractors are already activated or inactive. Skipped ${skippedActivated} activated, ${skippedInactive} inactive.` });
+      return;
+    }
+    if (!confirm(
+      `Send portal activation emails to ${eligible.length} contractor(s)?\n\n` +
+      `Will skip:\n• ${skippedActivated} already-activated (changed password)\n• ${skippedInactive} no longer active\n\n` +
+      `Default password: OutSta2026!`
+    )) return;
+
     setProvisioning(true);
+    let sent = 0, failed = 0;
+    const portalUrl = `https://outstahub.com/portal/login`;
     try {
-      const data = await callProvision();
+      for (const c of eligible) {
+        try {
+          await callProvision({ contractorAssignmentId: c.id });
+          const firstName = (c.applicant!.full_name || '').split(' ')[0] || 'there';
+          const subject = 'Your OutSta Portal Account is Ready';
+          const bodyHtml = `
+            <p>Hi ${firstName},</p>
+            <p>Your OutSta contractor portal account has been created. You can now log in to submit your weekly hours and view your invoices.</p>
+            <p><strong>Portal URL:</strong> <a href="${portalUrl}">${portalUrl}</a><br/>
+            <strong>Email:</strong> ${c.applicant!.email}<br/>
+            <strong>Temporary password:</strong> OutSta2026!</p>
+            <p>For security, you'll be asked to change your password the first time you log in.</p>
+            <p>If you have any questions, just reply to this email.</p>
+            <p>Thanks,<br/>The OutSta Team</p>
+          `;
+          const { error: emailError } = await supabase.functions.invoke('send-contractor-email', {
+            body: {
+              contractorAssignmentId: c.id,
+              subject,
+              bodyHtml,
+              recipientEmail: c.applicant!.email,
+              recipientName: c.applicant!.full_name || c.applicant!.email,
+            },
+          });
+          if (emailError) { failed += 1; console.error(`Email failed for ${c.applicant!.email}:`, emailError); }
+          else sent += 1;
+        } catch (err: any) {
+          failed += 1;
+          console.error(`Provision failed for ${c.applicant?.email}:`, err);
+        }
+      }
       toast({
         title: 'Provisioning complete',
-        description: `Created ${data.created}, linked ${data.linked}, skipped ${data.skipped}. ${data.errors?.length ? `${data.errors.length} errors — see console.` : ''}`,
+        description: `Sent ${sent} activation email(s). ${failed ? `${failed} failed — see console. ` : ''}Skipped ${skippedActivated} already-activated, ${skippedInactive} inactive.`,
       });
-      if (data.errors?.length) console.error('Provision errors:', data.errors);
       fetchData();
     } catch (e: any) {
       toast({ title: 'Provisioning failed', description: e.message || String(e), variant: 'destructive' });
