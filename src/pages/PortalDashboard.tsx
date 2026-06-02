@@ -1726,11 +1726,25 @@ const PortalDashboard = () => {
               <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] gap-6 items-start">
                 {/* LEFT: daily entries */}
                 <div className="space-y-3 min-w-0">
-                  <div>
-                    <Label className="block">Time in / Time out per day</Label>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Enter your log-in and log-out times — total hours are calculated automatically. Overnight shifts (log-out before log-in) are handled automatically.
-                    </p>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <Label className="block">Time in / Time out per day</Label>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Enter your log-in and log-out times — total hours are calculated automatically. Overnight shifts (log-out before log-in) are handled automatically.
+                      </p>
+                    </div>
+                    {dateKeys.length > 0 && hasRegularShift && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={fillAllRegular}
+                        className="h-8 border-teal-500/60 text-teal-700 hover:bg-teal-50 hover:text-teal-800 dark:text-teal-300 dark:hover:bg-teal-950/40"
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5" />
+                        Fill all with regular hours
+                      </Button>
+                    )}
                   </div>
                   <div className="rounded-lg border bg-card overflow-hidden">
                     {dateKeys.length === 0 && (
