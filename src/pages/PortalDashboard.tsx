@@ -1275,9 +1275,19 @@ const PortalDashboard = () => {
   }, [info?.regular_work_shift]);
   const hasRegularShift = !!(regularShift24.start && regularShift24.end);
 
+  const isRegularApplied = (k: string) => {
+    if (!hasRegularShift) return false;
+    const d = days[k];
+    return !!d && d.time_in === regularShift24.start && d.time_out === regularShift24.end;
+  };
+
   const fillRegular = (k: string) => {
     if (!hasRegularShift) return;
-    updateDay(k, { time_in: regularShift24.start, time_out: regularShift24.end });
+    if (isRegularApplied(k)) {
+      updateDay(k, { time_in: '', time_out: '' });
+    } else {
+      updateDay(k, { time_in: regularShift24.start, time_out: regularShift24.end });
+    }
   };
 
   const fillAllRegular = () => {
@@ -1817,15 +1827,26 @@ const PortalDashboard = () => {
                             <div className="text-xs text-muted-foreground">{format(date, 'MMM d, yyyy')}</div>
                             {scheduled && (
                               hasRegularShift ? (
-                                <button
-                                  type="button"
-                                  onClick={() => fillRegular(k)}
-                                  className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-teal-500/60 px-2 py-0.5 text-[10px] font-medium text-teal-700 hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-950/40"
-                                  aria-label={`Fill ${label} with regular hours`}
-                                >
-                                  <Check className="h-3 w-3" />
-                                  Regular
-                                </button>
+                                (() => {
+                                  const applied = isRegularApplied(k);
+                                  return (
+                                    <button
+                                      type="button"
+                                      onClick={() => fillRegular(k)}
+                                      className={`mt-1.5 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                                        applied
+                                          ? 'border-teal-500 bg-teal-500 text-white hover:bg-teal-600'
+                                          : 'border-teal-500/60 text-teal-700 hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-950/40'
+                                      }`}
+                                      aria-label={applied ? `Clear regular hours for ${label}` : `Fill ${label} with regular hours`}
+                                      aria-pressed={applied}
+                                      title={applied ? 'Click to clear' : 'Click to fill with regular hours'}
+                                    >
+                                      <Check className="h-3 w-3" />
+                                      Regular
+                                    </button>
+                                  );
+                                })()
                               ) : (
                                 <Tooltip>
                                   <TooltipTrigger asChild>
