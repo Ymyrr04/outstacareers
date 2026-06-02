@@ -1815,6 +1815,33 @@ const PortalDashboard = () => {
                           <div>
                             <div className="font-semibold text-sm">{label}</div>
                             <div className="text-xs text-muted-foreground">{format(date, 'MMM d, yyyy')}</div>
+                            {scheduled && (
+                              hasRegularShift ? (
+                                <button
+                                  type="button"
+                                  onClick={() => fillRegular(k)}
+                                  className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-teal-500/60 px-2 py-0.5 text-[10px] font-medium text-teal-700 hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-950/40"
+                                  aria-label={`Fill ${label} with regular hours`}
+                                >
+                                  <Check className="h-3 w-3" />
+                                  Regular
+                                </button>
+                              ) : (
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span
+                                      className="mt-1.5 inline-flex items-center gap-1 rounded-full border border-muted px-2 py-0.5 text-[10px] font-medium text-muted-foreground/70 cursor-help"
+                                    >
+                                      <Check className="h-3 w-3" />
+                                      Regular
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent className="max-w-xs text-xs">
+                                    Set your regular work shift in your profile to use this feature
+                                  </TooltipContent>
+                                </Tooltip>
+                              )
+                            )}
                           </div>
                           <div className="space-y-1">
                             <Label htmlFor={`tin-${k}`} className="text-[11px] font-medium text-muted-foreground">Time in</Label>
