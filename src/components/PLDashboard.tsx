@@ -392,29 +392,51 @@ export const PLDashboard = () => {
     setProvisioning(true);
     let sent = 0, failed = 0;
     const portalUrl = `https://outstahub.com/portal/login`;
+
+    // Load the "POrtal" template from the DB (created in Email Templates settings)
+    const { data: tpl, error: tplErr } = await supabase
+      .from('contractor_email_templates')
+      .select('subject, body_html')
+      .ilike('name', 'portal')
+      .maybeSingle();
+    if (tplErr || !tpl) {
+      setProvisioning(false);
+      toast({ title: 'Template missing', description: 'Could not find the "POrtal" email template. Please create it in Email Templates.', variant: 'destructive' });
+      return;
+    }
+    const tplIsHtml = /<[a-z][\s\S]*>/i.test(tpl.body_html);
+    const tplBody = tplIsHtml ? tpl.body_html : tpl.body_html.replace(/\n/g, '<br/>');
+
     try {
       for (const c of eligible) {
         try {
           await callProvision({ contractorAssignmentId: c.id });
-          const firstName = (c.applicant!.full_name || '').split(' ')[0] || 'there';
-          const subject = 'Your OutSta Portal Account is Ready';
-          const bodyHtml = `
-            <p>Hi ${firstName},</p>
-            <p>Your OutSta contractor portal account has been created. You can now log in to submit your weekly hours and view your invoices.</p>
+          const fullName = c.applicant!.full_name || '';
+          const firstName = fullName.split(' ')[0] || 'there';
+          const subject = tpl.subject
+            .replace(/\{\{first_name\}\}/g, firstName)
+            .replace(/\{\{full_name\}\}/g, fullName)
+            .replace(/\{\{applicant_name\}\}/g, fullName);
+          const renderedBody = tplBody
+            .replace(/\{\{first_name\}\}/g, firstName)
+            .replace(/\{\{full_name\}\}/g, fullName)
+            .replace(/\{\{applicant_name\}\}/g, fullName);
+          const credentialsBlock = `
+            <hr style="margin:24px 0;border:none;border-top:1px solid #e5e7eb"/>
+            <p><strong>Your portal login details:</strong></p>
             <p><strong>Portal URL:</strong> <a href="${portalUrl}">${portalUrl}</a><br/>
             <strong>Email:</strong> ${c.applicant!.email}<br/>
             <strong>Temporary password:</strong> OutSta2026!</p>
             <p>For security, you'll be asked to change your password the first time you log in.</p>
-            <p>If you have any questions, just reply to this email.</p>
-            <p>Thanks,<br/>The OutSta Team</p>
           `;
+          const bodyHtml = `${renderedBody}${credentialsBlock}`;
           const { error: emailError } = await supabase.functions.invoke('send-contractor-email', {
             body: {
               contractorAssignmentId: c.id,
               subject,
               bodyHtml,
               recipientEmail: c.applicant!.email,
-              recipientName: c.applicant!.full_name || c.applicant!.email,
+              recipientName: fullName || c.applicant!.email,
             },
           });
           if (emailError) { failed += 1; console.error(`Email failed for ${c.applicant!.email}:`, emailError); }
@@ -424,6 +446,7 @@ export const PLDashboard = () => {
           console.error(`Provision failed for ${c.applicant?.email}:`, err);
         }
       }
+
       toast({
         title: 'Provisioning complete',
         description: `Sent ${sent} activation email(s). ${failed ? `${failed} failed — see console. ` : ''}Skipped ${skippedActivated} already-activated, ${skippedInactive} inactive.`,
