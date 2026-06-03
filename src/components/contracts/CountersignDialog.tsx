@@ -35,8 +35,8 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
   const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [placement, setPlacement] = useState<Placement | null>(null);
-  const [drag, setDrag] = useState<{ ox: number; oy: number } | null>(null);
-  const [resizing, setResizing] = useState(false);
+  const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const dragRef = useRef<{ mode: "move" | "resize"; startX: number; startY: number; pageEl: HTMLDivElement } | null>(null);
 
   // Signature
   const [sigMode, setSigMode] = useState<"draw" | "type">("draw");
