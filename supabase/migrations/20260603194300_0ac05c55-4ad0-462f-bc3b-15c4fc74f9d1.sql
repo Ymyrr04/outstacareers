@@ -1,0 +1,1 @@
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.sales_leads TO authenticated; GRANT ALL ON public.sales_leads TO service_role; GRANT SELECT, INSERT, UPDATE, DELETE ON public.sales_lead_notes TO authenticated; GRANT ALL ON public.sales_lead_notes TO service_role;
