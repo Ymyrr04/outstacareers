@@ -73,6 +73,8 @@ const SignContract = () => {
   const [consent, setConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [savedSig, setSavedSig] = useState<string | null>(null);
+  const [savedSigPrompt, setSavedSigPrompt] = useState(false);
 
   useEffect(() => {
     if (!token) return;
