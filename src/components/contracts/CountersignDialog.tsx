@@ -245,7 +245,7 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
 
   return (
     <Dialog open={open} onOpenChange={tryClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Countersign — {recipientName}</DialogTitle>
           <DialogDescription>
