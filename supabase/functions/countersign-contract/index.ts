@@ -24,7 +24,7 @@ Deno.serve(async (req) => {
 
       const { data: env } = await admin
         .from("contract_envelopes")
-        .select("id, status, signed_pdf_path, countersigned_at, countersign_expires_at, countersign_recipient_name, countersign_message, countersign_placement, recipient_name")
+        .select("id, status, signed_pdf_path, countersigned_at, countersign_expires_at, countersign_recipient_name, countersign_recipient_email, countersign_message, countersign_placement, recipient_name")
         .eq("countersign_token", token)
         .maybeSingle();
       if (!env) return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: corsHeaders });
@@ -42,17 +42,30 @@ Deno.serve(async (req) => {
         .eq("id", env.id)
         .is("countersign_viewed_at", null);
 
+      // Lookup saved signature
+      let saved_signature: string | null = null;
+      if (env.countersign_recipient_email) {
+        const { data: sig } = await admin
+          .from("saved_signatures")
+          .select("signature_data_url")
+          .eq("recipient_email", env.countersign_recipient_email.toLowerCase())
+          .maybeSingle();
+        saved_signature = sig?.signature_data_url ?? null;
+      }
+
       return new Response(JSON.stringify({
         envelope: {
           id: env.id,
           status: env.status,
           recipient_name: env.recipient_name,
           countersign_recipient_name: env.countersign_recipient_name,
+          countersign_recipient_email: env.countersign_recipient_email,
           countersign_message: env.countersign_message,
           countersigned_at: env.countersigned_at,
         },
         placement: env.countersign_placement,
         pdf_url: signed?.signedUrl,
+        saved_signature,
       }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
