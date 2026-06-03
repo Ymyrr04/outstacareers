@@ -1,10 +1,10 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { Loader2, CheckCircle2, ShieldAlert } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Card } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { SignaturePad } from "@/components/contracts/SignaturePad";
 import { toast } from "sonner";
 import { renderPdfPages, RenderedPage } from "@/lib/pdfRender";
 
@@ -55,14 +55,9 @@ const CountersignContract = () => {
   const [pages, setPages] = useState<RenderedPage[]>([]);
   const [done, setDone] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-
-  const [sigMode, setSigMode] = useState<"draw" | "type">("draw");
-  const [typed, setTyped] = useState("");
   const [sigDataUrl, setSigDataUrl] = useState<string | null>(null);
   const [savedSig, setSavedSig] = useState<string | null>(null);
-  const [savedSigPrompt, setSavedSigPrompt] = useState(false);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const drawing = useRef(false);
+  const [popoverOpen, setPopoverOpen] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -84,16 +79,12 @@ const CountersignContract = () => {
         const rendered = await renderPdfPages(json.pdf_url, 900);
         setPages(rendered);
 
-        // Look for a saved signature: server (by email) or localStorage (by email)
         let found = json.saved_signature;
         const email = json.envelope.countersign_recipient_email?.toLowerCase();
         if (!found && email) {
           try { found = localStorage.getItem(`sig:${email}`); } catch { /* ignore */ }
         }
-        if (found) {
-          setSavedSig(found);
-          setSavedSigPrompt(true);
-        }
+        if (found) setSavedSig(found);
       } catch (e) {
         setError((e as Error).message);
       } finally {
@@ -101,41 +92,6 @@ const CountersignContract = () => {
       }
     })();
   }, [token]);
-
-  const getCtx = () => {
-    const c = canvasRef.current;
-    if (!c) return null;
-    const ctx = c.getContext("2d");
-    if (ctx) { ctx.lineWidth = 2.5; ctx.lineCap = "round"; ctx.strokeStyle = "#0a0a0a"; }
-    return ctx;
-  };
-  const sigPos = (e: React.PointerEvent) => {
-    const c = canvasRef.current!;
-    const r = c.getBoundingClientRect();
-    return { x: ((e.clientX - r.left) / r.width) * c.width, y: ((e.clientY - r.top) / r.height) * c.height };
-  };
-  const sigStart = (e: React.PointerEvent) => { drawing.current = true; const ctx = getCtx(); const p = sigPos(e); ctx?.beginPath(); ctx?.moveTo(p.x, p.y); };
-  const sigMove = (e: React.PointerEvent) => { if (!drawing.current) return; const ctx = getCtx(); const p = sigPos(e); ctx?.lineTo(p.x, p.y); ctx?.stroke(); };
-  const sigEnd = () => { if (!drawing.current) return; drawing.current = false; const c = canvasRef.current; if (c) setSigDataUrl(c.toDataURL("image/png")); };
-  const sigClear = () => {
-    const c = canvasRef.current;
-    if (c) c.getContext("2d")?.clearRect(0, 0, c.width, c.height);
-    setSigDataUrl(null);
-    setTyped("");
-  };
-  const typedToDataUrl = (text: string) => {
-    if (!text.trim()) return null;
-    const canvas = document.createElement("canvas");
-    canvas.width = 600; canvas.height = 140;
-    const ctx = canvas.getContext("2d"); if (!ctx) return null;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#0a0a0a";
-    ctx.textBaseline = "middle";
-    ctx.textAlign = "center";
-    ctx.font = "italic 64px 'Brush Script MT', 'Segoe Script', 'Lucida Handwriting', cursive";
-    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-    return canvas.toDataURL("image/png");
-  };
 
   const submit = async () => {
     if (!token || !sigDataUrl) { toast.error("Please add your signature first"); return; }
@@ -150,7 +106,6 @@ const CountersignContract = () => {
         const t = await r.text();
         throw new Error(t);
       }
-      // Cache locally as a fallback for future signings on this browser
       try {
         const email = data?.envelope.countersign_recipient_email?.toLowerCase();
         if (email) localStorage.setItem(`sig:${email}`, sigDataUrl);
@@ -185,13 +140,14 @@ const CountersignContract = () => {
   if (!data) return null;
 
   const p = data.placement;
+  const showSavedPrompt = !!savedSig && !sigDataUrl;
 
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="bg-background border-b sticky top-0 z-20">
         <div className="max-w-5xl mx-auto px-4 py-3">
           <h1 className="font-semibold text-lg leading-tight">Sign — {data.envelope.recipient_name}</h1>
-          <p className="text-xs text-muted-foreground">Review the signed contract below, then add your signature.</p>
+          <p className="text-xs text-muted-foreground">Review the signed contract below, then click the highlighted box to add your signature.</p>
         </div>
       </header>
 
@@ -208,7 +164,7 @@ const CountersignContract = () => {
               <img src={pg.dataUrl} alt={`Page ${pg.index + 1}`} className="w-full block select-none pointer-events-none" />
               {pg.index === p.page && (
                 <div
-                  className="absolute border-2 border-primary bg-primary/10 flex items-center justify-center text-[11px] font-medium text-primary"
+                  className="absolute"
                   style={{
                     left: `${p.x_pct * 100}%`,
                     top: `${p.y_pct * 100}%`,
@@ -216,64 +172,59 @@ const CountersignContract = () => {
                     height: `${p.h_pct * 100}%`,
                   }}
                 >
-                  {sigDataUrl
-                    ? <img src={sigDataUrl} alt="signature" className="max-h-full max-w-full" />
-                    : <span>Sign here ↓</span>}
+                  <Popover open={popoverOpen} onOpenChange={setPopoverOpen}>
+                    <PopoverTrigger asChild>
+                      <button
+                        className={`w-full h-full border-2 border-dashed border-amber-600 bg-amber-200/70 hover:bg-amber-300/80 ring-2 ring-amber-500/70 shadow-md transition flex items-center justify-center text-xs font-medium text-primary ${sigDataUrl ? "border-emerald-500 bg-emerald-500/10 ring-emerald-500/70" : ""}`}
+                      >
+                        {sigDataUrl
+                          ? <img src={sigDataUrl} alt="signature" className="max-h-full max-w-full" />
+                          : <span>Click to sign ↓</span>}
+                      </button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[420px] p-3">
+                      {showSavedPrompt && (
+                        <div className="mb-3 p-2 rounded border border-primary/30 bg-primary/5 flex items-center gap-2">
+                          <img src={savedSig!} alt="saved" className="h-10 max-w-[120px] object-contain bg-white border rounded px-1" />
+                          <div className="flex-1">
+                            <p className="text-xs font-medium">Use your previous signature?</p>
+                          </div>
+                          <Button
+                            size="sm"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setSigDataUrl(savedSig);
+                              setPopoverOpen(false);
+                              toast.success("Saved signature applied");
+                            }}
+                          >
+                            Use it
+                          </Button>
+                        </div>
+                      )}
+                      <p className="text-xs font-medium mb-2">Your signature</p>
+                      <SignaturePad
+                        value={sigDataUrl}
+                        onChange={(d) => setSigDataUrl(d)}
+                        allowType
+                      />
+                    </PopoverContent>
+                  </Popover>
                 </div>
               )}
             </div>
           ))}
         </div>
 
-        {savedSigPrompt && savedSig && (
-          <Card className="p-4 bg-primary/5 border-primary/30 flex items-center gap-3">
-            <img src={savedSig} alt="saved signature" className="h-12 max-w-[180px] object-contain bg-white border rounded px-2" />
-            <div className="flex-1">
-              <p className="text-sm font-medium">Use your previous signature?</p>
-              <p className="text-xs text-muted-foreground">We found a signature from a past document.</p>
-            </div>
-            <Button size="sm" variant="outline" onClick={() => setSavedSigPrompt(false)}>No, sign again</Button>
-            <Button size="sm" onClick={() => { setSigDataUrl(savedSig); setSavedSigPrompt(false); toast.success("Saved signature applied"); }}>Use it</Button>
-          </Card>
-        )}
-
-        <Card className="p-5 sticky bottom-4 shadow-lg space-y-3">
-          <p className="text-sm font-medium">Your signature</p>
-          <Tabs value={sigMode} onValueChange={(v) => { setSigMode(v as any); sigClear(); }}>
-            <TabsList className="grid grid-cols-2 w-full">
-              <TabsTrigger value="draw">Draw</TabsTrigger>
-              <TabsTrigger value="type">Type</TabsTrigger>
-            </TabsList>
-            <TabsContent value="draw" className="mt-2">
-              <div className="border rounded bg-white">
-                <canvas
-                  ref={canvasRef}
-                  width={600}
-                  height={140}
-                  className="w-full touch-none cursor-crosshair"
-                  onPointerDown={sigStart}
-                  onPointerMove={sigMove}
-                  onPointerUp={sigEnd}
-                  onPointerLeave={sigEnd}
-                />
-              </div>
-            </TabsContent>
-            <TabsContent value="type" className="mt-2">
-              <Input
-                value={typed}
-                onChange={(e) => { const t = e.target.value; setTyped(t); setSigDataUrl(typedToDataUrl(t)); }}
-                placeholder="Type your name"
-                className="text-center text-2xl"
-                style={{ fontFamily: "'Brush Script MT', 'Segoe Script', 'Lucida Handwriting', cursive", fontStyle: "italic" }}
-              />
-            </TabsContent>
-          </Tabs>
-          <div className="flex justify-between items-center">
-            <Button variant="ghost" size="sm" onClick={sigClear}>Clear</Button>
-            <Button size="lg" onClick={submit} disabled={submitting || !sigDataUrl}>
-              {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting…</> : "Finish & Sign"}
-            </Button>
-          </div>
+        <Card className="p-5 sticky bottom-4 shadow-lg flex items-center justify-between gap-3">
+          <p className="text-sm">
+            {sigDataUrl
+              ? <span className="text-emerald-600 font-medium">Signature added.</span>
+              : <span className="text-muted-foreground">Click the highlighted box on the document to add your signature.</span>}
+          </p>
+          <Button size="lg" onClick={submit} disabled={submitting || !sigDataUrl}>
+            {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting…</> : "Finish & Sign"}
+          </Button>
         </Card>
       </main>
     </div>
