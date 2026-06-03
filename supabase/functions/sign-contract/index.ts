@@ -311,6 +311,21 @@ Deno.serve(async (req) => {
         metadata: { sha256: signedHash },
       });
 
+      // Save signature for future reuse (first "signature" field by signer)
+      try {
+        const sigField = fields!.find(f => f.field_type === "signature" && f.assigned_to === "signer");
+        const sigVal = sigField ? valueByFieldId.get(sigField.id) : null;
+        if (sigVal?.signature_data_url && envelope.recipient_email) {
+          await admin.from("saved_signatures").upsert({
+            recipient_email: envelope.recipient_email.toLowerCase(),
+            signature_data_url: sigVal.signature_data_url,
+            last_used_at: new Date().toISOString(),
+          }, { onConflict: "recipient_email" });
+        }
+      } catch (sigErr) {
+        console.error("save signature failed", sigErr);
+      }
+
       // Email signed copy to both parties
       try {
         const gmailUser = Deno.env.get("MARK_GMAIL_USER")!;
