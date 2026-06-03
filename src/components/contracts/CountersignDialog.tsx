@@ -176,9 +176,9 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
       const signUrl = (data as any)?.signUrl;
       if (signUrl) {
         try { await navigator.clipboard.writeText(signUrl); } catch {}
-        toast.success("Countersignature request sent — link copied to clipboard");
+        toast.success("Signature request sent — link copied to clipboard");
       } else {
-        toast.success("Countersignature request sent");
+        toast.success("Signature request sent");
       }
       onDone();
       onOpenChange(false);
@@ -191,7 +191,7 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
 
   const tryClose = (v: boolean) => {
     if (!v && (placement || message || managerEmail)) {
-      if (!confirm("Discard this countersignature request?")) return;
+      if (!confirm("Discard this signature request?")) return;
     }
     onOpenChange(v);
   };
@@ -200,7 +200,7 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
     <Dialog open={open} onOpenChange={tryClose}>
       <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Send for Countersignature — {recipientName}</DialogTitle>
+          <DialogTitle>Send for Signature — {recipientName}</DialogTitle>
           <DialogDescription>
             Step {step} of 2 — {step === 1 ? "Place where the manager should sign" : "Email details & message"}
           </DialogDescription>
@@ -298,7 +298,7 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
                   </Button>
                 </div>
               </div>
-              <Textarea rows={8} value={message} onChange={(e) => setMessage(e.target.value)} placeholder={`Hi — please add your countersignature to the contract signed by ${recipientName}.`} />
+              <Textarea rows={8} value={message} onChange={(e) => setMessage(e.target.value)} placeholder={`Hi — please review and sign the contract signed by ${recipientName}.`} />
               <p className="text-[11px] text-muted-foreground mt-1">Markdown: **bold** *italic* ==highlight== - bullet</p>
             </div>
 
@@ -312,7 +312,7 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
               <div className="flex gap-2">
                 <Button variant="outline" onClick={() => tryClose(false)}>Cancel</Button>
                 <Button onClick={send} disabled={sending}>
-                  {sending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending…</> : "Send for Countersignature"}
+                  {sending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending…</> : "Send for Signature"}
                 </Button>
               </div>
             </div>
