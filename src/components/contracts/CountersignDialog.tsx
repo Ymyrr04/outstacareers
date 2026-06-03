@@ -93,40 +93,44 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
     setPlacement({ page: pageIndex, x_pct: Math.max(0, Math.min(1 - w, x - w / 2)), y_pct: Math.max(0, Math.min(1 - h, y - h / 2)), w_pct: w, h_pct: h });
   };
 
-  const onBoxPointerDown = (e: React.PointerEvent) => {
+  const startInteraction = (mode: "move" | "resize", e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     if (!placement) return;
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    setDrag({ ox: e.clientX, oy: e.clientY });
-  };
-  const onBoxPointerMove = (e: React.PointerEvent) => {
-    if (!placement) return;
-    const parent = (e.currentTarget as HTMLElement).parentElement!;
-    const rect = parent.getBoundingClientRect();
-    if (drag) {
-      const dx = (e.clientX - drag.ox) / rect.width;
-      const dy = (e.clientY - drag.oy) / rect.height;
-      setPlacement(p => p && ({
-        ...p,
-        x_pct: Math.max(0, Math.min(1 - p.w_pct, p.x_pct + dx)),
-        y_pct: Math.max(0, Math.min(1 - p.h_pct, p.y_pct + dy)),
-      }));
-      setDrag({ ox: e.clientX, oy: e.clientY });
-    } else if (resizing) {
-      const rectBox = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      const newW = (e.clientX - rectBox.left) / rect.width;
-      const newH = (e.clientY - rectBox.top) / rect.height;
-      setPlacement(p => p && ({
-        ...p,
-        w_pct: Math.max(0.05, Math.min(1 - p.x_pct, newW)),
-        h_pct: Math.max(0.03, Math.min(1 - p.y_pct, newH)),
-      }));
-    }
-  };
-  const onBoxPointerUp = (e: React.PointerEvent) => {
-    (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
-    setDrag(null);
-    setResizing(false);
+    const pageEl = pageRefs.current.get(placement.page);
+    if (!pageEl) return;
+    dragRef.current = { mode, startX: e.clientX, startY: e.clientY, pageEl };
+    const move = (ev: MouseEvent) => {
+      const d = dragRef.current;
+      if (!d) return;
+      const rect = d.pageEl.getBoundingClientRect();
+      const dx = (ev.clientX - d.startX) / rect.width;
+      const dy = (ev.clientY - d.startY) / rect.height;
+      d.startX = ev.clientX;
+      d.startY = ev.clientY;
+      setPlacement(p => {
+        if (!p) return p;
+        if (d.mode === "move") {
+          return {
+            ...p,
+            x_pct: Math.max(0, Math.min(1 - p.w_pct, p.x_pct + dx)),
+            y_pct: Math.max(0, Math.min(1 - p.h_pct, p.y_pct + dy)),
+          };
+        }
+        return {
+          ...p,
+          w_pct: Math.max(0.05, Math.min(1 - p.x_pct, p.w_pct + dx)),
+          h_pct: Math.max(0.03, Math.min(1 - p.y_pct, p.h_pct + dy)),
+        };
+      });
+    };
+    const up = () => {
+      dragRef.current = null;
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
   };
 
   // Signature canvas
