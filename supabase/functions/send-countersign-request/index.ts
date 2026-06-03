@@ -92,7 +92,7 @@ Deno.serve(async (req) => {
         .replace(/(^|[^\*])\*(?!\s)([^\*\n]+?)\*(?!\*)/g, "$1<em>$2</em>")
         .replace(/==(.+?)==/g, '<mark style="background:#fff176; padding:0 2px;">$1</mark>');
 
-    const raw = body.message || `Please add your countersignature to the contract signed by ${env.recipient_name}.`;
+    const raw = body.message || `Please review and sign the contract signed by ${env.recipient_name}.`;
     const blocks = raw.replace(/\r\n/g, "\n").split(/\n\s*\n/);
     const renderedBlocks = blocks.map((block) => {
       const lines = block.split("\n").filter((l) => l.trim().length);
@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
         ${renderedBlocks}
         <p style="margin: 32px 0;">
           <a href="${signUrl}" style="background:#1a1a1a; color:#fff; padding:14px 28px; text-decoration:none; border-radius:6px; font-weight:600; display:inline-block;">
-            Review &amp; Countersign Document
+            Review &amp; Sign Document
           </a>
         </p>
         <p style="color:#666; font-size:13px;">This link expires on ${new Date(expiresAt).toLocaleDateString()}.</p>
@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
     await client.send({
       from: `Mark Chua <${gmailUser}>`,
       to: body.recipientEmail,
-      subject: `Countersignature request — ${env.recipient_name}`,
+      subject: `Signature request — ${env.recipient_name}`,
       html,
       replyTo: userEmail || gmailUser,
     });

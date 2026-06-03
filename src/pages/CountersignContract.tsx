@@ -157,8 +157,8 @@ const CountersignContract = () => {
     <div className="min-h-screen grid place-items-center p-6 bg-muted/30">
       <Card className="p-10 max-w-lg text-center">
         <CheckCircle2 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
-        <h1 className="text-2xl font-semibold mb-2">Thank you — document countersigned</h1>
-        <p className="text-muted-foreground">The countersigned contract has been saved.</p>
+        <h1 className="text-2xl font-semibold mb-2">Thank you — document signed</h1>
+        <p className="text-muted-foreground">Your signed contract has been saved.</p>
       </Card>
     </div>
   );
@@ -170,7 +170,7 @@ const CountersignContract = () => {
     <div className="min-h-screen bg-muted/30">
       <header className="bg-background border-b sticky top-0 z-20">
         <div className="max-w-5xl mx-auto px-4 py-3">
-          <h1 className="font-semibold text-lg leading-tight">Countersign — {data.envelope.recipient_name}</h1>
+          <h1 className="font-semibold text-lg leading-tight">Sign — {data.envelope.recipient_name}</h1>
           <p className="text-xs text-muted-foreground">Review the signed contract below, then add your signature.</p>
         </div>
       </header>
@@ -239,7 +239,7 @@ const CountersignContract = () => {
           <div className="flex justify-between items-center">
             <Button variant="ghost" size="sm" onClick={sigClear}>Clear</Button>
             <Button size="lg" onClick={submit} disabled={submitting || !sigDataUrl}>
-              {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting…</> : "Finish & Countersign"}
+              {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Submitting…</> : "Finish & Sign"}
             </Button>
           </div>
         </Card>
