@@ -175,6 +175,9 @@ export const EnvelopesPanel = () => {
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-medium truncate">{e.recipient_name}</p>
                   <Badge className={STATUS_COLORS[e.status] || ""} variant="outline">{e.status}</Badge>
+                  {e.countersigned_at && (
+                    <Badge className="bg-teal-600/20 text-teal-700 dark:text-teal-300" variant="outline">countersigned</Badge>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">{e.recipient_email} • {e.contract_templates?.name || "—"}</p>
                 <p className="text-xs text-muted-foreground">
@@ -182,6 +185,9 @@ export const EnvelopesPanel = () => {
                   {e.viewed_at && ` • Viewed ${new Date(e.viewed_at).toLocaleString()}`}
                   {e.signed_at && ` • Signed ${new Date(e.signed_at).toLocaleString()}`}
                 </p>
+                {e.countersigned_at && (
+                  <p className="text-xs text-muted-foreground">Countersigned {new Date(e.countersigned_at).toLocaleString()}</p>
+                )}
               </div>
               <div className="flex gap-1 flex-shrink-0">
                 <Button size="sm" variant="outline" onClick={() => copyLink(e.signing_token)} className="gap-1" title="Copy signing link"><Copy className="w-3 h-3" /> Link</Button>
@@ -194,6 +200,12 @@ export const EnvelopesPanel = () => {
                 {e.signed_pdf_path && (
                   <Button size="sm" variant="outline" onClick={() => downloadPdf(e.signed_pdf_path!, `signed-${e.recipient_name}.pdf`)} className="gap-1"><Download className="w-3 h-3" /> Signed</Button>
                 )}
+                {e.status === "signed" && e.signed_pdf_path && !e.countersigned_file_url && (
+                  <Button size="sm" variant="outline" onClick={() => setCountersignFor(e)} className="gap-1" title="Add manager signature"><PenLine className="w-3 h-3" /> Countersign</Button>
+                )}
+                {e.countersigned_file_url && (
+                  <Button size="sm" variant="outline" onClick={() => downloadPdf(e.countersigned_file_url!, `countersigned-${e.recipient_name}.pdf`)} className="gap-1"><Download className="w-3 h-3" /> Download Countersigned</Button>
+                )}
                 {e.audit_pdf_path && (
                   <Button size="sm" variant="ghost" onClick={() => downloadPdf(e.audit_pdf_path!, `audit-${e.recipient_name}.pdf`)} className="gap-1"><Download className="w-3 h-3" /> Audit</Button>
                 )}
@@ -205,6 +217,16 @@ export const EnvelopesPanel = () => {
       )}
 
       <SendEnvelopeDialog open={sendOpen} onOpenChange={setSendOpen} onSent={load} />
+      {countersignFor && (
+        <CountersignDialog
+          open={!!countersignFor}
+          onOpenChange={(v) => { if (!v) setCountersignFor(null); }}
+          envelopeId={countersignFor.id}
+          signedPdfPath={countersignFor.signed_pdf_path!}
+          recipientName={countersignFor.recipient_name}
+          onDone={load}
+        />
+      )}
     </div>
   );
 };
