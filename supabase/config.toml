@@ -98,3 +98,9 @@ verify_jwt = false
 
 [functions.complete-client-portal-setup]
 verify_jwt = false
+
+[functions.send-countersign-request]
+verify_jwt = true
+
+[functions.countersign-contract]
+verify_jwt = false
