@@ -1644,6 +1644,12 @@ const Admin = () => {
                 Client Pipeline
               </TabsTrigger>
             )}
+            {canViewTab('sales-pipeline') && (
+              <TabsTrigger value="sales-pipeline" className="flex items-center gap-2">
+                <Target className="w-4 h-4" />
+                Sales Pipeline
+              </TabsTrigger>
+            )}
             {canViewTab('post-hire') && (
               <TabsTrigger value="post-hire" className="flex items-center gap-2">
                 <Target className="w-4 h-4" />
@@ -3634,6 +3640,11 @@ const Admin = () => {
               <p className="text-[11px] text-muted-foreground">Track client hiring requests through the recruitment pipeline</p>
             </div>
             <HiringPipelineKanban />
+          </TabsContent>
+
+          {/* Sales Pipeline Tab */}
+          <TabsContent value="sales-pipeline" className="space-y-1">
+            <SalesPipeline />
           </TabsContent>
 
           {/* Post-Hire Pipeline Tab */}
