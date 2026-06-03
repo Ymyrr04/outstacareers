@@ -108,6 +108,17 @@ const SignContract = () => {
           }
         }
         setValues(init);
+
+        // Look for saved signature: server (by email) or localStorage fallback
+        let found = json.saved_signature;
+        const email = json.envelope.recipient_email?.toLowerCase();
+        if (!found && email) {
+          try { found = localStorage.getItem(`sig:${email}`); } catch { /* ignore */ }
+        }
+        if (found) {
+          setSavedSig(found);
+          setSavedSigPrompt(true);
+        }
       } catch (e) {
         setError((e as Error).message);
       } finally {
