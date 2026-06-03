@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Send, Copy, Download, Ban, FileSignature, Trash2, RefreshCw, PenLine } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Send, Copy, Download, Ban, FileSignature, Trash2, RefreshCw, PenLine, FolderOpen, FolderCheck } from "lucide-react";
 import { toast } from "sonner";
 import { SendEnvelopeDialog } from "./SendEnvelopeDialog";
 import { CountersignDialog } from "./CountersignDialog";
