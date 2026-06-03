@@ -83,6 +83,17 @@ const CountersignContract = () => {
         }
         const rendered = await renderPdfPages(json.pdf_url, 900);
         setPages(rendered);
+
+        // Look for a saved signature: server (by email) or localStorage (by email)
+        let found = json.saved_signature;
+        const email = json.envelope.countersign_recipient_email?.toLowerCase();
+        if (!found && email) {
+          try { found = localStorage.getItem(`sig:${email}`); } catch { /* ignore */ }
+        }
+        if (found) {
+          setSavedSig(found);
+          setSavedSigPrompt(true);
+        }
       } catch (e) {
         setError((e as Error).message);
       } finally {
