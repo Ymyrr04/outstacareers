@@ -1,9 +1,10 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Send, Copy, Download, Ban, FileSignature, Trash2, RefreshCw, PenLine } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Loader2, Send, Copy, Download, Ban, FileSignature, Trash2, RefreshCw, PenLine, FolderOpen, FolderCheck } from "lucide-react";
 import { toast } from "sonner";
 import { SendEnvelopeDialog } from "./SendEnvelopeDialog";
 import { CountersignDialog } from "./CountersignDialog";
@@ -46,6 +47,7 @@ export const EnvelopesPanel = () => {
   const [loading, setLoading] = useState(true);
   const [sendOpen, setSendOpen] = useState(false);
   const [countersignFor, setCountersignFor] = useState<Envelope | null>(null);
+  const [folder, setFolder] = useState<"active" | "completed">("active");
 
   const load = async () => {
     setLoading(true);
@@ -159,22 +161,35 @@ export const EnvelopesPanel = () => {
     }
   };
 
+  const filtered = useMemo(() => {
+    return envelopes.filter(e => folder === "completed" ? !!e.countersigned_at : !e.countersigned_at);
+  }, [envelopes, folder]);
+
+  const activeCount = envelopes.filter(e => !e.countersigned_at).length;
+  const completedCount = envelopes.filter(e => !!e.countersigned_at).length;
+
   return (
     <div className="space-y-4">
-      <div className="flex justify-end">
+      <div className="flex justify-between items-center gap-3 flex-wrap">
+        <Tabs value={folder} onValueChange={(v) => setFolder(v as any)}>
+          <TabsList>
+            <TabsTrigger value="active" className="gap-2"><FolderOpen className="w-4 h-4" /> Active ({activeCount})</TabsTrigger>
+            <TabsTrigger value="completed" className="gap-2"><FolderCheck className="w-4 h-4" /> Completed Contracts ({completedCount})</TabsTrigger>
+          </TabsList>
+        </Tabs>
         <Button onClick={() => setSendOpen(true)} className="gap-2"><Send className="w-4 h-4" /> Send New Contract</Button>
       </div>
 
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className="w-6 h-6 animate-spin" /></div>
-      ) : envelopes.length === 0 ? (
+      ) : filtered.length === 0 ? (
         <Card className="p-12 text-center text-muted-foreground">
           <FileSignature className="w-12 h-12 mx-auto mb-3 opacity-40" />
-          <p>No contracts sent yet.</p>
+          <p>{folder === "completed" ? "No fully signed contracts yet." : "No active contracts."}</p>
         </Card>
       ) : (
         <div className="grid gap-2">
-          {envelopes.map(e => (
+          {filtered.map(e => (
             <Card key={e.id} className="p-4 flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
