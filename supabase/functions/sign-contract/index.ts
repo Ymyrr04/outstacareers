@@ -169,6 +169,18 @@ Deno.serve(async (req) => {
             const img = m[1] === "png" ? await pdfDoc.embedPng(imgBytes) : await pdfDoc.embedJpg(imgBytes);
             const scaled = img.scaleToFit(w, h);
             page.drawImage(img, { x: x + (w - scaled.width) / 2, y: y + (h - scaled.height) / 2, width: scaled.width, height: scaled.height });
+            // Timestamp under the signature
+            const ts = new Date().toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }) + " UTC";
+            const tsSize = 6;
+            const tsW = helv.widthOfTextAtSize(ts, tsSize);
+            page.drawText(`Signed: ${ts}`, {
+              x: x + Math.max(0, (w - helv.widthOfTextAtSize(`Signed: ${ts}`, tsSize)) / 2),
+              y: Math.max(2, y - tsSize - 1),
+              size: tsSize,
+              font: helv,
+              color: rgb(0.35, 0.35, 0.35),
+            });
+            void tsW;
           }
         } else {
           let text = v.value || "";
