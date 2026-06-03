@@ -83,14 +83,14 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
   }, [open, signedPdfPath]);
 
   // PDF click to place signature box
-  const onPdfClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const onPdfClick = (pageIndex: number) => (e: React.MouseEvent<HTMLDivElement>) => {
     if (placement) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
     const w = 0.25;
     const h = 0.08;
-    setPlacement({ page: currentPage, x_pct: Math.max(0, Math.min(1 - w, x - w / 2)), y_pct: Math.max(0, Math.min(1 - h, y - h / 2)), w_pct: w, h_pct: h });
+    setPlacement({ page: pageIndex, x_pct: Math.max(0, Math.min(1 - w, x - w / 2)), y_pct: Math.max(0, Math.min(1 - h, y - h / 2)), w_pct: w, h_pct: h });
   };
 
   const onBoxPointerDown = (e: React.PointerEvent) => {
