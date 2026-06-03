@@ -831,6 +831,8 @@ export type Database = {
           applicant_id: string | null
           audit_pdf_path: string | null
           contractor_assignment_id: string | null
+          countersigned_at: string | null
+          countersigned_file_url: string | null
           created_at: string
           expires_at: string
           id: string
@@ -856,6 +858,8 @@ export type Database = {
           applicant_id?: string | null
           audit_pdf_path?: string | null
           contractor_assignment_id?: string | null
+          countersigned_at?: string | null
+          countersigned_file_url?: string | null
           created_at?: string
           expires_at?: string
           id?: string
@@ -881,6 +885,8 @@ export type Database = {
           applicant_id?: string | null
           audit_pdf_path?: string | null
           contractor_assignment_id?: string | null
+          countersigned_at?: string | null
+          countersigned_file_url?: string | null
           created_at?: string
           expires_at?: string
           id?: string
