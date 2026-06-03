@@ -217,7 +217,7 @@ export const EnvelopesPanel = () => {
                   </Button>
                 )}
                 {e.countersign_token && !e.countersigned_at && (
-                  <Button size="sm" variant="ghost" onClick={() => { const url = `${window.location.origin}/countersign/${e.countersign_token}`; navigator.clipboard.writeText(url); toast.success("Signature link copied"); }} className="gap-1" title="Copy signature link"><Copy className="w-3 h-3" /> CS Link</Button>
+                  <Button size="sm" variant="ghost" onClick={() => { const url = `${window.location.origin}/countersign/${e.countersign_token}`; navigator.clipboard.writeText(url); toast.success("Signature link copied"); }} className="gap-1" title="Copy signature link"><Copy className="w-3 h-3" /> Sig Link</Button>
                 )}
                 {e.countersigned_file_url && (
                   <Button size="sm" variant="outline" onClick={() => downloadPdf(e.countersigned_file_url!, `countersigned-${e.recipient_name}.pdf`)} className="gap-1"><Download className="w-3 h-3" /> Download Signed</Button>
