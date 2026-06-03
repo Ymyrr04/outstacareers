@@ -135,7 +135,7 @@ Deno.serve(async (req) => {
     await client.send({
       from: `Mark Chua <${gmailUser}>`,
       to: body.recipientEmail,
-      subject: "Welcome to OutSta",
+      subject: `OutSta Contractor Agreement - ${body.recipientName}`,
       html,
       replyTo: userEmail || gmailUser,
     });
