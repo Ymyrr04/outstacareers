@@ -2652,6 +2652,30 @@ export type Database = {
           },
         ]
       }
+      saved_signatures: {
+        Row: {
+          created_at: string
+          id: string
+          last_used_at: string
+          recipient_email: string
+          signature_data_url: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          last_used_at?: string
+          recipient_email: string
+          signature_data_url: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          last_used_at?: string
+          recipient_email?: string
+          signature_data_url?: string
+        }
+        Relationships: []
+      }
       scheduled_contractor_emails: {
         Row: {
           body_html: string
