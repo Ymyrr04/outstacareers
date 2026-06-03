@@ -150,6 +150,11 @@ const CountersignContract = () => {
         const t = await r.text();
         throw new Error(t);
       }
+      // Cache locally as a fallback for future signings on this browser
+      try {
+        const email = data?.envelope.countersign_recipient_email?.toLowerCase();
+        if (email) localStorage.setItem(`sig:${email}`, sigDataUrl);
+      } catch { /* ignore */ }
       setDone(true);
     } catch (e) {
       toast.error((e as Error).message);
