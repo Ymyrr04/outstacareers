@@ -212,8 +212,8 @@ export const EnvelopesPanel = () => {
                   <Button size="sm" variant="outline" onClick={() => downloadPdf(e.signed_pdf_path!, `signed-${e.recipient_name}.pdf`)} className="gap-1"><Download className="w-3 h-3" /> Signed</Button>
                 )}
                 {e.status === "signed" && e.signed_pdf_path && !e.countersigned_file_url && (
-                  <Button size="sm" variant="outline" onClick={() => setCountersignFor(e)} className="gap-1" title={e.countersign_sent_at ? "Resend signature request" : "Send for signature"}>
-                    <PenLine className="w-3 h-3" /> {e.countersign_sent_at ? "Resend Signature" : "Send for Signature"}
+                  <Button size="sm" variant="outline" onClick={() => setCountersignFor(e)} className="gap-1" title={e.countersign_sent_at ? "Resend countersign request" : "Send for countersign"}>
+                    <PenLine className="w-3 h-3" /> {e.countersign_sent_at ? "Resend Countersign" : "Send for Countersign"}
                   </Button>
                 )}
                 {e.countersign_token && !e.countersigned_at && (
