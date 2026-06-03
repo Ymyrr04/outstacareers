@@ -19,11 +19,13 @@ interface LoadResponse {
     status: string;
     recipient_name: string;
     countersign_recipient_name: string | null;
+    countersign_recipient_email: string | null;
     countersign_message: string | null;
     countersigned_at: string | null;
   };
   placement: Placement;
   pdf_url: string;
+  saved_signature: string | null;
 }
 
 function renderMessage(raw: string): string {
