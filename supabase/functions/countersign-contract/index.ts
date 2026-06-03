@@ -2,7 +2,7 @@
 // GET ?token=...   -> { envelope, signed_pdf_url, placement, message }
 // POST { token, signature_data_url } -> embeds signature into signed PDF and saves it.
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
-import { PDFDocument } from "npm:pdf-lib@1.17.1";
+import { PDFDocument, StandardFonts, rgb } from "npm:pdf-lib@1.17.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
