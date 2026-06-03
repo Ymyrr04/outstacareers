@@ -181,7 +181,7 @@ export const EnvelopesPanel = () => {
                   <p className="font-medium truncate">{e.recipient_name}</p>
                   <Badge className={STATUS_COLORS[e.status] || ""} variant="outline">{e.status}</Badge>
                   {e.countersigned_at && (
-                    <Badge className="bg-teal-600/20 text-teal-700 dark:text-teal-300" variant="outline">signed</Badge>
+                    <Badge className="bg-teal-600/20 text-teal-700 dark:text-teal-300" variant="outline">fully signed</Badge>
                   )}
                   {!e.countersigned_at && e.countersign_sent_at && (
                     <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300" variant="outline">signature sent</Badge>
