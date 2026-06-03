@@ -224,38 +224,13 @@ const SignContract = () => {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
-        {savedSigPrompt && savedSig && (
-          <Card className="p-4 bg-primary/5 border-primary/30 flex items-center gap-3">
-            <img src={savedSig} alt="saved signature" className="h-12 max-w-[180px] object-contain bg-white border rounded px-2" />
-            <div className="flex-1">
-              <p className="text-sm font-medium">Use your previous signature?</p>
-              <p className="text-xs text-muted-foreground">We found a signature you used on a past document. Apply it to all signature fields in this contract?</p>
-            </div>
-            <Button size="sm" variant="outline" onClick={() => setSavedSigPrompt(false)}>No, sign again</Button>
-            <Button
-              size="sm"
-              onClick={() => {
-                const next = { ...values };
-                for (const f of data.fields) {
-                  if (f.field_type === "signature" && f.assigned_to !== "admin") {
-                    next[f.id] = { ...next[f.id], signature_data_url: savedSig };
-                  }
-                }
-                setValues(next);
-                setSavedSigPrompt(false);
-                toast.success("Saved signature applied");
-              }}
-            >
-              Use it
-            </Button>
-          </Card>
-        )}
-
         {data.envelope.message && (
           <Card className="p-4 bg-background">
             <div className="text-sm" dangerouslySetInnerHTML={{ __html: renderMessage(data.envelope.message) }} />
           </Card>
         )}
+
+
 
         {pages.map((p) => {
           const pageFields = data.fields.filter(f => (f.page - 1) === p.index);
