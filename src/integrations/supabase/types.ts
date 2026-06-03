@@ -783,6 +783,33 @@ export type Database = {
           },
         ]
       }
+      contract_countersign_message_templates: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          message: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          message?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       contract_envelope_field_values: {
         Row: {
           envelope_id: string
@@ -831,6 +858,14 @@ export type Database = {
           applicant_id: string | null
           audit_pdf_path: string | null
           contractor_assignment_id: string | null
+          countersign_expires_at: string | null
+          countersign_message: string | null
+          countersign_placement: Json | null
+          countersign_recipient_email: string | null
+          countersign_recipient_name: string | null
+          countersign_sent_at: string | null
+          countersign_token: string | null
+          countersign_viewed_at: string | null
           countersigned_at: string | null
           countersigned_file_url: string | null
           created_at: string
@@ -858,6 +893,14 @@ export type Database = {
           applicant_id?: string | null
           audit_pdf_path?: string | null
           contractor_assignment_id?: string | null
+          countersign_expires_at?: string | null
+          countersign_message?: string | null
+          countersign_placement?: Json | null
+          countersign_recipient_email?: string | null
+          countersign_recipient_name?: string | null
+          countersign_sent_at?: string | null
+          countersign_token?: string | null
+          countersign_viewed_at?: string | null
           countersigned_at?: string | null
           countersigned_file_url?: string | null
           created_at?: string
@@ -885,6 +928,14 @@ export type Database = {
           applicant_id?: string | null
           audit_pdf_path?: string | null
           contractor_assignment_id?: string | null
+          countersign_expires_at?: string | null
+          countersign_message?: string | null
+          countersign_placement?: Json | null
+          countersign_recipient_email?: string | null
+          countersign_recipient_name?: string | null
+          countersign_sent_at?: string | null
+          countersign_token?: string | null
+          countersign_viewed_at?: string | null
           countersigned_at?: string | null
           countersigned_file_url?: string | null
           created_at?: string

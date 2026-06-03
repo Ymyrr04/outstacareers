@@ -2,12 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Loader2, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Loader2, X, Save, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { renderPdfPages, RenderedPage } from "@/lib/pdfRender";
-import { PDFDocument } from "pdf-lib";
 
 interface Props {
   open: boolean;
@@ -15,64 +15,56 @@ interface Props {
   envelopeId: string;
   signedPdfPath: string;
   recipientName: string;
+  defaultRecipientName?: string;
+  defaultRecipientEmail?: string;
   onDone: () => void;
 }
 
-interface Placement {
-  page: number; // 0-based
-  x_pct: number;
-  y_pct: number;
-  w_pct: number;
-  h_pct: number;
-}
+interface Placement { page: number; x_pct: number; y_pct: number; w_pct: number; h_pct: number; }
+interface MsgTemplate { id: string; name: string; message: string; }
 
-type Step = 1 | 2 | 3;
+type Step = 1 | 2;
 
-export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPath, recipientName, onDone }: Props) => {
+export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPath, recipientName, defaultRecipientName, defaultRecipientEmail, onDone }: Props) => {
   const [step, setStep] = useState<Step>(1);
   const [loading, setLoading] = useState(false);
   const [pages, setPages] = useState<RenderedPage[]>([]);
-  const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null);
-  const [currentPage, setCurrentPage] = useState(0);
   const [placement, setPlacement] = useState<Placement | null>(null);
   const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
   const dragRef = useRef<{ mode: "move" | "resize"; startX: number; startY: number; pageEl: HTMLDivElement } | null>(null);
 
-  // Signature
-  const [sigMode, setSigMode] = useState<"draw" | "type">("draw");
-  const [typed, setTyped] = useState("");
-  const [sigDataUrl, setSigDataUrl] = useState<string | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const drawing = useRef(false);
+  const [managerName, setManagerName] = useState("");
+  const [managerEmail, setManagerEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [expiresInDays, setExpiresInDays] = useState(14);
+  const [sending, setSending] = useState(false);
 
-  // Final
-  const [finalBytes, setFinalBytes] = useState<Uint8Array | null>(null);
-  const [finalPages, setFinalPages] = useState<RenderedPage[]>([]);
-  const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
+  const [msgTemplates, setMsgTemplates] = useState<MsgTemplate[]>([]);
+  const [msgTemplateId, setMsgTemplateId] = useState<string>("");
 
-  // Load signed PDF on open
   useEffect(() => {
     if (!open) return;
+    setStep(1);
+    setPlacement(null);
+    setManagerName(defaultRecipientName || "");
+    setManagerEmail(defaultRecipientEmail || "");
+    setMessage("");
+    setMsgTemplateId("");
     (async () => {
       setLoading(true);
-      setStep(1);
-      setPlacement(null);
-      setSigDataUrl(null);
-      setTyped("");
-      setFinalBytes(null);
-      setFinalPages([]);
-      setSaved(false);
       try {
         const { data, error } = await supabase.storage.from("contract-signed").download(signedPdfPath);
         if (error || !data) throw new Error(error?.message || "Failed to load PDF");
-        const buf = new Uint8Array(await data.arrayBuffer());
-        setPdfBytes(buf);
         const url = URL.createObjectURL(data);
         const rendered = await renderPdfPages(url, 800);
         setPages(rendered);
-        setCurrentPage(0);
         setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+        const { data: tpl } = await supabase
+          .from("contract_countersign_message_templates")
+          .select("id, name, message")
+          .order("name");
+        setMsgTemplates((tpl || []) as MsgTemplate[]);
       } catch (e) {
         toast.error((e as Error).message);
         onOpenChange(false);
@@ -82,7 +74,6 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
     })();
   }, [open, signedPdfPath]);
 
-  // PDF click to place signature box
   const onPdfClick = (pageIndex: number) => (e: React.MouseEvent<HTMLDivElement>) => {
     if (placement) return;
     const rect = e.currentTarget.getBoundingClientRect();
@@ -133,127 +124,85 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
     window.addEventListener("mouseup", up);
   };
 
-  // Signature canvas
-  const getCtx = () => {
-    const c = canvasRef.current;
-    if (!c) return null;
-    const ctx = c.getContext("2d");
-    if (ctx) { ctx.lineWidth = 2.5; ctx.lineCap = "round"; ctx.strokeStyle = "#0a0a0a"; }
-    return ctx;
+  const applyMsgTemplate = (id: string) => {
+    setMsgTemplateId(id);
+    const t = msgTemplates.find(m => m.id === id);
+    if (t) setMessage(t.message);
   };
-  const sigPos = (e: React.PointerEvent) => {
-    const c = canvasRef.current!;
-    const r = c.getBoundingClientRect();
-    return { x: ((e.clientX - r.left) / r.width) * c.width, y: ((e.clientY - r.top) / r.height) * c.height };
+  const saveAsTemplate = async () => {
+    const trimmed = message.trim();
+    if (!trimmed) return toast.error("Message is empty.");
+    const name = window.prompt("Template name?")?.trim();
+    if (!name) return;
+    const { data, error } = await supabase
+      .from("contract_countersign_message_templates")
+      .insert({ name, message: trimmed })
+      .select("id, name, message")
+      .single();
+    if (error) return toast.error(error.message);
+    toast.success("Template saved");
+    setMsgTemplates(prev => [...prev, data as MsgTemplate].sort((a, b) => a.name.localeCompare(b.name)));
+    setMsgTemplateId((data as MsgTemplate).id);
   };
-  const sigStart = (e: React.PointerEvent) => { drawing.current = true; const ctx = getCtx(); const p = sigPos(e); ctx?.beginPath(); ctx?.moveTo(p.x, p.y); };
-  const sigMove = (e: React.PointerEvent) => { if (!drawing.current) return; const ctx = getCtx(); const p = sigPos(e); ctx?.lineTo(p.x, p.y); ctx?.stroke(); };
-  const sigEnd = () => { if (!drawing.current) return; drawing.current = false; const c = canvasRef.current; if (c) setSigDataUrl(c.toDataURL("image/png")); };
-  const sigClear = () => {
-    const c = canvasRef.current;
-    if (c) c.getContext("2d")?.clearRect(0, 0, c.width, c.height);
-    setSigDataUrl(null);
-    setTyped("");
-  };
-
-  const typedToDataUrl = (text: string) => {
-    if (!text.trim()) return null;
-    const canvas = document.createElement("canvas");
-    canvas.width = 600; canvas.height = 140;
-    const ctx = canvas.getContext("2d"); if (!ctx) return null;
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    ctx.fillStyle = "#0a0a0a";
-    ctx.textBaseline = "middle";
-    ctx.textAlign = "center";
-    ctx.font = "italic 64px 'Brush Script MT', 'Segoe Script', 'Lucida Handwriting', cursive";
-    ctx.fillText(text, canvas.width / 2, canvas.height / 2);
-    return canvas.toDataURL("image/png");
+  const deleteTemplate = async () => {
+    if (!msgTemplateId) return;
+    const t = msgTemplates.find(m => m.id === msgTemplateId);
+    if (!t) return;
+    if (!confirm(`Delete template "${t.name}"?`)) return;
+    const { error } = await supabase.from("contract_countersign_message_templates").delete().eq("id", msgTemplateId);
+    if (error) return toast.error(error.message);
+    setMsgTemplates(prev => prev.filter(m => m.id !== msgTemplateId));
+    setMsgTemplateId("");
+    toast.success("Template deleted");
   };
 
-  // Apply signature into PDF
-  const applyToDocument = async () => {
-    if (!placement || !sigDataUrl || !pdfBytes) {
-      toast.error("Place a signature and add your signature first");
-      return;
-    }
+  const send = async () => {
+    if (!placement) return toast.error("Place the signature box first.");
+    if (!managerName.trim() || !managerEmail.trim()) return toast.error("Manager name and email are required.");
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(managerEmail.trim())) return toast.error("Please enter a valid email address.");
+    setSending(true);
     try {
-      setLoading(true);
-      const pdf = await PDFDocument.load(pdfBytes);
-      const page = pdf.getPage(placement.page);
-      const { width: pw, height: ph } = page.getSize();
-      const pngBytes = await (await fetch(sigDataUrl)).arrayBuffer();
-      const png = await pdf.embedPng(pngBytes);
-      const w = placement.w_pct * pw;
-      const h = placement.h_pct * ph;
-      const x = placement.x_pct * pw;
-      // pdf-lib y origin is bottom-left
-      const y = ph - (placement.y_pct * ph) - h;
-      page.drawImage(png, { x, y, width: w, height: h });
-      const out = await pdf.save();
-      setFinalBytes(out);
-      // Render preview
-      const blob = new Blob([out as BlobPart], { type: "application/pdf" });
-      const url = URL.createObjectURL(blob);
-      const rendered = await renderPdfPages(url, 800);
-      setFinalPages(rendered);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-      setStep(3);
-    } catch (e) {
-      toast.error((e as Error).message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const saveAndDownload = async () => {
-    if (!finalBytes) return;
-    setSaving(true);
-    try {
-      const path = `countersigned/${envelopeId}-${Date.now()}.pdf`;
-      const blob = new Blob([finalBytes as BlobPart], { type: "application/pdf" });
-      const { error: upErr } = await supabase.storage.from("contract-signed").upload(path, blob, { contentType: "application/pdf", upsert: false });
-      if (upErr) throw upErr;
-      const { error: updErr } = await supabase
-        .from("contract_envelopes")
-        .update({ countersigned_file_url: path, countersigned_at: new Date().toISOString() })
-        .eq("id", envelopeId);
-      if (updErr) throw updErr;
-
-      // Download
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement("a");
-      a.href = url;
-      a.download = `countersigned-${recipientName}.pdf`;
-      document.body.appendChild(a); a.click(); a.remove();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-
-      setSaved(true);
-      toast.success("Countersigned and saved");
+      const { data, error } = await supabase.functions.invoke("send-countersign-request", {
+        body: {
+          envelopeId,
+          recipientName: managerName.trim(),
+          recipientEmail: managerEmail.trim(),
+          message,
+          placement,
+          expiresInDays,
+        },
+      });
+      if (error) throw error;
+      const signUrl = (data as any)?.signUrl;
+      if (signUrl) {
+        try { await navigator.clipboard.writeText(signUrl); } catch {}
+        toast.success("Countersignature request sent — link copied to clipboard");
+      } else {
+        toast.success("Countersignature request sent");
+      }
       onDone();
       onOpenChange(false);
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
-      setSaving(false);
+      setSending(false);
     }
   };
 
   const tryClose = (v: boolean) => {
-    if (!v && !saved && (placement || sigDataUrl || finalBytes)) {
-      if (!confirm("You haven't saved the countersigned contract yet. Close anyway?")) return;
+    if (!v && (placement || message || managerEmail)) {
+      if (!confirm("Discard this countersignature request?")) return;
     }
     onOpenChange(v);
   };
-
-  const page = pages[currentPage];
 
   return (
     <Dialog open={open} onOpenChange={tryClose}>
       <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Countersign — {recipientName}</DialogTitle>
+          <DialogTitle>Send for Countersignature — {recipientName}</DialogTitle>
           <DialogDescription>
-            Step {step} of 3 — {step === 1 ? "Place Signature" : step === 2 ? "Draw or Type Signature" : "Save & Download"}
+            Step {step} of 2 — {step === 1 ? "Place where the manager should sign" : "Email details & message"}
           </DialogDescription>
         </DialogHeader>
 
@@ -263,12 +212,12 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
 
         {!loading && step === 1 && pages.length > 0 && (
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Click anywhere on the document to place the manager's signature. Drag to reposition, drag the bottom-right corner to resize. Scroll to navigate.</p>
+            <p className="text-sm text-muted-foreground">Click anywhere on the document to drop the signature box. Drag to reposition, drag the bottom-right corner to resize. Scroll to navigate.</p>
             <div className="flex items-center justify-between text-xs text-muted-foreground">
               <span>{pages.length} {pages.length === 1 ? "page" : "pages"}</span>
               {placement && <span>Signature placed on page {placement.page + 1}</span>}
             </div>
-            <div className="border rounded bg-muted/30 overflow-y-auto space-y-3 p-3" style={{ height: "78vh" }}>
+            <div className="border rounded bg-muted/30 overflow-y-auto space-y-3 p-3" style={{ height: "70vh" }}>
               {pages.map((pg) => (
                 <div
                   key={pg.index}
@@ -309,75 +258,63 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => tryClose(false)}>Cancel</Button>
-              <Button onClick={() => setStep(2)} disabled={!placement}>Add Signature →</Button>
+              <Button onClick={() => setStep(2)} disabled={!placement}>Next →</Button>
             </div>
           </div>
         )}
 
         {!loading && step === 2 && (
           <div className="space-y-3">
-            <Tabs value={sigMode} onValueChange={(v) => { setSigMode(v as any); sigClear(); }}>
-              <TabsList className="grid grid-cols-2 w-full">
-                <TabsTrigger value="draw">Draw</TabsTrigger>
-                <TabsTrigger value="type">Type</TabsTrigger>
-              </TabsList>
-              <TabsContent value="draw" className="space-y-2 mt-2">
-                <p className="text-xs text-muted-foreground">Draw the manager's signature below</p>
-                <div className="border rounded bg-white">
-                  <canvas
-                    ref={canvasRef}
-                    width={600}
-                    height={140}
-                    className="w-full touch-none cursor-crosshair"
-                    onPointerDown={sigStart}
-                    onPointerMove={sigMove}
-                    onPointerUp={sigEnd}
-                    onPointerLeave={sigEnd}
-                  />
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium">Manager name</label>
+                <Input value={managerName} onChange={(e) => setManagerName(e.target.value)} placeholder="e.g. Mark Chua" />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Manager email</label>
+                <Input type="email" value={managerEmail} onChange={(e) => setManagerEmail(e.target.value)} placeholder="manager@company.com" />
+              </div>
+            </div>
+
+            <div>
+              <div className="flex items-center justify-between gap-2 mb-1">
+                <label className="text-sm font-medium">Message (optional)</label>
+                <div className="flex items-center gap-1">
+                  <Select value={msgTemplateId} onValueChange={applyMsgTemplate}>
+                    <SelectTrigger className="h-8 w-44 text-xs">
+                      <SelectValue placeholder={msgTemplates.length ? "Use template…" : "No templates yet"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {msgTemplates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                  {msgTemplateId && (
+                    <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={deleteTemplate} title="Delete template">
+                      <Trash2 className="w-3.5 h-3.5 text-destructive" />
+                    </Button>
+                  )}
+                  <Button type="button" variant="ghost" size="icon" className="h-8 w-8" onClick={saveAsTemplate} title="Save as template">
+                    <Save className="w-3.5 h-3.5" />
+                  </Button>
                 </div>
-              </TabsContent>
-              <TabsContent value="type" className="space-y-2 mt-2">
-                <p className="text-xs text-muted-foreground">Type the manager's name</p>
-                <Input
-                  value={typed}
-                  onChange={(e) => { const t = e.target.value; setTyped(t); setSigDataUrl(typedToDataUrl(t)); }}
-                  placeholder="e.g. Mark Smith"
-                  className="text-center text-2xl"
-                  style={{ fontFamily: "'Brush Script MT', 'Segoe Script', 'Lucida Handwriting', cursive", fontStyle: "italic" }}
-                />
-              </TabsContent>
-            </Tabs>
-
-            {sigDataUrl && (
-              <div className="border rounded p-3 bg-muted/30">
-                <p className="text-xs text-muted-foreground mb-2">Preview:</p>
-                <img src={sigDataUrl} alt="Signature preview" className="max-h-24 mx-auto" />
               </div>
-            )}
+              <Textarea rows={8} value={message} onChange={(e) => setMessage(e.target.value)} placeholder={`Hi — please add your countersignature to the contract signed by ${recipientName}.`} />
+              <p className="text-[11px] text-muted-foreground mt-1">Markdown: **bold** *italic* ==highlight== - bullet</p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium">Link expires in (days)</label>
+              <Input type="number" value={expiresInDays} onChange={(e) => setExpiresInDays(+e.target.value)} className="w-24" />
+            </div>
 
             <div className="flex justify-between gap-2">
-              <Button variant="ghost" onClick={sigClear}>Clear</Button>
+              <Button variant="outline" onClick={() => setStep(1)}>← Back</Button>
               <div className="flex gap-2">
-                <Button variant="outline" onClick={() => setStep(1)}>← Back</Button>
-                <Button onClick={applyToDocument} disabled={!sigDataUrl || loading}>Apply to Document →</Button>
+                <Button variant="outline" onClick={() => tryClose(false)}>Cancel</Button>
+                <Button onClick={send} disabled={sending}>
+                  {sending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Sending…</> : "Send for Countersignature"}
+                </Button>
               </div>
-            </div>
-          </div>
-        )}
-
-        {!loading && step === 3 && (
-          <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Preview of the countersigned document:</p>
-            <div className="max-h-[50vh] overflow-y-auto border rounded bg-muted/30 space-y-2 p-2">
-              {finalPages.map(p => (
-                <img key={p.index} src={p.dataUrl} alt={`Page ${p.index + 1}`} className="w-full block" />
-              ))}
-            </div>
-            <div className="flex justify-between gap-2">
-              <Button variant="outline" onClick={() => { setStep(1); setSigDataUrl(null); setTyped(""); setFinalBytes(null); setFinalPages([]); }}>Start over</Button>
-              <Button onClick={saveAndDownload} disabled={saving}>
-                {saving ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Saving…</> : "Save & Download"}
-              </Button>
             </div>
           </div>
         )}
