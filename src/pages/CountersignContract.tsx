@@ -59,6 +59,8 @@ const CountersignContract = () => {
   const [sigMode, setSigMode] = useState<"draw" | "type">("draw");
   const [typed, setTyped] = useState("");
   const [sigDataUrl, setSigDataUrl] = useState<string | null>(null);
+  const [savedSig, setSavedSig] = useState<string | null>(null);
+  const [savedSigPrompt, setSavedSigPrompt] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
 
