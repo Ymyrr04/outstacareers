@@ -181,10 +181,10 @@ export const EnvelopesPanel = () => {
                   <p className="font-medium truncate">{e.recipient_name}</p>
                   <Badge className={STATUS_COLORS[e.status] || ""} variant="outline">{e.status}</Badge>
                   {e.countersigned_at && (
-                    <Badge className="bg-teal-600/20 text-teal-700 dark:text-teal-300" variant="outline">countersigned</Badge>
+                    <Badge className="bg-teal-600/20 text-teal-700 dark:text-teal-300" variant="outline">signed</Badge>
                   )}
                   {!e.countersigned_at && e.countersign_sent_at && (
-                    <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300" variant="outline">countersign sent</Badge>
+                    <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300" variant="outline">signature sent</Badge>
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">{e.recipient_email} • {e.contract_templates?.name || "—"}</p>
@@ -194,10 +194,10 @@ export const EnvelopesPanel = () => {
                   {e.signed_at && ` • Signed ${new Date(e.signed_at).toLocaleString()}`}
                 </p>
                 {e.countersign_sent_at && !e.countersigned_at && (
-                  <p className="text-xs text-muted-foreground">Countersign sent to {e.countersign_recipient_email} on {new Date(e.countersign_sent_at).toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">Signature request sent to {e.countersign_recipient_email} on {new Date(e.countersign_sent_at).toLocaleString()}</p>
                 )}
                 {e.countersigned_at && (
-                  <p className="text-xs text-muted-foreground">Countersigned {new Date(e.countersigned_at).toLocaleString()}</p>
+                  <p className="text-xs text-muted-foreground">Signed {new Date(e.countersigned_at).toLocaleString()}</p>
                 )}
               </div>
               <div className="flex gap-1 flex-shrink-0">
@@ -212,15 +212,15 @@ export const EnvelopesPanel = () => {
                   <Button size="sm" variant="outline" onClick={() => downloadPdf(e.signed_pdf_path!, `signed-${e.recipient_name}.pdf`)} className="gap-1"><Download className="w-3 h-3" /> Signed</Button>
                 )}
                 {e.status === "signed" && e.signed_pdf_path && !e.countersigned_file_url && (
-                  <Button size="sm" variant="outline" onClick={() => setCountersignFor(e)} className="gap-1" title={e.countersign_sent_at ? "Resend countersignature request" : "Send for countersignature"}>
-                    <PenLine className="w-3 h-3" /> {e.countersign_sent_at ? "Resend Countersign" : "Send Countersign"}
+                  <Button size="sm" variant="outline" onClick={() => setCountersignFor(e)} className="gap-1" title={e.countersign_sent_at ? "Resend signature request" : "Send for signature"}>
+                    <PenLine className="w-3 h-3" /> {e.countersign_sent_at ? "Resend Signature" : "Send for Signature"}
                   </Button>
                 )}
                 {e.countersign_token && !e.countersigned_at && (
-                  <Button size="sm" variant="ghost" onClick={() => { const url = `${window.location.origin}/countersign/${e.countersign_token}`; navigator.clipboard.writeText(url); toast.success("Countersign link copied"); }} className="gap-1" title="Copy countersign link"><Copy className="w-3 h-3" /> CS Link</Button>
+                  <Button size="sm" variant="ghost" onClick={() => { const url = `${window.location.origin}/countersign/${e.countersign_token}`; navigator.clipboard.writeText(url); toast.success("Signature link copied"); }} className="gap-1" title="Copy signature link"><Copy className="w-3 h-3" /> CS Link</Button>
                 )}
                 {e.countersigned_file_url && (
-                  <Button size="sm" variant="outline" onClick={() => downloadPdf(e.countersigned_file_url!, `countersigned-${e.recipient_name}.pdf`)} className="gap-1"><Download className="w-3 h-3" /> Download Countersigned</Button>
+                  <Button size="sm" variant="outline" onClick={() => downloadPdf(e.countersigned_file_url!, `countersigned-${e.recipient_name}.pdf`)} className="gap-1"><Download className="w-3 h-3" /> Download Signed</Button>
                 )}
                 {e.audit_pdf_path && (
                   <Button size="sm" variant="ghost" onClick={() => downloadPdf(e.audit_pdf_path!, `audit-${e.recipient_name}.pdf`)} className="gap-1"><Download className="w-3 h-3" /> Audit</Button>
