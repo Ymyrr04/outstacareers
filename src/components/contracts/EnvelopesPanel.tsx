@@ -40,6 +40,7 @@ export const EnvelopesPanel = () => {
   const [envelopes, setEnvelopes] = useState<Envelope[]>([]);
   const [loading, setLoading] = useState(true);
   const [sendOpen, setSendOpen] = useState(false);
+  const [countersignFor, setCountersignFor] = useState<Envelope | null>(null);
 
   const load = async () => {
     setLoading(true);
