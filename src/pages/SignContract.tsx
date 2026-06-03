@@ -169,6 +169,13 @@ const SignContract = () => {
         const t = await r.text();
         throw new Error(t);
       }
+      // Cache locally for future signings on this browser
+      try {
+        const email = data.envelope.recipient_email?.toLowerCase();
+        const sigField = signerFields.find(f => f.field_type === "signature");
+        const sigUrl = sigField ? values[sigField.id]?.signature_data_url : undefined;
+        if (email && sigUrl) localStorage.setItem(`sig:${email}`, sigUrl);
+      } catch { /* ignore */ }
       setDone(true);
     } catch (e) {
       toast.error((e as Error).message);
