@@ -23,6 +23,11 @@ interface Envelope {
   audit_pdf_path: string | null;
   countersigned_file_url: string | null;
   countersigned_at: string | null;
+  countersign_token: string | null;
+  countersign_sent_at: string | null;
+  countersign_recipient_name: string | null;
+  countersign_recipient_email: string | null;
+  countersign_expires_at: string | null;
   created_at: string;
   contract_templates?: { name: string } | null;
 }
@@ -178,6 +183,9 @@ export const EnvelopesPanel = () => {
                   {e.countersigned_at && (
                     <Badge className="bg-teal-600/20 text-teal-700 dark:text-teal-300" variant="outline">countersigned</Badge>
                   )}
+                  {!e.countersigned_at && e.countersign_sent_at && (
+                    <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300" variant="outline">countersign sent</Badge>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">{e.recipient_email} • {e.contract_templates?.name || "—"}</p>
                 <p className="text-xs text-muted-foreground">
@@ -185,6 +193,9 @@ export const EnvelopesPanel = () => {
                   {e.viewed_at && ` • Viewed ${new Date(e.viewed_at).toLocaleString()}`}
                   {e.signed_at && ` • Signed ${new Date(e.signed_at).toLocaleString()}`}
                 </p>
+                {e.countersign_sent_at && !e.countersigned_at && (
+                  <p className="text-xs text-muted-foreground">Countersign sent to {e.countersign_recipient_email} on {new Date(e.countersign_sent_at).toLocaleString()}</p>
+                )}
                 {e.countersigned_at && (
                   <p className="text-xs text-muted-foreground">Countersigned {new Date(e.countersigned_at).toLocaleString()}</p>
                 )}
@@ -201,7 +212,12 @@ export const EnvelopesPanel = () => {
                   <Button size="sm" variant="outline" onClick={() => downloadPdf(e.signed_pdf_path!, `signed-${e.recipient_name}.pdf`)} className="gap-1"><Download className="w-3 h-3" /> Signed</Button>
                 )}
                 {e.status === "signed" && e.signed_pdf_path && !e.countersigned_file_url && (
-                  <Button size="sm" variant="outline" onClick={() => setCountersignFor(e)} className="gap-1" title="Add manager signature"><PenLine className="w-3 h-3" /> Countersign</Button>
+                  <Button size="sm" variant="outline" onClick={() => setCountersignFor(e)} className="gap-1" title={e.countersign_sent_at ? "Resend countersignature request" : "Send for countersignature"}>
+                    <PenLine className="w-3 h-3" /> {e.countersign_sent_at ? "Resend Countersign" : "Send Countersign"}
+                  </Button>
+                )}
+                {e.countersign_token && !e.countersigned_at && (
+                  <Button size="sm" variant="ghost" onClick={() => { const url = `${window.location.origin}/countersign/${e.countersign_token}`; navigator.clipboard.writeText(url); toast.success("Countersign link copied"); }} className="gap-1" title="Copy countersign link"><Copy className="w-3 h-3" /> CS Link</Button>
                 )}
                 {e.countersigned_file_url && (
                   <Button size="sm" variant="outline" onClick={() => downloadPdf(e.countersigned_file_url!, `countersigned-${e.recipient_name}.pdf`)} className="gap-1"><Download className="w-3 h-3" /> Download Countersigned</Button>
@@ -224,6 +240,8 @@ export const EnvelopesPanel = () => {
           envelopeId={countersignFor.id}
           signedPdfPath={countersignFor.signed_pdf_path!}
           recipientName={countersignFor.recipient_name}
+          defaultRecipientName={countersignFor.countersign_recipient_name || undefined}
+          defaultRecipientEmail={countersignFor.countersign_recipient_email || undefined}
           onDone={load}
         />
       )}
