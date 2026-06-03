@@ -1,0 +1,535 @@
+import { useMemo, useState, useRef } from 'react';
+import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
+import { formatDistanceToNow } from 'date-fns';
+import { Plus, Upload, LayoutGrid, List as ListIcon, Trash2, X, ArrowRight, UserPlus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
+import { useSalesLeads, SALES_STAGES, SalesLead, SalesStage, Temperature, useSalesLeadNotes } from '@/hooks/useSalesLeads';
+
+const tempBadge = (t: Temperature) => {
+  if (t === 'hot') return 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300';
+  if (t === 'cold') return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300';
+  return 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300';
+};
+
+const emptyLead: Partial<SalesLead> = {
+  company_name: '', contact_name: '', role_title: '', email: '', phone: '',
+  industry: '', team_size: '', hiring_urgency: '', temperature: 'warm',
+  source: 'manual', stage: 'Lead', original_message: '',
+};
+
+export const SalesPipeline = () => {
+  const { leads, loading, createLead, updateLead, deleteLead, bulkInsert, convertToClient } = useSalesLeads();
+  const [view, setView] = useState<'kanban' | 'list'>('kanban');
+  const [addOpen, setAddOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
+  const [selectedLead, setSelectedLead] = useState<SalesLead | null>(null);
+  const [confirmConvert, setConfirmConvert] = useState<SalesLead | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<SalesLead | null>(null);
+
+  const grouped = useMemo(() => {
+    const g: Record<string, SalesLead[]> = {};
+    SALES_STAGES.forEach(s => { g[s] = []; });
+    leads.forEach(l => { (g[l.stage] || (g[l.stage] = [])).push(l); });
+    return g;
+  }, [leads]);
+
+  const stats = useMemo(() => ({
+    newLeads: leads.filter(l => l.stage === 'Lead').length,
+    total: leads.length,
+    converted: leads.filter(l => !!l.converted_client_id).length,
+  }), [leads]);
+
+  const onDragEnd = async (r: DropResult) => {
+    if (!r.destination) return;
+    const newStage = r.destination.droppableId as SalesStage;
+    const lead = leads.find(l => l.id === r.draggableId);
+    if (!lead || lead.stage === newStage) return;
+    if (newStage === 'Converted' && !lead.converted_client_id) {
+      setConfirmConvert(lead);
+      return;
+    }
+    updateLead(lead.id, { stage: newStage });
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-start justify-between gap-4 flex-wrap">
+        <div>
+          <h1 className="text-2xl font-bold">Sales Pipeline</h1>
+          <p className="text-sm text-muted-foreground">Track and manage client leads through your sales pipeline</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="inline-flex rounded-md border bg-background p-0.5">
+            <Button size="sm" variant={view === 'list' ? 'default' : 'ghost'} onClick={() => setView('list')}>
+              <ListIcon className="w-4 h-4 mr-1" /> List
+            </Button>
+            <Button size="sm" variant={view === 'kanban' ? 'default' : 'ghost'} onClick={() => setView('kanban')}>
+              <LayoutGrid className="w-4 h-4 mr-1" /> Kanban
+            </Button>
+          </div>
+          <Button size="sm" variant="outline" onClick={() => setImportOpen(true)}>
+            <Upload className="w-4 h-4 mr-1" /> Import CSV
+          </Button>
+          <Button size="sm" onClick={() => setAddOpen(true)}>
+            <Plus className="w-4 h-4 mr-1" /> New Lead
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <StatCard label="New Leads" value={stats.newLeads} />
+        <StatCard label="Total Inquiries" value={stats.total} />
+        <StatCard label="Converted to Clients" value={stats.converted} accent />
+      </div>
+
+      {loading ? (
+        <div className="text-sm text-muted-foreground py-12 text-center">Loading…</div>
+      ) : view === 'kanban' ? (
+        <DragDropContext onDragEnd={onDragEnd}>
+          <div className="flex gap-3 overflow-x-auto pb-4">
+            {SALES_STAGES.map(stage => (
+              <Droppable droppableId={stage} key={stage}>
+                {(provided, snapshot) => (
+                  <div
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                    className={`min-w-[280px] w-[280px] flex-shrink-0 rounded-lg border bg-muted/30 p-2 transition-colors ${snapshot.isDraggingOver ? 'bg-primary/10 border-primary/40' : ''}`}
+                  >
+                    <div className="flex items-center justify-between px-1 py-2 mb-1">
+                      <h3 className="text-sm font-semibold">{stage}</h3>
+                      <Badge variant="secondary" className="text-xs">{grouped[stage].length}</Badge>
+                    </div>
+                    <div className="space-y-2 min-h-[60px]">
+                      {grouped[stage].length === 0 && (
+                        <div className="text-xs text-muted-foreground text-center py-6 italic">Empty</div>
+                      )}
+                      {grouped[stage].map((lead, idx) => (
+                        <Draggable draggableId={lead.id} index={idx} key={lead.id}>
+                          {(p, s) => (
+                            <div
+                              ref={p.innerRef}
+                              {...p.draggableProps}
+                              {...p.dragHandleProps}
+                              onClick={() => setSelectedLead(lead)}
+                              className={`bg-card border rounded-md p-3 shadow-sm cursor-pointer hover:border-primary/50 transition ${s.isDragging ? 'rotate-1 shadow-lg' : ''}`}
+                            >
+                              <div className="flex items-start justify-between gap-2 mb-1">
+                                <div className="font-semibold text-sm truncate">{lead.company_name}</div>
+                                {lead.converted_client_id && (
+                                  <Badge className="bg-teal-500 hover:bg-teal-500 text-white text-[10px]">converted</Badge>
+                                )}
+                              </div>
+                              <div className="text-xs text-muted-foreground mb-2">{lead.contact_name || 'N/A'}</div>
+                              <div className="flex flex-wrap gap-1 mb-2">
+                                <Badge variant="outline" className={`text-[10px] capitalize ${tempBadge(lead.temperature)}`}>{lead.temperature}</Badge>
+                                <Badge variant="outline" className="text-[10px]">{lead.source}</Badge>
+                              </div>
+                              {lead.role_title && <div className="text-xs truncate">{lead.role_title}</div>}
+                              {lead.industry && <div className="text-xs text-muted-foreground truncate">{lead.industry}</div>}
+                              {lead.email && <div className="text-xs text-muted-foreground truncate">{lead.email}</div>}
+                              <div className="text-[10px] text-muted-foreground mt-2">{formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}</div>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  </div>
+                )}
+              </Droppable>
+            ))}
+          </div>
+        </DragDropContext>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Industry</TableHead>
+                  <TableHead>Temperature</TableHead>
+                  <TableHead>Source</TableHead>
+                  <TableHead>Stage</TableHead>
+                  <TableHead>Last Activity</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {leads.map(l => (
+                  <TableRow key={l.id} className="cursor-pointer" onClick={() => setSelectedLead(l)}>
+                    <TableCell className="font-medium">{l.company_name}</TableCell>
+                    <TableCell>{l.contact_name || '—'}</TableCell>
+                    <TableCell>{l.role_title || '—'}</TableCell>
+                    <TableCell>{l.industry || '—'}</TableCell>
+                    <TableCell><Badge variant="outline" className={`capitalize ${tempBadge(l.temperature)}`}>{l.temperature}</Badge></TableCell>
+                    <TableCell><Badge variant="outline">{l.source}</Badge></TableCell>
+                    <TableCell>{l.stage}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(l.updated_at), { addSuffix: true })}</TableCell>
+                    <TableCell onClick={(e) => e.stopPropagation()}>
+                      <Button variant="ghost" size="icon" onClick={() => setConfirmDelete(l)}>
+                        <Trash2 className="w-4 h-4 text-destructive" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+                {leads.length === 0 && (
+                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-12">No leads yet</TableCell></TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      )}
+
+      <NewLeadDialog open={addOpen} onClose={() => setAddOpen(false)} onSubmit={async (d) => { const ok = await createLead(d); if (ok) setAddOpen(false); }} />
+      <ImportCsvDialog open={importOpen} onClose={() => setImportOpen(false)} onImport={bulkInsert} />
+      <LeadDetailPanel
+        lead={selectedLead}
+        onClose={() => setSelectedLead(null)}
+        onUpdate={(u) => selectedLead && updateLead(selectedLead.id, u).then(() => setSelectedLead(prev => prev ? { ...prev, ...u } as SalesLead : prev))}
+        onDelete={() => selectedLead && setConfirmDelete(selectedLead)}
+        onConvert={() => selectedLead && setConfirmConvert(selectedLead)}
+      />
+
+      <AlertDialog open={!!confirmConvert} onOpenChange={(o) => !o && setConfirmConvert(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Convert this lead to a client?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will create a client record in the Clients tab for <strong>{confirmConvert?.company_name}</strong>.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={async () => {
+              if (confirmConvert) await convertToClient(confirmConvert);
+              setConfirmConvert(null);
+              setSelectedLead(null);
+            }}>Convert</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete lead?</AlertDialogTitle>
+            <AlertDialogDescription>This cannot be undone.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={async () => {
+              if (confirmDelete) await deleteLead(confirmDelete.id);
+              setConfirmDelete(null);
+              setSelectedLead(null);
+            }}>Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </div>
+  );
+};
+
+const StatCard = ({ label, value, accent }: { label: string; value: number; accent?: boolean }) => (
+  <Card>
+    <CardContent className="p-4">
+      <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
+      <div className={`text-2xl font-bold mt-1 ${accent ? 'text-teal-600 dark:text-teal-400' : ''}`}>{value}</div>
+    </CardContent>
+  </Card>
+);
+
+// --- New Lead Dialog ---
+const NewLeadDialog = ({ open, onClose, onSubmit }: { open: boolean; onClose: () => void; onSubmit: (d: Partial<SalesLead>) => void }) => {
+  const [data, setData] = useState<Partial<SalesLead>>(emptyLead);
+  const set = (k: keyof SalesLead, v: any) => setData(d => ({ ...d, [k]: v }));
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); setData(emptyLead); } }}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader><DialogTitle>New Lead</DialogTitle></DialogHeader>
+        <div className="grid grid-cols-2 gap-3">
+          <Field label="Company name *"><Input value={data.company_name || ''} onChange={e => set('company_name', e.target.value)} /></Field>
+          <Field label="Contact name"><Input value={data.contact_name || ''} onChange={e => set('contact_name', e.target.value)} /></Field>
+          <Field label="Role title"><Input value={data.role_title || ''} onChange={e => set('role_title', e.target.value)} /></Field>
+          <Field label="Email *"><Input type="email" value={data.email || ''} onChange={e => set('email', e.target.value)} /></Field>
+          <Field label="Phone"><Input value={data.phone || ''} onChange={e => set('phone', e.target.value)} /></Field>
+          <Field label="Industry"><Input value={data.industry || ''} onChange={e => set('industry', e.target.value)} /></Field>
+          <Field label="Team size"><Input value={data.team_size || ''} onChange={e => set('team_size', e.target.value)} /></Field>
+          <Field label="Hiring urgency"><Input value={data.hiring_urgency || ''} onChange={e => set('hiring_urgency', e.target.value)} /></Field>
+          <Field label="Temperature">
+            <Select value={data.temperature} onValueChange={v => set('temperature', v)}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="warm">Warm</SelectItem>
+                <SelectItem value="cold">Cold</SelectItem>
+                <SelectItem value="hot">Hot</SelectItem>
+              </SelectContent>
+            </Select>
+          </Field>
+          <Field label="Source"><Input value={data.source || ''} onChange={e => set('source', e.target.value)} /></Field>
+          <div className="col-span-2"><Field label="Notes / Original message"><Textarea rows={3} value={data.original_message || ''} onChange={e => set('original_message', e.target.value)} /></Field></div>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose}>Cancel</Button>
+          <Button disabled={!data.company_name || !data.email} onClick={() => onSubmit(data)}>Create Lead</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+const Field = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="space-y-1"><Label className="text-xs">{label}</Label>{children}</div>
+);
+
+// --- Import CSV Dialog ---
+const FIELD_OPTIONS: { key: keyof SalesLead; label: string }[] = [
+  { key: 'company_name', label: 'Company Name' },
+  { key: 'contact_name', label: 'Contact Name' },
+  { key: 'role_title', label: 'Role Title' },
+  { key: 'email', label: 'Email' },
+  { key: 'phone', label: 'Phone' },
+  { key: 'industry', label: 'Industry' },
+  { key: 'team_size', label: 'Team Size' },
+  { key: 'hiring_urgency', label: 'Hiring Urgency' },
+  { key: 'temperature', label: 'Temperature' },
+  { key: 'original_message', label: 'Message / Notes' },
+];
+
+const parseCSV = (text: string): { headers: string[]; rows: string[][] } => {
+  const lines = text.split(/\r?\n/).filter(l => l.trim().length);
+  if (!lines.length) return { headers: [], rows: [] };
+  const parseLine = (line: string) => {
+    const out: string[] = []; let cur = ''; let inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') { if (inQ && line[i+1] === '"') { cur += '"'; i++; } else inQ = !inQ; }
+      else if (c === ',' && !inQ) { out.push(cur); cur = ''; }
+      else cur += c;
+    }
+    out.push(cur);
+    return out.map(s => s.trim());
+  };
+  const headers = parseLine(lines[0]);
+  const rows = lines.slice(1).map(parseLine);
+  return { headers, rows };
+};
+
+const ImportCsvDialog = ({ open, onClose, onImport }: { open: boolean; onClose: () => void; onImport: (rows: Partial<SalesLead>[]) => Promise<number> }) => {
+  const [step, setStep] = useState<'upload' | 'map' | 'done'>('upload');
+  const [headers, setHeaders] = useState<string[]>([]);
+  const [rows, setRows] = useState<string[][]>([]);
+  const [mapping, setMapping] = useState<Record<string, string>>({});
+  const [count, setCount] = useState(0);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  const reset = () => { setStep('upload'); setHeaders([]); setRows([]); setMapping({}); setCount(0); };
+
+  const handleFile = async (f: File) => {
+    const text = await f.text();
+    const { headers, rows } = parseCSV(text);
+    setHeaders(headers); setRows(rows);
+    const auto: Record<string, string> = {};
+    headers.forEach(h => {
+      const lower = h.toLowerCase().replace(/[^a-z0-9]/g, '');
+      const match = FIELD_OPTIONS.find(f => f.key.replace(/_/g, '').includes(lower) || lower.includes(f.key.replace(/_/g, '')));
+      if (match) auto[h] = match.key;
+    });
+    setMapping(auto);
+    setStep('map');
+  };
+
+  const doImport = async () => {
+    const payload: Partial<SalesLead>[] = rows.map(r => {
+      const obj: any = { source: 'csv-import' };
+      headers.forEach((h, i) => {
+        const field = mapping[h];
+        if (field && r[i]) obj[field] = r[i];
+      });
+      return obj;
+    }).filter(r => r.company_name);
+    const c = await onImport(payload);
+    setCount(c);
+    setStep('done');
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); reset(); } }}>
+      <DialogContent className="max-w-2xl">
+        <DialogHeader><DialogTitle>Import Leads from CSV</DialogTitle></DialogHeader>
+        {step === 'upload' && (
+          <div className="py-8 text-center border-2 border-dashed rounded-lg">
+            <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+            <p className="text-sm text-muted-foreground mb-3">Upload a CSV file with your leads</p>
+            <input ref={inputRef} type="file" accept=".csv" className="hidden" onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
+            <Button onClick={() => inputRef.current?.click()}>Choose CSV</Button>
+          </div>
+        )}
+        {step === 'map' && (
+          <div className="space-y-3 max-h-[60vh] overflow-y-auto">
+            <p className="text-sm text-muted-foreground">Map {rows.length} rows. CSV columns → Lead fields.</p>
+            {headers.map(h => (
+              <div key={h} className="grid grid-cols-2 gap-3 items-center">
+                <div className="text-sm font-medium truncate">{h}</div>
+                <Select value={mapping[h] || '__skip'} onValueChange={v => setMapping(m => ({ ...m, [h]: v === '__skip' ? '' : v }))}>
+                  <SelectTrigger><SelectValue placeholder="Skip" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__skip">— Skip —</SelectItem>
+                    {FIELD_OPTIONS.map(f => <SelectItem key={f.key} value={f.key}>{f.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+            ))}
+          </div>
+        )}
+        {step === 'done' && (
+          <div className="py-8 text-center"><p className="text-lg font-semibold">{count} leads imported successfully</p></div>
+        )}
+        <DialogFooter>
+          {step === 'map' && <Button variant="outline" onClick={reset}>Back</Button>}
+          {step === 'map' && <Button onClick={doImport} disabled={!Object.values(mapping).includes('company_name')}>Import</Button>}
+          {step === 'done' && <Button onClick={() => { onClose(); reset(); }}>Done</Button>}
+          {step === 'upload' && <Button variant="outline" onClick={() => { onClose(); reset(); }}>Cancel</Button>}
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+};
+
+// --- Lead Detail Panel ---
+const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
+  lead: SalesLead | null;
+  onClose: () => void;
+  onUpdate: (u: Partial<SalesLead>) => void;
+  onDelete: () => void;
+  onConvert: () => void;
+}) => {
+  const { notes, addNote } = useSalesLeadNotes(lead?.id || null);
+  const [newNote, setNewNote] = useState('');
+  const currentIdx = lead ? SALES_STAGES.indexOf(lead.stage) : -1;
+  const nextStage = currentIdx >= 0 && currentIdx < SALES_STAGES.length - 1 ? SALES_STAGES[currentIdx + 1] : null;
+
+  return (
+    <Sheet open={!!lead} onOpenChange={(o) => !o && onClose()}>
+      <SheetContent side="right" className="w-[420px] sm:max-w-[420px] overflow-y-auto">
+        {lead && (
+          <div className="space-y-4">
+            <div className="flex items-start justify-between gap-2">
+              <h2 className="text-xl font-bold">{lead.company_name}</h2>
+              <div className="flex gap-1">
+                <Button variant="ghost" size="icon" onClick={onDelete}><Trash2 className="w-4 h-4 text-destructive" /></Button>
+                <Button variant="ghost" size="icon" onClick={onClose}><X className="w-4 h-4" /></Button>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Badge variant="outline" className={`capitalize ${tempBadge(lead.temperature)}`}>{lead.temperature}</Badge>
+              <Badge variant="outline">{lead.source}</Badge>
+              {lead.converted_client_id && <Badge className="bg-teal-500 text-white">converted</Badge>}
+            </div>
+
+            <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+              <DetailRow label="Stage">
+                <Select value={lead.stage} onValueChange={v => onUpdate({ stage: v as SalesStage })}>
+                  <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                  <SelectContent>{SALES_STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
+                </Select>
+              </DetailRow>
+              <DetailRow label="Temperature">
+                <Select value={lead.temperature} onValueChange={v => onUpdate({ temperature: v as Temperature })}>
+                  <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="warm">Warm</SelectItem>
+                    <SelectItem value="cold">Cold</SelectItem>
+                    <SelectItem value="hot">Hot</SelectItem>
+                  </SelectContent>
+                </Select>
+              </DetailRow>
+              <EditField label="Contact" value={lead.contact_name} onSave={v => onUpdate({ contact_name: v })} />
+              <EditField label="Role" value={lead.role_title} onSave={v => onUpdate({ role_title: v })} />
+              <EditField label="Email" value={lead.email} onSave={v => onUpdate({ email: v })} />
+              <EditField label="Phone" value={lead.phone} onSave={v => onUpdate({ phone: v })} />
+              <EditField label="Industry" value={lead.industry} onSave={v => onUpdate({ industry: v })} />
+              <EditField label="Team size" value={lead.team_size} onSave={v => onUpdate({ team_size: v })} />
+              <div className="col-span-2"><EditField label="Hiring urgency" value={lead.hiring_urgency} onSave={v => onUpdate({ hiring_urgency: v })} /></div>
+              <div className="col-span-2"><EditField label="Source" value={lead.source} onSave={v => onUpdate({ source: v })} /></div>
+            </div>
+
+            <div>
+              <Label className="text-xs">Original Message</Label>
+              <Textarea
+                rows={4}
+                value={lead.original_message || ''}
+                onChange={e => onUpdate({ original_message: e.target.value })}
+                placeholder="No message"
+              />
+            </div>
+
+            <div className="flex gap-2 pt-2">
+              {nextStage && (
+                <Button size="sm" variant="outline" className="flex-1" onClick={() => onUpdate({ stage: nextStage })}>
+                  <ArrowRight className="w-4 h-4 mr-1" /> Move to {nextStage}
+                </Button>
+              )}
+              {!lead.converted_client_id && (
+                <Button size="sm" className="flex-1" onClick={onConvert}>
+                  <UserPlus className="w-4 h-4 mr-1" /> Convert to client
+                </Button>
+              )}
+            </div>
+
+            <div className="border-t pt-3">
+              <Label className="text-sm font-semibold">Notes</Label>
+              <div className="flex gap-2 mt-2">
+                <Textarea rows={2} value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="Add a note…" />
+              </div>
+              <Button size="sm" className="mt-2" disabled={!newNote.trim()} onClick={async () => { await addNote(newNote); setNewNote(''); }}>Add Note</Button>
+              <div className="space-y-2 mt-3">
+                {notes.length === 0 && <p className="text-xs text-muted-foreground italic">No notes yet</p>}
+                {notes.map(n => (
+                  <div key={n.id} className="text-xs border rounded p-2 bg-muted/30">
+                    <div className="text-muted-foreground mb-1">{new Date(n.created_at).toLocaleString()} · {n.created_by_email || 'Admin'}</div>
+                    <div className="whitespace-pre-wrap">{n.note}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </SheetContent>
+    </Sheet>
+  );
+};
+
+const DetailRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
+  <div className="space-y-1"><Label className="text-[10px] uppercase text-muted-foreground">{label}</Label>{children}</div>
+);
+
+const EditField = ({ label, value, onSave }: { label: string; value: string | null; onSave: (v: string) => void }) => {
+  const [v, setV] = useState(value || '');
+  return (
+    <DetailRow label={label}>
+      <Input
+        className="h-8"
+        value={v}
+        onChange={e => setV(e.target.value)}
+        onBlur={() => v !== (value || '') && onSave(v)}
+      />
+    </DetailRow>
+  );
+};
+
+export default SalesPipeline;
