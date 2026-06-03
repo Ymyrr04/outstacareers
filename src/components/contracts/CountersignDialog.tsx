@@ -272,6 +272,7 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
               {pages.map((pg) => (
                 <div
                   key={pg.index}
+                  ref={(el) => { if (el) pageRefs.current.set(pg.index, el); else pageRefs.current.delete(pg.index); }}
                   className="relative w-full bg-white shadow-sm"
                   onClick={onPdfClick(pg.index)}
                   style={{ cursor: placement ? "default" : "crosshair" }}
@@ -279,25 +280,25 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
                   <img src={pg.dataUrl} alt={`Page ${pg.index + 1}`} className="w-full block select-none pointer-events-none" />
                   {placement && placement.page === pg.index && (
                     <div
-                      className="absolute border-2 border-primary bg-primary/20 flex items-center justify-center text-xs font-medium text-primary cursor-move select-none"
+                      className="absolute border-2 border-primary bg-primary/10 flex items-center justify-center text-[10px] font-medium text-primary cursor-move select-none"
                       style={{
                         left: `${placement.x_pct * 100}%`,
                         top: `${placement.y_pct * 100}%`,
                         width: `${placement.w_pct * 100}%`,
                         height: `${placement.h_pct * 100}%`,
                       }}
-                      onPointerDown={onBoxPointerDown}
-                      onPointerMove={onBoxPointerMove}
-                      onPointerUp={onBoxPointerUp}
+                      onMouseDown={(e) => startInteraction("move", e)}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      Manager Signature
+                      <span className="truncate px-1 pointer-events-none opacity-70">Signature</span>
                       <div
-                        className="absolute bottom-0 right-0 w-3 h-3 bg-primary cursor-se-resize"
-                        onPointerDown={(e) => { e.stopPropagation(); setResizing(true); (e.target as HTMLElement).setPointerCapture(e.pointerId); }}
+                        className="absolute -right-1.5 -bottom-1.5 w-3 h-3 bg-primary border border-background rounded-sm cursor-nwse-resize"
+                        onMouseDown={(e) => startInteraction("resize", e)}
+                        title="Drag to resize"
                       />
                       <button
-                        className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-destructive text-white flex items-center justify-center"
+                        className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-destructive text-white flex items-center justify-center shadow"
+                        onMouseDown={(e) => e.stopPropagation()}
                         onClick={(e) => { e.stopPropagation(); setPlacement(null); }}
                       ><X className="w-3 h-3" /></button>
                     </div>
