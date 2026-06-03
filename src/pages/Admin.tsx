@@ -21,6 +21,7 @@ import { useBackgroundExport } from '@/hooks/useBackgroundExport';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useEmailReplies } from '@/hooks/useEmailTemplates';
 import { ClientsDashboard, ContractorsDashboard, ClientAnalyticsDashboard, HiringPipelineKanban } from '@/components/clients';
+import { SalesPipeline } from '@/components/sales/SalesPipeline';
 import { PostHirePipelineKanban } from '@/components/clients/PostHirePipelineKanban';
 import { generateJobUrl } from '@/lib/slugify';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
