@@ -25,6 +25,7 @@ import PortalLogin from "./pages/PortalLogin";
 import PortalChangePassword from "./pages/PortalChangePassword";
 import PortalDashboard from "./pages/PortalDashboard";
 import SignContract from "./pages/SignContract";
+import CountersignContract from "./pages/CountersignContract";
 import ClientPortalLogin from "./pages/ClientPortalLogin";
 import ClientPortalChangePassword from "./pages/ClientPortalChangePassword";
 import ClientPortalDashboard from "./pages/ClientPortalDashboard";
@@ -74,6 +75,7 @@ const App = () => (
                 <Route path="/portal/change-password" element={guard(<PortalChangePassword />)} />
                 <Route path="/portal" element={guard(<PortalDashboard />)} />
                 <Route path="/sign/:token" element={guard(<SignContract />)} />
+                <Route path="/countersign/:token" element={guard(<CountersignContract />)} />
 
                 {/* Client portal routes are accessible from BOTH domains */}
                 <Route path="/client-portal/login" element={<ClientPortalLogin />} />
