@@ -136,6 +136,19 @@ Deno.serve(async (req) => {
         metadata: { path },
       });
 
+      // Save signature for future reuse
+      try {
+        if (env.countersign_recipient_email) {
+          await admin.from("saved_signatures").upsert({
+            recipient_email: env.countersign_recipient_email.toLowerCase(),
+            signature_data_url: signature_data_url,
+            last_used_at: new Date().toISOString(),
+          }, { onConflict: "recipient_email" });
+        }
+      } catch (sigErr) {
+        console.error("save signature failed", sigErr);
+      }
+
       return new Response(JSON.stringify({ success: true }), { status: 200, headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
