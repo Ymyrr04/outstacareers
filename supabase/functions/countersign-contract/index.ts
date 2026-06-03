@@ -90,6 +90,19 @@ Deno.serve(async (req) => {
       const x = placement.x_pct * pw;
       const y = ph - (placement.y_pct * ph) - h;
       page.drawImage(png, { x, y, width: w, height: h });
+      // Timestamp under the signature
+      const helv = await pdf.embedFont(StandardFonts.Helvetica);
+      const ts = new Date().toLocaleString("en-US", { dateStyle: "medium", timeStyle: "short", timeZone: "UTC" }) + " UTC";
+      const tsSize = 6;
+      const label = `Signed: ${ts}`;
+      const tw = helv.widthOfTextAtSize(label, tsSize);
+      page.drawText(label, {
+        x: x + Math.max(0, (w - tw) / 2),
+        y: Math.max(2, y - tsSize - 1),
+        size: tsSize,
+        font: helv,
+        color: rgb(0.35, 0.35, 0.35),
+      });
       const out = await pdf.save();
 
       const path = `countersigned/${env.id}-${Date.now()}.pdf`;
