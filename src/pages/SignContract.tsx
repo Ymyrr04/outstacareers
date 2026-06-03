@@ -282,10 +282,12 @@ function renderFieldOverlay(
   v: { value?: string; signature_data_url?: string },
   locked: boolean,
   set: (next: { value?: string; signature_data_url?: string }) => void,
+  savedSig?: string | null,
 ) {
   const baseBox = "w-full h-full border-2 border-dashed border-amber-600 bg-amber-200/70 hover:bg-amber-300/80 ring-2 ring-amber-500/70 shadow-md transition flex items-center text-xs";
 
   if (f.field_type === "signature" || f.field_type === "initials") {
+    const showSavedPrompt = !!savedSig && !v.signature_data_url && f.field_type === "signature";
     return (
       <Popover>
         <PopoverTrigger asChild disabled={locked}>
@@ -296,6 +298,23 @@ function renderFieldOverlay(
           </button>
         </PopoverTrigger>
         <PopoverContent className="w-[420px] p-3">
+          {showSavedPrompt && (
+            <div className="mb-3 p-2 rounded border border-primary/30 bg-primary/5 flex items-center gap-2">
+              <img src={savedSig!} alt="saved" className="h-10 max-w-[120px] object-contain bg-white border rounded px-1" />
+              <div className="flex-1">
+                <p className="text-xs font-medium">Use your previous signature?</p>
+              </div>
+              <Button
+                size="sm"
+                onClick={(e) => {
+                  e.preventDefault();
+                  set({ signature_data_url: savedSig! });
+                }}
+              >
+                Use it
+              </Button>
+            </div>
+          )}
           <p className="text-xs font-medium mb-2">{f.label || (f.field_type === "initials" ? "Your initials" : "Your signature")}</p>
           <SignaturePad
             value={v.signature_data_url || null}
