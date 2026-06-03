@@ -21,6 +21,8 @@ interface Envelope {
   signing_token: string;
   signed_pdf_path: string | null;
   audit_pdf_path: string | null;
+  countersigned_file_url: string | null;
+  countersigned_at: string | null;
   created_at: string;
   contract_templates?: { name: string } | null;
 }
