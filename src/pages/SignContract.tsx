@@ -250,7 +250,7 @@ const SignContract = () => {
                   const adminLocked = f.assigned_to === "admin" || f.assigned_to === "system";
                   return (
                     <div key={f.id} style={style} className="group">
-                      {renderFieldOverlay(f, v, adminLocked, (next) => setValues((prev) => ({ ...prev, [f.id]: { ...prev[f.id], ...next } })))}
+                      {renderFieldOverlay(f, v, adminLocked, (next) => setValues((prev) => ({ ...prev, [f.id]: { ...prev[f.id], ...next } })), savedSig)}
                     </div>
                   );
                 })}
