@@ -35,8 +35,8 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
   const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null);
   const [currentPage, setCurrentPage] = useState(0);
   const [placement, setPlacement] = useState<Placement | null>(null);
-  const [drag, setDrag] = useState<{ ox: number; oy: number } | null>(null);
-  const [resizing, setResizing] = useState(false);
+  const pageRefs = useRef<Map<number, HTMLDivElement>>(new Map());
+  const dragRef = useRef<{ mode: "move" | "resize"; startX: number; startY: number; pageEl: HTMLDivElement } | null>(null);
 
   // Signature
   const [sigMode, setSigMode] = useState<"draw" | "type">("draw");
@@ -93,40 +93,44 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
     setPlacement({ page: pageIndex, x_pct: Math.max(0, Math.min(1 - w, x - w / 2)), y_pct: Math.max(0, Math.min(1 - h, y - h / 2)), w_pct: w, h_pct: h });
   };
 
-  const onBoxPointerDown = (e: React.PointerEvent) => {
+  const startInteraction = (mode: "move" | "resize", e: React.MouseEvent) => {
     e.stopPropagation();
+    e.preventDefault();
     if (!placement) return;
-    (e.target as HTMLElement).setPointerCapture(e.pointerId);
-    setDrag({ ox: e.clientX, oy: e.clientY });
-  };
-  const onBoxPointerMove = (e: React.PointerEvent) => {
-    if (!placement) return;
-    const parent = (e.currentTarget as HTMLElement).parentElement!;
-    const rect = parent.getBoundingClientRect();
-    if (drag) {
-      const dx = (e.clientX - drag.ox) / rect.width;
-      const dy = (e.clientY - drag.oy) / rect.height;
-      setPlacement(p => p && ({
-        ...p,
-        x_pct: Math.max(0, Math.min(1 - p.w_pct, p.x_pct + dx)),
-        y_pct: Math.max(0, Math.min(1 - p.h_pct, p.y_pct + dy)),
-      }));
-      setDrag({ ox: e.clientX, oy: e.clientY });
-    } else if (resizing) {
-      const rectBox = (e.currentTarget as HTMLElement).getBoundingClientRect();
-      const newW = (e.clientX - rectBox.left) / rect.width;
-      const newH = (e.clientY - rectBox.top) / rect.height;
-      setPlacement(p => p && ({
-        ...p,
-        w_pct: Math.max(0.05, Math.min(1 - p.x_pct, newW)),
-        h_pct: Math.max(0.03, Math.min(1 - p.y_pct, newH)),
-      }));
-    }
-  };
-  const onBoxPointerUp = (e: React.PointerEvent) => {
-    (e.target as HTMLElement).releasePointerCapture?.(e.pointerId);
-    setDrag(null);
-    setResizing(false);
+    const pageEl = pageRefs.current.get(placement.page);
+    if (!pageEl) return;
+    dragRef.current = { mode, startX: e.clientX, startY: e.clientY, pageEl };
+    const move = (ev: MouseEvent) => {
+      const d = dragRef.current;
+      if (!d) return;
+      const rect = d.pageEl.getBoundingClientRect();
+      const dx = (ev.clientX - d.startX) / rect.width;
+      const dy = (ev.clientY - d.startY) / rect.height;
+      d.startX = ev.clientX;
+      d.startY = ev.clientY;
+      setPlacement(p => {
+        if (!p) return p;
+        if (d.mode === "move") {
+          return {
+            ...p,
+            x_pct: Math.max(0, Math.min(1 - p.w_pct, p.x_pct + dx)),
+            y_pct: Math.max(0, Math.min(1 - p.h_pct, p.y_pct + dy)),
+          };
+        }
+        return {
+          ...p,
+          w_pct: Math.max(0.05, Math.min(1 - p.x_pct, p.w_pct + dx)),
+          h_pct: Math.max(0.03, Math.min(1 - p.y_pct, p.h_pct + dy)),
+        };
+      });
+    };
+    const up = () => {
+      dragRef.current = null;
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
   };
 
   // Signature canvas
@@ -268,6 +272,7 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
               {pages.map((pg) => (
                 <div
                   key={pg.index}
+                  ref={(el) => { if (el) pageRefs.current.set(pg.index, el); else pageRefs.current.delete(pg.index); }}
                   className="relative w-full bg-white shadow-sm"
                   onClick={onPdfClick(pg.index)}
                   style={{ cursor: placement ? "default" : "crosshair" }}
@@ -275,25 +280,25 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
                   <img src={pg.dataUrl} alt={`Page ${pg.index + 1}`} className="w-full block select-none pointer-events-none" />
                   {placement && placement.page === pg.index && (
                     <div
-                      className="absolute border-2 border-primary bg-primary/20 flex items-center justify-center text-xs font-medium text-primary cursor-move select-none"
+                      className="absolute border-2 border-primary bg-primary/10 flex items-center justify-center text-[10px] font-medium text-primary cursor-move select-none"
                       style={{
                         left: `${placement.x_pct * 100}%`,
                         top: `${placement.y_pct * 100}%`,
                         width: `${placement.w_pct * 100}%`,
                         height: `${placement.h_pct * 100}%`,
                       }}
-                      onPointerDown={onBoxPointerDown}
-                      onPointerMove={onBoxPointerMove}
-                      onPointerUp={onBoxPointerUp}
+                      onMouseDown={(e) => startInteraction("move", e)}
                       onClick={(e) => e.stopPropagation()}
                     >
-                      Manager Signature
+                      <span className="truncate px-1 pointer-events-none opacity-70">Signature</span>
                       <div
-                        className="absolute bottom-0 right-0 w-3 h-3 bg-primary cursor-se-resize"
-                        onPointerDown={(e) => { e.stopPropagation(); setResizing(true); (e.target as HTMLElement).setPointerCapture(e.pointerId); }}
+                        className="absolute -right-1.5 -bottom-1.5 w-3 h-3 bg-primary border border-background rounded-sm cursor-nwse-resize"
+                        onMouseDown={(e) => startInteraction("resize", e)}
+                        title="Drag to resize"
                       />
                       <button
-                        className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-destructive text-white flex items-center justify-center"
+                        className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-destructive text-white flex items-center justify-center shadow"
+                        onMouseDown={(e) => e.stopPropagation()}
                         onClick={(e) => { e.stopPropagation(); setPlacement(null); }}
                       ><X className="w-3 h-3" /></button>
                     </div>
