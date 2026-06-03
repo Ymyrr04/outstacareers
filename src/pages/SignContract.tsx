@@ -56,6 +56,7 @@ interface LoadResponse {
   template: { id: string; name: string; page_count: number };
   pdf_url: string;
   fields: TemplateField[];
+  saved_signature: string | null;
 }
 
 const FUNCTIONS_BASE = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1`;
