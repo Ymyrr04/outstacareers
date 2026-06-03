@@ -2546,6 +2546,112 @@ export type Database = {
           },
         ]
       }
+      sales_lead_notes: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          created_by_email: string | null
+          id: string
+          lead_id: string
+          note: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          id?: string
+          lead_id: string
+          note: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          created_by_email?: string | null
+          id?: string
+          lead_id?: string
+          note?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_lead_notes_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "sales_leads"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sales_leads: {
+        Row: {
+          company_name: string
+          contact_name: string | null
+          converted_at: string | null
+          converted_client_id: string | null
+          created_at: string
+          created_by: string | null
+          email: string | null
+          hiring_urgency: string | null
+          id: string
+          industry: string | null
+          original_message: string | null
+          phone: string | null
+          role_title: string | null
+          source: string
+          stage: string
+          team_size: string | null
+          temperature: string
+          updated_at: string
+        }
+        Insert: {
+          company_name: string
+          contact_name?: string | null
+          converted_at?: string | null
+          converted_client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          hiring_urgency?: string | null
+          id?: string
+          industry?: string | null
+          original_message?: string | null
+          phone?: string | null
+          role_title?: string | null
+          source?: string
+          stage?: string
+          team_size?: string | null
+          temperature?: string
+          updated_at?: string
+        }
+        Update: {
+          company_name?: string
+          contact_name?: string | null
+          converted_at?: string | null
+          converted_client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          email?: string | null
+          hiring_urgency?: string | null
+          id?: string
+          industry?: string | null
+          original_message?: string | null
+          phone?: string | null
+          role_title?: string | null
+          source?: string
+          stage?: string
+          team_size?: string | null
+          temperature?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_leads_converted_client_id_fkey"
+            columns: ["converted_client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       scheduled_contractor_emails: {
         Row: {
           body_html: string
