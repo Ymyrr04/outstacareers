@@ -225,6 +225,18 @@ const CountersignContract = () => {
           ))}
         </div>
 
+        {savedSigPrompt && savedSig && (
+          <Card className="p-4 bg-primary/5 border-primary/30 flex items-center gap-3">
+            <img src={savedSig} alt="saved signature" className="h-12 max-w-[180px] object-contain bg-white border rounded px-2" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Use your previous signature?</p>
+              <p className="text-xs text-muted-foreground">We found a signature from a past document.</p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => setSavedSigPrompt(false)}>No, sign again</Button>
+            <Button size="sm" onClick={() => { setSigDataUrl(savedSig); setSavedSigPrompt(false); toast.success("Saved signature applied"); }}>Use it</Button>
+          </Card>
+        )}
+
         <Card className="p-5 sticky bottom-4 shadow-lg space-y-3">
           <p className="text-sm font-medium">Your signature</p>
           <Tabs value={sigMode} onValueChange={(v) => { setSigMode(v as any); sigClear(); }}>
