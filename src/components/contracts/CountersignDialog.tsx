@@ -83,14 +83,14 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
   }, [open, signedPdfPath]);
 
   // PDF click to place signature box
-  const onPdfClick = (e: React.MouseEvent<HTMLDivElement>) => {
+  const onPdfClick = (pageIndex: number) => (e: React.MouseEvent<HTMLDivElement>) => {
     if (placement) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const x = (e.clientX - rect.left) / rect.width;
     const y = (e.clientY - rect.top) / rect.height;
     const w = 0.25;
     const h = 0.08;
-    setPlacement({ page: currentPage, x_pct: Math.max(0, Math.min(1 - w, x - w / 2)), y_pct: Math.max(0, Math.min(1 - h, y - h / 2)), w_pct: w, h_pct: h });
+    setPlacement({ page: pageIndex, x_pct: Math.max(0, Math.min(1 - w, x - w / 2)), y_pct: Math.max(0, Math.min(1 - h, y - h / 2)), w_pct: w, h_pct: h });
   };
 
   const onBoxPointerDown = (e: React.PointerEvent) => {
@@ -245,7 +245,7 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
 
   return (
     <Dialog open={open} onOpenChange={tryClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Countersign — {recipientName}</DialogTitle>
           <DialogDescription>
@@ -257,43 +257,50 @@ export const CountersignDialog = ({ open, onOpenChange, envelopeId, signedPdfPat
           <div className="py-12 flex justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>
         )}
 
-        {!loading && step === 1 && page && (
+        {!loading && step === 1 && pages.length > 0 && (
           <div className="space-y-3">
-            <p className="text-sm text-muted-foreground">Click anywhere on the document to place the manager's signature. Drag to reposition, drag the bottom-right corner to resize.</p>
-            {pages.length > 1 && (
-              <div className="flex items-center justify-center gap-3 text-sm">
-                <Button size="sm" variant="outline" onClick={() => setCurrentPage(p => Math.max(0, p - 1))} disabled={currentPage === 0}><ChevronLeft className="w-4 h-4" /></Button>
-                <span>Page {currentPage + 1} of {pages.length}</span>
-                <Button size="sm" variant="outline" onClick={() => setCurrentPage(p => Math.min(pages.length - 1, p + 1))} disabled={currentPage === pages.length - 1}><ChevronRight className="w-4 h-4" /></Button>
-              </div>
-            )}
-            <div className="relative inline-block w-full border rounded overflow-hidden bg-muted/30" onClick={onPdfClick} style={{ cursor: placement ? "default" : "crosshair" }}>
-              <img src={page.dataUrl} alt={`Page ${currentPage + 1}`} className="w-full block select-none pointer-events-none" />
-              {placement && placement.page === currentPage && (
+            <p className="text-sm text-muted-foreground">Click anywhere on the document to place the manager's signature. Drag to reposition, drag the bottom-right corner to resize. Scroll to navigate.</p>
+            <div className="flex items-center justify-between text-xs text-muted-foreground">
+              <span>{pages.length} {pages.length === 1 ? "page" : "pages"}</span>
+              {placement && <span>Signature placed on page {placement.page + 1}</span>}
+            </div>
+            <div className="border rounded bg-muted/30 overflow-y-auto space-y-3 p-3" style={{ height: "78vh" }}>
+              {pages.map((pg) => (
                 <div
-                  className="absolute border-2 border-primary bg-primary/20 flex items-center justify-center text-xs font-medium text-primary cursor-move select-none"
-                  style={{
-                    left: `${placement.x_pct * 100}%`,
-                    top: `${placement.y_pct * 100}%`,
-                    width: `${placement.w_pct * 100}%`,
-                    height: `${placement.h_pct * 100}%`,
-                  }}
-                  onPointerDown={onBoxPointerDown}
-                  onPointerMove={onBoxPointerMove}
-                  onPointerUp={onBoxPointerUp}
-                  onClick={(e) => e.stopPropagation()}
+                  key={pg.index}
+                  className="relative w-full bg-white shadow-sm"
+                  onClick={onPdfClick(pg.index)}
+                  style={{ cursor: placement ? "default" : "crosshair" }}
                 >
-                  Manager Signature
-                  <div
-                    className="absolute bottom-0 right-0 w-3 h-3 bg-primary cursor-se-resize"
-                    onPointerDown={(e) => { e.stopPropagation(); setResizing(true); (e.target as HTMLElement).setPointerCapture(e.pointerId); }}
-                  />
-                  <button
-                    className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-destructive text-white flex items-center justify-center"
-                    onClick={(e) => { e.stopPropagation(); setPlacement(null); }}
-                  ><X className="w-3 h-3" /></button>
+                  <img src={pg.dataUrl} alt={`Page ${pg.index + 1}`} className="w-full block select-none pointer-events-none" />
+                  {placement && placement.page === pg.index && (
+                    <div
+                      className="absolute border-2 border-primary bg-primary/20 flex items-center justify-center text-xs font-medium text-primary cursor-move select-none"
+                      style={{
+                        left: `${placement.x_pct * 100}%`,
+                        top: `${placement.y_pct * 100}%`,
+                        width: `${placement.w_pct * 100}%`,
+                        height: `${placement.h_pct * 100}%`,
+                      }}
+                      onPointerDown={onBoxPointerDown}
+                      onPointerMove={onBoxPointerMove}
+                      onPointerUp={onBoxPointerUp}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      Manager Signature
+                      <div
+                        className="absolute bottom-0 right-0 w-3 h-3 bg-primary cursor-se-resize"
+                        onPointerDown={(e) => { e.stopPropagation(); setResizing(true); (e.target as HTMLElement).setPointerCapture(e.pointerId); }}
+                      />
+                      <button
+                        className="absolute -top-2 -right-2 w-5 h-5 rounded-full bg-destructive text-white flex items-center justify-center"
+                        onClick={(e) => { e.stopPropagation(); setPlacement(null); }}
+                      ><X className="w-3 h-3" /></button>
+                    </div>
+                  )}
+                  <div className="absolute bottom-1 right-2 text-[10px] text-muted-foreground bg-white/70 px-1 rounded">{pg.index + 1}/{pages.length}</div>
                 </div>
-              )}
+              ))}
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="outline" onClick={() => tryClose(false)}>Cancel</Button>
