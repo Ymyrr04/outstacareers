@@ -21,6 +21,7 @@ import { useBackgroundExport } from '@/hooks/useBackgroundExport';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useEmailReplies } from '@/hooks/useEmailTemplates';
 import { ClientsDashboard, ContractorsDashboard, ClientAnalyticsDashboard, HiringPipelineKanban } from '@/components/clients';
+import { SalesPipeline } from '@/components/sales/SalesPipeline';
 import { PostHirePipelineKanban } from '@/components/clients/PostHirePipelineKanban';
 import { generateJobUrl } from '@/lib/slugify';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
@@ -1642,6 +1643,12 @@ const Admin = () => {
               <TabsTrigger value="pipeline" className="flex items-center gap-2">
                 <Kanban className="w-4 h-4" />
                 Client Pipeline
+              </TabsTrigger>
+            )}
+            {canViewTab('sales-pipeline') && (
+              <TabsTrigger value="sales-pipeline" className="flex items-center gap-2">
+                <Target className="w-4 h-4" />
+                Sales Pipeline
               </TabsTrigger>
             )}
             {canViewTab('post-hire') && (
@@ -3634,6 +3641,11 @@ const Admin = () => {
               <p className="text-[11px] text-muted-foreground">Track client hiring requests through the recruitment pipeline</p>
             </div>
             <HiringPipelineKanban />
+          </TabsContent>
+
+          {/* Sales Pipeline Tab */}
+          <TabsContent value="sales-pipeline" className="space-y-1">
+            <SalesPipeline />
           </TabsContent>
 
           {/* Post-Hire Pipeline Tab */}
