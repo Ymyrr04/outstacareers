@@ -68,6 +68,17 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Lookup saved signature by recipient email
+      let saved_signature: string | null = null;
+      if (envelope.recipient_email) {
+        const { data: sig } = await admin
+          .from("saved_signatures")
+          .select("signature_data_url")
+          .eq("recipient_email", envelope.recipient_email.toLowerCase())
+          .maybeSingle();
+        saved_signature = sig?.signature_data_url ?? null;
+      }
+
       return new Response(JSON.stringify({
         envelope: {
           id: envelope.id,
@@ -81,6 +92,7 @@ Deno.serve(async (req) => {
         template: { id: template!.id, name: template!.name, page_count: template!.page_count },
         pdf_url: signed?.signedUrl,
         fields,
+        saved_signature,
       }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
