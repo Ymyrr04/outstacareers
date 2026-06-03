@@ -19,11 +19,13 @@ interface LoadResponse {
     status: string;
     recipient_name: string;
     countersign_recipient_name: string | null;
+    countersign_recipient_email: string | null;
     countersign_message: string | null;
     countersigned_at: string | null;
   };
   placement: Placement;
   pdf_url: string;
+  saved_signature: string | null;
 }
 
 function renderMessage(raw: string): string {
@@ -57,6 +59,8 @@ const CountersignContract = () => {
   const [sigMode, setSigMode] = useState<"draw" | "type">("draw");
   const [typed, setTyped] = useState("");
   const [sigDataUrl, setSigDataUrl] = useState<string | null>(null);
+  const [savedSig, setSavedSig] = useState<string | null>(null);
+  const [savedSigPrompt, setSavedSigPrompt] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const drawing = useRef(false);
 
@@ -79,6 +83,17 @@ const CountersignContract = () => {
         }
         const rendered = await renderPdfPages(json.pdf_url, 900);
         setPages(rendered);
+
+        // Look for a saved signature: server (by email) or localStorage (by email)
+        let found = json.saved_signature;
+        const email = json.envelope.countersign_recipient_email?.toLowerCase();
+        if (!found && email) {
+          try { found = localStorage.getItem(`sig:${email}`); } catch { /* ignore */ }
+        }
+        if (found) {
+          setSavedSig(found);
+          setSavedSigPrompt(true);
+        }
       } catch (e) {
         setError((e as Error).message);
       } finally {
@@ -135,6 +150,11 @@ const CountersignContract = () => {
         const t = await r.text();
         throw new Error(t);
       }
+      // Cache locally as a fallback for future signings on this browser
+      try {
+        const email = data?.envelope.countersign_recipient_email?.toLowerCase();
+        if (email) localStorage.setItem(`sig:${email}`, sigDataUrl);
+      } catch { /* ignore */ }
       setDone(true);
     } catch (e) {
       toast.error((e as Error).message);
@@ -204,6 +224,18 @@ const CountersignContract = () => {
             </div>
           ))}
         </div>
+
+        {savedSigPrompt && savedSig && (
+          <Card className="p-4 bg-primary/5 border-primary/30 flex items-center gap-3">
+            <img src={savedSig} alt="saved signature" className="h-12 max-w-[180px] object-contain bg-white border rounded px-2" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Use your previous signature?</p>
+              <p className="text-xs text-muted-foreground">We found a signature from a past document.</p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => setSavedSigPrompt(false)}>No, sign again</Button>
+            <Button size="sm" onClick={() => { setSigDataUrl(savedSig); setSavedSigPrompt(false); toast.success("Saved signature applied"); }}>Use it</Button>
+          </Card>
+        )}
 
         <Card className="p-5 sticky bottom-4 shadow-lg space-y-3">
           <p className="text-sm font-medium">Your signature</p>

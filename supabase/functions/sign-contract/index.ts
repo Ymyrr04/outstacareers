@@ -68,6 +68,17 @@ Deno.serve(async (req) => {
         });
       }
 
+      // Lookup saved signature by recipient email
+      let saved_signature: string | null = null;
+      if (envelope.recipient_email) {
+        const { data: sig } = await admin
+          .from("saved_signatures")
+          .select("signature_data_url")
+          .eq("recipient_email", envelope.recipient_email.toLowerCase())
+          .maybeSingle();
+        saved_signature = sig?.signature_data_url ?? null;
+      }
+
       return new Response(JSON.stringify({
         envelope: {
           id: envelope.id,
@@ -81,6 +92,7 @@ Deno.serve(async (req) => {
         template: { id: template!.id, name: template!.name, page_count: template!.page_count },
         pdf_url: signed?.signedUrl,
         fields,
+        saved_signature,
       }), { headers: { "Content-Type": "application/json", ...corsHeaders } });
     }
 
@@ -298,6 +310,21 @@ Deno.serve(async (req) => {
         actor_email: envelope.recipient_email, ip_address: ip, user_agent: ua,
         metadata: { sha256: signedHash },
       });
+
+      // Save signature for future reuse (first "signature" field by signer)
+      try {
+        const sigField = fields!.find(f => f.field_type === "signature" && f.assigned_to === "signer");
+        const sigVal = sigField ? valueByFieldId.get(sigField.id) : null;
+        if (sigVal?.signature_data_url && envelope.recipient_email) {
+          await admin.from("saved_signatures").upsert({
+            recipient_email: envelope.recipient_email.toLowerCase(),
+            signature_data_url: sigVal.signature_data_url,
+            last_used_at: new Date().toISOString(),
+          }, { onConflict: "recipient_email" });
+        }
+      } catch (sigErr) {
+        console.error("save signature failed", sigErr);
+      }
 
       // Email signed copy to both parties
       try {

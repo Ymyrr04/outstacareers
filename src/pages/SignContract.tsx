@@ -56,6 +56,7 @@ interface LoadResponse {
   template: { id: string; name: string; page_count: number };
   pdf_url: string;
   fields: TemplateField[];
+  saved_signature: string | null;
 }
 
 const FUNCTIONS_BASE = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1`;
@@ -72,6 +73,8 @@ const SignContract = () => {
   const [consent, setConsent] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [done, setDone] = useState(false);
+  const [savedSig, setSavedSig] = useState<string | null>(null);
+  const [savedSigPrompt, setSavedSigPrompt] = useState(false);
 
   useEffect(() => {
     if (!token) return;
@@ -105,6 +108,17 @@ const SignContract = () => {
           }
         }
         setValues(init);
+
+        // Look for saved signature: server (by email) or localStorage fallback
+        let found = json.saved_signature;
+        const email = json.envelope.recipient_email?.toLowerCase();
+        if (!found && email) {
+          try { found = localStorage.getItem(`sig:${email}`); } catch { /* ignore */ }
+        }
+        if (found) {
+          setSavedSig(found);
+          setSavedSigPrompt(true);
+        }
       } catch (e) {
         setError((e as Error).message);
       } finally {
@@ -155,6 +169,13 @@ const SignContract = () => {
         const t = await r.text();
         throw new Error(t);
       }
+      // Cache locally for future signings on this browser
+      try {
+        const email = data.envelope.recipient_email?.toLowerCase();
+        const sigField = signerFields.find(f => f.field_type === "signature");
+        const sigUrl = sigField ? values[sigField.id]?.signature_data_url : undefined;
+        if (email && sigUrl) localStorage.setItem(`sig:${email}`, sigUrl);
+      } catch { /* ignore */ }
       setDone(true);
     } catch (e) {
       toast.error((e as Error).message);
@@ -203,6 +224,33 @@ const SignContract = () => {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6 space-y-6">
+        {savedSigPrompt && savedSig && (
+          <Card className="p-4 bg-primary/5 border-primary/30 flex items-center gap-3">
+            <img src={savedSig} alt="saved signature" className="h-12 max-w-[180px] object-contain bg-white border rounded px-2" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">Use your previous signature?</p>
+              <p className="text-xs text-muted-foreground">We found a signature you used on a past document. Apply it to all signature fields in this contract?</p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => setSavedSigPrompt(false)}>No, sign again</Button>
+            <Button
+              size="sm"
+              onClick={() => {
+                const next = { ...values };
+                for (const f of data.fields) {
+                  if (f.field_type === "signature" && f.assigned_to !== "admin") {
+                    next[f.id] = { ...next[f.id], signature_data_url: savedSig };
+                  }
+                }
+                setValues(next);
+                setSavedSigPrompt(false);
+                toast.success("Saved signature applied");
+              }}
+            >
+              Use it
+            </Button>
+          </Card>
+        )}
+
         {data.envelope.message && (
           <Card className="p-4 bg-background">
             <div className="text-sm" dangerouslySetInnerHTML={{ __html: renderMessage(data.envelope.message) }} />
