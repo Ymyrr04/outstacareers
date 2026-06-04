@@ -475,7 +475,7 @@ export function CommunicationHistory({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl w-[90vw] h-[80vh] flex flex-col p-0">
+      <DialogContent className="max-w-5xl w-[95vw] h-[88vh] flex flex-col p-0 overflow-hidden">
         <DialogHeader className="px-6 py-4 border-b">
           <DialogTitle className="flex items-center gap-2">
             <Mail className="h-5 w-5" />
@@ -523,12 +523,12 @@ export function CommunicationHistory({
                       className="border border-amber-200 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg p-4"
                     >
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <Clock className="h-4 w-4 text-amber-500" />
-                            <span className="font-medium">{email.subject}</span>
+                            <Clock className="h-4 w-4 text-amber-500 shrink-0" />
+                            <span className="font-medium truncate">{email.subject}</span>
                           </div>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm text-muted-foreground truncate">
                             To: {email.recipient_email}
                           </p>
                           <p className="text-xs text-muted-foreground">
