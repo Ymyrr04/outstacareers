@@ -523,12 +523,12 @@ export function CommunicationHistory({
                       className="border border-amber-200 dark:border-amber-900 bg-amber-50/50 dark:bg-amber-950/20 rounded-lg p-4"
                     >
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
+                        <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <Clock className="h-4 w-4 text-amber-500" />
-                            <span className="font-medium">{email.subject}</span>
+                            <Clock className="h-4 w-4 text-amber-500 shrink-0" />
+                            <span className="font-medium truncate">{email.subject}</span>
                           </div>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm text-muted-foreground truncate">
                             To: {email.recipient_email}
                           </p>
                           <p className="text-xs text-muted-foreground">
