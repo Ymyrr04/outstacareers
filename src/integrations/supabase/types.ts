@@ -2604,6 +2604,7 @@ export type Database = {
           industry: string | null
           original_message: string | null
           phone: string | null
+          phone_2: string | null
           role_title: string | null
           source: string
           stage: string
@@ -2633,6 +2634,7 @@ export type Database = {
           industry?: string | null
           original_message?: string | null
           phone?: string | null
+          phone_2?: string | null
           role_title?: string | null
           source?: string
           stage?: string
@@ -2662,6 +2664,7 @@ export type Database = {
           industry?: string | null
           original_message?: string | null
           phone?: string | null
+          phone_2?: string | null
           role_title?: string | null
           source?: string
           stage?: string
