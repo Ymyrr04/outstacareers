@@ -35,7 +35,7 @@ const tempBadge = (t: Temperature) => {
 };
 
 const emptyLead: Partial<SalesLead> = {
-  company_name: '', contact_name: '', role_title: '', email: '', phone: '',
+  company_name: '', contact_name: '', role_title: '', email: '', phone: '', phone_2: '',
   industry: '', team_size: '', hiring_urgency: '', temperature: 'warm',
   source: 'manual', stage: 'Lead', original_message: '',
 };
@@ -331,6 +331,7 @@ const NewLeadDialog = ({ open, onClose, onSubmit }: { open: boolean; onClose: ()
           <Field label="Role title"><Input value={data.role_title || ''} onChange={e => set('role_title', e.target.value)} /></Field>
           <Field label="Email *"><Input type="email" value={data.email || ''} onChange={e => set('email', e.target.value)} /></Field>
           <Field label="Phone"><Input value={data.phone || ''} onChange={e => set('phone', e.target.value)} /></Field>
+          <Field label="Phone 2"><Input value={data.phone_2 || ''} onChange={e => set('phone_2', e.target.value)} /></Field>
           <Field label="Industry"><Input value={data.industry || ''} onChange={e => set('industry', e.target.value)} /></Field>
           <Field label="Team size"><Input value={data.team_size || ''} onChange={e => set('team_size', e.target.value)} /></Field>
           <Field label="Hiring urgency"><Input value={data.hiring_urgency || ''} onChange={e => set('hiring_urgency', e.target.value)} /></Field>
@@ -367,6 +368,7 @@ const FIELD_OPTIONS: { key: keyof SalesLead; label: string }[] = [
   { key: 'role_title', label: 'Role Title' },
   { key: 'email', label: 'Email' },
   { key: 'phone', label: 'Phone' },
+  { key: 'phone_2', label: 'Phone 2' },
   { key: 'industry', label: 'Industry' },
   { key: 'team_size', label: 'Team Size' },
   { key: 'hiring_urgency', label: 'Hiring Urgency' },
@@ -421,7 +423,7 @@ const ImportCsvDialog = ({ open, onClose, onImport, existingLeads }: { open: boo
   const doImport = async () => {
     const norm = (s: string | null | undefined) => (s || '').trim().toLowerCase();
     const existingEmails = new Set(existingLeads.map(l => norm(l.email)).filter(Boolean));
-    const existingPhones = new Set(existingLeads.map(l => norm(l.phone)).filter(Boolean));
+    const existingPhones = new Set([...existingLeads.map(l => norm(l.phone)), ...existingLeads.map(l => norm(l.phone_2))].filter(Boolean));
     const existingCompanies = new Set(existingLeads.map(l => norm(l.company_name)).filter(Boolean));
     const seenEmail = new Set<string>();
     const seenPhone = new Set<string>();
@@ -438,15 +440,17 @@ const ImportCsvDialog = ({ open, onClose, onImport, existingLeads }: { open: boo
       if (!obj.company_name) { missing++; continue; }
       const email = norm(obj.email);
       const phone = norm(obj.phone);
+      const phone2 = norm(obj.phone_2);
       const company = norm(obj.company_name);
-      if ((email && existingEmails.has(email)) || (phone && existingPhones.has(phone)) || (!email && !phone && existingCompanies.has(company))) {
+      const phones = [phone, phone2].filter(Boolean);
+      if ((email && existingEmails.has(email)) || phones.some(p => existingPhones.has(p)) || (!email && !phones.length && existingCompanies.has(company))) {
         dupExisting++; continue;
       }
-      if ((email && seenEmail.has(email)) || (phone && seenPhone.has(phone)) || (!email && !phone && seenCompany.has(company))) {
+      if ((email && seenEmail.has(email)) || phones.some(p => seenPhone.has(p)) || (!email && !phones.length && seenCompany.has(company))) {
         dupCsv++; continue;
       }
       if (email) seenEmail.add(email);
-      if (phone) seenPhone.add(phone);
+      phones.forEach(p => seenPhone.add(p));
       seenCompany.add(company);
       payload.push(obj);
     }
@@ -476,7 +480,7 @@ const ImportCsvDialog = ({ open, onClose, onImport, existingLeads }: { open: boo
               <Button variant="outline" size="sm" onClick={() => {
                 const headers = FIELD_OPTIONS.map(f => f.label);
                 const example = [
-                  'Acme Corp','Jane Doe','Head of Talent','jane@acme.com','+1 555 123 4567',
+                  'Acme Corp','Jane Doe','Head of Talent','jane@acme.com','+1 555 123 4567','+1 555 987 6543',
                   'Technology','50-200','High','warm','Met at conference, looking to hire 5 engineers'
                 ];
                 const csv = [headers.join(','), example.map(v => `"${v.replace(/"/g,'""')}"`).join(',')].join('\n');
@@ -584,6 +588,7 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
               <EditField label="Role" value={lead.role_title} onSave={v => onUpdate({ role_title: v })} />
               <EditField label="Email" value={lead.email} onSave={v => onUpdate({ email: v })} />
               <EditField label="Phone" value={lead.phone} onSave={v => onUpdate({ phone: v })} />
+              <EditField label="Phone 2" value={lead.phone_2} onSave={v => onUpdate({ phone_2: v })} />
               <EditField label="Industry" value={lead.industry} onSave={v => onUpdate({ industry: v })} />
               <EditField label="Team size" value={lead.team_size} onSave={v => onUpdate({ team_size: v })} />
               <div className="col-span-2"><EditField label="Hiring urgency" value={lead.hiring_urgency} onSave={v => onUpdate({ hiring_urgency: v })} /></div>
