@@ -720,7 +720,7 @@ export const TalentScoutDashboard = () => {
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-semibold text-base">{result.full_name}</span>
                             {result.is_starred && <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />}
-                            <Badge variant="outline" className="text-xs">{result.status}</Badge>
+                            <Badge variant="outline" className="text-xs">{getDisplayName(result.status)}</Badge>
                           </div>
                           <p className="text-sm text-muted-foreground">{result.job_title}</p>
                           <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
