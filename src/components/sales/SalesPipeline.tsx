@@ -71,7 +71,13 @@ export const SalesPipeline = () => {
       setConfirmConvert(lead);
       return;
     }
-    updateLead(lead.id, { stage: newStage });
+    const updates: Partial<SalesLead> = { stage: newStage };
+    const idx = stageToContactIdx(newStage);
+    if (idx) {
+      const atKey = `contact_${idx}_at` as keyof SalesLead;
+      if (!lead[atKey]) (updates as any)[atKey] = new Date().toISOString();
+    }
+    updateLead(lead.id, updates);
   };
 
   return (
