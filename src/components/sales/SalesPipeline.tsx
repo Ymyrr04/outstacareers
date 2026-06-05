@@ -142,9 +142,8 @@ export const SalesPipeline = () => {
         <StatCard label="Converted to Clients" value={stats.converted} accent />
       </div>
 
-      <div className="space-y-2">
-        <div className="flex items-center gap-2 flex-wrap">
       <div className="flex items-center gap-2 flex-wrap">
+
         <div className="relative flex-1 min-w-[260px] max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
           <Input
