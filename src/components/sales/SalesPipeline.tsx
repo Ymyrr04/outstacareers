@@ -252,7 +252,7 @@ export const SalesPipeline = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {leads.map(l => (
+                {filteredLeads.map(l => (
                   <TableRow key={l.id} className="cursor-pointer" onClick={() => setSelectedLead(l)}>
                     <TableCell className="font-medium">{l.company_name}</TableCell>
                     <TableCell>{l.contact_name || '—'}</TableCell>
@@ -269,8 +269,8 @@ export const SalesPipeline = () => {
                     </TableCell>
                   </TableRow>
                 ))}
-                {leads.length === 0 && (
-                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-12">No leads yet</TableCell></TableRow>
+                {filteredLeads.length === 0 && (
+                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-12">{leads.length === 0 ? 'No leads yet' : 'No leads match your search'}</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
