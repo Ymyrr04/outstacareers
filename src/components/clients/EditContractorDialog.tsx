@@ -75,6 +75,7 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
   const [deleting, setDeleting] = useState(false);
   const [clients, setClients] = useState<{ id: string; company_name: string }[]>([]);
   const [loadingClients, setLoadingClients] = useState(false);
+  const [existingPositions, setExistingPositions] = useState<string[]>([]);
   
   const [formData, setFormData] = useState({
     // Applicant fields
