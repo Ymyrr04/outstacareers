@@ -13,7 +13,20 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useSalesLeads, SALES_STAGES, SalesLead, SalesStage, Temperature, useSalesLeadNotes } from '@/hooks/useSalesLeads';
+import { useSalesLeads, SALES_STAGES, SalesLead, SalesStage, Temperature, ContactType, CONTACT_TYPES, useSalesLeadNotes } from '@/hooks/useSalesLeads';
+
+const CONTACT_STAGES: SalesStage[] = ['Contact 1', 'Contact 2', 'Contact 3'];
+const stageToContactIdx = (s: SalesStage): 1 | 2 | 3 | null =>
+  s === 'Contact 1' ? 1 : s === 'Contact 2' ? 2 : s === 'Contact 3' ? 3 : null;
+
+const contactTypeBadge = (t: ContactType | null) => {
+  if (t === 'Email') return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300';
+  if (t === 'Text') return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-300';
+  if (t === 'Call') return 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300';
+  return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800/40 dark:text-gray-300';
+};
+const contactTypeIcon = (t: ContactType | null) =>
+  t === 'Email' ? '📧' : t === 'Text' ? '💬' : t === 'Call' ? '📞' : t === 'Other' ? '✏️' : '';
 
 const tempBadge = (t: Temperature) => {
   if (t === 'hot') return 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300';
