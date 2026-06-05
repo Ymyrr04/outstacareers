@@ -436,11 +436,34 @@ const ImportCsvDialog = ({ open, onClose, onImport }: { open: boolean; onClose: 
       <DialogContent className="max-w-2xl">
         <DialogHeader><DialogTitle>Import Leads from CSV</DialogTitle></DialogHeader>
         {step === 'upload' && (
-          <div className="py-8 text-center border-2 border-dashed rounded-lg">
-            <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
-            <p className="text-sm text-muted-foreground mb-3">Upload a CSV file with your leads</p>
-            <input ref={inputRef} type="file" accept=".csv" className="hidden" onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
-            <Button onClick={() => inputRef.current?.click()}>Choose CSV</Button>
+          <div className="space-y-3">
+            <div className="py-8 text-center border-2 border-dashed rounded-lg">
+              <Upload className="w-10 h-10 mx-auto text-muted-foreground mb-3" />
+              <p className="text-sm text-muted-foreground mb-3">Upload a CSV file with your leads</p>
+              <input ref={inputRef} type="file" accept=".csv" className="hidden" onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
+              <Button onClick={() => inputRef.current?.click()}>Choose CSV</Button>
+            </div>
+            <div className="flex items-center justify-between rounded-lg border p-3 bg-muted/30">
+              <div>
+                <p className="text-sm font-medium">Need a starting point?</p>
+                <p className="text-xs text-muted-foreground">Download the sample CSV template with the correct headers.</p>
+              </div>
+              <Button variant="outline" size="sm" onClick={() => {
+                const headers = FIELD_OPTIONS.map(f => f.label);
+                const example = [
+                  'Acme Corp','Jane Doe','Head of Talent','jane@acme.com','+1 555 123 4567',
+                  'Technology','50-200','High','warm','Met at conference, looking to hire 5 engineers'
+                ];
+                const csv = [headers.join(','), example.map(v => `"${v.replace(/"/g,'""')}"`).join(',')].join('\n');
+                const blob = new Blob([csv], { type: 'text/csv' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = 'sales_leads_template.csv'; a.click();
+                URL.revokeObjectURL(url);
+              }}>
+                <Download className="w-4 h-4 mr-2" />Template
+              </Button>
+            </div>
           </div>
         )}
         {step === 'map' && (
