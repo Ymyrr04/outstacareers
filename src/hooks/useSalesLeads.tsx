@@ -23,6 +23,7 @@ export interface SalesLead {
   role_title: string | null;
   email: string | null;
   phone: string | null;
+  phone_2: string | null;
   industry: string | null;
   team_size: string | null;
   hiring_urgency: string | null;
