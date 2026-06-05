@@ -1,0 +1,1 @@
+UPDATE public.sales_leads SET stage = 'OutSta Lead' WHERE stage = 'Lead';
