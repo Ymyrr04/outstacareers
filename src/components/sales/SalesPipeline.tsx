@@ -160,9 +160,11 @@ export const SalesPipeline = () => {
                                 const ci = stageToContactIdx(stage);
                                 if (!ci) return null;
                                 const typeKey = `contact_${ci}_type` as keyof SalesLead;
+                                const notesKey = `contact_${ci}_notes` as keyof SalesLead;
                                 const current = lead[typeKey] as ContactType | null;
+                                const currentNotes = (lead[notesKey] as string | null) || '';
                                 return (
-                                  <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                                  <div className="mt-2 space-y-1" onClick={(e) => e.stopPropagation()}>
                                     <Select
                                       value={current || ''}
                                       onValueChange={(v) => updateLead(lead.id, { [typeKey]: v as ContactType } as any)}
@@ -178,6 +180,12 @@ export const SalesPipeline = () => {
                                         ))}
                                       </SelectContent>
                                     </Select>
+                                    {current === 'Other' && (
+                                      <OtherReasonInput
+                                        value={currentNotes}
+                                        onSave={(v) => updateLead(lead.id, { [notesKey]: v } as any)}
+                                      />
+                                    )}
                                   </div>
                                 );
                               })()}
