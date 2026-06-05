@@ -440,15 +440,17 @@ const ImportCsvDialog = ({ open, onClose, onImport, existingLeads }: { open: boo
       if (!obj.company_name) { missing++; continue; }
       const email = norm(obj.email);
       const phone = norm(obj.phone);
+      const phone2 = norm(obj.phone_2);
       const company = norm(obj.company_name);
-      if ((email && existingEmails.has(email)) || (phone && existingPhones.has(phone)) || (!email && !phone && existingCompanies.has(company))) {
+      const phones = [phone, phone2].filter(Boolean);
+      if ((email && existingEmails.has(email)) || phones.some(p => existingPhones.has(p)) || (!email && !phones.length && existingCompanies.has(company))) {
         dupExisting++; continue;
       }
-      if ((email && seenEmail.has(email)) || (phone && seenPhone.has(phone)) || (!email && !phone && seenCompany.has(company))) {
+      if ((email && seenEmail.has(email)) || phones.some(p => seenPhone.has(p)) || (!email && !phones.length && seenCompany.has(company))) {
         dupCsv++; continue;
       }
       if (email) seenEmail.add(email);
-      if (phone) seenPhone.add(phone);
+      phones.forEach(p => seenPhone.add(p));
       seenCompany.add(company);
       payload.push(obj);
     }
