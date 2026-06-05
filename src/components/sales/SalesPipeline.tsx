@@ -512,6 +512,55 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
               <div className="col-span-2"><EditField label="Source" value={lead.source} onSave={v => onUpdate({ source: v })} /></div>
             </div>
 
+            <div className="space-y-3 pt-2 border-t">
+              {[1, 2, 3].map((n) => {
+                const typeKey = `contact_${n}_type` as keyof SalesLead;
+                const atKey = `contact_${n}_at` as keyof SalesLead;
+                const notesKey = `contact_${n}_notes` as keyof SalesLead;
+                const t = lead[typeKey] as ContactType | null;
+                const atVal = lead[atKey] as string | null;
+                const dateLocal = atVal ? new Date(atVal).toISOString().slice(0, 16) : '';
+                return (
+                  <div key={n} className="rounded-md border bg-muted/20 p-2 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs font-semibold">Contact {n}</div>
+                      {t && <Badge variant="outline" className={`text-[10px] ${contactTypeBadge(t)}`}>{contactTypeIcon(t)} {t}</Badge>}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase text-muted-foreground">Type</Label>
+                        <Select value={t || ''} onValueChange={(v) => onUpdate({ [typeKey]: v as ContactType } as any)}>
+                          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
+                          <SelectContent>
+                            {CONTACT_TYPES.map(ct => <SelectItem key={ct} value={ct}>{contactTypeIcon(ct)} {ct}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase text-muted-foreground">Date</Label>
+                        <Input
+                          type="datetime-local"
+                          className="h-8 text-xs"
+                          value={dateLocal}
+                          onChange={(e) => onUpdate({ [atKey]: e.target.value ? new Date(e.target.value).toISOString() : null } as any)}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase text-muted-foreground">Notes</Label>
+                      <Textarea
+                        rows={2}
+                        className="text-xs"
+                        value={(lead[notesKey] as string | null) || ''}
+                        onChange={(e) => onUpdate({ [notesKey]: e.target.value } as any)}
+                        placeholder="Notes for this contact attempt"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
             <div>
               <Label className="text-xs">Original Message</Label>
               <Textarea
