@@ -247,7 +247,7 @@ export const SalesPipeline = () => {
       )}
 
       <NewLeadDialog open={addOpen} onClose={() => setAddOpen(false)} onSubmit={async (d) => { const ok = await createLead(d); if (ok) setAddOpen(false); }} />
-      <ImportCsvDialog open={importOpen} onClose={() => setImportOpen(false)} onImport={bulkInsert} />
+      <ImportCsvDialog open={importOpen} onClose={() => setImportOpen(false)} onImport={bulkInsert} existingLeads={leads} />
       <LeadDetailPanel
         lead={selectedLead}
         onClose={() => setSelectedLead(null)}
@@ -393,15 +393,16 @@ const parseCSV = (text: string): { headers: string[]; rows: string[][] } => {
   return { headers, rows };
 };
 
-const ImportCsvDialog = ({ open, onClose, onImport }: { open: boolean; onClose: () => void; onImport: (rows: Partial<SalesLead>[]) => Promise<number> }) => {
+const ImportCsvDialog = ({ open, onClose, onImport, existingLeads }: { open: boolean; onClose: () => void; onImport: (rows: Partial<SalesLead>[]) => Promise<number>; existingLeads: SalesLead[] }) => {
   const [step, setStep] = useState<'upload' | 'map' | 'done'>('upload');
   const [headers, setHeaders] = useState<string[]>([]);
   const [rows, setRows] = useState<string[][]>([]);
   const [mapping, setMapping] = useState<Record<string, string>>({});
   const [count, setCount] = useState(0);
+  const [skipped, setSkipped] = useState({ missing: 0, dupCsv: 0, dupExisting: 0 });
   const inputRef = useRef<HTMLInputElement>(null);
 
-  const reset = () => { setStep('upload'); setHeaders([]); setRows([]); setMapping({}); setCount(0); };
+  const reset = () => { setStep('upload'); setHeaders([]); setRows([]); setMapping({}); setCount(0); setSkipped({ missing: 0, dupCsv: 0, dupExisting: 0 }); };
 
   const handleFile = async (f: File) => {
     const text = await f.text();
@@ -418,16 +419,40 @@ const ImportCsvDialog = ({ open, onClose, onImport }: { open: boolean; onClose: 
   };
 
   const doImport = async () => {
-    const payload: Partial<SalesLead>[] = rows.map(r => {
+    const norm = (s: string | null | undefined) => (s || '').trim().toLowerCase();
+    const existingEmails = new Set(existingLeads.map(l => norm(l.email)).filter(Boolean));
+    const existingPhones = new Set(existingLeads.map(l => norm(l.phone)).filter(Boolean));
+    const existingCompanies = new Set(existingLeads.map(l => norm(l.company_name)).filter(Boolean));
+    const seenEmail = new Set<string>();
+    const seenPhone = new Set<string>();
+    const seenCompany = new Set<string>();
+    let missing = 0, dupCsv = 0, dupExisting = 0;
+
+    const payload: Partial<SalesLead>[] = [];
+    for (const r of rows) {
       const obj: any = { source: 'csv-import' };
       headers.forEach((h, i) => {
         const field = mapping[h];
         if (field && r[i]) obj[field] = r[i];
       });
-      return obj;
-    }).filter(r => r.company_name);
-    const c = await onImport(payload);
+      if (!obj.company_name) { missing++; continue; }
+      const email = norm(obj.email);
+      const phone = norm(obj.phone);
+      const company = norm(obj.company_name);
+      if ((email && existingEmails.has(email)) || (phone && existingPhones.has(phone)) || (!email && !phone && existingCompanies.has(company))) {
+        dupExisting++; continue;
+      }
+      if ((email && seenEmail.has(email)) || (phone && seenPhone.has(phone)) || (!email && !phone && seenCompany.has(company))) {
+        dupCsv++; continue;
+      }
+      if (email) seenEmail.add(email);
+      if (phone) seenPhone.add(phone);
+      seenCompany.add(company);
+      payload.push(obj);
+    }
+    const c = payload.length ? await onImport(payload) : 0;
     setCount(c);
+    setSkipped({ missing, dupCsv, dupExisting });
     setStep('done');
   };
 
@@ -484,7 +509,16 @@ const ImportCsvDialog = ({ open, onClose, onImport }: { open: boolean; onClose: 
           </div>
         )}
         {step === 'done' && (
-          <div className="py-8 text-center"><p className="text-lg font-semibold">{count} leads imported successfully</p></div>
+          <div className="py-6 text-center space-y-2">
+            <p className="text-lg font-semibold">{count} leads imported</p>
+            {(skipped.missing + skipped.dupCsv + skipped.dupExisting) > 0 && (
+              <div className="text-xs text-muted-foreground space-y-0.5">
+                {skipped.missing > 0 && <p>{skipped.missing} skipped (missing company name)</p>}
+                {skipped.dupExisting > 0 && <p>{skipped.dupExisting} skipped (already in pipeline)</p>}
+                {skipped.dupCsv > 0 && <p>{skipped.dupCsv} skipped (duplicate in CSV)</p>}
+              </div>
+            )}
+          </div>
         )}
         <DialogFooter>
           {step === 'map' && <Button variant="outline" onClick={reset}>Back</Button>}
