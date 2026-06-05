@@ -2584,6 +2584,15 @@ export type Database = {
       sales_leads: {
         Row: {
           company_name: string
+          contact_1_at: string | null
+          contact_1_notes: string | null
+          contact_1_type: string | null
+          contact_2_at: string | null
+          contact_2_notes: string | null
+          contact_2_type: string | null
+          contact_3_at: string | null
+          contact_3_notes: string | null
+          contact_3_type: string | null
           contact_name: string | null
           converted_at: string | null
           converted_client_id: string | null
@@ -2604,6 +2613,15 @@ export type Database = {
         }
         Insert: {
           company_name: string
+          contact_1_at?: string | null
+          contact_1_notes?: string | null
+          contact_1_type?: string | null
+          contact_2_at?: string | null
+          contact_2_notes?: string | null
+          contact_2_type?: string | null
+          contact_3_at?: string | null
+          contact_3_notes?: string | null
+          contact_3_type?: string | null
           contact_name?: string | null
           converted_at?: string | null
           converted_client_id?: string | null
@@ -2624,6 +2642,15 @@ export type Database = {
         }
         Update: {
           company_name?: string
+          contact_1_at?: string | null
+          contact_1_notes?: string | null
+          contact_1_type?: string | null
+          contact_2_at?: string | null
+          contact_2_notes?: string | null
+          contact_2_type?: string | null
+          contact_3_at?: string | null
+          contact_3_notes?: string | null
+          contact_3_type?: string | null
           contact_name?: string | null
           converted_at?: string | null
           converted_client_id?: string | null
