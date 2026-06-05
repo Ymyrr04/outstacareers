@@ -49,15 +49,34 @@ export const SalesPipeline = () => {
   const [confirmConvert, setConfirmConvert] = useState<SalesLead | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<SalesLead | null>(null);
   const [search, setSearch] = useState('');
+  const [tempFilters, setTempFilters] = useState<Set<Temperature>>(new Set());
+  const [sourceFilters, setSourceFilters] = useState<Set<'manual' | 'csv-import'>>(new Set());
+  const [industryFilters, setIndustryFilters] = useState<Set<string>>(new Set());
+
+  const industries = useMemo(() => {
+    const s = new Set<string>();
+    leads.forEach(l => { if (l.industry && l.industry.trim()) s.add(l.industry.trim()); });
+    return Array.from(s).sort();
+  }, [leads]);
 
   const filteredLeads = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return leads;
-    return leads.filter(l =>
-      [l.company_name, l.contact_name, l.email, l.phone, l.phone_2, l.role_title, l.industry, l.source, l.stage]
-        .some(v => (v || '').toString().toLowerCase().includes(q))
-    );
-  }, [leads, search]);
+    return leads.filter(l => {
+      if (q && ![l.company_name, l.contact_name, l.email, l.phone, l.phone_2, l.role_title, l.industry, l.source, l.stage]
+        .some(v => (v || '').toString().toLowerCase().includes(q))) return false;
+      if (tempFilters.size && !tempFilters.has(l.temperature)) return false;
+      if (sourceFilters.size && !sourceFilters.has((l.source as any))) return false;
+      if (industryFilters.size && !industryFilters.has((l.industry || '').trim())) return false;
+      return true;
+    });
+  }, [leads, search, tempFilters, sourceFilters, industryFilters]);
+
+  const activeFilterCount = tempFilters.size + sourceFilters.size + industryFilters.size;
+  const toggleFromSet = <T,>(set: Set<T>, val: T, setter: (s: Set<T>) => void) => {
+    const n = new Set(set);
+    n.has(val) ? n.delete(val) : n.add(val);
+    setter(n);
+  };
 
   const grouped = useMemo(() => {
     const g: Record<string, SalesLead[]> = {};
