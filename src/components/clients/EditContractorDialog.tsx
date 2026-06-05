@@ -346,13 +346,26 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
           {/* Position */}
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="job_title" className="text-right">Position</Label>
-            <Input
-              id="job_title"
-              value={formData.job_title}
-              onChange={(e) => setFormData(prev => ({ ...prev, job_title: e.target.value }))}
-              className="col-span-3"
-            />
+            <div className="col-span-3">
+              <Input
+                id="job_title"
+                list="contractor-positions"
+                value={formData.job_title}
+                onChange={(e) => setFormData(prev => ({ ...prev, job_title: e.target.value }))}
+                placeholder="Select or type a position..."
+                autoComplete="off"
+              />
+              <datalist id="contractor-positions">
+                {existingPositions.map(p => (
+                  <option key={p} value={p} />
+                ))}
+              </datalist>
+              <p className="text-xs text-muted-foreground mt-1">
+                {existingPositions.length} existing positions — click the field to choose or type a new one.
+              </p>
+            </div>
           </div>
+
 
           {/* Rate & Hours */}
           <div className="grid grid-cols-4 items-center gap-4">
