@@ -125,6 +125,16 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
 
     if (open) {
       fetchClients();
+      (async () => {
+        const { data } = await supabase
+          .from('contractor_assignments')
+          .select('job_title')
+          .not('job_title', 'is', null);
+        const unique = Array.from(new Set((data || [])
+          .map((r: any) => (r.job_title || '').trim())
+          .filter(Boolean))).sort((a, b) => a.localeCompare(b));
+        setExistingPositions(unique);
+      })();
     }
   }, [open]);
 
