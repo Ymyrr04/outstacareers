@@ -1,7 +1,7 @@
 import { useMemo, useState, useRef } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { formatDistanceToNow } from 'date-fns';
-import { Plus, Upload, LayoutGrid, List as ListIcon, Trash2, X, ArrowRight, UserPlus, Download } from 'lucide-react';
+import { Plus, Upload, LayoutGrid, List as ListIcon, Trash2, X, ArrowRight, UserPlus, Download, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -48,13 +48,23 @@ export const SalesPipeline = () => {
   const [selectedLead, setSelectedLead] = useState<SalesLead | null>(null);
   const [confirmConvert, setConfirmConvert] = useState<SalesLead | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<SalesLead | null>(null);
+  const [search, setSearch] = useState('');
+
+  const filteredLeads = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return leads;
+    return leads.filter(l =>
+      [l.company_name, l.contact_name, l.email, l.phone, l.phone_2, l.role_title, l.industry, l.source, l.stage]
+        .some(v => (v || '').toString().toLowerCase().includes(q))
+    );
+  }, [leads, search]);
 
   const grouped = useMemo(() => {
     const g: Record<string, SalesLead[]> = {};
     SALES_STAGES.forEach(s => { g[s] = []; });
-    leads.forEach(l => { (g[l.stage] || (g[l.stage] = [])).push(l); });
+    filteredLeads.forEach(l => { (g[l.stage] || (g[l.stage] = [])).push(l); });
     return g;
-  }, [leads]);
+  }, [filteredLeads]);
 
   const stats = useMemo(() => ({
     newLeads: leads.filter(l => l.stage === 'Lead').length,
@@ -109,6 +119,28 @@ export const SalesPipeline = () => {
         <StatCard label="New Leads" value={stats.newLeads} />
         <StatCard label="Total Inquiries" value={stats.total} />
         <StatCard label="Converted to Clients" value={stats.converted} accent />
+      </div>
+
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[260px] max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search company, contact, email, phone, role..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-10 pr-9"
+          />
+          {search && (
+            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+        {search && (
+          <span className="text-xs text-muted-foreground">
+            {filteredLeads.length} of {leads.length} match
+          </span>
+        )}
       </div>
 
       {loading ? (
@@ -220,7 +252,7 @@ export const SalesPipeline = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {leads.map(l => (
+                {filteredLeads.map(l => (
                   <TableRow key={l.id} className="cursor-pointer" onClick={() => setSelectedLead(l)}>
                     <TableCell className="font-medium">{l.company_name}</TableCell>
                     <TableCell>{l.contact_name || '—'}</TableCell>
@@ -237,8 +269,8 @@ export const SalesPipeline = () => {
                     </TableCell>
                   </TableRow>
                 ))}
-                {leads.length === 0 && (
-                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-12">No leads yet</TableCell></TableRow>
+                {filteredLeads.length === 0 && (
+                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-12">{leads.length === 0 ? 'No leads yet' : 'No leads match your search'}</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
