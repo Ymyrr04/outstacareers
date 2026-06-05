@@ -3,7 +3,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
 export const SALES_STAGES = [
-  'Lead',
+  'OutSta Lead',
+  'Personalized Lead',
   'Contact 1',
   'Contact 2',
   'Contact 3',
