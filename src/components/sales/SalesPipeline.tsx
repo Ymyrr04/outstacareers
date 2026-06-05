@@ -144,81 +144,113 @@ export const SalesPipeline = () => {
 
       <div className="space-y-2">
         <div className="flex items-center gap-2 flex-wrap">
-          <div className="relative flex-1 min-w-[260px] max-w-md">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-            <Input
-              placeholder="Search company, contact, email, phone, role..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="pl-10 pr-9"
-            />
-            {search && (
-              <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </div>
-          {(search || activeFilterCount > 0) && (
-            <span className="text-xs text-muted-foreground">
-              {filteredLeads.length} of {leads.length} match
-            </span>
-          )}
-          {activeFilterCount > 0 && (
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 text-xs"
-              onClick={() => { setTempFilters(new Set()); setSourceFilters(new Set()); setIndustryFilters(new Set()); }}
-            >
-              <X className="w-3 h-3 mr-1" /> Clear filters ({activeFilterCount})
-            </Button>
+      <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative flex-1 min-w-[260px] max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            placeholder="Search company, contact, email, phone, role..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="pl-10 pr-9"
+          />
+          {search && (
+            <button onClick={() => setSearch('')} className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+              <X className="w-4 h-4" />
+            </button>
           )}
         </div>
-        <div className="flex items-center gap-2 flex-wrap">
-          <span className="text-xs font-medium text-muted-foreground mr-1">Temperature:</span>
-          {(['warm','cold','hot'] as Temperature[]).map(t => {
-            const active = tempFilters.has(t);
-            return (
-              <button
-                key={t}
-                onClick={() => toggleFromSet(tempFilters, t, setTempFilters)}
-                className={`text-xs px-2.5 py-1 rounded-full border capitalize transition-colors ${active ? tempBadge(t) + ' ring-2 ring-offset-1 ring-primary/40' : 'bg-background text-muted-foreground border-border hover:bg-muted'}`}
-              >
-                {t}
-              </button>
-            );
-          })}
-          <span className="text-xs font-medium text-muted-foreground ml-2 mr-1">Source:</span>
-          {([['manual','Manual'], ['csv-import','CSV Import']] as const).map(([val, label]) => {
-            const active = sourceFilters.has(val as any);
-            return (
-              <button
-                key={val}
-                onClick={() => toggleFromSet(sourceFilters, val as any, setSourceFilters)}
-                className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${active ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground border-border hover:bg-muted'}`}
-              >
-                {label}
-              </button>
-            );
-          })}
-          {industries.length > 0 && (
-            <>
-              <span className="text-xs font-medium text-muted-foreground ml-2 mr-1">Industry:</span>
-              {industries.map(ind => {
-                const active = industryFilters.has(ind);
+
+        <Popover>
+          <PopoverTrigger asChild>
+            <Button variant="outline" size="sm" className="h-10">
+              <Filter className="w-4 h-4 mr-2" />
+              Filters
+              {activeFilterCount > 0 && (
+                <Badge variant="secondary" className="ml-2 h-5 px-1.5 rounded-full">{activeFilterCount}</Badge>
+              )}
+            </Button>
+          </PopoverTrigger>
+          <PopoverContent align="start" className="w-80 p-0">
+            <div className="flex items-center justify-between p-3 border-b">
+              <span className="text-sm font-semibold">Filters</span>
+              {activeFilterCount > 0 && (
+                <button
+                  onClick={() => { setTempFilters(new Set()); setSourceFilters(new Set()); setIndustryFilters(new Set()); }}
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                >
+                  Clear all
+                </button>
+              )}
+            </div>
+
+            <div className="p-3 space-y-1">
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Temperature</div>
+              {(['warm','cold','hot'] as Temperature[]).map(t => {
+                const active = tempFilters.has(t);
                 return (
                   <button
-                    key={ind}
-                    onClick={() => toggleFromSet(industryFilters, ind, setIndustryFilters)}
-                    className={`text-xs px-2.5 py-1 rounded-full border transition-colors ${active ? 'bg-primary text-primary-foreground border-primary' : 'bg-background text-muted-foreground border-border hover:bg-muted'}`}
+                    key={t}
+                    onClick={() => toggleFromSet(tempFilters, t, setTempFilters)}
+                    className="w-full flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-muted text-sm"
                   >
-                    {ind}
+                    <span className="flex items-center gap-2 capitalize">
+                      <span className={`inline-block w-2 h-2 rounded-full ${t === 'hot' ? 'bg-red-500' : t === 'cold' ? 'bg-blue-500' : 'bg-orange-500'}`} />
+                      {t}
+                    </span>
+                    {active && <Check className="w-4 h-4 text-primary" />}
                   </button>
                 );
               })}
-            </>
-          )}
-        </div>
+            </div>
+
+            <Separator />
+
+            <div className="p-3 space-y-1">
+              <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5">Source</div>
+              {([['manual','Manual'], ['csv-import','CSV Import']] as const).map(([val, label]) => {
+                const active = sourceFilters.has(val as any);
+                return (
+                  <button
+                    key={val}
+                    onClick={() => toggleFromSet(sourceFilters, val as any, setSourceFilters)}
+                    className="w-full flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-muted text-sm"
+                  >
+                    <span>{label}</span>
+                    {active && <Check className="w-4 h-4 text-primary" />}
+                  </button>
+                );
+              })}
+            </div>
+
+            {industries.length > 0 && (
+              <>
+                <Separator />
+                <div className="p-3 space-y-1 max-h-60 overflow-y-auto">
+                  <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide mb-1.5 sticky top-0 bg-popover">Industry</div>
+                  {industries.map(ind => {
+                    const active = industryFilters.has(ind);
+                    return (
+                      <button
+                        key={ind}
+                        onClick={() => toggleFromSet(industryFilters, ind, setIndustryFilters)}
+                        className="w-full flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-muted text-sm"
+                      >
+                        <span className="truncate">{ind}</span>
+                        {active && <Check className="w-4 h-4 text-primary flex-shrink-0 ml-2" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </PopoverContent>
+        </Popover>
+
+        {(search || activeFilterCount > 0) && (
+          <span className="text-xs text-muted-foreground">
+            {filteredLeads.length} of {leads.length} match
+          </span>
+        )}
       </div>
 
       {loading ? (
