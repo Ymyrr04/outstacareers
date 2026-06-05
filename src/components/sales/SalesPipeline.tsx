@@ -509,7 +509,16 @@ const ImportCsvDialog = ({ open, onClose, onImport, existingLeads }: { open: boo
           </div>
         )}
         {step === 'done' && (
-          <div className="py-8 text-center"><p className="text-lg font-semibold">{count} leads imported successfully</p></div>
+          <div className="py-6 text-center space-y-2">
+            <p className="text-lg font-semibold">{count} leads imported</p>
+            {(skipped.missing + skipped.dupCsv + skipped.dupExisting) > 0 && (
+              <div className="text-xs text-muted-foreground space-y-0.5">
+                {skipped.missing > 0 && <p>{skipped.missing} skipped (missing company name)</p>}
+                {skipped.dupExisting > 0 && <p>{skipped.dupExisting} skipped (already in pipeline)</p>}
+                {skipped.dupCsv > 0 && <p>{skipped.dupCsv} skipped (duplicate in CSV)</p>}
+              </div>
+            )}
+          </div>
         )}
         <DialogFooter>
           {step === 'map' && <Button variant="outline" onClick={reset}>Back</Button>}
