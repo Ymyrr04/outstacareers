@@ -586,6 +586,7 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
               <EditField label="Role" value={lead.role_title} onSave={v => onUpdate({ role_title: v })} />
               <EditField label="Email" value={lead.email} onSave={v => onUpdate({ email: v })} />
               <EditField label="Phone" value={lead.phone} onSave={v => onUpdate({ phone: v })} />
+              <EditField label="Phone 2" value={lead.phone_2} onSave={v => onUpdate({ phone_2: v })} />
               <EditField label="Industry" value={lead.industry} onSave={v => onUpdate({ industry: v })} />
               <EditField label="Team size" value={lead.team_size} onSave={v => onUpdate({ team_size: v })} />
               <div className="col-span-2"><EditField label="Hiring urgency" value={lead.hiring_urgency} onSave={v => onUpdate({ hiring_urgency: v })} /></div>
