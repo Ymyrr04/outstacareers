@@ -156,8 +156,38 @@ export const SalesPipeline = () => {
                               {lead.role_title && <div className="text-xs truncate">{lead.role_title}</div>}
                               {lead.industry && <div className="text-xs text-muted-foreground truncate">{lead.industry}</div>}
                               {lead.email && <div className="text-xs text-muted-foreground truncate">{lead.email}</div>}
+                              {(() => {
+                                const ci = stageToContactIdx(stage);
+                                if (!ci) return null;
+                                const typeKey = `contact_${ci}_type` as keyof SalesLead;
+                                const current = lead[typeKey] as ContactType | null;
+                                return (
+                                  <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                                    <Select
+                                      value={current || ''}
+                                      onValueChange={(v) => updateLead(lead.id, { [typeKey]: v as ContactType } as any)}
+                                    >
+                                      <SelectTrigger className={`h-6 text-[10px] px-2 ${current ? contactTypeBadge(current) : 'text-muted-foreground'}`}>
+                                        <SelectValue placeholder="Select type">
+                                          {current ? `${contactTypeIcon(current)} ${current}` : 'Select type'}
+                                        </SelectValue>
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {CONTACT_TYPES.map(t => (
+                                          <SelectItem key={t} value={t}>{contactTypeIcon(t)} {t}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                );
+                              })()}
                               <div className="text-[10px] text-muted-foreground mt-2">{formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}</div>
                             </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
                           )}
                         </Draggable>
                       ))}
