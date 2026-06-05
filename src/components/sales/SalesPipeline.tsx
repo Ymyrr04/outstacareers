@@ -331,6 +331,7 @@ const NewLeadDialog = ({ open, onClose, onSubmit }: { open: boolean; onClose: ()
           <Field label="Role title"><Input value={data.role_title || ''} onChange={e => set('role_title', e.target.value)} /></Field>
           <Field label="Email *"><Input type="email" value={data.email || ''} onChange={e => set('email', e.target.value)} /></Field>
           <Field label="Phone"><Input value={data.phone || ''} onChange={e => set('phone', e.target.value)} /></Field>
+          <Field label="Phone 2"><Input value={data.phone_2 || ''} onChange={e => set('phone_2', e.target.value)} /></Field>
           <Field label="Industry"><Input value={data.industry || ''} onChange={e => set('industry', e.target.value)} /></Field>
           <Field label="Team size"><Input value={data.team_size || ''} onChange={e => set('team_size', e.target.value)} /></Field>
           <Field label="Hiring urgency"><Input value={data.hiring_urgency || ''} onChange={e => set('hiring_urgency', e.target.value)} /></Field>
