@@ -67,7 +67,7 @@ export const SalesPipeline = () => {
   }, [filteredLeads]);
 
   const stats = useMemo(() => ({
-    newLeads: leads.filter(l => l.stage === 'Lead').length,
+    newLeads: leads.filter(l => l.stage === 'OutSta Lead' || l.stage === 'Personalized Lead').length,
     total: leads.length,
     converted: leads.filter(l => !!l.converted_client_id).length,
   }), [leads]);
