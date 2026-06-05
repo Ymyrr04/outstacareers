@@ -122,7 +122,7 @@ export const useSalesLeads = () => {
   const bulkInsert = async (rows: Partial<SalesLead>[]): Promise<number> => {
     if (!rows.length) return 0;
     const { data: userData } = await supabase.auth.getUser();
-    const payload = rows.map(r => ({ source: 'csv-import', stage: 'Lead' as SalesStage, temperature: 'warm' as Temperature, ...r, created_by: userData.user?.id }));
+    const payload = rows.map(r => ({ source: 'csv-import', stage: 'OutSta Lead' as SalesStage, temperature: 'warm' as Temperature, ...r, created_by: userData.user?.id }));
     const { error, count } = await supabase.from('sales_leads' as any).insert(payload, { count: 'exact' });
     if (error) {
       toast({ title: 'Import failed', description: error.message, variant: 'destructive' });
