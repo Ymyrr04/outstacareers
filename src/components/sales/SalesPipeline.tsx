@@ -368,6 +368,7 @@ const FIELD_OPTIONS: { key: keyof SalesLead; label: string }[] = [
   { key: 'role_title', label: 'Role Title' },
   { key: 'email', label: 'Email' },
   { key: 'phone', label: 'Phone' },
+  { key: 'phone_2', label: 'Phone 2' },
   { key: 'industry', label: 'Industry' },
   { key: 'team_size', label: 'Team Size' },
   { key: 'hiring_urgency', label: 'Hiring Urgency' },
