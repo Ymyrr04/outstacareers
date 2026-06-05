@@ -160,9 +160,11 @@ export const SalesPipeline = () => {
                                 const ci = stageToContactIdx(stage);
                                 if (!ci) return null;
                                 const typeKey = `contact_${ci}_type` as keyof SalesLead;
+                                const notesKey = `contact_${ci}_notes` as keyof SalesLead;
                                 const current = lead[typeKey] as ContactType | null;
+                                const currentNotes = (lead[notesKey] as string | null) || '';
                                 return (
-                                  <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                                  <div className="mt-2 space-y-1" onClick={(e) => e.stopPropagation()}>
                                     <Select
                                       value={current || ''}
                                       onValueChange={(v) => updateLead(lead.id, { [typeKey]: v as ContactType } as any)}
@@ -178,6 +180,12 @@ export const SalesPipeline = () => {
                                         ))}
                                       </SelectContent>
                                     </Select>
+                                    {current === 'Other' && (
+                                      <OtherReasonInput
+                                        value={currentNotes}
+                                        onSave={(v) => updateLead(lead.id, { [notesKey]: v } as any)}
+                                      />
+                                    )}
                                   </div>
                                 );
                               })()}
@@ -284,7 +292,20 @@ export const SalesPipeline = () => {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+);
+
+const OtherReasonInput = ({ value, onSave }: { value: string; onSave: (v: string) => void }) => {
+  const [val, setVal] = useState(value);
+  return (
+    <Input
+      value={val}
+      onChange={(e) => setVal(e.target.value)}
+      onBlur={() => { if (val !== value) onSave(val); }}
+      placeholder="Reason (optional)"
+      className="h-6 text-[10px] px-2"
+    />
   );
+};
 };
 
 const StatCard = ({ label, value, accent }: { label: string; value: number; accent?: boolean }) => (
