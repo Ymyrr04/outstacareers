@@ -480,7 +480,7 @@ const ImportCsvDialog = ({ open, onClose, onImport, existingLeads }: { open: boo
               <Button variant="outline" size="sm" onClick={() => {
                 const headers = FIELD_OPTIONS.map(f => f.label);
                 const example = [
-                  'Acme Corp','Jane Doe','Head of Talent','jane@acme.com','+1 555 123 4567',
+                  'Acme Corp','Jane Doe','Head of Talent','jane@acme.com','+1 555 123 4567','+1 555 987 6543',
                   'Technology','50-200','High','warm','Met at conference, looking to hire 5 engineers'
                 ];
                 const csv = [headers.join(','), example.map(v => `"${v.replace(/"/g,'""')}"`).join(',')].join('\n');
