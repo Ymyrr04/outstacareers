@@ -292,7 +292,20 @@ export const SalesPipeline = () => {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+);
+
+const OtherReasonInput = ({ value, onSave }: { value: string; onSave: (v: string) => void }) => {
+  const [val, setVal] = useState(value);
+  return (
+    <Input
+      value={val}
+      onChange={(e) => setVal(e.target.value)}
+      onBlur={() => { if (val !== value) onSave(val); }}
+      placeholder="Reason (optional)"
+      className="h-6 text-[10px] px-2"
+    />
   );
+};
 };
 
 const StatCard = ({ label, value, accent }: { label: string; value: number; accent?: boolean }) => (
