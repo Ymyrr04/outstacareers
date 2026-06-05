@@ -4,17 +4,17 @@ import { useToast } from '@/hooks/use-toast';
 
 export const SALES_STAGES = [
   'Lead',
-  'Email 1',
-  'Email 2',
-  'Email 3',
-  'Call',
-  'Follow Up',
-  'Nurture',
+  'Contact 1',
+  'Contact 2',
+  'Contact 3',
   'Converted',
+  'Follow Up',
 ] as const;
 export type SalesStage = typeof SALES_STAGES[number];
 
 export type Temperature = 'warm' | 'cold' | 'hot';
+export type ContactType = 'Email' | 'Text' | 'Call' | 'Other';
+export const CONTACT_TYPES: ContactType[] = ['Email', 'Text', 'Call', 'Other'];
 
 export interface SalesLead {
   id: string;
@@ -35,6 +35,15 @@ export interface SalesLead {
   created_by: string | null;
   created_at: string;
   updated_at: string;
+  contact_1_type: ContactType | null;
+  contact_2_type: ContactType | null;
+  contact_3_type: ContactType | null;
+  contact_1_at: string | null;
+  contact_2_at: string | null;
+  contact_3_at: string | null;
+  contact_1_notes: string | null;
+  contact_2_notes: string | null;
+  contact_3_notes: string | null;
 }
 
 export interface SalesLeadNote {
