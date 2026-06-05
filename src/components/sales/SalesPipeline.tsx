@@ -35,7 +35,7 @@ const tempBadge = (t: Temperature) => {
 };
 
 const emptyLead: Partial<SalesLead> = {
-  company_name: '', contact_name: '', role_title: '', email: '', phone: '',
+  company_name: '', contact_name: '', role_title: '', email: '', phone: '', phone_2: '',
   industry: '', team_size: '', hiring_urgency: '', temperature: 'warm',
   source: 'manual', stage: 'Lead', original_message: '',
 };
