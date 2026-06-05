@@ -188,11 +188,6 @@ export const SalesPipeline = () => {
                       ))}
                       {provided.placeholder}
                     </div>
-                          )}
-                        </Draggable>
-                      ))}
-                      {provided.placeholder}
-                    </div>
                   </div>
                 )}
               </Droppable>
