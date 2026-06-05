@@ -13,7 +13,20 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useSalesLeads, SALES_STAGES, SalesLead, SalesStage, Temperature, useSalesLeadNotes } from '@/hooks/useSalesLeads';
+import { useSalesLeads, SALES_STAGES, SalesLead, SalesStage, Temperature, ContactType, CONTACT_TYPES, useSalesLeadNotes } from '@/hooks/useSalesLeads';
+
+const CONTACT_STAGES: SalesStage[] = ['Contact 1', 'Contact 2', 'Contact 3'];
+const stageToContactIdx = (s: SalesStage): 1 | 2 | 3 | null =>
+  s === 'Contact 1' ? 1 : s === 'Contact 2' ? 2 : s === 'Contact 3' ? 3 : null;
+
+const contactTypeBadge = (t: ContactType | null) => {
+  if (t === 'Email') return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300';
+  if (t === 'Text') return 'bg-green-100 text-green-700 border-green-200 dark:bg-green-950/40 dark:text-green-300';
+  if (t === 'Call') return 'bg-teal-100 text-teal-700 border-teal-200 dark:bg-teal-950/40 dark:text-teal-300';
+  return 'bg-gray-100 text-gray-700 border-gray-200 dark:bg-gray-800/40 dark:text-gray-300';
+};
+const contactTypeIcon = (t: ContactType | null) =>
+  t === 'Email' ? '📧' : t === 'Text' ? '💬' : t === 'Call' ? '📞' : t === 'Other' ? '✏️' : '';
 
 const tempBadge = (t: Temperature) => {
   if (t === 'hot') return 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300';
@@ -58,7 +71,13 @@ export const SalesPipeline = () => {
       setConfirmConvert(lead);
       return;
     }
-    updateLead(lead.id, { stage: newStage });
+    const updates: Partial<SalesLead> = { stage: newStage };
+    const idx = stageToContactIdx(newStage);
+    if (idx) {
+      const atKey = `contact_${idx}_at` as keyof SalesLead;
+      if (!lead[atKey]) (updates as any)[atKey] = new Date().toISOString();
+    }
+    updateLead(lead.id, updates);
   };
 
   return (
@@ -137,6 +156,31 @@ export const SalesPipeline = () => {
                               {lead.role_title && <div className="text-xs truncate">{lead.role_title}</div>}
                               {lead.industry && <div className="text-xs text-muted-foreground truncate">{lead.industry}</div>}
                               {lead.email && <div className="text-xs text-muted-foreground truncate">{lead.email}</div>}
+                              {(() => {
+                                const ci = stageToContactIdx(stage);
+                                if (!ci) return null;
+                                const typeKey = `contact_${ci}_type` as keyof SalesLead;
+                                const current = lead[typeKey] as ContactType | null;
+                                return (
+                                  <div className="mt-2" onClick={(e) => e.stopPropagation()}>
+                                    <Select
+                                      value={current || ''}
+                                      onValueChange={(v) => updateLead(lead.id, { [typeKey]: v as ContactType } as any)}
+                                    >
+                                      <SelectTrigger className={`h-6 text-[10px] px-2 ${current ? contactTypeBadge(current) : 'text-muted-foreground'}`}>
+                                        <SelectValue placeholder="Select type">
+                                          {current ? `${contactTypeIcon(current)} ${current}` : 'Select type'}
+                                        </SelectValue>
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {CONTACT_TYPES.map(t => (
+                                          <SelectItem key={t} value={t}>{contactTypeIcon(t)} {t}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                );
+                              })()}
                               <div className="text-[10px] text-muted-foreground mt-2">{formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}</div>
                             </div>
                           )}
@@ -466,6 +510,55 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
               <EditField label="Team size" value={lead.team_size} onSave={v => onUpdate({ team_size: v })} />
               <div className="col-span-2"><EditField label="Hiring urgency" value={lead.hiring_urgency} onSave={v => onUpdate({ hiring_urgency: v })} /></div>
               <div className="col-span-2"><EditField label="Source" value={lead.source} onSave={v => onUpdate({ source: v })} /></div>
+            </div>
+
+            <div className="space-y-3 pt-2 border-t">
+              {[1, 2, 3].map((n) => {
+                const typeKey = `contact_${n}_type` as keyof SalesLead;
+                const atKey = `contact_${n}_at` as keyof SalesLead;
+                const notesKey = `contact_${n}_notes` as keyof SalesLead;
+                const t = lead[typeKey] as ContactType | null;
+                const atVal = lead[atKey] as string | null;
+                const dateLocal = atVal ? new Date(atVal).toISOString().slice(0, 16) : '';
+                return (
+                  <div key={n} className="rounded-md border bg-muted/20 p-2 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="text-xs font-semibold">Contact {n}</div>
+                      {t && <Badge variant="outline" className={`text-[10px] ${contactTypeBadge(t)}`}>{contactTypeIcon(t)} {t}</Badge>}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase text-muted-foreground">Type</Label>
+                        <Select value={t || ''} onValueChange={(v) => onUpdate({ [typeKey]: v as ContactType } as any)}>
+                          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
+                          <SelectContent>
+                            {CONTACT_TYPES.map(ct => <SelectItem key={ct} value={ct}>{contactTypeIcon(ct)} {ct}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="space-y-1">
+                        <Label className="text-[10px] uppercase text-muted-foreground">Date</Label>
+                        <Input
+                          type="datetime-local"
+                          className="h-8 text-xs"
+                          value={dateLocal}
+                          onChange={(e) => onUpdate({ [atKey]: e.target.value ? new Date(e.target.value).toISOString() : null } as any)}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px] uppercase text-muted-foreground">Notes</Label>
+                      <Textarea
+                        rows={2}
+                        className="text-xs"
+                        value={(lead[notesKey] as string | null) || ''}
+                        onChange={(e) => onUpdate({ [notesKey]: e.target.value } as any)}
+                        placeholder="Notes for this contact attempt"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
 
             <div>
