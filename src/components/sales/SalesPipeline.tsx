@@ -48,13 +48,23 @@ export const SalesPipeline = () => {
   const [selectedLead, setSelectedLead] = useState<SalesLead | null>(null);
   const [confirmConvert, setConfirmConvert] = useState<SalesLead | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<SalesLead | null>(null);
+  const [search, setSearch] = useState('');
+
+  const filteredLeads = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return leads;
+    return leads.filter(l =>
+      [l.company_name, l.contact_name, l.email, l.phone, l.phone_2, l.role_title, l.industry, l.source, l.stage]
+        .some(v => (v || '').toString().toLowerCase().includes(q))
+    );
+  }, [leads, search]);
 
   const grouped = useMemo(() => {
     const g: Record<string, SalesLead[]> = {};
     SALES_STAGES.forEach(s => { g[s] = []; });
-    leads.forEach(l => { (g[l.stage] || (g[l.stage] = [])).push(l); });
+    filteredLeads.forEach(l => { (g[l.stage] || (g[l.stage] = [])).push(l); });
     return g;
-  }, [leads]);
+  }, [filteredLeads]);
 
   const stats = useMemo(() => ({
     newLeads: leads.filter(l => l.stage === 'Lead').length,
