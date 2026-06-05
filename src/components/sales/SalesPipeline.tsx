@@ -423,7 +423,7 @@ const ImportCsvDialog = ({ open, onClose, onImport, existingLeads }: { open: boo
   const doImport = async () => {
     const norm = (s: string | null | undefined) => (s || '').trim().toLowerCase();
     const existingEmails = new Set(existingLeads.map(l => norm(l.email)).filter(Boolean));
-    const existingPhones = new Set(existingLeads.map(l => norm(l.phone)).filter(Boolean));
+    const existingPhones = new Set([...existingLeads.map(l => norm(l.phone)), ...existingLeads.map(l => norm(l.phone_2))].filter(Boolean));
     const existingCompanies = new Set(existingLeads.map(l => norm(l.company_name)).filter(Boolean));
     const seenEmail = new Set<string>();
     const seenPhone = new Set<string>();
