@@ -247,7 +247,7 @@ export const SalesPipeline = () => {
       )}
 
       <NewLeadDialog open={addOpen} onClose={() => setAddOpen(false)} onSubmit={async (d) => { const ok = await createLead(d); if (ok) setAddOpen(false); }} />
-      <ImportCsvDialog open={importOpen} onClose={() => setImportOpen(false)} onImport={bulkInsert} />
+      <ImportCsvDialog open={importOpen} onClose={() => setImportOpen(false)} onImport={bulkInsert} existingLeads={leads} />
       <LeadDetailPanel
         lead={selectedLead}
         onClose={() => setSelectedLead(null)}
