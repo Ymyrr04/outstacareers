@@ -38,6 +38,7 @@ interface TimesheetRow {
     job_title: string | null;
     start_date: string | null;
     hours_per_week: number | null;
+    hourly_rate: number | null;
     client_id: string | null;
     applicant: { full_name: string; email: string } | null;
     client: { company_name: string } | null;
@@ -224,6 +225,7 @@ export const PLDashboard = () => {
             job_title,
             start_date,
             hours_per_week,
+            hourly_rate,
             client_id,
             applicant:applicants_prescreen(full_name, email),
             client:clients(company_name)
@@ -1563,6 +1565,7 @@ export const PLDashboard = () => {
                   <ProfileField label="Submitted" value={format(new Date(r.submitted_at), 'MMM d, yyyy h:mm a')} />
                   <ProfileField label="Total hours" value={Number(r.total_hours).toFixed(2)} />
                   <ProfileField label="Overtime" value={Number(r.overtime_hours).toFixed(2)} />
+                  <ProfileField label="Invoice amount" value={r.contractor?.hourly_rate != null ? `$${(Number(r.total_hours) * Number(r.contractor.hourly_rate)).toFixed(2)}` : '—'} />
                   <ProfileField label="Bonus" value={`$${Number(r.incentive_amount || 0).toFixed(2)}`} />
                   <ProfileField label="Target hours/week" value={expectedWeekly ? `${expectedWeekly}` : null} />
                   <ProfileField label="Variance" value={expectedWeekly ? `${weeklyDiff > 0 ? '+' : ''}${weeklyDiff.toFixed(2)}h` : null} />
