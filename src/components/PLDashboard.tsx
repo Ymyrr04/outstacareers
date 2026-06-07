@@ -38,6 +38,7 @@ interface TimesheetRow {
     job_title: string | null;
     start_date: string | null;
     hours_per_week: number | null;
+    hourly_rate: number | null;
     client_id: string | null;
     applicant: { full_name: string; email: string } | null;
     client: { company_name: string } | null;
