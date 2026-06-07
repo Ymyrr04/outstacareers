@@ -1563,6 +1563,7 @@ export const PLDashboard = () => {
                   <ProfileField label="Submitted" value={format(new Date(r.submitted_at), 'MMM d, yyyy h:mm a')} />
                   <ProfileField label="Total hours" value={Number(r.total_hours).toFixed(2)} />
                   <ProfileField label="Overtime" value={Number(r.overtime_hours).toFixed(2)} />
+                  <ProfileField label="Invoice amount" value={r.hourly_rate != null ? `$${(Number(r.total_hours) * Number(r.hourly_rate)).toFixed(2)}` : '—'} />
                   <ProfileField label="Bonus" value={`$${Number(r.incentive_amount || 0).toFixed(2)}`} />
                   <ProfileField label="Target hours/week" value={expectedWeekly ? `${expectedWeekly}` : null} />
                   <ProfileField label="Variance" value={expectedWeekly ? `${weeklyDiff > 0 ? '+' : ''}${weeklyDiff.toFixed(2)}h` : null} />
