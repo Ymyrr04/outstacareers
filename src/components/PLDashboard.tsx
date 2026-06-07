@@ -225,6 +225,7 @@ export const PLDashboard = () => {
             job_title,
             start_date,
             hours_per_week,
+            hourly_rate,
             client_id,
             applicant:applicants_prescreen(full_name, email),
             client:clients(company_name)
