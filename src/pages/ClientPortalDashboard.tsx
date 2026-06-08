@@ -317,11 +317,17 @@ const ClientPortalDashboard = () => {
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-blue-600" />
             <div className="text-sm font-semibold">{clientName || 'OutStaWorkforce'}</div>
-
           </div>
-          <Button variant="outline" size="sm" onClick={handleSignOut}>
-            <LogOut className="w-4 h-4 mr-1" /> Sign out
-          </Button>
+          <div className="flex items-center gap-2">
+            <ProfileMenu
+              clientId={clientId}
+              userEmail={userEmail}
+              onClientNameUpdated={(name) => setClientName(name)}
+            />
+            <Button variant="outline" size="sm" onClick={handleSignOut}>
+              <LogOut className="w-4 h-4 mr-1" /> Sign out
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -336,13 +342,10 @@ const ClientPortalDashboard = () => {
           />
         ) : (
           <div className="space-y-6">
-            <CompanyProfileCard
-              clientId={clientId}
-              onUpdated={(name) => setClientName(name)}
-            />
             <div>
               <h1 className="text-xl font-semibold mb-3">Submitted Timesheets</h1>
               <ContractorProfilePanel assignments={assignments} clientName={clientName} />
+
             </div>
             <Card>
             <CardContent className="space-y-4 pt-6">
