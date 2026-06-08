@@ -336,6 +336,10 @@ const ClientPortalDashboard = () => {
           />
         ) : (
           <div className="space-y-6">
+            <CompanyProfileCard
+              clientId={clientId}
+              onUpdated={(name) => setClientName(name)}
+            />
             <div>
               <h1 className="text-xl font-semibold mb-3">Submitted Timesheets</h1>
               <ContractorProfilePanel assignments={assignments} clientName={clientName} />
