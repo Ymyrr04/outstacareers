@@ -1361,6 +1361,7 @@ export const PLDashboard = () => {
                         )}
                       </TableCell>
                       <TableCell className="text-right">{Number(r.overtime_hours).toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-medium">{r.contractor?.hourly_rate != null ? `$${(Number(r.total_hours) * Number(r.contractor.hourly_rate)).toFixed(2)}` : '—'}</TableCell>
                       <TableCell className="text-right">${Number(r.incentive_amount || 0).toFixed(2)}</TableCell>
                       <TableCell>
                         {(() => {
