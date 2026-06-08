@@ -2893,6 +2893,15 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      update_my_client_profile: {
+        Args: {
+          _address: string
+          _company_name: string
+          _industry: string
+          _website: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "super_admin"
