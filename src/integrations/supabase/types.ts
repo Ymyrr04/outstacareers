@@ -2902,6 +2902,15 @@ export type Database = {
         }
         Returns: undefined
       }
+      update_my_portal_user_profile: {
+        Args: {
+          _full_name: string
+          _phone: string
+          _primary_email: string
+          _secondary_email: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role: "admin" | "user" | "super_admin"

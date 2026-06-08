@@ -317,11 +317,17 @@ const ClientPortalDashboard = () => {
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-blue-600" />
             <div className="text-sm font-semibold">{clientName || 'OutStaWorkforce'}</div>
-
           </div>
-          <Button variant="outline" size="sm" onClick={handleSignOut}>
-            <LogOut className="w-4 h-4 mr-1" /> Sign out
-          </Button>
+          <div className="flex items-center gap-2">
+            <ProfileMenu
+              clientId={clientId}
+              userEmail={userEmail}
+              onClientNameUpdated={(name) => setClientName(name)}
+            />
+            <Button variant="outline" size="sm" onClick={handleSignOut}>
+              <LogOut className="w-4 h-4 mr-1" /> Sign out
+            </Button>
+          </div>
         </div>
       </header>
 
@@ -336,13 +342,10 @@ const ClientPortalDashboard = () => {
           />
         ) : (
           <div className="space-y-6">
-            <CompanyProfileCard
-              clientId={clientId}
-              onUpdated={(name) => setClientName(name)}
-            />
             <div>
               <h1 className="text-xl font-semibold mb-3">Submitted Timesheets</h1>
               <ContractorProfilePanel assignments={assignments} clientName={clientName} />
+
             </div>
             <Card>
             <CardContent className="space-y-4 pt-6">
@@ -695,53 +698,85 @@ interface CompanyProfile {
   address: string | null;
 }
 
-const CompanyProfileCard = ({ clientId, onUpdated }: { clientId: string | null; onUpdated: (name: string) => void }) => {
+interface UserProfile {
+  full_name: string | null;
+  primary_email: string | null;
+  secondary_email: string | null;
+  phone: string | null;
+}
+
+const ProfileMenu = ({
+  clientId,
+  userEmail,
+  onClientNameUpdated,
+}: {
+  clientId: string | null;
+  userEmail: string;
+  onClientNameUpdated: (name: string) => void;
+}) => {
   const { toast } = useToast();
-  const [profile, setProfile] = useState<CompanyProfile | null>(null);
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState<CompanyProfile>({ company_name: '', industry: '', website: '', address: '' });
+  const [company, setCompany] = useState<CompanyProfile | null>(null);
+  const [me, setMe] = useState<UserProfile | null>(null);
+  const [cForm, setCForm] = useState<CompanyProfile>({ company_name: '', industry: '', website: '', address: '' });
+  const [uForm, setUForm] = useState<UserProfile>({ full_name: '', primary_email: '', secondary_email: '', phone: '' });
 
   const load = async () => {
     if (!clientId) return;
-    const { data } = await supabase
-      .from('clients')
-      .select('company_name, industry, website, address')
-      .eq('id', clientId)
-      .maybeSingle();
-    if (data) setProfile(data as CompanyProfile);
+    const [{ data: c }, { data: u }] = await Promise.all([
+      supabase.from('clients').select('company_name, industry, website, address').eq('id', clientId).maybeSingle(),
+      supabase.from('client_portal_users').select('full_name, primary_email, secondary_email, phone').eq('user_id', (await supabase.auth.getUser()).data.user?.id || '').maybeSingle(),
+    ]);
+    if (c) setCompany(c as CompanyProfile);
+    if (u) setMe(u as UserProfile);
   };
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, [clientId]);
+  useEffect(() => { if (open) load(); /* eslint-disable-next-line */ }, [open, clientId]);
 
   const startEdit = () => {
-    if (!profile) return;
-    setForm({
-      company_name: profile.company_name || '',
-      industry: profile.industry || '',
-      website: profile.website || '',
-      address: profile.address || '',
+    setCForm({
+      company_name: company?.company_name || '',
+      industry: company?.industry || '',
+      website: company?.website || '',
+      address: company?.address || '',
     });
-    setOpen(true);
+    setUForm({
+      full_name: me?.full_name || '',
+      primary_email: me?.primary_email || userEmail || '',
+      secondary_email: me?.secondary_email || '',
+      phone: me?.phone || '',
+    });
+    setEditing(true);
   };
 
   const handleSave = async () => {
-    if (!form.company_name.trim()) {
+    if (!cForm.company_name.trim()) {
       toast({ title: 'Company name is required', variant: 'destructive' });
       return;
     }
     setSaving(true);
     try {
-      const { error } = await supabase.rpc('update_my_client_profile', {
-        _company_name: form.company_name,
-        _industry: form.industry || '',
-        _website: form.website || '',
-        _address: form.address || '',
-      });
-      if (error) throw error;
+      const [{ error: e1 }, { error: e2 }] = await Promise.all([
+        supabase.rpc('update_my_client_profile', {
+          _company_name: cForm.company_name,
+          _industry: cForm.industry || '',
+          _website: cForm.website || '',
+          _address: cForm.address || '',
+        }),
+        supabase.rpc('update_my_portal_user_profile', {
+          _full_name: uForm.full_name || '',
+          _primary_email: uForm.primary_email || '',
+          _secondary_email: uForm.secondary_email || '',
+          _phone: uForm.phone || '',
+        }),
+      ]);
+      if (e1) throw e1;
+      if (e2) throw e2;
       toast({ title: 'Profile updated' });
-      onUpdated(form.company_name.trim());
-      setOpen(false);
+      onClientNameUpdated(cForm.company_name.trim());
+      setEditing(false);
       await load();
     } catch (err: any) {
       toast({ title: 'Failed to save', description: err.message, variant: 'destructive' });
@@ -750,92 +785,151 @@ const CompanyProfileCard = ({ clientId, onUpdated }: { clientId: string | null; 
     }
   };
 
-  if (!profile) return null;
+  const displayName = me?.full_name || userEmail || 'Account';
+  const avatarText = initialsOf(displayName);
 
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-start justify-between space-y-0">
-        <div>
-          <CardTitle className="text-base">Company profile</CardTitle>
-          <div className="text-xs text-muted-foreground mt-1">Keep your company details up to date.</div>
-        </div>
-        <Button variant="outline" size="sm" onClick={startEdit}>
-          <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
-        </Button>
-      </CardHeader>
-      <CardContent>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
-          <div className="flex items-start gap-2">
-            <Building2 className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
-            <div>
-              <div className="text-xs text-muted-foreground">Company name</div>
-              <div className="font-medium">{profile.company_name}</div>
-            </div>
-          </div>
-          <div className="flex items-start gap-2">
-            <Briefcase className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
-            <div>
-              <div className="text-xs text-muted-foreground">Industry</div>
-              <div className="font-medium">{profile.industry || <span className="italic text-muted-foreground">Not set</span>}</div>
-            </div>
-          </div>
-          <div className="flex items-start gap-2">
-            <Globe className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
-            <div className="min-w-0">
-              <div className="text-xs text-muted-foreground">Website</div>
-              <div className="font-medium truncate">
-                {profile.website ? (
-                  <a href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
-                    {profile.website}
-                  </a>
-                ) : <span className="italic text-muted-foreground">Not set</span>}
-              </div>
-            </div>
-          </div>
-          <div className="flex items-start gap-2">
-            <MapPin className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
-            <div>
-              <div className="text-xs text-muted-foreground">Address</div>
-              <div className="font-medium whitespace-pre-wrap">{profile.address || <span className="italic text-muted-foreground">Not set</span>}</div>
-            </div>
-          </div>
-        </div>
-      </CardContent>
+    <>
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-xs ${colorFor(displayName)} hover:ring-2 hover:ring-offset-2 hover:ring-blue-300 transition`}
+        title="Profile"
+        aria-label="Open profile"
+      >
+        {avatarText}
+      </button>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
+      <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(false); }}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Edit company profile</DialogTitle>
-            <DialogDescription>Update your company information shown across OutStaWorkforce.</DialogDescription>
+            <DialogTitle>Profile</DialogTitle>
+            <DialogDescription>Your account and company information.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
-            <div className="space-y-1">
-              <Label className="text-xs">Company name</Label>
-              <Input value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} />
+
+          {!editing ? (
+            <div className="space-y-6">
+              {/* Header */}
+              <div className="flex items-center gap-3">
+                <div className={`w-14 h-14 rounded-full flex items-center justify-center text-white font-semibold ${colorFor(displayName)}`}>
+                  {avatarText}
+                </div>
+                <div className="min-w-0">
+                  <div className="font-semibold">{me?.full_name || <span className="italic text-muted-foreground">No name set</span>}</div>
+                  <div className="text-xs text-muted-foreground truncate">{userEmail}</div>
+                </div>
+              </div>
+
+              {/* My account */}
+              <section>
+                <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wide mb-2">My account</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm border rounded-md p-3">
+                  <ProfileField label="Full name" value={me?.full_name} />
+                  <ProfileField label="Phone" value={me?.phone} />
+                  <ProfileField label="Primary email" value={me?.primary_email || userEmail} />
+                  <ProfileField label="Secondary email" value={me?.secondary_email} />
+                </div>
+              </section>
+
+              {/* Company */}
+              <section>
+                <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wide mb-2">Company</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm border rounded-md p-3">
+                  <ProfileField label="Company name" value={company?.company_name} icon={<Building2 className="w-3.5 h-3.5" />} />
+                  <ProfileField label="Industry" value={company?.industry} icon={<Briefcase className="w-3.5 h-3.5" />} />
+                  <ProfileField
+                    label="Website"
+                    value={company?.website}
+                    icon={<Globe className="w-3.5 h-3.5" />}
+                    href={company?.website ? (company.website.startsWith('http') ? company.website : `https://${company.website}`) : undefined}
+                  />
+                  <ProfileField label="Address" value={company?.address} icon={<MapPin className="w-3.5 h-3.5" />} />
+                </div>
+              </section>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setOpen(false)}>Close</Button>
+                <Button onClick={startEdit}><Pencil className="w-3.5 h-3.5 mr-1" /> Edit profile</Button>
+              </DialogFooter>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Industry</Label>
-              <Input value={form.industry || ''} onChange={(e) => setForm({ ...form, industry: e.target.value })} placeholder="e.g. Healthcare, SaaS" />
+          ) : (
+            <div className="space-y-6">
+              <section>
+                <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wide mb-2">My account</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <Label className="text-xs">Full name</Label>
+                    <Input value={uForm.full_name || ''} onChange={(e) => setUForm({ ...uForm, full_name: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Phone</Label>
+                    <Input value={uForm.phone || ''} onChange={(e) => setUForm({ ...uForm, phone: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Primary email</Label>
+                    <Input type="email" value={uForm.primary_email || ''} onChange={(e) => setUForm({ ...uForm, primary_email: e.target.value })} />
+                  </div>
+                  <div className="space-y-1">
+                    <Label className="text-xs">Secondary email</Label>
+                    <Input type="email" value={uForm.secondary_email || ''} onChange={(e) => setUForm({ ...uForm, secondary_email: e.target.value })} />
+                  </div>
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  Sign-in email: <span className="font-medium">{userEmail}</span> (cannot be changed here).
+                </div>
+              </section>
+
+              <section>
+                <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wide mb-2">Company</div>
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div className="space-y-1">
+                      <Label className="text-xs">Company name</Label>
+                      <Input value={cForm.company_name} onChange={(e) => setCForm({ ...cForm, company_name: e.target.value })} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">Industry</Label>
+                      <Input value={cForm.industry || ''} onChange={(e) => setCForm({ ...cForm, industry: e.target.value })} placeholder="e.g. Healthcare, SaaS" />
+                    </div>
+                    <div className="space-y-1 sm:col-span-2">
+                      <Label className="text-xs">Website</Label>
+                      <Input value={cForm.website || ''} onChange={(e) => setCForm({ ...cForm, website: e.target.value })} placeholder="https://example.com" />
+                    </div>
+                    <div className="space-y-1 sm:col-span-2">
+                      <Label className="text-xs">Address</Label>
+                      <Textarea value={cForm.address || ''} onChange={(e) => setCForm({ ...cForm, address: e.target.value })} rows={3} />
+                    </div>
+                  </div>
+                </div>
+              </section>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setEditing(false)} disabled={saving}>Cancel</Button>
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Save changes
+                </Button>
+              </DialogFooter>
             </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Website</Label>
-              <Input value={form.website || ''} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://example.com" />
-            </div>
-            <div className="space-y-1">
-              <Label className="text-xs">Address</Label>
-              <Textarea value={form.address || ''} onChange={(e) => setForm({ ...form, address: e.target.value })} rows={3} />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>Cancel</Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Save changes
-            </Button>
-          </DialogFooter>
+          )}
         </DialogContent>
       </Dialog>
-    </Card>
+    </>
   );
 };
+
+const ProfileField = ({
+  label, value, icon, href,
+}: { label: string; value?: string | null; icon?: React.ReactNode; href?: string }) => (
+  <div className="min-w-0">
+    <div className="text-xs text-muted-foreground flex items-center gap-1">{icon}{label}</div>
+    <div className="font-medium truncate">
+      {value
+        ? (href
+            ? <a href={href} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">{value}</a>
+            : <span className="whitespace-pre-wrap">{value}</span>)
+        : <span className="italic text-muted-foreground">Not set</span>}
+    </div>
+  </div>
+);
 
 export default ClientPortalDashboard;
