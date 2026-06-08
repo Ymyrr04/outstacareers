@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Helmet } from 'react-helmet-async';
 import { format } from 'date-fns';
-import { Loader2, LogOut, ArrowLeft, CheckCircle2, Flag, Search, Eye, Building2, Trash2, Pencil, Globe, MapPin, Briefcase } from 'lucide-react';
+import { Loader2, LogOut, ArrowLeft, CheckCircle2, Flag, Search, Eye, Building2, Trash2, Pencil, Globe, MapPin, Briefcase, User } from 'lucide-react';
 
 interface Assignment {
   id: string;
