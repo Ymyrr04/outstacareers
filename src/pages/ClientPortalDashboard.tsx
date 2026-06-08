@@ -688,4 +688,154 @@ const TimesheetDetail = ({
   );
 };
 
+interface CompanyProfile {
+  company_name: string;
+  industry: string | null;
+  website: string | null;
+  address: string | null;
+}
+
+const CompanyProfileCard = ({ clientId, onUpdated }: { clientId: string | null; onUpdated: (name: string) => void }) => {
+  const { toast } = useToast();
+  const [profile, setProfile] = useState<CompanyProfile | null>(null);
+  const [open, setOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState<CompanyProfile>({ company_name: '', industry: '', website: '', address: '' });
+
+  const load = async () => {
+    if (!clientId) return;
+    const { data } = await supabase
+      .from('clients')
+      .select('company_name, industry, website, address')
+      .eq('id', clientId)
+      .maybeSingle();
+    if (data) setProfile(data as CompanyProfile);
+  };
+
+  useEffect(() => { load(); /* eslint-disable-next-line */ }, [clientId]);
+
+  const startEdit = () => {
+    if (!profile) return;
+    setForm({
+      company_name: profile.company_name || '',
+      industry: profile.industry || '',
+      website: profile.website || '',
+      address: profile.address || '',
+    });
+    setOpen(true);
+  };
+
+  const handleSave = async () => {
+    if (!form.company_name.trim()) {
+      toast({ title: 'Company name is required', variant: 'destructive' });
+      return;
+    }
+    setSaving(true);
+    try {
+      const { error } = await supabase.rpc('update_my_client_profile', {
+        _company_name: form.company_name,
+        _industry: form.industry || '',
+        _website: form.website || '',
+        _address: form.address || '',
+      });
+      if (error) throw error;
+      toast({ title: 'Profile updated' });
+      onUpdated(form.company_name.trim());
+      setOpen(false);
+      await load();
+    } catch (err: any) {
+      toast({ title: 'Failed to save', description: err.message, variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!profile) return null;
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-start justify-between space-y-0">
+        <div>
+          <CardTitle className="text-base">Company profile</CardTitle>
+          <div className="text-xs text-muted-foreground mt-1">Keep your company details up to date.</div>
+        </div>
+        <Button variant="outline" size="sm" onClick={startEdit}>
+          <Pencil className="w-3.5 h-3.5 mr-1" /> Edit
+        </Button>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm">
+          <div className="flex items-start gap-2">
+            <Building2 className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+            <div>
+              <div className="text-xs text-muted-foreground">Company name</div>
+              <div className="font-medium">{profile.company_name}</div>
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <Briefcase className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+            <div>
+              <div className="text-xs text-muted-foreground">Industry</div>
+              <div className="font-medium">{profile.industry || <span className="italic text-muted-foreground">Not set</span>}</div>
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <Globe className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+            <div className="min-w-0">
+              <div className="text-xs text-muted-foreground">Website</div>
+              <div className="font-medium truncate">
+                {profile.website ? (
+                  <a href={profile.website.startsWith('http') ? profile.website : `https://${profile.website}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline">
+                    {profile.website}
+                  </a>
+                ) : <span className="italic text-muted-foreground">Not set</span>}
+              </div>
+            </div>
+          </div>
+          <div className="flex items-start gap-2">
+            <MapPin className="w-4 h-4 mt-0.5 text-muted-foreground shrink-0" />
+            <div>
+              <div className="text-xs text-muted-foreground">Address</div>
+              <div className="font-medium whitespace-pre-wrap">{profile.address || <span className="italic text-muted-foreground">Not set</span>}</div>
+            </div>
+          </div>
+        </div>
+      </CardContent>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit company profile</DialogTitle>
+            <DialogDescription>Update your company information shown across OutStaWorkforce.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Company name</Label>
+              <Input value={form.company_name} onChange={(e) => setForm({ ...form, company_name: e.target.value })} />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Industry</Label>
+              <Input value={form.industry || ''} onChange={(e) => setForm({ ...form, industry: e.target.value })} placeholder="e.g. Healthcare, SaaS" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Website</Label>
+              <Input value={form.website || ''} onChange={(e) => setForm({ ...form, website: e.target.value })} placeholder="https://example.com" />
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Address</Label>
+              <Textarea value={form.address || ''} onChange={(e) => setForm({ ...form, address: e.target.value })} rows={3} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)} disabled={saving}>Cancel</Button>
+            <Button onClick={handleSave} disabled={saving}>
+              {saving && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Save changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </Card>
+  );
+};
+
 export default ClientPortalDashboard;
