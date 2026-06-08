@@ -14,7 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { Helmet } from 'react-helmet-async';
 import { format } from 'date-fns';
-import { Loader2, LogOut, ArrowLeft, CheckCircle2, Flag, Search, Eye, Building2, Trash2, Pencil, Globe, MapPin, Briefcase } from 'lucide-react';
+import { Loader2, LogOut, ArrowLeft, CheckCircle2, Flag, Search, Eye, Building2, Trash2, Pencil, Globe, MapPin, Briefcase, User } from 'lucide-react';
 
 interface Assignment {
   id: string;
@@ -793,11 +793,12 @@ const ProfileMenu = ({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-xs ${colorFor(displayName)} hover:ring-2 hover:ring-offset-2 hover:ring-blue-300 transition`}
+        className="h-9 px-3 rounded-full flex items-center gap-1.5 text-sm font-medium border border-border bg-background hover:bg-muted transition"
         title="Profile"
         aria-label="Open profile"
       >
-        {avatarText}
+        <User className="w-4 h-4" />
+        Profile
       </button>
 
       <Dialog open={open} onOpenChange={(o) => { setOpen(o); if (!o) setEditing(false); }}>
