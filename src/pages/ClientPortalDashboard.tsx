@@ -836,14 +836,13 @@ const ProfileMenu = ({
                 <div className="text-xs font-semibold uppercase text-muted-foreground tracking-wide mb-2">Company</div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm border rounded-md p-3">
                   <ProfileField label="Company name" value={company?.company_name} icon={<Building2 className="w-3.5 h-3.5" />} />
-                  <ProfileField label="Industry" value={company?.industry} icon={<Briefcase className="w-3.5 h-3.5" />} />
                   <ProfileField
                     label="Website"
                     value={company?.website}
                     icon={<Globe className="w-3.5 h-3.5" />}
                     href={company?.website ? (company.website.startsWith('http') ? company.website : `https://${company.website}`) : undefined}
                   />
-                  <ProfileField label="Address" value={company?.address} icon={<MapPin className="w-3.5 h-3.5" />} />
+
                 </div>
               </section>
 
