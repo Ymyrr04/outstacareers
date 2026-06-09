@@ -502,6 +502,7 @@ export const BulkContractorEmailDialog = ({
           scheduled_for: new Date().toISOString(),
           status: 'processing',
           client_id: selectedClientId !== 'all' ? selectedClientId : null,
+          country: selectedCountry !== 'all' ? selectedCountry : null,
         } as any)
         .select('id')
         .single();
