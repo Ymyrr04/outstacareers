@@ -1193,8 +1193,8 @@ export const ContractorsDashboard = () => {
                         {visibleColumns.type && <TableHead className="w-[100px]">Type</TableHead>}
                         {visibleColumns.country && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('country')}>Country {getSortIcon('country')}</TableHead>}
                         {visibleColumns.source && <TableHead className="min-w-[100px]">Source</TableHead>}
-                        {visibleColumns.notes && <TableHead className="min-w-[200px]">Notes</TableHead>}
                         {visibleColumns.separationNote && <TableHead className="min-w-[200px]">Separation Note</TableHead>}
+                        {visibleColumns.notes && <TableHead className="min-w-[200px]">Notes</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1468,24 +1468,6 @@ export const ContractorsDashboard = () => {
                               {contractor.source || '—'}
                             </TableCell>
                           )}
-                          {visibleColumns.notes && (
-                            <TableCell>
-                              {contractor.notes ? (
-                                <HoverCard>
-                                  <HoverCardTrigger asChild>
-                                    <span className="text-sm text-muted-foreground line-clamp-1 max-w-[200px] cursor-help underline decoration-dotted underline-offset-2">
-                                      {contractor.notes}
-                                    </span>
-                                  </HoverCardTrigger>
-                                  <HoverCardContent className="w-80 text-sm" align="start">
-                                    <p className="whitespace-pre-wrap">{contractor.notes}</p>
-                                  </HoverCardContent>
-                                </HoverCard>
-                              ) : (
-                                <span className="text-muted-foreground">—</span>
-                              )}
-                            </TableCell>
-                          )}
                           {visibleColumns.separationNote && (
                             <TableCell>
                               {contractor.separation_note ? (
@@ -1497,6 +1479,24 @@ export const ContractorsDashboard = () => {
                                   </HoverCardTrigger>
                                   <HoverCardContent className="w-80 text-sm" align="start">
                                     <p className="whitespace-pre-wrap">{contractor.separation_note}</p>
+                                  </HoverCardContent>
+                                </HoverCard>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          )}
+                          {visibleColumns.notes && (
+                            <TableCell>
+                              {contractor.notes ? (
+                                <HoverCard>
+                                  <HoverCardTrigger asChild>
+                                    <span className="text-sm text-muted-foreground line-clamp-1 max-w-[200px] cursor-help underline decoration-dotted underline-offset-2">
+                                      {contractor.notes}
+                                    </span>
+                                  </HoverCardTrigger>
+                                  <HoverCardContent className="w-80 text-sm" align="start">
+                                    <p className="whitespace-pre-wrap">{contractor.notes}</p>
                                   </HoverCardContent>
                                 </HoverCard>
                               ) : (
