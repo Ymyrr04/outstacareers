@@ -390,6 +390,7 @@ const handler = async (req: Request): Promise<Response> => {
           scheduledEmailId,
           maxBatchSize: batchSize,
           clientId: clientId || undefined,
+          country: country || undefined,
         }),
       }).catch((err) => {
         console.error("Self-invoke failed:", err.message);
