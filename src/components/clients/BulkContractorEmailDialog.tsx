@@ -408,15 +408,18 @@ export const BulkContractorEmailDialog = ({
     }
   };
 
-  const handleClientSelect = (value: string) => {
-    setSelectedClientId(value);
-    if (value === 'all') {
-      setFilteredCount(activeContractorCount);
-    } else {
-      const client = clients.find(c => c.id === value);
-      setFilteredCount(client?.contractor_count || 0);
+  // Recompute filtered count whenever filters or assignments change
+  useEffect(() => {
+    if (assignments.length === 0) {
+      setFilteredCount(selectedClientId === 'all' && selectedCountry === 'all' ? activeContractorCount : 0);
+      return;
     }
-  };
+    const count = assignments.filter(r =>
+      (selectedClientId === 'all' || r.client_id === selectedClientId) &&
+      (selectedCountry === 'all' || r.country === selectedCountry)
+    ).length;
+    setFilteredCount(count);
+  }, [assignments, selectedClientId, selectedCountry, activeContractorCount]);
 
   const resetForm = () => {
     setSubject('');
