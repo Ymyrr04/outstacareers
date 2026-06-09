@@ -1420,6 +1420,15 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
                 <p className="text-xs font-semibold leading-tight flex-1 min-w-0" title={candidate.full_name}>
                   {candidate.full_name}
                 </p>
+                {hasAdditionalProfile && (
+                  <span
+                    title="Has additional profile(s)"
+                    className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1 py-0.5 rounded bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400 shrink-0"
+                  >
+                    <UserCircle className="w-2.5 h-2.5" />
+                    +P
+                  </span>
+                )}
                 {candidate.is_starred && (
                   <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 shrink-0" />
                 )}
