@@ -1494,20 +1494,53 @@ export const ContractorsDashboard = () => {
                           )}
                           {visibleColumns.separationNote && (
                             <TableCell>
-                              {contractor.separation_note ? (
-                                <HoverCard>
-                                  <HoverCardTrigger asChild>
-                                    <span className="text-sm text-muted-foreground line-clamp-1 max-w-[200px] cursor-help underline decoration-dotted underline-offset-2">
-                                      {contractor.separation_note}
-                                    </span>
-                                  </HoverCardTrigger>
-                                  <HoverCardContent className="w-80 text-sm" align="start">
-                                    <p className="whitespace-pre-wrap">{contractor.separation_note}</p>
-                                  </HoverCardContent>
-                                </HoverCard>
-                              ) : (
-                                <span className="text-muted-foreground">—</span>
-                              )}
+                              <Popover
+                                open={editingSeparationId === contractor.id}
+                                onOpenChange={(open) => {
+                                  if (open) {
+                                    setEditingSeparationId(contractor.id);
+                                    setEditingSeparationText(contractor.separation_note || '');
+                                  } else {
+                                    setEditingSeparationId(null);
+                                  }
+                                }}
+                              >
+                                <PopoverTrigger asChild>
+                                  <button
+                                    type="button"
+                                    className="group flex items-start gap-1 text-left max-w-[220px] hover:bg-muted/50 rounded px-1 py-0.5 -mx-1 -my-0.5 transition-colors"
+                                    title="Click to edit separation note"
+                                  >
+                                    {contractor.separation_note ? (
+                                      <span className="text-sm text-muted-foreground line-clamp-2 whitespace-pre-wrap">
+                                        {contractor.separation_note}
+                                      </span>
+                                    ) : (
+                                      <span className="text-sm text-muted-foreground italic">Add note…</span>
+                                    )}
+                                    <Pencil className="w-3 h-3 mt-1 opacity-0 group-hover:opacity-60 shrink-0" />
+                                  </button>
+                                </PopoverTrigger>
+                                <PopoverContent className="w-96" align="start">
+                                  <div className="space-y-2">
+                                    <p className="text-sm font-medium">Edit Separation Note</p>
+                                    <Textarea
+                                      value={editingSeparationText}
+                                      onChange={(e) => setEditingSeparationText(e.target.value)}
+                                      rows={6}
+                                      placeholder="Add separation note…"
+                                    />
+                                    <div className="flex justify-end gap-2">
+                                      <Button size="sm" variant="outline" onClick={() => setEditingSeparationId(null)}>
+                                        Cancel
+                                      </Button>
+                                      <Button size="sm" onClick={() => handleSaveSeparationNote(contractor.id)} disabled={savingSeparation}>
+                                        {savingSeparation ? <Loader2 className="w-3 h-3 animate-spin" /> : 'Save'}
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </PopoverContent>
+                              </Popover>
                             </TableCell>
                           )}
                           {visibleColumns.notes && (
