@@ -463,6 +463,7 @@ export const BulkContractorEmailDialog = ({
         scheduled_for: scheduledDate.toISOString(),
         status: 'pending',
         client_id: selectedClientId !== 'all' ? selectedClientId : null,
+        country: selectedCountry !== 'all' ? selectedCountry : null,
       } as any);
 
       if (error) throw error;
