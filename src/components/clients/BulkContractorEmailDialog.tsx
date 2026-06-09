@@ -20,6 +20,17 @@ interface ClientOption {
   contractor_count: number;
 }
 
+interface CountryOption {
+  country: string;
+  contractor_count: number;
+}
+
+interface AssignmentRow {
+  client_id: string | null;
+  company_name: string | null;
+  country: string | null;
+}
+
 interface EmailTemplate {
   id: string;
   name: string;
