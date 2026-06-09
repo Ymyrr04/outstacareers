@@ -120,6 +120,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
+  const [additionalProfileIds, setAdditionalProfileIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [candidateSearch, setCandidateSearch] = useState('');
   const candidateSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -603,6 +604,32 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     // while the user sits on the page (e.g., admin map loading in stages).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRole, jobFilter, selectedAdmin, activeRoles.length, allRoles.length]);
+
+  // Fetch which loaded candidates have additional profiles (Talent Pool markers)
+  useEffect(() => {
+    if (candidates.length === 0) {
+      setAdditionalProfileIds(new Set());
+      return;
+    }
+    let cancelled = false;
+    const ids = candidates.map(c => c.id);
+    (async () => {
+      const found = new Set<string>();
+      const chunk = 500;
+      for (let i = 0; i < ids.length; i += chunk) {
+        const batch = ids.slice(i, i + chunk);
+        const { data } = await supabase
+          .from('candidate_additional_profiles')
+          .select('applicant_id')
+          .in('applicant_id', batch);
+        for (const row of data || []) found.add(row.applicant_id);
+      }
+      if (!cancelled) setAdditionalProfileIds(found);
+    })();
+    return () => { cancelled = true; };
+  }, [candidates]);
+
+
 
   // Close dropdown on outside click
   useEffect(() => {
@@ -1180,6 +1207,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                             isInactiveRole={jobFilter === 'all' && inactiveRolesSet.has(candidate.job_title)}
                             isSelected={selectedIds.has(candidate.id)}
                             onSelectToggle={() => toggleCardSelection(candidate)}
+                            hasAdditionalProfile={additionalProfileIds.has(candidate.id)}
                           />
                         ))
                       )}
@@ -1280,9 +1308,10 @@ interface CandidateCardProps {
   isInactiveRole?: boolean;
   isSelected?: boolean;
   onSelectToggle?: () => void;
+  hasAdditionalProfile?: boolean;
 }
 
-const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle }: CandidateCardProps) => {
+const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle, hasAdditionalProfile }: CandidateCardProps) => {
   const { getDisplayName: getStageDisplayName } = useStageSettings();
   const [showDetails, setShowDetails] = useState(false);
   const [showDetailsTab, setShowDetailsTab] = useState<string | undefined>(undefined); // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -1391,6 +1420,15 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
                 <p className="text-xs font-semibold leading-tight flex-1 min-w-0" title={candidate.full_name}>
                   {candidate.full_name}
                 </p>
+                {hasAdditionalProfile && (
+                  <span
+                    title="Has additional profile(s)"
+                    className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1 py-0.5 rounded bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400 shrink-0"
+                  >
+                    <UserCircle className="w-2.5 h-2.5" />
+                    +P
+                  </span>
+                )}
                 {candidate.is_starred && (
                   <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 shrink-0" />
                 )}
