@@ -163,7 +163,7 @@ export const ContractorsDashboard = () => {
     emergency: false,
     timesheet: false,
     type: false,
-    country: false,
+    country: true,
     source: false,
     notes: true,
     separationNote: true,
