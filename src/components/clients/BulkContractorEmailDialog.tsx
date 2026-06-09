@@ -428,7 +428,7 @@ export const BulkContractorEmailDialog = ({
     setRecurringSchedule('none');
     setRecurringEnabled(false);
     setSelectedClientId('all');
-    setFilteredCount(activeContractorCount);
+    setSelectedCountry('all');
   };
 
 
