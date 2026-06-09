@@ -224,6 +224,25 @@ export const ContractorsDashboard = () => {
     return <ArrowUpDown className="w-3 h-3 ml-1 inline opacity-30" />;
   };
 
+  const handleSaveSeparationNote = async (contractorId: string) => {
+    setSavingSeparation(true);
+    try {
+      const newValue = editingSeparationText.trim() ? editingSeparationText : null;
+      const { error } = await supabase
+        .from('contractor_assignments')
+        .update({ separation_note: newValue })
+        .eq('id', contractorId);
+      if (error) throw error;
+      setContractors(prev => prev.map(c => c.id === contractorId ? { ...c, separation_note: newValue } : c));
+      toast({ title: 'Separation note updated' });
+      setEditingSeparationId(null);
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message, variant: 'destructive' });
+    } finally {
+      setSavingSeparation(false);
+    }
+  };
+
   const toggleColumn = (column: string) => {
     setVisibleColumns(prev => ({ ...prev, [column]: !prev[column] }));
   };
