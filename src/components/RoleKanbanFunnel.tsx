@@ -509,20 +509,24 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       stage_entered_at: a.submitted_at,
     }));
 
-    // Phase 1: priority statuses — only paint partial data when no cache was
-    // shown (avoid flashing stale → partial → full).
-    const priorityData = await fetchByStatuses(PRIORITY_STATUSES);
+    // Fire ALL phases in parallel. The previous two-phase approach starved the
+    // background fetch behind per-card duplicate-check N+1 queries from
+    // useApplicationHistory, leaving Bench / Talent Pipeline / Reject columns
+    // visibly empty for many seconds.
+    const priorityPromise = fetchByStatuses(PRIORITY_STATUSES);
+    const backgroundPromise = fetchByStatuses(BACKGROUND_STATUSES);
+    const unfilteredPromise = fetchUnfilteredByStatuses(UNFILTERED_STATUSES);
+
+    // Paint priority data as soon as it lands so the active funnel stays snappy.
+    const priorityData = await priorityPromise;
     if (!cached) {
       setCandidates(mapToCandidate(priorityData));
       setLoading(false);
     }
 
-    // Phase 2: background fetch for cold columns — yield to any active
-    // priority work (e.g., the Candidate Detail Dialog opening).
-    await priorityGate.wait();
     const [backgroundData, unfilteredData] = await Promise.all([
-      fetchByStatuses(BACKGROUND_STATUSES),
-      fetchUnfilteredByStatuses(UNFILTERED_STATUSES),
+      backgroundPromise,
+      unfilteredPromise,
     ]);
     const allData = [...priorityData, ...backgroundData, ...unfilteredData];
     if (!cached) setCandidates(mapToCandidate(allData));

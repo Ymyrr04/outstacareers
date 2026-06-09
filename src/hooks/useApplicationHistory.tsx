@@ -72,20 +72,41 @@ export function useApplicationHistory(email: string, currentId: string, phone?: 
 
   useEffect(() => {
     if (!email) return;
-    
+
     let cancelled = false;
-    setLoading(true);
 
-    fetchHistory(email, phone).then(results => {
-      if (!cancelled) {
-        setOtherApplications(results.filter(a => a.id !== currentId));
-        setLoading(false);
-      }
-    }).catch(() => {
-      if (!cancelled) setLoading(false);
-    });
+    // Defer the duplicate-check fetch using requestIdleCallback so it doesn't
+    // saturate the browser's concurrent-connection pool while the kanban /
+    // dashboard is still loading its primary data. Falls back to setTimeout
+    // on browsers without rIC (Safari).
+    const ric: any =
+      typeof window !== 'undefined' && (window as any).requestIdleCallback
+        ? (window as any).requestIdleCallback
+        : (cb: () => void) => setTimeout(cb, 800);
+    const cic: any =
+      typeof window !== 'undefined' && (window as any).cancelIdleCallback
+        ? (window as any).cancelIdleCallback
+        : clearTimeout;
 
-    return () => { cancelled = true; };
+    const handle = ric(() => {
+      if (cancelled) return;
+      setLoading(true);
+      fetchHistory(email, phone)
+        .then((results) => {
+          if (!cancelled) {
+            setOtherApplications(results.filter((a) => a.id !== currentId));
+            setLoading(false);
+          }
+        })
+        .catch(() => {
+          if (!cancelled) setLoading(false);
+        });
+    }, { timeout: 2000 });
+
+    return () => {
+      cancelled = true;
+      try { cic(handle); } catch { /* noop */ }
+    };
   }, [email, currentId, phone]);
 
   return { otherApplications, loading, totalApplications: otherApplications.length + 1 };
