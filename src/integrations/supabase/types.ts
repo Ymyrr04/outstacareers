@@ -2710,6 +2710,7 @@ export type Database = {
         Row: {
           body_html: string
           client_id: string | null
+          country: string | null
           created_at: string
           error_message: string | null
           id: string
@@ -2723,6 +2724,7 @@ export type Database = {
         Insert: {
           body_html: string
           client_id?: string | null
+          country?: string | null
           created_at?: string
           error_message?: string | null
           id?: string
@@ -2736,6 +2738,7 @@ export type Database = {
         Update: {
           body_html?: string
           client_id?: string | null
+          country?: string | null
           created_at?: string
           error_message?: string | null
           id?: string

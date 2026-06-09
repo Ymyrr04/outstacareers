@@ -1,0 +1,1 @@
+ALTER TABLE public.scheduled_contractor_emails ADD COLUMN IF NOT EXISTS country text;
