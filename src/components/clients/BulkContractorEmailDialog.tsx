@@ -216,28 +216,42 @@ export const BulkContractorEmailDialog = ({
   const fetchClients = useCallback(async () => {
     setLoadingClients(true);
     try {
-      const { data: assignments, error } = await supabase
+      const { data, error } = await supabase
         .from('contractor_assignments')
-        .select('client_id, client:clients(id, company_name)')
+        .select('client_id, country, client:clients(id, company_name)')
         .eq('status', 'active');
-      if (error || !assignments) return;
+      if (error || !data) return;
 
-      const countMap = new Map<string, { company_name: string; count: number }>();
-      for (const a of assignments) {
-        const c = a.client as any;
-        if (!c?.id) continue;
-        const existing = countMap.get(c.id);
-        if (existing) {
-          existing.count++;
-        } else {
-          countMap.set(c.id, { company_name: c.company_name, count: 1 });
+      const rows: AssignmentRow[] = data.map((a: any) => ({
+        client_id: a.client?.id ?? null,
+        company_name: a.client?.company_name ?? null,
+        country: (a.country ?? '').trim() || null,
+      }));
+      setAssignments(rows);
+
+      const clientMap = new Map<string, { company_name: string; count: number }>();
+      const countryMap = new Map<string, number>();
+      for (const r of rows) {
+        if (r.client_id && r.company_name) {
+          const e = clientMap.get(r.client_id);
+          if (e) e.count++;
+          else clientMap.set(r.client_id, { company_name: r.company_name, count: 1 });
+        }
+        if (r.country) {
+          countryMap.set(r.country, (countryMap.get(r.country) || 0) + 1);
         }
       }
 
-      const options: ClientOption[] = Array.from(countMap.entries())
-        .map(([id, v]) => ({ id, company_name: v.company_name, contractor_count: v.count }))
-        .sort((a, b) => a.company_name.localeCompare(b.company_name));
-      setClients(options);
+      setClients(
+        Array.from(clientMap.entries())
+          .map(([id, v]) => ({ id, company_name: v.company_name, contractor_count: v.count }))
+          .sort((a, b) => a.company_name.localeCompare(b.company_name))
+      );
+      setCountries(
+        Array.from(countryMap.entries())
+          .map(([country, contractor_count]) => ({ country, contractor_count }))
+          .sort((a, b) => b.contractor_count - a.contractor_count || a.country.localeCompare(b.country))
+      );
     } finally {
       setLoadingClients(false);
     }
