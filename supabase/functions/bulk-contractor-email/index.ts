@@ -21,6 +21,7 @@ interface BulkEmailRequest {
   scheduledEmailId?: string;
   maxBatchSize?: number;
   clientId?: string;
+  country?: string;
 }
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
