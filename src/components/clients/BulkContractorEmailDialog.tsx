@@ -546,7 +546,7 @@ export const BulkContractorEmailDialog = ({
           'Authorization': `Bearer ${session?.access_token || anonKey}`,
           'apikey': anonKey,
         },
-        body: JSON.stringify({ subject, bodyHtml, scheduledEmailId, clientId: selectedClientId !== 'all' ? selectedClientId : undefined }),
+        body: JSON.stringify({ subject, bodyHtml, scheduledEmailId, clientId: selectedClientId !== 'all' ? selectedClientId : undefined, country: selectedCountry !== 'all' ? selectedCountry : undefined }),
       }).then(async (res) => {
         const rawText = await res.text();
         let data: any = {};
