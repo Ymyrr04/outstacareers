@@ -133,6 +133,9 @@ export const ContractorsDashboard = () => {
   } | null>(null);
   const [showImportErrors, setShowImportErrors] = useState(false);
   const [updatingStatusId, setUpdatingStatusId] = useState<string | null>(null);
+  const [editingSeparationId, setEditingSeparationId] = useState<string | null>(null);
+  const [editingSeparationText, setEditingSeparationText] = useState('');
+  const [savingSeparation, setSavingSeparation] = useState(false);
   const [statusDialogOpen, setStatusDialogOpen] = useState(false);
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [bulkEmailDialogOpen, setBulkEmailDialogOpen] = useState(false);
