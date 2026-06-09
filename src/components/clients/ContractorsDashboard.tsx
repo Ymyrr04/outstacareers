@@ -34,8 +34,10 @@ import {
   ArrowUp,
   ArrowDown,
   ArrowUpDown,
-  FileText
+  FileText,
+  Pencil
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { HoverCard, HoverCardContent, HoverCardTrigger } from '@/components/ui/hover-card';
