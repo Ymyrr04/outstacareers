@@ -41,14 +41,14 @@ const handler = async (req: Request): Promise<Response> => {
     if (!supabaseUrl || !supabaseServiceKey) throw new Error("Supabase credentials not configured");
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    let { subject, bodyHtml, scheduledEmailId, maxBatchSize, clientId }: BulkEmailRequest = await req.json();
+    let { subject, bodyHtml, scheduledEmailId, maxBatchSize, clientId, country }: BulkEmailRequest = await req.json();
 
     // When resuming a scheduled batch, always read subject/body from the database
     // to avoid empty body issues from re-triggers or self-invocations
     if (scheduledEmailId) {
       const { data: scheduledData, error: scheduledErr } = await supabase
         .from("scheduled_contractor_emails")
-        .select("subject, body_html, client_id")
+        .select("subject, body_html, client_id, country")
         .eq("id", scheduledEmailId)
         .single();
 
@@ -58,6 +58,9 @@ const handler = async (req: Request): Promise<Response> => {
         bodyHtml = scheduledData.body_html;
         if (!clientId && scheduledData.client_id) {
           clientId = scheduledData.client_id;
+        }
+        if (!country && (scheduledData as any).country) {
+          country = (scheduledData as any).country;
         }
       }
     }
@@ -70,6 +73,9 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (clientId) {
       contractorQuery = contractorQuery.eq("client_id", clientId);
+    }
+    if (country) {
+      contractorQuery = contractorQuery.eq("country", country);
     }
 
     const { data: contractors, error: fetchError } = await contractorQuery;
