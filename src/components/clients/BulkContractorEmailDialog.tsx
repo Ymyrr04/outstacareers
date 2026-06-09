@@ -620,14 +620,14 @@ export const BulkContractorEmailDialog = ({
           {/* Company selector */}
           <div>
             <Label>Send To</Label>
-            <Select value={selectedClientId} onValueChange={handleClientSelect} disabled={loadingClients}>
+            <Select value={selectedClientId} onValueChange={setSelectedClientId} disabled={loadingClients}>
               <SelectTrigger>
                 <SelectValue placeholder={loadingClients ? 'Loading...' : 'Select company'}>
                   <span className="flex items-center gap-2">
                     <Building2 className="w-3 h-3" />
                     {selectedClientId === 'all'
-                      ? `All Companies (${activeContractorCount})`
-                      : `${clients.find(c => c.id === selectedClientId)?.company_name || 'Company'} (${filteredCount})`}
+                      ? `All Companies`
+                      : `${clients.find(c => c.id === selectedClientId)?.company_name || 'Company'}`}
                   </span>
                 </SelectValue>
               </SelectTrigger>
@@ -643,6 +643,37 @@ export const BulkContractorEmailDialog = ({
                     <span className="flex items-center gap-2">
                       <Building2 className="w-3 h-3" />
                       {c.company_name} ({c.contractor_count})
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Country selector */}
+          <div>
+            <Label>Country</Label>
+            <Select value={selectedCountry} onValueChange={setSelectedCountry} disabled={loadingClients}>
+              <SelectTrigger>
+                <SelectValue placeholder={loadingClients ? 'Loading...' : 'Select country'}>
+                  <span className="flex items-center gap-2">
+                    <Globe className="w-3 h-3" />
+                    {selectedCountry === 'all' ? 'All Countries' : selectedCountry}
+                  </span>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <span className="flex items-center gap-2">
+                    <Globe className="w-3 h-3" />
+                    All Countries
+                  </span>
+                </SelectItem>
+                {countries.map(c => (
+                  <SelectItem key={c.country} value={c.country}>
+                    <span className="flex items-center gap-2">
+                      <Globe className="w-3 h-3" />
+                      {c.country} ({c.contractor_count})
                     </span>
                   </SelectItem>
                 ))}
