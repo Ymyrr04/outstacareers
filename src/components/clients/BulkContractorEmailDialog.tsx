@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
-import { Send, Loader2, FileText, Mail, Users, RefreshCw, CalendarClock, Clock, XCircle, CalendarIcon, Building2, Pause, Play } from 'lucide-react';
+import { Send, Loader2, FileText, Mail, Users, RefreshCw, CalendarClock, Clock, XCircle, CalendarIcon, Building2, Pause, Play, Globe } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { RichTextToolbar } from '@/components/RichTextToolbar';
 import { ScheduleDateTimeDialog } from '@/components/clients/ScheduleDateTimeDialog';
@@ -18,6 +18,17 @@ interface ClientOption {
   id: string;
   company_name: string;
   contractor_count: number;
+}
+
+interface CountryOption {
+  country: string;
+  contractor_count: number;
+}
+
+interface AssignmentRow {
+  client_id: string | null;
+  company_name: string | null;
+  country: string | null;
 }
 
 interface EmailTemplate {
@@ -164,7 +175,10 @@ export const BulkContractorEmailDialog = ({
   const [rescheduleDialogOpen, setRescheduleDialogOpen] = useState(false);
   const [rescheduleTargetId, setRescheduleTargetId] = useState<string | null>(null);
   const [clients, setClients] = useState<ClientOption[]>([]);
+  const [countries, setCountries] = useState<CountryOption[]>([]);
+  const [assignments, setAssignments] = useState<AssignmentRow[]>([]);
   const [selectedClientId, setSelectedClientId] = useState<string>('all');
+  const [selectedCountry, setSelectedCountry] = useState<string>('all');
   const [filteredCount, setFilteredCount] = useState(activeContractorCount);
   const [loadingClients, setLoadingClients] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -202,28 +216,42 @@ export const BulkContractorEmailDialog = ({
   const fetchClients = useCallback(async () => {
     setLoadingClients(true);
     try {
-      const { data: assignments, error } = await supabase
+      const { data, error } = await supabase
         .from('contractor_assignments')
-        .select('client_id, client:clients(id, company_name)')
+        .select('client_id, country, client:clients(id, company_name)')
         .eq('status', 'active');
-      if (error || !assignments) return;
+      if (error || !data) return;
 
-      const countMap = new Map<string, { company_name: string; count: number }>();
-      for (const a of assignments) {
-        const c = a.client as any;
-        if (!c?.id) continue;
-        const existing = countMap.get(c.id);
-        if (existing) {
-          existing.count++;
-        } else {
-          countMap.set(c.id, { company_name: c.company_name, count: 1 });
+      const rows: AssignmentRow[] = data.map((a: any) => ({
+        client_id: a.client?.id ?? null,
+        company_name: a.client?.company_name ?? null,
+        country: (a.country ?? '').trim() || null,
+      }));
+      setAssignments(rows);
+
+      const clientMap = new Map<string, { company_name: string; count: number }>();
+      const countryMap = new Map<string, number>();
+      for (const r of rows) {
+        if (r.client_id && r.company_name) {
+          const e = clientMap.get(r.client_id);
+          if (e) e.count++;
+          else clientMap.set(r.client_id, { company_name: r.company_name, count: 1 });
+        }
+        if (r.country) {
+          countryMap.set(r.country, (countryMap.get(r.country) || 0) + 1);
         }
       }
 
-      const options: ClientOption[] = Array.from(countMap.entries())
-        .map(([id, v]) => ({ id, company_name: v.company_name, contractor_count: v.count }))
-        .sort((a, b) => a.company_name.localeCompare(b.company_name));
-      setClients(options);
+      setClients(
+        Array.from(clientMap.entries())
+          .map(([id, v]) => ({ id, company_name: v.company_name, contractor_count: v.count }))
+          .sort((a, b) => a.company_name.localeCompare(b.company_name))
+      );
+      setCountries(
+        Array.from(countryMap.entries())
+          .map(([country, contractor_count]) => ({ country, contractor_count }))
+          .sort((a, b) => b.contractor_count - a.contractor_count || a.country.localeCompare(b.country))
+      );
     } finally {
       setLoadingClients(false);
     }
@@ -380,15 +408,18 @@ export const BulkContractorEmailDialog = ({
     }
   };
 
-  const handleClientSelect = (value: string) => {
-    setSelectedClientId(value);
-    if (value === 'all') {
-      setFilteredCount(activeContractorCount);
-    } else {
-      const client = clients.find(c => c.id === value);
-      setFilteredCount(client?.contractor_count || 0);
+  // Recompute filtered count whenever filters or assignments change
+  useEffect(() => {
+    if (assignments.length === 0) {
+      setFilteredCount(selectedClientId === 'all' && selectedCountry === 'all' ? activeContractorCount : 0);
+      return;
     }
-  };
+    const count = assignments.filter(r =>
+      (selectedClientId === 'all' || r.client_id === selectedClientId) &&
+      (selectedCountry === 'all' || r.country === selectedCountry)
+    ).length;
+    setFilteredCount(count);
+  }, [assignments, selectedClientId, selectedCountry, activeContractorCount]);
 
   const resetForm = () => {
     setSubject('');
@@ -397,7 +428,7 @@ export const BulkContractorEmailDialog = ({
     setRecurringSchedule('none');
     setRecurringEnabled(false);
     setSelectedClientId('all');
-    setFilteredCount(activeContractorCount);
+    setSelectedCountry('all');
   };
 
 
@@ -432,6 +463,7 @@ export const BulkContractorEmailDialog = ({
         scheduled_for: scheduledDate.toISOString(),
         status: 'pending',
         client_id: selectedClientId !== 'all' ? selectedClientId : null,
+        country: selectedCountry !== 'all' ? selectedCountry : null,
       } as any);
 
       if (error) throw error;
@@ -470,6 +502,7 @@ export const BulkContractorEmailDialog = ({
           scheduled_for: new Date().toISOString(),
           status: 'processing',
           client_id: selectedClientId !== 'all' ? selectedClientId : null,
+          country: selectedCountry !== 'all' ? selectedCountry : null,
         } as any)
         .select('id')
         .single();
@@ -513,7 +546,7 @@ export const BulkContractorEmailDialog = ({
           'Authorization': `Bearer ${session?.access_token || anonKey}`,
           'apikey': anonKey,
         },
-        body: JSON.stringify({ subject, bodyHtml, scheduledEmailId, clientId: selectedClientId !== 'all' ? selectedClientId : undefined }),
+        body: JSON.stringify({ subject, bodyHtml, scheduledEmailId, clientId: selectedClientId !== 'all' ? selectedClientId : undefined, country: selectedCountry !== 'all' ? selectedCountry : undefined }),
       }).then(async (res) => {
         const rawText = await res.text();
         let data: any = {};
@@ -589,14 +622,14 @@ export const BulkContractorEmailDialog = ({
           {/* Company selector */}
           <div>
             <Label>Send To</Label>
-            <Select value={selectedClientId} onValueChange={handleClientSelect} disabled={loadingClients}>
+            <Select value={selectedClientId} onValueChange={setSelectedClientId} disabled={loadingClients}>
               <SelectTrigger>
                 <SelectValue placeholder={loadingClients ? 'Loading...' : 'Select company'}>
                   <span className="flex items-center gap-2">
                     <Building2 className="w-3 h-3" />
                     {selectedClientId === 'all'
-                      ? `All Companies (${activeContractorCount})`
-                      : `${clients.find(c => c.id === selectedClientId)?.company_name || 'Company'} (${filteredCount})`}
+                      ? `All Companies`
+                      : `${clients.find(c => c.id === selectedClientId)?.company_name || 'Company'}`}
                   </span>
                 </SelectValue>
               </SelectTrigger>
@@ -612,6 +645,37 @@ export const BulkContractorEmailDialog = ({
                     <span className="flex items-center gap-2">
                       <Building2 className="w-3 h-3" />
                       {c.company_name} ({c.contractor_count})
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Country selector */}
+          <div>
+            <Label>Country</Label>
+            <Select value={selectedCountry} onValueChange={setSelectedCountry} disabled={loadingClients}>
+              <SelectTrigger>
+                <SelectValue placeholder={loadingClients ? 'Loading...' : 'Select country'}>
+                  <span className="flex items-center gap-2">
+                    <Globe className="w-3 h-3" />
+                    {selectedCountry === 'all' ? 'All Countries' : selectedCountry}
+                  </span>
+                </SelectValue>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">
+                  <span className="flex items-center gap-2">
+                    <Globe className="w-3 h-3" />
+                    All Countries
+                  </span>
+                </SelectItem>
+                {countries.map(c => (
+                  <SelectItem key={c.country} value={c.country}>
+                    <span className="flex items-center gap-2">
+                      <Globe className="w-3 h-3" />
+                      {c.country} ({c.contractor_count})
                     </span>
                   </SelectItem>
                 ))}
