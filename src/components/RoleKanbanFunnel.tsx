@@ -605,6 +605,32 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRole, jobFilter, selectedAdmin, activeRoles.length, allRoles.length]);
 
+  // Fetch which loaded candidates have additional profiles (Talent Pool markers)
+  useEffect(() => {
+    if (candidates.length === 0) {
+      setAdditionalProfileIds(new Set());
+      return;
+    }
+    let cancelled = false;
+    const ids = candidates.map(c => c.id);
+    (async () => {
+      const found = new Set<string>();
+      const chunk = 500;
+      for (let i = 0; i < ids.length; i += chunk) {
+        const batch = ids.slice(i, i + chunk);
+        const { data } = await supabase
+          .from('candidate_additional_profiles')
+          .select('applicant_id')
+          .in('applicant_id', batch);
+        for (const row of data || []) found.add(row.applicant_id);
+      }
+      if (!cancelled) setAdditionalProfileIds(found);
+    })();
+    return () => { cancelled = true; };
+  }, [candidates]);
+
+
+
   // Close dropdown on outside click
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
