@@ -244,7 +244,7 @@ const staticJobs: Job[] = [
   },
 ];
 
-type Region = "philippines" | "latin-america";
+type Region = "philippines" | "latin-america" | "global";
 
 const JobsSection = () => {
   const navigate = useNavigate();
@@ -277,8 +277,14 @@ const JobsSection = () => {
     job.region === 'latin-america' || job.region === 'all' ||
     (!job.region && job.title.toLowerCase().includes('bilingual'))
   );
+  const globalJobs = jobs;
 
-  const displayedJobs = selectedRegion === "philippines" ? philippinesJobs : latinAmericaJobs;
+  const displayedJobs =
+    selectedRegion === "philippines"
+      ? philippinesJobs
+      : selectedRegion === "latin-america"
+      ? latinAmericaJobs
+      : globalJobs;
 
   // Get the display rate based on selected region
   const getDisplayRate = (job: Job): string | null => {
@@ -452,12 +458,25 @@ const JobsSection = () => {
           >
             Latin America
           </Button>
+          <Button
+            variant={selectedRegion === "global" ? "default" : "outline"}
+            size="lg"
+            onClick={() => setSelectedRegion("global")}
+            className="min-w-[160px]"
+          >
+            Global
+          </Button>
         </div>
 
         {/* Jobs Grid */}
         <div className="mb-12">
           <h3 className="text-2xl md:text-3xl font-bold text-foreground mb-8 text-center">
-            {selectedRegion === "philippines" ? "Philippines" : "Latin America"} Roles
+            {selectedRegion === "philippines"
+              ? "Philippines"
+              : selectedRegion === "latin-america"
+              ? "Latin America"
+              : "Global"}{" "}
+            Roles
           </h3>
           {loading ? (
             <p className="text-center text-muted-foreground">Loading jobs...</p>
