@@ -431,7 +431,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     //  role and the Active/All/Inactive jobs filter.
     const PRIORITY_STATUSES = ['For Review', 'For Interview', 'SIV', 'Pitch', 'Client Interview', 'Hired'];
     const BACKGROUND_STATUSES = ['Reject', 'Archive', 'Archived'];
-    const UNFILTERED_STATUSES = ['Bench', 'Talent Pool'];
+    const UNFILTERED_STATUSES = ['Bench', 'Talent Pool', 'Cold Talent Pool'];
 
     const fetchUnfilteredByStatuses = async (statuses: string[]): Promise<any[]> => {
       // Determine which roles to include based on the selected role and jobFilter
