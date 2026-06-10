@@ -21,6 +21,7 @@ const ALL_STAGES = [
   'Bench',
   'Reject',
   'Talent Pool',
+  'Cold Talent Pool',
   'Archive',
   'Archived',
 ] as const;
@@ -35,6 +36,7 @@ const DEFAULT_COLORS: Record<string, string> = {
   'Bench': '#f59e0b',
   'Reject': '#ef4444',
   'Talent Pool': '#14b8a6',
+  'Cold Talent Pool': '#0ea5e9',
   'Archive': '#6b7280',
   'Archived': '#6b7280',
 };
