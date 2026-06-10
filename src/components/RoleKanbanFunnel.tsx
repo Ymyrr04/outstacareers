@@ -1440,13 +1440,13 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
                 <p className="text-xs font-semibold leading-tight flex-1 min-w-0" title={candidate.full_name}>
                   {candidate.full_name}
                 </p>
-                {hasAdditionalProfile && (
+                {(hasAdditionalProfile || hasPrimaryProfile) && (
                   <span
-                    title="Has additional profile(s)"
+                    title={hasAdditionalProfile ? "Has additional profile(s)" : "Has candidate profile"}
                     className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-sky-500 text-white shadow-sm ring-1 ring-sky-600 shrink-0"
                   >
                     <UserCircle className="w-3 h-3" />
-                    +P
+                    {hasAdditionalProfile ? '+P' : 'P'}
                   </span>
                 )}
                 {candidate.is_starred && (
