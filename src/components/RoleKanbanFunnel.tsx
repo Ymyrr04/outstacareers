@@ -880,7 +880,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       }
     };
     const hasAnyProfile = (c: Candidate) =>
-      additionalProfileIds.has(c.id) || !!(c.candidate_profile && String(c.candidate_profile).trim().length > 0);
+      additionalProfileIds.has(c.id) || primaryProfileIds.has(c.id);
     for (const stage of orderedFunnelStages) {
       groups[stage].sort((a, b) => {
         // Pin candidates with any profile (primary or additional) to the top of each stage
@@ -892,7 +892,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     }
 
     return groups;
-  }, [filteredCandidates, sortOption, additionalProfileIds]);
+  }, [filteredCandidates, sortOption, additionalProfileIds, primaryProfileIds]);
 
   const totalInPipeline = useMemo(
     () => Object.values(stageGroups).reduce((sum, arr) => sum + arr.length, 0),
