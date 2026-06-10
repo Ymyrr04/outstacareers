@@ -37,7 +37,7 @@ const jobSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   rate: z.string().max(100).optional(),
   description: z.string().max(5000).optional(),
-  region: z.enum(['all', 'philippines', 'latin-america']),
+  region: z.enum(['all', 'philippines', 'latin-america', 'global']),
   qualifications: z.array(z.string().max(1000)).max(20).optional(),
   responsibilities: z.array(z.string().max(1000)).max(20).optional(),
   assigned_admin_id: z.union([z.string().uuid(), z.literal(''), z.null()]).optional(),
@@ -99,7 +99,7 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
     title: '',
     rate: '',
     description: '',
-    region: 'all' as 'all' | 'philippines' | 'latin-america',
+    region: 'all' as 'all' | 'philippines' | 'latin-america' | 'global',
     qualifications: ['', '', '', '', ''] as string[],
     responsibilities: ['', '', '', '', ''] as string[],
     assigned_admin_id: '' as string,
@@ -358,7 +358,7 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
             <Label htmlFor="region">Region</Label>
             <Select
               value={formData.region}
-              onValueChange={(value: 'all' | 'philippines' | 'latin-america') => 
+              onValueChange={(value: 'all' | 'philippines' | 'latin-america' | 'global') => 
                 setFormData({ ...formData, region: value })
               }
             >
@@ -369,6 +369,7 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
                 <SelectItem value="all">All Regions</SelectItem>
                 <SelectItem value="philippines">Philippines</SelectItem>
                 <SelectItem value="latin-america">Latin America</SelectItem>
+                <SelectItem value="global">Global</SelectItem>
               </SelectContent>
             </Select>
           </div>

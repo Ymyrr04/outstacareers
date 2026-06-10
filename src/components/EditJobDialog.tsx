@@ -29,7 +29,7 @@ const jobSchema = z.object({
   title: z.string().min(1, 'Title is required').max(200),
   rate: z.string().max(100).optional(),
   description: z.string().max(5000).optional(),
-  region: z.enum(['all', 'philippines', 'latin-america']),
+  region: z.enum(['all', 'philippines', 'latin-america', 'global']),
   qualifications: z.array(z.string().max(1000)).max(20).optional(),
   responsibilities: z.array(z.string().max(1000)).max(20).optional(),
   assigned_admin_id: z.string().uuid().optional().nullable(),
@@ -106,7 +106,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
     title: job.title,
     rate: job.rate || '',
     description: job.description || '',
-    region: (job.region || 'all') as 'all' | 'philippines' | 'latin-america',
+    region: (job.region || 'all') as 'all' | 'philippines' | 'latin-america' | 'global',
     qualifications: (job.qualifications && job.qualifications.length > 0) 
       ? job.qualifications 
       : ['', '', '', '', ''] as string[],
@@ -203,7 +203,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
         title: job.title,
         rate: job.rate || '',
         description: job.description || '',
-        region: (job.region || 'all') as 'all' | 'philippines' | 'latin-america',
+        region: (job.region || 'all') as 'all' | 'philippines' | 'latin-america' | 'global',
         qualifications: (job.qualifications && job.qualifications.length > 0) 
           ? job.qualifications 
           : ['', '', '', '', ''],
@@ -345,7 +345,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
             <Label htmlFor="edit-region">Region</Label>
             <Select
               value={formData.region}
-              onValueChange={(value: 'all' | 'philippines' | 'latin-america') => 
+              onValueChange={(value: 'all' | 'philippines' | 'latin-america' | 'global') => 
                 setFormData({ ...formData, region: value })
               }
             >
@@ -356,6 +356,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
                 <SelectItem value="all">All Regions</SelectItem>
                 <SelectItem value="philippines">Philippines</SelectItem>
                 <SelectItem value="latin-america">Latin America</SelectItem>
+                <SelectItem value="global">Global</SelectItem>
               </SelectContent>
             </Select>
           </div>
