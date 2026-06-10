@@ -46,6 +46,7 @@ const FUNNEL_STAGES = [
   'Hired',
   'Bench',
   'Talent Pool',
+  'Cold Talent Pool',
   'Reject',
 ] as const;
 
@@ -59,6 +60,7 @@ const STAGE_COLORS: Record<string, { bg: string; header: string; dot: string }> 
   'Bench': { bg: 'bg-teal-50 dark:bg-teal-950/20', header: 'bg-teal-500', dot: 'bg-teal-400' },
   'Reject': { bg: 'bg-red-50 dark:bg-red-950/20', header: 'bg-red-400', dot: 'bg-red-400' },
   'Talent Pool': { bg: 'bg-amber-50 dark:bg-amber-950/20', header: 'bg-amber-500', dot: 'bg-amber-400' },
+  'Cold Talent Pool': { bg: 'bg-sky-50 dark:bg-sky-950/20', header: 'bg-sky-500', dot: 'bg-sky-400' },
 };
 
 const defaultStageDisplayName = (stage: string): string => {
