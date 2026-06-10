@@ -121,6 +121,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [additionalProfileIds, setAdditionalProfileIds] = useState<Set<string>>(new Set());
+  const [primaryProfileIds, setPrimaryProfileIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [candidateSearch, setCandidateSearch] = useState('');
   const candidateSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
