@@ -121,6 +121,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   const dropdownRef = useRef<HTMLDivElement>(null);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [additionalProfileIds, setAdditionalProfileIds] = useState<Set<string>>(new Set());
+  const [primaryProfileIds, setPrimaryProfileIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [candidateSearch, setCandidateSearch] = useState('');
   const candidateSearchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -605,26 +606,35 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRole, jobFilter, selectedAdmin, activeRoles.length, allRoles.length]);
 
-  // Fetch which loaded candidates have additional profiles (Talent Pool markers)
+  // Fetch which loaded candidates have profiles (primary or additional)
   useEffect(() => {
     if (candidates.length === 0) {
       setAdditionalProfileIds(new Set());
+      setPrimaryProfileIds(new Set());
       return;
     }
     let cancelled = false;
     const ids = candidates.map(c => c.id);
     (async () => {
-      const found = new Set<string>();
+      const foundAdditional = new Set<string>();
+      const foundPrimary = new Set<string>();
       const chunk = 500;
       for (let i = 0; i < ids.length; i += chunk) {
         const batch = ids.slice(i, i + chunk);
-        const { data } = await supabase
-          .from('candidate_additional_profiles')
-          .select('applicant_id')
-          .in('applicant_id', batch);
-        for (const row of data || []) found.add(row.applicant_id);
+        const [{ data: addData }, { data: primData }] = await Promise.all([
+          supabase.from('candidate_additional_profiles').select('applicant_id').in('applicant_id', batch),
+          supabase.from('applicants_prescreen').select('id, candidate_profile').in('id', batch),
+        ]);
+        for (const row of addData || []) foundAdditional.add(row.applicant_id);
+        for (const row of primData || []) {
+          const p = (row as { id: string; candidate_profile: string | null }).candidate_profile;
+          if (p && String(p).trim().length > 0) foundPrimary.add((row as { id: string }).id);
+        }
       }
-      if (!cancelled) setAdditionalProfileIds(found);
+      if (!cancelled) {
+        setAdditionalProfileIds(foundAdditional);
+        setPrimaryProfileIds(foundPrimary);
+      }
     })();
     return () => { cancelled = true; };
   }, [candidates]);
@@ -869,18 +879,20 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
         default: return 0;
       }
     };
+    const hasAnyProfile = (c: Candidate) =>
+      additionalProfileIds.has(c.id) || primaryProfileIds.has(c.id);
     for (const stage of orderedFunnelStages) {
       groups[stage].sort((a, b) => {
-        // Pin candidates with additional profiles to the top of each stage
-        const aHasP = additionalProfileIds.has(a.id) ? 1 : 0;
-        const bHasP = additionalProfileIds.has(b.id) ? 1 : 0;
+        // Pin candidates with any profile (primary or additional) to the top of each stage
+        const aHasP = hasAnyProfile(a) ? 1 : 0;
+        const bHasP = hasAnyProfile(b) ? 1 : 0;
         if (bHasP !== aHasP) return bHasP - aHasP;
         return sortFn(a, b);
       });
     }
 
     return groups;
-  }, [filteredCandidates, sortOption, additionalProfileIds]);
+  }, [filteredCandidates, sortOption, additionalProfileIds, primaryProfileIds]);
 
   const totalInPipeline = useMemo(
     () => Object.values(stageGroups).reduce((sum, arr) => sum + arr.length, 0),
@@ -1214,6 +1226,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                             isSelected={selectedIds.has(candidate.id)}
                             onSelectToggle={() => toggleCardSelection(candidate)}
                             hasAdditionalProfile={additionalProfileIds.has(candidate.id)}
+                            hasPrimaryProfile={primaryProfileIds.has(candidate.id)}
                           />
                         ))
                       )}
@@ -1315,9 +1328,10 @@ interface CandidateCardProps {
   isSelected?: boolean;
   onSelectToggle?: () => void;
   hasAdditionalProfile?: boolean;
+  hasPrimaryProfile?: boolean;
 }
 
-const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle, hasAdditionalProfile }: CandidateCardProps) => {
+const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle, hasAdditionalProfile, hasPrimaryProfile }: CandidateCardProps) => {
   const { getDisplayName: getStageDisplayName } = useStageSettings();
   const [showDetails, setShowDetails] = useState(false);
   const [showDetailsTab, setShowDetailsTab] = useState<string | undefined>(undefined); // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -1426,13 +1440,13 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
                 <p className="text-xs font-semibold leading-tight flex-1 min-w-0" title={candidate.full_name}>
                   {candidate.full_name}
                 </p>
-                {hasAdditionalProfile && (
+                {(hasAdditionalProfile || hasPrimaryProfile) && (
                   <span
-                    title="Has additional profile(s)"
+                    title={hasAdditionalProfile ? "Has additional profile(s)" : "Has candidate profile"}
                     className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-sky-500 text-white shadow-sm ring-1 ring-sky-600 shrink-0"
                   >
                     <UserCircle className="w-3 h-3" />
-                    +P
+                    {hasAdditionalProfile ? '+P' : 'P'}
                   </span>
                 )}
                 {candidate.is_starred && (
