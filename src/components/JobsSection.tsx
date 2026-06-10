@@ -277,8 +277,14 @@ const JobsSection = () => {
     job.region === 'latin-america' || job.region === 'all' ||
     (!job.region && job.title.toLowerCase().includes('bilingual'))
   );
+  const globalJobs = jobs;
 
-  const displayedJobs = selectedRegion === "philippines" ? philippinesJobs : latinAmericaJobs;
+  const displayedJobs =
+    selectedRegion === "philippines"
+      ? philippinesJobs
+      : selectedRegion === "latin-america"
+      ? latinAmericaJobs
+      : globalJobs;
 
   // Get the display rate based on selected region
   const getDisplayRate = (job: Job): string | null => {
