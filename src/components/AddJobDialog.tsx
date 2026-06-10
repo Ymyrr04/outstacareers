@@ -358,7 +358,7 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
             <Label htmlFor="region">Region</Label>
             <Select
               value={formData.region}
-              onValueChange={(value: 'all' | 'philippines' | 'latin-america') => 
+              onValueChange={(value: 'all' | 'philippines' | 'latin-america' | 'global') => 
                 setFormData({ ...formData, region: value })
               }
             >
@@ -369,6 +369,7 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
                 <SelectItem value="all">All Regions</SelectItem>
                 <SelectItem value="philippines">Philippines</SelectItem>
                 <SelectItem value="latin-america">Latin America</SelectItem>
+                <SelectItem value="global">Global</SelectItem>
               </SelectContent>
             </Select>
           </div>
