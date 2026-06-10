@@ -66,6 +66,7 @@ export const triggerToStatus: Record<string, string> = {
   'bench': 'Bench',
   'reject': 'Reject',
   'talent_pool': 'Talent Pool',
+  'cold_talent_pool': 'Cold Talent Pool',
   'check_availability': 'Check Availability',
   'reprofiling': 'Reprofiling',
 };
