@@ -54,6 +54,7 @@ export const statusToTrigger: Record<string, string> = {
   'Bench': 'bench',
   'Reject': 'reject',
   'Talent Pool': 'talent_pool',
+  'Cold Talent Pool': 'cold_talent_pool',
 };
 
 export const triggerToStatus: Record<string, string> = {
