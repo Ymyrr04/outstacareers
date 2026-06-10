@@ -606,26 +606,35 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRole, jobFilter, selectedAdmin, activeRoles.length, allRoles.length]);
 
-  // Fetch which loaded candidates have additional profiles (Talent Pool markers)
+  // Fetch which loaded candidates have profiles (primary or additional)
   useEffect(() => {
     if (candidates.length === 0) {
       setAdditionalProfileIds(new Set());
+      setPrimaryProfileIds(new Set());
       return;
     }
     let cancelled = false;
     const ids = candidates.map(c => c.id);
     (async () => {
-      const found = new Set<string>();
+      const foundAdditional = new Set<string>();
+      const foundPrimary = new Set<string>();
       const chunk = 500;
       for (let i = 0; i < ids.length; i += chunk) {
         const batch = ids.slice(i, i + chunk);
-        const { data } = await supabase
-          .from('candidate_additional_profiles')
-          .select('applicant_id')
-          .in('applicant_id', batch);
-        for (const row of data || []) found.add(row.applicant_id);
+        const [{ data: addData }, { data: primData }] = await Promise.all([
+          supabase.from('candidate_additional_profiles').select('applicant_id').in('applicant_id', batch),
+          supabase.from('applicants_prescreen').select('id, candidate_profile').in('id', batch),
+        ]);
+        for (const row of addData || []) foundAdditional.add(row.applicant_id);
+        for (const row of primData || []) {
+          const p = (row as { id: string; candidate_profile: string | null }).candidate_profile;
+          if (p && String(p).trim().length > 0) foundPrimary.add((row as { id: string }).id);
+        }
       }
-      if (!cancelled) setAdditionalProfileIds(found);
+      if (!cancelled) {
+        setAdditionalProfileIds(foundAdditional);
+        setPrimaryProfileIds(foundPrimary);
+      }
     })();
     return () => { cancelled = true; };
   }, [candidates]);
