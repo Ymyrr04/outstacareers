@@ -1423,9 +1423,9 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
                 {hasAdditionalProfile && (
                   <span
                     title="Has additional profile(s)"
-                    className="inline-flex items-center gap-0.5 text-[9px] font-bold px-1 py-0.5 rounded bg-sky-100 text-sky-700 dark:bg-sky-950/40 dark:text-sky-400 shrink-0"
+                    className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-sky-500 text-white shadow-sm ring-1 ring-sky-600 shrink-0"
                   >
-                    <UserCircle className="w-2.5 h-2.5" />
+                    <UserCircle className="w-3 h-3" />
                     +P
                   </span>
                 )}
