@@ -106,7 +106,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
     title: job.title,
     rate: job.rate || '',
     description: job.description || '',
-    region: (job.region || 'all') as 'all' | 'philippines' | 'latin-america',
+    region: (job.region || 'all') as 'all' | 'philippines' | 'latin-america' | 'global',
     qualifications: (job.qualifications && job.qualifications.length > 0) 
       ? job.qualifications 
       : ['', '', '', '', ''] as string[],
