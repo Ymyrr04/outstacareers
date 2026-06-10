@@ -244,7 +244,7 @@ const staticJobs: Job[] = [
   },
 ];
 
-type Region = "philippines" | "latin-america";
+type Region = "philippines" | "latin-america" | "global";
 
 const JobsSection = () => {
   const navigate = useNavigate();
