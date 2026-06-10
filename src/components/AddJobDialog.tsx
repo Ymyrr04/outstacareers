@@ -99,7 +99,7 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
     title: '',
     rate: '',
     description: '',
-    region: 'all' as 'all' | 'philippines' | 'latin-america',
+    region: 'all' as 'all' | 'philippines' | 'latin-america' | 'global',
     qualifications: ['', '', '', '', ''] as string[],
     responsibilities: ['', '', '', '', ''] as string[],
     assigned_admin_id: '' as string,
