@@ -345,7 +345,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
             <Label htmlFor="edit-region">Region</Label>
             <Select
               value={formData.region}
-              onValueChange={(value: 'all' | 'philippines' | 'latin-america') => 
+              onValueChange={(value: 'all' | 'philippines' | 'latin-america' | 'global') => 
                 setFormData({ ...formData, region: value })
               }
             >
@@ -356,6 +356,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
                 <SelectItem value="all">All Regions</SelectItem>
                 <SelectItem value="philippines">Philippines</SelectItem>
                 <SelectItem value="latin-america">Latin America</SelectItem>
+                <SelectItem value="global">Global</SelectItem>
               </SelectContent>
             </Select>
           </div>
