@@ -870,11 +870,17 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       }
     };
     for (const stage of orderedFunnelStages) {
-      groups[stage].sort(sortFn);
+      groups[stage].sort((a, b) => {
+        // Pin candidates with additional profiles to the top of each stage
+        const aHasP = additionalProfileIds.has(a.id) ? 1 : 0;
+        const bHasP = additionalProfileIds.has(b.id) ? 1 : 0;
+        if (bHasP !== aHasP) return bHasP - aHasP;
+        return sortFn(a, b);
+      });
     }
 
     return groups;
-  }, [filteredCandidates, sortOption]);
+  }, [filteredCandidates, sortOption, additionalProfileIds]);
 
   const totalInPipeline = useMemo(
     () => Object.values(stageGroups).reduce((sum, arr) => sum + arr.length, 0),
