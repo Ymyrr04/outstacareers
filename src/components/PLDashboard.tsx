@@ -555,6 +555,55 @@ export const PLDashboard = () => {
     }
   };
 
+  const handleResetPassword = async (c: ContractorRow) => {
+    if (!c.applicant?.email) {
+      toast({ title: 'No email', description: 'This contractor has no email on file.', variant: 'destructive' });
+      return;
+    }
+    if (!confirm(`Reset portal password for ${c.applicant.full_name}?\n\nTheir password will be reset to the default (OutSta2026!) and they'll be emailed the new login details. They'll be required to change it on next login.`)) return;
+    setResettingId(c.id);
+    try {
+      const portalUrl = `https://outstahub.com/portal/login`;
+      const firstName = (c.applicant.full_name || '').split(' ')[0] || 'there';
+
+      const { error: resetErr } = await supabase.functions.invoke('admin-reset-password', {
+        body: { email: c.applicant.email, password: 'OutSta2026!' },
+      });
+      if (resetErr) throw resetErr;
+
+      await supabase
+        .from('contractor_portal_users')
+        .update({ must_change_password: true })
+        .eq('contractor_assignment_id', c.id);
+
+      const subject = 'Your OutSta Portal Password Has Been Reset';
+      const bodyHtml = `
+        <p>Hi ${firstName},</p>
+        <p>Your OutSta contractor portal password has been reset by an administrator. Use the temporary password below to log in, and you'll be asked to set a new one.</p>
+        <p><strong>Portal URL:</strong> <a href="${portalUrl}">${portalUrl}</a><br/>
+        <strong>Email:</strong> ${c.applicant.email}<br/>
+        <strong>Temporary password:</strong> OutSta2026!</p>
+        <p>If you didn't request this, please reply to this email right away.</p>
+        <p>Thanks,<br/>The OutSta Team</p>
+      `;
+      await supabase.functions.invoke('send-contractor-email', {
+        body: {
+          contractorAssignmentId: c.id,
+          subject,
+          bodyHtml,
+          recipientEmail: c.applicant.email,
+          recipientName: c.applicant.full_name || c.applicant.email,
+        },
+      });
+      toast({ title: 'Password reset', description: `New credentials emailed to ${c.applicant.email}.` });
+      fetchData();
+    } catch (e: any) {
+      toast({ title: 'Reset failed', description: e.message || String(e), variant: 'destructive' });
+    } finally {
+      setResettingId(null);
+    }
+  };
+
   const handleDecision = async (r: TimesheetRow, decision: 'approved' | 'rejected') => {
     const overDays = r.daily_hours
       ? Object.entries(r.daily_hours).filter(([, v]) => Number(v?.hours) > 10).map(([k]) => k)
