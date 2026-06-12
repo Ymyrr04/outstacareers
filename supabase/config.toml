@@ -104,3 +104,6 @@ verify_jwt = true
 
 [functions.countersign-contract]
 verify_jwt = false
+
+[functions.contractor-portal-recovery]
+verify_jwt = false
