@@ -15,6 +15,9 @@ const PortalLogin = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotEmail, setForgotEmail] = useState('');
+  const [forgotLoading, setForgotLoading] = useState(false);
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
@@ -62,6 +65,26 @@ const PortalLogin = () => {
     }
   };
 
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleaned = forgotEmail.trim().toLowerCase();
+    if (!cleaned) return;
+    setForgotLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('contractor-portal-recovery', {
+        body: { email: cleaned },
+      });
+      if (error) throw error;
+      toast({ title: 'Check your email', description: data?.message || 'If that account exists, a reset link has been sent.' });
+      setForgotOpen(false);
+      setForgotEmail('');
+    } catch (err: any) {
+      toast({ title: 'Failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
       <Helmet><title>Contractor Login | OutSta PL Portal</title></Helmet>
@@ -77,7 +100,16 @@ const PortalLogin = () => {
               <Input id="email" type="email" autoComplete="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password">Password</Label>
+                <button
+                  type="button"
+                  className="text-xs text-primary hover:underline"
+                  onClick={() => { setForgotEmail(email); setForgotOpen((v) => !v); }}
+                >
+                  Forgot password?
+                </button>
+              </div>
               <Input id="password" type="password" autoComplete="current-password" required value={password} onChange={(e) => setPassword(e.target.value)} />
             </div>
             <Button type="submit" className="w-full" disabled={loading}>
@@ -85,6 +117,28 @@ const PortalLogin = () => {
             </Button>
             <p className="text-xs text-muted-foreground text-center">First time? Use the default password provided by your admin.</p>
           </form>
+          {forgotOpen && (
+            <form onSubmit={handleForgot} className="mt-6 space-y-3 border-t pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="forgot-email">Enter your account email</Label>
+                <Input
+                  id="forgot-email"
+                  type="email"
+                  required
+                  value={forgotEmail}
+                  onChange={(e) => setForgotEmail(e.target.value)}
+                  placeholder="you@example.com"
+                />
+                <p className="text-xs text-muted-foreground">We'll email you a link to reset your password.</p>
+              </div>
+              <div className="flex gap-2">
+                <Button type="submit" className="flex-1" disabled={forgotLoading}>
+                  {forgotLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Send reset link'}
+                </Button>
+                <Button type="button" variant="outline" onClick={() => setForgotOpen(false)}>Cancel</Button>
+              </div>
+            </form>
+          )}
         </CardContent>
       </Card>
     </div>

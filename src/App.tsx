@@ -23,6 +23,7 @@ import AiUsage from "./pages/AiUsage";
 import StageSettings from "./pages/StageSettings";
 import PortalLogin from "./pages/PortalLogin";
 import PortalChangePassword from "./pages/PortalChangePassword";
+import PortalResetPassword from "./pages/PortalResetPassword";
 import PortalDashboard from "./pages/PortalDashboard";
 import SignContract from "./pages/SignContract";
 import CountersignContract from "./pages/CountersignContract";
@@ -73,6 +74,7 @@ const App = () => (
                 <Route path="/talent-pool" element={guard(<TalentPool />)} />
                 <Route path="/portal/login" element={guard(<PortalLogin />)} />
                 <Route path="/portal/change-password" element={guard(<PortalChangePassword />)} />
+                <Route path="/portal/reset-password" element={guard(<PortalResetPassword />)} />
                 <Route path="/portal" element={guard(<PortalDashboard />)} />
                 <Route path="/sign/:token" element={guard(<SignContract />)} />
                 <Route path="/countersign/:token" element={guard(<CountersignContract />)} />

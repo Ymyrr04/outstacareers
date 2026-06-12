@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye, Mail, Settings2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye, Mail, Settings2, ChevronLeft, ChevronRight, KeyRound } from 'lucide-react';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -134,6 +134,7 @@ export const PLDashboard = () => {
   const [provisioning, setProvisioning] = useState(false);
   const [provisioningId, setProvisioningId] = useState<string | null>(null);
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [resettingId, setResettingId] = useState<string | null>(null);
   const [rows, setRows] = useState<TimesheetRow[]>([]);
   const [contractors, setContractors] = useState<ContractorRow[]>([]);
   const [search, setSearch] = useState('');
@@ -551,6 +552,55 @@ export const PLDashboard = () => {
       toast({ title: 'Failed to resend', description: e.message || String(e), variant: 'destructive' });
     } finally {
       setResendingId(null);
+    }
+  };
+
+  const handleResetPassword = async (c: ContractorRow) => {
+    if (!c.applicant?.email) {
+      toast({ title: 'No email', description: 'This contractor has no email on file.', variant: 'destructive' });
+      return;
+    }
+    if (!confirm(`Reset portal password for ${c.applicant.full_name}?\n\nTheir password will be reset to the default (OutSta2026!) and they'll be emailed the new login details. They'll be required to change it on next login.`)) return;
+    setResettingId(c.id);
+    try {
+      const portalUrl = `https://outstahub.com/portal/login`;
+      const firstName = (c.applicant.full_name || '').split(' ')[0] || 'there';
+
+      const { error: resetErr } = await supabase.functions.invoke('admin-reset-password', {
+        body: { email: c.applicant.email, password: 'OutSta2026!' },
+      });
+      if (resetErr) throw resetErr;
+
+      await supabase
+        .from('contractor_portal_users')
+        .update({ must_change_password: true })
+        .eq('contractor_assignment_id', c.id);
+
+      const subject = 'Your OutSta Portal Password Has Been Reset';
+      const bodyHtml = `
+        <p>Hi ${firstName},</p>
+        <p>Your OutSta contractor portal password has been reset by an administrator. Use the temporary password below to log in, and you'll be asked to set a new one.</p>
+        <p><strong>Portal URL:</strong> <a href="${portalUrl}">${portalUrl}</a><br/>
+        <strong>Email:</strong> ${c.applicant.email}<br/>
+        <strong>Temporary password:</strong> OutSta2026!</p>
+        <p>If you didn't request this, please reply to this email right away.</p>
+        <p>Thanks,<br/>The OutSta Team</p>
+      `;
+      await supabase.functions.invoke('send-contractor-email', {
+        body: {
+          contractorAssignmentId: c.id,
+          subject,
+          bodyHtml,
+          recipientEmail: c.applicant.email,
+          recipientName: c.applicant.full_name || c.applicant.email,
+        },
+      });
+      toast({ title: 'Password reset', description: `New credentials emailed to ${c.applicant.email}.` });
+      fetchData();
+    } catch (e: any) {
+      toast({ title: 'Reset failed', description: e.message || String(e), variant: 'destructive' });
+    } finally {
+      setResettingId(null);
     }
   };
 
@@ -1023,6 +1073,16 @@ export const PLDashboard = () => {
                               {resendingId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Mail className="w-3 h-3 mr-1" />Resend</>}
                             </Button>
                           )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs"
+                            disabled={resettingId === c.id || !c.applicant?.email}
+                            onClick={() => handleResetPassword(c)}
+                            title="Reset password to default and email new credentials"
+                          >
+                            {resettingId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><KeyRound className="w-3 h-3 mr-1" />Reset PW</>}
+                          </Button>
                         </div>
                       )}
                     </TableCell>
@@ -1215,6 +1275,16 @@ export const PLDashboard = () => {
                               {resendingId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Mail className="w-3 h-3 mr-1" />Resend</>}
                             </Button>
                           )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs"
+                            disabled={resettingId === c.id || !c.applicant?.email}
+                            onClick={() => handleResetPassword(c)}
+                            title="Reset password to default and email new credentials"
+                          >
+                            {resettingId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><KeyRound className="w-3 h-3 mr-1" />Reset PW</>}
+                          </Button>
                         </div>
                       )}
                     </TableCell>
