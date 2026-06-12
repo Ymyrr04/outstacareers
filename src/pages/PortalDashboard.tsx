@@ -1693,6 +1693,7 @@ const PortalDashboard = () => {
                           mode="range"
                           numberOfMonths={2}
                           showOutsideDays={false}
+                          weekStartsOn={1}
                           defaultMonth={draftDateRange?.from ?? dateRange?.from ?? new Date()}
                           selected={draftDateRange}
                           onSelect={setDraftDateRange}
