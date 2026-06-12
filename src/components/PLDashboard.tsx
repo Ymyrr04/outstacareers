@@ -566,10 +566,23 @@ export const PLDashboard = () => {
       const portalUrl = `https://outstahub.com/portal/login`;
       const firstName = (c.applicant.full_name || '').split(' ')[0] || 'there';
 
-      const { error: resetErr } = await supabase.functions.invoke('admin-reset-password', {
+      const { data: resetData, error: resetErr } = await supabase.functions.invoke('admin-reset-password', {
         body: { email: c.applicant.email, password: 'OutSta2026!' },
       });
-      if (resetErr) throw resetErr;
+      if (resetErr) {
+        // FunctionsHttpError hides the response body — extract it for a useful message.
+        let serverMsg = resetErr.message || 'Unknown error';
+        try {
+          const resp = (resetErr as any).context?.response;
+          if (resp && typeof resp.text === 'function') {
+            const txt = await resp.text();
+            try { const j = JSON.parse(txt); serverMsg = j.error || j.message || txt; }
+            catch { if (txt) serverMsg = txt; }
+          }
+        } catch {}
+        throw new Error(serverMsg);
+      }
+      if (resetData?.error) throw new Error(resetData.error);
 
       await supabase
         .from('contractor_portal_users')
