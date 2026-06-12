@@ -565,15 +565,19 @@ export const PLDashboard = () => {
     try {
       const portalUrl = `https://outstahub.com/portal/login`;
       const firstName = (c.applicant.full_name || '').split(' ')[0] || 'there';
+      const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+      if (sessionError) throw new Error(`Unable to read admin session: ${sessionError.message}`);
+      const token = sessionData.session?.access_token;
+      if (!token) throw new Error('No active admin session. Please sign in as admin and try again.');
 
       const resetResponse = await fetch(`${import.meta.env.VITE_SUPABASE_URL}/functions/v1/admin-reset-password`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify({ email: c.applicant.email, password: 'OutSta2026!' }),
+        body: JSON.stringify({ email: c.applicant.email, password: 'OutSta2026!', contractorAssignmentId: c.id }),
       });
       const resetText = await resetResponse.text();
       let resetData: any = null;
