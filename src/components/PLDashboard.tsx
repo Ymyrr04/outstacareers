@@ -1073,6 +1073,16 @@ export const PLDashboard = () => {
                               {resendingId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><Mail className="w-3 h-3 mr-1" />Resend</>}
                             </Button>
                           )}
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2 text-xs"
+                            disabled={resettingId === c.id || !c.applicant?.email}
+                            onClick={() => handleResetPassword(c)}
+                            title="Reset password to default and email new credentials"
+                          >
+                            {resettingId === c.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <><KeyRound className="w-3 h-3 mr-1" />Reset PW</>}
+                          </Button>
                         </div>
                       )}
                     </TableCell>
