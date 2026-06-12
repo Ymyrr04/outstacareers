@@ -23,6 +23,7 @@ import AiUsage from "./pages/AiUsage";
 import StageSettings from "./pages/StageSettings";
 import PortalLogin from "./pages/PortalLogin";
 import PortalChangePassword from "./pages/PortalChangePassword";
+import PortalResetPassword from "./pages/PortalResetPassword";
 import PortalDashboard from "./pages/PortalDashboard";
 import SignContract from "./pages/SignContract";
 import CountersignContract from "./pages/CountersignContract";
