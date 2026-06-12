@@ -65,6 +65,26 @@ const PortalLogin = () => {
     }
   };
 
+  const handleForgot = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleaned = forgotEmail.trim().toLowerCase();
+    if (!cleaned) return;
+    setForgotLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('contractor-portal-recovery', {
+        body: { email: cleaned },
+      });
+      if (error) throw error;
+      toast({ title: 'Check your email', description: data?.message || 'If that account exists, a reset link has been sent.' });
+      setForgotOpen(false);
+      setForgotEmail('');
+    } catch (err: any) {
+      toast({ title: 'Failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setForgotLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
       <Helmet><title>Contractor Login | OutSta PL Portal</title></Helmet>
