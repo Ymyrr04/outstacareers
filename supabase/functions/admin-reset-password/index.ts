@@ -13,6 +13,20 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
   }
 }
 
+async function linkPortalUser(supabase: any, contractorAssignmentId: string, userId: string, email: string) {
+  const payload = { user_id: userId, contractor_assignment_id: contractorAssignmentId, email, must_change_password: true };
+  const { data: updated, error: updateErr } = await supabase
+    .from("contractor_portal_users")
+    .update(payload)
+    .eq("contractor_assignment_id", contractorAssignmentId)
+    .select("id")
+    .maybeSingle();
+  if (updateErr) return updateErr;
+  if (updated) return null;
+  const { error: insertErr } = await supabase.from("contractor_portal_users").insert(payload);
+  return insertErr;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: cors });
   try {
@@ -90,9 +104,7 @@ Deno.serve(async (req) => {
       if (createErr || !newUser.user) {
         return new Response(JSON.stringify({ error: `Create user failed: ${createErr?.message || "No user returned"}` }), { status: 500, headers: cors });
       }
-      const { error: portalErr } = await supabase
-        .from("contractor_portal_users")
-        .upsert({ user_id: newUser.user.id, contractor_assignment_id: contractorAssignmentId, email: normalizedEmail, must_change_password: true }, { onConflict: "contractor_assignment_id" });
+      const portalErr = await linkPortalUser(supabase, contractorAssignmentId, newUser.user.id, normalizedEmail);
       if (portalErr) {
         await supabase.auth.admin.deleteUser(newUser.user.id).catch(() => {});
         return new Response(JSON.stringify({ error: `Portal link failed: ${portalErr.message}` }), { status: 500, headers: cors });
@@ -106,9 +118,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: `Update failed: ${error.message}` }), { status: 500, headers: cors });
     }
     if (contractorAssignmentId) {
-      const { error: portalErr } = await supabase
-        .from("contractor_portal_users")
-        .upsert({ user_id: foundUser.id, contractor_assignment_id: contractorAssignmentId, email: normalizedEmail, must_change_password: true }, { onConflict: "contractor_assignment_id" });
+      const portalErr = await linkPortalUser(supabase, contractorAssignmentId, foundUser.id, normalizedEmail);
       if (portalErr) {
         return new Response(JSON.stringify({ error: `Portal link failed: ${portalErr.message}` }), { status: 500, headers: cors });
       }
