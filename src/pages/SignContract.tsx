@@ -213,7 +213,7 @@ const SignContract = () => {
       <header className="bg-background border-b sticky top-0 z-20">
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <div>
-            <h1 className="font-semibold text-lg leading-tight">OutSta Contractor Agreement - {data.envelope.recipient_name}</h1>
+            <h1 className="font-semibold text-lg leading-tight">OutSta Agreement - {data.envelope.recipient_name}</h1>
             <p className="text-xs text-muted-foreground">For {data.envelope.recipient_name} • Expires {new Date(data.envelope.expires_at).toLocaleDateString()}</p>
           </div>
           <div className="text-sm">
