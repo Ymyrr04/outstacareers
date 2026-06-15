@@ -62,6 +62,23 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400, headers: corsHeaders });
     }
 
+    // Resolve sender credentials
+    const requestedSender = (body.senderEmail || "mark@outsta.io").toLowerCase();
+    const senderConfig = SENDER_CREDENTIALS[requestedSender] ?? SENDER_CREDENTIALS["mark@outsta.io"];
+    let gmailUser = defaultGmailUser;
+    let gmailPassword = defaultGmailPassword;
+    let senderDisplayName = SENDER_CREDENTIALS["mark@outsta.io"].displayName;
+    const specificUser = Deno.env.get(senderConfig.userEnv);
+    const specificPass = Deno.env.get(senderConfig.passEnv);
+    if (specificUser && specificPass) {
+      gmailUser = specificUser;
+      gmailPassword = specificPass;
+      senderDisplayName = senderConfig.displayName;
+    } else if (requestedSender !== "mark@outsta.io") {
+      console.warn(`Credentials missing for ${requestedSender}; falling back to Mark`);
+    }
+
+
     const token = generateToken();
     const expiresAt = new Date(Date.now() + (body.expiresInDays ?? 14) * 86400000).toISOString();
 
