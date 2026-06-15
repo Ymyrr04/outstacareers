@@ -97,7 +97,7 @@ Deno.serve(async (req) => {
         status: "sent",
         sent_at: new Date().toISOString(),
         sender_user_id: userId,
-        sender_email: userEmail,
+        sender_email: gmailUser,
       })
       .select()
       .single();
