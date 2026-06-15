@@ -35,8 +35,8 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const gmailUser = Deno.env.get("MARK_GMAIL_USER")!;
-    const gmailPassword = Deno.env.get("MARK_GMAIL_APP_PASSWORD")!;
+    const defaultGmailUser = Deno.env.get("MARK_GMAIL_USER")!;
+    const defaultGmailPassword = Deno.env.get("MARK_GMAIL_APP_PASSWORD")!;
 
     // Auth check (signing-keys compatible)
     const authHeader = req.headers.get("Authorization");
