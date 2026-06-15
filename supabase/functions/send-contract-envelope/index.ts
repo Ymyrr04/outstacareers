@@ -20,7 +20,13 @@ interface SendEnvelopeRequest {
   adminPrefill?: Record<string, string>;
   message?: string;
   expiresInDays?: number;
+  senderEmail?: string;
 }
+
+const SENDER_CREDENTIALS: Record<string, { userEnv: string; passEnv: string; displayName: string }> = {
+  "mark@outsta.io": { userEnv: "MARK_GMAIL_USER", passEnv: "MARK_GMAIL_APP_PASSWORD", displayName: "Mark Chua" },
+  "liezl@outsta.io": { userEnv: "LIEZL_GMAIL_USER", passEnv: "LIEZL_GMAIL_APP_PASSWORD", displayName: "Liezl" },
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
