@@ -28,6 +28,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
   const [rate, setRate] = useState("");
   const [startDate, setStartDate] = useState("");
   const [startTime, setStartTime] = useState("");
+  const [senderEmail, setSenderEmail] = useState<string>("mark@outsta.io");
   const messageRef = useRef<HTMLTextAreaElement>(null);
 
   const formatStartDate = (iso: string) => {
