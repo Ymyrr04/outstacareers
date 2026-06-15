@@ -204,6 +204,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
             .replace(/\{\{start_date\}\}/g, formatStartDate(startDate) || "{{start_date}}")
             .replace(/\{\{start_time\}\}/g, formatStartTime(startTime) || "{{start_time}}"),
           expiresInDays,
+          senderEmail,
         },
       });
       if (error) throw error;
