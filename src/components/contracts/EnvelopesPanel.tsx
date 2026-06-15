@@ -193,7 +193,7 @@ export const EnvelopesPanel = () => {
             <Card key={e.id} className="p-4 flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-medium truncate">OutSta Contractor Agreement - {e.recipient_name}</p>
+                  <p className="font-medium truncate">OutSta Agreement - {e.recipient_name}</p>
                   <Badge className={STATUS_COLORS[e.status] || ""} variant="outline">{e.status}</Badge>
                   {e.countersigned_at && (
                     <Badge className="bg-teal-600/20 text-teal-700 dark:text-teal-300" variant="outline">fully signed</Badge>

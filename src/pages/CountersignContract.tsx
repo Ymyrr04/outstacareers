@@ -185,7 +185,7 @@ const CountersignContract = () => {
     <div className="min-h-screen bg-muted/30">
       <header className="bg-background border-b sticky top-0 z-20">
         <div className="max-w-5xl mx-auto px-4 py-3">
-          <h1 className="font-semibold text-lg leading-tight">OutSta Contractor Agreement - {data.envelope.recipient_name}</h1>
+          <h1 className="font-semibold text-lg leading-tight">OutSta Agreement - {data.envelope.recipient_name}</h1>
           <p className="text-xs text-muted-foreground">Review the signed contract below, then add your signature.</p>
         </div>
       </header>
