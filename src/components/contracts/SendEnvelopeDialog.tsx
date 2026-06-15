@@ -28,6 +28,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
   const [rate, setRate] = useState("");
   const [startDate, setStartDate] = useState("");
   const [startTime, setStartTime] = useState("");
+  const [senderEmail, setSenderEmail] = useState<string>("mark@outsta.io");
   const messageRef = useRef<HTMLTextAreaElement>(null);
 
   const formatStartDate = (iso: string) => {
@@ -203,6 +204,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
             .replace(/\{\{start_date\}\}/g, formatStartDate(startDate) || "{{start_date}}")
             .replace(/\{\{start_time\}\}/g, formatStartTime(startTime) || "{{start_time}}"),
           expiresInDays,
+          senderEmail,
         },
       });
       if (error) throw error;
@@ -223,14 +225,26 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader><DialogTitle>Send Contract for Signature</DialogTitle></DialogHeader>
         <div className="space-y-3">
-          <div>
-            <label className="text-sm font-medium">Template</label>
-            <Select value={templateId} onValueChange={setTemplateId}>
-              <SelectTrigger><SelectValue placeholder="Select template" /></SelectTrigger>
-              <SelectContent>
-                {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-sm font-medium">Template</label>
+              <Select value={templateId} onValueChange={setTemplateId}>
+                <SelectTrigger><SelectValue placeholder="Select template" /></SelectTrigger>
+                <SelectContent>
+                  {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="text-sm font-medium">Send from</label>
+              <Select value={senderEmail} onValueChange={setSenderEmail}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mark@outsta.io">Mark &lt;mark@outsta.io&gt;</SelectItem>
+                  <SelectItem value="liezl@outsta.io">Liezl &lt;liezl@outsta.io&gt;</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>

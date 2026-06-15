@@ -20,7 +20,13 @@ interface SendEnvelopeRequest {
   adminPrefill?: Record<string, string>;
   message?: string;
   expiresInDays?: number;
+  senderEmail?: string;
 }
+
+const SENDER_CREDENTIALS: Record<string, { userEnv: string; passEnv: string; displayName: string }> = {
+  "mark@outsta.io": { userEnv: "MARK_GMAIL_USER", passEnv: "MARK_GMAIL_APP_PASSWORD", displayName: "Mark Chua" },
+  "liezl@outsta.io": { userEnv: "LIEZL_GMAIL_USER", passEnv: "LIEZL_GMAIL_APP_PASSWORD", displayName: "Liezl" },
+};
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -29,8 +35,8 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
-    const gmailUser = Deno.env.get("MARK_GMAIL_USER")!;
-    const gmailPassword = Deno.env.get("MARK_GMAIL_APP_PASSWORD")!;
+    const defaultGmailUser = Deno.env.get("MARK_GMAIL_USER")!;
+    const defaultGmailPassword = Deno.env.get("MARK_GMAIL_APP_PASSWORD")!;
 
     // Auth check (signing-keys compatible)
     const authHeader = req.headers.get("Authorization");
@@ -56,6 +62,23 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: "Missing fields" }), { status: 400, headers: corsHeaders });
     }
 
+    // Resolve sender credentials
+    const requestedSender = (body.senderEmail || "mark@outsta.io").toLowerCase();
+    const senderConfig = SENDER_CREDENTIALS[requestedSender] ?? SENDER_CREDENTIALS["mark@outsta.io"];
+    let gmailUser = defaultGmailUser;
+    let gmailPassword = defaultGmailPassword;
+    let senderDisplayName = SENDER_CREDENTIALS["mark@outsta.io"].displayName;
+    const specificUser = Deno.env.get(senderConfig.userEnv);
+    const specificPass = Deno.env.get(senderConfig.passEnv);
+    if (specificUser && specificPass) {
+      gmailUser = specificUser;
+      gmailPassword = specificPass;
+      senderDisplayName = senderConfig.displayName;
+    } else if (requestedSender !== "mark@outsta.io") {
+      console.warn(`Credentials missing for ${requestedSender}; falling back to Mark`);
+    }
+
+
     const token = generateToken();
     const expiresAt = new Date(Date.now() + (body.expiresInDays ?? 14) * 86400000).toISOString();
 
@@ -74,7 +97,7 @@ Deno.serve(async (req) => {
         status: "sent",
         sent_at: new Date().toISOString(),
         sender_user_id: userId,
-        sender_email: userEmail,
+        sender_email: gmailUser,
       })
       .select()
       .single();
@@ -133,7 +156,7 @@ Deno.serve(async (req) => {
     `;
 
     await client.send({
-      from: `Mark Chua <${gmailUser}>`,
+      from: `${senderDisplayName} <${gmailUser}>`,
       to: body.recipientEmail,
       subject: `OutSta Agreement - ${body.recipientName}`,
       html,
