@@ -107,3 +107,6 @@ verify_jwt = false
 
 [functions.contractor-portal-recovery]
 verify_jwt = false
+
+[functions.indeed-feed]
+verify_jwt = false
