@@ -191,6 +191,7 @@ interface Timesheet {
   incentive_amount: number;
   notes: string | null;
   status: string;
+  outsta_status?: string | null;
   submitted_at: string;
   daily_hours: Record<string, { hours: number; time_in?: string; time_out?: string; reason?: string }> | null;
   client_approval_status?: string | null;
