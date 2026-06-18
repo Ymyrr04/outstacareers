@@ -121,7 +121,25 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
     post_to_linkedin: job.post_to_linkedin ?? false,
   });
   const [convertedRate, setConvertedRate] = useState<string | null>(null);
+  const [isPosting, setIsPosting] = useState(false);
   const { toast } = useToast();
+
+  const handlePostToLinkedIn = async () => {
+    setIsPosting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('post-job-to-linkedin', {
+        body: { job_id: job.id },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast({ title: 'Posted to LinkedIn', description: 'Your job is now live on LinkedIn.' });
+      onJobUpdated();
+    } catch (e: any) {
+      toast({ title: 'LinkedIn post failed', description: e?.message || 'Unknown error', variant: 'destructive' });
+    } finally {
+      setIsPosting(false);
+    }
+  };
 
   // Fetch admin users
   useEffect(() => {
