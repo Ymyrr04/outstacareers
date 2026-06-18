@@ -191,6 +191,7 @@ interface Timesheet {
   incentive_amount: number;
   notes: string | null;
   status: string;
+  outsta_status?: string | null;
   submitted_at: string;
   daily_hours: Record<string, { hours: number; time_in?: string; time_out?: string; reason?: string }> | null;
   client_approval_status?: string | null;
@@ -698,7 +699,7 @@ const PortalDashboard = () => {
     // so they can review historical invoices even after switching clients.
     const { data: ts } = await supabase
       .from('contractor_timesheets')
-      .select('id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, submitted_at, daily_hours, client_approval_status, client_flag_reason, client_reviewed_at')
+      .select('id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, outsta_status, submitted_at, daily_hours, client_approval_status, client_flag_reason, client_reviewed_at')
       .in('contractor_assignment_id', allAssignmentIds)
       .order('week_ending_date', { ascending: false });
 
@@ -2163,8 +2164,8 @@ const PortalDashboard = () => {
                   {timesheets.map((t) => {
                     const clientStatus = (t.client_approval_status || 'pending') as 'pending' | 'approved' | 'flagged';
                     const outstaStatus: 'pending' | 'approved' | 'flagged' =
-                      t.status === 'approved' ? 'approved'
-                      : (t.status === 'rejected' || t.status === 'flagged') ? 'flagged'
+                      t.outsta_status === 'flagged' || t.status === 'rejected' || t.status === 'flagged' ? 'flagged'
+                      : (t.outsta_status === 'approved' || t.status === 'approved') ? 'approved'
                       : 'pending';
                     const submittedAt = t.submitted_at ? new Date(t.submitted_at).getTime() : 0;
                     const minsSince = (Date.now() - submittedAt) / 60000;
