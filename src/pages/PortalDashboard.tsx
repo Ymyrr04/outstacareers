@@ -699,7 +699,7 @@ const PortalDashboard = () => {
     // so they can review historical invoices even after switching clients.
     const { data: ts } = await supabase
       .from('contractor_timesheets')
-      .select('id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, submitted_at, daily_hours, client_approval_status, client_flag_reason, client_reviewed_at')
+      .select('id, week_ending_date, total_hours, overtime_hours, incentive_amount, notes, status, outsta_status, submitted_at, daily_hours, client_approval_status, client_flag_reason, client_reviewed_at')
       .in('contractor_assignment_id', allAssignmentIds)
       .order('week_ending_date', { ascending: false });
 
