@@ -49,6 +49,8 @@ interface Job {
   responsibilities?: string[] | null;
   assigned_admin_id?: string | null;
   post_to_linkedin?: boolean | null;
+  linkedin_post_url?: string | null;
+  linkedin_posted_at?: string | null;
 }
 
 interface EditJobDialogProps {
@@ -119,7 +121,25 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
     post_to_linkedin: job.post_to_linkedin ?? false,
   });
   const [convertedRate, setConvertedRate] = useState<string | null>(null);
+  const [isPosting, setIsPosting] = useState(false);
   const { toast } = useToast();
+
+  const handlePostToLinkedIn = async () => {
+    setIsPosting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('post-job-to-linkedin', {
+        body: { job_id: job.id },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast({ title: 'Posted to LinkedIn', description: 'Your job is now live on LinkedIn.' });
+      onJobUpdated();
+    } catch (e: any) {
+      toast({ title: 'LinkedIn post failed', description: e?.message || 'Unknown error', variant: 'destructive' });
+    } finally {
+      setIsPosting(false);
+    }
+  };
 
   // Fetch admin users
   useEffect(() => {
@@ -391,19 +411,47 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
             </p>
           </div>
 
-          <div className="flex items-center justify-between p-3 border rounded-lg">
-            <div className="flex items-start gap-2">
-              <Linkedin className="w-4 h-4 mt-0.5 text-[#0A66C2]" />
-              <div>
-                <Label htmlFor="edit-post_to_linkedin" className="cursor-pointer">Post to LinkedIn</Label>
-                <p className="text-xs text-muted-foreground">Publish this role to the connected LinkedIn account when active.</p>
+          <div className="p-3 border rounded-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-start gap-2">
+                <Linkedin className="w-4 h-4 mt-0.5 text-[#0A66C2]" />
+                <div>
+                  <Label htmlFor="edit-post_to_linkedin" className="cursor-pointer">Post to LinkedIn</Label>
+                  <p className="text-xs text-muted-foreground">Publish this role to the connected LinkedIn account.</p>
+                </div>
               </div>
+              <Switch
+                id="edit-post_to_linkedin"
+                checked={formData.post_to_linkedin}
+                onCheckedChange={(checked) => setFormData({ ...formData, post_to_linkedin: checked })}
+              />
             </div>
-            <Switch
-              id="edit-post_to_linkedin"
-              checked={formData.post_to_linkedin}
-              onCheckedChange={(checked) => setFormData({ ...formData, post_to_linkedin: checked })}
-            />
+            {formData.post_to_linkedin && (
+              <div className="flex items-center justify-between gap-2 pl-6">
+                <div className="text-xs text-muted-foreground">
+                  {job.linkedin_posted_at ? (
+                    <>
+                      Posted {new Date(job.linkedin_posted_at).toLocaleString()}
+                      {job.linkedin_post_url && (
+                        <> · <a href={job.linkedin_post_url} target="_blank" rel="noreferrer" className="underline">View post</a></>
+                      )}
+                    </>
+                  ) : (
+                    'Not posted yet'
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={isPosting}
+                  onClick={handlePostToLinkedIn}
+                >
+                  <Linkedin className="w-3.5 h-3.5 mr-1.5 text-[#0A66C2]" />
+                  {isPosting ? 'Posting…' : job.linkedin_posted_at ? 'Post again' : 'Post now'}
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Job Description Parser Helper */}
