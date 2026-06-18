@@ -15,7 +15,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Pencil, Plus, X } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Pencil, Plus, X, Linkedin } from 'lucide-react';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import JobInterviewQuestionsManager from '@/components/JobInterviewQuestionsManager';
 import { JobDescriptionParser } from '@/components/JobDescriptionParser';
@@ -47,6 +48,7 @@ interface Job {
   qualifications?: string[] | null;
   responsibilities?: string[] | null;
   assigned_admin_id?: string | null;
+  post_to_linkedin?: boolean | null;
 }
 
 interface EditJobDialogProps {
@@ -114,6 +116,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
       ? job.responsibilities
       : ['', '', '', '', ''] as string[],
     assigned_admin_id: job.assigned_admin_id || '',
+    post_to_linkedin: job.post_to_linkedin ?? false,
   });
   const [convertedRate, setConvertedRate] = useState<string | null>(null);
   const { toast } = useToast();
@@ -211,6 +214,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
           ? job.responsibilities
           : ['', '', '', '', ''],
         assigned_admin_id: job.assigned_admin_id || '',
+        post_to_linkedin: job.post_to_linkedin ?? false,
       });
       setConvertedRate(null);
     }
@@ -270,6 +274,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
         qualifications: filteredQualifications.length > 0 ? filteredQualifications : null,
         responsibilities: filteredResponsibilities.length > 0 ? filteredResponsibilities : null,
         assigned_admin_id: formData.assigned_admin_id || null,
+        post_to_linkedin: formData.post_to_linkedin,
       })
       .eq('id', job.id);
 
@@ -384,6 +389,21 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
             <p className="text-xs text-muted-foreground">
               Admin responsible for managing this role
             </p>
+          </div>
+
+          <div className="flex items-center justify-between p-3 border rounded-lg">
+            <div className="flex items-start gap-2">
+              <Linkedin className="w-4 h-4 mt-0.5 text-[#0A66C2]" />
+              <div>
+                <Label htmlFor="edit-post_to_linkedin" className="cursor-pointer">Post to LinkedIn</Label>
+                <p className="text-xs text-muted-foreground">Publish this role to the connected LinkedIn account when active.</p>
+              </div>
+            </div>
+            <Switch
+              id="edit-post_to_linkedin"
+              checked={formData.post_to_linkedin}
+              onCheckedChange={(checked) => setFormData({ ...formData, post_to_linkedin: checked })}
+            />
           </div>
 
           {/* Job Description Parser Helper */}

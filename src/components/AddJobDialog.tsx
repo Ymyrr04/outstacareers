@@ -15,7 +15,8 @@ import {
   DialogTrigger,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, X } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Plus, X, Linkedin } from 'lucide-react';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import JobInterviewQuestionsManager from '@/components/JobInterviewQuestionsManager';
 import { JobDescriptionParser } from '@/components/JobDescriptionParser';
@@ -103,6 +104,7 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
     qualifications: ['', '', '', '', ''] as string[],
     responsibilities: ['', '', '', '', ''] as string[],
     assigned_admin_id: '' as string,
+    post_to_linkedin: false,
   });
   const [convertedRate, setConvertedRate] = useState<string | null>(null);
   const [customQuestions, setCustomQuestions] = useState<CustomQuestion[]>([]);
@@ -234,6 +236,7 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
       qualifications: filteredQualifications.length > 0 ? filteredQualifications : null,
       responsibilities: filteredResponsibilities.length > 0 ? filteredResponsibilities : null,
       assigned_admin_id: formData.assigned_admin_id || null,
+      post_to_linkedin: formData.post_to_linkedin,
     }).select().single();
 
     if (error) {
@@ -295,6 +298,7 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
       qualifications: ['', '', '', '', ''],
       responsibilities: ['', '', '', '', ''],
       assigned_admin_id: '',
+      post_to_linkedin: false,
     });
     setConvertedRate(null);
     setCustomQuestions([]);
@@ -397,6 +401,21 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
             <p className="text-xs text-muted-foreground">
               Admin responsible for managing this role
             </p>
+          </div>
+
+          <div className="flex items-center justify-between p-3 border rounded-lg">
+            <div className="flex items-start gap-2">
+              <Linkedin className="w-4 h-4 mt-0.5 text-[#0A66C2]" />
+              <div>
+                <Label htmlFor="post_to_linkedin" className="cursor-pointer">Post to LinkedIn</Label>
+                <p className="text-xs text-muted-foreground">Publish this role to the connected LinkedIn account when active.</p>
+              </div>
+            </div>
+            <Switch
+              id="post_to_linkedin"
+              checked={formData.post_to_linkedin}
+              onCheckedChange={(checked) => setFormData({ ...formData, post_to_linkedin: checked })}
+            />
           </div>
 
           {/* Job Description Parser Helper */}
