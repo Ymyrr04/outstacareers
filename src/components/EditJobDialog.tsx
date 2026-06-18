@@ -49,6 +49,8 @@ interface Job {
   responsibilities?: string[] | null;
   assigned_admin_id?: string | null;
   post_to_linkedin?: boolean | null;
+  linkedin_post_url?: string | null;
+  linkedin_posted_at?: string | null;
 }
 
 interface EditJobDialogProps {
