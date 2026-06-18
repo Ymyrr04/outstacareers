@@ -393,19 +393,47 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
             </p>
           </div>
 
-          <div className="flex items-center justify-between p-3 border rounded-lg">
-            <div className="flex items-start gap-2">
-              <Linkedin className="w-4 h-4 mt-0.5 text-[#0A66C2]" />
-              <div>
-                <Label htmlFor="edit-post_to_linkedin" className="cursor-pointer">Post to LinkedIn</Label>
-                <p className="text-xs text-muted-foreground">Publish this role to the connected LinkedIn account when active.</p>
+          <div className="p-3 border rounded-lg space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-start gap-2">
+                <Linkedin className="w-4 h-4 mt-0.5 text-[#0A66C2]" />
+                <div>
+                  <Label htmlFor="edit-post_to_linkedin" className="cursor-pointer">Post to LinkedIn</Label>
+                  <p className="text-xs text-muted-foreground">Publish this role to the connected LinkedIn account.</p>
+                </div>
               </div>
+              <Switch
+                id="edit-post_to_linkedin"
+                checked={formData.post_to_linkedin}
+                onCheckedChange={(checked) => setFormData({ ...formData, post_to_linkedin: checked })}
+              />
             </div>
-            <Switch
-              id="edit-post_to_linkedin"
-              checked={formData.post_to_linkedin}
-              onCheckedChange={(checked) => setFormData({ ...formData, post_to_linkedin: checked })}
-            />
+            {formData.post_to_linkedin && (
+              <div className="flex items-center justify-between gap-2 pl-6">
+                <div className="text-xs text-muted-foreground">
+                  {job.linkedin_posted_at ? (
+                    <>
+                      Posted {new Date(job.linkedin_posted_at).toLocaleString()}
+                      {job.linkedin_post_url && (
+                        <> · <a href={job.linkedin_post_url} target="_blank" rel="noreferrer" className="underline">View post</a></>
+                      )}
+                    </>
+                  ) : (
+                    'Not posted yet'
+                  )}
+                </div>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={isPosting}
+                  onClick={handlePostToLinkedIn}
+                >
+                  <Linkedin className="w-3.5 h-3.5 mr-1.5 text-[#0A66C2]" />
+                  {isPosting ? 'Posting…' : job.linkedin_posted_at ? 'Post again' : 'Post now'}
+                </Button>
+              </div>
+            )}
           </div>
 
           {/* Job Description Parser Helper */}
