@@ -1,0 +1,1 @@
+ALTER TABLE public.jobs ADD COLUMN IF NOT EXISTS post_to_linkedin boolean NOT NULL DEFAULT false;

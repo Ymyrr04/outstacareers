@@ -2423,6 +2423,7 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean | null
+          post_to_linkedin: boolean
           qualifications: string[] | null
           rate: string | null
           region: string | null
@@ -2438,6 +2439,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          post_to_linkedin?: boolean
           qualifications?: string[] | null
           rate?: string | null
           region?: string | null
@@ -2453,6 +2455,7 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          post_to_linkedin?: boolean
           qualifications?: string[] | null
           rate?: string | null
           region?: string | null
