@@ -2423,6 +2423,10 @@ export type Database = {
           description: string | null
           id: string
           is_active: boolean | null
+          linkedin_last_error: string | null
+          linkedin_post_id: string | null
+          linkedin_post_url: string | null
+          linkedin_posted_at: string | null
           post_to_linkedin: boolean
           qualifications: string[] | null
           rate: string | null
@@ -2439,6 +2443,10 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          linkedin_last_error?: string | null
+          linkedin_post_id?: string | null
+          linkedin_post_url?: string | null
+          linkedin_posted_at?: string | null
           post_to_linkedin?: boolean
           qualifications?: string[] | null
           rate?: string | null
@@ -2455,6 +2463,10 @@ export type Database = {
           description?: string | null
           id?: string
           is_active?: boolean | null
+          linkedin_last_error?: string | null
+          linkedin_post_id?: string | null
+          linkedin_post_url?: string | null
+          linkedin_posted_at?: string | null
           post_to_linkedin?: boolean
           qualifications?: string[] | null
           rate?: string | null
