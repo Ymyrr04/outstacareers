@@ -2164,8 +2164,8 @@ const PortalDashboard = () => {
                   {timesheets.map((t) => {
                     const clientStatus = (t.client_approval_status || 'pending') as 'pending' | 'approved' | 'flagged';
                     const outstaStatus: 'pending' | 'approved' | 'flagged' =
-                      t.status === 'approved' ? 'approved'
-                      : (t.status === 'rejected' || t.status === 'flagged') ? 'flagged'
+                      t.outsta_status === 'flagged' || t.status === 'rejected' || t.status === 'flagged' ? 'flagged'
+                      : (t.outsta_status === 'approved' || t.status === 'approved') ? 'approved'
                       : 'pending';
                     const submittedAt = t.submitted_at ? new Date(t.submitted_at).getTime() : 0;
                     const minsSince = (Date.now() - submittedAt) / 60000;
