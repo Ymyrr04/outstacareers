@@ -1525,6 +1525,87 @@ export const PLDashboard = () => {
       </CollapsibleSection>
       )}
 
+      {activeSubtab === 'submissions' && weekMonday && (() => {
+        const submittedIds = new Set(filtered.map((r) => r.contractor_assignment_id));
+        const weekEnd = new Date(weekMonday); weekEnd.setDate(weekEnd.getDate() + 6); weekEnd.setHours(23,59,59,999);
+        const nonSubmitters = externalContractors
+          .filter((c) => ['active', 'rendering'].includes((c.status || '').toLowerCase()))
+          .filter((c) => !submittedIds.has(c.id))
+          .filter((c) => {
+            if (!c.start_date) return true;
+            const sd = new Date(c.start_date + 'T12:00:00').getTime();
+            return sd <= weekEnd.getTime();
+          })
+          .filter((c) => {
+            const q = (search || '').toLowerCase();
+            if (!q) return true;
+            return (
+              c.applicant?.full_name?.toLowerCase().includes(q) ||
+              c.applicant?.email?.toLowerCase().includes(q) ||
+              c.client?.company_name?.toLowerCase().includes(q)
+            );
+          })
+          .sort((a, b) =>
+            (a.client?.company_name || '').localeCompare(b.client?.company_name || '') ||
+            (a.applicant?.full_name || '').localeCompare(b.applicant?.full_name || '')
+          );
+        const weekEndLabel = format(weekEnd, 'MMM d, yyyy');
+        return (
+          <CollapsibleSection
+            storageKey="pl_section_non_submitters"
+            title="Did Not Submit"
+            badge={
+              <>
+                <Badge variant="secondary" className="text-[10px] ml-1">{nonSubmitters.length}</Badge>
+                <Badge variant="outline" className="text-[10px] ml-1 border-amber-500 text-amber-600">Week ending {weekEndLabel}</Badge>
+              </>
+            }
+            collapsedSummary={`${nonSubmitters.length} contractors missing for week ending ${weekEndLabel}`}
+            className="border-dashed border-amber-300"
+          >
+            <div className="p-0">
+              {nonSubmitters.length === 0 ? (
+                <div className="p-6 text-center text-sm text-muted-foreground">
+                  All active contractors submitted timesheets for this week.
+                </div>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Contractor</TableHead>
+                      <TableHead>Company</TableHead>
+                      <TableHead>Job Title</TableHead>
+                      <TableHead className="text-right">Target Hours/wk</TableHead>
+                      <TableHead>Status</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {nonSubmitters.map((c) => (
+                      <TableRow key={c.id} className="bg-red-50/40 dark:bg-red-950/10">
+                        <TableCell>
+                          <div className="font-medium">{c.applicant?.full_name || '—'}</div>
+                          <div className="text-xs text-muted-foreground">{c.applicant?.email}</div>
+                        </TableCell>
+                        <TableCell>{c.client?.company_name || '—'}</TableCell>
+                        <TableCell className="text-sm">{c.job_title || '—'}</TableCell>
+                        <TableCell className="text-right">{c.hours_per_week ?? '—'}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="border-red-500 text-red-600 text-[10px]">
+                            Missing
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </div>
+          </CollapsibleSection>
+        );
+      })()}
+
+
+
       {activeSubtab === 'submissions' && filteredInternal.length > 0 && (
 
         <CollapsibleSection
