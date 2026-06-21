@@ -1465,6 +1465,11 @@ export const PLDashboard = () => {
                       <TableCell className="text-right">{Number(r.overtime_hours).toFixed(2)}</TableCell>
                       <TableCell className="text-right font-medium">{r.contractor?.hourly_rate != null ? `$${(Number(r.total_hours) * Number(r.contractor.hourly_rate)).toFixed(2)}` : '—'}</TableCell>
                       <TableCell className="text-right">${Number(r.incentive_amount || 0).toFixed(2)}</TableCell>
+                      <TableCell className="text-right">
+                        <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setViewTimesheet(r)}>
+                          <Eye className="w-3 h-3 mr-1" />View
+                        </Button>
+                      </TableCell>
                       <TableCell>
                         {(() => {
                           const clientHasPortal = r.contractor?.client_id
@@ -1510,11 +1515,6 @@ export const PLDashboard = () => {
                       </TableCell>
                       <TableCell className="text-sm max-w-xs truncate">{r.notes || '—'}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{format(new Date(r.submitted_at), 'MMM d, h:mm a')}</TableCell>
-                      <TableCell className="text-right">
-                        <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setViewTimesheet(r)}>
-                          <Eye className="w-3 h-3 mr-1" />View
-                        </Button>
-                      </TableCell>
                     </TableRow>
                   );
                 })}
