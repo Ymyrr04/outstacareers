@@ -1436,7 +1436,20 @@ export const PLDashboard = () => {
                       <TableCell>{r.contractor?.client?.company_name || '—'}</TableCell>
                       
                       <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
-                      <TableCell className="text-right font-medium">{Number(r.total_hours).toFixed(2)}</TableCell>
+                      <TableCell className="text-right font-medium">
+                        {(() => {
+                          const expected = Number(r.contractor?.hours_per_week || 0);
+                          const total = Number(r.total_hours);
+                          let cls = '';
+                          let title = '';
+                          if (expected > 0) {
+                            if (total < expected) { cls = 'text-red-600'; title = `Below target (${expected}h)`; }
+                            else if (total > expected) { cls = 'text-emerald-600'; title = `Above target (${expected}h)`; }
+                            else { title = `Meets target (${expected}h)`; }
+                          }
+                          return <span className={cls} title={title}>{total.toFixed(2)}</span>;
+                        })()}
+                      </TableCell>
                       <TableCell className="text-right">
                         {dep.isDeposit ? (
                           <div className="flex flex-col items-end">
@@ -1549,7 +1562,20 @@ export const PLDashboard = () => {
                       <div className="text-xs text-muted-foreground">{r.contractor?.applicant?.email}</div>
                     </TableCell>
                     <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
-                    <TableCell className="text-right font-medium">{Number(r.total_hours).toFixed(2)}</TableCell>
+                    <TableCell className="text-right font-medium">
+                      {(() => {
+                        const expected = Number(r.contractor?.hours_per_week || 0);
+                        const total = Number(r.total_hours);
+                        let cls = '';
+                        let title = '';
+                        if (expected > 0) {
+                          if (total < expected) { cls = 'text-red-600'; title = `Below target (${expected}h)`; }
+                          else if (total > expected) { cls = 'text-emerald-600'; title = `Above target (${expected}h)`; }
+                          else { title = `Meets target (${expected}h)`; }
+                        }
+                        return <span className={cls} title={title}>{total.toFixed(2)}</span>;
+                      })()}
+                    </TableCell>
                     <TableCell className="text-right">{Number(r.overtime_hours).toFixed(2)}</TableCell>
                     <TableCell className="text-right">${Number(r.incentive_amount || 0).toFixed(2)}</TableCell>
                     <TableCell>
