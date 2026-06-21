@@ -1418,10 +1418,10 @@ export const PLDashboard = () => {
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('ot')}>OT<SortIcon active={tsSort.key === 'ot'} dir={tsSort.dir} /></button></TableHead>
                   <TableHead className="text-right">Invoice</TableHead>
                   <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('incentives')}>Bonus<SortIcon active={tsSort.key === 'incentives'} dir={tsSort.dir} /></button></TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                   <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('status')}>Status<SortIcon active={tsSort.key === 'status'} dir={tsSort.dir} /></button></TableHead>
                   <TableHead>Notes</TableHead>
                   <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleTsSort('submitted')}>Submitted<SortIcon active={tsSort.key === 'submitted'} dir={tsSort.dir} /></button></TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
