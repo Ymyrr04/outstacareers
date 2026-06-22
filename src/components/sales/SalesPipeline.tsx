@@ -217,11 +217,9 @@ export const SalesPipeline = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard label="Total Leads" value={stats.total} />
-        <StatCard label="Cold" value={stats.cold} />
-        <StatCard label="Warm" value={stats.warm} />
-        <StatCard label="Hot" value={stats.hot} />
+        <TemperatureBreakdownCard cold={stats.cold} warm={stats.warm} hot={stats.hot} />
         <StatCard label="Converted to Clients" value={stats.converted} accent />
         <StatCard label="Total Est. Deal Value" value={formatCurrency(stats.totalEst)} />
         <StatCard label="Total Pipeline Value" value={formatCurrency(stats.totalPipeline)} accent />
@@ -573,6 +571,28 @@ const StatCard = ({ label, value, accent }: { label: string; value: number | str
     <CardContent className="p-4">
       <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
       <div className={`text-2xl font-bold mt-1 ${accent ? 'text-teal-600 dark:text-teal-400' : ''}`}>{value}</div>
+    </CardContent>
+  </Card>
+);
+
+const TemperatureBreakdownCard = ({ cold, warm, hot }: { cold: number; warm: number; hot: number }) => (
+  <Card>
+    <CardContent className="p-4">
+      <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Leads by Temperature</div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-center flex-1">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Cold</div>
+          <div className="text-2xl font-bold">{cold}</div>
+        </div>
+        <div className="text-center flex-1 border-x border-border px-2">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Warm</div>
+          <div className="text-2xl font-bold">{warm}</div>
+        </div>
+        <div className="text-center flex-1">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Hot</div>
+          <div className="text-2xl font-bold">{hot}</div>
+        </div>
+      </div>
     </CardContent>
   </Card>
 );
