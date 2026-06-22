@@ -96,7 +96,7 @@ const emptyLead: Partial<SalesLead> = {
   company_name: '', contact_name: '', role_title: '', email: '', phone: '', phone_2: '',
   industry: '', team_size: '', hiring_urgency: '', temperature: 'warm',
   source: 'manual', stage: 'OutSta Lead', original_message: '',
-  estimated_hires: 0, likelihood_to_close: 0,
+  estimated_hires: 0, likelihood_to_close: 0, hiring_type: [],
 };
 
 export const SalesPipeline = () => {
