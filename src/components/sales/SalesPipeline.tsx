@@ -18,6 +18,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useSalesLeads, SALES_STAGES, SalesLead, SalesStage, Temperature, ContactType, CONTACT_TYPES, HiringType, HIRING_TYPES, useSalesLeadNotes } from '@/hooks/useSalesLeads';
 import { estDealValue, pipelineValue, formatCurrency } from '@/lib/salesPipelineMath';
+import { AddClientDialog, AddClientInitialValues } from '@/components/clients/AddClientDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 const hiringTypeArr = (l: SalesLead | Partial<SalesLead>): HiringType[] => (Array.isArray((l as any).hiring_type) ? (l as any).hiring_type as HiringType[] : []);
 
@@ -514,24 +516,31 @@ export const SalesPipeline = () => {
         onConvert={() => selectedLead && setConfirmConvert(selectedLead)}
       />
 
-      <AlertDialog open={!!confirmConvert} onOpenChange={(o) => !o && setConfirmConvert(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Convert this lead to a client?</AlertDialogTitle>
-            <AlertDialogDescription>
-              This will create a client record in the Clients tab for <strong>{confirmConvert?.company_name}</strong>.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={async () => {
-              if (confirmConvert) await convertToClient(confirmConvert);
-              setConfirmConvert(null);
-              setSelectedLead(null);
-            }}>Convert</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+      <AddClientDialog
+        open={!!confirmConvert}
+        onOpenChange={(o) => !o && setConfirmConvert(null)}
+        title={confirmConvert ? `Convert lead to client: ${confirmConvert.company_name}` : 'Add New Client'}
+        initialValues={confirmConvert ? {
+          company_name: confirmConvert.company_name || '',
+          industry: confirmConvert.industry || '',
+          leads_from: confirmConvert.source || 'sales-pipeline',
+          contact_full_name: confirmConvert.contact_name || '',
+          email: confirmConvert.email || '',
+          phone: confirmConvert.phone || '',
+        } as AddClientInitialValues : undefined}
+        onClientAdded={async (clientId) => {
+          if (confirmConvert && clientId) {
+            await updateLead(confirmConvert.id, {
+              stage: 'Converted',
+              converted_client_id: clientId,
+              converted_at: new Date().toISOString(),
+            } as any);
+          }
+          setConfirmConvert(null);
+          setSelectedLead(null);
+        }}
+      />
+
 
       <AlertDialog open={!!confirmDelete} onOpenChange={(o) => !o && setConfirmDelete(null)}>
         <AlertDialogContent>
