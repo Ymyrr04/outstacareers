@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useSalesLeads, SALES_STAGES, SalesLead, SalesStage, Temperature, ContactType, CONTACT_TYPES, useSalesLeadNotes } from '@/hooks/useSalesLeads';
+import { estDealValue, pipelineValue, formatCurrency } from '@/lib/salesPipelineMath';
 
 const CONTACT_STAGES: SalesStage[] = ['Contact 1', 'Contact 2', 'Contact 3'];
 const stageToContactIdx = (s: SalesStage): 1 | 2 | 3 | null =>
@@ -40,6 +41,7 @@ const emptyLead: Partial<SalesLead> = {
   company_name: '', contact_name: '', role_title: '', email: '', phone: '', phone_2: '',
   industry: '', team_size: '', hiring_urgency: '', temperature: 'warm',
   source: 'manual', stage: 'OutSta Lead', original_message: '',
+  estimated_hires: 0, likelihood_to_close: 0,
 };
 
 export const SalesPipeline = () => {
@@ -87,11 +89,21 @@ export const SalesPipeline = () => {
     return g;
   }, [filteredLeads]);
 
-  const stats = useMemo(() => ({
-    newLeads: leads.filter(l => l.stage === 'OutSta Lead' || l.stage === 'Personalized Lead').length,
-    total: leads.length,
-    converted: leads.filter(l => !!l.converted_client_id).length,
-  }), [leads]);
+  const stats = useMemo(() => {
+    let totalEst = 0;
+    let totalPipeline = 0;
+    leads.forEach(l => {
+      totalEst += estDealValue(l.estimated_hires);
+      totalPipeline += pipelineValue(l.estimated_hires, l.likelihood_to_close);
+    });
+    return {
+      newLeads: leads.filter(l => l.stage === 'OutSta Lead' || l.stage === 'Personalized Lead').length,
+      total: leads.length,
+      converted: leads.filter(l => !!l.converted_client_id).length,
+      totalEst,
+      totalPipeline,
+    };
+  }, [leads]);
 
   const onDragEnd = async (r: DropResult) => {
     if (!r.destination) return;
