@@ -73,6 +73,11 @@ const HiringTypeToggle = ({ value, onChange }: { value: HiringType[]; onChange: 
   );
 };
 
+const normalizeNumericInput = (value: string): string => {
+  const digits = value.replace(/[^0-9]/g, '');
+  return digits.replace(/^0+/, '');
+};
+
 const CONTACT_STAGES: SalesStage[] = ['Contact 1', 'Contact 2', 'Contact 3'];
 const stageToContactIdx = (s: SalesStage): 1 | 2 | 3 | null =>
   s === 'Contact 1' ? 1 : s === 'Contact 2' ? 2 : s === 'Contact 3' ? 3 : null;
@@ -623,7 +628,7 @@ const NewLeadDialog = ({ open, onClose, onSubmit }: { open: boolean; onClose: ()
               type="number"
               min={0}
               value={hiresInput}
-              onChange={e => setHiresInput(e.target.value.replace(/[^0-9]/g, ''))}
+              onChange={e => setHiresInput(normalizeNumericInput(e.target.value))}
             />
           </Field>
           <Field label="Likelihood to close (%)">
@@ -632,7 +637,7 @@ const NewLeadDialog = ({ open, onClose, onSubmit }: { open: boolean; onClose: ()
               min={0}
               max={100}
               value={likelihoodInput}
-              onChange={e => setLikelihoodInput(e.target.value.replace(/[^0-9]/g, ''))}
+              onChange={e => setLikelihoodInput(normalizeNumericInput(e.target.value))}
             />
           </Field>
           <div className="col-span-2 rounded-md border bg-muted/30 p-2 text-xs flex items-center justify-between">
@@ -842,14 +847,16 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
 }) => {
   const { notes, addNote } = useSalesLeadNotes(lead?.id || null);
   const [newNote, setNewNote] = useState('');
-  const [localHires, setLocalHires] = useState<string>(String(lead?.estimated_hires ?? ''));
-  const [localLikelihood, setLocalLikelihood] = useState<string>(String(lead?.likelihood_to_close ?? ''));
+  const [localHires, setLocalHires] = useState<string>((lead?.estimated_hires ?? 0) ? String(lead?.estimated_hires) : '');
+  const [localLikelihood, setLocalLikelihood] = useState<string>((lead?.likelihood_to_close ?? 0) ? String(lead?.likelihood_to_close) : '');
   const currentIdx = lead ? SALES_STAGES.indexOf(lead.stage) : -1;
   const nextStage = currentIdx >= 0 && currentIdx < SALES_STAGES.length - 1 ? SALES_STAGES[currentIdx + 1] : null;
 
   useEffect(() => {
-    setLocalHires(String(lead?.estimated_hires ?? ''));
-    setLocalLikelihood(String(lead?.likelihood_to_close ?? ''));
+    const h = lead?.estimated_hires ?? 0;
+    const l = lead?.likelihood_to_close ?? 0;
+    setLocalHires(h ? String(h) : '');
+    setLocalLikelihood(l ? String(l) : '');
   }, [lead?.id]);
 
   const numericHires = useMemo(() => Math.max(0, parseInt(localHires || '0', 10) || 0), [localHires]);
@@ -922,7 +929,7 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
                   min={0}
                   className="h-8"
                   value={localHires}
-                  onChange={e => setLocalHires(e.target.value.replace(/[^0-9]/g, ''))}
+                  onChange={e => setLocalHires(normalizeNumericInput(e.target.value))}
                 />
               </DetailRow>
               <DetailRow label="Likelihood to close (%)">
@@ -932,7 +939,7 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
                   max={100}
                   className="h-8"
                   value={localLikelihood}
-                  onChange={e => setLocalLikelihood(e.target.value.replace(/[^0-9]/g, ''))}
+                  onChange={e => setLocalLikelihood(normalizeNumericInput(e.target.value))}
                 />
               </DetailRow>
               <div className="col-span-2 rounded-md border bg-muted/30 p-2 text-xs flex items-center justify-between">
