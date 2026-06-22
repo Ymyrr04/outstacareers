@@ -489,7 +489,7 @@ export const SalesPipeline = () => {
                   </TableRow>
                 ))}
                 {filteredLeads.length === 0 && (
-                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-12">{leads.length === 0 ? 'No leads yet' : 'No leads match your search'}</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-12">{leads.length === 0 ? 'No leads yet' : 'No leads match your search'}</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
