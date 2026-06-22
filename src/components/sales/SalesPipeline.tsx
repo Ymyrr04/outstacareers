@@ -1001,10 +1001,11 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
               })}
             </div>
 
-            <div>
-              <Label className="text-xs">Original Message</Label>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Original Message</Label>
               <Textarea
                 rows={4}
+                className="text-sm border-2"
                 value={lead.original_message || ''}
                 onChange={e => onUpdate({ original_message: e.target.value })}
                 placeholder="No message"
@@ -1013,12 +1014,12 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
 
             <div className="flex gap-2 pt-2">
               {nextStage && (
-                <Button size="sm" variant="outline" className="flex-1" onClick={() => onUpdate({ stage: nextStage })}>
+                <Button size="sm" variant="outline" className="flex-1 h-10 text-sm" onClick={() => onUpdate({ stage: nextStage })}>
                   <ArrowRight className="w-4 h-4 mr-1" /> Move to {nextStage}
                 </Button>
               )}
               {!lead.converted_client_id && (
-                <Button size="sm" className="flex-1" onClick={onConvert}>
+                <Button size="sm" className="flex-1 h-10 text-sm" onClick={onConvert}>
                   <UserPlus className="w-4 h-4 mr-1" /> Convert to client
                 </Button>
               )}
@@ -1027,14 +1028,14 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
             <div className="border-t pt-3">
               <Label className="text-sm font-semibold">Notes</Label>
               <div className="flex gap-2 mt-2">
-                <Textarea rows={2} value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="Add a note…" />
+                <Textarea rows={2} className="text-sm border-2" value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="Add a note…" />
               </div>
-              <Button size="sm" className="mt-2" disabled={!newNote.trim()} onClick={async () => { await addNote(newNote); setNewNote(''); }}>Add Note</Button>
+              <Button size="sm" className="mt-2 h-9 text-sm" disabled={!newNote.trim()} onClick={async () => { await addNote(newNote); setNewNote(''); }}>Add Note</Button>
               <div className="space-y-2 mt-3">
-                {notes.length === 0 && <p className="text-xs text-muted-foreground italic">No notes yet</p>}
+                {notes.length === 0 && <p className="text-sm text-muted-foreground italic">No notes yet</p>}
                 {notes.map(n => (
-                  <div key={n.id} className="text-xs border rounded p-2 bg-muted/30">
-                    <div className="text-muted-foreground mb-1">{new Date(n.created_at).toLocaleString()} · {n.created_by_email || 'Admin'}</div>
+                  <div key={n.id} className="text-sm border rounded p-3 bg-muted/30">
+                    <div className="text-muted-foreground mb-1 text-xs">{new Date(n.created_at).toLocaleString()} · {n.created_by_email || 'Admin'}</div>
                     <div className="whitespace-pre-wrap">{n.note}</div>
                   </div>
                 ))}
