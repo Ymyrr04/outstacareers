@@ -397,6 +397,23 @@ export const HiringPipelineKanban = () => {
     })();
     return () => { cancelled = true; };
   }, [clientFilterId, requests]);
+
+  // Auto-open the request detail when filtered by client (once per clientId)
+  const autoOpenedClientRef = React.useRef<string | null>(null);
+  useEffect(() => {
+    if (!clientFilterId) {
+      autoOpenedClientRef.current = null;
+      return;
+    }
+    if (autoOpenedClientRef.current === clientFilterId) return;
+    const matches = requests.filter(r => r.client_id === clientFilterId);
+    if (matches.length === 0) return;
+    const pick = [...matches].sort((a: any, b: any) =>
+      new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+    )[0];
+    autoOpenedClientRef.current = clientFilterId;
+    setSelectedRequest(pick);
+  }, [clientFilterId, requests]);
   
   // Sort function based on sort option
   const sortRequests = (items: HiringRequest[], sortOption: 'priority' | 'target_end_date' | 'closed_at' | 'created_at'): HiringRequest[] => {
