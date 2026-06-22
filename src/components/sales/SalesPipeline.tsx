@@ -492,9 +492,27 @@ const StatCard = ({ label, value, accent }: { label: string; value: number | str
 // --- New Lead Dialog ---
 const NewLeadDialog = ({ open, onClose, onSubmit }: { open: boolean; onClose: () => void; onSubmit: (d: Partial<SalesLead>) => void }) => {
   const [data, setData] = useState<Partial<SalesLead>>(emptyLead);
+  const [hiresInput, setHiresInput] = useState<string>('');
+  const [likelihoodInput, setLikelihoodInput] = useState<string>('');
   const set = (k: keyof SalesLead, v: any) => setData(d => ({ ...d, [k]: v }));
+
+  const numericHires = useMemo(() => Math.max(0, parseInt(hiresInput || '0', 10) || 0), [hiresInput]);
+  const numericLikelihood = useMemo(() => Math.min(100, Math.max(0, parseInt(likelihoodInput || '0', 10) || 0)), [likelihoodInput]);
+
+  useEffect(() => {
+    setData(d => d.estimated_hires === numericHires && d.likelihood_to_close === numericLikelihood ? d : { ...d, estimated_hires: numericHires, likelihood_to_close: numericLikelihood });
+  }, [numericHires, numericLikelihood]);
+
+  useEffect(() => {
+    if (open) {
+      setData(emptyLead);
+      setHiresInput('');
+      setLikelihoodInput('');
+    }
+  }, [open]);
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); setData(emptyLead); } }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); setData(emptyLead); setHiresInput(''); setLikelihoodInput(''); } }}>
       <DialogContent className="max-w-2xl">
         <DialogHeader><DialogTitle>New Lead</DialogTitle></DialogHeader>
         <div className="grid grid-cols-2 gap-3">
@@ -522,8 +540,8 @@ const NewLeadDialog = ({ open, onClose, onSubmit }: { open: boolean; onClose: ()
             <Input
               type="number"
               min={0}
-              value={data.estimated_hires ?? 0}
-              onChange={e => set('estimated_hires', Math.max(0, parseInt(e.target.value || '0', 10) || 0))}
+              value={hiresInput}
+              onChange={e => setHiresInput(e.target.value.replace(/[^0-9]/g, ''))}
             />
           </Field>
           <Field label="Likelihood to close (%)">
@@ -531,17 +549,17 @@ const NewLeadDialog = ({ open, onClose, onSubmit }: { open: boolean; onClose: ()
               type="number"
               min={0}
               max={100}
-              value={data.likelihood_to_close ?? 0}
-              onChange={e => set('likelihood_to_close', Math.min(100, Math.max(0, parseInt(e.target.value || '0', 10) || 0)))}
+              value={likelihoodInput}
+              onChange={e => setLikelihoodInput(e.target.value.replace(/[^0-9]/g, ''))}
             />
           </Field>
           <div className="col-span-2 rounded-md border bg-muted/30 p-2 text-xs flex items-center justify-between">
             <span className="text-muted-foreground">Est. Deal Value / yr</span>
-            <span className="font-semibold">{estDealValue(data.estimated_hires) > 0 ? `${formatCurrency(estDealValue(data.estimated_hires))}/yr` : '—'}</span>
+            <span className="font-semibold">{estDealValue(numericHires) > 0 ? `${formatCurrency(estDealValue(numericHires))}/yr` : '—'}</span>
           </div>
           <div className="col-span-2 rounded-md border bg-primary/5 p-2 text-xs flex items-center justify-between">
             <span className="text-muted-foreground">Pipeline Value</span>
-            <span className="font-semibold text-primary">{pipelineValue(data.estimated_hires, data.likelihood_to_close) > 0 ? formatCurrency(pipelineValue(data.estimated_hires, data.likelihood_to_close)) : '—'}</span>
+            <span className="font-semibold text-primary">{pipelineValue(numericHires, numericLikelihood) > 0 ? formatCurrency(pipelineValue(numericHires, numericLikelihood)) : '—'}</span>
           </div>
           <div className="col-span-2"><Field label="Notes / Original message"><Textarea rows={3} value={data.original_message || ''} onChange={e => set('original_message', e.target.value)} /></Field></div>
         </div>
@@ -742,24 +760,29 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
 }) => {
   const { notes, addNote } = useSalesLeadNotes(lead?.id || null);
   const [newNote, setNewNote] = useState('');
-  const [localHires, setLocalHires] = useState<number>(lead?.estimated_hires ?? 0);
-  const [localLikelihood, setLocalLikelihood] = useState<number>(lead?.likelihood_to_close ?? 0);
+  const [localHires, setLocalHires] = useState<string>(String(lead?.estimated_hires ?? ''));
+  const [localLikelihood, setLocalLikelihood] = useState<string>(String(lead?.likelihood_to_close ?? ''));
   const currentIdx = lead ? SALES_STAGES.indexOf(lead.stage) : -1;
   const nextStage = currentIdx >= 0 && currentIdx < SALES_STAGES.length - 1 ? SALES_STAGES[currentIdx + 1] : null;
 
   useEffect(() => {
-    setLocalHires(lead?.estimated_hires ?? 0);
-    setLocalLikelihood(lead?.likelihood_to_close ?? 0);
+    setLocalHires(String(lead?.estimated_hires ?? ''));
+    setLocalLikelihood(String(lead?.likelihood_to_close ?? ''));
   }, [lead?.id]);
+
+  const numericHires = useMemo(() => Math.max(0, parseInt(localHires || '0', 10) || 0), [localHires]);
+  const numericLikelihood = useMemo(() => Math.min(100, Math.max(0, parseInt(localLikelihood || '0', 10) || 0)), [localLikelihood]);
 
   useEffect(() => {
     if (!lead) return;
-    if (localHires === lead.estimated_hires && localLikelihood === lead.likelihood_to_close) return;
+    const leadHires = lead.estimated_hires ?? 0;
+    const leadLikelihood = lead.likelihood_to_close ?? 0;
+    if (numericHires === leadHires && numericLikelihood === leadLikelihood) return;
     const t = setTimeout(() => {
-      onUpdate({ estimated_hires: localHires, likelihood_to_close: localLikelihood });
+      onUpdate({ estimated_hires: numericHires, likelihood_to_close: numericLikelihood });
     }, 500);
     return () => clearTimeout(t);
-  }, [localHires, localLikelihood, lead, onUpdate]);
+  }, [numericHires, numericLikelihood, lead, onUpdate]);
 
   return (
     <Sheet open={!!lead} onOpenChange={(o) => !o && onClose()}>
@@ -812,7 +835,7 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
                   min={0}
                   className="h-8"
                   value={localHires}
-                  onChange={e => setLocalHires(Math.max(0, parseInt(e.target.value || '0', 10) || 0))}
+                  onChange={e => setLocalHires(e.target.value.replace(/[^0-9]/g, ''))}
                 />
               </DetailRow>
               <DetailRow label="Likelihood to close (%)">
@@ -822,16 +845,16 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
                   max={100}
                   className="h-8"
                   value={localLikelihood}
-                  onChange={e => setLocalLikelihood(Math.min(100, Math.max(0, parseInt(e.target.value || '0', 10) || 0)))}
+                  onChange={e => setLocalLikelihood(e.target.value.replace(/[^0-9]/g, ''))}
                 />
               </DetailRow>
               <div className="col-span-2 rounded-md border bg-muted/30 p-2 text-xs flex items-center justify-between">
                 <span className="text-muted-foreground">Est. Deal Value / yr</span>
-                <span className="font-semibold">{estDealValue(localHires) > 0 ? `${formatCurrency(estDealValue(localHires))}/yr` : '—'}</span>
+                <span className="font-semibold">{estDealValue(numericHires) > 0 ? `${formatCurrency(estDealValue(numericHires))}/yr` : '—'}</span>
               </div>
               <div className="col-span-2 rounded-md border-2 border-primary/30 bg-primary/5 p-2 text-sm flex items-center justify-between">
                 <span className="font-medium">Pipeline Value</span>
-                <span className="font-bold text-primary">{pipelineValue(localHires, localLikelihood) > 0 ? formatCurrency(pipelineValue(localHires, localLikelihood)) : '—'}</span>
+                <span className="font-bold text-primary">{pipelineValue(numericHires, numericLikelihood) > 0 ? formatCurrency(pipelineValue(numericHires, numericLikelihood)) : '—'}</span>
               </div>
             </div>
 
