@@ -929,7 +929,7 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
                   min={0}
                   className="h-8"
                   value={localHires}
-                  onChange={e => setLocalHires(e.target.value.replace(/[^0-9]/g, ''))}
+                  onChange={e => setLocalHires(normalizeNumericInput(e.target.value))}
                 />
               </DetailRow>
               <DetailRow label="Likelihood to close (%)">
