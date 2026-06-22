@@ -518,6 +518,31 @@ const NewLeadDialog = ({ open, onClose, onSubmit }: { open: boolean; onClose: ()
             </Select>
           </Field>
           <Field label="Source"><Input value={data.source || ''} onChange={e => set('source', e.target.value)} /></Field>
+          <Field label="Estimated number of hires">
+            <Input
+              type="number"
+              min={0}
+              value={data.estimated_hires ?? 0}
+              onChange={e => set('estimated_hires', Math.max(0, parseInt(e.target.value || '0', 10) || 0))}
+            />
+          </Field>
+          <Field label="Likelihood to close (%)">
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              value={data.likelihood_to_close ?? 0}
+              onChange={e => set('likelihood_to_close', Math.min(100, Math.max(0, parseInt(e.target.value || '0', 10) || 0)))}
+            />
+          </Field>
+          <div className="col-span-2 rounded-md border bg-muted/30 p-2 text-xs flex items-center justify-between">
+            <span className="text-muted-foreground">Est. Deal Value / yr</span>
+            <span className="font-semibold">{estDealValue(data.estimated_hires) > 0 ? `${formatCurrency(estDealValue(data.estimated_hires))}/yr` : '—'}</span>
+          </div>
+          <div className="col-span-2 rounded-md border bg-primary/5 p-2 text-xs flex items-center justify-between">
+            <span className="text-muted-foreground">Pipeline Value</span>
+            <span className="font-semibold text-primary">{pipelineValue(data.estimated_hires, data.likelihood_to_close) > 0 ? formatCurrency(pipelineValue(data.estimated_hires, data.likelihood_to_close)) : '—'}</span>
+          </div>
           <div className="col-span-2"><Field label="Notes / Original message"><Textarea rows={3} value={data.original_message || ''} onChange={e => set('original_message', e.target.value)} /></Field></div>
         </div>
         <DialogFooter>
