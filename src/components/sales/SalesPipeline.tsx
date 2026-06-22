@@ -464,6 +464,7 @@ export const SalesPipeline = () => {
                   <TableHead>Temperature</TableHead>
                   <TableHead>Source</TableHead>
                   <TableHead>Stage</TableHead>
+                  <TableHead>Hiring Type</TableHead>
                   <TableHead>Last Activity</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
