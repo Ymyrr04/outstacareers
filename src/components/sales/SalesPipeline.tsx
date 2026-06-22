@@ -409,7 +409,7 @@ export const SalesPipeline = () => {
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); openClientInPipeline(lead.converted_client_id!); }}
                                     className="font-semibold text-sm truncate flex-1 text-left text-primary hover:underline"
-                                    title="Open in Clients"
+                                    title="Open in client pipeline"
                                   >
                                     {lead.company_name}
                                   </button>
@@ -521,7 +521,7 @@ export const SalesPipeline = () => {
                           type="button"
                           onClick={(e) => { e.stopPropagation(); openClientInPipeline(l.converted_client_id!); }}
                           className="text-primary hover:underline text-left"
-                          title="Open in Clients"
+                          title="Open in client pipeline"
                         >
                           {l.company_name}
                         </button>
