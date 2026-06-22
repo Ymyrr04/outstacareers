@@ -2614,9 +2614,11 @@ export type Database = {
           created_at: string
           created_by: string | null
           email: string | null
+          estimated_hires: number
           hiring_urgency: string | null
           id: string
           industry: string | null
+          likelihood_to_close: number
           original_message: string | null
           phone: string | null
           phone_2: string | null
@@ -2644,9 +2646,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           email?: string | null
+          estimated_hires?: number
           hiring_urgency?: string | null
           id?: string
           industry?: string | null
+          likelihood_to_close?: number
           original_message?: string | null
           phone?: string | null
           phone_2?: string | null
@@ -2674,9 +2678,11 @@ export type Database = {
           created_at?: string
           created_by?: string | null
           email?: string | null
+          estimated_hires?: number
           hiring_urgency?: string | null
           id?: string
           industry?: string | null
+          likelihood_to_close?: number
           original_message?: string | null
           phone?: string | null
           phone_2?: string | null

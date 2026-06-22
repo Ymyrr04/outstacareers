@@ -16,6 +16,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useSalesLeads, SALES_STAGES, SalesLead, SalesStage, Temperature, ContactType, CONTACT_TYPES, useSalesLeadNotes } from '@/hooks/useSalesLeads';
+import { estDealValue, pipelineValue, formatCurrency } from '@/lib/salesPipelineMath';
 
 const CONTACT_STAGES: SalesStage[] = ['Contact 1', 'Contact 2', 'Contact 3'];
 const stageToContactIdx = (s: SalesStage): 1 | 2 | 3 | null =>
@@ -40,6 +41,7 @@ const emptyLead: Partial<SalesLead> = {
   company_name: '', contact_name: '', role_title: '', email: '', phone: '', phone_2: '',
   industry: '', team_size: '', hiring_urgency: '', temperature: 'warm',
   source: 'manual', stage: 'OutSta Lead', original_message: '',
+  estimated_hires: 0, likelihood_to_close: 0,
 };
 
 export const SalesPipeline = () => {
@@ -87,11 +89,21 @@ export const SalesPipeline = () => {
     return g;
   }, [filteredLeads]);
 
-  const stats = useMemo(() => ({
-    newLeads: leads.filter(l => l.stage === 'OutSta Lead' || l.stage === 'Personalized Lead').length,
-    total: leads.length,
-    converted: leads.filter(l => !!l.converted_client_id).length,
-  }), [leads]);
+  const stats = useMemo(() => {
+    let totalEst = 0;
+    let totalPipeline = 0;
+    leads.forEach(l => {
+      totalEst += estDealValue(l.estimated_hires);
+      totalPipeline += pipelineValue(l.estimated_hires, l.likelihood_to_close);
+    });
+    return {
+      newLeads: leads.filter(l => l.stage === 'OutSta Lead' || l.stage === 'Personalized Lead').length,
+      total: leads.length,
+      converted: leads.filter(l => !!l.converted_client_id).length,
+      totalEst,
+      totalPipeline,
+    };
+  }, [leads]);
 
   const onDragEnd = async (r: DropResult) => {
     if (!r.destination) return;
@@ -136,10 +148,12 @@ export const SalesPipeline = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard label="New Leads" value={stats.newLeads} />
         <StatCard label="Total Inquiries" value={stats.total} />
         <StatCard label="Converted to Clients" value={stats.converted} accent />
+        <StatCard label="Total Est. Deal Value" value={formatCurrency(stats.totalEst)} />
+        <StatCard label="Total Pipeline Value" value={formatCurrency(stats.totalPipeline)} accent />
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -330,6 +344,23 @@ export const SalesPipeline = () => {
                                   </div>
                                 );
                               })()}
+                              {(() => {
+                                const hires = lead.estimated_hires || 0;
+                                const pct = lead.likelihood_to_close || 0;
+                                const dv = estDealValue(hires);
+                                const pv = pipelineValue(hires, pct);
+                                return (
+                                  <div className="mt-2 flex items-center justify-between gap-2 pt-2 border-t border-dashed">
+                                    <Badge variant="outline" className="text-[10px] bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300">
+                                      {pct > 0 ? `${pct}%` : '—'}
+                                    </Badge>
+                                    <div className="text-right leading-tight">
+                                      <div className="text-[10px] text-muted-foreground">{dv > 0 ? `${formatCurrency(dv)}/yr` : '—'}</div>
+                                      <div className="text-[11px] font-semibold">{pv > 0 ? `Pipeline: ${formatCurrency(pv)}` : '—'}</div>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                               <div className="text-[10px] text-muted-foreground mt-2">{formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}</div>
                             </div>
                           )}
@@ -449,7 +480,7 @@ const OtherReasonInput = ({ value, onSave }: { value: string; onSave: (v: string
   );
 };
 
-const StatCard = ({ label, value, accent }: { label: string; value: number; accent?: boolean }) => (
+const StatCard = ({ label, value, accent }: { label: string; value: number | string; accent?: boolean }) => (
   <Card>
     <CardContent className="p-4">
       <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
@@ -487,6 +518,31 @@ const NewLeadDialog = ({ open, onClose, onSubmit }: { open: boolean; onClose: ()
             </Select>
           </Field>
           <Field label="Source"><Input value={data.source || ''} onChange={e => set('source', e.target.value)} /></Field>
+          <Field label="Estimated number of hires">
+            <Input
+              type="number"
+              min={0}
+              value={data.estimated_hires ?? 0}
+              onChange={e => set('estimated_hires', Math.max(0, parseInt(e.target.value || '0', 10) || 0))}
+            />
+          </Field>
+          <Field label="Likelihood to close (%)">
+            <Input
+              type="number"
+              min={0}
+              max={100}
+              value={data.likelihood_to_close ?? 0}
+              onChange={e => set('likelihood_to_close', Math.min(100, Math.max(0, parseInt(e.target.value || '0', 10) || 0)))}
+            />
+          </Field>
+          <div className="col-span-2 rounded-md border bg-muted/30 p-2 text-xs flex items-center justify-between">
+            <span className="text-muted-foreground">Est. Deal Value / yr</span>
+            <span className="font-semibold">{estDealValue(data.estimated_hires) > 0 ? `${formatCurrency(estDealValue(data.estimated_hires))}/yr` : '—'}</span>
+          </div>
+          <div className="col-span-2 rounded-md border bg-primary/5 p-2 text-xs flex items-center justify-between">
+            <span className="text-muted-foreground">Pipeline Value</span>
+            <span className="font-semibold text-primary">{pipelineValue(data.estimated_hires, data.likelihood_to_close) > 0 ? formatCurrency(pipelineValue(data.estimated_hires, data.likelihood_to_close)) : '—'}</span>
+          </div>
           <div className="col-span-2"><Field label="Notes / Original message"><Textarea rows={3} value={data.original_message || ''} onChange={e => set('original_message', e.target.value)} /></Field></div>
         </div>
         <DialogFooter>
@@ -734,6 +790,33 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
               <EditField label="Team size" value={lead.team_size} onSave={v => onUpdate({ team_size: v })} />
               <div className="col-span-2"><EditField label="Hiring urgency" value={lead.hiring_urgency} onSave={v => onUpdate({ hiring_urgency: v })} /></div>
               <div className="col-span-2"><EditField label="Source" value={lead.source} onSave={v => onUpdate({ source: v })} /></div>
+              <DetailRow label="Estimated number of hires">
+                <Input
+                  type="number"
+                  min={0}
+                  className="h-8"
+                  value={lead.estimated_hires ?? 0}
+                  onChange={e => onUpdate({ estimated_hires: Math.max(0, parseInt(e.target.value || '0', 10) || 0) })}
+                />
+              </DetailRow>
+              <DetailRow label="Likelihood to close (%)">
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  className="h-8"
+                  value={lead.likelihood_to_close ?? 0}
+                  onChange={e => onUpdate({ likelihood_to_close: Math.min(100, Math.max(0, parseInt(e.target.value || '0', 10) || 0)) })}
+                />
+              </DetailRow>
+              <div className="col-span-2 rounded-md border bg-muted/30 p-2 text-xs flex items-center justify-between">
+                <span className="text-muted-foreground">Est. Deal Value / yr</span>
+                <span className="font-semibold">{estDealValue(lead.estimated_hires) > 0 ? `${formatCurrency(estDealValue(lead.estimated_hires))}/yr` : '—'}</span>
+              </div>
+              <div className="col-span-2 rounded-md border-2 border-primary/30 bg-primary/5 p-2 text-sm flex items-center justify-between">
+                <span className="font-medium">Pipeline Value</span>
+                <span className="font-bold text-primary">{pipelineValue(lead.estimated_hires, lead.likelihood_to_close) > 0 ? formatCurrency(pipelineValue(lead.estimated_hires, lead.likelihood_to_close)) : '—'}</span>
+              </div>
             </div>
 
             <div className="space-y-3 pt-2 border-t">
