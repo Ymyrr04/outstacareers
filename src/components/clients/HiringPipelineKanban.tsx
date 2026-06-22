@@ -434,11 +434,15 @@ export const HiringPipelineKanban = () => {
     return sortRequests(items, sortOption);
   };
 
-  // Filter requests by search term
+  // Filter requests by search term and selected client
   const filteredRequests = useMemo(() => {
-    if (!searchTerm.trim()) return requests;
+    let result = requests;
+    if (clientFilterId) {
+      result = result.filter(r => r.client_id === clientFilterId);
+    }
+    if (!searchTerm.trim()) return result;
     const term = searchTerm.toLowerCase();
-    return requests.filter(r => {
+    return result.filter(r => {
       const assignee = adminUsers.find(a => a.user_id === r.assigned_admin_id);
       const assigneeName = getAdminDisplayName(assignee?.email).toLowerCase();
       return (
@@ -449,7 +453,7 @@ export const HiringPipelineKanban = () => {
         assigneeName.includes(term)
       );
     });
-  }, [requests, searchTerm, adminUsers]);
+  }, [requests, searchTerm, adminUsers, clientFilterId]);
 
   // Group requests by pipeline stage dynamically
   const requestsByStage = stages.reduce((acc, stage) => {
