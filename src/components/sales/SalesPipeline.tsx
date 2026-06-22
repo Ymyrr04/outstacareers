@@ -628,7 +628,7 @@ const NewLeadDialog = ({ open, onClose, onSubmit }: { open: boolean; onClose: ()
               type="number"
               min={0}
               value={hiresInput}
-              onChange={e => setHiresInput(e.target.value.replace(/[^0-9]/g, ''))}
+              onChange={e => setHiresInput(normalizeNumericInput(e.target.value))}
             />
           </Field>
           <Field label="Likelihood to close (%)">
@@ -637,7 +637,7 @@ const NewLeadDialog = ({ open, onClose, onSubmit }: { open: boolean; onClose: ()
               min={0}
               max={100}
               value={likelihoodInput}
-              onChange={e => setLikelihoodInput(e.target.value.replace(/[^0-9]/g, ''))}
+              onChange={e => setLikelihoodInput(normalizeNumericInput(e.target.value))}
             />
           </Field>
           <div className="col-span-2 rounded-md border bg-muted/30 p-2 text-xs flex items-center justify-between">
