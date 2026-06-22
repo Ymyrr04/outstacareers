@@ -198,10 +198,10 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
               // Friendlier message for runtime crashes (OOM / timeout) which
               // return no JSON body.
               if (resp.status >= 500 && (!realMessage || realMessage === 'Edge Function returned a non-2xx status code')) {
-                realMessage = `Server crashed while processing this file (status ${resp.status}). The PDF may be too large or image-heavy — try compressing it under 8MB.`;
+                realMessage = `Server crashed while processing this file (status ${resp.status}). The PDF may be too large or image-heavy — try compressing it under 10MB.`;
               }
             } else if (/non-2xx/i.test(realMessage)) {
-              realMessage = 'Server crashed while processing this file. The PDF may be too large or image-heavy — try compressing it under 8MB.';
+              realMessage = 'Server crashed while processing this file. The PDF may be too large or image-heavy — try compressing it under 10MB.';
             }
           } catch (parseErr) {
             console.warn('Could not parse function error body:', parseErr);
