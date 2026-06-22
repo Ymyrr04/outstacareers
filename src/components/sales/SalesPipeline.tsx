@@ -479,6 +479,7 @@ export const SalesPipeline = () => {
                     <TableCell><Badge variant="outline" className={`capitalize ${tempBadge(l.temperature)}`}>{l.temperature}</Badge></TableCell>
                     <TableCell><Badge variant="outline">{l.source}</Badge></TableCell>
                     <TableCell>{l.stage}</TableCell>
+                    <TableCell><HiringTypeIcons types={hiringTypeArr(l)} size={16} /></TableCell>
                     <TableCell className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(l.updated_at), { addSuffix: true })}</TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <Button variant="ghost" size="icon" onClick={() => setConfirmDelete(l)}>
