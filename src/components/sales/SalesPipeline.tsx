@@ -1049,7 +1049,7 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
 };
 
 const DetailRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="space-y-1"><Label className="text-[10px] uppercase text-muted-foreground">{label}</Label>{children}</div>
+  <div className="space-y-1.5"><Label className="text-xs uppercase text-muted-foreground">{label}</Label>{children}</div>
 );
 
 const EditField = ({ label, value, onSave }: { label: string; value: string | null; onSave: (v: string) => void }) => {
@@ -1057,7 +1057,7 @@ const EditField = ({ label, value, onSave }: { label: string; value: string | nu
   return (
     <DetailRow label={label}>
       <Input
-        className="h-8"
+        className="h-10 text-sm border-2"
         value={v}
         onChange={e => setV(e.target.value)}
         onBlur={() => v !== (value || '') && onSave(v)}
