@@ -109,6 +109,7 @@ const emptyLead: Partial<SalesLead> = {
 
 export const SalesPipeline = () => {
   const { leads, loading, createLead, updateLead, deleteLead, bulkInsert, convertToClient } = useSalesLeads();
+  const navigate = useNavigate();
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -120,6 +121,27 @@ export const SalesPipeline = () => {
   const [sourceFilters, setSourceFilters] = useState<Set<'manual' | 'csv-import'>>(new Set());
   const [industryFilters, setIndustryFilters] = useState<Set<string>>(new Set());
   const [hiringTypeFilter, setHiringTypeFilter] = useState<'all' | 'Local' | 'Remote' | 'Both'>('all');
+  const [existingClientIds, setExistingClientIds] = useState<Set<string>>(new Set());
+
+  // Verify which converted_client_id values actually exist in the clients table
+  useEffect(() => {
+    const ids = Array.from(new Set(leads.map(l => l.converted_client_id).filter(Boolean) as string[]));
+    if (ids.length === 0) {
+      setExistingClientIds(new Set());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase.from('clients').select('id').in('id', ids);
+      if (cancelled || error) return;
+      setExistingClientIds(new Set((data || []).map((c: any) => c.id)));
+    })();
+    return () => { cancelled = true; };
+  }, [leads]);
+
+  const openClientInPipeline = (clientId: string) => {
+    navigate(`/admin/clients?clientId=${clientId}`);
+  };
 
   const industries = useMemo(() => {
     const s = new Set<string>();
