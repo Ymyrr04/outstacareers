@@ -148,10 +148,12 @@ export const SalesPipeline = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard label="New Leads" value={stats.newLeads} />
         <StatCard label="Total Inquiries" value={stats.total} />
         <StatCard label="Converted to Clients" value={stats.converted} accent />
+        <StatCard label="Total Est. Deal Value" value={formatCurrency(stats.totalEst)} />
+        <StatCard label="Total Pipeline Value" value={formatCurrency(stats.totalPipeline)} accent />
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -461,7 +463,7 @@ const OtherReasonInput = ({ value, onSave }: { value: string; onSave: (v: string
   );
 };
 
-const StatCard = ({ label, value, accent }: { label: string; value: number; accent?: boolean }) => (
+const StatCard = ({ label, value, accent }: { label: string; value: number | string; accent?: boolean }) => (
   <Card>
     <CardContent className="p-4">
       <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
