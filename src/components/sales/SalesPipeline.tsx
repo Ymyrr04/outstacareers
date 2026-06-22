@@ -875,7 +875,7 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
 
   return (
     <Sheet open={!!lead} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-[420px] sm:max-w-[420px] overflow-y-auto">
+      <SheetContent side="right" className="w-[600px] sm:max-w-[600px] overflow-y-auto">
         {lead && (
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-2">
@@ -895,7 +895,7 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
             <div className="grid grid-cols-2 gap-2 pt-2 border-t">
               <DetailRow label="Stage">
                 <Select value={lead.stage} onValueChange={v => onUpdate({ stage: v as SalesStage })}>
-                  <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>{SALES_STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                 </Select>
               </DetailRow>
