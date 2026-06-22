@@ -73,6 +73,11 @@ const HiringTypeToggle = ({ value, onChange }: { value: HiringType[]; onChange: 
   );
 };
 
+const normalizeNumericInput = (value: string): string => {
+  const digits = value.replace(/[^0-9]/g, '');
+  return digits.replace(/^0+/, '');
+};
+
 const CONTACT_STAGES: SalesStage[] = ['Contact 1', 'Contact 2', 'Contact 3'];
 const stageToContactIdx = (s: SalesStage): 1 | 2 | 3 | null =>
   s === 'Contact 1' ? 1 : s === 'Contact 2' ? 2 : s === 'Contact 3' ? 3 : null;
