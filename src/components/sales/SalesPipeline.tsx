@@ -847,8 +847,8 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
 }) => {
   const { notes, addNote } = useSalesLeadNotes(lead?.id || null);
   const [newNote, setNewNote] = useState('');
-  const [localHires, setLocalHires] = useState<string>(String(lead?.estimated_hires ?? ''));
-  const [localLikelihood, setLocalLikelihood] = useState<string>(String(lead?.likelihood_to_close ?? ''));
+  const [localHires, setLocalHires] = useState<string>((lead?.estimated_hires ?? 0) ? String(lead?.estimated_hires) : '');
+  const [localLikelihood, setLocalLikelihood] = useState<string>((lead?.likelihood_to_close ?? 0) ? String(lead?.likelihood_to_close) : '');
   const currentIdx = lead ? SALES_STAGES.indexOf(lead.stage) : -1;
   const nextStage = currentIdx >= 0 && currentIdx < SALES_STAGES.length - 1 ? SALES_STAGES[currentIdx + 1] : null;
 
