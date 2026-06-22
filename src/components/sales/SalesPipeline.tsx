@@ -111,6 +111,7 @@ export const SalesPipeline = () => {
   const [tempFilters, setTempFilters] = useState<Set<Temperature>>(new Set());
   const [sourceFilters, setSourceFilters] = useState<Set<'manual' | 'csv-import'>>(new Set());
   const [industryFilters, setIndustryFilters] = useState<Set<string>>(new Set());
+  const [hiringTypeFilter, setHiringTypeFilter] = useState<'all' | 'Local' | 'Remote' | 'Both'>('all');
 
   const industries = useMemo(() => {
     const s = new Set<string>();
