@@ -875,7 +875,7 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
 
   return (
     <Sheet open={!!lead} onOpenChange={(o) => !o && onClose()}>
-      <SheetContent side="right" className="w-[420px] sm:max-w-[420px] overflow-y-auto">
+      <SheetContent side="right" className="w-[600px] sm:max-w-[600px] overflow-y-auto">
         {lead && (
           <div className="space-y-4">
             <div className="flex items-start justify-between gap-2">
@@ -892,16 +892,16 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
               {lead.converted_client_id && <Badge className="bg-teal-500 text-white">converted</Badge>}
             </div>
 
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+            <div className="grid grid-cols-2 gap-3 pt-3 border-t">
               <DetailRow label="Stage">
                 <Select value={lead.stage} onValueChange={v => onUpdate({ stage: v as SalesStage })}>
-                  <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>{SALES_STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                 </Select>
               </DetailRow>
               <DetailRow label="Temperature">
                 <Select value={lead.temperature} onValueChange={v => onUpdate({ temperature: v as Temperature })}>
-                  <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="warm">Warm</SelectItem>
                     <SelectItem value="cold">Cold</SelectItem>
@@ -927,7 +927,7 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
                 <Input
                   type="number"
                   min={0}
-                  className="h-8"
+                  className="h-10 text-sm border-2"
                   value={localHires}
                   onChange={e => setLocalHires(normalizeNumericInput(e.target.value))}
                 />
@@ -937,16 +937,16 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
                   type="number"
                   min={0}
                   max={100}
-                  className="h-8"
+                  className="h-10 text-sm border-2"
                   value={localLikelihood}
                   onChange={e => setLocalLikelihood(normalizeNumericInput(e.target.value))}
                 />
               </DetailRow>
-              <div className="col-span-2 rounded-md border bg-muted/30 p-2 text-xs flex items-center justify-between">
+              <div className="col-span-2 rounded-md border bg-muted/30 p-3 text-sm flex items-center justify-between">
                 <span className="text-muted-foreground">Est. Deal Value / yr</span>
                 <span className="font-semibold">{estDealValue(numericHires) > 0 ? `${formatCurrency(estDealValue(numericHires))}/yr` : '—'}</span>
               </div>
-              <div className="col-span-2 rounded-md border-2 border-primary/30 bg-primary/5 p-2 text-sm flex items-center justify-between">
+              <div className="col-span-2 rounded-md border-2 border-primary/30 bg-primary/5 p-3 text-base flex items-center justify-between">
                 <span className="font-medium">Pipeline Value</span>
                 <span className="font-bold text-primary">{pipelineValue(numericHires, numericLikelihood) > 0 ? formatCurrency(pipelineValue(numericHires, numericLikelihood)) : '—'}</span>
               </div>
@@ -961,36 +961,36 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
                 const atVal = lead[atKey] as string | null;
                 const dateLocal = atVal ? new Date(atVal).toISOString().slice(0, 16) : '';
                 return (
-                  <div key={n} className="rounded-md border bg-muted/20 p-2 space-y-2">
+                  <div key={n} className="rounded-md border bg-muted/20 p-3 space-y-3">
                     <div className="flex items-center justify-between">
-                      <div className="text-xs font-semibold">Contact {n}</div>
-                      {t && <Badge variant="outline" className={`text-[10px] ${contactTypeBadge(t)}`}>{contactTypeIcon(t)} {t}</Badge>}
+                      <div className="text-sm font-semibold">Contact {n}</div>
+                      {t && <Badge variant="outline" className={`text-xs ${contactTypeBadge(t)}`}>{contactTypeIcon(t)} {t}</Badge>}
                     </div>
-                    <div className="grid grid-cols-2 gap-2">
-                      <div className="space-y-1">
-                        <Label className="text-[10px] uppercase text-muted-foreground">Type</Label>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="space-y-1.5">
+                        <Label className="text-xs uppercase text-muted-foreground">Type</Label>
                         <Select value={t || ''} onValueChange={(v) => onUpdate({ [typeKey]: v as ContactType } as any)}>
-                          <SelectTrigger className="h-8 text-xs"><SelectValue placeholder="Select" /></SelectTrigger>
+                          <SelectTrigger className="h-10 text-sm"><SelectValue placeholder="Select" /></SelectTrigger>
                           <SelectContent>
                             {CONTACT_TYPES.map(ct => <SelectItem key={ct} value={ct}>{contactTypeIcon(ct)} {ct}</SelectItem>)}
                           </SelectContent>
                         </Select>
                       </div>
-                      <div className="space-y-1">
-                        <Label className="text-[10px] uppercase text-muted-foreground">Date</Label>
+                      <div className="space-y-1.5">
+                        <Label className="text-xs uppercase text-muted-foreground">Date</Label>
                         <Input
                           type="datetime-local"
-                          className="h-8 text-xs"
+                          className="h-10 text-sm border-2"
                           value={dateLocal}
                           onChange={(e) => onUpdate({ [atKey]: e.target.value ? new Date(e.target.value).toISOString() : null } as any)}
                         />
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <Label className="text-[10px] uppercase text-muted-foreground">Notes</Label>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs uppercase text-muted-foreground">Notes</Label>
                       <Textarea
                         rows={2}
-                        className="text-xs"
+                        className="text-sm border-2"
                         value={(lead[notesKey] as string | null) || ''}
                         onChange={(e) => onUpdate({ [notesKey]: e.target.value } as any)}
                         placeholder="Notes for this contact attempt"
@@ -1001,10 +1001,11 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
               })}
             </div>
 
-            <div>
-              <Label className="text-xs">Original Message</Label>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Original Message</Label>
               <Textarea
                 rows={4}
+                className="text-sm border-2"
                 value={lead.original_message || ''}
                 onChange={e => onUpdate({ original_message: e.target.value })}
                 placeholder="No message"
@@ -1013,12 +1014,12 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
 
             <div className="flex gap-2 pt-2">
               {nextStage && (
-                <Button size="sm" variant="outline" className="flex-1" onClick={() => onUpdate({ stage: nextStage })}>
+                <Button size="sm" variant="outline" className="flex-1 h-10 text-sm" onClick={() => onUpdate({ stage: nextStage })}>
                   <ArrowRight className="w-4 h-4 mr-1" /> Move to {nextStage}
                 </Button>
               )}
               {!lead.converted_client_id && (
-                <Button size="sm" className="flex-1" onClick={onConvert}>
+                <Button size="sm" className="flex-1 h-10 text-sm" onClick={onConvert}>
                   <UserPlus className="w-4 h-4 mr-1" /> Convert to client
                 </Button>
               )}
@@ -1027,14 +1028,14 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
             <div className="border-t pt-3">
               <Label className="text-sm font-semibold">Notes</Label>
               <div className="flex gap-2 mt-2">
-                <Textarea rows={2} value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="Add a note…" />
+                <Textarea rows={2} className="text-sm border-2" value={newNote} onChange={e => setNewNote(e.target.value)} placeholder="Add a note…" />
               </div>
-              <Button size="sm" className="mt-2" disabled={!newNote.trim()} onClick={async () => { await addNote(newNote); setNewNote(''); }}>Add Note</Button>
+              <Button size="sm" className="mt-2 h-9 text-sm" disabled={!newNote.trim()} onClick={async () => { await addNote(newNote); setNewNote(''); }}>Add Note</Button>
               <div className="space-y-2 mt-3">
-                {notes.length === 0 && <p className="text-xs text-muted-foreground italic">No notes yet</p>}
+                {notes.length === 0 && <p className="text-sm text-muted-foreground italic">No notes yet</p>}
                 {notes.map(n => (
-                  <div key={n.id} className="text-xs border rounded p-2 bg-muted/30">
-                    <div className="text-muted-foreground mb-1">{new Date(n.created_at).toLocaleString()} · {n.created_by_email || 'Admin'}</div>
+                  <div key={n.id} className="text-sm border rounded p-3 bg-muted/30">
+                    <div className="text-muted-foreground mb-1 text-xs">{new Date(n.created_at).toLocaleString()} · {n.created_by_email || 'Admin'}</div>
                     <div className="whitespace-pre-wrap">{n.note}</div>
                   </div>
                 ))}
@@ -1048,7 +1049,7 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
 };
 
 const DetailRow = ({ label, children }: { label: string; children: React.ReactNode }) => (
-  <div className="space-y-1"><Label className="text-[10px] uppercase text-muted-foreground">{label}</Label>{children}</div>
+  <div className="space-y-1.5"><Label className="text-xs uppercase text-muted-foreground">{label}</Label>{children}</div>
 );
 
 const EditField = ({ label, value, onSave }: { label: string; value: string | null; onSave: (v: string) => void }) => {
@@ -1056,7 +1057,7 @@ const EditField = ({ label, value, onSave }: { label: string; value: string | nu
   return (
     <DetailRow label={label}>
       <Input
-        className="h-8"
+        className="h-10 text-sm border-2"
         value={v}
         onChange={e => setV(e.target.value)}
         onBlur={() => v !== (value || '') && onSave(v)}
