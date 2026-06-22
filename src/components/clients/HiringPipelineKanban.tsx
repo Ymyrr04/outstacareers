@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { format, isPast, startOfDay } from 'date-fns';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
@@ -396,6 +396,23 @@ export const HiringPipelineKanban = () => {
       setClientFilterName(data?.company_name || 'Unknown Client');
     })();
     return () => { cancelled = true; };
+  }, [clientFilterId, requests]);
+
+  // Auto-open the request detail when filtered by client (once per clientId)
+  const autoOpenedClientRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!clientFilterId) {
+      autoOpenedClientRef.current = null;
+      return;
+    }
+    if (autoOpenedClientRef.current === clientFilterId) return;
+    const matches = requests.filter(r => r.client_id === clientFilterId);
+    if (matches.length === 0) return;
+    const pick = [...matches].sort((a: any, b: any) =>
+      new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
+    )[0];
+    autoOpenedClientRef.current = clientFilterId;
+    setSelectedRequest(pick);
   }, [clientFilterId, requests]);
   
   // Sort function based on sort option
