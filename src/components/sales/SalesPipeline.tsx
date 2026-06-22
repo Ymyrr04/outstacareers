@@ -143,22 +143,29 @@ export const SalesPipeline = () => {
       // Fetch latest hiring request stage per converted client
       const { data: stageData, error: stageError } = await supabase
         .from('client_hiring_requests')
-        .select(`
-          client_id,
-          pipeline_stage,
-          pipeline_stages!inner(name)
-        `)
+        .select('client_id, pipeline_stage, created_at')
         .in('client_id', ids)
         .order('client_id', { ascending: true })
         .order('created_at', { ascending: false });
 
       if (cancelled || stageError) return;
 
+      // Map stage slugs to display names
+      const { data: stageNamesData } = await supabase
+        .from('pipeline_stages')
+        .select('name, slug');
+
+      const stageNameMap: Record<string, string> = {};
+      (stageNamesData || []).forEach((s: any) => {
+        if (s.slug) stageNameMap[s.slug] = s.name;
+      });
+
       const stageMap: Record<string, string> = {};
       (stageData || []).forEach((row: any) => {
         const clientId = row.client_id as string;
         if (!stageMap[clientId]) {
-          stageMap[clientId] = row.pipeline_stages?.name || row.pipeline_stage || 'Unknown';
+          const rawStage = (row.pipeline_stage || '').toString();
+          stageMap[clientId] = stageNameMap[rawStage] || rawStage.replace(/_/g, ' ');
         }
       });
       setClientPipelineStages(stageMap);
