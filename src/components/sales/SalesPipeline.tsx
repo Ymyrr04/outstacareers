@@ -577,6 +577,28 @@ const StatCard = ({ label, value, accent }: { label: string; value: number | str
   </Card>
 );
 
+const TemperatureBreakdownCard = ({ cold, warm, hot }: { cold: number; warm: number; hot: number }) => (
+  <Card>
+    <CardContent className="p-4">
+      <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Leads by Temperature</div>
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-center flex-1">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Cold</div>
+          <div className="text-2xl font-bold">{cold}</div>
+        </div>
+        <div className="text-center flex-1 border-x border-border px-2">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Warm</div>
+          <div className="text-2xl font-bold">{warm}</div>
+        </div>
+        <div className="text-center flex-1">
+          <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Hot</div>
+          <div className="text-2xl font-bold">{hot}</div>
+        </div>
+      </div>
+    </CardContent>
+  </Card>
+);
+
 // --- New Lead Dialog ---
 const NewLeadDialog = ({ open, onClose, onSubmit }: { open: boolean; onClose: () => void; onSubmit: (d: Partial<SalesLead>) => void }) => {
   const [data, setData] = useState<Partial<SalesLead>>(emptyLead);
