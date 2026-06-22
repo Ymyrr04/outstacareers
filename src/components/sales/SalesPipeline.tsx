@@ -515,7 +515,20 @@ export const SalesPipeline = () => {
               <TableBody>
                 {filteredLeads.map(l => (
                   <TableRow key={l.id} className="cursor-pointer" onClick={() => setSelectedLead(l)}>
-                    <TableCell className="font-medium">{l.company_name}</TableCell>
+                    <TableCell className="font-medium">
+                      {l.converted_client_id && existingClientIds.has(l.converted_client_id) ? (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); openClientInPipeline(l.converted_client_id!); }}
+                          className="text-primary hover:underline text-left"
+                          title="Open in Clients"
+                        >
+                          {l.company_name}
+                        </button>
+                      ) : (
+                        l.company_name
+                      )}
+                    </TableCell>
                     <TableCell>{l.contact_name || '—'}</TableCell>
                     <TableCell>{l.role_title || '—'}</TableCell>
                     <TableCell>{l.industry || '—'}</TableCell>
