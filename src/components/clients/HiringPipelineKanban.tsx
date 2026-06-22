@@ -399,7 +399,7 @@ export const HiringPipelineKanban = () => {
   }, [clientFilterId, requests]);
 
   // Auto-open the request detail when filtered by client (once per clientId)
-  const autoOpenedClientRef = React.useRef<string | null>(null);
+  const autoOpenedClientRef = useRef<string | null>(null);
   useEffect(() => {
     if (!clientFilterId) {
       autoOpenedClientRef.current = null;
