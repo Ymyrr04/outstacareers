@@ -790,6 +790,33 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
               <EditField label="Team size" value={lead.team_size} onSave={v => onUpdate({ team_size: v })} />
               <div className="col-span-2"><EditField label="Hiring urgency" value={lead.hiring_urgency} onSave={v => onUpdate({ hiring_urgency: v })} /></div>
               <div className="col-span-2"><EditField label="Source" value={lead.source} onSave={v => onUpdate({ source: v })} /></div>
+              <DetailRow label="Estimated number of hires">
+                <Input
+                  type="number"
+                  min={0}
+                  className="h-8"
+                  value={lead.estimated_hires ?? 0}
+                  onChange={e => onUpdate({ estimated_hires: Math.max(0, parseInt(e.target.value || '0', 10) || 0) })}
+                />
+              </DetailRow>
+              <DetailRow label="Likelihood to close (%)">
+                <Input
+                  type="number"
+                  min={0}
+                  max={100}
+                  className="h-8"
+                  value={lead.likelihood_to_close ?? 0}
+                  onChange={e => onUpdate({ likelihood_to_close: Math.min(100, Math.max(0, parseInt(e.target.value || '0', 10) || 0)) })}
+                />
+              </DetailRow>
+              <div className="col-span-2 rounded-md border bg-muted/30 p-2 text-xs flex items-center justify-between">
+                <span className="text-muted-foreground">Est. Deal Value / yr</span>
+                <span className="font-semibold">{estDealValue(lead.estimated_hires) > 0 ? `${formatCurrency(estDealValue(lead.estimated_hires))}/yr` : '—'}</span>
+              </div>
+              <div className="col-span-2 rounded-md border-2 border-primary/30 bg-primary/5 p-2 text-sm flex items-center justify-between">
+                <span className="font-medium">Pipeline Value</span>
+                <span className="font-bold text-primary">{pipelineValue(lead.estimated_hires, lead.likelihood_to_close) > 0 ? formatCurrency(pipelineValue(lead.estimated_hires, lead.likelihood_to_close)) : '—'}</span>
+              </div>
             </div>
 
             <div className="space-y-3 pt-2 border-t">
