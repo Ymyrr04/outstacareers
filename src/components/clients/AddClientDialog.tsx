@@ -154,21 +154,10 @@ export const AddClientDialog = ({ open, onOpenChange, onClientAdded, initialValu
       });
 
       // Reset form
-      setForm({
-        company_name: '',
-        industry: '',
-        leads_from: '',
-        company_links: '',
-        yearly_increase: false,
-        contractor_count: 0,
-        first_name: '',
-        last_name: '',
-        email: '',
-        phone: '',
-      });
+      setForm(emptyForm);
 
       onOpenChange(false);
-      onClientAdded();
+      onClientAdded(client?.id);
     } catch (err: any) {
       toast({
         title: 'Error',
@@ -184,7 +173,7 @@ export const AddClientDialog = ({ open, onOpenChange, onClientAdded, initialValu
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Client</DialogTitle>
+          <DialogTitle>{title || 'Add New Client'}</DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Business Info */}
