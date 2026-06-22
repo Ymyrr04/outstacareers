@@ -177,18 +177,12 @@ If this is not a CV/resume, respond with: "EXTRACTION_FAILED: [reason]"`
   }
 }
 
-// Simple text extraction from PDF (basic approach)
-async function extractTextFromPDF(base64Data: string): Promise<string> {
+// Simple text extraction from PDF bytes (basic approach)
+function extractTextFromPDFBytes(bytes: Uint8Array): string {
   try {
-    const binaryString = atob(base64Data);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    
     const content = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
     const textMatches: string[] = [];
-    
+
     const parenRegex = /\(([^)]+)\)/g;
     let match;
     while ((match = parenRegex.exec(content)) !== null) {
@@ -197,7 +191,7 @@ async function extractTextFromPDF(base64Data: string): Promise<string> {
         textMatches.push(text);
       }
     }
-    
+
     const asciiRegex = /[\x20-\x7E]{10,}/g;
     while ((match = asciiRegex.exec(content)) !== null) {
       const text = match[0].trim();
@@ -205,7 +199,7 @@ async function extractTextFromPDF(base64Data: string): Promise<string> {
         textMatches.push(text);
       }
     }
-    
+
     const extractedText = textMatches.join(' ').replace(/\s+/g, ' ').trim();
     return extractedText || 'Unable to extract text from PDF';
   } catch (error) {
@@ -214,18 +208,12 @@ async function extractTextFromPDF(base64Data: string): Promise<string> {
   }
 }
 
-// Extract text from DOC/DOCX (basic approach)
-async function extractTextFromDoc(base64Data: string): Promise<string> {
+// Extract text from DOC/DOCX bytes (basic approach)
+function extractTextFromDocBytes(bytes: Uint8Array): string {
   try {
-    const binaryString = atob(base64Data);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
-    
     const content = new TextDecoder('utf-8', { fatal: false }).decode(bytes);
     const textMatches: string[] = [];
-    
+
     const xmlTextRegex = />([^<]+)</g;
     let match;
     while ((match = xmlTextRegex.exec(content)) !== null) {
@@ -234,7 +222,7 @@ async function extractTextFromDoc(base64Data: string): Promise<string> {
         textMatches.push(text);
       }
     }
-    
+
     const asciiRegex = /[\x20-\x7E]{15,}/g;
     while ((match = asciiRegex.exec(content)) !== null) {
       const text = match[0].trim();
@@ -242,12 +230,20 @@ async function extractTextFromDoc(base64Data: string): Promise<string> {
         textMatches.push(text);
       }
     }
-    
+
     return textMatches.join(' ').replace(/\s+/g, ' ').trim() || 'Unable to extract text from document';
   } catch (error) {
     console.error('DOC extraction error:', error);
     return 'Unable to extract text from document';
   }
+}
+
+function base64ToBytes(base64: string): Uint8Array {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) bytes[i] = binaryString.charCodeAt(i);
+  return bytes;
 }
 
 // Extract contact info from text
