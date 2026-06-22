@@ -1,7 +1,8 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { formatDistanceToNow } from 'date-fns';
-import { Plus, Upload, LayoutGrid, List as ListIcon, Trash2, X, ArrowRight, UserPlus, Download, Search, Filter, Check } from 'lucide-react';
+import { Plus, Upload, LayoutGrid, List as ListIcon, Trash2, X, ArrowRight, UserPlus, Download, Search, Filter, Check, Building2, Globe } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
@@ -15,8 +16,62 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useSalesLeads, SALES_STAGES, SalesLead, SalesStage, Temperature, ContactType, CONTACT_TYPES, useSalesLeadNotes } from '@/hooks/useSalesLeads';
+import { useSalesLeads, SALES_STAGES, SalesLead, SalesStage, Temperature, ContactType, CONTACT_TYPES, HiringType, HIRING_TYPES, useSalesLeadNotes } from '@/hooks/useSalesLeads';
 import { estDealValue, pipelineValue, formatCurrency } from '@/lib/salesPipelineMath';
+
+const hiringTypeArr = (l: SalesLead | Partial<SalesLead>): HiringType[] => (Array.isArray((l as any).hiring_type) ? (l as any).hiring_type as HiringType[] : []);
+
+const HiringTypeIcons = ({ types, size = 14 }: { types: HiringType[]; size?: number }) => {
+  if (!types || types.length === 0) return null;
+  const hasLocal = types.includes('Local');
+  const hasRemote = types.includes('Remote');
+  return (
+    <TooltipProvider delayDuration={150}>
+      <div className="flex items-center gap-1">
+        {hasLocal && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Building2 className="text-amber-500" style={{ width: size, height: size }} />
+            </TooltipTrigger>
+            <TooltipContent>Local</TooltipContent>
+          </Tooltip>
+        )}
+        {hasRemote && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Globe className="text-teal-500" style={{ width: size, height: size }} />
+            </TooltipTrigger>
+            <TooltipContent>Remote</TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+    </TooltipProvider>
+  );
+};
+
+const HiringTypeToggle = ({ value, onChange }: { value: HiringType[]; onChange: (v: HiringType[]) => void }) => {
+  const toggle = (t: HiringType) => {
+    onChange(value.includes(t) ? value.filter(x => x !== t) : [...value, t]);
+  };
+  const cls = (active: boolean, color: 'amber' | 'teal') =>
+    `flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs transition ${
+      active
+        ? color === 'amber'
+          ? 'bg-amber-500 text-white border-amber-500'
+          : 'bg-teal-500 text-white border-teal-500'
+        : 'bg-transparent text-muted-foreground border-border hover:bg-muted'
+    }`;
+  return (
+    <div className="flex gap-2">
+      <button type="button" onClick={() => toggle('Local')} className={cls(value.includes('Local'), 'amber')}>
+        <Building2 className="w-3.5 h-3.5" /> Local
+      </button>
+      <button type="button" onClick={() => toggle('Remote')} className={cls(value.includes('Remote'), 'teal')}>
+        <Globe className="w-3.5 h-3.5" /> Remote
+      </button>
+    </div>
+  );
+};
 
 const CONTACT_STAGES: SalesStage[] = ['Contact 1', 'Contact 2', 'Contact 3'];
 const stageToContactIdx = (s: SalesStage): 1 | 2 | 3 | null =>
@@ -41,7 +96,7 @@ const emptyLead: Partial<SalesLead> = {
   company_name: '', contact_name: '', role_title: '', email: '', phone: '', phone_2: '',
   industry: '', team_size: '', hiring_urgency: '', temperature: 'warm',
   source: 'manual', stage: 'OutSta Lead', original_message: '',
-  estimated_hires: 0, likelihood_to_close: 0,
+  estimated_hires: 0, likelihood_to_close: 0, hiring_type: [],
 };
 
 export const SalesPipeline = () => {
@@ -56,6 +111,7 @@ export const SalesPipeline = () => {
   const [tempFilters, setTempFilters] = useState<Set<Temperature>>(new Set());
   const [sourceFilters, setSourceFilters] = useState<Set<'manual' | 'csv-import'>>(new Set());
   const [industryFilters, setIndustryFilters] = useState<Set<string>>(new Set());
+  const [hiringTypeFilter, setHiringTypeFilter] = useState<'all' | 'Local' | 'Remote' | 'Both'>('all');
 
   const industries = useMemo(() => {
     const s = new Set<string>();
@@ -71,9 +127,15 @@ export const SalesPipeline = () => {
       if (tempFilters.size && !tempFilters.has(l.temperature)) return false;
       if (sourceFilters.size && !sourceFilters.has((l.source as any))) return false;
       if (industryFilters.size && !industryFilters.has((l.industry || '').trim())) return false;
+      if (hiringTypeFilter !== 'all') {
+        const ht = hiringTypeArr(l);
+        if (hiringTypeFilter === 'Both') {
+          if (!(ht.includes('Local') && ht.includes('Remote'))) return false;
+        } else if (!ht.includes(hiringTypeFilter)) return false;
+      }
       return true;
     });
-  }, [leads, search, tempFilters, sourceFilters, industryFilters]);
+  }, [leads, search, tempFilters, sourceFilters, industryFilters, hiringTypeFilter]);
 
   const activeFilterCount = tempFilters.size + sourceFilters.size + industryFilters.size;
   const toggleFromSet = <T,>(set: Set<T>, val: T, setter: (s: Set<T>) => void) => {
@@ -259,6 +321,18 @@ export const SalesPipeline = () => {
           </PopoverContent>
         </Popover>
 
+        <Select value={hiringTypeFilter} onValueChange={(v) => setHiringTypeFilter(v as any)}>
+          <SelectTrigger className="h-10 w-[160px]">
+            <SelectValue placeholder="Hiring Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Hiring Types</SelectItem>
+            <SelectItem value="Local">🏢 Local</SelectItem>
+            <SelectItem value="Remote">🌐 Remote</SelectItem>
+            <SelectItem value="Both">🏢 🌐 Local + Remote</SelectItem>
+          </SelectContent>
+        </Select>
+
         {(search || activeFilterCount > 0) && (
           <span className="text-xs text-muted-foreground">
             {filteredLeads.length} of {leads.length} match
@@ -298,10 +372,13 @@ export const SalesPipeline = () => {
                               className={`bg-card border rounded-md p-3 shadow-sm cursor-pointer hover:border-primary/50 transition ${s.isDragging ? 'rotate-1 shadow-lg' : ''}`}
                             >
                               <div className="flex items-start justify-between gap-2 mb-1">
-                                <div className="font-semibold text-sm truncate">{lead.company_name}</div>
-                                {lead.converted_client_id && (
-                                  <Badge className="bg-teal-500 hover:bg-teal-500 text-white text-[10px]">converted</Badge>
-                                )}
+                                <div className="font-semibold text-sm truncate flex-1">{lead.company_name}</div>
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                  <HiringTypeIcons types={hiringTypeArr(lead)} size={14} />
+                                  {lead.converted_client_id && (
+                                    <Badge className="bg-teal-500 hover:bg-teal-500 text-white text-[10px]">converted</Badge>
+                                  )}
+                                </div>
                               </div>
                               <div className="text-xs text-muted-foreground mb-2">{lead.contact_name || 'N/A'}</div>
                               <div className="flex flex-wrap gap-1 mb-2">
@@ -387,6 +464,7 @@ export const SalesPipeline = () => {
                   <TableHead>Temperature</TableHead>
                   <TableHead>Source</TableHead>
                   <TableHead>Stage</TableHead>
+                  <TableHead>Hiring Type</TableHead>
                   <TableHead>Last Activity</TableHead>
                   <TableHead></TableHead>
                 </TableRow>
@@ -401,6 +479,7 @@ export const SalesPipeline = () => {
                     <TableCell><Badge variant="outline" className={`capitalize ${tempBadge(l.temperature)}`}>{l.temperature}</Badge></TableCell>
                     <TableCell><Badge variant="outline">{l.source}</Badge></TableCell>
                     <TableCell>{l.stage}</TableCell>
+                    <TableCell><HiringTypeIcons types={hiringTypeArr(l)} size={16} /></TableCell>
                     <TableCell className="text-xs text-muted-foreground">{formatDistanceToNow(new Date(l.updated_at), { addSuffix: true })}</TableCell>
                     <TableCell onClick={(e) => e.stopPropagation()}>
                       <Button variant="ghost" size="icon" onClick={() => setConfirmDelete(l)}>
@@ -410,7 +489,7 @@ export const SalesPipeline = () => {
                   </TableRow>
                 ))}
                 {filteredLeads.length === 0 && (
-                  <TableRow><TableCell colSpan={9} className="text-center text-muted-foreground py-12">{leads.length === 0 ? 'No leads yet' : 'No leads match your search'}</TableCell></TableRow>
+                  <TableRow><TableCell colSpan={10} className="text-center text-muted-foreground py-12">{leads.length === 0 ? 'No leads yet' : 'No leads match your search'}</TableCell></TableRow>
                 )}
               </TableBody>
             </Table>
@@ -525,6 +604,9 @@ const NewLeadDialog = ({ open, onClose, onSubmit }: { open: boolean; onClose: ()
           <Field label="Industry"><Input value={data.industry || ''} onChange={e => set('industry', e.target.value)} /></Field>
           <Field label="Team size"><Input value={data.team_size || ''} onChange={e => set('team_size', e.target.value)} /></Field>
           <Field label="Hiring urgency"><Input value={data.hiring_urgency || ''} onChange={e => set('hiring_urgency', e.target.value)} /></Field>
+          <Field label="Hiring Type">
+            <HiringTypeToggle value={hiringTypeArr(data)} onChange={(v) => set('hiring_type', v)} />
+          </Field>
           <Field label="Temperature">
             <Select value={data.temperature} onValueChange={v => set('temperature', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
@@ -828,6 +910,11 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
               <EditField label="Industry" value={lead.industry} onSave={v => onUpdate({ industry: v })} />
               <EditField label="Team size" value={lead.team_size} onSave={v => onUpdate({ team_size: v })} />
               <div className="col-span-2"><EditField label="Hiring urgency" value={lead.hiring_urgency} onSave={v => onUpdate({ hiring_urgency: v })} /></div>
+              <div className="col-span-2">
+                <DetailRow label="Hiring Type">
+                  <HiringTypeToggle value={hiringTypeArr(lead)} onChange={(v) => onUpdate({ hiring_type: v })} />
+                </DetailRow>
+              </div>
               <div className="col-span-2"><EditField label="Source" value={lead.source} onSave={v => onUpdate({ source: v })} /></div>
               <DetailRow label="Estimated number of hires">
                 <Input

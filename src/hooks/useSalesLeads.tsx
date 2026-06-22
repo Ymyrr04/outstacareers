@@ -17,6 +17,8 @@ export type SalesStage = typeof SALES_STAGES[number];
 export type Temperature = 'warm' | 'cold' | 'hot';
 export type ContactType = 'Email' | 'Text' | 'Call' | 'Other';
 export const CONTACT_TYPES: ContactType[] = ['Email', 'Text', 'Call', 'Other'];
+export type HiringType = 'Local' | 'Remote';
+export const HIRING_TYPES: HiringType[] = ['Local', 'Remote'];
 
 export interface SalesLead {
   id: string;
@@ -49,6 +51,7 @@ export interface SalesLead {
   contact_3_notes: string | null;
   estimated_hires: number;
   likelihood_to_close: number;
+  hiring_type: HiringType[];
 }
 
 
