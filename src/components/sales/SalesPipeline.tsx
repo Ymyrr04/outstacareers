@@ -321,6 +321,18 @@ export const SalesPipeline = () => {
           </PopoverContent>
         </Popover>
 
+        <Select value={hiringTypeFilter} onValueChange={(v) => setHiringTypeFilter(v as any)}>
+          <SelectTrigger className="h-10 w-[160px]">
+            <SelectValue placeholder="Hiring Type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Hiring Types</SelectItem>
+            <SelectItem value="Local">🏢 Local</SelectItem>
+            <SelectItem value="Remote">🌐 Remote</SelectItem>
+            <SelectItem value="Both">🏢 🌐 Local + Remote</SelectItem>
+          </SelectContent>
+        </Select>
+
         {(search || activeFilterCount > 0) && (
           <span className="text-xs text-muted-foreground">
             {filteredLeads.length} of {leads.length} match
