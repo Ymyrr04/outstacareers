@@ -145,11 +145,11 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
 
       try {
         // Client-side size guard (matches edge function limit)
-        const MAX_FILE_BYTES = 8 * 1024 * 1024;
+        const MAX_FILE_BYTES = 10 * 1024 * 1024;
         if (file.size > MAX_FILE_BYTES) {
           updateFileStatus(i, {
             status: 'failed',
-            message: `File too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum is 8MB. Please compress the PDF and try again.`,
+            message: `File too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum is 10MB. Please compress the PDF and try again.`,
           });
           failedCount++;
           continue;
