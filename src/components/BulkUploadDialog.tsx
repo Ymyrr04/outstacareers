@@ -144,6 +144,17 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
       const file = selectedFiles[i];
 
       try {
+        // Client-side size guard (matches edge function limit)
+        const MAX_FILE_BYTES = 8 * 1024 * 1024;
+        if (file.size > MAX_FILE_BYTES) {
+          updateFileStatus(i, {
+            status: 'failed',
+            message: `File too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum is 8MB. Please compress the PDF and try again.`,
+          });
+          failedCount++;
+          continue;
+        }
+
         // Step 1: Uploading
         updateFileStatus(i, { status: 'uploading' });
         const base64 = await fileToBase64(file);
@@ -169,45 +180,69 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
 
         if (error) {
           console.error('Function error:', error);
-          updateFileStatus(i, { 
-            status: 'failed', 
-            message: error.message || 'Processing failed' 
-          });
+          // Try to read the actual error body returned by the edge function
+          let realMessage = error.message || 'Processing failed';
+          try {
+            const resp = (error as { context?: { response?: Response } })?.context?.response;
+            if (resp) {
+              const cloned = resp.clone();
+              const ct = cloned.headers.get('content-type') || '';
+              if (ct.includes('application/json')) {
+                const body = await cloned.json();
+                if (body?.error) realMessage = body.error;
+                else if (body?.reason) realMessage = body.reason;
+              } else {
+                const txt = (await cloned.text()).trim();
+                if (txt) realMessage = txt.slice(0, 300);
+              }
+              // Friendlier message for runtime crashes (OOM / timeout) which
+              // return no JSON body.
+              if (resp.status >= 500 && (!realMessage || realMessage === 'Edge Function returned a non-2xx status code')) {
+                realMessage = `Server crashed while processing this file (status ${resp.status}). The PDF may be too large or image-heavy — try compressing it under 8MB.`;
+              }
+            } else if (/non-2xx/i.test(realMessage)) {
+              realMessage = 'Server crashed while processing this file. The PDF may be too large or image-heavy — try compressing it under 8MB.';
+            }
+          } catch (parseErr) {
+            console.warn('Could not parse function error body:', parseErr);
+          }
+          updateFileStatus(i, { status: 'failed', message: realMessage });
           failedCount++;
           continue;
         }
 
         if (data?.skipped) {
-          updateFileStatus(i, { 
-            status: 'skipped', 
+          updateFileStatus(i, {
+            status: 'skipped',
             message: data.reason || 'Duplicate found',
             extractedInfo: data.extracted_info,
           });
           skippedCount++;
         } else if (data?.success) {
-          updateFileStatus(i, { 
+          updateFileStatus(i, {
             status: 'completed',
             extractedInfo: data.extracted_info,
             extractionMethod: data.extraction_method,
           });
           successCount++;
         } else {
-          updateFileStatus(i, { 
-            status: 'failed', 
-            message: data?.error || 'Unknown error' 
+          updateFileStatus(i, {
+            status: 'failed',
+            message: data?.error || 'Unknown error'
           });
           failedCount++;
         }
 
       } catch (err) {
         console.error('Processing error:', err);
-        updateFileStatus(i, { 
-          status: 'failed', 
-          message: err instanceof Error ? err.message : 'Unknown error' 
+        updateFileStatus(i, {
+          status: 'failed',
+          message: err instanceof Error ? err.message : 'Unknown error'
         });
         failedCount++;
       }
     }
+
 
     setIsProcessing(false);
 
