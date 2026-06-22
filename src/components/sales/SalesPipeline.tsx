@@ -892,16 +892,16 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
               {lead.converted_client_id && <Badge className="bg-teal-500 text-white">converted</Badge>}
             </div>
 
-            <div className="grid grid-cols-2 gap-2 pt-2 border-t">
+            <div className="grid grid-cols-2 gap-3 pt-3 border-t">
               <DetailRow label="Stage">
                 <Select value={lead.stage} onValueChange={v => onUpdate({ stage: v as SalesStage })}>
-                <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>{SALES_STAGES.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
                 </Select>
               </DetailRow>
               <DetailRow label="Temperature">
                 <Select value={lead.temperature} onValueChange={v => onUpdate({ temperature: v as Temperature })}>
-                  <SelectTrigger className="h-8"><SelectValue /></SelectTrigger>
+                  <SelectTrigger className="h-10 text-sm"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="warm">Warm</SelectItem>
                     <SelectItem value="cold">Cold</SelectItem>
@@ -927,7 +927,7 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
                 <Input
                   type="number"
                   min={0}
-                  className="h-8"
+                  className="h-10 text-sm border-2"
                   value={localHires}
                   onChange={e => setLocalHires(normalizeNumericInput(e.target.value))}
                 />
@@ -937,16 +937,16 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
                   type="number"
                   min={0}
                   max={100}
-                  className="h-8"
+                  className="h-10 text-sm border-2"
                   value={localLikelihood}
                   onChange={e => setLocalLikelihood(normalizeNumericInput(e.target.value))}
                 />
               </DetailRow>
-              <div className="col-span-2 rounded-md border bg-muted/30 p-2 text-xs flex items-center justify-between">
+              <div className="col-span-2 rounded-md border bg-muted/30 p-3 text-sm flex items-center justify-between">
                 <span className="text-muted-foreground">Est. Deal Value / yr</span>
                 <span className="font-semibold">{estDealValue(numericHires) > 0 ? `${formatCurrency(estDealValue(numericHires))}/yr` : '—'}</span>
               </div>
-              <div className="col-span-2 rounded-md border-2 border-primary/30 bg-primary/5 p-2 text-sm flex items-center justify-between">
+              <div className="col-span-2 rounded-md border-2 border-primary/30 bg-primary/5 p-3 text-base flex items-center justify-between">
                 <span className="font-medium">Pipeline Value</span>
                 <span className="font-bold text-primary">{pipelineValue(numericHires, numericLikelihood) > 0 ? formatCurrency(pipelineValue(numericHires, numericLikelihood)) : '—'}</span>
               </div>
