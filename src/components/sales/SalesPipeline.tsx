@@ -1,7 +1,8 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { formatDistanceToNow } from 'date-fns';
-import { Plus, Upload, LayoutGrid, List as ListIcon, Trash2, X, ArrowRight, UserPlus, Download, Search, Filter, Check } from 'lucide-react';
+import { Plus, Upload, LayoutGrid, List as ListIcon, Trash2, X, ArrowRight, UserPlus, Download, Search, Filter, Check, Building2, Globe } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
 import { Button } from '@/components/ui/button';
