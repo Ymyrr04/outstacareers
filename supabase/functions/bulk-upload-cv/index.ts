@@ -460,21 +460,15 @@ serve(async (req) => {
       );
     }
 
-    // Step 4: Upload CV to storage
+    // Step 4: Upload CV to storage (reuse bytes decoded above)
     const fileExt = file_name.split('.').pop();
     const storageName = `bulk/${Date.now()}-${Math.random().toString(36).substring(7)}.${fileExt}`;
-    
-    const binaryString = atob(file_base64);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) {
-      bytes[i] = binaryString.charCodeAt(i);
-    }
 
     const { error: uploadError } = await supabase.storage
       .from('cv-uploads')
-      .upload(storageName, bytes, { 
+      .upload(storageName, fileBytes, {
         contentType: file_type,
-        upsert: false 
+        upsert: false
       });
 
     if (uploadError) {
