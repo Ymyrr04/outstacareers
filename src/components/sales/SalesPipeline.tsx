@@ -492,9 +492,27 @@ const StatCard = ({ label, value, accent }: { label: string; value: number | str
 // --- New Lead Dialog ---
 const NewLeadDialog = ({ open, onClose, onSubmit }: { open: boolean; onClose: () => void; onSubmit: (d: Partial<SalesLead>) => void }) => {
   const [data, setData] = useState<Partial<SalesLead>>(emptyLead);
+  const [hiresInput, setHiresInput] = useState<string>('');
+  const [likelihoodInput, setLikelihoodInput] = useState<string>('');
   const set = (k: keyof SalesLead, v: any) => setData(d => ({ ...d, [k]: v }));
+
+  const numericHires = useMemo(() => Math.max(0, parseInt(hiresInput || '0', 10) || 0), [hiresInput]);
+  const numericLikelihood = useMemo(() => Math.min(100, Math.max(0, parseInt(likelihoodInput || '0', 10) || 0)), [likelihoodInput]);
+
+  useEffect(() => {
+    setData(d => d.estimated_hires === numericHires && d.likelihood_to_close === numericLikelihood ? d : { ...d, estimated_hires: numericHires, likelihood_to_close: numericLikelihood });
+  }, [numericHires, numericLikelihood]);
+
+  useEffect(() => {
+    if (open) {
+      setData(emptyLead);
+      setHiresInput('');
+      setLikelihoodInput('');
+    }
+  }, [open]);
+
   return (
-    <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); setData(emptyLead); } }}>
+    <Dialog open={open} onOpenChange={(o) => { if (!o) { onClose(); setData(emptyLead); setHiresInput(''); setLikelihoodInput(''); } }}>
       <DialogContent className="max-w-2xl">
         <DialogHeader><DialogTitle>New Lead</DialogTitle></DialogHeader>
         <div className="grid grid-cols-2 gap-3">
@@ -522,8 +540,8 @@ const NewLeadDialog = ({ open, onClose, onSubmit }: { open: boolean; onClose: ()
             <Input
               type="number"
               min={0}
-              value={data.estimated_hires ?? 0}
-              onChange={e => set('estimated_hires', Math.max(0, parseInt(e.target.value || '0', 10) || 0))}
+              value={hiresInput}
+              onChange={e => setHiresInput(e.target.value.replace(/[^0-9]/g, ''))}
             />
           </Field>
           <Field label="Likelihood to close (%)">
@@ -531,17 +549,17 @@ const NewLeadDialog = ({ open, onClose, onSubmit }: { open: boolean; onClose: ()
               type="number"
               min={0}
               max={100}
-              value={data.likelihood_to_close ?? 0}
-              onChange={e => set('likelihood_to_close', Math.min(100, Math.max(0, parseInt(e.target.value || '0', 10) || 0)))}
+              value={likelihoodInput}
+              onChange={e => setLikelihoodInput(e.target.value.replace(/[^0-9]/g, ''))}
             />
           </Field>
           <div className="col-span-2 rounded-md border bg-muted/30 p-2 text-xs flex items-center justify-between">
             <span className="text-muted-foreground">Est. Deal Value / yr</span>
-            <span className="font-semibold">{estDealValue(data.estimated_hires) > 0 ? `${formatCurrency(estDealValue(data.estimated_hires))}/yr` : '—'}</span>
+            <span className="font-semibold">{estDealValue(numericHires) > 0 ? `${formatCurrency(estDealValue(numericHires))}/yr` : '—'}</span>
           </div>
           <div className="col-span-2 rounded-md border bg-primary/5 p-2 text-xs flex items-center justify-between">
             <span className="text-muted-foreground">Pipeline Value</span>
-            <span className="font-semibold text-primary">{pipelineValue(data.estimated_hires, data.likelihood_to_close) > 0 ? formatCurrency(pipelineValue(data.estimated_hires, data.likelihood_to_close)) : '—'}</span>
+            <span className="font-semibold text-primary">{pipelineValue(numericHires, numericLikelihood) > 0 ? formatCurrency(pipelineValue(numericHires, numericLikelihood)) : '—'}</span>
           </div>
           <div className="col-span-2"><Field label="Notes / Original message"><Textarea rows={3} value={data.original_message || ''} onChange={e => set('original_message', e.target.value)} /></Field></div>
         </div>
