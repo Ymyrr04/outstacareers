@@ -443,10 +443,17 @@ export const SalesPipeline = () => {
                                 ) : (
                                   <div className="font-semibold text-sm truncate flex-1">{lead.company_name}</div>
                                 )}
-                                <div className="flex items-center gap-1.5 flex-shrink-0">
-                                  <HiringTypeIcons types={hiringTypeArr(lead)} size={14} />
-                                  {lead.converted_client_id && (
-                                    <Badge className="bg-teal-500 hover:bg-teal-500 text-white text-[10px]">converted</Badge>
+                                <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <HiringTypeIcons types={hiringTypeArr(lead)} size={14} />
+                                    {lead.converted_client_id && (
+                                      <Badge className="bg-teal-500 hover:bg-teal-500 text-white text-[10px]">converted</Badge>
+                                    )}
+                                  </div>
+                                  {lead.converted_client_id && clientPipelineStages[lead.converted_client_id] && (
+                                    <span className="text-[10px] text-muted-foreground">
+                                      Stage: {clientPipelineStages[lead.converted_client_id]}
+                                    </span>
                                   )}
                                 </div>
                               </div>
