@@ -9,30 +9,72 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 
+export interface AddClientInitialValues {
+  company_name?: string;
+  industry?: string;
+  leads_from?: string;
+  company_links?: string;
+  first_name?: string;
+  last_name?: string;
+  contact_full_name?: string;
+  email?: string;
+  phone?: string;
+}
+
 interface AddClientDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onClientAdded: () => void;
+  onClientAdded: (clientId?: string) => void;
+  initialValues?: AddClientInitialValues;
+  title?: string;
 }
 
-export const AddClientDialog = ({ open, onOpenChange, onClientAdded }: AddClientDialogProps) => {
+const emptyForm = {
+  company_name: '',
+  industry: '',
+  leads_from: '',
+  company_links: '',
+  yearly_increase: false,
+  contractor_count: 0,
+  first_name: '',
+  last_name: '',
+  email: '',
+  phone: '',
+};
+
+const buildForm = (iv?: AddClientInitialValues) => {
+  let first = iv?.first_name || '';
+  let last = iv?.last_name || '';
+  if ((!first && !last) && iv?.contact_full_name) {
+    const parts = iv.contact_full_name.trim().split(/\s+/);
+    first = parts.shift() || '';
+    last = parts.join(' ');
+  }
+  return {
+    ...emptyForm,
+    company_name: iv?.company_name || '',
+    industry: iv?.industry || '',
+    leads_from: iv?.leads_from || '',
+    company_links: iv?.company_links || '',
+    first_name: first,
+    last_name: last,
+    email: iv?.email || '',
+    phone: iv?.phone || '',
+  };
+};
+
+export const AddClientDialog = ({ open, onOpenChange, onClientAdded, initialValues, title }: AddClientDialogProps) => {
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
   const [existingIndustries, setExistingIndustries] = useState<string[]>([]);
   const [existingSources, setExistingSources] = useState<string[]>([]);
-  const [form, setForm] = useState({
-    company_name: '',
-    industry: '',
-    leads_from: '',
-    company_links: '',
-    yearly_increase: false,
-    contractor_count: 0,
-    // Primary contact
-    first_name: '',
-    last_name: '',
-    email: '',
-    phone: '',
-  });
+  const [form, setForm] = useState(() => buildForm(initialValues));
+
+  // Re-seed form when dialog opens with new initial values
+  useEffect(() => {
+    if (open) setForm(buildForm(initialValues));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, initialValues]);
 
   // Fetch existing industries from the database
   useEffect(() => {
