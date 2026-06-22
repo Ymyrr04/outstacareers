@@ -122,19 +122,46 @@ export const SalesPipeline = () => {
   const [industryFilters, setIndustryFilters] = useState<Set<string>>(new Set());
   const [hiringTypeFilter, setHiringTypeFilter] = useState<'all' | 'Local' | 'Remote' | 'Both'>('all');
   const [existingClientIds, setExistingClientIds] = useState<Set<string>>(new Set());
+  const [clientPipelineStages, setClientPipelineStages] = useState<Record<string, string>>({});
 
   // Verify which converted_client_id values actually exist in the clients table
+  // and fetch the latest client pipeline stage for each converted client
   useEffect(() => {
     const ids = Array.from(new Set(leads.map(l => l.converted_client_id).filter(Boolean) as string[]));
     if (ids.length === 0) {
       setExistingClientIds(new Set());
+      setClientPipelineStages({});
       return;
     }
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase.from('clients').select('id').in('id', ids);
       if (cancelled || error) return;
-      setExistingClientIds(new Set((data || []).map((c: any) => c.id)));
+      const existing = new Set((data || []).map((c: any) => c.id));
+      setExistingClientIds(existing);
+
+      // Fetch latest hiring request stage per converted client
+      const { data: stageData, error: stageError } = await supabase
+        .from('client_hiring_requests')
+        .select(`
+          client_id,
+          pipeline_stage,
+          pipeline_stages!inner(name)
+        `)
+        .in('client_id', ids)
+        .order('client_id', { ascending: true })
+        .order('created_at', { ascending: false });
+
+      if (cancelled || stageError) return;
+
+      const stageMap: Record<string, string> = {};
+      (stageData || []).forEach((row: any) => {
+        const clientId = row.client_id as string;
+        if (!stageMap[clientId]) {
+          stageMap[clientId] = row.pipeline_stages?.name || row.pipeline_stage || 'Unknown';
+        }
+      });
+      setClientPipelineStages(stageMap);
     })();
     return () => { cancelled = true; };
   }, [leads]);
