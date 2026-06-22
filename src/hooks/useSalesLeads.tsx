@@ -46,7 +46,10 @@ export interface SalesLead {
   contact_1_notes: string | null;
   contact_2_notes: string | null;
   contact_3_notes: string | null;
+  estimated_hires: number;
+  likelihood_to_close: number;
 }
+
 
 export interface SalesLeadNote {
   id: string;
