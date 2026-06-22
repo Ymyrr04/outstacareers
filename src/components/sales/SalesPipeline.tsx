@@ -742,8 +742,24 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
 }) => {
   const { notes, addNote } = useSalesLeadNotes(lead?.id || null);
   const [newNote, setNewNote] = useState('');
+  const [localHires, setLocalHires] = useState<number>(lead?.estimated_hires ?? 0);
+  const [localLikelihood, setLocalLikelihood] = useState<number>(lead?.likelihood_to_close ?? 0);
   const currentIdx = lead ? SALES_STAGES.indexOf(lead.stage) : -1;
   const nextStage = currentIdx >= 0 && currentIdx < SALES_STAGES.length - 1 ? SALES_STAGES[currentIdx + 1] : null;
+
+  useEffect(() => {
+    setLocalHires(lead?.estimated_hires ?? 0);
+    setLocalLikelihood(lead?.likelihood_to_close ?? 0);
+  }, [lead?.id]);
+
+  useEffect(() => {
+    if (!lead) return;
+    if (localHires === lead.estimated_hires && localLikelihood === lead.likelihood_to_close) return;
+    const t = setTimeout(() => {
+      onUpdate({ estimated_hires: localHires, likelihood_to_close: localLikelihood });
+    }, 500);
+    return () => clearTimeout(t);
+  }, [localHires, localLikelihood, lead, onUpdate]);
 
   return (
     <Sheet open={!!lead} onOpenChange={(o) => !o && onClose()}>
