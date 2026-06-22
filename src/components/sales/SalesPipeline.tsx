@@ -571,7 +571,7 @@ export const SalesPipeline = () => {
                           <span>{l.company_name}</span>
                         )}
                         {l.converted_client_id && clientPipelineStages[l.converted_client_id] && (
-                          <span className="text-[10px] text-muted-foreground">
+                          <span className="text-[10px] font-semibold text-teal-600 dark:text-teal-400">
                             Stage: {clientPipelineStages[l.converted_client_id]}
                           </span>
                         )}
