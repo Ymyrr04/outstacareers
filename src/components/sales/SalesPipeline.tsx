@@ -165,7 +165,9 @@ export const SalesPipeline = () => {
     });
     return {
       total: leads.length,
-      warmAndHot: leads.filter(l => l.temperature === 'warm' || l.temperature === 'hot').length,
+      cold: leads.filter(l => l.temperature === 'cold').length,
+      warm: leads.filter(l => l.temperature === 'warm').length,
+      hot: leads.filter(l => l.temperature === 'hot').length,
       converted: leads.filter(l => !!l.converted_client_id).length,
       totalEst,
       totalPipeline,
@@ -215,9 +217,11 @@ export const SalesPipeline = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
         <StatCard label="Total Leads" value={stats.total} />
-        <StatCard label="Total number of warm and hot leads" value={stats.warmAndHot} />
+        <StatCard label="Cold" value={stats.cold} />
+        <StatCard label="Warm" value={stats.warm} />
+        <StatCard label="Hot" value={stats.hot} />
         <StatCard label="Converted to Clients" value={stats.converted} accent />
         <StatCard label="Total Est. Deal Value" value={formatCurrency(stats.totalEst)} />
         <StatCard label="Total Pipeline Value" value={formatCurrency(stats.totalPipeline)} accent />
