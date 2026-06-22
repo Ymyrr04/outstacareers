@@ -811,8 +811,8 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
                   type="number"
                   min={0}
                   className="h-8"
-                  value={lead.estimated_hires ?? 0}
-                  onChange={e => onUpdate({ estimated_hires: Math.max(0, parseInt(e.target.value || '0', 10) || 0) })}
+                  value={localHires}
+                  onChange={e => setLocalHires(Math.max(0, parseInt(e.target.value || '0', 10) || 0))}
                 />
               </DetailRow>
               <DetailRow label="Likelihood to close (%)">
@@ -821,17 +821,17 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
                   min={0}
                   max={100}
                   className="h-8"
-                  value={lead.likelihood_to_close ?? 0}
-                  onChange={e => onUpdate({ likelihood_to_close: Math.min(100, Math.max(0, parseInt(e.target.value || '0', 10) || 0)) })}
+                  value={localLikelihood}
+                  onChange={e => setLocalLikelihood(Math.min(100, Math.max(0, parseInt(e.target.value || '0', 10) || 0)))}
                 />
               </DetailRow>
               <div className="col-span-2 rounded-md border bg-muted/30 p-2 text-xs flex items-center justify-between">
                 <span className="text-muted-foreground">Est. Deal Value / yr</span>
-                <span className="font-semibold">{estDealValue(lead.estimated_hires) > 0 ? `${formatCurrency(estDealValue(lead.estimated_hires))}/yr` : '—'}</span>
+                <span className="font-semibold">{estDealValue(localHires) > 0 ? `${formatCurrency(estDealValue(localHires))}/yr` : '—'}</span>
               </div>
               <div className="col-span-2 rounded-md border-2 border-primary/30 bg-primary/5 p-2 text-sm flex items-center justify-between">
                 <span className="font-medium">Pipeline Value</span>
-                <span className="font-bold text-primary">{pipelineValue(lead.estimated_hires, lead.likelihood_to_close) > 0 ? formatCurrency(pipelineValue(lead.estimated_hires, lead.likelihood_to_close)) : '—'}</span>
+                <span className="font-bold text-primary">{pipelineValue(localHires, localLikelihood) > 0 ? formatCurrency(pipelineValue(localHires, localLikelihood)) : '—'}</span>
               </div>
             </div>
 
