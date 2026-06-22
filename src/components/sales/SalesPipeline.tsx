@@ -550,18 +550,25 @@ export const SalesPipeline = () => {
                 {filteredLeads.map(l => (
                   <TableRow key={l.id} className="cursor-pointer" onClick={() => setSelectedLead(l)}>
                     <TableCell className="font-medium">
-                      {l.converted_client_id && existingClientIds.has(l.converted_client_id) ? (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); openClientInPipeline(l.converted_client_id!); }}
-                          className="text-primary hover:underline text-left"
-                          title="Open in client pipeline"
-                        >
-                          {l.company_name}
-                        </button>
-                      ) : (
-                        l.company_name
-                      )}
+                      <div className="flex flex-col gap-0.5">
+                        {l.converted_client_id && existingClientIds.has(l.converted_client_id) ? (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); openClientInPipeline(l.converted_client_id!); }}
+                            className="text-primary hover:underline text-left"
+                            title="Open in client pipeline"
+                          >
+                            {l.company_name}
+                          </button>
+                        ) : (
+                          <span>{l.company_name}</span>
+                        )}
+                        {l.converted_client_id && clientPipelineStages[l.converted_client_id] && (
+                          <span className="text-[10px] text-muted-foreground">
+                            Stage: {clientPipelineStages[l.converted_client_id]}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>{l.contact_name || '—'}</TableCell>
                     <TableCell>{l.role_title || '—'}</TableCell>
