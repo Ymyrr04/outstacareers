@@ -217,11 +217,9 @@ export const SalesPipeline = () => {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-7 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
         <StatCard label="Total Leads" value={stats.total} />
-        <StatCard label="Cold" value={stats.cold} />
-        <StatCard label="Warm" value={stats.warm} />
-        <StatCard label="Hot" value={stats.hot} />
+        <TemperatureBreakdownCard cold={stats.cold} warm={stats.warm} hot={stats.hot} />
         <StatCard label="Converted to Clients" value={stats.converted} accent />
         <StatCard label="Total Est. Deal Value" value={formatCurrency(stats.totalEst)} />
         <StatCard label="Total Pipeline Value" value={formatCurrency(stats.totalPipeline)} accent />
