@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { format, isPast, startOfDay } from 'date-fns';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { useHiringRequests, type HiringRequest } from '@/hooks/useHiringRequests';
@@ -358,6 +359,7 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
 export const HiringPipelineKanban = () => {
   const { requests, loading: requestsLoading, updateStage, fetchRequests } = useHiringRequests();
   const { stages, loading: stagesLoading } = usePipelineStages();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [addStageDialogOpen, setAddStageDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -369,9 +371,32 @@ export const HiringPipelineKanban = () => {
   const [closureCount, setClosureCount] = useState(0);
   const [stageSortBy, setStageSortBy] = useState<Record<string, 'priority' | 'target_end_date' | 'closed_at' | 'created_at'>>({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [clientFilterName, setClientFilterName] = useState<string | null>(null);
   const { toast } = useToast();
-  
+
+  const clientFilterId = searchParams.get('clientId');
+
   const loading = requestsLoading || stagesLoading;
+
+  // Resolve client name from filtered requests or clients table
+  useEffect(() => {
+    if (!clientFilterId) {
+      setClientFilterName(null);
+      return;
+    }
+    const match = requests.find(r => r.client_id === clientFilterId);
+    if (match?.client_name) {
+      setClientFilterName(match.client_name);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase.from('clients').select('company_name').eq('id', clientFilterId).single();
+      if (cancelled || error) return;
+      setClientFilterName(data?.company_name || 'Unknown Client');
+    })();
+    return () => { cancelled = true; };
+  }, [clientFilterId, requests]);
   
   // Sort function based on sort option
   const sortRequests = (items: HiringRequest[], sortOption: 'priority' | 'target_end_date' | 'closed_at' | 'created_at'): HiringRequest[] => {
@@ -409,11 +434,15 @@ export const HiringPipelineKanban = () => {
     return sortRequests(items, sortOption);
   };
 
-  // Filter requests by search term
+  // Filter requests by search term and selected client
   const filteredRequests = useMemo(() => {
-    if (!searchTerm.trim()) return requests;
+    let result = requests;
+    if (clientFilterId) {
+      result = result.filter(r => r.client_id === clientFilterId);
+    }
+    if (!searchTerm.trim()) return result;
     const term = searchTerm.toLowerCase();
-    return requests.filter(r => {
+    return result.filter(r => {
       const assignee = adminUsers.find(a => a.user_id === r.assigned_admin_id);
       const assigneeName = getAdminDisplayName(assignee?.email).toLowerCase();
       return (
@@ -424,7 +453,7 @@ export const HiringPipelineKanban = () => {
         assigneeName.includes(term)
       );
     });
-  }, [requests, searchTerm, adminUsers]);
+  }, [requests, searchTerm, adminUsers, clientFilterId]);
 
   // Group requests by pipeline stage dynamically
   const requestsByStage = stages.reduce((acc, stage) => {
@@ -550,6 +579,32 @@ export const HiringPipelineKanban = () => {
 
   return (
     <>
+      {clientFilterId && (
+        <div className="px-4 py-2 border-b bg-primary/5 flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-sm font-medium truncate">
+              Showing pipeline for: {clientFilterName || 'Loading…'}
+            </span>
+            <Badge variant="secondary" className="text-xs flex-shrink-0">
+              {filteredRequests.length}
+            </Badge>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs flex-shrink-0"
+            onClick={() => {
+              const next = new URLSearchParams(searchParams);
+              next.delete('clientId');
+              setSearchParams(next, { replace: true });
+            }}
+          >
+            <X className="w-3 h-3 mr-1" />
+            Clear filter
+          </Button>
+        </div>
+      )}
+
       {/* Recruiter Analytics Section */}
       <div className="px-4 py-3 border-b">
         <h3 className="text-sm font-semibold mb-2">Recruiter Performance</h3>
