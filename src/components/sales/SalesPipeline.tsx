@@ -1,4 +1,4 @@
-import { useMemo, useState, useRef } from 'react';
+import { useMemo, useState, useRef, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { formatDistanceToNow } from 'date-fns';
 import { Plus, Upload, LayoutGrid, List as ListIcon, Trash2, X, ArrowRight, UserPlus, Download, Search, Filter, Check } from 'lucide-react';
@@ -742,8 +742,24 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
 }) => {
   const { notes, addNote } = useSalesLeadNotes(lead?.id || null);
   const [newNote, setNewNote] = useState('');
+  const [localHires, setLocalHires] = useState<number>(lead?.estimated_hires ?? 0);
+  const [localLikelihood, setLocalLikelihood] = useState<number>(lead?.likelihood_to_close ?? 0);
   const currentIdx = lead ? SALES_STAGES.indexOf(lead.stage) : -1;
   const nextStage = currentIdx >= 0 && currentIdx < SALES_STAGES.length - 1 ? SALES_STAGES[currentIdx + 1] : null;
+
+  useEffect(() => {
+    setLocalHires(lead?.estimated_hires ?? 0);
+    setLocalLikelihood(lead?.likelihood_to_close ?? 0);
+  }, [lead?.id]);
+
+  useEffect(() => {
+    if (!lead) return;
+    if (localHires === lead.estimated_hires && localLikelihood === lead.likelihood_to_close) return;
+    const t = setTimeout(() => {
+      onUpdate({ estimated_hires: localHires, likelihood_to_close: localLikelihood });
+    }, 500);
+    return () => clearTimeout(t);
+  }, [localHires, localLikelihood, lead, onUpdate]);
 
   return (
     <Sheet open={!!lead} onOpenChange={(o) => !o && onClose()}>
@@ -795,8 +811,8 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
                   type="number"
                   min={0}
                   className="h-8"
-                  value={lead.estimated_hires ?? 0}
-                  onChange={e => onUpdate({ estimated_hires: Math.max(0, parseInt(e.target.value || '0', 10) || 0) })}
+                  value={localHires}
+                  onChange={e => setLocalHires(Math.max(0, parseInt(e.target.value || '0', 10) || 0))}
                 />
               </DetailRow>
               <DetailRow label="Likelihood to close (%)">
@@ -805,17 +821,17 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
                   min={0}
                   max={100}
                   className="h-8"
-                  value={lead.likelihood_to_close ?? 0}
-                  onChange={e => onUpdate({ likelihood_to_close: Math.min(100, Math.max(0, parseInt(e.target.value || '0', 10) || 0)) })}
+                  value={localLikelihood}
+                  onChange={e => setLocalLikelihood(Math.min(100, Math.max(0, parseInt(e.target.value || '0', 10) || 0)))}
                 />
               </DetailRow>
               <div className="col-span-2 rounded-md border bg-muted/30 p-2 text-xs flex items-center justify-between">
                 <span className="text-muted-foreground">Est. Deal Value / yr</span>
-                <span className="font-semibold">{estDealValue(lead.estimated_hires) > 0 ? `${formatCurrency(estDealValue(lead.estimated_hires))}/yr` : '—'}</span>
+                <span className="font-semibold">{estDealValue(localHires) > 0 ? `${formatCurrency(estDealValue(localHires))}/yr` : '—'}</span>
               </div>
               <div className="col-span-2 rounded-md border-2 border-primary/30 bg-primary/5 p-2 text-sm flex items-center justify-between">
                 <span className="font-medium">Pipeline Value</span>
-                <span className="font-bold text-primary">{pipelineValue(lead.estimated_hires, lead.likelihood_to_close) > 0 ? formatCurrency(pipelineValue(lead.estimated_hires, lead.likelihood_to_close)) : '—'}</span>
+                <span className="font-bold text-primary">{pipelineValue(localHires, localLikelihood) > 0 ? formatCurrency(pipelineValue(localHires, localLikelihood)) : '—'}</span>
               </div>
             </div>
 
