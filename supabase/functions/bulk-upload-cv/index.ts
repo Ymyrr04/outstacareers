@@ -315,15 +315,32 @@ serve(async (req) => {
 
     const LOVABLE_API_KEY = Deno.env.get('LOVABLE_API_KEY');
 
+    // Decode bytes ONCE (reused for text extraction and storage upload)
+    // Guard against oversized files that would OOM the edge function runtime.
+    const approxBytes = Math.floor((file_base64?.length || 0) * 0.75);
+    const MAX_FILE_BYTES = 8 * 1024 * 1024; // 8MB
+    if (approxBytes > MAX_FILE_BYTES) {
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: `File too large (${(approxBytes / (1024 * 1024)).toFixed(1)}MB). Maximum is ${MAX_FILE_BYTES / (1024 * 1024)}MB. Please compress the PDF and try again.`,
+        }),
+        { status: 413, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const fileBytes = base64ToBytes(file_base64);
+
     // Step 1: Extract text from CV
     let cvText = '';
     let extractionMethod = 'standard';
-    
+
     if (file_type.includes('pdf')) {
-      cvText = await extractTextFromPDF(file_base64);
+      cvText = extractTextFromPDFBytes(fileBytes);
     } else {
-      cvText = await extractTextFromDoc(file_base64);
+      cvText = extractTextFromDocBytes(fileBytes);
     }
+
 
     cvText = sanitizeText(cvText);
     console.log('Extracted text length:', cvText.length);
