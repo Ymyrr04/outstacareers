@@ -939,7 +939,7 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
                   max={100}
                   className="h-8"
                   value={localLikelihood}
-                  onChange={e => setLocalLikelihood(e.target.value.replace(/[^0-9]/g, ''))}
+                  onChange={e => setLocalLikelihood(normalizeNumericInput(e.target.value))}
                 />
               </DetailRow>
               <div className="col-span-2 rounded-md border bg-muted/30 p-2 text-xs flex items-center justify-between">
