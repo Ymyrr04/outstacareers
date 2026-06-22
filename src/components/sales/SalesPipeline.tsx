@@ -1,4 +1,5 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { formatDistanceToNow } from 'date-fns';
 import { Plus, Upload, LayoutGrid, List as ListIcon, Trash2, X, ArrowRight, UserPlus, Download, Search, Filter, Check, Building2, Globe } from 'lucide-react';
@@ -108,6 +109,7 @@ const emptyLead: Partial<SalesLead> = {
 
 export const SalesPipeline = () => {
   const { leads, loading, createLead, updateLead, deleteLead, bulkInsert, convertToClient } = useSalesLeads();
+  const navigate = useNavigate();
   const [view, setView] = useState<'kanban' | 'list'>('kanban');
   const [addOpen, setAddOpen] = useState(false);
   const [importOpen, setImportOpen] = useState(false);
@@ -119,6 +121,27 @@ export const SalesPipeline = () => {
   const [sourceFilters, setSourceFilters] = useState<Set<'manual' | 'csv-import'>>(new Set());
   const [industryFilters, setIndustryFilters] = useState<Set<string>>(new Set());
   const [hiringTypeFilter, setHiringTypeFilter] = useState<'all' | 'Local' | 'Remote' | 'Both'>('all');
+  const [existingClientIds, setExistingClientIds] = useState<Set<string>>(new Set());
+
+  // Verify which converted_client_id values actually exist in the clients table
+  useEffect(() => {
+    const ids = Array.from(new Set(leads.map(l => l.converted_client_id).filter(Boolean) as string[]));
+    if (ids.length === 0) {
+      setExistingClientIds(new Set());
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase.from('clients').select('id').in('id', ids);
+      if (cancelled || error) return;
+      setExistingClientIds(new Set((data || []).map((c: any) => c.id)));
+    })();
+    return () => { cancelled = true; };
+  }, [leads]);
+
+  const openClientInPipeline = (clientId: string) => {
+    navigate(`/admin/clients?clientId=${clientId}`);
+  };
 
   const industries = useMemo(() => {
     const s = new Set<string>();
@@ -381,7 +404,18 @@ export const SalesPipeline = () => {
                               className={`bg-card border rounded-md p-3 shadow-sm cursor-pointer hover:border-primary/50 transition ${s.isDragging ? 'rotate-1 shadow-lg' : ''}`}
                             >
                               <div className="flex items-start justify-between gap-2 mb-1">
-                                <div className="font-semibold text-sm truncate flex-1">{lead.company_name}</div>
+                                {lead.converted_client_id && existingClientIds.has(lead.converted_client_id) ? (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); openClientInPipeline(lead.converted_client_id!); }}
+                                    className="font-semibold text-sm truncate flex-1 text-left text-primary hover:underline"
+                                    title="Open in Clients"
+                                  >
+                                    {lead.company_name}
+                                  </button>
+                                ) : (
+                                  <div className="font-semibold text-sm truncate flex-1">{lead.company_name}</div>
+                                )}
                                 <div className="flex items-center gap-1.5 flex-shrink-0">
                                   <HiringTypeIcons types={hiringTypeArr(lead)} size={14} />
                                   {lead.converted_client_id && (
@@ -481,7 +515,20 @@ export const SalesPipeline = () => {
               <TableBody>
                 {filteredLeads.map(l => (
                   <TableRow key={l.id} className="cursor-pointer" onClick={() => setSelectedLead(l)}>
-                    <TableCell className="font-medium">{l.company_name}</TableCell>
+                    <TableCell className="font-medium">
+                      {l.converted_client_id && existingClientIds.has(l.converted_client_id) ? (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); openClientInPipeline(l.converted_client_id!); }}
+                          className="text-primary hover:underline text-left"
+                          title="Open in Clients"
+                        >
+                          {l.company_name}
+                        </button>
+                      ) : (
+                        l.company_name
+                      )}
+                    </TableCell>
                     <TableCell>{l.contact_name || '—'}</TableCell>
                     <TableCell>{l.role_title || '—'}</TableCell>
                     <TableCell>{l.industry || '—'}</TableCell>

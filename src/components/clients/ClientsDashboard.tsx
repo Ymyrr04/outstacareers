@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 import { Button } from '@/components/ui/button';
@@ -93,6 +94,20 @@ export const ClientsDashboard = () => {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Auto-open client detail when ?clientId=... is present in URL
+  useEffect(() => {
+    const targetId = searchParams.get('clientId');
+    if (!targetId || clients.length === 0) return;
+    const match = clients.find(c => c.id === targetId);
+    if (match) {
+      setSelectedClient(match);
+      const next = new URLSearchParams(searchParams);
+      next.delete('clientId');
+      setSearchParams(next, { replace: true });
+    }
+  }, [clients, searchParams, setSearchParams]);
 
   const fetchClients = useCallback(async () => {
     try {
