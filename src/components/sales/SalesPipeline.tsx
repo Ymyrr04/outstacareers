@@ -372,10 +372,13 @@ export const SalesPipeline = () => {
                               className={`bg-card border rounded-md p-3 shadow-sm cursor-pointer hover:border-primary/50 transition ${s.isDragging ? 'rotate-1 shadow-lg' : ''}`}
                             >
                               <div className="flex items-start justify-between gap-2 mb-1">
-                                <div className="font-semibold text-sm truncate">{lead.company_name}</div>
-                                {lead.converted_client_id && (
-                                  <Badge className="bg-teal-500 hover:bg-teal-500 text-white text-[10px]">converted</Badge>
-                                )}
+                                <div className="font-semibold text-sm truncate flex-1">{lead.company_name}</div>
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                  <HiringTypeIcons types={hiringTypeArr(lead)} size={14} />
+                                  {lead.converted_client_id && (
+                                    <Badge className="bg-teal-500 hover:bg-teal-500 text-white text-[10px]">converted</Badge>
+                                  )}
+                                </div>
                               </div>
                               <div className="text-xs text-muted-foreground mb-2">{lead.contact_name || 'N/A'}</div>
                               <div className="flex flex-wrap gap-1 mb-2">
