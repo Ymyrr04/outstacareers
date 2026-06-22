@@ -140,7 +140,7 @@ export const SalesPipeline = () => {
   }, [leads]);
 
   const openClientInPipeline = (clientId: string) => {
-    navigate(`/admin/pipeline?clientId=${clientId}`);
+    navigate(`/admin/clients?clientId=${clientId}`);
   };
 
   const industries = useMemo(() => {
@@ -409,7 +409,119 @@ export const SalesPipeline = () => {
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); openClientInPipeline(lead.converted_client_id!); }}
                                     className="font-semibold text-sm truncate flex-1 text-left text-primary hover:underline"
-                                    title="Open in client pipeline"
+                                    title="Open in Clients"
+                                  >
+                                    {lead.company_name}
+                                  </button>
+                                ) : (
+                                  <div className="font-semibold text-sm truncate flex-1">{lead.company_name}</div>
+                                )}
+                                <div className="flex items-center gap-1.5 flex-shrink-0">
+                                  <HiringTypeIcons types={hiringTypeArr(lead)} size={14} />
+                                  {lead.converted_client_id && (
+                                    <Badge className="bg-teal-500 hover:bg-teal-500 text-white text-[10px]">converted</Badge>
+                                  )}
+                                </div>
+                              </div>
+                              <div className="text-xs text-muted-foreground mb-2">{lead.contact_name || 'N/A'}</div>
+                              <div className="flex flex-wrap gap-1 mb-2">
+                                <Badge variant="outline" className={`text-[10px] capitalize ${tempBadge(lead.temperature)}`}>{lead.temperature}</Badge>
+                                <Badge variant="outline" className="text-[10px]">{lead.source}</Badge>
+                              </div>
+                              {lead.role_title && <div className="text-xs truncate">{lead.role_title}</div>}
+                              {lead.industry && <div className="text-xs text-muted-foreground truncate">{lead.industry}</div>}
+                              {lead.email && <div className="text-xs text-muted-foreground truncate">{lead.email}</div>}
+                              {(() => {
+                                const ci = stageToContactIdx(stage);
+                                if (!ci) return null;
+                                const typeKey = `contact_${ci}_type` as keyof SalesLead;
+                                const notesKey = `contact_${ci}_notes` as keyof SalesLead;
+                                const current = lead[typeKey] as ContactType | null;
+                                const currentNotes = (lead[notesKey] as string | null) || '';
+                                return (
+                                  <div className="mt-2 space-y-1" onClick={(e) => e.stopPropagation()}>
+                                    <Select
+                                      value={current || ''}
+                                      onValueChange={(v) => updateLead(lead.id, { [typeKey]: v as ContactType } as any)}
+                                    >
+                                      <SelectTrigger className={`h-6 text-[10px] px-2 ${current ? contactTypeBadge(current) : 'text-muted-foreground'}`}>
+                                        <SelectValue placeholder="Select type">
+                                          {current ? `${contactTypeIcon(current)} ${current}` : 'Select type'}
+                                        </SelectValue>
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        {CONTACT_TYPES.map(t => (
+                                          <SelectItem key={t} value={t}>{contactTypeIcon(t)} {t}</SelectItem>
+                                        ))}
+                                      </SelectContent>
+                                    </Select>
+                                    {current === 'Other' && (
+                                      <OtherReasonInput
+                                        value={currentNotes}
+                                        onSave={(v) => updateLead(lead.id, { [notesKey]: v } as any)}
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })()}
+                              {(() => {
+                                const hires = lead.estimated_hires || 0;
+                                const pct = lead.likelihood_to_close || 0;
+                                const dv = estDealValue(hires);
+                                const pv = pipelineValue(hires, pct);
+                                return (
+                                  <div className="mt-2 flex items-center justify-between gap-2 pt-2 border-t border-dashed">
+                                    <Badge variant="outline" className="text-[10px] bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300">
+                                      {pct > 0 ? `${pct}%` : '—'}
+                                    </Badge>
+                                    <div className="text-right leading-tight">
+                                      <div className="text-[10px] text-muted-foreground">{dv > 0 ? `${formatCurrency(dv)}/yr` : '—'}</div>
+                                      <div className="text-[11px] font-semibold">{pv > 0 ? `Pipeline: ${formatCurrency(pv)}` : '—'}</div>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
+                              <div className="text-[10px] text-muted-foreground mt-2">{formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}</div>
+                            </div>
+                          )}
+                        </Draggable>
+                      ))}
+                      {provided.placeholder}
+                    </div>
+                  </div>
+                )}
+              </Droppable>
+            ))}
+          </div>
+        </DragDropContext>
+      ) : (
+        <Card>
+          <CardContent className="p-0">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Company</TableHead>
+                  <TableHead>Contact</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead>Industry</TableHead>
+                  <TableHead>Temperature</TableHead>
+                  <TableHead>Source</TableHead>
+                  <TableHead>Stage</TableHead>
+                  <TableHead>Hiring Type</TableHead>
+                  <TableHead>Last Activity</TableHead>
+                  <TableHead></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredLeads.map(l => (
+                  <TableRow key={l.id} className="cursor-pointer" onClick={() => setSelectedLead(l)}>
+                    <TableCell className="font-medium">
+                      {l.converted_client_id && existingClientIds.has(l.converted_client_id) ? (
+                        <button
+                          type="button"
+                          onClick={(e) => { e.stopPropagation(); openClientInPipeline(l.converted_client_id!); }}
+                          className="text-primary hover:underline text-left"
+                          title="Open in Clients"
                         >
                           {l.company_name}
                         </button>
