@@ -359,6 +359,7 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
 export const HiringPipelineKanban = () => {
   const { requests, loading: requestsLoading, updateStage, fetchRequests } = useHiringRequests();
   const { stages, loading: stagesLoading } = usePipelineStages();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [addStageDialogOpen, setAddStageDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -370,9 +371,32 @@ export const HiringPipelineKanban = () => {
   const [closureCount, setClosureCount] = useState(0);
   const [stageSortBy, setStageSortBy] = useState<Record<string, 'priority' | 'target_end_date' | 'closed_at' | 'created_at'>>({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [clientFilterName, setClientFilterName] = useState<string | null>(null);
   const { toast } = useToast();
-  
+
+  const clientFilterId = searchParams.get('clientId');
+
   const loading = requestsLoading || stagesLoading;
+
+  // Resolve client name from filtered requests or clients table
+  useEffect(() => {
+    if (!clientFilterId) {
+      setClientFilterName(null);
+      return;
+    }
+    const match = requests.find(r => r.client_id === clientFilterId);
+    if (match?.client_name) {
+      setClientFilterName(match.client_name);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await supabase.from('clients').select('company_name').eq('id', clientFilterId).single();
+      if (cancelled || error) return;
+      setClientFilterName(data?.company_name || 'Unknown Client');
+    })();
+    return () => { cancelled = true; };
+  }, [clientFilterId, requests]);
   
   // Sort function based on sort option
   const sortRequests = (items: HiringRequest[], sortOption: 'priority' | 'target_end_date' | 'closed_at' | 'created_at'): HiringRequest[] => {
