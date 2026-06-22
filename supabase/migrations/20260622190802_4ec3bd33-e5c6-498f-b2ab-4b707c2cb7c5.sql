@@ -1,0 +1,2 @@
+UPDATE public.sales_leads SET converted_client_id = 'b41e7df4-f38b-411c-8d68-ea6147a517aa', converted_at = COALESCE(converted_at, now()) WHERE id = 'd5d4a1bb-d713-4e2d-aa9f-c649e5a4f1aa';
+UPDATE public.sales_leads SET converted_client_id = '6a78529b-be01-43b9-8a37-20676732b601', converted_at = COALESCE(converted_at, now()) WHERE id = '1aaeeae3-bb11-4a29-85c0-8904731f194a';
