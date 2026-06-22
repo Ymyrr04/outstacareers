@@ -344,6 +344,23 @@ export const SalesPipeline = () => {
                                   </div>
                                 );
                               })()}
+                              {(() => {
+                                const hires = lead.estimated_hires || 0;
+                                const pct = lead.likelihood_to_close || 0;
+                                const dv = estDealValue(hires);
+                                const pv = pipelineValue(hires, pct);
+                                return (
+                                  <div className="mt-2 flex items-center justify-between gap-2 pt-2 border-t border-dashed">
+                                    <Badge variant="outline" className="text-[10px] bg-indigo-100 text-indigo-700 border-indigo-200 dark:bg-indigo-950/40 dark:text-indigo-300">
+                                      {pct > 0 ? `${pct}%` : '—'}
+                                    </Badge>
+                                    <div className="text-right leading-tight">
+                                      <div className="text-[10px] text-muted-foreground">{dv > 0 ? `${formatCurrency(dv)}/yr` : '—'}</div>
+                                      <div className="text-[11px] font-semibold">{pv > 0 ? `Pipeline: ${formatCurrency(pv)}` : '—'}</div>
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                               <div className="text-[10px] text-muted-foreground mt-2">{formatDistanceToNow(new Date(lead.created_at), { addSuffix: true })}</div>
                             </div>
                           )}
