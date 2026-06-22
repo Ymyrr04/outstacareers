@@ -910,6 +910,11 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
               <EditField label="Industry" value={lead.industry} onSave={v => onUpdate({ industry: v })} />
               <EditField label="Team size" value={lead.team_size} onSave={v => onUpdate({ team_size: v })} />
               <div className="col-span-2"><EditField label="Hiring urgency" value={lead.hiring_urgency} onSave={v => onUpdate({ hiring_urgency: v })} /></div>
+              <div className="col-span-2">
+                <DetailRow label="Hiring Type">
+                  <HiringTypeToggle value={hiringTypeArr(lead)} onChange={(v) => onUpdate({ hiring_type: v })} />
+                </DetailRow>
+              </div>
               <div className="col-span-2"><EditField label="Source" value={lead.source} onSave={v => onUpdate({ source: v })} /></div>
               <DetailRow label="Estimated number of hires">
                 <Input
