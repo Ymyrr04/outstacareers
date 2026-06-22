@@ -604,6 +604,9 @@ const NewLeadDialog = ({ open, onClose, onSubmit }: { open: boolean; onClose: ()
           <Field label="Industry"><Input value={data.industry || ''} onChange={e => set('industry', e.target.value)} /></Field>
           <Field label="Team size"><Input value={data.team_size || ''} onChange={e => set('team_size', e.target.value)} /></Field>
           <Field label="Hiring urgency"><Input value={data.hiring_urgency || ''} onChange={e => set('hiring_urgency', e.target.value)} /></Field>
+          <Field label="Hiring Type">
+            <HiringTypeToggle value={hiringTypeArr(data)} onChange={(v) => set('hiring_type', v)} />
+          </Field>
           <Field label="Temperature">
             <Select value={data.temperature} onValueChange={v => set('temperature', v)}>
               <SelectTrigger><SelectValue /></SelectTrigger>
