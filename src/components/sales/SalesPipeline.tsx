@@ -853,8 +853,10 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
   const nextStage = currentIdx >= 0 && currentIdx < SALES_STAGES.length - 1 ? SALES_STAGES[currentIdx + 1] : null;
 
   useEffect(() => {
-    setLocalHires(String(lead?.estimated_hires ?? ''));
-    setLocalLikelihood(String(lead?.likelihood_to_close ?? ''));
+    const h = lead?.estimated_hires ?? 0;
+    const l = lead?.likelihood_to_close ?? 0;
+    setLocalHires(h ? String(h) : '');
+    setLocalLikelihood(l ? String(l) : '');
   }, [lead?.id]);
 
   const numericHires = useMemo(() => Math.max(0, parseInt(localHires || '0', 10) || 0), [localHires]);
