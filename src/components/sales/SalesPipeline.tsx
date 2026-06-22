@@ -18,6 +18,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { useSalesLeads, SALES_STAGES, SalesLead, SalesStage, Temperature, ContactType, CONTACT_TYPES, HiringType, HIRING_TYPES, useSalesLeadNotes } from '@/hooks/useSalesLeads';
 import { estDealValue, pipelineValue, formatCurrency } from '@/lib/salesPipelineMath';
+import { AddClientDialog, AddClientInitialValues } from '@/components/clients/AddClientDialog';
+import { supabase } from '@/integrations/supabase/client';
 
 const hiringTypeArr = (l: SalesLead | Partial<SalesLead>): HiringType[] => (Array.isArray((l as any).hiring_type) ? (l as any).hiring_type as HiringType[] : []);
 
