@@ -51,6 +51,7 @@ export interface SalesLead {
   contact_3_notes: string | null;
   estimated_hires: number;
   likelihood_to_close: number;
+  hiring_type: HiringType[];
 }
 
 
