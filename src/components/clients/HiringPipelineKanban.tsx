@@ -579,6 +579,32 @@ export const HiringPipelineKanban = () => {
 
   return (
     <>
+      {clientFilterId && (
+        <div className="px-4 py-2 border-b bg-primary/5 flex items-center justify-between">
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="text-sm font-medium truncate">
+              Showing pipeline for: {clientFilterName || 'Loading…'}
+            </span>
+            <Badge variant="secondary" className="text-xs flex-shrink-0">
+              {filteredRequests.length}
+            </Badge>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 text-xs flex-shrink-0"
+            onClick={() => {
+              const next = new URLSearchParams(searchParams);
+              next.delete('clientId');
+              setSearchParams(next, { replace: true });
+            }}
+          >
+            <X className="w-3 h-3 mr-1" />
+            Clear filter
+          </Button>
+        </div>
+      )}
+
       {/* Recruiter Analytics Section */}
       <div className="px-4 py-3 border-b">
         <h3 className="text-sm font-semibold mb-2">Recruiter Performance</h3>
