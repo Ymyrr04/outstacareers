@@ -77,7 +77,12 @@ export const useSalesLeads = () => {
       console.error(error);
       toast({ title: 'Error', description: 'Failed to load leads', variant: 'destructive' });
     } else {
-      setLeads((data || []) as any);
+      setLeads(
+        (data || []).map((l: any) => ({
+          ...l,
+          temperature: ((l.temperature || '').toString().toLowerCase() || 'warm') as Temperature,
+        })) as SalesLead[]
+      );
     }
     setLoading(false);
   }, [toast]);
