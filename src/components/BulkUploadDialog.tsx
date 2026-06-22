@@ -145,11 +145,11 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
 
       try {
         // Client-side size guard (matches edge function limit)
-        const MAX_FILE_BYTES = 8 * 1024 * 1024;
+        const MAX_FILE_BYTES = 10 * 1024 * 1024;
         if (file.size > MAX_FILE_BYTES) {
           updateFileStatus(i, {
             status: 'failed',
-            message: `File too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum is 8MB. Please compress the PDF and try again.`,
+            message: `File too large (${(file.size / (1024 * 1024)).toFixed(1)}MB). Maximum is 10MB. Please compress the PDF and try again.`,
           });
           failedCount++;
           continue;
@@ -198,10 +198,10 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
               // Friendlier message for runtime crashes (OOM / timeout) which
               // return no JSON body.
               if (resp.status >= 500 && (!realMessage || realMessage === 'Edge Function returned a non-2xx status code')) {
-                realMessage = `Server crashed while processing this file (status ${resp.status}). The PDF may be too large or image-heavy — try compressing it under 8MB.`;
+                realMessage = `Server crashed while processing this file (status ${resp.status}). The PDF may be too large or image-heavy — try compressing it under 10MB.`;
               }
             } else if (/non-2xx/i.test(realMessage)) {
-              realMessage = 'Server crashed while processing this file. The PDF may be too large or image-heavy — try compressing it under 8MB.';
+              realMessage = 'Server crashed while processing this file. The PDF may be too large or image-heavy — try compressing it under 10MB.';
             }
           } catch (parseErr) {
             console.warn('Could not parse function error body:', parseErr);

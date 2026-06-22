@@ -318,7 +318,7 @@ serve(async (req) => {
     // Decode bytes ONCE (reused for text extraction and storage upload)
     // Guard against oversized files that would OOM the edge function runtime.
     const approxBytes = Math.floor((file_base64?.length || 0) * 0.75);
-    const MAX_FILE_BYTES = 8 * 1024 * 1024; // 8MB
+    const MAX_FILE_BYTES = 10 * 1024 * 1024; // 10MB
     if (approxBytes > MAX_FILE_BYTES) {
       return new Response(
         JSON.stringify({
