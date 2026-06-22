@@ -16,8 +16,62 @@ import { Sheet, SheetContent } from '@/components/ui/sheet';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { useSalesLeads, SALES_STAGES, SalesLead, SalesStage, Temperature, ContactType, CONTACT_TYPES, useSalesLeadNotes } from '@/hooks/useSalesLeads';
+import { useSalesLeads, SALES_STAGES, SalesLead, SalesStage, Temperature, ContactType, CONTACT_TYPES, HiringType, HIRING_TYPES, useSalesLeadNotes } from '@/hooks/useSalesLeads';
 import { estDealValue, pipelineValue, formatCurrency } from '@/lib/salesPipelineMath';
+
+const hiringTypeArr = (l: SalesLead | Partial<SalesLead>): HiringType[] => (Array.isArray((l as any).hiring_type) ? (l as any).hiring_type as HiringType[] : []);
+
+const HiringTypeIcons = ({ types, size = 14 }: { types: HiringType[]; size?: number }) => {
+  if (!types || types.length === 0) return null;
+  const hasLocal = types.includes('Local');
+  const hasRemote = types.includes('Remote');
+  return (
+    <TooltipProvider delayDuration={150}>
+      <div className="flex items-center gap-1">
+        {hasLocal && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Building2 className="text-amber-500" style={{ width: size, height: size }} />
+            </TooltipTrigger>
+            <TooltipContent>Local</TooltipContent>
+          </Tooltip>
+        )}
+        {hasRemote && (
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Globe className="text-teal-500" style={{ width: size, height: size }} />
+            </TooltipTrigger>
+            <TooltipContent>Remote</TooltipContent>
+          </Tooltip>
+        )}
+      </div>
+    </TooltipProvider>
+  );
+};
+
+const HiringTypeToggle = ({ value, onChange }: { value: HiringType[]; onChange: (v: HiringType[]) => void }) => {
+  const toggle = (t: HiringType) => {
+    onChange(value.includes(t) ? value.filter(x => x !== t) : [...value, t]);
+  };
+  const cls = (active: boolean, color: 'amber' | 'teal') =>
+    `flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs transition ${
+      active
+        ? color === 'amber'
+          ? 'bg-amber-500 text-white border-amber-500'
+          : 'bg-teal-500 text-white border-teal-500'
+        : 'bg-transparent text-muted-foreground border-border hover:bg-muted'
+    }`;
+  return (
+    <div className="flex gap-2">
+      <button type="button" onClick={() => toggle('Local')} className={cls(value.includes('Local'), 'amber')}>
+        <Building2 className="w-3.5 h-3.5" /> Local
+      </button>
+      <button type="button" onClick={() => toggle('Remote')} className={cls(value.includes('Remote'), 'teal')}>
+        <Globe className="w-3.5 h-3.5" /> Remote
+      </button>
+    </div>
+  );
+};
 
 const CONTACT_STAGES: SalesStage[] = ['Contact 1', 'Contact 2', 'Contact 3'];
 const stageToContactIdx = (s: SalesStage): 1 | 2 | 3 | null =>
