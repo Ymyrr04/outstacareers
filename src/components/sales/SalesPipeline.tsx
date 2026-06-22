@@ -404,7 +404,18 @@ export const SalesPipeline = () => {
                               className={`bg-card border rounded-md p-3 shadow-sm cursor-pointer hover:border-primary/50 transition ${s.isDragging ? 'rotate-1 shadow-lg' : ''}`}
                             >
                               <div className="flex items-start justify-between gap-2 mb-1">
-                                <div className="font-semibold text-sm truncate flex-1">{lead.company_name}</div>
+                                {lead.converted_client_id && existingClientIds.has(lead.converted_client_id) ? (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); openClientInPipeline(lead.converted_client_id!); }}
+                                    className="font-semibold text-sm truncate flex-1 text-left text-primary hover:underline"
+                                    title="Open in Clients"
+                                  >
+                                    {lead.company_name}
+                                  </button>
+                                ) : (
+                                  <div className="font-semibold text-sm truncate flex-1">{lead.company_name}</div>
+                                )}
                                 <div className="flex items-center gap-1.5 flex-shrink-0">
                                   <HiringTypeIcons types={hiringTypeArr(lead)} size={14} />
                                   {lead.converted_client_id && (
