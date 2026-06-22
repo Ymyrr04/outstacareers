@@ -578,7 +578,7 @@ const StatCard = ({ label, value, accent }: { label: string; value: number | str
 const TemperatureBreakdownCard = ({ cold, warm, hot }: { cold: number; warm: number; hot: number }) => (
   <Card>
     <CardContent className="p-4">
-      <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Leads by Temperature</div>
+      <div className="text-xs uppercase tracking-wide text-muted-foreground mb-2">Lead Status</div>
       <div className="flex items-center justify-between gap-2">
         <div className="text-center flex-1">
           <div className="text-[10px] uppercase tracking-wide text-muted-foreground">Cold</div>
