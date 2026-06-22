@@ -742,24 +742,29 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
 }) => {
   const { notes, addNote } = useSalesLeadNotes(lead?.id || null);
   const [newNote, setNewNote] = useState('');
-  const [localHires, setLocalHires] = useState<number>(lead?.estimated_hires ?? 0);
-  const [localLikelihood, setLocalLikelihood] = useState<number>(lead?.likelihood_to_close ?? 0);
+  const [localHires, setLocalHires] = useState<string>(String(lead?.estimated_hires ?? ''));
+  const [localLikelihood, setLocalLikelihood] = useState<string>(String(lead?.likelihood_to_close ?? ''));
   const currentIdx = lead ? SALES_STAGES.indexOf(lead.stage) : -1;
   const nextStage = currentIdx >= 0 && currentIdx < SALES_STAGES.length - 1 ? SALES_STAGES[currentIdx + 1] : null;
 
   useEffect(() => {
-    setLocalHires(lead?.estimated_hires ?? 0);
-    setLocalLikelihood(lead?.likelihood_to_close ?? 0);
+    setLocalHires(String(lead?.estimated_hires ?? ''));
+    setLocalLikelihood(String(lead?.likelihood_to_close ?? ''));
   }, [lead?.id]);
+
+  const numericHires = useMemo(() => Math.max(0, parseInt(localHires || '0', 10) || 0), [localHires]);
+  const numericLikelihood = useMemo(() => Math.min(100, Math.max(0, parseInt(localLikelihood || '0', 10) || 0)), [localLikelihood]);
 
   useEffect(() => {
     if (!lead) return;
-    if (localHires === lead.estimated_hires && localLikelihood === lead.likelihood_to_close) return;
+    const leadHires = lead.estimated_hires ?? 0;
+    const leadLikelihood = lead.likelihood_to_close ?? 0;
+    if (numericHires === leadHires && numericLikelihood === leadLikelihood) return;
     const t = setTimeout(() => {
-      onUpdate({ estimated_hires: localHires, likelihood_to_close: localLikelihood });
+      onUpdate({ estimated_hires: numericHires, likelihood_to_close: numericLikelihood });
     }, 500);
     return () => clearTimeout(t);
-  }, [localHires, localLikelihood, lead, onUpdate]);
+  }, [numericHires, numericLikelihood, lead, onUpdate]);
 
   return (
     <Sheet open={!!lead} onOpenChange={(o) => !o && onClose()}>
