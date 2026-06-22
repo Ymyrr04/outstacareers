@@ -122,19 +122,46 @@ export const SalesPipeline = () => {
   const [industryFilters, setIndustryFilters] = useState<Set<string>>(new Set());
   const [hiringTypeFilter, setHiringTypeFilter] = useState<'all' | 'Local' | 'Remote' | 'Both'>('all');
   const [existingClientIds, setExistingClientIds] = useState<Set<string>>(new Set());
+  const [clientPipelineStages, setClientPipelineStages] = useState<Record<string, string>>({});
 
   // Verify which converted_client_id values actually exist in the clients table
+  // and fetch the latest client pipeline stage for each converted client
   useEffect(() => {
     const ids = Array.from(new Set(leads.map(l => l.converted_client_id).filter(Boolean) as string[]));
     if (ids.length === 0) {
       setExistingClientIds(new Set());
+      setClientPipelineStages({});
       return;
     }
     let cancelled = false;
     (async () => {
       const { data, error } = await supabase.from('clients').select('id').in('id', ids);
       if (cancelled || error) return;
-      setExistingClientIds(new Set((data || []).map((c: any) => c.id)));
+      const existing = new Set((data || []).map((c: any) => c.id));
+      setExistingClientIds(existing);
+
+      // Fetch latest hiring request stage per converted client
+      const { data: stageData, error: stageError } = await supabase
+        .from('client_hiring_requests')
+        .select(`
+          client_id,
+          pipeline_stage,
+          pipeline_stages!inner(name)
+        `)
+        .in('client_id', ids)
+        .order('client_id', { ascending: true })
+        .order('created_at', { ascending: false });
+
+      if (cancelled || stageError) return;
+
+      const stageMap: Record<string, string> = {};
+      (stageData || []).forEach((row: any) => {
+        const clientId = row.client_id as string;
+        if (!stageMap[clientId]) {
+          stageMap[clientId] = row.pipeline_stages?.name || row.pipeline_stage || 'Unknown';
+        }
+      });
+      setClientPipelineStages(stageMap);
     })();
     return () => { cancelled = true; };
   }, [leads]);
@@ -416,10 +443,17 @@ export const SalesPipeline = () => {
                                 ) : (
                                   <div className="font-semibold text-sm truncate flex-1">{lead.company_name}</div>
                                 )}
-                                <div className="flex items-center gap-1.5 flex-shrink-0">
-                                  <HiringTypeIcons types={hiringTypeArr(lead)} size={14} />
-                                  {lead.converted_client_id && (
-                                    <Badge className="bg-teal-500 hover:bg-teal-500 text-white text-[10px]">converted</Badge>
+                                <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
+                                  <div className="flex items-center gap-1.5">
+                                    <HiringTypeIcons types={hiringTypeArr(lead)} size={14} />
+                                    {lead.converted_client_id && (
+                                      <Badge className="bg-teal-500 hover:bg-teal-500 text-white text-[10px]">converted</Badge>
+                                    )}
+                                  </div>
+                                  {lead.converted_client_id && clientPipelineStages[lead.converted_client_id] && (
+                                    <span className="text-[10px] text-muted-foreground">
+                                      Stage: {clientPipelineStages[lead.converted_client_id]}
+                                    </span>
                                   )}
                                 </div>
                               </div>
@@ -516,18 +550,25 @@ export const SalesPipeline = () => {
                 {filteredLeads.map(l => (
                   <TableRow key={l.id} className="cursor-pointer" onClick={() => setSelectedLead(l)}>
                     <TableCell className="font-medium">
-                      {l.converted_client_id && existingClientIds.has(l.converted_client_id) ? (
-                        <button
-                          type="button"
-                          onClick={(e) => { e.stopPropagation(); openClientInPipeline(l.converted_client_id!); }}
-                          className="text-primary hover:underline text-left"
-                          title="Open in client pipeline"
-                        >
-                          {l.company_name}
-                        </button>
-                      ) : (
-                        l.company_name
-                      )}
+                      <div className="flex flex-col gap-0.5">
+                        {l.converted_client_id && existingClientIds.has(l.converted_client_id) ? (
+                          <button
+                            type="button"
+                            onClick={(e) => { e.stopPropagation(); openClientInPipeline(l.converted_client_id!); }}
+                            className="text-primary hover:underline text-left"
+                            title="Open in client pipeline"
+                          >
+                            {l.company_name}
+                          </button>
+                        ) : (
+                          <span>{l.company_name}</span>
+                        )}
+                        {l.converted_client_id && clientPipelineStages[l.converted_client_id] && (
+                          <span className="text-[10px] text-muted-foreground">
+                            Stage: {clientPipelineStages[l.converted_client_id]}
+                          </span>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell>{l.contact_name || '—'}</TableCell>
                     <TableCell>{l.role_title || '—'}</TableCell>
