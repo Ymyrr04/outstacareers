@@ -140,7 +140,7 @@ export const SalesPipeline = () => {
   }, [leads]);
 
   const openClientInPipeline = (clientId: string) => {
-    navigate(`/admin/clients?clientId=${clientId}`);
+    navigate(`/admin/pipeline?clientId=${clientId}`);
   };
 
   const industries = useMemo(() => {
