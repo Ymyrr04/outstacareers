@@ -127,9 +127,15 @@ export const SalesPipeline = () => {
       if (tempFilters.size && !tempFilters.has(l.temperature)) return false;
       if (sourceFilters.size && !sourceFilters.has((l.source as any))) return false;
       if (industryFilters.size && !industryFilters.has((l.industry || '').trim())) return false;
+      if (hiringTypeFilter !== 'all') {
+        const ht = hiringTypeArr(l);
+        if (hiringTypeFilter === 'Both') {
+          if (!(ht.includes('Local') && ht.includes('Remote'))) return false;
+        } else if (!ht.includes(hiringTypeFilter)) return false;
+      }
       return true;
     });
-  }, [leads, search, tempFilters, sourceFilters, industryFilters]);
+  }, [leads, search, tempFilters, sourceFilters, industryFilters, hiringTypeFilter]);
 
   const activeFilterCount = tempFilters.size + sourceFilters.size + industryFilters.size;
   const toggleFromSet = <T,>(set: Set<T>, val: T, setter: (s: Set<T>) => void) => {
