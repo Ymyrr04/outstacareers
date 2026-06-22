@@ -2615,6 +2615,7 @@ export type Database = {
           created_by: string | null
           email: string | null
           estimated_hires: number
+          hiring_type: string[]
           hiring_urgency: string | null
           id: string
           industry: string | null
@@ -2647,6 +2648,7 @@ export type Database = {
           created_by?: string | null
           email?: string | null
           estimated_hires?: number
+          hiring_type?: string[]
           hiring_urgency?: string | null
           id?: string
           industry?: string | null
@@ -2679,6 +2681,7 @@ export type Database = {
           created_by?: string | null
           email?: string | null
           estimated_hires?: number
+          hiring_type?: string[]
           hiring_urgency?: string | null
           id?: string
           industry?: string | null
