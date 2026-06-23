@@ -1171,6 +1171,30 @@ export const ClientAnalyticsDashboard = () => {
               <span>Resigned</span>
             </div>
           </div>
+          <div className="mt-6 pt-4 border-t">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="text-sm font-semibold">Tenure at Separation</h4>
+              <span className="text-xs text-muted-foreground">
+                Based on {separationTenureBuckets.total} separated contractor{separationTenureBuckets.total === 1 ? '' : 's'}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              {[
+                { label: 'Within 2 weeks', data: separationTenureBuckets.twoWeeks, color: 'text-red-600' },
+                { label: 'Within 3 months', data: separationTenureBuckets.threeMonths, color: 'text-orange-600' },
+                { label: 'Within 6 months', data: separationTenureBuckets.sixMonths, color: 'text-amber-600' },
+                { label: 'After 6 months', data: separationTenureBuckets.beyond, color: 'text-emerald-600' },
+              ].map((b) => (
+                <div key={b.label} className="rounded-lg border p-3 bg-muted/30">
+                  <div className="text-xs text-muted-foreground mb-1">{b.label}</div>
+                  <div className={`text-2xl font-bold ${b.color}`}>{b.data.pct}%</div>
+                  <div className="text-xs text-muted-foreground mt-1">
+                    {b.data.count} of {separationTenureBuckets.total}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
         </CardContent>
       </Card>
     </DraggableCard>
