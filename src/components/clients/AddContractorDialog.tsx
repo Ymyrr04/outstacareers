@@ -84,6 +84,9 @@ export const AddContractorDialog = ({ open, onOpenChange, clientId, onContractor
 
     setSaving(true);
     try {
+      const { data: userData } = await supabase.auth.getUser();
+      const hiredByUserId = userData?.user?.id ?? null;
+
       const { error } = await supabase.from('contractor_assignments').insert({
         client_id: clientId,
         applicant_id: form.applicant_id,
@@ -94,6 +97,7 @@ export const AddContractorDialog = ({ open, onOpenChange, clientId, onContractor
         status: form.status,
         notes: form.notes.trim() || null,
         hired_via: 'manual_import',
+        hired_by: hiredByUserId,
       });
 
       if (error) throw error;
