@@ -1581,11 +1581,11 @@ export const ContractorsDashboard = () => {
                           )}
                           {visibleColumns.hiredBy && (
                             <TableCell>
-                              {contractor.hired_by ? (
-                                <span className="text-sm whitespace-nowrap">{getAdminDisplayName(contractor.hired_by)}</span>
-                              ) : (
-                                <span className="text-muted-foreground">—</span>
-                              )}
+                              <HiredByEditor
+                                contractorId={contractor.id}
+                                value={contractor.hired_by}
+                                onSaved={(next) => setContractors(prev => prev.map(c => c.id === contractor.id ? { ...c, hired_by: next } : c))}
+                              />
                             </TableCell>
                           )}
                         </TableRow>
