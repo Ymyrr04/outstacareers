@@ -173,6 +173,7 @@ export const ContractorsDashboard = () => {
     source: false,
     notes: true,
     separationNote: true,
+    hiredBy: true,
   });
 
   const columnLabels: Record<string, string> = {
