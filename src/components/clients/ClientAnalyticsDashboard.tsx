@@ -51,6 +51,7 @@ interface ClientData {
   website: string | null;
   notes: string | null;
   is_hiring: boolean | null;
+  created_at: string;
 }
 
 type CardId = 'industry' | 'leadsFrom' | 'roles' | 'country' | 'monthlyHires' | 'separations' | 'retentionCompany' | 'retentionIndustry' | 'retentionRole' | 'applicationSources' | 'retentionBilingual';
