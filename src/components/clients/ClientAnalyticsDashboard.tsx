@@ -371,6 +371,35 @@ export const ClientAnalyticsDashboard = () => {
       });
   }, [contractors]);
 
+  // Tenure-at-separation buckets: % of separated contractors who left within
+  // 2 weeks / 3 months / 6 months of their start_date.
+  // Only counts contractors with status terminated/resigned AND both start_date and end_date set.
+  const separationTenureBuckets = useMemo(() => {
+    const separated = contractors.filter(
+      (c) => (c.status === 'terminated' || c.status === 'resigned') && c.start_date && c.end_date
+    );
+    const total = separated.length;
+    const buckets = { twoWeeks: 0, threeMonths: 0, sixMonths: 0, beyond: 0 };
+    separated.forEach((c) => {
+      const start = new Date(c.start_date as string).getTime();
+      const end = new Date(c.end_date as string).getTime();
+      const days = (end - start) / (1000 * 60 * 60 * 24);
+      if (days < 0) return;
+      if (days <= 14) buckets.twoWeeks += 1;
+      else if (days <= 90) buckets.threeMonths += 1;
+      else if (days <= 180) buckets.sixMonths += 1;
+      else buckets.beyond += 1;
+    });
+    const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
+    return {
+      total,
+      twoWeeks: { count: buckets.twoWeeks, pct: pct(buckets.twoWeeks) },
+      threeMonths: { count: buckets.threeMonths, pct: pct(buckets.threeMonths) },
+      sixMonths: { count: buckets.sixMonths, pct: pct(buckets.sixMonths) },
+      beyond: { count: buckets.beyond, pct: pct(buckets.beyond) },
+    };
+  }, [contractors]);
+
   // Compute drill-down rows from contractors when a separation cell is clicked
   // Includes BOTH terminated and resigned for the selected month
   const separationDrillDownRows = useMemo(() => {
