@@ -771,6 +771,11 @@ export const ClientAnalyticsDashboard = () => {
       .map(c => c.client_id)
   );
   const totalActiveClients = clientsWithActiveContractors.size;
+
+  // Active clients (with 1+ active contractors) split by signup era
+  const activeClientsWithContractors = clients.filter(c => clientsWithActiveContractors.has(c.id));
+  const oldActiveClientsCount = activeClientsWithContractors.filter(c => new Date(c.created_at).getFullYear() < 2026).length;
+  const newActiveClientsCount = activeClientsWithContractors.filter(c => new Date(c.created_at).getFullYear() >= 2026).length;
   
   // Build contractor count per client
   const contractorCountByClient = contractors
