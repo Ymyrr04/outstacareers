@@ -137,7 +137,7 @@ export const ClientAnalyticsDashboard = () => {
       const [contractorsRes, clientsRes, applicantsRes, hiringRequestsRes] = await Promise.all([
         supabase
           .from('contractor_assignments')
-          .select(`*, country, notes, client:clients(id, company_name, industry), applicant:applicants_prescreen(id, full_name)`),
+          .select(`*, country, notes, separation_note, client:clients(id, company_name, industry), applicant:applicants_prescreen(id, full_name)`),
         supabase
           .from('clients')
           .select('id, company_name, industry, leads_from, website, notes, is_hiring'),
@@ -414,7 +414,7 @@ export const ClientAnalyticsDashboard = () => {
           date: dateStr,
           tenure,
           jobTitle: c.job_title || '—',
-          notes: c.notes || '',
+          notes: (c as any).separation_note || '',
         };
       })
       .filter((r): r is NonNullable<typeof r> => r !== null)
