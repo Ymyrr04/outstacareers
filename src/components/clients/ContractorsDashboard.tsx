@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
+import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -88,6 +89,9 @@ interface ContractorWithDetails {
   is_replacement: boolean | null;
   country: string | null;
   source: string | null;
+  hired_by: string | null;
+  hired_via: string | null;
+  hired_from_stage: string | null;
   created_at: string;
   applicant: {
     full_name: string;
@@ -172,6 +176,7 @@ export const ContractorsDashboard = () => {
     source: false,
     notes: true,
     separationNote: true,
+    hiredBy: true,
   });
 
   const columnLabels: Record<string, string> = {
@@ -193,6 +198,7 @@ export const ContractorsDashboard = () => {
     source: 'Source',
     notes: 'Notes',
     separationNote: 'Separation Note',
+    hiredBy: 'Hired By',
   };
 
   const COLUMN_SORT_MAP: Record<string, { asc: string; desc: string }> = {
@@ -890,6 +896,7 @@ export const ContractorsDashboard = () => {
                       {visibleColumns.source && <TableHead className="min-w-[100px]">Source</TableHead>}
                       {visibleColumns.notes && <TableHead className="min-w-[200px]">Notes</TableHead>}
                       {visibleColumns.separationNote && <TableHead className="min-w-[200px]">Separation Note</TableHead>}
+                      {visibleColumns.hiredBy && <TableHead className="min-w-[120px]">Hired By</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1175,6 +1182,15 @@ export const ContractorsDashboard = () => {
                             )}
                           </TableCell>
                         )}
+                        {visibleColumns.hiredBy && (
+                          <TableCell>
+                            {contractor.hired_by ? (
+                              <span className="text-sm whitespace-nowrap">{getAdminDisplayName(contractor.hired_by)}</span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -1219,6 +1235,7 @@ export const ContractorsDashboard = () => {
                         {visibleColumns.source && <TableHead className="min-w-[100px]">Source</TableHead>}
                         {visibleColumns.separationNote && <TableHead className="min-w-[200px]">Separation Note</TableHead>}
                         {visibleColumns.notes && <TableHead className="min-w-[200px]">Notes</TableHead>}
+                        {visibleColumns.hiredBy && <TableHead className="min-w-[120px]">Hired By</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1556,6 +1573,15 @@ export const ContractorsDashboard = () => {
                                     <p className="whitespace-pre-wrap">{contractor.notes}</p>
                                   </HoverCardContent>
                                 </HoverCard>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          )}
+                          {visibleColumns.hiredBy && (
+                            <TableCell>
+                              {contractor.hired_by ? (
+                                <span className="text-sm whitespace-nowrap">{getAdminDisplayName(contractor.hired_by)}</span>
                               ) : (
                                 <span className="text-muted-foreground">—</span>
                               )}

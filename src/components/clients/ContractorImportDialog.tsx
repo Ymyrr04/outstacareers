@@ -144,6 +144,9 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
       const hoursPerWeek = manualForm.hours ? parseFloat(manualForm.hours) : null;
       let startDate: string | null = manualForm.start_date || null;
 
+      const { data: userData } = await supabase.auth.getUser();
+      const hiredByUserId = userData?.user?.id ?? null;
+
       const { error } = await supabase.from('contractor_assignments').insert({
         client_id: client.id,
         applicant_id: applicantId,
@@ -159,6 +162,7 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
         country: manualForm.country || null,
         source: manualForm.source || null,
         hired_via: 'manual_import',
+        hired_by: hiredByUserId,
       });
 
       if (error) {
@@ -445,6 +449,10 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
     let skippedCount = 0;
 
     try {
+      // Capture admin performing the bulk import
+      const { data: userData } = await supabase.auth.getUser();
+      const hiredByUserId = userData?.user?.id ?? null;
+
       // Fetch existing assignments to check duplicates
       const { data: existingAssignments } = await supabase
         .from('contractor_assignments')
@@ -550,6 +558,7 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
           country: row.country || null,
           source: row.source || null,
           hired_via: 'manual_import',
+          hired_by: hiredByUserId,
         });
 
         if (error) {

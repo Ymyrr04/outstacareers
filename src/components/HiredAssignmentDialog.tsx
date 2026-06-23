@@ -128,6 +128,10 @@ export const HiredAssignmentDialog = ({ open, onOpenChange, applicant, onComplet
         .maybeSingle();
       const hiredFromStage = applicantRow?.status && applicantRow.status !== 'Hired' ? applicantRow.status : null;
 
+      // Capture the admin performing the hire
+      const { data: userData } = await supabase.auth.getUser();
+      const hiredByUserId = userData?.user?.id ?? null;
+
       // Create contractor assignment with all onboarding info
       const { error: assignError } = await supabase.from('contractor_assignments').insert({
         applicant_id: applicant.id,
@@ -143,6 +147,7 @@ export const HiredAssignmentDialog = ({ open, onOpenChange, applicant, onComplet
         notes: onboardingNote,
         hired_via: 'recruitment_funnel',
         hired_from_stage: hiredFromStage,
+        hired_by: hiredByUserId,
       });
 
       if (assignError) throw assignError;
