@@ -1578,6 +1578,15 @@ export const ContractorsDashboard = () => {
                               )}
                             </TableCell>
                           )}
+                          {visibleColumns.hiredBy && (
+                            <TableCell>
+                              {contractor.hired_by ? (
+                                <span className="text-sm whitespace-nowrap">{getAdminDisplayName(contractor.hired_by)}</span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))}
                     </TableBody>
