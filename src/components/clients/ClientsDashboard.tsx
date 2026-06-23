@@ -482,10 +482,10 @@ export const ClientsDashboard = () => {
                   </Select>
                 </div>
                 <div className="flex items-center gap-2 mt-1 text-[10px]">
-                  <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground" title="Active clients (with active contractors) signed up before 2026">
+                  <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground" title="Active clients whose earliest active contractor started before 2026">
                     Old <span className="font-semibold text-foreground">{oldActiveClientsCount}</span>
                   </span>
-                  <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary" title="Active clients (with active contractors) signed up in 2026 or later">
+                  <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary" title="Active clients whose active contractors all started in 2026 or later">
                     New <span className="font-semibold">{newActiveClientsCount}</span>
                   </span>
                 </div>
