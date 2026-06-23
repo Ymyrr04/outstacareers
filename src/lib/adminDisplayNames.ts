@@ -34,26 +34,28 @@ export const USER_ID_TO_EMAIL: Record<string, string> = {
   '73d829ad-a6a7-48bd-8cac-2ad9a9206705': 'sean@outsta.io',
 };
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 /**
  * Resolves a user ID or email to an email address.
  */
 const resolveToEmail = (identifier: string | undefined | null): string | null => {
   if (!identifier) return null;
   const normalized = identifier.toLowerCase();
-  // Check if it's already an email
   if (normalized.includes('@')) return normalized;
-  // Try to resolve UUID to email
-  return USER_ID_TO_EMAIL[normalized] || null;
+  if (UUID_RE.test(normalized)) return USER_ID_TO_EMAIL[normalized] || null;
+  return null;
 };
 
 /**
- * Converts an admin email or user ID to a display name.
- * Returns the mapped name if available, otherwise extracts the username from email.
+ * Converts an admin email, user ID, or free-text manual entry to a display name.
  */
 export const getAdminDisplayName = (identifier: string | undefined | null, fallback: string = 'Unassigned'): string => {
+  if (!identifier) return fallback;
   const email = resolveToEmail(identifier);
-  if (!email) return fallback;
-  return EMAIL_TO_NAME[email] || email.split('@')[0];
+  if (email) return EMAIL_TO_NAME[email] || email.split('@')[0];
+  const trimmed = identifier.trim();
+  return trimmed || fallback;
 };
 
 /**
