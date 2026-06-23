@@ -141,7 +141,7 @@ export const ClientAnalyticsDashboard = () => {
           .select(`*, country, notes, separation_note, client:clients(id, company_name, industry), applicant:applicants_prescreen(id, full_name)`),
         supabase
           .from('clients')
-          .select('id, company_name, industry, leads_from, website, notes, is_hiring'),
+          .select('id, company_name, industry, leads_from, website, notes, is_hiring, created_at'),
         supabase
           .from('applicants_prescreen')
           .select('job_source, full_name, job_title, email')
