@@ -893,6 +893,7 @@ export const ContractorsDashboard = () => {
                       {visibleColumns.source && <TableHead className="min-w-[100px]">Source</TableHead>}
                       {visibleColumns.notes && <TableHead className="min-w-[200px]">Notes</TableHead>}
                       {visibleColumns.separationNote && <TableHead className="min-w-[200px]">Separation Note</TableHead>}
+                      {visibleColumns.hiredBy && <TableHead className="min-w-[120px]">Hired By</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
