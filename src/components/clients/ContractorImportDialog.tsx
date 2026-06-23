@@ -449,6 +449,10 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
     let skippedCount = 0;
 
     try {
+      // Capture admin performing the bulk import
+      const { data: userData } = await supabase.auth.getUser();
+      const hiredByUserId = userData?.user?.id ?? null;
+
       // Fetch existing assignments to check duplicates
       const { data: existingAssignments } = await supabase
         .from('contractor_assignments')
