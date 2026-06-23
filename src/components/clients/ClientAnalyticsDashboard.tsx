@@ -772,10 +772,22 @@ export const ClientAnalyticsDashboard = () => {
   );
   const totalActiveClients = clientsWithActiveContractors.size;
 
-  // Active clients (with 1+ active contractors) split by signup era
+  // Active clients (with 1+ active contractors) split by earliest active contractor start date
   const activeClientsWithContractors = clients.filter(c => clientsWithActiveContractors.has(c.id));
-  const oldActiveClientsCount = activeClientsWithContractors.filter(c => new Date(c.created_at).getFullYear() < 2026).length;
-  const newActiveClientsCount = activeClientsWithContractors.filter(c => new Date(c.created_at).getFullYear() >= 2026).length;
+  const getClientEarliestActiveStartYear = (clientId: string) => {
+    const activeStartDates = contractors
+      .filter(c => c.status === 'active' && c.client_id === clientId && c.start_date)
+      .map(c => new Date(c.start_date as string).getFullYear());
+    return activeStartDates.length > 0 ? Math.min(...activeStartDates) : null;
+  };
+  const oldActiveClientsCount = activeClientsWithContractors.filter(c => {
+    const year = getClientEarliestActiveStartYear(c.id);
+    return year !== null && year < 2026;
+  }).length;
+  const newActiveClientsCount = activeClientsWithContractors.filter(c => {
+    const year = getClientEarliestActiveStartYear(c.id);
+    return year !== null && year >= 2026;
+  }).length;
   
   // Build contractor count per client
   const contractorCountByClient = contractors
