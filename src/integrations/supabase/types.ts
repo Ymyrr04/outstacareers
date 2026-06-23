@@ -1102,6 +1102,7 @@ export type Database = {
           created_at: string
           emergency_number: string | null
           end_date: string | null
+          hired_by: string | null
           hired_from_stage: string | null
           hired_via: string | null
           hourly_rate: number | null
@@ -1133,6 +1134,7 @@ export type Database = {
           created_at?: string
           emergency_number?: string | null
           end_date?: string | null
+          hired_by?: string | null
           hired_from_stage?: string | null
           hired_via?: string | null
           hourly_rate?: number | null
@@ -1164,6 +1166,7 @@ export type Database = {
           created_at?: string
           emergency_number?: string | null
           end_date?: string | null
+          hired_by?: string | null
           hired_from_stage?: string | null
           hired_via?: string | null
           hourly_rate?: number | null
