@@ -257,10 +257,22 @@ export const ClientsDashboard = () => {
   const totalActiveContractors = clients.reduce((sum, c) => sum + (c.contractor_count || 0), 0);
   const totalActiveClients = clients.filter(c => (c.contractor_count || 0) > 0).length;
 
-  // Active clients (with active contractors) split by signup era
+  // Active clients (with active contractors) split by earliest active contractor start date
   const activeClientsWithContractors = clients.filter(c => (c.contractor_count || 0) > 0);
-  const oldActiveClientsCount = activeClientsWithContractors.filter(c => new Date(c.created_at).getFullYear() < 2026).length;
-  const newActiveClientsCount = activeClientsWithContractors.filter(c => new Date(c.created_at).getFullYear() >= 2026).length;
+  const getClientEarliestActiveStartYear = (clientId: string) => {
+    const activeStartDates = contractorData
+      .filter(c => c.status?.toLowerCase() === 'active' && c.client_id === clientId && c.start_date)
+      .map(c => new Date(c.start_date as string).getFullYear());
+    return activeStartDates.length > 0 ? Math.min(...activeStartDates) : null;
+  };
+  const oldActiveClientsCount = activeClientsWithContractors.filter(c => {
+    const year = getClientEarliestActiveStartYear(c.id);
+    return year !== null && year < 2026;
+  }).length;
+  const newActiveClientsCount = activeClientsWithContractors.filter(c => {
+    const year = getClientEarliestActiveStartYear(c.id);
+    return year !== null && year >= 2026;
+  }).length;
 
   // Count clients added per selected year (based on created_at)
   const clientsAddedForYear = clients.filter(c => {
@@ -470,10 +482,10 @@ export const ClientsDashboard = () => {
                   </Select>
                 </div>
                 <div className="flex items-center gap-2 mt-1 text-[10px]">
-                  <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground" title="Active clients (with active contractors) signed up before 2026">
+                  <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground" title="Active clients whose earliest active contractor started before 2026">
                     Old <span className="font-semibold text-foreground">{oldActiveClientsCount}</span>
                   </span>
-                  <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary" title="Active clients (with active contractors) signed up in 2026 or later">
+                  <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary" title="Active clients whose active contractors all started in 2026 or later">
                     New <span className="font-semibold">{newActiveClientsCount}</span>
                   </span>
                 </div>
