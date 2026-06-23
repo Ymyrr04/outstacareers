@@ -53,7 +53,7 @@ export const HiredByEditor = ({ contractorId, value, onSaved }: Props) => {
   return (
     <div className="flex items-center gap-1.5 group">
       <span className="text-sm whitespace-nowrap">
-        {value ? getAdminDisplayName(value) : <span className="text-muted-foreground">—</span>}
+        {value ? getAdminDisplayName(value) : <span className="text-muted-foreground">Kristine{"\n"}</span>}
       </span>
       <Popover open={open} onOpenChange={setOpen}>
         <PopoverTrigger asChild>

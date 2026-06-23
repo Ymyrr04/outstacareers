@@ -482,7 +482,7 @@ const FlexibleTimeInput = ({
 const ProfileField = ({ label, value }: { label: string; value: string | number | null | undefined }) => (
   <div>
     <div className="text-xs font-medium text-muted-foreground">{label}</div>
-    <div className="text-sm mt-0.5 break-words">{value != null && value !== '' ? value : <span className="text-muted-foreground">—</span>}</div>
+    <div className="text-sm mt-0.5 break-words">{value != null && value !== '' ? value : <span className="text-muted-foreground"></span>}</div>
   </div>
 );
 
