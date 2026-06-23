@@ -93,6 +93,7 @@ export const AddContractorDialog = ({ open, onOpenChange, clientId, onContractor
         start_date: form.start_date || null,
         status: form.status,
         notes: form.notes.trim() || null,
+        hired_via: 'manual_import',
       });
 
       if (error) throw error;
