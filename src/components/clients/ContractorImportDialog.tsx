@@ -158,6 +158,7 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
         is_replacement: manualForm.type.toLowerCase().includes('replacement'),
         country: manualForm.country || null,
         source: manualForm.source || null,
+        hired_via: 'manual_import',
       });
 
       if (error) {
