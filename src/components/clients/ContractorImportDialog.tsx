@@ -558,6 +558,7 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
           country: row.country || null,
           source: row.source || null,
           hired_via: 'manual_import',
+          hired_by: hiredByUserId,
         });
 
         if (error) {
