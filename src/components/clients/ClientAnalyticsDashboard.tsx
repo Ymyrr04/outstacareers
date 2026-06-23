@@ -51,6 +51,7 @@ interface ClientData {
   website: string | null;
   notes: string | null;
   is_hiring: boolean | null;
+  created_at: string;
 }
 
 type CardId = 'industry' | 'leadsFrom' | 'roles' | 'country' | 'monthlyHires' | 'separations' | 'retentionCompany' | 'retentionIndustry' | 'retentionRole' | 'applicationSources' | 'retentionBilingual';
@@ -140,7 +141,7 @@ export const ClientAnalyticsDashboard = () => {
           .select(`*, country, notes, separation_note, client:clients(id, company_name, industry), applicant:applicants_prescreen(id, full_name)`),
         supabase
           .from('clients')
-          .select('id, company_name, industry, leads_from, website, notes, is_hiring'),
+          .select('id, company_name, industry, leads_from, website, notes, is_hiring, created_at'),
         supabase
           .from('applicants_prescreen')
           .select('job_source, full_name, job_title, email')
@@ -770,6 +771,11 @@ export const ClientAnalyticsDashboard = () => {
       .map(c => c.client_id)
   );
   const totalActiveClients = clientsWithActiveContractors.size;
+
+  // Active clients (with 1+ active contractors) split by signup era
+  const activeClientsWithContractors = clients.filter(c => clientsWithActiveContractors.has(c.id));
+  const oldActiveClientsCount = activeClientsWithContractors.filter(c => new Date(c.created_at).getFullYear() < 2026).length;
+  const newActiveClientsCount = activeClientsWithContractors.filter(c => new Date(c.created_at).getFullYear() >= 2026).length;
   
   // Build contractor count per client
   const contractorCountByClient = contractors
@@ -1549,6 +1555,14 @@ export const ClientAnalyticsDashboard = () => {
               <div>
                 <p className="text-2xl font-bold">{totalActiveClients || 0}</p>
                 <p className="text-sm text-muted-foreground">Active Clients</p>
+                <div className="flex items-center gap-2 mt-1 text-[10px]">
+                  <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground" title="Active clients signed up before 2026">
+                    Old <span className="font-semibold text-foreground">{oldActiveClientsCount}</span>
+                  </span>
+                  <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary" title="Active clients signed up in 2026 or later">
+                    New <span className="font-semibold">{newActiveClientsCount}</span>
+                  </span>
+                </div>
               </div>
             </div>
           </CardContent>
