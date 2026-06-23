@@ -1,0 +1,2 @@
+ALTER TABLE public.contractor_assignments DROP CONSTRAINT IF EXISTS contractor_assignments_hired_by_fkey;
+ALTER TABLE public.contractor_assignments ALTER COLUMN hired_by TYPE text USING hired_by::text;

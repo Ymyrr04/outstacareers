@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
+import { HiredByEditor } from './HiredByEditor';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -1184,11 +1185,11 @@ export const ContractorsDashboard = () => {
                         )}
                         {visibleColumns.hiredBy && (
                           <TableCell>
-                            {contractor.hired_by ? (
-                              <span className="text-sm whitespace-nowrap">{getAdminDisplayName(contractor.hired_by)}</span>
-                            ) : (
-                              <span className="text-muted-foreground">—</span>
-                            )}
+                            <HiredByEditor
+                              contractorId={contractor.id}
+                              value={contractor.hired_by}
+                              onSaved={(next) => setContractors(prev => prev.map(c => c.id === contractor.id ? { ...c, hired_by: next } : c))}
+                            />
                           </TableCell>
                         )}
                       </TableRow>
@@ -1580,11 +1581,11 @@ export const ContractorsDashboard = () => {
                           )}
                           {visibleColumns.hiredBy && (
                             <TableCell>
-                              {contractor.hired_by ? (
-                                <span className="text-sm whitespace-nowrap">{getAdminDisplayName(contractor.hired_by)}</span>
-                              ) : (
-                                <span className="text-muted-foreground">—</span>
-                              )}
+                              <HiredByEditor
+                                contractorId={contractor.id}
+                                value={contractor.hired_by}
+                                onSaved={(next) => setContractors(prev => prev.map(c => c.id === contractor.id ? { ...c, hired_by: next } : c))}
+                              />
                             </TableCell>
                           )}
                         </TableRow>
