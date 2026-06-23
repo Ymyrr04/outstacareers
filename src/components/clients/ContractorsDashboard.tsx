@@ -89,6 +89,9 @@ interface ContractorWithDetails {
   is_replacement: boolean | null;
   country: string | null;
   source: string | null;
+  hired_by: string | null;
+  hired_via: string | null;
+  hired_from_stage: string | null;
   created_at: string;
   applicant: {
     full_name: string;
