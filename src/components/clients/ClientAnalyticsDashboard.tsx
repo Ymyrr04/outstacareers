@@ -414,7 +414,7 @@ export const ClientAnalyticsDashboard = () => {
           date: dateStr,
           tenure,
           jobTitle: c.job_title || '—',
-          notes: c.notes || '',
+          notes: (c as any).separation_note || '',
         };
       })
       .filter((r): r is NonNullable<typeof r> => r !== null)
