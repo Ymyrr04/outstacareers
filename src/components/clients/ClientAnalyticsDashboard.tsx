@@ -379,24 +379,41 @@ export const ClientAnalyticsDashboard = () => {
       (c) => (c.status === 'terminated' || c.status === 'resigned') && c.start_date && c.end_date
     );
     const total = separated.length;
-    const buckets = { twoWeeks: 0, threeMonths: 0, sixMonths: 0, beyond: 0 };
+    type Bucket = { count: number; ph: number; latam: number };
+    const buckets: Record<'twoWeeks' | 'threeMonths' | 'sixMonths' | 'beyond', Bucket> = {
+      twoWeeks: { count: 0, ph: 0, latam: 0 },
+      threeMonths: { count: 0, ph: 0, latam: 0 },
+      sixMonths: { count: 0, ph: 0, latam: 0 },
+      beyond: { count: 0, ph: 0, latam: 0 },
+    };
     separated.forEach((c) => {
       const start = new Date(c.start_date as string).getTime();
       const end = new Date(c.end_date as string).getTime();
       const days = (end - start) / (1000 * 60 * 60 * 24);
       if (days < 0) return;
-      if (days <= 14) buckets.twoWeeks += 1;
-      else if (days <= 90) buckets.threeMonths += 1;
-      else if (days <= 180) buckets.sixMonths += 1;
-      else buckets.beyond += 1;
+      const region: 'ph' | 'latam' =
+        (c.country || '').toLowerCase() === 'philippines' ? 'ph' : 'latam';
+      let bucket: keyof typeof buckets;
+      if (days <= 14) bucket = 'twoWeeks';
+      else if (days <= 90) bucket = 'threeMonths';
+      else if (days <= 180) bucket = 'sixMonths';
+      else bucket = 'beyond';
+      buckets[bucket].count += 1;
+      buckets[bucket][region] += 1;
     });
-    const pct = (n: number) => (total > 0 ? Math.round((n / total) * 100) : 0);
+    const pct = (n: number, denom: number) => (denom > 0 ? Math.round((n / denom) * 100) : 0);
+    const makeBucket = (b: Bucket) => ({
+      count: b.count,
+      pct: pct(b.count, total),
+      ph: { count: b.ph, pct: pct(b.ph, b.count) },
+      latam: { count: b.latam, pct: pct(b.latam, b.count) },
+    });
     return {
       total,
-      twoWeeks: { count: buckets.twoWeeks, pct: pct(buckets.twoWeeks) },
-      threeMonths: { count: buckets.threeMonths, pct: pct(buckets.threeMonths) },
-      sixMonths: { count: buckets.sixMonths, pct: pct(buckets.sixMonths) },
-      beyond: { count: buckets.beyond, pct: pct(buckets.beyond) },
+      twoWeeks: makeBucket(buckets.twoWeeks),
+      threeMonths: makeBucket(buckets.threeMonths),
+      sixMonths: makeBucket(buckets.sixMonths),
+      beyond: makeBucket(buckets.beyond),
     };
   }, [contractors]);
 
@@ -1190,6 +1207,14 @@ export const ClientAnalyticsDashboard = () => {
                   <div className={`text-2xl font-bold ${b.color}`}>{b.data.pct}%</div>
                   <div className="text-xs text-muted-foreground mt-1">
                     {b.data.count} of {separationTenureBuckets.total}
+                  </div>
+                  <div className="mt-2 pt-2 border-t border-border/60 flex justify-between text-[10px] leading-tight">
+                    <span className="text-muted-foreground">
+                      PH <span className="font-medium text-foreground">{b.data.ph.pct}%</span>
+                    </span>
+                    <span className="text-muted-foreground">
+                      LATAM <span className="font-medium text-foreground">{b.data.latam.pct}%</span>
+                    </span>
                   </div>
                 </div>
               ))}
