@@ -1208,6 +1208,14 @@ export const ClientAnalyticsDashboard = () => {
                   <div className="text-xs text-muted-foreground mt-1">
                     {b.data.count} of {separationTenureBuckets.total}
                   </div>
+                  <div className="mt-2 pt-2 border-t border-border/60 flex justify-between text-[10px] leading-tight">
+                    <span className="text-muted-foreground">
+                      PH <span className="font-medium text-foreground">{b.data.ph.pct}%</span>
+                    </span>
+                    <span className="text-muted-foreground">
+                      LATAM <span className="font-medium text-foreground">{b.data.latam.pct}%</span>
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>
