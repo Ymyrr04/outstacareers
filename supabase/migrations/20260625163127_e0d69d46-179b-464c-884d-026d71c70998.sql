@@ -1,0 +1,2 @@
+ALTER TABLE public.contract_envelopes DROP CONSTRAINT contract_envelopes_template_id_fkey;
+ALTER TABLE public.contract_envelopes ADD CONSTRAINT contract_envelopes_template_id_fkey FOREIGN KEY (template_id) REFERENCES public.contract_templates(id) ON DELETE SET NULL;
