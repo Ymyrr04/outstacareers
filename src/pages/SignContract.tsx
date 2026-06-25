@@ -330,6 +330,30 @@ function renderFieldOverlay(
   }
 
   if (f.field_type === "attachment") {
+    return (
+      <label
+        className={`${baseBox} cursor-pointer justify-center px-2 overflow-hidden ${v.signature_data_url ? "border-emerald-500 bg-emerald-500/10" : ""} ${locked ? "pointer-events-none opacity-70" : ""}`}
+      >
+        {v.signature_data_url
+          ? <img src={v.signature_data_url} alt="attachment" className="max-h-full max-w-full object-contain" />
+          : <span className="text-primary font-medium">📎 {f.label || "Attach image"}</span>}
+        <input
+          type="file"
+          accept="image/png,image/jpeg,image/jpg"
+          className="hidden"
+          disabled={locked}
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = () => set({ signature_data_url: reader.result as string });
+            reader.readAsDataURL(file);
+          }}
+        />
+      </label>
+    );
+  }
+
   if (f.field_type === "checkbox") {
     const checked = v.value === "true";
     return (
