@@ -4,11 +4,11 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, ArrowLeft, Trash2, PenLine, Type, Calendar, Paperclip, Hash } from "lucide-react";
+import { Loader2, ArrowLeft, Trash2, PenLine, Type, Calendar, Paperclip, Hash, Check } from "lucide-react";
 import { toast } from "sonner";
 import { renderPdfPages, RenderedPage } from "@/lib/pdfRender";
 
-type FieldType = "signature" | "initials" | "date" | "text" | "attachment";
+type FieldType = "signature" | "initials" | "date" | "text" | "attachment" | "checkbox";
 type AssignedTo = "signer" | "admin" | "system";
 
 interface Field {
@@ -35,6 +35,7 @@ const FIELD_DEFAULTS: Record<FieldType, { w: number; h: number; label: string; i
   date: { w: 0.12, h: 0.03, label: "Date", icon: Calendar },
   text: { w: 0.2, h: 0.03, label: "Text", icon: Type },
   attachment: { w: 0.18, h: 0.08, label: "Attachment", icon: Paperclip },
+  checkbox: { w: 0.035, h: 0.035, label: "Checkbox", icon: Check },
 };
 
 const PREFILL_KEYS: { value: string; label: string }[] = [
