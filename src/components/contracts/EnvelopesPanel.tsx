@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { SendEnvelopeDialog } from "./SendEnvelopeDialog";
 import { CountersignDialog } from "./CountersignDialog";
 
+const PRE_PITCH_TEMPLATE_NAME = "Outsta Pre-Pitch Applicant Agreement";
+
 interface Envelope {
   id: string;
   template_id: string;
@@ -161,12 +163,14 @@ export const EnvelopesPanel = () => {
     }
   };
 
-  const filtered = useMemo(() => {
-    return envelopes.filter(e => folder === "completed" ? !!e.countersigned_at : !e.countersigned_at);
-  }, [envelopes, folder]);
+  const nonPitchEnvelopes = useMemo(() => envelopes.filter(e => e.contract_templates?.name !== PRE_PITCH_TEMPLATE_NAME), [envelopes]);
 
-  const activeCount = envelopes.filter(e => !e.countersigned_at).length;
-  const completedCount = envelopes.filter(e => !!e.countersigned_at).length;
+  const filtered = useMemo(() => {
+    return nonPitchEnvelopes.filter(e => folder === "completed" ? !!e.countersigned_at : !e.countersigned_at);
+  }, [nonPitchEnvelopes, folder]);
+
+  const activeCount = nonPitchEnvelopes.filter(e => !e.countersigned_at).length;
+  const completedCount = nonPitchEnvelopes.filter(e => !!e.countersigned_at).length;
 
   return (
     <div className="space-y-4">
