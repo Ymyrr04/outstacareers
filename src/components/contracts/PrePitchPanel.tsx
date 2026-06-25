@@ -92,6 +92,7 @@ export const PrePitchPanel = () => {
           contractorAssignmentId: full.contractor_assignment_id,
           adminPrefill: full.admin_prefill || {},
           message: full.message,
+          category: "prepitch",
         },
       });
       if (error) throw error;
