@@ -13,7 +13,7 @@ interface Template { id: string; name: string; }
 interface AdminField { id: string; label: string | null; field_key: string | null; field_type: string | null; }
 interface MsgTemplate { id: string; name: string; message: string; }
 
-export const SendEnvelopeDialog = ({ open, onOpenChange, onSent, lockedTemplateId, title }: { open: boolean; onOpenChange: (o: boolean) => void; onSent: () => void; lockedTemplateId?: string; title?: string; }) => {
+export const SendEnvelopeDialog = ({ open, onOpenChange, onSent, lockedTemplateId, title, messageCategory = "contract" }: { open: boolean; onOpenChange: (o: boolean) => void; onSent: () => void; lockedTemplateId?: string; title?: string; messageCategory?: "contract" | "prepitch"; }) => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [templateId, setTemplateId] = useState<string>("");
   const [adminFields, setAdminFields] = useState<AdminField[]>([]);
@@ -106,7 +106,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent, lockedTemplateI
   };
 
   const loadMsgTemplates = async () => {
-    const { data } = await supabase.from("contract_message_templates").select("id, name, message").order("name");
+    const { data } = await supabase.from("contract_message_templates").select("id, name, message, category").eq("category", messageCategory).order("name");
     setMsgTemplates((data || []) as MsgTemplate[]);
   };
 
@@ -171,7 +171,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent, lockedTemplateI
     if (!name) return;
     const { data, error } = await supabase
       .from("contract_message_templates")
-      .insert({ name, message: trimmed })
+      .insert({ name, message: trimmed, category: messageCategory })
       .select("id, name, message")
       .single();
     if (error) return toast.error(error.message);

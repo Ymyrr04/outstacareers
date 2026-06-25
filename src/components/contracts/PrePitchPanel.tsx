@@ -221,6 +221,7 @@ export const PrePitchPanel = () => {
           onSent={load}
           lockedTemplateId={templateId}
           title="Send Pre-Pitch Agreement"
+          messageCategory="prepitch"
         />
       )}
     </div>

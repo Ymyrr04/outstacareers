@@ -1,0 +1,1 @@
+ALTER TABLE public.contract_message_templates ADD COLUMN IF NOT EXISTS category TEXT NOT NULL DEFAULT 'contract';
