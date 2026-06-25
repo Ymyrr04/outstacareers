@@ -196,6 +196,23 @@ Deno.serve(async (req) => {
             });
             void tsW;
           }
+        } else if (f.field_type === "checkbox") {
+          if (v.value === "true") {
+            const pad = Math.min(w, h) * 0.15;
+            const thickness = Math.max(1.5, Math.min(w, h) * 0.12);
+            page.drawLine({
+              start: { x: x + pad, y: y + h * 0.55 },
+              end: { x: x + w * 0.42, y: y + pad },
+              thickness,
+              color: rgb(0, 0, 0),
+            });
+            page.drawLine({
+              start: { x: x + w * 0.42, y: y + pad },
+              end: { x: x + w - pad, y: y + h * 0.75 },
+              thickness,
+              color: rgb(0, 0, 0),
+            });
+          }
         } else {
           let text = v.value || "";
           // Format ISO date values (yyyy-mm-dd) into "Dayname , Month D, YYYY" for date fields
