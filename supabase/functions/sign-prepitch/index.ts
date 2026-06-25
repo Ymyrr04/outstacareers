@@ -3,7 +3,7 @@
 //
 // POST { token, fullName, signatureDataUrl, terms:[bool x6], finalConfirm:bool, consent:bool }
 
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import nodemailer from "npm:nodemailer@6.9.16";
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
 import { PDFDocument, StandardFonts, rgb } from "npm:pdf-lib@1.17.1";
 
