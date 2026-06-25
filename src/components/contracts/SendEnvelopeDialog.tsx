@@ -113,10 +113,14 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent, lockedTemplateI
   useEffect(() => {
     if (!open) return;
     supabase.from("contract_templates").select("id, name").eq("is_active", true).order("name").then(({ data }) => {
-      setTemplates((data || []) as Template[]);
+      const list = (data || []) as Template[];
+      setTemplates(list);
+      if (lockedTemplateId && list.some(t => t.id === lockedTemplateId)) {
+        setTemplateId(lockedTemplateId);
+      }
     });
     loadMsgTemplates();
-  }, [open]);
+  }, [open, lockedTemplateId]);
 
   useEffect(() => {
     if (!templateId) { setAdminFields([]); setPrefill({}); return; }
