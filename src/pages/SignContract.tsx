@@ -9,6 +9,9 @@ import { toast } from "sonner";
 import { renderPdfPages, RenderedPage } from "@/lib/pdfRender";
 import { SignaturePad } from "@/components/contracts/SignaturePad";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { PrePitchSignView } from "@/components/contracts/PrePitchSignView";
+
+const PRE_PITCH_TEMPLATE_NAME = "Outsta Pre-Pitch Applicant Agreement";
 
 function renderMessage(raw: string): string {
   const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -93,8 +96,10 @@ const SignContract = () => {
           setLoading(false);
           return;
         }
-        const rendered = await renderPdfPages(json.pdf_url, 900);
-        setPages(rendered);
+        if (json.template?.name !== PRE_PITCH_TEMPLATE_NAME) {
+          const rendered = await renderPdfPages(json.pdf_url, 900);
+          setPages(rendered);
+        }
         const init: Record<string, { value?: string; signature_data_url?: string }> = {};
         const today = new Date().toISOString().slice(0, 10);
         for (const f of json.fields) {
@@ -210,6 +215,19 @@ const SignContract = () => {
   );
 
   if (!data) return null;
+
+  if (data.template?.name === PRE_PITCH_TEMPLATE_NAME) {
+    return (
+      <PrePitchSignView
+        token={token!}
+        recipientName={data.envelope.recipient_name}
+        expiresAt={data.envelope.expires_at}
+        savedSignature={savedSig}
+        onDone={() => setDone(true)}
+      />
+    );
+  }
+
 
   return (
     <div className="min-h-screen bg-muted/30">
