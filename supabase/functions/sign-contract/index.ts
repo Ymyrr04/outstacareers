@@ -137,6 +137,8 @@ Deno.serve(async (req) => {
           const v = valueByFieldId.get(f.id);
           const hasVal = (f.field_type === "signature" || f.field_type === "initials" || f.field_type === "attachment")
             ? !!v?.signature_data_url
+            : f.field_type === "checkbox"
+            ? v?.value === "true"
             : !!v?.value;
           if (!hasVal) return new Response(JSON.stringify({ error: `Missing required field: ${f.label || f.field_type}` }), { status: 400, headers: corsHeaders });
         }
