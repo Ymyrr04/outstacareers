@@ -1369,6 +1369,50 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
   const openProfile = useCallback(() => { setMountProfile(true); setShowProfile(true); }, []);
   const openActivity = useCallback(() => { setMountActivity(true); setShowActivity(true); }, []);
 
+  const [sendingPrepitch, setSendingPrepitch] = useState(false);
+  const sendPrepitch = useCallback(async () => {
+    if (!candidate.email) return toast.error('Applicant has no email address.');
+    const firstName = (candidate.full_name || '').trim().split(/\s+/)[0] || candidate.full_name || '';
+    if (!confirm(`Send OutSta Pre-Pitch Agreement to ${firstName} (${candidate.email})?`)) return;
+    setSendingPrepitch(true);
+    try {
+      const { data: tpl, error: te } = await supabase
+        .from('contract_templates')
+        .select('id')
+        .eq('name', 'OutSta Pre-Pitch Agreement')
+        .maybeSingle();
+      if (te) throw te;
+      if (!tpl) throw new Error('Pre-Pitch Agreement template not found.');
+
+      const { data: msgTpls } = await supabase
+        .from('contract_message_templates')
+        .select('message')
+        .eq('category', 'prepitch')
+        .order('created_at', { ascending: true })
+        .limit(1);
+      const rawMsg = msgTpls?.[0]?.message || '';
+      const message = rawMsg.replace(/\{\{first_name\}\}/g, firstName);
+
+      const { error } = await supabase.functions.invoke('send-contract-envelope', {
+        body: {
+          templateId: tpl.id,
+          recipientName: candidate.full_name,
+          recipientEmail: candidate.email,
+          applicantId: candidate.id,
+          adminPrefill: { first_name: firstName },
+          message,
+          category: 'prepitch',
+        },
+      });
+      if (error) throw error;
+      toast.success(`Pre-Pitch Agreement sent to ${candidate.email}`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSendingPrepitch(false);
+    }
+  }, [candidate.id, candidate.email, candidate.full_name]);
+
   const fetchActivity = useCallback(async () => {
     setActivityLoading(true);
     const { data, error } = await supabase
