@@ -171,7 +171,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent, lockedTemplateI
     if (!name) return;
     const { data, error } = await supabase
       .from("contract_message_templates")
-      .insert({ name, message: trimmed })
+      .insert({ name, message: trimmed, category: messageCategory })
       .select("id, name, message")
       .single();
     if (error) return toast.error(error.message);
