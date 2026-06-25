@@ -1,0 +1,1 @@
+ALTER TABLE public.contract_envelopes ALTER COLUMN template_id DROP NOT NULL;
