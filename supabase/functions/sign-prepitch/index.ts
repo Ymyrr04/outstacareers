@@ -3,7 +3,8 @@
 //
 // POST { token, fullName, signatureDataUrl, terms:[bool x6], finalConfirm:bool, consent:bool }
 
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import nodemailer from "npm:nodemailer@6.9.16";
+import { Buffer } from "node:buffer";
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
 import { PDFDocument, StandardFonts, rgb } from "npm:pdf-lib@1.17.1";
 
@@ -326,22 +327,54 @@ Deno.serve(async (req) => {
     try {
       const gmailUser = Deno.env.get("MARK_GMAIL_USER")!;
       const gmailPassword = Deno.env.get("MARK_GMAIL_APP_PASSWORD")!;
-      const smtp = new SMTPClient({ connection: { hostname: "smtp.gmail.com", port: 465, tls: true, auth: { username: gmailUser, password: gmailPassword } } });
-      const signedB64 = btoa(String.fromCharCode(...pdfBytes));
-      const auditB64 = btoa(String.fromCharCode(...auditBytes));
+      const transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        auth: { user: gmailUser, pass: gmailPassword },
+      });
       const recipients = [envelope.recipient_email];
       if (envelope.sender_email) recipients.push(envelope.sender_email);
-      await smtp.send({
+
+      // CC the admin assigned to the role
+      const ccList: string[] = [];
+      try {
+        if (envelope.applicant_id) {
+          const { data: applicant } = await admin
+            .from("applicants_prescreen")
+            .select("job_id")
+            .eq("id", envelope.applicant_id)
+            .maybeSingle();
+          if (applicant?.job_id) {
+            const { data: job } = await admin
+              .from("jobs")
+              .select("assigned_admin_id")
+              .eq("id", applicant.job_id)
+              .maybeSingle();
+            if (job?.assigned_admin_id) {
+              const { data: adminUser } = await admin.auth.admin.getUserById(job.assigned_admin_id);
+              const adminEmail = adminUser?.user?.email;
+              if (adminEmail && !recipients.includes(adminEmail)) {
+                ccList.push(adminEmail);
+              }
+            }
+          }
+        }
+      } catch (ccErr) {
+        console.error("failed to resolve assigned admin for CC", ccErr);
+      }
+
+      await transporter.sendMail({
         from: `OutSta Contracts <${gmailUser}>`,
         to: recipients,
+        cc: ccList.length ? ccList : undefined,
         subject: `Signed: ${template.name}`,
         html: `<div style="font-family:Arial,sans-serif"><h2>Pre-Pitch Agreement signed</h2><p>${template.name} has been signed by ${envelope.recipient_name}.</p></div>`,
         attachments: [
-          { filename: "pre-pitch-signed.pdf", content: signedB64, encoding: "base64", contentType: "application/pdf" },
-          { filename: "audit-trail.pdf", content: auditB64, encoding: "base64", contentType: "application/pdf" },
+          { filename: "pre-pitch-signed.pdf", content: Buffer.from(pdfBytes), contentType: "application/pdf" },
+          { filename: "audit-trail.pdf", content: Buffer.from(auditBytes), contentType: "application/pdf" },
         ],
       });
-      await smtp.close();
     } catch (mailErr) {
       console.error("email failed", mailErr);
     }
