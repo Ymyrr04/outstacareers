@@ -1631,6 +1631,11 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
             Send interview invite
           </ContextMenuItem>
 
+          <ContextMenuItem onClick={sendPrepitch} disabled={sendingPrepitch}>
+            {sendingPrepitch ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileSignature className="w-4 h-4 mr-2" />}
+            Send Pre-pitch
+          </ContextMenuItem>
+
           <ContextMenuItem onClick={openInterviewResults}>
             <ClipboardList className="w-4 h-4 mr-2" />
             Notes
