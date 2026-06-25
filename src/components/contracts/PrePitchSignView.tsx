@@ -100,74 +100,74 @@ export const PrePitchSignView = ({ token, recipientName, expiresAt, savedSignatu
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="bg-background border-b sticky top-0 z-20">
-        <div className="max-w-3xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <div>
-            <h1 className="font-semibold text-lg leading-tight">Outsta Pre-Pitch Applicant Agreement</h1>
-            <p className="text-xs text-muted-foreground">For {recipientName} • Expires {new Date(expiresAt).toLocaleDateString()}</p>
+            <h1 className="font-semibold text-2xl leading-tight">Outsta Pre-Pitch Applicant Agreement</h1>
+            <p className="text-base text-muted-foreground">For {recipientName} • Expires {new Date(expiresAt).toLocaleDateString()}</p>
           </div>
-          <div className="text-sm">
+          <div className="text-lg">
             <span className="font-medium">{completed}</span>
             <span className="text-muted-foreground"> / {totalRequired} complete</span>
           </div>
         </div>
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-6 space-y-6">
-        <Card className="p-6 bg-background">
-          <div className="bg-teal-700 text-white rounded-md p-5 -mx-2 -mt-2 mb-5">
-            <h2 className="text-2xl font-bold leading-none">Outsta</h2>
-            <p className="text-sm opacity-90 mt-1">Pre-Pitch Applicant Agreement</p>
+      <main className="max-w-5xl mx-auto px-6 py-8 space-y-8">
+        <Card className="p-8 bg-background">
+          <div className="bg-teal-700 text-white rounded-md p-7 -mx-2 -mt-2 mb-6">
+            <h2 className="text-4xl font-bold leading-none">Outsta</h2>
+            <p className="text-lg opacity-90 mt-2">Pre-Pitch Applicant Agreement</p>
           </div>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-lg text-muted-foreground leading-relaxed">
             Before we move forward with presenting you to our client, please read each term carefully and tick the box beside it to confirm your understanding. Sign and print your full name at the bottom. This agreement must be completed before we can proceed with your placement.
           </p>
         </Card>
 
         {TERMS.map((t, i) => (
-          <Card key={i} className={`p-5 transition border-2 ${terms[i] ? "border-emerald-500/50 bg-emerald-500/5" : "border-border"}`}>
-            <label className="flex gap-4 cursor-pointer">
+          <Card key={i} className={`p-7 transition border-2 ${terms[i] ? "border-emerald-500/50 bg-emerald-500/5" : "border-border"}`}>
+            <label className="flex gap-5 cursor-pointer">
               <Checkbox
                 checked={terms[i]}
                 onCheckedChange={(c) => setTerm(i, c === true)}
-                className="mt-1 h-5 w-5"
+                className="mt-1.5 h-7 w-7"
               />
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400">Term 0{i + 1}</p>
-                <h3 className="font-semibold text-base mt-0.5">{t.title}</h3>
-                <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{t.body}</p>
+                <p className="text-sm font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400">Term 0{i + 1}</p>
+                <h3 className="font-semibold text-xl mt-1">{t.title}</h3>
+                <p className="text-base text-muted-foreground mt-3 leading-relaxed">{t.body}</p>
               </div>
             </label>
           </Card>
         ))}
 
-        <Card className={`p-5 border-2 ${finalConfirm ? "border-emerald-500/50 bg-emerald-500/5" : "border-border"}`}>
-          <p className="text-xs font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400 mb-2">Final confirmation</p>
-          <label className="flex gap-4 cursor-pointer">
+        <Card className={`p-7 border-2 ${finalConfirm ? "border-emerald-500/50 bg-emerald-500/5" : "border-border"}`}>
+          <p className="text-sm font-bold uppercase tracking-wider text-teal-700 dark:text-teal-400 mb-3">Final confirmation</p>
+          <label className="flex gap-5 cursor-pointer">
             <Checkbox
               checked={finalConfirm}
               onCheckedChange={(c) => setFinalConfirm(c === true)}
-              className="mt-1 h-5 w-5"
+              className="mt-1.5 h-7 w-7"
             />
-            <span className="text-sm leading-relaxed">
+            <span className="text-base leading-relaxed">
               I confirm that I have read, understood, and agree to all six terms listed above. I understand that by signing below, I am acknowledging my acceptance of these conditions before being presented to the client.
             </span>
           </label>
         </Card>
 
-        <Card className="p-5">
-          <h3 className="font-semibold mb-4">Sign below</h3>
-          <div className="grid md:grid-cols-2 gap-5">
+        <Card className="p-7">
+          <h3 className="font-semibold text-xl mb-5">Sign below</h3>
+          <div className="grid md:grid-cols-2 gap-6">
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Full name (printed)</label>
+              <label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Full name (printed)</label>
               <Input
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 placeholder="Your full legal name"
-                className="mt-2 h-11 text-base"
+                className="mt-2 h-14 text-lg"
               />
             </div>
             <div>
-              <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Signature</label>
+              <label className="text-sm font-semibold uppercase tracking-wider text-muted-foreground">Signature</label>
               <div className="mt-2">
                 <SignaturePad value={signature} onChange={setSignature} />
               </div>
@@ -175,16 +175,16 @@ export const PrePitchSignView = ({ token, recipientName, expiresAt, savedSignatu
           </div>
         </Card>
 
-        <Card className="p-5 sticky bottom-4 shadow-lg">
-          <label className="flex items-start gap-3 cursor-pointer">
-            <Checkbox checked={consent} onCheckedChange={(c) => setConsent(c === true)} />
-            <span className="text-sm">
+        <Card className="p-6 sticky bottom-4 shadow-lg">
+          <label className="flex items-start gap-4 cursor-pointer">
+            <Checkbox checked={consent} onCheckedChange={(c) => setConsent(c === true)} className="mt-1 h-6 w-6" />
+            <span className="text-base leading-relaxed">
               I agree that my electronic signature on this document is the legal equivalent of my handwritten signature, and that this document is binding on me.
             </span>
           </label>
-          <div className="flex justify-end mt-4">
-            <Button size="lg" onClick={submit} disabled={submitting || !consent}>
-              {submitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Signing…</> : <><CheckCircle2 className="w-4 h-4 mr-2" /> Finish & Sign</>}
+          <div className="flex justify-end mt-5">
+            <Button size="lg" onClick={submit} disabled={submitting || !consent} className="text-lg h-12 px-8">
+              {submitting ? <><Loader2 className="w-5 h-5 mr-2 animate-spin" /> Signing…</> : <><CheckCircle2 className="w-5 h-5 mr-2" /> Finish & Sign</>}
             </Button>
           </div>
         </Card>
