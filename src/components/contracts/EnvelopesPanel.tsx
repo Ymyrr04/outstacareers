@@ -9,7 +9,7 @@ import { toast } from "sonner";
 import { SendEnvelopeDialog } from "./SendEnvelopeDialog";
 import { CountersignDialog } from "./CountersignDialog";
 
-const PRE_PITCH_TEMPLATE_NAME = "Outsta Pre-Pitch Applicant Agreement";
+const PRE_PITCH_TEMPLATE_NAME = "OutSta Pre-Pitch Agreement";
 
 interface Envelope {
   id: string;

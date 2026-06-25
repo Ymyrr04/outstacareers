@@ -12,12 +12,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const PRE_PITCH_TEMPLATE_NAME = "Outsta Pre-Pitch Applicant Agreement";
+const PRE_PITCH_TEMPLATE_NAME = "OutSta Pre-Pitch Agreement";
 
 const TERMS: { title: string; body: string }[] = [
   {
     title: "Security deposit",
-    body: "A two-week security deposit will be held by Outsta for the duration of your contract. This deposit will be released in full on your final working day, provided there are no outstanding issues or claims. This is a standard requirement for all contractors and is non-negotiable.",
+    body: "A two-week security deposit will be held by OutSta for the duration of your contract. This deposit will be released in full on your final working day, provided there are no outstanding issues or claims. This is a standard requirement for all contractors and is non-negotiable.",
   },
   {
     title: "Payment method — Payoneer only",
@@ -25,7 +25,7 @@ const TERMS: { title: string; body: string }[] = [
   },
   {
     title: "Employment status — full - time Independent contractor",
-    body: "You will be engaged as a full - time Independent contractor, working dedicated hours exclusively for your assigned client. While you work full-time hours, your engagement is on a contractor basis — meaning you are responsible for your own taxes and statutory compliance in your country of residence. Outsta does not provide employment benefits such as paid leave, health insurance, or retirement contributions.",
+    body: "You will be engaged as a full - time Independent contractor, working dedicated hours exclusively for your assigned client. While you work full-time hours, your engagement is on a contractor basis — meaning you are responsible for your own taxes and statutory compliance in your country of residence. OutSta does not provide employment benefits such as paid leave, health insurance, or retirement contributions.",
   },
   {
     title: "Working hours — as per client requirement",
@@ -37,7 +37,7 @@ const TERMS: { title: string; body: string }[] = [
   },
   {
     title: "Probation period",
-    body: "All contractors are subject to a two-week probation period starting from their first day of work. During this period, either party may end the engagement without the standard notice requirement. Successful completion of the probation period confirms your continued placement with the client. Outsta and the client reserve the right to assess your performance, work quality, and overall fit during this time.",
+    body: "All contractors are subject to a two-week probation period starting from their first day of work. During this period, either party may end the engagement without the standard notice requirement. Successful completion of the probation period confirms your continued placement with the client. OutSta and the client reserve the right to assess your performance, work quality, and overall fit during this time.",
   },
 ];
 
@@ -94,7 +94,7 @@ async function buildPrePitchPdf(opts: {
   const newPageIfNeeded = (needed: number) => {
     if (y - needed < margin + 30) {
       // footer
-      page.drawText("Outsta — Workforce Solutions", { x: margin, y: margin - 10, size: 8, font, color: muted });
+      page.drawText("OutSta — Workforce Solutions", { x: margin, y: margin - 10, size: 8, font, color: muted });
       page = doc.addPage([pageW, pageH]);
       y = pageH - margin;
     }
@@ -102,8 +102,8 @@ async function buildPrePitchPdf(opts: {
 
   // Header band
   page.drawRectangle({ x: 0, y: pageH - 70, width: pageW, height: 70, color: teal });
-  page.drawText("Outsta", { x: margin, y: pageH - 38, size: 22, font: bold, color: rgb(1, 1, 1) });
-  page.drawText("Pre-Pitch Applicant Agreement", { x: margin, y: pageH - 58, size: 12, font, color: rgb(1, 1, 1) });
+  page.drawText("OutSta", { x: margin, y: pageH - 38, size: 22, font: bold, color: rgb(1, 1, 1) });
+  page.drawText("Pre-Pitch Agreement", { x: margin, y: pageH - 58, size: 12, font, color: rgb(1, 1, 1) });
   y = pageH - 90;
 
   // Intro
@@ -205,7 +205,7 @@ async function buildPrePitchPdf(opts: {
   const pageCount = doc.getPageCount();
   for (let i = 0; i < pageCount; i++) {
     const p = doc.getPage(i);
-    p.drawText(`Outsta — Workforce Solutions   •   Page ${i + 1} of ${pageCount}`, {
+    p.drawText(`OutSta — Workforce Solutions   •   Page ${i + 1} of ${pageCount}`, {
       x: margin,
       y: 24,
       size: 8,
