@@ -9,6 +9,8 @@ import { toast } from "sonner";
 import { SendEnvelopeDialog } from "./SendEnvelopeDialog";
 import { CountersignDialog } from "./CountersignDialog";
 
+const PRE_PITCH_TEMPLATE_NAME = "Outsta Pre-Pitch Applicant Agreement";
+
 interface Envelope {
   id: string;
   template_id: string;
