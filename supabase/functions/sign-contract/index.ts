@@ -137,6 +137,8 @@ Deno.serve(async (req) => {
           const v = valueByFieldId.get(f.id);
           const hasVal = (f.field_type === "signature" || f.field_type === "initials" || f.field_type === "attachment")
             ? !!v?.signature_data_url
+            : f.field_type === "checkbox"
+            ? v?.value === "true"
             : !!v?.value;
           if (!hasVal) return new Response(JSON.stringify({ error: `Missing required field: ${f.label || f.field_type}` }), { status: 400, headers: corsHeaders });
         }
@@ -193,6 +195,23 @@ Deno.serve(async (req) => {
               color: rgb(0.35, 0.35, 0.35),
             });
             void tsW;
+          }
+        } else if (f.field_type === "checkbox") {
+          if (v.value === "true") {
+            const pad = Math.min(w, h) * 0.15;
+            const thickness = Math.max(1.5, Math.min(w, h) * 0.12);
+            page.drawLine({
+              start: { x: x + pad, y: y + h * 0.55 },
+              end: { x: x + w * 0.42, y: y + pad },
+              thickness,
+              color: rgb(0, 0, 0),
+            });
+            page.drawLine({
+              start: { x: x + w * 0.42, y: y + pad },
+              end: { x: x + w - pad, y: y + h * 0.75 },
+              thickness,
+              color: rgb(0, 0, 0),
+            });
           }
         } else {
           let text = v.value || "";

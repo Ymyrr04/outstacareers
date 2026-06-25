@@ -266,6 +266,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent, lockedTemplateI
               {adminFields.map(f => {
                 const key = f.field_key || f.label || f.id;
                 const isDate = f.field_type === "date";
+                const isCheckbox = f.field_type === "checkbox";
                 const current = prefill[key] ?? "";
                 return (
                   <div key={f.id}>
@@ -275,7 +276,17 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent, lockedTemplateI
                         <span className="font-mono text-[10px] text-muted-foreground">{`{{${f.field_key}}}`}</span>
                       )}
                     </label>
-                    {isDate ? (
+                    {isCheckbox ? (
+                      <label className="flex items-center gap-2 mt-1 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={current === "true"}
+                          onChange={(e) => setPrefill(p => ({ ...p, [key]: e.target.checked ? "true" : "false" }))}
+                          className="w-4 h-4 accent-primary"
+                        />
+                        <span className="text-xs text-muted-foreground">Checked</span>
+                      </label>
+                    ) : isDate ? (
                       <Input
                         type="date"
                         value={current}
