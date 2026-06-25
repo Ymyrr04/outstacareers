@@ -24,8 +24,8 @@ const TERMS: { title: string; body: string }[] = [
     body: "All payments are processed exclusively through Payoneer. This is required for our tax and accounting compliance. Direct bank transfers or any other payment methods are not supported. Please ensure you have an active Payoneer account set up before your start date.",
   },
   {
-    title: "Employment status — full-time contractor",
-    body: "You will be engaged as a full-time independent contractor, working dedicated hours exclusively for your assigned client. While you work full-time hours, your engagement is on a contractor basis — meaning you are responsible for your own taxes and statutory compliance in your country of residence. Outsta does not provide employment benefits such as paid leave, health insurance, or retirement contributions.",
+    title: "Employment status — full - time Independent contractor",
+    body: "You will be engaged as a full - time Independent contractor, working dedicated hours exclusively for your assigned client. While you work full-time hours, your engagement is on a contractor basis — meaning you are responsible for your own taxes and statutory compliance in your country of residence. Outsta does not provide employment benefits such as paid leave, health insurance, or retirement contributions.",
   },
   {
     title: "Working hours — as per client requirement",
