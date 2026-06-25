@@ -96,8 +96,10 @@ const SignContract = () => {
           setLoading(false);
           return;
         }
-        const rendered = await renderPdfPages(json.pdf_url, 900);
-        setPages(rendered);
+        if (json.template?.name !== PRE_PITCH_TEMPLATE_NAME) {
+          const rendered = await renderPdfPages(json.pdf_url, 900);
+          setPages(rendered);
+        }
         const init: Record<string, { value?: string; signature_data_url?: string }> = {};
         const today = new Date().toISOString().slice(0, 10);
         for (const f of json.fields) {
