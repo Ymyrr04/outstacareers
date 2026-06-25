@@ -331,9 +331,39 @@ Deno.serve(async (req) => {
       const auditB64 = btoa(String.fromCharCode(...auditBytes));
       const recipients = [envelope.recipient_email];
       if (envelope.sender_email) recipients.push(envelope.sender_email);
+
+      // CC the admin assigned to the role
+      const ccList: string[] = [];
+      try {
+        if (envelope.applicant_id) {
+          const { data: applicant } = await admin
+            .from("applicants_prescreen")
+            .select("job_id")
+            .eq("id", envelope.applicant_id)
+            .maybeSingle();
+          if (applicant?.job_id) {
+            const { data: job } = await admin
+              .from("jobs")
+              .select("assigned_admin_id")
+              .eq("id", applicant.job_id)
+              .maybeSingle();
+            if (job?.assigned_admin_id) {
+              const { data: adminUser } = await admin.auth.admin.getUserById(job.assigned_admin_id);
+              const adminEmail = adminUser?.user?.email;
+              if (adminEmail && !recipients.includes(adminEmail)) {
+                ccList.push(adminEmail);
+              }
+            }
+          }
+        }
+      } catch (ccErr) {
+        console.error("failed to resolve assigned admin for CC", ccErr);
+      }
+
       await smtp.send({
         from: `OutSta Contracts <${gmailUser}>`,
         to: recipients,
+        cc: ccList.length ? ccList : undefined,
         subject: `Signed: ${template.name}`,
         html: `<div style="font-family:Arial,sans-serif"><h2>Pre-Pitch Agreement signed</h2><p>${template.name} has been signed by ${envelope.recipient_name}.</p></div>`,
         attachments: [
