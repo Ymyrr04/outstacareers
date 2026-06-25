@@ -9,6 +9,9 @@ import { toast } from "sonner";
 import { renderPdfPages, RenderedPage } from "@/lib/pdfRender";
 import { SignaturePad } from "@/components/contracts/SignaturePad";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { PrePitchSignView } from "@/components/contracts/PrePitchSignView";
+
+const PRE_PITCH_TEMPLATE_NAME = "Outsta Pre-Pitch Applicant Agreement";
 
 function renderMessage(raw: string): string {
   const escape = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
