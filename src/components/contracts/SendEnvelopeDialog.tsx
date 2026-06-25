@@ -209,6 +209,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent, lockedTemplateI
             .replace(/\{\{start_time\}\}/g, formatStartTime(startTime) || "{{start_time}}"),
           expiresInDays,
           senderEmail,
+          category: messageCategory,
         },
       });
       if (error) throw error;
