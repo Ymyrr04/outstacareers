@@ -13,7 +13,7 @@ interface Template { id: string; name: string; }
 interface AdminField { id: string; label: string | null; field_key: string | null; field_type: string | null; }
 interface MsgTemplate { id: string; name: string; message: string; }
 
-export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boolean; onOpenChange: (o: boolean) => void; onSent: () => void; }) => {
+export const SendEnvelopeDialog = ({ open, onOpenChange, onSent, lockedTemplateId, title }: { open: boolean; onOpenChange: (o: boolean) => void; onSent: () => void; lockedTemplateId?: string; title?: string; }) => {
   const [templates, setTemplates] = useState<Template[]>([]);
   const [templateId, setTemplateId] = useState<string>("");
   const [adminFields, setAdminFields] = useState<AdminField[]>([]);
@@ -113,10 +113,14 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
   useEffect(() => {
     if (!open) return;
     supabase.from("contract_templates").select("id, name").eq("is_active", true).order("name").then(({ data }) => {
-      setTemplates((data || []) as Template[]);
+      const list = (data || []) as Template[];
+      setTemplates(list);
+      if (lockedTemplateId && list.some(t => t.id === lockedTemplateId)) {
+        setTemplateId(lockedTemplateId);
+      }
     });
     loadMsgTemplates();
-  }, [open]);
+  }, [open, lockedTemplateId]);
 
   useEffect(() => {
     if (!templateId) { setAdminFields([]); setPrefill({}); return; }
@@ -223,12 +227,12 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent }: { open: boole
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Send Contract for Signature</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{title || "Send Contract for Signature"}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-medium">Template</label>
-              <Select value={templateId} onValueChange={setTemplateId}>
+              <Select value={templateId} onValueChange={setTemplateId} disabled={!!lockedTemplateId}>
                 <SelectTrigger><SelectValue placeholder="Select template" /></SelectTrigger>
                 <SelectContent>
                   {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
