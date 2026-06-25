@@ -216,6 +216,19 @@ const SignContract = () => {
 
   if (!data) return null;
 
+  if (data.template?.name === PRE_PITCH_TEMPLATE_NAME) {
+    return (
+      <PrePitchSignView
+        token={token!}
+        recipientName={data.envelope.recipient_name}
+        expiresAt={data.envelope.expires_at}
+        savedSignature={savedSig}
+        onDone={() => setDone(true)}
+      />
+    );
+  }
+
+
   return (
     <div className="min-h-screen bg-muted/30">
       <header className="bg-background border-b sticky top-0 z-20">
