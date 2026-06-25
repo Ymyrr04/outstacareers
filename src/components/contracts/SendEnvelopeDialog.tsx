@@ -106,7 +106,7 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent, lockedTemplateI
   };
 
   const loadMsgTemplates = async () => {
-    const { data } = await supabase.from("contract_message_templates").select("id, name, message").order("name");
+    const { data } = await supabase.from("contract_message_templates").select("id, name, message, category").eq("category", messageCategory).order("name");
     setMsgTemplates((data || []) as MsgTemplate[]);
   };
 
