@@ -21,6 +21,7 @@ interface SendEnvelopeRequest {
   message?: string;
   expiresInDays?: number;
   senderEmail?: string;
+  category?: "contract" | "prepitch";
 }
 
 const SENDER_CREDENTIALS: Record<string, { userEnv: string; passEnv: string; displayName: string }> = {
