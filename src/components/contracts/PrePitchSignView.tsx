@@ -14,7 +14,7 @@ const PUBLIC_HEADERS = { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` }
 const TERMS = [
   {
     title: "Security deposit",
-    body: "A two-week security deposit will be held by Outsta for the duration of your contract. This deposit will be released in full on your final working day, provided there are no outstanding issues or claims. This is a standard requirement for all contractors and is non-negotiable.",
+    body: "A two-week security deposit will be held by OutSta for the duration of your contract. This deposit will be released in full on your final working day, provided there are no outstanding issues or claims. This is a standard requirement for all contractors and is non-negotiable.",
   },
   {
     title: "Payment method — Payoneer only",
@@ -22,7 +22,7 @@ const TERMS = [
   },
   {
     title: "Employment status — full - time Independent contractor",
-    body: "You will be engaged as a full - time Independent contractor, working dedicated hours exclusively for your assigned client. While you work full-time hours, your engagement is on a contractor basis — meaning you are responsible for your own taxes and statutory compliance in your country of residence. Outsta does not provide employment benefits such as paid leave, health insurance, or retirement contributions.",
+    body: "You will be engaged as a full - time Independent contractor, working dedicated hours exclusively for your assigned client. While you work full-time hours, your engagement is on a contractor basis — meaning you are responsible for your own taxes and statutory compliance in your country of residence. OutSta does not provide employment benefits such as paid leave, health insurance, or retirement contributions.",
   },
   {
     title: "Working hours — as per client requirement",
@@ -34,7 +34,7 @@ const TERMS = [
   },
   {
     title: "Probation period",
-    body: "All contractors are subject to a two-week probation period starting from their first day of work. During this period, either party may end the engagement without the standard notice requirement. Successful completion of the probation period confirms your continued placement with the client. Outsta and the client reserve the right to assess your performance, work quality, and overall fit during this time.",
+    body: "All contractors are subject to a two-week probation period starting from their first day of work. During this period, either party may end the engagement without the standard notice requirement. Successful completion of the probation period confirms your continued placement with the client. OutSta and the client reserve the right to assess your performance, work quality, and overall fit during this time.",
   },
 ];
 
@@ -102,7 +102,7 @@ export const PrePitchSignView = ({ token, recipientName, expiresAt, savedSignatu
       <header className="bg-background border-b sticky top-0 z-20">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <div>
-            <h1 className="font-semibold text-2xl leading-tight">Outsta Pre-Pitch Applicant Agreement</h1>
+            <h1 className="font-semibold text-2xl leading-tight">OutSta Pre-Pitch Agreement</h1>
             <p className="text-base text-muted-foreground">For {recipientName} • Expires {new Date(expiresAt).toLocaleDateString()}</p>
           </div>
           <div className="text-lg">
@@ -115,8 +115,8 @@ export const PrePitchSignView = ({ token, recipientName, expiresAt, savedSignatu
       <main className="max-w-5xl mx-auto px-6 py-8 space-y-8">
         <Card className="p-8 bg-background">
           <div className="bg-teal-700 text-white rounded-md p-7 -mx-2 -mt-2 mb-6">
-            <h2 className="text-4xl font-bold leading-none">Outsta</h2>
-            <p className="text-lg opacity-90 mt-2">Pre-Pitch Applicant Agreement</p>
+            <h2 className="text-4xl font-bold leading-none">OutSta</h2>
+            <p className="text-lg opacity-90 mt-2">Pre-Pitch Agreement</p>
           </div>
           <p className="text-lg text-muted-foreground leading-relaxed">
             Before we move forward with presenting you to our client, please read each term carefully and tick the box beside it to confirm your understanding. Sign and print your full name at the bottom. This agreement must be completed before we can proceed with your placement.
