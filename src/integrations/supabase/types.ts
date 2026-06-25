@@ -882,7 +882,7 @@ export type Database = {
           signed_pdf_sha256: string | null
           signing_token: string
           status: string
-          template_id: string
+          template_id: string | null
           updated_at: string
           viewed_at: string | null
           voided_at: string | null
@@ -917,7 +917,7 @@ export type Database = {
           signed_pdf_sha256?: string | null
           signing_token: string
           status?: string
-          template_id: string
+          template_id?: string | null
           updated_at?: string
           viewed_at?: string | null
           voided_at?: string | null
@@ -952,7 +952,7 @@ export type Database = {
           signed_pdf_sha256?: string | null
           signing_token?: string
           status?: string
-          template_id?: string
+          template_id?: string | null
           updated_at?: string
           viewed_at?: string | null
           voided_at?: string | null
