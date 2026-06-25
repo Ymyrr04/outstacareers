@@ -970,6 +970,7 @@ export type Database = {
       }
       contract_message_templates: {
         Row: {
+          category: string
           created_at: string
           created_by: string | null
           id: string
@@ -978,6 +979,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          category?: string
           created_at?: string
           created_by?: string | null
           id?: string
@@ -986,6 +988,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          category?: string
           created_at?: string
           created_by?: string | null
           id?: string
