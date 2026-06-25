@@ -227,12 +227,12 @@ export const SendEnvelopeDialog = ({ open, onOpenChange, onSent, lockedTemplateI
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-        <DialogHeader><DialogTitle>Send Contract for Signature</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{title || "Send Contract for Signature"}</DialogTitle></DialogHeader>
         <div className="space-y-3">
           <div className="grid grid-cols-2 gap-3">
             <div>
               <label className="text-sm font-medium">Template</label>
-              <Select value={templateId} onValueChange={setTemplateId}>
+              <Select value={templateId} onValueChange={setTemplateId} disabled={!!lockedTemplateId}>
                 <SelectTrigger><SelectValue placeholder="Select template" /></SelectTrigger>
                 <SelectContent>
                   {templates.map(t => <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>)}
