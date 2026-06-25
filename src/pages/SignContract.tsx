@@ -31,7 +31,7 @@ function renderMessage(raw: string): string {
 
 interface TemplateField {
   id: string;
-  field_type: "signature" | "initials" | "date" | "text" | "attachment";
+  field_type: "signature" | "initials" | "date" | "text" | "attachment" | "checkbox";
   page: number;
   x_pct: number;
   y_pct: number;
@@ -132,6 +132,7 @@ const SignContract = () => {
     const v = values[f.id];
     if (f.field_type === "attachment") return !!v?.signature_data_url;
     if (f.field_type === "signature" || f.field_type === "initials") return !!v?.signature_data_url;
+    if (f.field_type === "checkbox") return v?.value === "true";
     return !!v?.value;
   }).length;
   const requiredCount = signerFields.filter(f => f.required).length;
@@ -147,6 +148,8 @@ const SignContract = () => {
       const v = values[f.id];
       const ok = (f.field_type === "signature" || f.field_type === "initials" || f.field_type === "attachment")
         ? !!v?.signature_data_url
+        : f.field_type === "checkbox"
+        ? v?.value === "true"
         : !!v?.value;
       if (!ok) {
         toast.error(`Please complete: ${f.label || f.field_type}`);
