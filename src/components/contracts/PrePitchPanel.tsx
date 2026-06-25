@@ -8,7 +8,7 @@ import { Loader2, Send, Copy, Download, Ban, FileSignature, Trash2, RefreshCw, F
 import { toast } from "sonner";
 import { SendEnvelopeDialog } from "./SendEnvelopeDialog";
 
-const PRE_PITCH_TEMPLATE_NAME = "Outsta Pre-Pitch Applicant Agreement";
+const PRE_PITCH_TEMPLATE_NAME = "OutSta Pre-Pitch Agreement";
 
 interface Envelope {
   id: string;

@@ -12,7 +12,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const PRE_PITCH_TEMPLATE_NAME = "Outsta Pre-Pitch Applicant Agreement";
+const PRE_PITCH_TEMPLATE_NAME = "OutSta Pre-Pitch Agreement";
 
 const TERMS: { title: string; body: string }[] = [
   {
