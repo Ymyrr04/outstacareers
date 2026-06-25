@@ -326,9 +326,12 @@ Deno.serve(async (req) => {
     try {
       const gmailUser = Deno.env.get("MARK_GMAIL_USER")!;
       const gmailPassword = Deno.env.get("MARK_GMAIL_APP_PASSWORD")!;
-      const smtp = new SMTPClient({ connection: { hostname: "smtp.gmail.com", port: 465, tls: true, auth: { username: gmailUser, password: gmailPassword } } });
-      const signedB64 = btoa(String.fromCharCode(...pdfBytes));
-      const auditB64 = btoa(String.fromCharCode(...auditBytes));
+      const transporter = nodemailer.createTransport({
+        host: "smtp.gmail.com",
+        port: 465,
+        secure: true,
+        auth: { user: gmailUser, pass: gmailPassword },
+      });
       const recipients = [envelope.recipient_email];
       if (envelope.sender_email) recipients.push(envelope.sender_email);
 
@@ -360,18 +363,17 @@ Deno.serve(async (req) => {
         console.error("failed to resolve assigned admin for CC", ccErr);
       }
 
-      await smtp.send({
+      await transporter.sendMail({
         from: `OutSta Contracts <${gmailUser}>`,
         to: recipients,
         cc: ccList.length ? ccList : undefined,
         subject: `Signed: ${template.name}`,
         html: `<div style="font-family:Arial,sans-serif"><h2>Pre-Pitch Agreement signed</h2><p>${template.name} has been signed by ${envelope.recipient_name}.</p></div>`,
         attachments: [
-          { filename: "pre-pitch-signed.pdf", content: signedB64, encoding: "base64", contentType: "application/pdf" },
-          { filename: "audit-trail.pdf", content: auditB64, encoding: "base64", contentType: "application/pdf" },
+          { filename: "pre-pitch-signed.pdf", content: Buffer.from(pdfBytes), contentType: "application/pdf" },
+          { filename: "audit-trail.pdf", content: Buffer.from(auditBytes), contentType: "application/pdf" },
         ],
       });
-      await smtp.close();
     } catch (mailErr) {
       console.error("email failed", mailErr);
     }
