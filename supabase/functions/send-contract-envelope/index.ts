@@ -156,10 +156,15 @@ Deno.serve(async (req) => {
       </div>
     `;
 
+    const isPrepitch = body.category === "prepitch";
+    const subject = isPrepitch
+      ? "You're In — Quick Step Before We Present Your Profile!"
+      : `OutSta Agreement - ${body.recipientName}`;
+
     await client.send({
       from: `${senderDisplayName} <${gmailUser}>`,
       to: body.recipientEmail,
-      subject: `OutSta Agreement - ${body.recipientName}`,
+      subject,
       html,
       replyTo: userEmail || gmailUser,
     });
