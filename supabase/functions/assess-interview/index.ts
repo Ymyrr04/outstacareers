@@ -234,6 +234,26 @@ serve(async (req) => {
       );
     }
 
+    // Dedupe guard: if session is already completed with an AI assessment, skip re-running the AI.
+    {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      const { data: existing } = await supabase
+        .from('interview_sessions')
+        .select('status, ai_summary')
+        .eq('id', session_id)
+        .maybeSingle();
+      if (existing?.status === 'completed' && existing?.ai_summary) {
+        console.log(`Session ${session_id} already assessed — skipping redundant AI call.`);
+        return new Response(
+          JSON.stringify({ success: true, skipped: true, reason: 'already_assessed' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
+
     // Validate that answers have actual content
     const hasVoiceContent = answers.some(a => a.section === 'voice' && a.voice_recording_url);
     const hasTextContent = answers.some(a => a.section === 'text' && a.text_answer && a.text_answer.trim().length > 0);
