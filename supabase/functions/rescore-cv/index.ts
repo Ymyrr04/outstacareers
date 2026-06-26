@@ -171,7 +171,7 @@ serve(async (req) => {
     // Fetch applicant data
     const { data: applicant, error: fetchError } = await supabase
       .from('applicants_prescreen')
-      .select('id, full_name, job_title, cv_text, cv_file_url, job_id')
+      .select('id, full_name, job_title, cv_text, cv_file_url, job_id, file_hash, ai_summary')
       .eq('id', applicant_id)
       .single();
 
@@ -181,6 +181,44 @@ serve(async (req) => {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+
+    // Dedupe: if this applicant already has an AI summary and caller did not force, skip.
+    if (!force_vision && applicant.ai_summary && applicant.ai_summary.trim().length > 0) {
+      console.log(`Applicant ${applicant_id} already scored — skipping redundant AI call.`);
+      return new Response(JSON.stringify({ success: true, skipped: true, reason: 'already_scored' }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Dedupe: if another applicant with the same file_hash has already been scored,
+    // copy that score rather than re-running the AI.
+    if (!force_vision && applicant.file_hash) {
+      const { data: twin } = await supabase
+        .from('applicants_prescreen')
+        .select('ai_summary, scoring_breakdown, total_score')
+        .eq('file_hash', applicant.file_hash)
+        .neq('id', applicant_id)
+        .not('ai_summary', 'is', null)
+        .limit(1)
+        .maybeSingle();
+      if (twin?.ai_summary) {
+        await supabase
+          .from('applicants_prescreen')
+          .update({
+            ai_summary: twin.ai_summary,
+            scoring_breakdown: (twin as any).scoring_breakdown ?? null,
+            total_score: (twin as any).total_score ?? null,
+          })
+          .eq('id', applicant_id);
+        console.log(`Copied existing score from twin file_hash for applicant ${applicant_id}.`);
+        return new Response(JSON.stringify({ success: true, skipped: true, reason: 'reused_file_hash' }), {
+          status: 200,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+    }
+
 
     console.log(`Re-scoring CV for applicant: ${applicant.full_name} (${applicant_id})`);
     console.log(`CV text length: ${applicant.cv_text?.length || 0}`);
