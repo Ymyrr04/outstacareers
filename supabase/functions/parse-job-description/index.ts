@@ -1,4 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { logAiUsage } from "../_shared/logAiUsage.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
