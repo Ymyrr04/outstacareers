@@ -125,6 +125,12 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
+    logAiUsage({
+      functionName: 'submit-application:cv-scoring',
+      model: 'google/gemini-2.5-flash',
+      usage: data.usage,
+      context: { applicant_id: applicantId, job_title: jobTitle },
+    });
 
     if (!content) {
       console.error('[Background] No content in AI response');
