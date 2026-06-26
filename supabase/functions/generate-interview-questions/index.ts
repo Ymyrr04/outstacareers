@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { logAiUsage } from "../_shared/logAiUsage.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -255,6 +256,12 @@ Generate 3 voice questions and 1 text question. Each question's context must spe
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
+    logAiUsage({
+      functionName: 'generate-interview-questions',
+      model: 'google/gemini-3-flash-preview',
+      usage: data.usage,
+      context: { job_id: job_id ?? null, job_title },
+    });
 
     if (!content) {
       console.error('No content in AI response');

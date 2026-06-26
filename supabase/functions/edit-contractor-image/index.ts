@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { encode as base64Encode } from "https://deno.land/std@0.168.0/encoding/base64.ts";
+import { logAiUsage } from "../_shared/logAiUsage.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -81,6 +82,13 @@ serve(async (req) => {
 
     const data = await response.json();
     console.log("AI response received");
+    logAiUsage({
+      functionName: 'edit-contractor-image',
+      model: 'google/gemini-2.5-flash-image-preview',
+      usage: data.usage,
+      context: { name, role },
+    });
+
 
     const editedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
     const textContent = data.choices?.[0]?.message?.content;

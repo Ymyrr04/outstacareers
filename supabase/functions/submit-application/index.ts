@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logAiUsage } from "../_shared/logAiUsage.ts";
 
 // Declare EdgeRuntime for background tasks
 declare const EdgeRuntime: {
@@ -124,6 +125,12 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
+    logAiUsage({
+      functionName: 'submit-application:cv-scoring',
+      model: 'google/gemini-2.5-flash',
+      usage: data.usage,
+      context: { applicant_id: applicantId, job_title: jobTitle },
+    });
 
     if (!content) {
       console.error('[Background] No content in AI response');

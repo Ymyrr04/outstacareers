@@ -1,4 +1,5 @@
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
+import { logAiUsage } from "../_shared/logAiUsage.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -83,6 +84,12 @@ Return ONLY valid JSON, no markdown, no explanation.`;
 
     const data = await response.json();
     const aiResponse = data.choices?.[0]?.message?.content;
+    logAiUsage({
+      functionName: 'parse-job-description',
+      model: 'google/gemini-2.5-flash',
+      usage: data.usage,
+      context: { content_length: content.length },
+    });
 
     if (!aiResponse) {
       console.error('No AI response received');

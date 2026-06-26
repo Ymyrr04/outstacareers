@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient, SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logAiUsage } from "../_shared/logAiUsage.ts";
 
 // Declare EdgeRuntime for background tasks
 declare const EdgeRuntime: {
@@ -232,6 +233,26 @@ serve(async (req) => {
         { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
+
+    // Dedupe guard: if session is already completed with an AI assessment, skip re-running the AI.
+    {
+      const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
+      const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+      const supabase = createClient(supabaseUrl, supabaseServiceKey);
+      const { data: existing } = await supabase
+        .from('interview_sessions')
+        .select('status, ai_summary')
+        .eq('id', session_id)
+        .maybeSingle();
+      if (existing?.status === 'completed' && existing?.ai_summary) {
+        console.log(`Session ${session_id} already assessed — skipping redundant AI call.`);
+        return new Response(
+          JSON.stringify({ success: true, skipped: true, reason: 'already_assessed' }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    }
+
 
     // Validate that answers have actual content
     const hasVoiceContent = answers.some(a => a.section === 'voice' && a.voice_recording_url);
@@ -537,6 +558,12 @@ Provide your assessment. Return ONLY the JSON object.`;
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
+    logAiUsage({
+      functionName: 'assess-interview',
+      model: 'google/gemini-3-flash-preview',
+      usage: data.usage,
+      context: { session_id },
+    });
 
     if (!content) {
       console.error('No content in AI response');

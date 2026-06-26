@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { logAiUsage } from "../_shared/logAiUsage.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -133,6 +134,12 @@ If this is not a CV/resume, respond with: "EXTRACTION_FAILED: [reason]"`
 
     const visionData = await visionResponse.json();
     const extractedContent = visionData.choices?.[0]?.message?.content;
+    logAiUsage({
+      functionName: 'bulk-upload-cv:vision',
+      model: 'google/gemini-2.5-flash',
+      usage: visionData.usage,
+      context: { mimeType },
+    });
 
     if (!extractedContent || extractedContent.startsWith('EXTRACTION_FAILED:')) {
       console.error('Vision extraction failed:', extractedContent);
