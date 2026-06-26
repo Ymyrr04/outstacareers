@@ -338,6 +338,7 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
       functionName: 'rescore-cv:scoring',
       model: 'google/gemini-2.5-flash',
       usage: aiData.usage,
+      context: { applicant_id, job_id: applicant.job_id, extraction_method: extractionMethod },
     });
 
     if (!aiContent) {
