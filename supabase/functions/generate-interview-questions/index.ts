@@ -260,7 +260,7 @@ Generate 3 voice questions and 1 text question. Each question's context must spe
       functionName: 'generate-interview-questions',
       model: 'google/gemini-3-flash-preview',
       usage: data.usage,
-      context: { job_id: (req as any).job_id ?? null },
+      context: { job_id: job_id ?? null, job_title },
     });
 
     if (!content) {
