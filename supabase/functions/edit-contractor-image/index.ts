@@ -82,6 +82,13 @@ serve(async (req) => {
 
     const data = await response.json();
     console.log("AI response received");
+    logAiUsage({
+      functionName: 'edit-contractor-image',
+      model: 'google/gemini-2.5-flash-image-preview',
+      usage: data.usage,
+      context: { name, role },
+    });
+
 
     const editedImageUrl = data.choices?.[0]?.message?.images?.[0]?.image_url?.url;
     const textContent = data.choices?.[0]?.message?.content;
