@@ -256,6 +256,12 @@ Generate 3 voice questions and 1 text question. Each question's context must spe
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
+    logAiUsage({
+      functionName: 'generate-interview-questions',
+      model: 'google/gemini-3-flash-preview',
+      usage: data.usage,
+      context: { job_id: (req as any).job_id ?? null },
+    });
 
     if (!content) {
       console.error('No content in AI response');
