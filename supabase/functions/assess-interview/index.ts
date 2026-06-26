@@ -538,6 +538,12 @@ Provide your assessment. Return ONLY the JSON object.`;
 
     const data = await response.json();
     const content = data.choices?.[0]?.message?.content;
+    logAiUsage({
+      functionName: 'assess-interview',
+      model: 'google/gemini-3-flash-preview',
+      usage: data.usage,
+      context: { session_id },
+    });
 
     if (!content) {
       console.error('No content in AI response');
