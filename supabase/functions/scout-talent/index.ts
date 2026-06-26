@@ -290,6 +290,13 @@ Return the JSON array ranking these candidates with score_breakdown.`;
 
     const aiData = await aiResponse.json();
     let content = aiData.choices?.[0]?.message?.content || '';
+    logAiUsage({
+      functionName: 'scout-talent',
+      model: 'google/gemini-3-flash-preview',
+      usage: aiData.usage,
+      context: { job_title, candidates_evaluated: allCandidates.length },
+    });
+
 
     let jsonContent = content.trim();
     if (jsonContent.startsWith('```json')) jsonContent = jsonContent.slice(7);
