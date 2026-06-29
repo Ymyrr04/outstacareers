@@ -616,8 +616,8 @@ const TimesheetDetail = ({
                     {dailyEntries.map(([date, val]: [string, any]) => (
                       <TableRow key={date}>
                         <TableCell>
-                          <div className="font-medium">{format(new Date(`${date}T00:00:00`), 'EEEE')}</div>
-                          <div className="text-xs text-muted-foreground">{format(new Date(`${date}T00:00:00`), 'MMM d, yyyy')}</div>
+                          <div className="font-medium">{estWeekday(date)}</div>
+                          <div className="text-xs text-muted-foreground">{estMonthDay(date)}</div>
                         </TableCell>
                         <TableCell className="text-sm">{val?.time_in ? `${to12h(val.time_in)} EST` : '—'}</TableCell>
                         <TableCell className="text-sm">{val?.time_out ? `${to12h(val.time_out)} EST` : '—'}</TableCell>
