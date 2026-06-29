@@ -969,4 +969,88 @@ const ProfileField = ({
   </div>
 );
 
+const LeaveRequestsCard = ({ leaveRequests, assignments }: { leaveRequests: LeaveRequest[]; assignments: Assignment[] }) => {
+  const nameMap = useMemo(() => {
+    const m = new Map<string, { name: string; email: string }>();
+    assignments.forEach(a => m.set(a.id, { name: a.applicant?.full_name || 'Unknown', email: a.applicant?.email || '' }));
+    return m;
+  }, [assignments]);
+
+  const leaveStatusBadge = (s: string) => {
+    if (s === 'approved') return <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Approved</Badge>;
+    if (s === 'rejected') return <Badge className="bg-red-100 text-red-700 hover:bg-red-100">Rejected</Badge>;
+    return <Badge variant="secondary">Pending</Badge>;
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Leave Requests ({leaveRequests.length})</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {leaveRequests.length === 0 ? (
+          <div className="text-center text-sm text-muted-foreground py-8">No leave requests submitted.</div>
+        ) : (
+          <div className="border rounded-md overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Contractor</TableHead>
+                  <TableHead>Leave Date</TableHead>
+                  <TableHead>Period</TableHead>
+                  <TableHead>Type</TableHead>
+                  <TableHead>Compensation</TableHead>
+                  <TableHead>Submitted</TableHead>
+                  <TableHead>Status</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {leaveRequests.map(r => {
+                  const c = nameMap.get(r.contractor_assignment_id);
+                  return (
+                    <TableRow key={r.id}>
+                      <TableCell>
+                        <div className="font-medium">{c?.name || 'Unknown'}</div>
+                        <div className="text-xs text-muted-foreground">{c?.email}</div>
+                      </TableCell>
+                      <TableCell className="whitespace-nowrap">{estMonthDay(r.leave_date)}</TableCell>
+                      <TableCell className="whitespace-nowrap">
+                        {r.time_period}
+                        {r.specific_time && r.time_period !== 'All day' && (
+                          <div className="text-xs text-muted-foreground">{r.specific_time} ET</div>
+                        )}
+                      </TableCell>
+                      <TableCell className="max-w-[240px] whitespace-normal text-sm">
+                        {r.leave_type}
+                        {r.notes && (
+                          <div className="text-xs italic text-muted-foreground mt-1">{r.notes}</div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-sm whitespace-nowrap">
+                        {r.compensation_type || '—'}
+                        {r.compensation_note && (
+                          <div className="text-xs italic text-muted-foreground mt-1 whitespace-normal max-w-[200px]">{r.compensation_note}</div>
+                        )}
+                      </TableCell>
+                      <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
+                        {r.created_at ? estMonthDay(r.created_at) : '—'}
+                      </TableCell>
+                      <TableCell>
+                        {leaveStatusBadge(r.status)}
+                        {r.review_notes && (
+                          <div className="text-xs italic text-muted-foreground mt-1 max-w-[200px] whitespace-normal">{r.review_notes}</div>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
 export default ClientPortalDashboard;
