@@ -2480,7 +2480,7 @@ const PortalDashboard = () => {
 
       {/* Resolve missing hours: add split shift OR mark as undertime */}
       <Dialog open={!!splitDialogKey} onOpenChange={(o) => { if (!o) setSplitDialogKey(null); }}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-lg">
           {(() => {
             if (!splitDialogKey) return null;
             const k = splitDialogKey;
@@ -2505,7 +2505,7 @@ const PortalDashboard = () => {
                   <Button
                     type="button"
                     variant="outline"
-                    className="h-auto py-3 justify-start text-left"
+                    className="h-auto py-3 justify-start text-left whitespace-normal"
                     onClick={() => {
                       // Seed the split-shift row. Pre-fill time_in_2 with the first shift's
                       // time_out as a starting point; leave time_out_2 empty for the user to fill.
@@ -2516,8 +2516,8 @@ const PortalDashboard = () => {
                       setSplitDialogKey(null);
                     }}
                   >
-                    <Split className="h-4 w-4 mt-0.5 text-teal-600" />
-                    <div className="ml-2">
+                    <Split className="h-4 w-4 mt-0.5 text-teal-600 shrink-0" />
+                    <div className="ml-2 min-w-0">
                       <div className="font-semibold text-sm">Add a split shift</div>
                       <div className="text-xs text-muted-foreground">
                         Log a second time-in / time-out for this day (e.g. 8–10 AM and 4–10 PM).
