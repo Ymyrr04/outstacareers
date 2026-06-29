@@ -410,7 +410,7 @@ const ClientPortalDashboard = () => {
                               <div className="font-medium">{r.contractor_name}</div>
                               <div className="text-xs text-muted-foreground">{r.contractor_email}</div>
                             </TableCell>
-                            <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
+                            <TableCell>{format(new Date(`${r.week_ending_date}T00:00:00`), 'MMM d, yyyy')}</TableCell>
                             <TableCell className="text-right">
                               <div>{fmtHours((Number(r.total_hours) || 0) + sundayHrs)}</div>
                             </TableCell>
@@ -582,7 +582,7 @@ const TimesheetDetail = ({
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-base">
-              {row.contractor_name} <span className="text-muted-foreground font-normal">— week ending {format(new Date(row.week_ending_date), 'MMM d, yyyy')}</span>
+              {row.contractor_name} <span className="text-muted-foreground font-normal">— week ending {format(new Date(`${row.week_ending_date}T00:00:00`), 'MMM d, yyyy')}</span>
             </CardTitle>
             <div className="text-xs text-muted-foreground mt-1">
               Times shown in EST (Eastern Standard Time)
@@ -607,8 +607,8 @@ const TimesheetDetail = ({
                     {dailyEntries.map(([date, val]: [string, any]) => (
                       <TableRow key={date}>
                         <TableCell>
-                          <div className="font-medium">{format(new Date(date), 'EEEE')}</div>
-                          <div className="text-xs text-muted-foreground">{format(new Date(date), 'MMM d, yyyy')}</div>
+                          <div className="font-medium">{format(new Date(`${date}T00:00:00`), 'EEEE')}</div>
+                          <div className="text-xs text-muted-foreground">{format(new Date(`${date}T00:00:00`), 'MMM d, yyyy')}</div>
                         </TableCell>
                         <TableCell className="text-sm">{val?.time_in ? `${to12h(val.time_in)} EST` : '—'}</TableCell>
                         <TableCell className="text-sm">{val?.time_out ? `${to12h(val.time_out)} EST` : '—'}</TableCell>
