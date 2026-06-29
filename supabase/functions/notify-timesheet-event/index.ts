@@ -168,6 +168,23 @@ function timesheetSummary(ts: any, applicant: any, client: any) {
   `;
 }
 
+// Client-facing summary — mirrors the client portal view.
+// Excludes pay/rate/incentive fields. Strips payoneer links from notes.
+function timesheetSummaryForClient(ts: any, applicant: any, client: any) {
+  const cleanedNotes = (ts.notes || "")
+    .replace(/https?:\/\/(?:www\.)?payoneer\.com\/[^\s<>"']*/gi, "")
+    .replace(/payoneer\.com\/[^\s<>"']*/gi, "")
+    .trim();
+  return `
+    <p><strong>Contractor:</strong> ${applicant?.full_name || "—"}<br/>
+    <strong>Client:</strong> ${client?.company_name || "—"}<br/>
+    <strong>Week ending:</strong> ${fmtDate(ts.week_ending_date)}<br/>
+    <strong>Total hours:</strong> ${Number(ts.total_hours || 0).toFixed(2)}</p>
+    ${dailyTable(ts.daily_hours)}
+    ${cleanedNotes ? `<p><strong>Contractor notes:</strong><br/>${cleanedNotes.replace(/\n/g, "<br/>")}</p>` : ""}
+  `;
+}
+
 async function handleTimesheetEvent(event: EventType, timesheetId: string, reason?: string, reviewerName?: string) {
   const { ts, applicant, client, assign } = await loadTimesheet(timesheetId);
   const contractorEmail = applicant?.email;
