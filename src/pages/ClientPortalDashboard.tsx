@@ -654,8 +654,18 @@ const TimesheetDetail = ({
                           <div className="font-medium">{estWeekday(date)}</div>
                           <div className="text-xs text-muted-foreground">{estMonthDay(date)}</div>
                         </TableCell>
-                        <TableCell className="text-sm">{val?.time_in ? `${to12h(val.time_in)} EST` : '—'}</TableCell>
-                        <TableCell className="text-sm">{val?.time_out ? `${to12h(val.time_out)} EST` : '—'}</TableCell>
+                        <TableCell className="text-sm">
+                          {val?.time_in ? `${to12h(val.time_in)} EST` : '—'}
+                          {val?.time_in_2 ? (
+                            <div className="text-xs text-muted-foreground mt-0.5">+ {to12h(val.time_in_2)} EST</div>
+                          ) : null}
+                        </TableCell>
+                        <TableCell className="text-sm">
+                          {val?.time_out ? `${to12h(val.time_out)} EST` : '—'}
+                          {val?.time_out_2 ? (
+                            <div className="text-xs text-muted-foreground mt-0.5">+ {to12h(val.time_out_2)} EST</div>
+                          ) : null}
+                        </TableCell>
                         <TableCell className="text-right">{fmtHours(val?.hours || 0)}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{val?.reason || ''}</TableCell>
                       </TableRow>
