@@ -242,6 +242,10 @@ const ClientPortalDashboard = () => {
         event_type: 'approved',
       });
 
+      supabase.functions.invoke('notify-timesheet-event', {
+        body: { event: 'timesheet_approved', timesheetId: selected.id, reviewerName: userEmail || 'Client', source: 'client' },
+      }).catch((e) => console.error('notify invoke failed', e));
+
       toast({ title: 'Timesheet approved', description: `${selected.contractor_name} — week ending ${selected.week_ending_date}` });
       await loadData(clientId);
       setSelected(null);
@@ -278,6 +282,10 @@ const ClientPortalDashboard = () => {
         event_type: 'flagged',
         reason: flagReason.trim(),
       });
+
+      supabase.functions.invoke('notify-timesheet-event', {
+        body: { event: 'timesheet_flagged', timesheetId: selected.id, reason: flagReason.trim(), reviewerName: userEmail || 'Client', source: 'client' },
+      }).catch((e) => console.error('notify invoke failed', e));
 
       toast({ title: 'Flagged for review', description: 'Our team has been notified.' });
       setFlagOpen(false);

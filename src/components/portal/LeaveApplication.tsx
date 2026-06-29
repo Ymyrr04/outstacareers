@@ -148,7 +148,7 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
     if (otherChecked) types.push(`Other: ${otherText.trim()}`);
     setSubmitting(true);
     try {
-      const { error } = await supabase.from('contractor_leave_applications' as any).insert({
+      const { data: inserted, error } = await supabase.from('contractor_leave_applications' as any).insert({
         contractor_assignment_id: contractorAssignmentId,
         leave_date: format(leaveDate, 'yyyy-MM-dd'),
         time_period: timePeriod,
@@ -159,8 +159,16 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
         compensation_note: compensationType === 'Time compensation' ? compensationNote.trim() : null,
         notes: notes.trim() || null,
         client_informed_approved: true,
-      });
+      }).select('id').maybeSingle();
       if (error) throw error;
+
+      const leaveId = (inserted as any)?.id;
+      if (leaveId) {
+        supabase.functions.invoke('notify-timesheet-event', {
+          body: { event: 'leave_submitted', leaveId },
+        }).catch((e) => console.error('notify invoke failed', e));
+      }
+
       toast({ title: 'Leave application submitted', description: 'Your request has been sent for review.' });
       setConfirmOpen(false);
       reset();

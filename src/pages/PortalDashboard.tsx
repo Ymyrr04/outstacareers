@@ -1012,6 +1012,15 @@ const PortalDashboard = () => {
       if (extraAmt > 0 && extraReason.trim()) noteParts.push(`Extra amount ($${extraAmt.toFixed(2)}): ${extraReason.trim()}`);
       const combinedNotes = noteParts.join('\n\n');
 
+      // Detect if this is a resubmission of a previously flagged timesheet
+      const prior = timesheets.find((t) => t.id === editingId);
+      const wasFlagged = !!prior && (
+        prior.client_approval_status === 'flagged' ||
+        prior.outsta_status === 'flagged' ||
+        prior.status === 'flagged' ||
+        prior.status === 'rejected'
+      );
+
       const { error } = await supabase.from('contractor_timesheets').upsert({
         contractor_assignment_id: info.contractor_assignment_id,
         week_ending_date: weekEnding,
@@ -1022,12 +1031,34 @@ const PortalDashboard = () => {
         daily_hours: dailyPayload,
         status: needsApproval ? 'pending_approval' : 'submitted',
         submitted_at: new Date().toISOString(),
+        ...(wasFlagged ? { client_approval_status: 'pending', client_flag_reason: null, outsta_status: 'pending' } : {}),
       }, { onConflict: 'contractor_assignment_id,week_ending_date' });
       if (error) throw error;
       toast({
         title: editingId ? 'Timesheet updated' : 'Timesheet submitted',
         description: needsApproval ? 'Days over 10 hours are pending admin approval.' : undefined,
       });
+
+      // Fire email notifications (non-blocking)
+      try {
+        const { data: tsRow } = await supabase
+          .from('contractor_timesheets')
+          .select('id')
+          .eq('contractor_assignment_id', info.contractor_assignment_id)
+          .eq('week_ending_date', weekEnding)
+          .maybeSingle();
+        if (tsRow?.id) {
+          supabase.functions.invoke('notify-timesheet-event', {
+            body: {
+              event: wasFlagged ? 'timesheet_resubmitted' : 'timesheet_submitted',
+              timesheetId: tsRow.id,
+            },
+          }).catch((e) => console.error('notify invoke failed', e));
+        }
+      } catch (e) {
+        console.error('notify lookup failed', e);
+      }
+
       handleCancelEdit();
       loadAll();
     } catch (err: any) {

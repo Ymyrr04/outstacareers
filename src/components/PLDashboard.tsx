@@ -655,6 +655,18 @@ export const PLDashboard = () => {
     }
     setRows((prev) => prev.map((x) => (x.id === r.id ? { ...x, outsta_status: newStatus } : x)));
     toast({ title: `OutSta status: ${newStatus}` });
+
+    if (newStatus === 'approved' || newStatus === 'flagged') {
+      supabase.functions.invoke('notify-timesheet-event', {
+        body: {
+          event: newStatus === 'approved' ? 'timesheet_approved' : 'timesheet_flagged',
+          timesheetId: r.id,
+          reason: newStatus === 'flagged' ? (r.client_flag_reason || 'Flagged by OutSta admin for review.') : undefined,
+          reviewerName: 'OutSta admin',
+          source: 'admin',
+        },
+      }).catch((e) => console.error('notify invoke failed', e));
+    }
   };
 
   const STATUS_PILL: Record<string, string> = {
