@@ -251,7 +251,7 @@ async function handleTimesheetEvent(event: EventType, timesheetId: string, reaso
   if (event === "timesheet_approved") {
     await send(
       contractorEmail,
-      undefined,
+      ["liezl@outsta.io"],
       `Timesheet approved — week ending ${fmtDate(ts.week_ending_date)}`,
       wrap(
         "Timesheet approved ✅",
