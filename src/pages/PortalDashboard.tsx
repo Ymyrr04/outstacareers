@@ -180,7 +180,9 @@ const DEFAULT_WORK_DAYS: string[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 interface DayEntry {
   time_in: string;  // "HH:MM" 24h
   time_out: string; // "HH:MM" 24h
-  hours: string;    // computed string e.g. "8.50"
+  time_in_2?: string;  // optional second/split shift "HH:MM" 24h
+  time_out_2?: string; // optional second/split shift "HH:MM" 24h
+  hours: string;    // computed string e.g. "8.50" (sum of both shifts)
   reason: string;
 }
 interface Timesheet {
@@ -193,7 +195,7 @@ interface Timesheet {
   status: string;
   outsta_status?: string | null;
   submitted_at: string;
-  daily_hours: Record<string, { hours: number; time_in?: string; time_out?: string; reason?: string }> | null;
+  daily_hours: Record<string, { hours: number; time_in?: string; time_out?: string; time_in_2?: string; time_out_2?: string; reason?: string }> | null;
   client_approval_status?: string | null;
   client_flag_reason?: string | null;
   client_reviewed_at?: string | null;
