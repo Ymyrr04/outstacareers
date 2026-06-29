@@ -85,6 +85,15 @@ const fmtHours = (n: number) => {
   return Number.isInteger(v) ? v.toString() : v.toFixed(2).replace(/\.?0+$/, '');
 };
 
+// Format a YYYY-MM-DD (or ISO) date in EST, regardless of viewer timezone.
+const fmtDateEST = (dateStr: string, opts: Intl.DateTimeFormatOptions) => {
+  const iso = /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? `${dateStr}T12:00:00Z` : dateStr;
+  return new Intl.DateTimeFormat('en-US', { ...opts, timeZone: 'America/New_York' }).format(new Date(iso));
+};
+const estWeekday = (dateStr: string) => fmtDateEST(dateStr, { weekday: 'long' });
+const estMonthDay = (dateStr: string) => fmtDateEST(dateStr, { month: 'short', day: 'numeric', year: 'numeric' });
+
+
 const ClientPortalDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
