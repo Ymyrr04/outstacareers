@@ -45,6 +45,22 @@ interface Timesheet {
   locked: boolean;
 }
 
+interface LeaveRequest {
+  id: string;
+  contractor_assignment_id: string;
+  leave_date: string;
+  time_period: string;
+  specific_time: string | null;
+  leave_type: string;
+  leave_type_other: string | null;
+  compensation_type: string | null;
+  compensation_note: string | null;
+  notes: string | null;
+  status: string;
+  review_notes: string | null;
+  created_at: string;
+}
+
 type RowView = Timesheet & {
   contractor_name: string;
   contractor_email: string;
