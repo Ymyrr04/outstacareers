@@ -169,10 +169,11 @@ function timesheetSummary(ts: any, applicant: any, client: any) {
 }
 
 // Client-facing summary — mirrors the client portal view.
-// Excludes pay/rate/incentive fields. Strips payoneer links from notes.
+// Excludes pay/rate/incentive fields. Strips payoneer links and placeholder note links from notes.
 function timesheetSummaryForClient(ts: any, applicant: any, client: any) {
   const cleanedNotes = (ts.notes || "")
     .replace(/https?:\/\/(?:www\.)?payoneer\.com\/[^\s<>"']*/gi, "")
+    .replace(/https?:\/\/[^\s<>"']*/gi, "")
     .replace(/payoneer\.com\/[^\s<>"']*/gi, "")
     .trim();
   return `
