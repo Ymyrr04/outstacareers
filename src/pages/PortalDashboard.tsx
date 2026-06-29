@@ -1971,7 +1971,7 @@ const PortalDashboard = () => {
                             />
                           </div>
                           </div>
-                          </div>
+
 
                           {hasSplit && (
                             <div className="mt-2 grid grid-cols-1 md:grid-cols-[110px_100px_100px_72px_1fr] gap-2.5 md:gap-3 items-center">
