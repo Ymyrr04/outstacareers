@@ -183,7 +183,7 @@ const ClientPortalDashboard = () => {
 
 
     const ids = (ca || []).map((c: any) => c.id);
-    if (ids.length === 0) { setTimesheets([]); return; }
+    if (ids.length === 0) { setTimesheets([]); setLeaveRequests([]); return; }
 
     const { data: ts, error: tsErr } = await supabase
       .from('contractor_timesheets')
@@ -192,6 +192,14 @@ const ClientPortalDashboard = () => {
       .order('week_ending_date', { ascending: false });
     if (tsErr) console.error(tsErr);
     setTimesheets((ts || []) as any);
+
+    const { data: lv, error: lvErr } = await supabase
+      .from('contractor_leave_applications' as any)
+      .select('id, contractor_assignment_id, leave_date, time_period, specific_time, leave_type, leave_type_other, compensation_type, compensation_note, notes, status, review_notes, created_at')
+      .in('contractor_assignment_id', ids)
+      .order('leave_date', { ascending: false });
+    if (lvErr) console.error(lvErr);
+    setLeaveRequests(((lv as any) || []) as LeaveRequest[]);
   };
 
   const rows: RowView[] = useMemo(() => {
