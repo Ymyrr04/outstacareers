@@ -1843,11 +1843,18 @@ const PortalDashboard = () => {
                         ? 'border-l-4 border-l-amber-500'
                         : '';
 
+                      const hasSplit = !!(entry.time_in_2 || entry.time_out_2);
+                      const shortBy = perDayExpected != null && validHours < perDayExpected
+                        ? Number((perDayExpected - validHours).toFixed(2))
+                        : 0;
+
                       return (
                         <div
                           key={k}
-                          className={`grid grid-cols-1 md:grid-cols-[110px_100px_100px_72px_1fr] gap-2.5 md:gap-3 px-4 py-3 items-center border-b last:border-b-0 ${leftBorder} ${rowBg}`}
+                          className={`px-4 py-3 border-b last:border-b-0 ${leftBorder} ${rowBg}`}
                         >
+                          <div className="grid grid-cols-1 md:grid-cols-[110px_100px_100px_72px_1fr] gap-2.5 md:gap-3 items-center">
+
 
                           <div>
                             <div className="font-semibold text-sm">{label}</div>
