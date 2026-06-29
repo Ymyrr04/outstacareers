@@ -142,14 +142,28 @@ function fmtDate(d: string) {
   }
 }
 
+function fmtTime12(t: string) {
+  // Convert "HH:MM" or "H:MM" to 12-hour "h:mm AM/PM"
+  if (!t || typeof t !== "string") return t;
+  const [hStr, mStr] = t.split(":");
+  if (!hStr || !mStr) return t;
+  let h = parseInt(hStr, 10);
+  const m = parseInt(mStr, 10);
+  if (Number.isNaN(h) || Number.isNaN(m)) return t;
+  const ampm = h >= 12 ? "PM" : "AM";
+  h = h % 12 || 12;
+  const mm = m.toString().padStart(2, "0");
+  return `${h}:${mm} ${ampm}`;
+}
+
 function dailyTable(daily: Record<string, any> | null | undefined) {
   if (!daily) return "";
   const keys = Object.keys(daily).filter((k) => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
   if (!keys.length) return "";
   const rows = keys.map((k) => {
     const d = daily[k] || {};
-    const t1 = d.time_in && d.time_out ? `${d.time_in}–${d.time_out}` : "";
-    const t2 = d.time_in_2 && d.time_out_2 ? ` &nbsp;|&nbsp; ${d.time_in_2}–${d.time_out_2}` : "";
+    const t1 = d.time_in && d.time_out ? `${fmtTime12(d.time_in)}–${fmtTime12(d.time_out)}` : "";
+    const t2 = d.time_in_2 && d.time_out_2 ? ` &nbsp;|&nbsp; ${fmtTime12(d.time_in_2)}–${fmtTime12(d.time_out_2)}` : "";
     return `<tr><td style="padding:6px 10px;border-bottom:1px solid #eef0f3">${d.weekday || ""} ${fmtDate(k)}</td><td style="padding:6px 10px;border-bottom:1px solid #eef0f3">${Number(d.hours || 0).toFixed(2)} hrs</td><td style="padding:6px 10px;border-bottom:1px solid #eef0f3;color:#475569">${t1}${t2}</td></tr>`;
   }).join("");
   return `<table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:13px"><thead><tr style="background:#f1f5f9;text-align:left"><th style="padding:6px 10px">Day</th><th style="padding:6px 10px">Hours</th><th style="padding:6px 10px">Time</th></tr></thead><tbody>${rows}</tbody></table>`;
