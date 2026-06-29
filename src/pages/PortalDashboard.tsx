@@ -2463,10 +2463,12 @@ const PortalDashboard = () => {
                     variant="outline"
                     className="h-auto py-3 justify-start text-left"
                     onClick={() => {
-                      // Seed a sensible default for second shift: start it at the next hour after first shift ends
-                      updateDay(k, { time_in_2: entry.time_in_2 || '', time_out_2: entry.time_out_2 || '' });
-                      // Force-show split shift row by setting an empty string (truthy via hasSplit checks falsy values, so use a space-safe approach)
-                      updateDay(k, { time_in_2: entry.time_in_2 || '00:00', time_out_2: entry.time_out_2 || '00:00' });
+                      // Seed the split-shift row. Pre-fill time_in_2 with the first shift's
+                      // time_out as a starting point; leave time_out_2 empty for the user to fill.
+                      updateDay(k, {
+                        time_in_2: entry.time_in_2 || entry.time_out || '',
+                        time_out_2: entry.time_out_2 || '',
+                      });
                       setSplitDialogKey(null);
                     }}
                   >
