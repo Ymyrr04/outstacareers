@@ -2047,16 +2047,29 @@ const PortalDashboard = () => {
 
                           {!hasSplit && isMissing && validHours > 0 && shortBy > 0.01 && (
                             <div className="mt-2 flex items-center gap-2">
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setSplitDialogKey(k)}
-                                className="h-8 border-red-500/60 text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40"
-                              >
-                                <Split className="h-3.5 w-3.5" />
-                                Missing {shortBy.toFixed(2)} hrs — Add split shift or mark as undertime
-                              </Button>
+                              {entry.reason?.trim() ? (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setSplitDialogKey(k)}
+                                  className="h-8 border-amber-500/60 text-amber-700 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/40"
+                                >
+                                  <AlertTriangle className="h-3.5 w-3.5" />
+                                  Undertime explained ({shortBy.toFixed(2)} hrs short) — edit
+                                </Button>
+                              ) : (
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => setSplitDialogKey(k)}
+                                  className="h-8 border-red-500/60 text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40"
+                                >
+                                  <Split className="h-3.5 w-3.5" />
+                                  Missing {shortBy.toFixed(2)} hrs — Add split shift or mark as undertime
+                                </Button>
+                              )}
                             </div>
                           )}
                         </div>
