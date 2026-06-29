@@ -517,6 +517,8 @@ const PortalDashboard = () => {
   const [missingDays, setMissingDays] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [tutorialOpen, setTutorialOpen] = useState(false);
+  // When set, opens the "Resolve missing hours" dialog for the given date key.
+  const [splitDialogKey, setSplitDialogKey] = useState<string | null>(null);
 
   const emptyProfileForm: ProfileForm = {
     full_name: '', phone: '', whatsapp: '', location: '', country: '',
