@@ -169,10 +169,11 @@ function timesheetSummary(ts: any, applicant: any, client: any) {
 }
 
 // Client-facing summary — mirrors the client portal view.
-// Excludes pay/rate/incentive fields. Strips payoneer links from notes.
+// Excludes pay/rate/incentive fields. Strips payoneer links and placeholder note links from notes.
 function timesheetSummaryForClient(ts: any, applicant: any, client: any) {
   const cleanedNotes = (ts.notes || "")
     .replace(/https?:\/\/(?:www\.)?payoneer\.com\/[^\s<>"']*/gi, "")
+    .replace(/https?:\/\/[^\s<>"']*/gi, "")
     .replace(/payoneer\.com\/[^\s<>"']*/gi, "")
     .trim();
   return `
@@ -218,7 +219,7 @@ async function handleTimesheetEvent(event: EventType, timesheetId: string, reaso
           : `New timesheet from ${contractorName} — week ending ${fmtDate(ts.week_ending_date)}`,
         wrap(
           isResub ? "Updated timesheet to review" : "New timesheet to review",
-          `<p>Hello,</p><p>${contractorName} ${isResub ? "submitted an updated timesheet for the previously flagged week" : "submitted a new timesheet"}. Please review and approve or flag in your client portal.</p>${timesheetSummaryForClient(ts, applicant, client)}<p><a href="https://outstahub.com/client" style="display:inline-block;padding:10px 16px;background:#0f172a;color:#fff;text-decoration:none;border-radius:6px">Open client portal</a></p>`
+          `<p>Hello,</p><p>${contractorName} ${isResub ? "submitted an updated timesheet for the previously flagged week" : "submitted a new timesheet"}. Please review and approve or flag in your client portal.</p>${timesheetSummaryForClient(ts, applicant, client)}<p><a href="https://outstaworkforce.com/client" style="display:inline-block;padding:10px 16px;background:#0f172a;color:#fff;text-decoration:none;border-radius:6px">Open client portal</a></p>`
         )
       );
     }
