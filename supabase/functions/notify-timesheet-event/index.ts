@@ -283,14 +283,16 @@ async function handleLeaveSubmitted(leaveId: string) {
     .maybeSingle();
 
   let contractorName = "Contractor";
+  let contractorEmail: string | null = null;
   let companyName = "—";
   if (assign?.applicant_id) {
     const { data: a } = await supabase
       .from("applicants_prescreen")
-      .select("full_name")
+      .select("full_name, email")
       .eq("id", assign.applicant_id)
       .maybeSingle();
     if (a?.full_name) contractorName = a.full_name;
+    if (a?.email) contractorEmail = a.email;
   }
   if (assign?.client_id) {
     const { data: c } = await supabase.from("clients").select("company_name").eq("id", assign.client_id).maybeSingle();
@@ -312,10 +314,11 @@ async function handleLeaveSubmitted(leaveId: string) {
   const subject = `Leave request: ${contractorName} — ${fmtDate(leave.leave_date)}`;
   const html = wrap("New leave request", `<p>A new leave request has been submitted.</p>${summary}`);
 
-  const adminEmails = await getAdminEmails();
   const clientEmails = assign?.client_id ? await getClientEmails(assign.client_id) : [];
+  const recipients = [contractorEmail, ...clientEmails].filter(Boolean);
+  const cc = ["mark@outsta.io", "liezl@outsta.io"];
 
-  await send(adminEmails, clientEmails, subject, html);
+  await send(recipients, cc, subject, html);
 }
 
 Deno.serve(async (req) => {
