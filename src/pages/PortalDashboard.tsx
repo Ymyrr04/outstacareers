@@ -1970,6 +1970,64 @@ const PortalDashboard = () => {
                               className={`bg-background border-2 h-10 ${borderTone}`}
                             />
                           </div>
+                          </div>
+                          </div>
+
+                          {hasSplit && (
+                            <div className="mt-2 grid grid-cols-1 md:grid-cols-[110px_100px_100px_72px_1fr] gap-2.5 md:gap-3 items-center">
+                              <div className="text-[11px] font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300">
+                                Split shift
+                              </div>
+                              <div className="space-y-1">
+                                <Label htmlFor={`tin2-${k}`} className="text-[11px] font-medium text-muted-foreground">Time in (2nd)</Label>
+                                <FlexibleTimeInput
+                                  id={`tin2-${k}`}
+                                  value={entry.time_in_2 || ''}
+                                  onChange={(v) => updateDay(k, { time_in_2: v })}
+                                  ariaLabel={`${label} ${format(date, 'MMM d')} second shift time in`}
+                                  className={timeInputClass}
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label htmlFor={`tout2-${k}`} className="text-[11px] font-medium text-muted-foreground">Time out (2nd)</Label>
+                                <FlexibleTimeInput
+                                  id={`tout2-${k}`}
+                                  value={entry.time_out_2 || ''}
+                                  onChange={(v) => updateDay(k, { time_out_2: v })}
+                                  ariaLabel={`${label} ${format(date, 'MMM d')} second shift time out`}
+                                  className={timeInputClass}
+                                />
+                              </div>
+                              <div />
+                              <div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => updateDay(k, { time_in_2: '', time_out_2: '' })}
+                                  className="h-8 text-xs text-muted-foreground hover:text-destructive"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                  Remove split shift
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+
+                          {!hasSplit && isMissing && validHours > 0 && shortBy > 0.01 && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSplitDialogKey(k)}
+                                className="h-8 border-red-500/60 text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40"
+                              >
+                                <Split className="h-3.5 w-3.5" />
+                                Missing {shortBy.toFixed(2)} hrs — Add split shift or mark as undertime
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
