@@ -410,7 +410,7 @@ const ClientPortalDashboard = () => {
                               <div className="font-medium">{r.contractor_name}</div>
                               <div className="text-xs text-muted-foreground">{r.contractor_email}</div>
                             </TableCell>
-                            <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
+                            <TableCell>{format(new Date(`${r.week_ending_date}T00:00:00`), 'MMM d, yyyy')}</TableCell>
                             <TableCell className="text-right">
                               <div>{fmtHours((Number(r.total_hours) || 0) + sundayHrs)}</div>
                             </TableCell>
