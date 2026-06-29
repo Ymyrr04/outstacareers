@@ -1309,7 +1309,8 @@ const PortalDashboard = () => {
   const fillRegular = (k: string) => {
     if (!hasRegularShift) return;
     if (isRegularApplied(k)) {
-      updateDay(k, { time_in: '', time_out: '' });
+      // Clear primary shift AND any split shift on this day
+      updateDay(k, { time_in: '', time_out: '', time_in_2: '', time_out_2: '' });
     } else {
       updateDay(k, { time_in: regularShift24.start, time_out: regularShift24.end });
     }
@@ -1326,7 +1327,7 @@ const PortalDashboard = () => {
           time_in: regularShift24.start,
           time_out: regularShift24.end,
         };
-        const h = computeHours(merged.time_in, merged.time_out, info?.break_duration_minutes, info?.break_is_paid);
+        const h = computeDayBillable(merged, info?.break_duration_minutes, info?.break_is_paid);
         merged.hours = h > 0 ? String(h) : '';
         next[k] = merged;
       });
