@@ -283,6 +283,10 @@ const ClientPortalDashboard = () => {
         reason: flagReason.trim(),
       });
 
+      supabase.functions.invoke('notify-timesheet-event', {
+        body: { event: 'timesheet_flagged', timesheetId: selected.id, reason: flagReason.trim(), reviewerName: userEmail || 'Client', source: 'client' },
+      }).catch((e) => console.error('notify invoke failed', e));
+
       toast({ title: 'Flagged for review', description: 'Our team has been notified.' });
       setFlagOpen(false);
       setFlagReason('');
