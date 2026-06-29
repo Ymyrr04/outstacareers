@@ -2527,8 +2527,8 @@ const PortalDashboard = () => {
 
                   <div className="rounded-md border p-3 space-y-2">
                     <div className="flex items-start gap-2">
-                      <AlertTriangle className="h-4 w-4 mt-0.5 text-amber-600" />
-                      <div>
+                      <AlertTriangle className="h-4 w-4 mt-0.5 text-amber-600 shrink-0" />
+                      <div className="min-w-0">
                         <div className="font-semibold text-sm">Mark as undertime</div>
                         <div className="text-xs text-muted-foreground">
                           Keep the logged {logged.toFixed(2)} hrs and explain why you were short.
