@@ -2434,6 +2434,97 @@ const PortalDashboard = () => {
         </AlertDialogContent>
       </AlertDialog>
 
+      {/* Resolve missing hours: add split shift OR mark as undertime */}
+      <Dialog open={!!splitDialogKey} onOpenChange={(o) => { if (!o) setSplitDialogKey(null); }}>
+        <DialogContent className="sm:max-w-md">
+          {(() => {
+            if (!splitDialogKey) return null;
+            const k = splitDialogKey;
+            const entry = days[k];
+            if (!entry) return null;
+            const dLabel = dayLabel(k);
+            const dateStr = format(new Date(k + 'T00:00:00'), 'MMM d, yyyy');
+            const logged = computeDayBillable(entry, info?.break_duration_minutes, info?.break_is_paid);
+            const expected = perDayExpected ?? 0;
+            const short = Math.max(0, Number((expected - logged).toFixed(2)));
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Missing hours on {dLabel}</DialogTitle>
+                  <DialogDescription>
+                    {dateStr} — You logged <strong>{logged.toFixed(2)} hrs</strong> of {expected.toFixed(2)} hrs expected
+                    ({short.toFixed(2)} hrs short). How would you like to resolve this?
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="grid gap-3 py-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-auto py-3 justify-start text-left"
+                    onClick={() => {
+                      // Seed a sensible default for second shift: start it at the next hour after first shift ends
+                      updateDay(k, { time_in_2: entry.time_in_2 || '', time_out_2: entry.time_out_2 || '' });
+                      // Force-show split shift row by setting an empty string (truthy via hasSplit checks falsy values, so use a space-safe approach)
+                      updateDay(k, { time_in_2: entry.time_in_2 || '00:00', time_out_2: entry.time_out_2 || '00:00' });
+                      setSplitDialogKey(null);
+                    }}
+                  >
+                    <Split className="h-4 w-4 mt-0.5 text-teal-600" />
+                    <div className="ml-2">
+                      <div className="font-semibold text-sm">Add a split shift</div>
+                      <div className="text-xs text-muted-foreground">
+                        Log a second time-in / time-out for this day (e.g. 8–10 AM and 4–10 PM).
+                      </div>
+                    </div>
+                  </Button>
+
+                  <div className="rounded-md border p-3 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 mt-0.5 text-amber-600" />
+                      <div>
+                        <div className="font-semibold text-sm">Mark as undertime</div>
+                        <div className="text-xs text-muted-foreground">
+                          Keep the logged {logged.toFixed(2)} hrs and explain why you were short.
+                        </div>
+                      </div>
+                    </div>
+                    <Label htmlFor="undertime-reason" className="text-xs font-medium">Reason for undertime</Label>
+                    <Input
+                      id="undertime-reason"
+                      placeholder="e.g. left early — doctor's appointment"
+                      value={entry.reason || ''}
+                      onChange={(e) => updateDay(k, { reason: e.target.value })}
+                      autoFocus
+                    />
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => {
+                          if (!days[k]?.reason?.trim()) {
+                            toast({ title: 'Reason required', description: 'Please provide a reason for the undertime.', variant: 'destructive' });
+                            return;
+                          }
+                          setSplitDialogKey(null);
+                        }}
+                      >
+                        Save undertime
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => setSplitDialogKey(null)}>Close</Button>
+                </DialogFooter>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
+
       {/* Submission confirmation */}
       <AlertDialog
         open={confirmOpen}
