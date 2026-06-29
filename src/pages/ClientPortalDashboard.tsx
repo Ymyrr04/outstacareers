@@ -591,7 +591,7 @@ const TimesheetDetail = ({
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-base">
-              {row.contractor_name} <span className="text-muted-foreground font-normal">— week ending {format(new Date(`${row.week_ending_date}T00:00:00`), 'MMM d, yyyy')}</span>
+              {row.contractor_name} <span className="text-muted-foreground font-normal">— week ending {estMonthDay(row.week_ending_date)}</span>
             </CardTitle>
             <div className="text-xs text-muted-foreground mt-1">
               Times shown in EST (Eastern Standard Time)
