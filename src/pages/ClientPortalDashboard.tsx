@@ -568,7 +568,7 @@ const TimesheetDetail = ({
   const excludeSunday = row.sunday_hours_excluded;
   const sundayHours = excludeSunday
     ? dailyEntries.reduce((s, [date, val]: [string, any]) => {
-        const isSunday = new Date(`${date}T00:00:00`).getDay() === 0;
+        const isSunday = estWeekday(date) === 'Sunday';
         return s + (isSunday ? (parseFloat(val?.hours) || 0) : 0);
       }, 0)
     : 0;
