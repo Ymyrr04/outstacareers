@@ -1070,6 +1070,8 @@ const PortalDashboard = () => {
         if (d) next[k] = {
           time_in: d.time_in || '',
           time_out: d.time_out || '',
+          time_in_2: d.time_in_2 || '',
+          time_out_2: d.time_out_2 || '',
           hours: d.hours != null ? String(d.hours) : '',
           reason: d.reason || '',
         };
@@ -1082,6 +1084,8 @@ const PortalDashboard = () => {
         if (d) next[k] = {
           time_in: d.time_in || '',
           time_out: d.time_out || '',
+          time_in_2: d.time_in_2 || '',
+          time_out_2: d.time_out_2 || '',
           hours: d.hours != null ? String(d.hours) : '',
           reason: d.reason || '',
         };
