@@ -238,6 +238,20 @@ const computeHours = (
   return applyBreakDeduction(raw, breakMinutes, breakIsPaid);
 };
 
+// Compute total billable day hours = shift 1 + optional split shift.
+// Each shift gets the unpaid-break deduction applied independently when configured.
+const computeDayBillable = (
+  entry: Pick<DayEntry, 'time_in' | 'time_out' | 'time_in_2' | 'time_out_2'>,
+  breakMinutes?: number | null,
+  breakIsPaid?: boolean | null
+): number => {
+  const h1 = computeHours(entry.time_in, entry.time_out, breakMinutes, breakIsPaid);
+  const h2 = entry.time_in_2 && entry.time_out_2
+    ? computeHours(entry.time_in_2, entry.time_out_2, breakMinutes, breakIsPaid)
+    : 0;
+  return Math.round((h1 + h2) * 100) / 100;
+};
+
 // Convert stored break (always minutes) into the profile form's display unit.
 const breakStateToForm = (
   minutes: number | null | undefined,
