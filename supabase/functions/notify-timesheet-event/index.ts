@@ -165,11 +165,16 @@ function dailyTable(daily: Record<string, any> | null | undefined) {
     const d = daily[k] || {};
     const t1 = d.time_in && d.time_out ? `${fmtTime12(d.time_in)}–${fmtTime12(d.time_out)}` : "";
     const t2 = d.time_in_2 && d.time_out_2 ? ` &nbsp;|&nbsp; ${fmtTime12(d.time_in_2)}–${fmtTime12(d.time_out_2)}` : "";
-    const reasonCell = hasReason ? `<td style="padding:6px 10px;border-bottom:1px solid #eef0f3;color:#475569">${(d.reason || "").toString().replace(/</g, "&lt;")}</td>` : "";
-    return `<tr><td style="padding:6px 10px;border-bottom:1px solid #eef0f3">${d.weekday || ""} ${fmtDate(k)}</td><td style="padding:6px 10px;border-bottom:1px solid #eef0f3">${Number(d.hours || 0).toFixed(2)} hrs</td><td style="padding:6px 10px;border-bottom:1px solid #eef0f3;color:#475569">${t1}${t2}</td>${reasonCell}</tr>`;
+    const reasonCell = hasReason ? `<td style="padding:8px 12px;border-bottom:1px solid #eef0f3;color:#475569;vertical-align:top">${(d.reason || "").toString().replace(/</g, "&lt;")}</td>` : "";
+    return `<tr>
+      <td style="width:28%;padding:8px 12px;border-bottom:1px solid #eef0f3;vertical-align:top;white-space:nowrap">${d.weekday || ""} ${fmtDate(k)}</td>
+      <td style="width:14%;padding:8px 12px;border-bottom:1px solid #eef0f3;vertical-align:top;white-space:nowrap">${Number(d.hours || 0).toFixed(2)} hrs</td>
+      <td style="width:32%;padding:8px 12px;border-bottom:1px solid #eef0f3;color:#475569;vertical-align:top;white-space:nowrap">${t1}${t2}</td>
+      ${reasonCell}
+    </tr>`;
   }).join("");
-  const reasonHead = hasReason ? `<th style="padding:6px 10px">Reason</th>` : "";
-  return `<table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:13px"><thead><tr style="background:#f1f5f9;text-align:left"><th style="padding:6px 10px">Day</th><th style="padding:6px 10px">Hours</th><th style="padding:6px 10px">Time</th>${reasonHead}</tr></thead><tbody>${rows}</tbody></table>`;
+  const reasonHead = hasReason ? `<th style="width:26%;padding:8px 12px">Reason</th>` : "";
+  return `<table style="width:100%;border-collapse:collapse;margin:12px 0;font-size:13px"><thead><tr style="background:#f1f5f9;text-align:left"><th style="width:28%;padding:8px 12px">Day</th><th style="width:14%;padding:8px 12px">Hours</th><th style="width:32%;padding:8px 12px">Time</th>${reasonHead}</tr></thead><tbody>${rows}</tbody></table>`;
 }
 
 function timesheetSummary(ts: any, applicant: any, client: any) {
