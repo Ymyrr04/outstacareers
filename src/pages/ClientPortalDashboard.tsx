@@ -85,6 +85,15 @@ const fmtHours = (n: number) => {
   return Number.isInteger(v) ? v.toString() : v.toFixed(2).replace(/\.?0+$/, '');
 };
 
+// Format a YYYY-MM-DD (or ISO) date in EST, regardless of viewer timezone.
+const fmtDateEST = (dateStr: string, opts: Intl.DateTimeFormatOptions) => {
+  const iso = /^\d{4}-\d{2}-\d{2}$/.test(dateStr) ? `${dateStr}T12:00:00Z` : dateStr;
+  return new Intl.DateTimeFormat('en-US', { ...opts, timeZone: 'America/New_York' }).format(new Date(iso));
+};
+const estWeekday = (dateStr: string) => fmtDateEST(dateStr, { weekday: 'long' });
+const estMonthDay = (dateStr: string) => fmtDateEST(dateStr, { month: 'short', day: 'numeric', year: 'numeric' });
+
+
 const ClientPortalDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -410,7 +419,7 @@ const ClientPortalDashboard = () => {
                               <div className="font-medium">{r.contractor_name}</div>
                               <div className="text-xs text-muted-foreground">{r.contractor_email}</div>
                             </TableCell>
-                            <TableCell>{format(new Date(`${r.week_ending_date}T00:00:00`), 'MMM d, yyyy')}</TableCell>
+                            <TableCell>{estMonthDay(r.week_ending_date)}</TableCell>
                             <TableCell className="text-right">
                               <div>{fmtHours((Number(r.total_hours) || 0) + sundayHrs)}</div>
                             </TableCell>
@@ -559,7 +568,7 @@ const TimesheetDetail = ({
   const excludeSunday = row.sunday_hours_excluded;
   const sundayHours = excludeSunday
     ? dailyEntries.reduce((s, [date, val]: [string, any]) => {
-        const isSunday = new Date(`${date}T00:00:00`).getDay() === 0;
+        const isSunday = estWeekday(date) === 'Sunday';
         return s + (isSunday ? (parseFloat(val?.hours) || 0) : 0);
       }, 0)
     : 0;
@@ -582,7 +591,7 @@ const TimesheetDetail = ({
         <Card className="lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-base">
-              {row.contractor_name} <span className="text-muted-foreground font-normal">— week ending {format(new Date(`${row.week_ending_date}T00:00:00`), 'MMM d, yyyy')}</span>
+              {row.contractor_name} <span className="text-muted-foreground font-normal">— week ending {estMonthDay(row.week_ending_date)}</span>
             </CardTitle>
             <div className="text-xs text-muted-foreground mt-1">
               Times shown in EST (Eastern Standard Time)
@@ -607,8 +616,8 @@ const TimesheetDetail = ({
                     {dailyEntries.map(([date, val]: [string, any]) => (
                       <TableRow key={date}>
                         <TableCell>
-                          <div className="font-medium">{format(new Date(`${date}T00:00:00`), 'EEEE')}</div>
-                          <div className="text-xs text-muted-foreground">{format(new Date(`${date}T00:00:00`), 'MMM d, yyyy')}</div>
+                          <div className="font-medium">{estWeekday(date)}</div>
+                          <div className="text-xs text-muted-foreground">{estMonthDay(date)}</div>
                         </TableCell>
                         <TableCell className="text-sm">{val?.time_in ? `${to12h(val.time_in)} EST` : '—'}</TableCell>
                         <TableCell className="text-sm">{val?.time_out ? `${to12h(val.time_out)} EST` : '—'}</TableCell>
