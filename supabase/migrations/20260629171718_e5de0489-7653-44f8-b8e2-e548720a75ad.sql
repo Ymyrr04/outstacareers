@@ -1,0 +1,1 @@
+CREATE POLICY "Client portal can update leave for their contractors" ON public.contractor_leave_applications FOR UPDATE USING (contractor_assignment_id IN (SELECT id FROM contractor_assignments WHERE client_id = get_my_client_id())) WITH CHECK (contractor_assignment_id IN (SELECT id FROM contractor_assignments WHERE client_id = get_my_client_id()));

@@ -486,7 +486,7 @@ const ClientPortalDashboard = () => {
             </CardContent>
             </Card>
 
-            <LeaveRequestsCard leaveRequests={leaveRequests} assignments={assignments} />
+            <LeaveRequestsCard leaveRequests={leaveRequests} assignments={assignments} onChanged={() => clientId && loadData(clientId)} />
           </div>
         )}
       </main>
@@ -969,7 +969,13 @@ const ProfileField = ({
   </div>
 );
 
-const LeaveRequestsCard = ({ leaveRequests, assignments }: { leaveRequests: LeaveRequest[]; assignments: Assignment[] }) => {
+const LeaveRequestsCard = ({ leaveRequests, assignments, onChanged }: { leaveRequests: LeaveRequest[]; assignments: Assignment[]; onChanged: () => void }) => {
+  const { toast } = useToast();
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [rejectOpen, setRejectOpen] = useState(false);
+  const [rejectTarget, setRejectTarget] = useState<LeaveRequest | null>(null);
+  const [rejectNote, setRejectNote] = useState('');
+
   const nameMap = useMemo(() => {
     const m = new Map<string, { name: string; email: string }>();
     assignments.forEach(a => m.set(a.id, { name: a.applicant?.full_name || 'Unknown', email: a.applicant?.email || '' }));
@@ -980,6 +986,28 @@ const LeaveRequestsCard = ({ leaveRequests, assignments }: { leaveRequests: Leav
     if (s === 'approved') return <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Approved</Badge>;
     if (s === 'rejected') return <Badge className="bg-red-100 text-red-700 hover:bg-red-100">Rejected</Badge>;
     return <Badge variant="secondary">Pending</Badge>;
+  };
+
+  const updateLeave = async (id: string, status: 'approved' | 'rejected', review_notes?: string) => {
+    setBusyId(id);
+    const { error } = await supabase
+      .from('contractor_leave_applications' as any)
+      .update({ status, review_notes: review_notes || null, reviewed_at: new Date().toISOString() } as any)
+      .eq('id', id);
+    setBusyId(null);
+    if (error) {
+      toast({ title: 'Update failed', description: error.message, variant: 'destructive' });
+      return false;
+    }
+    toast({ title: `Leave ${status}` });
+    onChanged();
+    return true;
+  };
+
+  const submitReject = async () => {
+    if (!rejectTarget) return;
+    const ok = await updateLeave(rejectTarget.id, 'rejected', rejectNote.trim());
+    if (ok) { setRejectOpen(false); setRejectTarget(null); setRejectNote(''); }
   };
 
   return (
@@ -1002,6 +1030,7 @@ const LeaveRequestsCard = ({ leaveRequests, assignments }: { leaveRequests: Leav
                   <TableHead>Compensation</TableHead>
                   <TableHead>Submitted</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1041,6 +1070,33 @@ const LeaveRequestsCard = ({ leaveRequests, assignments }: { leaveRequests: Leav
                           <div className="text-xs italic text-muted-foreground mt-1 max-w-[200px] whitespace-normal">{r.review_notes}</div>
                         )}
                       </TableCell>
+                      <TableCell className="text-right whitespace-nowrap">
+                        {r.status === 'pending' ? (
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              size="sm"
+                              variant="default"
+                              disabled={busyId === r.id}
+                              onClick={() => updateLeave(r.id, 'approved')}
+                              className="bg-green-600 hover:bg-green-700"
+                            >
+                              {busyId === r.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <CheckCircle2 className="w-3 h-3" />}
+                              <span className="ml-1">Approve</span>
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              disabled={busyId === r.id}
+                              onClick={() => { setRejectTarget(r); setRejectNote(''); setRejectOpen(true); }}
+                            >
+                              <Flag className="w-3 h-3" />
+                              <span className="ml-1">Reject</span>
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">—</span>
+                        )}
+                      </TableCell>
                     </TableRow>
                   );
                 })}
@@ -1049,6 +1105,28 @@ const LeaveRequestsCard = ({ leaveRequests, assignments }: { leaveRequests: Leav
           </div>
         )}
       </CardContent>
+
+      <Dialog open={rejectOpen} onOpenChange={(o) => { setRejectOpen(o); if (!o) { setRejectTarget(null); setRejectNote(''); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject leave request</DialogTitle>
+            <DialogDescription>Optionally let the contractor know why this leave was rejected.</DialogDescription>
+          </DialogHeader>
+          <Textarea
+            value={rejectNote}
+            onChange={(e) => setRejectNote(e.target.value)}
+            placeholder="Reason (optional)"
+            rows={4}
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setRejectOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={submitReject} disabled={busyId === rejectTarget?.id}>
+              {busyId === rejectTarget?.id && <Loader2 className="w-3 h-3 animate-spin mr-1" />}
+              Reject leave
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
