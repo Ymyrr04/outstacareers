@@ -485,6 +485,8 @@ const ClientPortalDashboard = () => {
               )}
             </CardContent>
             </Card>
+
+            <LeaveRequestsCard leaveRequests={leaveRequests} assignments={assignments} />
           </div>
         )}
       </main>
