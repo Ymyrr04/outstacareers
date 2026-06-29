@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, LogOut, Pencil, CalendarIcon, UserCircle2, Check, ChevronsUpDown, HelpCircle, ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle, Lock, Info } from 'lucide-react';
+import { Loader2, LogOut, Pencil, CalendarIcon, UserCircle2, Check, ChevronsUpDown, HelpCircle, ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle, Lock, Info, Plus, X, Split } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -180,7 +180,9 @@ const DEFAULT_WORK_DAYS: string[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 interface DayEntry {
   time_in: string;  // "HH:MM" 24h
   time_out: string; // "HH:MM" 24h
-  hours: string;    // computed string e.g. "8.50"
+  time_in_2?: string;  // optional second/split shift "HH:MM" 24h
+  time_out_2?: string; // optional second/split shift "HH:MM" 24h
+  hours: string;    // computed string e.g. "8.50" (sum of both shifts)
   reason: string;
 }
 interface Timesheet {
@@ -193,7 +195,7 @@ interface Timesheet {
   status: string;
   outsta_status?: string | null;
   submitted_at: string;
-  daily_hours: Record<string, { hours: number; time_in?: string; time_out?: string; reason?: string }> | null;
+  daily_hours: Record<string, { hours: number; time_in?: string; time_out?: string; time_in_2?: string; time_out_2?: string; reason?: string }> | null;
   client_approval_status?: string | null;
   client_flag_reason?: string | null;
   client_reviewed_at?: string | null;
@@ -234,6 +236,20 @@ const computeHours = (
 ): number => {
   const raw = computeRawHours(timeIn, timeOut);
   return applyBreakDeduction(raw, breakMinutes, breakIsPaid);
+};
+
+// Compute total billable day hours = shift 1 + optional split shift.
+// Each shift gets the unpaid-break deduction applied independently when configured.
+const computeDayBillable = (
+  entry: Pick<DayEntry, 'time_in' | 'time_out' | 'time_in_2' | 'time_out_2'>,
+  breakMinutes?: number | null,
+  breakIsPaid?: boolean | null
+): number => {
+  const h1 = computeHours(entry.time_in, entry.time_out, breakMinutes, breakIsPaid);
+  const h2 = entry.time_in_2 && entry.time_out_2
+    ? computeHours(entry.time_in_2, entry.time_out_2, breakMinutes, breakIsPaid)
+    : 0;
+  return Math.round((h1 + h2) * 100) / 100;
 };
 
 // Convert stored break (always minutes) into the profile form's display unit.
@@ -501,6 +517,8 @@ const PortalDashboard = () => {
   const [missingDays, setMissingDays] = useState<string[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [tutorialOpen, setTutorialOpen] = useState(false);
+  // When set, opens the "Resolve missing hours" dialog for the given date key.
+  const [splitDialogKey, setSplitDialogKey] = useState<string | null>(null);
 
   const emptyProfileForm: ProfileForm = {
     full_name: '', phone: '', whatsapp: '', location: '', country: '',
@@ -965,17 +983,21 @@ const PortalDashboard = () => {
     if (!validateNumbers()) return;
     const ot = parseFloat(overtimeHours || '0');
 
-    const dailyPayload: Record<string, { hours: number; time_in?: string; time_out?: string; reason?: string; weekday?: string }> = {};
+    const dailyPayload: Record<string, { hours: number; time_in?: string; time_out?: string; time_in_2?: string; time_out_2?: string; reason?: string; weekday?: string }> = {};
     dateKeys.forEach((k) => {
       const h = parseFloat(days[k]?.hours || '0') || 0;
       const reason = days[k]?.reason?.trim() || '';
       const time_in = days[k]?.time_in || '';
       const time_out = days[k]?.time_out || '';
+      const time_in_2 = days[k]?.time_in_2 || '';
+      const time_out_2 = days[k]?.time_out_2 || '';
       dailyPayload[k] = {
         hours: h,
         weekday: dayLabel(k),
         ...(time_in ? { time_in } : {}),
         ...(time_out ? { time_out } : {}),
+        ...(time_in_2 ? { time_in_2 } : {}),
+        ...(time_out_2 ? { time_out_2 } : {}),
         ...(reason ? { reason } : {}),
       };
     });
@@ -1050,6 +1072,8 @@ const PortalDashboard = () => {
         if (d) next[k] = {
           time_in: d.time_in || '',
           time_out: d.time_out || '',
+          time_in_2: d.time_in_2 || '',
+          time_out_2: d.time_out_2 || '',
           hours: d.hours != null ? String(d.hours) : '',
           reason: d.reason || '',
         };
@@ -1062,6 +1086,8 @@ const PortalDashboard = () => {
         if (d) next[k] = {
           time_in: d.time_in || '',
           time_out: d.time_out || '',
+          time_in_2: d.time_in_2 || '',
+          time_out_2: d.time_out_2 || '',
           hours: d.hours != null ? String(d.hours) : '',
           reason: d.reason || '',
         };
@@ -1285,7 +1311,8 @@ const PortalDashboard = () => {
   const fillRegular = (k: string) => {
     if (!hasRegularShift) return;
     if (isRegularApplied(k)) {
-      updateDay(k, { time_in: '', time_out: '' });
+      // Clear primary shift AND any split shift on this day
+      updateDay(k, { time_in: '', time_out: '', time_in_2: '', time_out_2: '' });
     } else {
       updateDay(k, { time_in: regularShift24.start, time_out: regularShift24.end });
     }
@@ -1302,7 +1329,7 @@ const PortalDashboard = () => {
           time_in: regularShift24.start,
           time_out: regularShift24.end,
         };
-        const h = computeHours(merged.time_in, merged.time_out, info?.break_duration_minutes, info?.break_is_paid);
+        const h = computeDayBillable(merged, info?.break_duration_minutes, info?.break_is_paid);
         merged.hours = h > 0 ? String(h) : '';
         next[k] = merged;
       });
@@ -1312,10 +1339,10 @@ const PortalDashboard = () => {
 
   const updateDay = (k: string, patch: Partial<DayEntry>) => {
     setDays((prev) => {
-      const merged = { ...prev[k], ...patch };
-      // Recompute hours whenever either time field is touched
-      if ('time_in' in patch || 'time_out' in patch) {
-        const h = computeHours(merged.time_in, merged.time_out, info?.break_duration_minutes, info?.break_is_paid);
+      const merged = { ...prev[k], ...patch } as DayEntry;
+      // Recompute hours whenever any time field is touched (shift 1 or split shift 2)
+      if ('time_in' in patch || 'time_out' in patch || 'time_in_2' in patch || 'time_out_2' in patch) {
+        const h = computeDayBillable(merged, info?.break_duration_minutes, info?.break_is_paid);
         merged.hours = h > 0 ? String(h) : '';
       }
       return { ...prev, [k]: merged };
@@ -1330,7 +1357,7 @@ const PortalDashboard = () => {
       let changed = false;
       Object.entries(prev).forEach(([k, entry]) => {
         if (entry?.time_in && entry?.time_out) {
-          const h = computeHours(entry.time_in, entry.time_out, info?.break_duration_minutes, info?.break_is_paid);
+          const h = computeDayBillable(entry, info?.break_duration_minutes, info?.break_is_paid);
           const newHours = h > 0 ? String(h) : '';
           if (newHours !== entry.hours) changed = true;
           next[k] = { ...entry, hours: newHours };
@@ -1818,11 +1845,18 @@ const PortalDashboard = () => {
                         ? 'border-l-4 border-l-amber-500'
                         : '';
 
+                      const hasSplit = !!(entry.time_in_2 || entry.time_out_2);
+                      const shortBy = perDayExpected != null && validHours < perDayExpected
+                        ? Number((perDayExpected - validHours).toFixed(2))
+                        : 0;
+
                       return (
                         <div
                           key={k}
-                          className={`grid grid-cols-1 md:grid-cols-[110px_100px_100px_72px_1fr] gap-2.5 md:gap-3 px-4 py-3 items-center border-b last:border-b-0 ${leftBorder} ${rowBg}`}
+                          className={`px-4 py-3 border-b last:border-b-0 ${leftBorder} ${rowBg}`}
                         >
+                          <div className="grid grid-cols-1 md:grid-cols-[110px_100px_100px_72px_1fr] gap-2.5 md:gap-3 items-center">
+
 
                           <div>
                             <div className="font-semibold text-sm">{label}</div>
@@ -1936,6 +1970,64 @@ const PortalDashboard = () => {
                               className={`bg-background border-2 h-10 ${borderTone}`}
                             />
                           </div>
+                          </div>
+
+
+                          {hasSplit && (
+                            <div className="mt-2 grid grid-cols-1 md:grid-cols-[110px_100px_100px_72px_1fr] gap-2.5 md:gap-3 items-center">
+                              <div className="text-[11px] font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300">
+                                Split shift
+                              </div>
+                              <div className="space-y-1">
+                                <Label htmlFor={`tin2-${k}`} className="text-[11px] font-medium text-muted-foreground">Time in (2nd)</Label>
+                                <FlexibleTimeInput
+                                  id={`tin2-${k}`}
+                                  value={entry.time_in_2 || ''}
+                                  onChange={(v) => updateDay(k, { time_in_2: v })}
+                                  ariaLabel={`${label} ${format(date, 'MMM d')} second shift time in`}
+                                  className={timeInputClass}
+                                />
+                              </div>
+                              <div className="space-y-1">
+                                <Label htmlFor={`tout2-${k}`} className="text-[11px] font-medium text-muted-foreground">Time out (2nd)</Label>
+                                <FlexibleTimeInput
+                                  id={`tout2-${k}`}
+                                  value={entry.time_out_2 || ''}
+                                  onChange={(v) => updateDay(k, { time_out_2: v })}
+                                  ariaLabel={`${label} ${format(date, 'MMM d')} second shift time out`}
+                                  className={timeInputClass}
+                                />
+                              </div>
+                              <div />
+                              <div>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => updateDay(k, { time_in_2: '', time_out_2: '' })}
+                                  className="h-8 text-xs text-muted-foreground hover:text-destructive"
+                                >
+                                  <X className="h-3.5 w-3.5" />
+                                  Remove split shift
+                                </Button>
+                              </div>
+                            </div>
+                          )}
+
+                          {!hasSplit && isMissing && validHours > 0 && shortBy > 0.01 && (
+                            <div className="mt-2 flex items-center gap-2">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setSplitDialogKey(k)}
+                                className="h-8 border-red-500/60 text-red-700 hover:bg-red-50 dark:text-red-300 dark:hover:bg-red-950/40"
+                              >
+                                <Split className="h-3.5 w-3.5" />
+                                Missing {shortBy.toFixed(2)} hrs — Add split shift or mark as undertime
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -2341,6 +2433,99 @@ const PortalDashboard = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Resolve missing hours: add split shift OR mark as undertime */}
+      <Dialog open={!!splitDialogKey} onOpenChange={(o) => { if (!o) setSplitDialogKey(null); }}>
+        <DialogContent className="sm:max-w-md">
+          {(() => {
+            if (!splitDialogKey) return null;
+            const k = splitDialogKey;
+            const entry = days[k];
+            if (!entry) return null;
+            const dLabel = dayLabel(k);
+            const dateStr = format(new Date(k + 'T00:00:00'), 'MMM d, yyyy');
+            const logged = computeDayBillable(entry, info?.break_duration_minutes, info?.break_is_paid);
+            const expected = perDayExpected ?? 0;
+            const short = Math.max(0, Number((expected - logged).toFixed(2)));
+            return (
+              <>
+                <DialogHeader>
+                  <DialogTitle>Missing hours on {dLabel}</DialogTitle>
+                  <DialogDescription>
+                    {dateStr} — You logged <strong>{logged.toFixed(2)} hrs</strong> of {expected.toFixed(2)} hrs expected
+                    ({short.toFixed(2)} hrs short). How would you like to resolve this?
+                  </DialogDescription>
+                </DialogHeader>
+
+                <div className="grid gap-3 py-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="h-auto py-3 justify-start text-left"
+                    onClick={() => {
+                      // Seed the split-shift row. Pre-fill time_in_2 with the first shift's
+                      // time_out as a starting point; leave time_out_2 empty for the user to fill.
+                      updateDay(k, {
+                        time_in_2: entry.time_in_2 || entry.time_out || '',
+                        time_out_2: entry.time_out_2 || '',
+                      });
+                      setSplitDialogKey(null);
+                    }}
+                  >
+                    <Split className="h-4 w-4 mt-0.5 text-teal-600" />
+                    <div className="ml-2">
+                      <div className="font-semibold text-sm">Add a split shift</div>
+                      <div className="text-xs text-muted-foreground">
+                        Log a second time-in / time-out for this day (e.g. 8–10 AM and 4–10 PM).
+                      </div>
+                    </div>
+                  </Button>
+
+                  <div className="rounded-md border p-3 space-y-2">
+                    <div className="flex items-start gap-2">
+                      <AlertTriangle className="h-4 w-4 mt-0.5 text-amber-600" />
+                      <div>
+                        <div className="font-semibold text-sm">Mark as undertime</div>
+                        <div className="text-xs text-muted-foreground">
+                          Keep the logged {logged.toFixed(2)} hrs and explain why you were short.
+                        </div>
+                      </div>
+                    </div>
+                    <Label htmlFor="undertime-reason" className="text-xs font-medium">Reason for undertime</Label>
+                    <Input
+                      id="undertime-reason"
+                      placeholder="e.g. left early — doctor's appointment"
+                      value={entry.reason || ''}
+                      onChange={(e) => updateDay(k, { reason: e.target.value })}
+                      autoFocus
+                    />
+                    <div className="flex justify-end">
+                      <Button
+                        type="button"
+                        size="sm"
+                        onClick={() => {
+                          if (!days[k]?.reason?.trim()) {
+                            toast({ title: 'Reason required', description: 'Please provide a reason for the undertime.', variant: 'destructive' });
+                            return;
+                          }
+                          setSplitDialogKey(null);
+                        }}
+                      >
+                        Save undertime
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button variant="ghost" onClick={() => setSplitDialogKey(null)}>Close</Button>
+                </DialogFooter>
+              </>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
+
 
       {/* Submission confirmation */}
       <AlertDialog
