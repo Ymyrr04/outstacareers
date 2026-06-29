@@ -1336,10 +1336,10 @@ const PortalDashboard = () => {
 
   const updateDay = (k: string, patch: Partial<DayEntry>) => {
     setDays((prev) => {
-      const merged = { ...prev[k], ...patch };
-      // Recompute hours whenever either time field is touched
-      if ('time_in' in patch || 'time_out' in patch) {
-        const h = computeHours(merged.time_in, merged.time_out, info?.break_duration_minutes, info?.break_is_paid);
+      const merged = { ...prev[k], ...patch } as DayEntry;
+      // Recompute hours whenever any time field is touched (shift 1 or split shift 2)
+      if ('time_in' in patch || 'time_out' in patch || 'time_in_2' in patch || 'time_out_2' in patch) {
+        const h = computeDayBillable(merged, info?.break_duration_minutes, info?.break_is_paid);
         merged.hours = h > 0 ? String(h) : '';
       }
       return { ...prev, [k]: merged };
@@ -1354,7 +1354,7 @@ const PortalDashboard = () => {
       let changed = false;
       Object.entries(prev).forEach(([k, entry]) => {
         if (entry?.time_in && entry?.time_out) {
-          const h = computeHours(entry.time_in, entry.time_out, info?.break_duration_minutes, info?.break_is_paid);
+          const h = computeDayBillable(entry, info?.break_duration_minutes, info?.break_is_paid);
           const newHours = h > 0 ? String(h) : '';
           if (newHours !== entry.hours) changed = true;
           next[k] = { ...entry, hours: newHours };
