@@ -210,7 +210,11 @@ export const PostHirePipelineKanban = () => {
                             daysElapsed={getDaysElapsed(item.contractor?.start_date)}
                             weeksElapsed={getWeeksElapsed(item.contractor?.start_date)}
                             onSendEmail={() => setEmailTarget({ item, stage })}
-                            hasEmailTemplate={!!(stage.checkin_email_subject || stage.contractor_email_subject)}
+                            hasEmailTemplate={!!(
+                              stage.checkin_email_subject ||
+                              stage.contractor_email_subject ||
+                              (Array.isArray((stage as any).checkin_sections) && (stage as any).checkin_sections.length > 0)
+                            )}
                           />
                         ))}
                         {provided.placeholder}
@@ -340,7 +344,7 @@ const ContractorCard = ({ item, index, daysElapsed, weeksElapsed, onSendEmail, h
                     <Send className="w-3 h-3" />
                   </button>
                 </TooltipTrigger>
-                <TooltipContent>Send check-in email</TooltipContent>
+                <TooltipContent>Send check-in to portal</TooltipContent>
               </Tooltip>
             )}
           </div>
