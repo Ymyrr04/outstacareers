@@ -236,13 +236,13 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-sm">
-            {stage?.emoji} Send Check-in Email — {contractor?.contractorName}
+            {stage?.emoji} Send Check-in — {contractor?.contractorName}
           </DialogTitle>
         </DialogHeader>
 
         {!hasAnyTemplate ? (
           <div className="text-center py-6 text-sm text-muted-foreground">
-            No email template configured for this stage. Click the ✉️ icon on the column header to set one up.
+            No template configured for this stage. Click the ✉️ icon on the column header to set one up.
           </div>
         ) : showBothTabs ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
