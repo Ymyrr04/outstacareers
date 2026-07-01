@@ -1309,6 +1309,54 @@ export type Database = {
           },
         ]
       }
+      contractor_checkin_messages: {
+        Row: {
+          body_html: string
+          contractor_assignment_id: string
+          created_at: string
+          id: string
+          read_at: string | null
+          sent_by: string | null
+          stage_id: string | null
+          subject: string
+        }
+        Insert: {
+          body_html: string
+          contractor_assignment_id: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sent_by?: string | null
+          stage_id?: string | null
+          subject: string
+        }
+        Update: {
+          body_html?: string
+          contractor_assignment_id?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          sent_by?: string | null
+          stage_id?: string | null
+          subject?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contractor_checkin_messages_contractor_assignment_id_fkey"
+            columns: ["contractor_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "contractor_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "contractor_checkin_messages_stage_id_fkey"
+            columns: ["stage_id"]
+            isOneToOne: false
+            referencedRelation: "contractor_pipeline_stages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contractor_checkin_templates: {
         Row: {
           contractor_assignment_id: string
