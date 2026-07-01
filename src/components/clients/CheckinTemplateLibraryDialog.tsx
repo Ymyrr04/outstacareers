@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import type { Editor } from '@tiptap/react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -75,6 +76,31 @@ export const CheckinTemplateLibraryDialog = ({ open, onOpenChange, onApply, save
   const [bSections, setBSections] = useState<CheckinSection[]>(DEFAULT_NEW_SECTIONS);
   const [bSubject, setBSubject] = useState('');
   const [bBody, setBBody] = useState('');
+  const subjectRef = useRef<HTMLInputElement>(null);
+  const bodyEditorRef = useRef<Editor | null>(null);
+
+  const insertInSubject = (token: string) => {
+    const el = subjectRef.current;
+    if (!el) { setBSubject(s => s + token); return; }
+    const start = el.selectionStart ?? bSubject.length;
+    const end = el.selectionEnd ?? bSubject.length;
+    const next = bSubject.slice(0, start) + token + bSubject.slice(end);
+    setBSubject(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + token.length;
+      el.setSelectionRange(pos, pos);
+    });
+  };
+
+  const insertInBody = (token: string) => {
+    const ed = bodyEditorRef.current;
+    if (ed) {
+      ed.chain().focus().insertContent(token).run();
+    } else {
+      setBBody(b => (b || '') + token);
+    }
+  };
   const [bSaving, setBSaving] = useState(false);
   const [previewId, setPreviewId] = useState<string | null>(null);
 
@@ -306,11 +332,11 @@ export const CheckinTemplateLibraryDialog = ({ open, onOpenChange, onApply, save
                 <TabsContent value="email" className="space-y-2 mt-3">
                   <div>
                     <Label className="text-xs">Subject (optional)</Label>
-                    <Input value={bSubject} onChange={e => setBSubject(e.target.value)} placeholder="Weekly check-in reminder" />
+                    <Input ref={subjectRef} value={bSubject} onChange={e => setBSubject(e.target.value)} placeholder="Weekly check-in reminder" />
                     <div className="flex flex-wrap gap-1 mt-1.5">
                       {MERGE_TAGS.map(t => (
                         <Button key={t.token} type="button" size="sm" variant="outline" className="h-6 px-2 text-[11px]"
-                          onClick={() => setBSubject(s => s + t.token)}>
+                          onClick={() => insertInSubject(t.token)}>
                           + {t.label}
                         </Button>
                       ))}
@@ -322,14 +348,14 @@ export const CheckinTemplateLibraryDialog = ({ open, onOpenChange, onApply, save
                       <div className="flex flex-wrap gap-1">
                         {MERGE_TAGS.map(t => (
                           <Button key={t.token} type="button" size="sm" variant="outline" className="h-6 px-2 text-[11px]"
-                            onClick={() => setBBody(b => (b || '') + `<span>${t.token}</span>`)}>
+                            onClick={() => insertInBody(t.token)}>
                             + {t.label}
                           </Button>
                         ))}
                       </div>
                     </div>
                     <div className="rounded-md border bg-background">
-                      <WysiwygEditor value={bBody} onChange={setBBody} placeholder="Write your email template. Format text, add links, headings, lists…" />
+                      <WysiwygEditor value={bBody} onChange={setBBody} onReady={(ed) => { bodyEditorRef.current = ed; }} placeholder="Write your email template. Format text, add links, headings, lists…" />
                     </div>
                     <p className="text-[11px] text-muted-foreground mt-1">
                       Use merge tags like <code className="text-[10px] bg-muted px-1 rounded">{'{{first_name}}'}</code> — they are automatically replaced with the contractor's info when the email is sent.
