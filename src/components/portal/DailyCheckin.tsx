@@ -109,6 +109,8 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
         sections: DEFAULT_SECTIONS as any,
       });
     }
+    // Hide sections the admin has toggled off
+    secs = secs.filter(s => s.enabled !== false);
     setSections(secs);
     setDraftSections(secs);
     setChecked(initChecked(secs));
