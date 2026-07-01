@@ -312,9 +312,15 @@ export const ContractorCheckinConfig = ({ contractorAssignmentId, timezone }: Pr
       <CheckinTemplateLibraryDialog
         open={libOpen}
         onOpenChange={setLibOpen}
-        onApply={(tpl) => setSections(tpl.sections.map((s, i) => ({
-          title: s.title, items: s.items || [], color: s.color || COLOR_CHOICES[i % COLOR_CHOICES.length], enabled: s.enabled !== false,
-        })))}
+        onApply={(tpl) => {
+          if ((tpl.template_type || 'checklist') !== 'checklist') {
+            toast({ title: 'Email templates cannot be applied to a check-in form', description: 'Pick a checklist template.', variant: 'destructive' });
+            return;
+          }
+          setSections(tpl.sections.map((s, i) => ({
+            title: s.title, items: s.items || [], color: s.color || COLOR_CHOICES[i % COLOR_CHOICES.length], enabled: s.enabled !== false,
+          })));
+        }}
       />
       <CheckinTemplateLibraryDialog
         open={saveLibOpen}
