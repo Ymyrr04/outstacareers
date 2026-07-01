@@ -788,6 +788,65 @@ const PortalDashboard = () => {
 
   useEffect(() => { loadAll(); }, []);
 
+  // ==== Check-in attention badge + reminder popup ====
+  const tzOffset = useMemo(() => tzOffsetMinutes(info?.timezone), [info?.timezone]);
+
+  const refreshCheckinToday = async () => {
+    if (!info?.contractor_assignment_id) return;
+    const today = todayInTz(tzOffset);
+    const { data } = await supabase
+      .from('contractor_daily_checkins')
+      .select('id')
+      .eq('contractor_assignment_id', info.contractor_assignment_id)
+      .eq('checkin_date', today)
+      .limit(1);
+    setHasCheckinToday(Boolean(data && data.length > 0));
+  };
+
+  useEffect(() => {
+    if (!info?.contractor_assignment_id) return;
+    refreshCheckinToday();
+    const id = window.setInterval(refreshCheckinToday, 5 * 60 * 1000); // every 5 min
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [info?.contractor_assignment_id, info?.timezone]);
+
+  // Reminder popup ticker — checks once per minute
+  useEffect(() => {
+    if (!info?.contractor_assignment_id) return;
+    const tick = () => {
+      if (!info.checkin_reminder_enabled) return;
+      if (hasCheckinToday) return;
+      const reminderMin = timeStringToMinutes(info.checkin_reminder_time);
+      if (reminderMin === null) return;
+      const nowMin = nowMinutesInTz(tzOffset);
+      if (nowMin < reminderMin) return;
+      const today = todayInTz(tzOffset);
+      const snoozeUntil = Number(localStorage.getItem(`checkin_snooze_${info.contractor_assignment_id}`) || 0);
+      if (Date.now() < snoozeUntil) return;
+      const dismissed = localStorage.getItem(`checkin_reminded_${info.contractor_assignment_id}_${today}`);
+      if (dismissed) return;
+      setReminderOpen(true);
+    };
+    tick();
+    const id = window.setInterval(tick, 60 * 1000);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [info?.contractor_assignment_id, info?.checkin_reminder_enabled, info?.checkin_reminder_time, info?.timezone, hasCheckinToday]);
+
+  const dismissReminderForToday = () => {
+    if (!info?.contractor_assignment_id) return;
+    const today = todayInTz(tzOffset);
+    localStorage.setItem(`checkin_reminded_${info.contractor_assignment_id}_${today}`, '1');
+    setReminderOpen(false);
+  };
+  const snoozeReminder = () => {
+    if (!info?.contractor_assignment_id) return;
+    localStorage.setItem(`checkin_snooze_${info.contractor_assignment_id}`, String(Date.now() + 30 * 60 * 1000));
+    setReminderOpen(false);
+  };
+
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
     navigate('/portal/login');
