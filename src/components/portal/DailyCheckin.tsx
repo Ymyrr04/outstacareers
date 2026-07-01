@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Trash2, Check, X, Settings2, MessageSquare, CheckCheck } from 'lucide-react';
 import { FormattedNotes } from '@/components/FormattedNotes';
+import { parseCheckinItem } from '@/lib/checkinItem';
 
 export interface CheckinSection {
   title: string;
