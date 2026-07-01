@@ -4,11 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Loader2, MessageSquare } from 'lucide-react';
+import { Send, Loader2, MessageSquare, ListChecks, Mail } from 'lucide-react';
 
 interface SendCheckinEmailDialogProps {
   open: boolean;
@@ -35,12 +36,22 @@ interface SendCheckinEmailDialogProps {
   } | null;
 }
 
-const PLACEHOLDERS = [
-  { key: '{{contractor_first_name}}', label: 'Contractor First Name' },
-  { key: '{{client_first_name}}', label: 'Client First Name' },
-  { key: '{{job_title}}', label: 'Job Title' },
-  { key: '{{weeks_elapsed}}', label: 'Weeks Elapsed' },
-];
+interface LibraryTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  template_type: 'email' | 'checklist';
+  subject: string | null;
+  body_html: string | null;
+  sections: any;
+}
+
+interface CheckinSection {
+  title: string;
+  items: string[];
+  color?: string;
+  enabled?: boolean;
+}
 
 function toProperCase(str: string): string {
   return str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase());
@@ -59,23 +70,52 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
   const [clientBody, setClientBody] = useState('');
   const [clientEmail, setClientEmail] = useState('');
   const [clientFirstName, setClientFirstName] = useState('');
+
   const [contractorSubject, setContractorSubject] = useState('');
   const [contractorBody, setContractorBody] = useState('');
+  const [contractorMode, setContractorMode] = useState<'email' | 'checklist'>('email');
+  const [contractorSections, setContractorSections] = useState<CheckinSection[]>([]);
+
+  const [templates, setTemplates] = useState<LibraryTemplate[]>([]);
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string>('');
+
   const [sending, setSending] = useState<'client' | 'contractor' | null>(null);
-  const [activeTab, setActiveTab] = useState('client');
+  const [activeTab, setActiveTab] = useState('contractor');
   const { toast } = useToast();
+
+  const placeholders = (): Record<string, string> => ({
+    contractor_first_name: contractor ? toProperCase(contractor.contractorFirstName) : '',
+    contractor_full_name: contractor ? toProperCase(contractor.contractorName) : '',
+    client_first_name: clientFirstName,
+    client_name: contractor?.clientName || '',
+    job_title: contractor?.jobTitle || 'Contractor',
+    weeks_elapsed: String(contractor?.weeksElapsed ?? ''),
+  });
+
+  // Load library templates once when dialog opens
+  useEffect(() => {
+    if (!open) return;
+    (async () => {
+      const { data } = await supabase
+        .from('checkin_templates_library' as any)
+        .select('id, name, description, template_type, subject, body_html, sections')
+        .order('name', { ascending: true });
+      setTemplates((data as any) || []);
+    })();
+  }, [open]);
 
   useEffect(() => {
     if (!stage || !contractor || !open) return;
 
-    const placeholders: Record<string, string> = {
+    const p: Record<string, string> = {
       contractor_first_name: toProperCase(contractor.contractorFirstName),
+      contractor_full_name: toProperCase(contractor.contractorName),
       client_first_name: '',
+      client_name: contractor.clientName || '',
       job_title: contractor.jobTitle || 'Contractor',
       weeks_elapsed: String(contractor.weeksElapsed),
     };
 
-    // Fetch primary client contact
     const fetchClientContact = async () => {
       const { data: contacts } = await supabase
         .from('client_contacts')
@@ -89,53 +129,71 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
         setClientEmail(pc.email || '');
         const firstName = pc.first_name || pc.full_name?.split(' ')[0] || '';
         setClientFirstName(firstName);
-        placeholders.client_first_name = firstName;
+        p.client_first_name = firstName;
       }
 
-      // Fill client template
-      if (stage.checkin_email_subject) {
-        setClientSubject(replacePlaceholders(stage.checkin_email_subject, placeholders));
-      }
-      if (stage.checkin_email_body) {
-        setClientBody(replacePlaceholders(stage.checkin_email_body.replace(/\\n/g, '\n'), placeholders));
-      }
+      if (stage.checkin_email_subject) setClientSubject(replacePlaceholders(stage.checkin_email_subject, p));
+      if (stage.checkin_email_body) setClientBody(replacePlaceholders(stage.checkin_email_body.replace(/\\n/g, '\n'), p));
 
-      // Fill contractor template
       if ((stage as any).contractor_email_subject) {
-        setContractorSubject(replacePlaceholders((stage as any).contractor_email_subject, placeholders));
+        setContractorSubject(replacePlaceholders((stage as any).contractor_email_subject, p));
       }
       if ((stage as any).contractor_email_body) {
-        setContractorBody(replacePlaceholders((stage as any).contractor_email_body.replace(/\\n/g, '\n'), placeholders));
+        setContractorBody(replacePlaceholders((stage as any).contractor_email_body.replace(/\\n/g, '\n'), p));
       }
+      setContractorMode('email');
+      setContractorSections([]);
+      setSelectedTemplateId('');
     };
 
     fetchClientContact();
   }, [stage, contractor, open]);
 
+  const applyTemplate = (id: string) => {
+    setSelectedTemplateId(id);
+    const t = templates.find(x => x.id === id);
+    if (!t) return;
+    const p = placeholders();
+    if (t.template_type === 'checklist') {
+      setContractorMode('checklist');
+      const secs: CheckinSection[] = Array.isArray(t.sections) ? t.sections : [];
+      setContractorSections(secs.filter(s => s.enabled !== false));
+      setContractorSubject(t.subject ? replacePlaceholders(t.subject, p) : `Check-in: ${t.name}`);
+    } else {
+      setContractorMode('email');
+      setContractorSubject(t.subject ? replacePlaceholders(t.subject, p) : '');
+      setContractorBody(t.body_html ? replacePlaceholders(t.body_html, p) : '');
+    }
+  };
+
   const handleSend = async (target: 'client' | 'contractor') => {
     if (!contractor) return;
 
-    const email = target === 'client' ? clientEmail : contractor.contractorEmail;
-    const subject = target === 'client' ? clientSubject : contractorSubject;
-    const body = target === 'client' ? clientBody : contractorBody;
-    const name = target === 'client' ? clientFirstName : contractor.contractorFirstName;
+    if (target === 'contractor') {
+      if (!contractorSubject) {
+        toast({ title: 'Missing subject', description: 'Subject is required', variant: 'destructive' });
+        return;
+      }
+      if (contractorMode === 'email' && !contractorBody) {
+        toast({ title: 'Missing body', description: 'Body is required', variant: 'destructive' });
+        return;
+      }
+      if (contractorMode === 'checklist' && contractorSections.length === 0) {
+        toast({ title: 'Empty form', description: 'This checklist template has no sections', variant: 'destructive' });
+        return;
+      }
 
-    if (!subject || !body) {
-      toast({ title: 'Missing content', description: 'Subject and body are required', variant: 'destructive' });
-      return;
-    }
-
-    setSending(target);
-    try {
-      if (target === 'contractor') {
-        // Post to contractor's portal Check-in instead of emailing
+      setSending('contractor');
+      try {
         const { error: msgErr } = await supabase
           .from('contractor_checkin_messages' as any)
           .insert({
             contractor_assignment_id: contractor.assignmentId,
             stage_id: stage?.id ?? null,
-            subject,
-            body_html: body,
+            subject: contractorSubject,
+            body_html: contractorMode === 'email' ? contractorBody : null,
+            template_type: contractorMode,
+            sections: contractorMode === 'checklist' ? (contractorSections as any) : null,
           } as any);
         if (msgErr) throw msgErr;
 
@@ -143,38 +201,52 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
           title: 'Posted to portal',
           description: `${contractor.contractorFirstName} will see this in their Check-in tab.`,
         });
-      } else {
-        if (!email) {
-          toast({ title: 'No email', description: 'No client email found', variant: 'destructive' });
-          setSending(null);
-          return;
-        }
-        const { error } = await supabase.functions.invoke('send-contractor-email', {
-          body: {
-            contractorAssignmentId: contractor.assignmentId,
-            subject,
-            bodyHtml: body,
-            recipientEmail: email,
-            recipientName: name,
-          },
-        });
-        if (error) throw error;
-
-        if (stage) {
-          await supabase.from('contractor_checkin_emails').insert({
-            contractor_assignment_id: contractor.assignmentId,
-            stage_id: stage.id,
-            recipient_email: email,
-            recipient_name: name,
-            subject,
-            body_html: body,
-            status: 'sent',
-            sent_at: new Date().toISOString(),
-          } as any);
-        }
-
-        toast({ title: 'Email sent', description: `Check-in email sent to ${email}` });
+        onOpenChange(false);
+      } catch (err: any) {
+        toast({ title: 'Error', description: err.message, variant: 'destructive' });
+      } finally {
+        setSending(null);
       }
+      return;
+    }
+
+    // Client email
+    if (!clientSubject || !clientBody) {
+      toast({ title: 'Missing content', description: 'Subject and body are required', variant: 'destructive' });
+      return;
+    }
+    if (!clientEmail) {
+      toast({ title: 'No email', description: 'No client email found', variant: 'destructive' });
+      return;
+    }
+
+    setSending('client');
+    try {
+      const { error } = await supabase.functions.invoke('send-contractor-email', {
+        body: {
+          contractorAssignmentId: contractor.assignmentId,
+          subject: clientSubject,
+          bodyHtml: clientBody,
+          recipientEmail: clientEmail,
+          recipientName: clientFirstName,
+        },
+      });
+      if (error) throw error;
+
+      if (stage) {
+        await supabase.from('contractor_checkin_emails').insert({
+          contractor_assignment_id: contractor.assignmentId,
+          stage_id: stage.id,
+          recipient_email: clientEmail,
+          recipient_name: clientFirstName,
+          subject: clientSubject,
+          body_html: clientBody,
+          status: 'sent',
+          sent_at: new Date().toISOString(),
+        } as any);
+      }
+
+      toast({ title: 'Email sent', description: `Check-in email sent to ${clientEmail}` });
       onOpenChange(false);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
@@ -183,44 +255,121 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
     }
   };
 
-  const emailRecipient = stage?.email_recipient || 'client';
+  const emailRecipient = stage?.email_recipient || 'contractor';
   const showClientTab = emailRecipient === 'client' || emailRecipient === 'both';
-  const showContractorTab = emailRecipient === 'contractor' || emailRecipient === 'both';
+  const showContractorTab = emailRecipient === 'contractor' || emailRecipient === 'both' || (!showClientTab);
   const showBothTabs = showClientTab && showContractorTab;
 
-  const renderEmailForm = (
-    target: 'client' | 'contractor',
-    subject: string,
-    setSubject: (v: string) => void,
-    body: string,
-    setBody: (v: string) => void,
-    recipientEmail: string,
-  ) => (
+  const emailTemplates = templates.filter(t => t.template_type === 'email');
+  const checklistTemplates = templates.filter(t => t.template_type === 'checklist');
+
+  const renderTemplatePicker = () => (
+    <div className="space-y-1.5">
+      <Label className="text-xs font-medium">Load from Template Library</Label>
+      <Select value={selectedTemplateId} onValueChange={applyTemplate}>
+        <SelectTrigger className="h-9 text-sm">
+          <SelectValue placeholder="Pick an email or checklist form template..." />
+        </SelectTrigger>
+        <SelectContent>
+          {emailTemplates.length > 0 && (
+            <>
+              <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Email templates</div>
+              {emailTemplates.map(t => (
+                <SelectItem key={t.id} value={t.id}>
+                  <span className="inline-flex items-center gap-1.5"><Mail className="w-3 h-3" /> {t.name}</span>
+                </SelectItem>
+              ))}
+            </>
+          )}
+          {checklistTemplates.length > 0 && (
+            <>
+              <div className="px-2 py-1 text-[10px] uppercase tracking-wider text-muted-foreground font-semibold border-t mt-1">Checklist forms</div>
+              {checklistTemplates.map(t => (
+                <SelectItem key={t.id} value={t.id}>
+                  <span className="inline-flex items-center gap-1.5"><ListChecks className="w-3 h-3" /> {t.name}</span>
+                </SelectItem>
+              ))}
+            </>
+          )}
+          {templates.length === 0 && (
+            <div className="px-2 py-2 text-xs text-muted-foreground">No templates saved yet.</div>
+          )}
+        </SelectContent>
+      </Select>
+    </div>
+  );
+
+  const renderContractorForm = () => (
     <div className="space-y-3">
-      {target === 'contractor' ? (
-        <div className="text-[11px] text-muted-foreground bg-muted/40 border border-border rounded-md px-2.5 py-1.5">
-          This will be posted to the contractor's <span className="font-medium text-foreground">Check-in tab</span> in the portal — no email will be sent.
-        </div>
-      ) : (
-        <div className="space-y-1.5">
-          <Label className="text-xs font-medium">To</Label>
-          <Input value={recipientEmail} readOnly className="text-sm bg-muted/50" />
-        </div>
-      )}
+      <div className="text-[11px] text-muted-foreground bg-muted/40 border border-border rounded-md px-2.5 py-1.5">
+        This will be posted to the contractor's <span className="font-medium text-foreground">Check-in tab</span> in the portal — no email is sent.
+      </div>
+
+      {renderTemplatePicker()}
+
       <div className="space-y-1.5">
         <Label className="text-xs font-medium">Subject</Label>
-        <Input value={subject} onChange={(e) => setSubject(e.target.value)} className="text-sm" />
+        <Input value={contractorSubject} onChange={(e) => setContractorSubject(e.target.value)} className="text-sm" />
+      </div>
+
+      {contractorMode === 'email' ? (
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">Body</Label>
+          <Textarea value={contractorBody} onChange={(e) => setContractorBody(e.target.value)} rows={8} className="text-sm" />
+        </div>
+      ) : (
+        <div className="space-y-2">
+          <Label className="text-xs font-medium flex items-center gap-1.5">
+            <ListChecks className="w-3.5 h-3.5" /> Checklist form preview
+            <Badge variant="outline" className="text-[10px]">The contractor will tick and submit these</Badge>
+          </Label>
+          <div className="rounded-md border bg-muted/20 p-3 space-y-3 max-h-[300px] overflow-y-auto">
+            {contractorSections.map((sec, i) => (
+              <div key={i}>
+                <p className="text-xs font-semibold mb-1">{sec.title}</p>
+                <ul className="space-y-0.5 pl-3">
+                  {sec.items.map((it, j) => (
+                    <li key={j} className="text-[11px] text-muted-foreground list-disc">{it}</li>
+                  ))}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      <div className="flex justify-end">
+        <Button size="sm" onClick={() => handleSend('contractor')} disabled={!!sending}>
+          {sending === 'contractor' ? (
+            <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Posting...</>
+          ) : contractorMode === 'checklist' ? (
+            <><ListChecks className="w-3.5 h-3.5 mr-1.5" /> Post Form to Portal</>
+          ) : (
+            <><MessageSquare className="w-3.5 h-3.5 mr-1.5" /> Post to Portal</>
+          )}
+        </Button>
+      </div>
+    </div>
+  );
+
+  const renderClientForm = () => (
+    <div className="space-y-3">
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium">To</Label>
+        <Input value={clientEmail} readOnly className="text-sm bg-muted/50" />
+      </div>
+      <div className="space-y-1.5">
+        <Label className="text-xs font-medium">Subject</Label>
+        <Input value={clientSubject} onChange={(e) => setClientSubject(e.target.value)} className="text-sm" />
       </div>
       <div className="space-y-1.5">
         <Label className="text-xs font-medium">Body</Label>
-        <Textarea value={body} onChange={(e) => setBody(e.target.value)} rows={8} className="text-sm" />
+        <Textarea value={clientBody} onChange={(e) => setClientBody(e.target.value)} rows={8} className="text-sm" />
       </div>
       <div className="flex justify-end">
-        <Button size="sm" onClick={() => handleSend(target)} disabled={!!sending}>
-          {sending === target ? (
-            <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> {target === 'contractor' ? 'Posting...' : 'Sending...'}</>
-          ) : target === 'contractor' ? (
-            <><MessageSquare className="w-3.5 h-3.5 mr-1.5" /> Post to Portal</>
+        <Button size="sm" onClick={() => handleSend('client')} disabled={!!sending}>
+          {sending === 'client' ? (
+            <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Sending...</>
           ) : (
             <><Send className="w-3.5 h-3.5 mr-1.5" /> Send Email</>
           )}
@@ -229,38 +378,28 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
     </div>
   );
 
-  const hasAnyTemplate = stage?.checkin_email_subject || (stage as any)?.contractor_email_subject;
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-sm">
             {stage?.emoji} Send Check-in — {contractor?.contractorName}
           </DialogTitle>
         </DialogHeader>
 
-        {!hasAnyTemplate ? (
-          <div className="text-center py-6 text-sm text-muted-foreground">
-            No template configured for this stage. Click the ✉️ icon on the column header to set one up.
-          </div>
-        ) : showBothTabs ? (
+        {showBothTabs ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="w-full">
-              <TabsTrigger value="client" className="flex-1 text-xs">Email Client</TabsTrigger>
               <TabsTrigger value="contractor" className="flex-1 text-xs">Post to Contractor Portal</TabsTrigger>
+              <TabsTrigger value="client" className="flex-1 text-xs">Email Client</TabsTrigger>
             </TabsList>
-            <TabsContent value="client" className="mt-3">
-              {renderEmailForm('client', clientSubject, setClientSubject, clientBody, setClientBody, clientEmail)}
-            </TabsContent>
-            <TabsContent value="contractor" className="mt-3">
-              {renderEmailForm('contractor', contractorSubject, setContractorSubject, contractorBody, setContractorBody, contractor?.contractorEmail || '')}
-            </TabsContent>
+            <TabsContent value="contractor" className="mt-3">{renderContractorForm()}</TabsContent>
+            <TabsContent value="client" className="mt-3">{renderClientForm()}</TabsContent>
           </Tabs>
         ) : showClientTab ? (
-          renderEmailForm('client', clientSubject, setClientSubject, clientBody, setClientBody, clientEmail)
+          renderClientForm()
         ) : (
-          renderEmailForm('contractor', contractorSubject, setContractorSubject, contractorBody, setContractorBody, contractor?.contractorEmail || '')
+          renderContractorForm()
         )}
       </DialogContent>
     </Dialog>
