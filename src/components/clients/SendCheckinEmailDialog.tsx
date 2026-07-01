@@ -197,10 +197,16 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
     recipientEmail: string,
   ) => (
     <div className="space-y-3">
-      <div className="space-y-1.5">
-        <Label className="text-xs font-medium">To</Label>
-        <Input value={recipientEmail} readOnly className="text-sm bg-muted/50" />
-      </div>
+      {target === 'contractor' ? (
+        <div className="text-[11px] text-muted-foreground bg-muted/40 border border-border rounded-md px-2.5 py-1.5">
+          This will be posted to the contractor's <span className="font-medium text-foreground">Check-in tab</span> in the portal — no email will be sent.
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">To</Label>
+          <Input value={recipientEmail} readOnly className="text-sm bg-muted/50" />
+        </div>
+      )}
       <div className="space-y-1.5">
         <Label className="text-xs font-medium">Subject</Label>
         <Input value={subject} onChange={(e) => setSubject(e.target.value)} className="text-sm" />
@@ -212,7 +218,9 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
       <div className="flex justify-end">
         <Button size="sm" onClick={() => handleSend(target)} disabled={!!sending}>
           {sending === target ? (
-            <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Sending...</>
+            <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> {target === 'contractor' ? 'Posting...' : 'Sending...'}</>
+          ) : target === 'contractor' ? (
+            <><MessageSquare className="w-3.5 h-3.5 mr-1.5" /> Post to Portal</>
           ) : (
             <><Send className="w-3.5 h-3.5 mr-1.5" /> Send Email</>
           )}
