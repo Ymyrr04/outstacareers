@@ -152,6 +152,9 @@ interface ContractorInfo {
   sunday_hours_excluded: boolean;
   break_duration_minutes: number | null;
   break_is_paid: boolean | null;
+  timezone: string | null;
+  checkin_reminder_enabled: boolean;
+  checkin_reminder_time: string | null;
 }
 
 interface ProfileForm {
@@ -502,6 +505,41 @@ const ProfileField = ({ label, value }: { label: string; value: string | number 
   </div>
 );
 
+// Parse timezone strings like "PHT (UTC+8)" or "EST (UTC-5)" into offset minutes.
+// Falls back to the browser's offset when the string is missing or malformed.
+function tzOffsetMinutes(tz?: string | null): number | null {
+  if (!tz) return null;
+  const m = tz.match(/UTC\s*([+-])\s*(\d{1,2})(?::?(\d{2}))?/i);
+  if (!m) return null;
+  const sign = m[1] === '-' ? -1 : 1;
+  const h = parseInt(m[2], 10);
+  const mm = m[3] ? parseInt(m[3], 10) : 0;
+  return sign * (h * 60 + mm);
+}
+
+// Returns "YYYY-MM-DD" for `now` shifted into the given TZ offset.
+function todayInTz(offsetMin: number | null): string {
+  const now = new Date();
+  const effective = offsetMin ?? -now.getTimezoneOffset();
+  const shifted = new Date(now.getTime() + (effective + now.getTimezoneOffset()) * 60000);
+  return `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(2, '0')}-${String(shifted.getDate()).padStart(2, '0')}`;
+}
+
+// Minutes since midnight in the given TZ offset.
+function nowMinutesInTz(offsetMin: number | null): number {
+  const now = new Date();
+  const effective = offsetMin ?? -now.getTimezoneOffset();
+  const shifted = new Date(now.getTime() + (effective + now.getTimezoneOffset()) * 60000);
+  return shifted.getHours() * 60 + shifted.getMinutes();
+}
+
+function timeStringToMinutes(t?: string | null): number | null {
+  if (!t) return null;
+  const m = t.match(/^(\d{2}):(\d{2})/);
+  if (!m) return null;
+  return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+}
+
 const PortalDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -519,6 +557,11 @@ const PortalDashboard = () => {
   const [tutorialOpen, setTutorialOpen] = useState(false);
   // When set, opens the "Resolve missing hours" dialog for the given date key.
   const [splitDialogKey, setSplitDialogKey] = useState<string | null>(null);
+
+  // Check-in reminder + attention badge state
+  const [hasCheckinToday, setHasCheckinToday] = useState<boolean>(true);
+  const [reminderOpen, setReminderOpen] = useState(false);
+  const [tabValue, setTabValue] = useState<'timesheet' | 'checkin' | 'leave'>('timesheet');
 
   const emptyProfileForm: ProfileForm = {
     full_name: '', phone: '', whatsapp: '', location: '', country: '',
@@ -643,7 +686,7 @@ const PortalDashboard = () => {
     // for the dashboard view and (b) join client/job info to past timesheets.
     const { data: assignmentsAll } = await supabase
       .from('contractor_assignments')
-      .select('id, applicant_id, job_title, hourly_rate, hours_per_week, regular_work_shift, contact_number, emergency_number, country, work_days, status, start_date, sunday_hours_excluded, break_duration_minutes, break_is_paid, applicant:applicants_prescreen(full_name, email, phone, whatsapp, location), client:clients(company_name)')
+      .select('id, applicant_id, job_title, hourly_rate, hours_per_week, regular_work_shift, contact_number, emergency_number, country, work_days, status, start_date, sunday_hours_excluded, break_duration_minutes, break_is_paid, timezone, checkin_reminder_enabled, checkin_reminder_time, applicant:applicants_prescreen(full_name, email, phone, whatsapp, location), client:clients(company_name)')
       .in('id', allAssignmentIds);
 
     // Pick the active assignment first; otherwise the most recently started.
@@ -684,6 +727,9 @@ const PortalDashboard = () => {
       sunday_hours_excluded: Boolean((assignment as any).sunday_hours_excluded),
       break_duration_minutes: (assignment as any).break_duration_minutes ?? null,
       break_is_paid: (assignment as any).break_is_paid ?? null,
+      timezone: (assignment as any).timezone || null,
+      checkin_reminder_enabled: Boolean((assignment as any).checkin_reminder_enabled),
+      checkin_reminder_time: (assignment as any).checkin_reminder_time || null,
     };
     setInfo(nextInfo);
     setProfileForm({
@@ -741,6 +787,65 @@ const PortalDashboard = () => {
 
 
   useEffect(() => { loadAll(); }, []);
+
+  // ==== Check-in attention badge + reminder popup ====
+  const tzOffset = useMemo(() => tzOffsetMinutes(info?.timezone), [info?.timezone]);
+
+  const refreshCheckinToday = async () => {
+    if (!info?.contractor_assignment_id) return;
+    const today = todayInTz(tzOffset);
+    const { data } = await supabase
+      .from('contractor_daily_checkins')
+      .select('id')
+      .eq('contractor_assignment_id', info.contractor_assignment_id)
+      .eq('checkin_date', today)
+      .limit(1);
+    setHasCheckinToday(Boolean(data && data.length > 0));
+  };
+
+  useEffect(() => {
+    if (!info?.contractor_assignment_id) return;
+    refreshCheckinToday();
+    const id = window.setInterval(refreshCheckinToday, 5 * 60 * 1000); // every 5 min
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [info?.contractor_assignment_id, info?.timezone]);
+
+  // Reminder popup ticker — checks once per minute
+  useEffect(() => {
+    if (!info?.contractor_assignment_id) return;
+    const tick = () => {
+      if (!info.checkin_reminder_enabled) return;
+      if (hasCheckinToday) return;
+      const reminderMin = timeStringToMinutes(info.checkin_reminder_time);
+      if (reminderMin === null) return;
+      const nowMin = nowMinutesInTz(tzOffset);
+      if (nowMin < reminderMin) return;
+      const today = todayInTz(tzOffset);
+      const snoozeUntil = Number(localStorage.getItem(`checkin_snooze_${info.contractor_assignment_id}`) || 0);
+      if (Date.now() < snoozeUntil) return;
+      const dismissed = localStorage.getItem(`checkin_reminded_${info.contractor_assignment_id}_${today}`);
+      if (dismissed) return;
+      setReminderOpen(true);
+    };
+    tick();
+    const id = window.setInterval(tick, 60 * 1000);
+    return () => window.clearInterval(id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [info?.contractor_assignment_id, info?.checkin_reminder_enabled, info?.checkin_reminder_time, info?.timezone, hasCheckinToday]);
+
+  const dismissReminderForToday = () => {
+    if (!info?.contractor_assignment_id) return;
+    const today = todayInTz(tzOffset);
+    localStorage.setItem(`checkin_reminded_${info.contractor_assignment_id}_${today}`, '1');
+    setReminderOpen(false);
+  };
+  const snoozeReminder = () => {
+    if (!info?.contractor_assignment_id) return;
+    localStorage.setItem(`checkin_snooze_${info.contractor_assignment_id}`, String(Date.now() + 30 * 60 * 1000));
+    setReminderOpen(false);
+  };
+
 
   const handleSignOut = async () => {
     await supabase.auth.signOut();
@@ -1663,10 +1768,20 @@ const PortalDashboard = () => {
           </DialogContent>
         </Dialog>
 
-        <Tabs defaultValue="timesheet" className="space-y-6">
+        <Tabs value={tabValue} onValueChange={(v) => setTabValue(v as any)} className="space-y-6">
           <TabsList>
             <TabsTrigger value="timesheet">Timesheet</TabsTrigger>
-            <TabsTrigger value="checkin">Check-in</TabsTrigger>
+            <TabsTrigger value="checkin" className="relative">
+              Check-in
+              {!hasCheckinToday && (
+                <span
+                  aria-label="Check-in not submitted"
+                  className="absolute -top-1 -right-1 flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none shadow ring-2 ring-background"
+                >
+                  !
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="leave">Leave</TabsTrigger>
           </TabsList>
           <TabsContent value="timesheet" className="space-y-6 mt-0">
@@ -2384,13 +2499,20 @@ const PortalDashboard = () => {
           </CardContent>
         </Card>
           </TabsContent>
-          <TabsContent value="checkin" className="mt-0">
+          <TabsContent value="checkin" className="mt-0 space-y-3">
+            {!hasCheckinToday && info && (
+              <div className="rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-100 px-4 py-2.5 text-sm flex items-center gap-2">
+                <AlertTriangle className="w-4 h-4 shrink-0" />
+                <span>You haven't submitted today's check-in yet.</span>
+              </div>
+            )}
             {info && (
               <DailyCheckin
                 contractorAssignmentId={info.contractor_assignment_id}
                 contractorName={info.full_name || 'Contractor'}
                 jobTitle={info.job_title}
                 companyName={info.company_name}
+                onSubmitted={() => { setHasCheckinToday(true); setReminderOpen(false); }}
               />
             )}
           </TabsContent>
@@ -2399,6 +2521,24 @@ const PortalDashboard = () => {
           </TabsContent>
         </Tabs>
       </main>
+
+      {/* Daily check-in reminder popup */}
+      <Dialog open={reminderOpen} onOpenChange={(o) => { if (!o) dismissReminderForToday(); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Don't forget your daily check-in! 📋</DialogTitle>
+            <DialogDescription>
+              Take a minute to complete today's check-in and keep your manager updated.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={snoozeReminder}>Remind me later</Button>
+            <Button onClick={() => { setTabValue('checkin'); setReminderOpen(false); }}>
+              Go to Check-in →
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!flagDialogTimesheet} onOpenChange={(o) => { if (!o) setFlagDialogTimesheet(null); }}>
         <DialogContent className="max-w-md">
