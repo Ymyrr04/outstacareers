@@ -48,6 +48,16 @@ const DEFAULT_NEW_SECTIONS: CheckinSection[] = [
   { title: "Today's accomplishments", color: 'emerald', enabled: true, items: [''] },
 ];
 
+const MERGE_TAGS: { label: string; token: string }[] = [
+  { label: 'First name', token: '{{first_name}}' },
+  { label: 'Full name', token: '{{full_name}}' },
+  { label: 'Last name', token: '{{last_name}}' },
+  { label: 'Email', token: '{{email}}' },
+  { label: 'Role', token: '{{role}}' },
+  { label: 'Client', token: '{{client_name}}' },
+  { label: 'Start date', token: '{{start_date}}' },
+];
+
 export const CheckinTemplateLibraryDialog = ({ open, onOpenChange, onApply, saveCurrent }: Props) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
