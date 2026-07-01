@@ -89,7 +89,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
   const loadMessages = async () => {
     const { data } = await supabase
       .from('contractor_checkin_messages' as any)
-      .select('id, subject, body_html, read_at, created_at')
+      .select('id, subject, body_html, read_at, created_at, template_type, sections, responses, submitted_at')
       .eq('contractor_assignment_id', contractorAssignmentId)
       .order('created_at', { ascending: false })
       .limit(20);
@@ -100,6 +100,47 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
     setMessages(prev => prev.map(m => m.id === id ? { ...m, read_at: new Date().toISOString() } : m));
     await supabase.from('contractor_checkin_messages' as any).update({ read_at: new Date().toISOString() } as any).eq('id', id);
   };
+
+  const [msgChecked, setMsgChecked] = useState<Record<string, Record<string, Set<number>>>>({});
+  const [msgNotes, setMsgNotes] = useState<Record<string, string>>({});
+  const [msgSubmitting, setMsgSubmitting] = useState<string | null>(null);
+
+  const toggleMsgItem = (msgId: string, sectionTitle: string, idx: number) => {
+    setMsgChecked(prev => {
+      const forMsg = { ...(prev[msgId] || {}) };
+      const set = new Set(forMsg[sectionTitle] || []);
+      if (set.has(idx)) set.delete(idx); else set.add(idx);
+      forMsg[sectionTitle] = set;
+      return { ...prev, [msgId]: forMsg };
+    });
+  };
+
+  const submitMsgForm = async (m: any) => {
+    setMsgSubmitting(m.id);
+    try {
+      const responses: any = { sections: [], notes: msgNotes[m.id] || '' };
+      (m.sections || []).forEach((sec: any) => {
+        const checkedSet = msgChecked[m.id]?.[sec.title] || new Set();
+        responses.sections.push({
+          title: sec.title,
+          checked: sec.items.filter((_: any, i: number) => checkedSet.has(i)),
+        });
+      });
+      const nowIso = new Date().toISOString();
+      const { error } = await supabase
+        .from('contractor_checkin_messages' as any)
+        .update({ responses, submitted_at: nowIso, read_at: m.read_at || nowIso } as any)
+        .eq('id', m.id);
+      if (error) throw error;
+      setMessages(prev => prev.map(x => x.id === m.id ? { ...x, responses, submitted_at: nowIso, read_at: x.read_at || nowIso } : x));
+      toast({ title: 'Submitted', description: 'Your response was sent to your manager.' });
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+    } finally {
+      setMsgSubmitting(null);
+    }
+  };
+
 
   const initChecked = (s: CheckinSection[]) => {
     const m: Record<string, Set<number>> = {};
@@ -301,10 +342,82 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
                     </Button>
                   )}
                 </div>
-                <div
-                  className="prose prose-sm max-w-none dark:prose-invert text-sm [&_p]:my-1"
-                  dangerouslySetInnerHTML={{ __html: m.body_html }}
-                />
+
+                {m.template_type === 'checklist' && Array.isArray(m.sections) ? (
+                  m.submitted_at ? (
+                    <div className="space-y-2">
+                      <div className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Submitted {new Date(m.submitted_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                      </div>
+                      {(m.responses?.sections || []).map((sec: any, i: number) => (
+                        <div key={i} className="text-xs">
+                          <p className="font-semibold">{sec.title}</p>
+                          {sec.checked?.length > 0 ? (
+                            <ul className="pl-4 list-disc text-muted-foreground">
+                              {sec.checked.map((it: string, j: number) => <li key={j}>{it}</li>)}
+                            </ul>
+                          ) : (
+                            <p className="pl-4 text-muted-foreground italic">Nothing ticked</p>
+                          )}
+                        </div>
+                      ))}
+                      {m.responses?.notes && (
+                        <div className="text-xs">
+                          <p className="font-semibold">Notes</p>
+                          <p className="pl-1 text-muted-foreground whitespace-pre-wrap">{m.responses.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {(m.sections as CheckinSection[]).map((sec, si) => {
+                        const checkedSet = msgChecked[m.id]?.[sec.title] || new Set<number>();
+                        return (
+                          <div key={si} className="rounded border bg-background p-2.5">
+                            <p className="text-xs font-semibold mb-1.5">{sec.title}</p>
+                            <div className="space-y-1">
+                              {sec.items.map((it, ii) => (
+                                <label key={ii} className="flex items-start gap-2 text-xs cursor-pointer">
+                                  <Checkbox
+                                    checked={checkedSet.has(ii)}
+                                    onCheckedChange={() => toggleMsgItem(m.id, sec.title, ii)}
+                                    className="mt-0.5"
+                                  />
+                                  <span>{it}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div className="space-y-1">
+                        <Label className="text-[11px]">Notes (optional)</Label>
+                        <Textarea
+                          value={msgNotes[m.id] || ''}
+                          onChange={(e) => setMsgNotes(prev => ({ ...prev, [m.id]: e.target.value }))}
+                          rows={2}
+                          className="text-xs"
+                          placeholder="Add any details..."
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <Button size="sm" onClick={() => submitMsgForm(m)} disabled={msgSubmitting === m.id}>
+                          {msgSubmitting === m.id ? (
+                            <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Submitting...</>
+                          ) : (
+                            <>Submit Response</>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  <div
+                    className="prose prose-sm max-w-none dark:prose-invert text-sm [&_p]:my-1"
+                    dangerouslySetInnerHTML={{ __html: m.body_html || '' }}
+                  />
+                )}
+
               </div>
             ))}
           </CardContent>
