@@ -216,7 +216,7 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
             contractor_assignment_id: contractor.assignmentId,
             stage_id: stage?.id ?? null,
             subject: contractorSubject,
-            body_html: contractorMode === 'email' ? contractorBody : null,
+            body_html: contractorBody || null,
             template_type: contractorMode,
             sections: contractorMode === 'checklist' ? (contractorSections as any) : null,
           } as any);
