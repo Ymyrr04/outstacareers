@@ -342,10 +342,82 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
                     </Button>
                   )}
                 </div>
-                <div
-                  className="prose prose-sm max-w-none dark:prose-invert text-sm [&_p]:my-1"
-                  dangerouslySetInnerHTML={{ __html: m.body_html }}
-                />
+
+                {m.template_type === 'checklist' && Array.isArray(m.sections) ? (
+                  m.submitted_at ? (
+                    <div className="space-y-2">
+                      <div className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                        <Check className="w-3 h-3" /> Submitted {new Date(m.submitted_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                      </div>
+                      {(m.responses?.sections || []).map((sec: any, i: number) => (
+                        <div key={i} className="text-xs">
+                          <p className="font-semibold">{sec.title}</p>
+                          {sec.checked?.length > 0 ? (
+                            <ul className="pl-4 list-disc text-muted-foreground">
+                              {sec.checked.map((it: string, j: number) => <li key={j}>{it}</li>)}
+                            </ul>
+                          ) : (
+                            <p className="pl-4 text-muted-foreground italic">Nothing ticked</p>
+                          )}
+                        </div>
+                      ))}
+                      {m.responses?.notes && (
+                        <div className="text-xs">
+                          <p className="font-semibold">Notes</p>
+                          <p className="pl-1 text-muted-foreground whitespace-pre-wrap">{m.responses.notes}</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      {(m.sections as CheckinSection[]).map((sec, si) => {
+                        const checkedSet = msgChecked[m.id]?.[sec.title] || new Set<number>();
+                        return (
+                          <div key={si} className="rounded border bg-background p-2.5">
+                            <p className="text-xs font-semibold mb-1.5">{sec.title}</p>
+                            <div className="space-y-1">
+                              {sec.items.map((it, ii) => (
+                                <label key={ii} className="flex items-start gap-2 text-xs cursor-pointer">
+                                  <Checkbox
+                                    checked={checkedSet.has(ii)}
+                                    onCheckedChange={() => toggleMsgItem(m.id, sec.title, ii)}
+                                    className="mt-0.5"
+                                  />
+                                  <span>{it}</span>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                      <div className="space-y-1">
+                        <Label className="text-[11px]">Notes (optional)</Label>
+                        <Textarea
+                          value={msgNotes[m.id] || ''}
+                          onChange={(e) => setMsgNotes(prev => ({ ...prev, [m.id]: e.target.value }))}
+                          rows={2}
+                          className="text-xs"
+                          placeholder="Add any details..."
+                        />
+                      </div>
+                      <div className="flex justify-end">
+                        <Button size="sm" onClick={() => submitMsgForm(m)} disabled={msgSubmitting === m.id}>
+                          {msgSubmitting === m.id ? (
+                            <><Loader2 className="w-3 h-3 mr-1 animate-spin" /> Submitting...</>
+                          ) : (
+                            <>Submit Response</>
+                          )}
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                ) : (
+                  <div
+                    className="prose prose-sm max-w-none dark:prose-invert text-sm [&_p]:my-1"
+                    dangerouslySetInnerHTML={{ __html: m.body_html || '' }}
+                  />
+                )}
+
               </div>
             ))}
           </CardContent>
