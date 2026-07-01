@@ -119,11 +119,11 @@ export const StageEmailTemplateDialog = ({ open, onOpenChange, stage, onSaved }:
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Body</Label>
+              <Label className="text-xs font-medium">Message</Label>
               <Textarea
                 value={contractorBody}
                 onChange={(e) => setContractorBody(e.target.value)}
-                placeholder="Write your check-in email to the contractor here..."
+                placeholder="Write your check-in message to the contractor here..."
                 rows={10}
                 className="text-sm"
               />
