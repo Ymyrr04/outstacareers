@@ -152,6 +152,9 @@ interface ContractorInfo {
   sunday_hours_excluded: boolean;
   break_duration_minutes: number | null;
   break_is_paid: boolean | null;
+  timezone: string | null;
+  checkin_reminder_enabled: boolean;
+  checkin_reminder_time: string | null;
 }
 
 interface ProfileForm {
