@@ -1,4 +1,4 @@
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEditor, EditorContent, Editor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import Underline from '@tiptap/extension-underline';
 import Link from '@tiptap/extension-link';
@@ -16,6 +16,7 @@ interface WysiwygEditorProps {
   disabled?: boolean;
   minHeight?: string;
   autoFocus?: boolean;
+  onReady?: (editor: Editor) => void;
 }
 
 export function WysiwygEditor({
@@ -25,6 +26,7 @@ export function WysiwygEditor({
   disabled = false,
   minHeight = "100px",
   autoFocus = false,
+  onReady,
 }: WysiwygEditorProps) {
   const [linkUrl, setLinkUrl] = useState('');
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
