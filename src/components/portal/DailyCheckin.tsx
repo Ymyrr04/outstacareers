@@ -185,6 +185,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
       toast({ title: 'Check-in submitted', description: 'Your daily report has been sent.' });
       setChecked(initChecked(sections));
       setNotes('');
+      onSubmitted?.();
       load();
     } catch (e: any) {
       toast({ title: 'Submission failed', description: e?.message || 'Please try again.', variant: 'destructive' });
