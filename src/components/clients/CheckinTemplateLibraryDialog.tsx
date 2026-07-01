@@ -311,14 +311,31 @@ export const CheckinTemplateLibraryDialog = ({ open, onOpenChange, onApply, save
                         </Button>
                       </div>
                       <div className="p-2 space-y-1.5">
-                        {sec.items.map((item, ii) => (
-                          <div key={ii} className="flex items-center gap-2">
-                            <Input value={item} onChange={e => updateItem(si, ii, e.target.value)} className="h-8 text-sm" placeholder="Checklist item" />
-                            <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeItem(si, ii)}>
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        ))}
+                        {sec.items.map((item, ii) => {
+                          const parsed = parseCheckinItem(item);
+                          const setType = (t: CheckinItemType) => updateItem(si, ii, encodeCheckinItem(parsed.text, t));
+                          const setText = (v: string) => updateItem(si, ii, encodeCheckinItem(v, parsed.type));
+                          const placeholder =
+                            parsed.type === 'short' ? 'Short answer question' :
+                            parsed.type === 'long' ? 'Long answer question' :
+                            'Checklist item';
+                          return (
+                            <div key={ii} className="flex items-center gap-2">
+                              <Select value={parsed.type} onValueChange={(v) => setType(v as CheckinItemType)}>
+                                <SelectTrigger className="h-8 w-32 text-xs shrink-0"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="check">☑ Checklist</SelectItem>
+                                  <SelectItem value="short">— Short answer</SelectItem>
+                                  <SelectItem value="long">¶ Long answer</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Input value={parsed.text} onChange={e => setText(e.target.value)} className="h-8 text-sm" placeholder={placeholder} />
+                              <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeItem(si, ii)}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          );
+                        })}
                         <Button type="button" variant="outline" size="sm" onClick={() => addItem(si)}>
                           <Plus className="w-3.5 h-3.5 mr-1" /> Add item
                         </Button>
