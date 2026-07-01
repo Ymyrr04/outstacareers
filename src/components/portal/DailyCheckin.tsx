@@ -59,14 +59,22 @@ const DEFAULT_SECTIONS: CheckinSection[] = [
   },
 ];
 
+export interface CheckinSection {
+  title: string;
+  items: string[];
+  color?: string;
+  enabled?: boolean;
+}
+
 interface Props {
   contractorAssignmentId: string;
   contractorName: string;
   jobTitle?: string | null;
   companyName?: string | null;
+  onSubmitted?: () => void;
 }
 
-export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle, companyName }: Props) => {
+export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle, companyName, onSubmitted }: Props) => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
