@@ -1311,7 +1311,7 @@ export type Database = {
       }
       contractor_checkin_messages: {
         Row: {
-          body_html: string
+          body_html: string | null
           contractor_assignment_id: string
           created_at: string
           id: string
@@ -1325,7 +1325,7 @@ export type Database = {
           template_type: string
         }
         Insert: {
-          body_html: string
+          body_html?: string | null
           contractor_assignment_id: string
           created_at?: string
           id?: string
@@ -1339,7 +1339,7 @@ export type Database = {
           template_type?: string
         }
         Update: {
-          body_html?: string
+          body_html?: string | null
           contractor_assignment_id?: string
           created_at?: string
           id?: string
