@@ -114,6 +114,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
       if (error) throw error;
       setMessages(prev => prev.map(x => x.id === m.id ? { ...x, responses, submitted_at: nowIso, read_at: x.read_at || nowIso } : x));
       toast({ title: 'Submitted', description: 'Your response was sent to your manager.' });
+      onSubmitted?.();
     } catch (e: any) {
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
     } finally {
