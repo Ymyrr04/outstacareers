@@ -438,6 +438,36 @@ export type Database = {
           },
         ]
       }
+      checkin_templates_library: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          name: string
+          sections: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name: string
+          sections?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          name?: string
+          sections?: Json
+          updated_at?: string
+        }
+        Relationships: []
+      }
       client_communications: {
         Row: {
           client_id: string
@@ -1515,6 +1545,7 @@ export type Database = {
         Row: {
           checkin_email_body: string | null
           checkin_email_subject: string | null
+          checkin_sections: Json | null
           contractor_email_body: string | null
           contractor_email_subject: string | null
           created_at: string
@@ -1531,6 +1562,7 @@ export type Database = {
         Insert: {
           checkin_email_body?: string | null
           checkin_email_subject?: string | null
+          checkin_sections?: Json | null
           contractor_email_body?: string | null
           contractor_email_subject?: string | null
           created_at?: string
@@ -1547,6 +1579,7 @@ export type Database = {
         Update: {
           checkin_email_body?: string | null
           checkin_email_subject?: string | null
+          checkin_sections?: Json | null
           contractor_email_body?: string | null
           contractor_email_subject?: string | null
           created_at?: string
