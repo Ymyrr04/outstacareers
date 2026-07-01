@@ -545,6 +545,13 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
               rows={3}
             />
           </div>
+
+          {contractor?.id && (
+            <ContractorCheckinConfig
+              contractorAssignmentId={contractor.id}
+              timezone={formData.timezone || (contractor as any).timezone}
+            />
+          )}
         </div>
 
         <DialogFooter className="flex justify-between sm:justify-between">
