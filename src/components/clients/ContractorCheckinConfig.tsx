@@ -224,8 +224,19 @@ export const ContractorCheckinConfig = ({ contractorAssignmentId, timezone }: Pr
                 )}
               </div>
 
+              {/* Template library actions */}
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" size="sm" variant="outline" onClick={() => setLibOpen(true)}>
+                  <Library className="w-3.5 h-3.5 mr-1" /> Load from library
+                </Button>
+                <Button type="button" size="sm" variant="outline" onClick={() => setSaveLibOpen(true)} disabled={sections.length === 0}>
+                  <Save className="w-3.5 h-3.5 mr-1" /> Save as template
+                </Button>
+              </div>
+
               {/* Sections */}
               <div className="space-y-3">
+
                 {sections.map((sec, si) => (
                   <div
                     key={si}
