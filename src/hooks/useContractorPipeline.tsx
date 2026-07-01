@@ -15,6 +15,7 @@ export interface ContractorPipelineStage {
   contractor_email_subject: string | null;
   contractor_email_body: string | null;
   email_recipient: string;
+  checkin_sections?: any[] | null;
   created_at: string;
   updated_at: string;
 }
