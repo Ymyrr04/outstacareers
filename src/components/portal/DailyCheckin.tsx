@@ -89,7 +89,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
   const loadMessages = async () => {
     const { data } = await supabase
       .from('contractor_checkin_messages' as any)
-      .select('id, subject, body_html, read_at, created_at')
+      .select('id, subject, body_html, read_at, created_at, template_type, sections, responses, submitted_at')
       .eq('contractor_assignment_id', contractorAssignmentId)
       .order('created_at', { ascending: false })
       .limit(20);
@@ -100,6 +100,47 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
     setMessages(prev => prev.map(m => m.id === id ? { ...m, read_at: new Date().toISOString() } : m));
     await supabase.from('contractor_checkin_messages' as any).update({ read_at: new Date().toISOString() } as any).eq('id', id);
   };
+
+  const [msgChecked, setMsgChecked] = useState<Record<string, Record<string, Set<number>>>>({});
+  const [msgNotes, setMsgNotes] = useState<Record<string, string>>({});
+  const [msgSubmitting, setMsgSubmitting] = useState<string | null>(null);
+
+  const toggleMsgItem = (msgId: string, sectionTitle: string, idx: number) => {
+    setMsgChecked(prev => {
+      const forMsg = { ...(prev[msgId] || {}) };
+      const set = new Set(forMsg[sectionTitle] || []);
+      if (set.has(idx)) set.delete(idx); else set.add(idx);
+      forMsg[sectionTitle] = set;
+      return { ...prev, [msgId]: forMsg };
+    });
+  };
+
+  const submitMsgForm = async (m: any) => {
+    setMsgSubmitting(m.id);
+    try {
+      const responses: any = { sections: [], notes: msgNotes[m.id] || '' };
+      (m.sections || []).forEach((sec: any) => {
+        const checkedSet = msgChecked[m.id]?.[sec.title] || new Set();
+        responses.sections.push({
+          title: sec.title,
+          checked: sec.items.filter((_: any, i: number) => checkedSet.has(i)),
+        });
+      });
+      const nowIso = new Date().toISOString();
+      const { error } = await supabase
+        .from('contractor_checkin_messages' as any)
+        .update({ responses, submitted_at: nowIso, read_at: m.read_at || nowIso } as any)
+        .eq('id', m.id);
+      if (error) throw error;
+      setMessages(prev => prev.map(x => x.id === m.id ? { ...x, responses, submitted_at: nowIso, read_at: x.read_at || nowIso } : x));
+      toast({ title: 'Submitted', description: 'Your response was sent to your manager.' });
+    } catch (e: any) {
+      toast({ title: 'Error', description: e.message, variant: 'destructive' });
+    } finally {
+      setMsgSubmitting(null);
+    }
+  };
+
 
   const initChecked = (s: CheckinSection[]) => {
     const m: Record<string, Set<number>> = {};
