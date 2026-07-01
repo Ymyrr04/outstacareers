@@ -332,7 +332,7 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
       {contractorMode === 'email' ? (
         <div className="space-y-1.5">
           <Label className="text-xs font-medium">Body</Label>
-          <Textarea value={contractorBody} onChange={(e) => setContractorBody(e.target.value)} rows={8} className="text-sm" />
+          <WysiwygEditor value={contractorBody} onChange={setContractorBody} minHeight="220px" />
         </div>
       ) : (
         <div className="space-y-2">
