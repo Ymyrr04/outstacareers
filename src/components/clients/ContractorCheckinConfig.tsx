@@ -84,6 +84,8 @@ export const ContractorCheckinConfig = ({ contractorAssignmentId, timezone }: Pr
   const [reminderTime, setReminderTime] = useState<string>('5:00 PM');
   const [dragItem, setDragItem] = useState<{ s: number; i: number } | null>(null);
   const [dragSection, setDragSection] = useState<number | null>(null);
+  const [libOpen, setLibOpen] = useState(false);
+  const [saveLibOpen, setSaveLibOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
