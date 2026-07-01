@@ -21,6 +21,8 @@ export const PostHirePipelineKanban = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [processingMilestones, setProcessingMilestones] = useState(false);
   const [editingStage, setEditingStage] = useState<ContractorPipelineStage | null>(null);
+  const [stageCheckinTarget, setStageCheckinTarget] = useState<ContractorPipelineStage | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const [emailTarget, setEmailTarget] = useState<{ item: ContractorPipelineTracking; stage: ContractorPipelineStage } | null>(null);
   const { toast } = useToast();
 
