@@ -2522,6 +2522,24 @@ const PortalDashboard = () => {
         </Tabs>
       </main>
 
+      {/* Daily check-in reminder popup */}
+      <Dialog open={reminderOpen} onOpenChange={(o) => { if (!o) dismissReminderForToday(); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Don't forget your daily check-in! 📋</DialogTitle>
+            <DialogDescription>
+              Take a minute to complete today's check-in and keep your manager updated.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="outline" onClick={snoozeReminder}>Remind me later</Button>
+            <Button onClick={() => { setTabValue('checkin'); setReminderOpen(false); }}>
+              Go to Check-in →
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!flagDialogTimesheet} onOpenChange={(o) => { if (!o) setFlagDialogTimesheet(null); }}>
         <DialogContent className="max-w-md">
           <DialogHeader>
