@@ -65,6 +65,19 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
   const [msgAnswers, setMsgAnswers] = useState<Record<string, Record<string, Record<number, string>>>>({});
   const [msgNotes, setMsgNotes] = useState<Record<string, string>>({});
   const [msgSubmitting, setMsgSubmitting] = useState<string | null>(null);
+  const [resending, setResending] = useState<string | null>(null);
+
+  const resendNotification = async (m: any) => {
+    setResending(m.id);
+    try {
+      await notifyTeamRef.current?.(m, m.responses || { sections: [], notes: '' });
+      toast({ title: 'Sent', description: 'Notification re-sent to the team.' });
+    } catch (e: any) {
+      toast({ title: 'Failed', description: e?.message || 'Could not send', variant: 'destructive' });
+    } finally {
+      setResending(null);
+    }
+  };
 
   const toggleMsgItem = (msgId: string, sectionTitle: string, idx: number) => {
     setMsgChecked(prev => {
