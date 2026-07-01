@@ -247,13 +247,18 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
         <CardContent className="space-y-4">
           {sections.map((sec, secIdx) => {
             const sectionCount = checked[sec.title]?.size || 0;
-            const accents = [
-              { bar: 'bg-emerald-500', chip: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' },
-              { bar: 'bg-blue-500', chip: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20' },
-              { bar: 'bg-violet-500', chip: 'bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/20' },
-              { bar: 'bg-amber-500', chip: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20' },
-            ];
-            const a = accents[secIdx % accents.length];
+            const accentMap: Record<string, { bar: string; chip: string }> = {
+              emerald: { bar: 'bg-emerald-500', chip: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' },
+              blue:    { bar: 'bg-blue-500',    chip: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20' },
+              violet:  { bar: 'bg-violet-500',  chip: 'bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/20' },
+              amber:   { bar: 'bg-amber-500',   chip: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20' },
+              rose:    { bar: 'bg-rose-500',    chip: 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20' },
+              cyan:    { bar: 'bg-cyan-500',    chip: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/20' },
+              orange:  { bar: 'bg-orange-500',  chip: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20' },
+              pink:    { bar: 'bg-pink-500',    chip: 'bg-pink-500/10 text-pink-700 dark:text-pink-400 border-pink-500/20' },
+            };
+            const orderFallback = ['emerald','blue','violet','amber'];
+            const a = accentMap[sec.color || orderFallback[secIdx % orderFallback.length]] || accentMap.emerald;
             return (
               <section key={sec.title} className="rounded-lg border bg-muted/30 overflow-hidden">
                 <header className="flex items-center justify-between gap-3 px-4 py-2.5 bg-muted/60 border-b">
