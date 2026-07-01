@@ -76,6 +76,31 @@ export const CheckinTemplateLibraryDialog = ({ open, onOpenChange, onApply, save
   const [bSections, setBSections] = useState<CheckinSection[]>(DEFAULT_NEW_SECTIONS);
   const [bSubject, setBSubject] = useState('');
   const [bBody, setBBody] = useState('');
+  const subjectRef = useRef<HTMLInputElement>(null);
+  const bodyEditorRef = useRef<Editor | null>(null);
+
+  const insertInSubject = (token: string) => {
+    const el = subjectRef.current;
+    if (!el) { setBSubject(s => s + token); return; }
+    const start = el.selectionStart ?? bSubject.length;
+    const end = el.selectionEnd ?? bSubject.length;
+    const next = bSubject.slice(0, start) + token + bSubject.slice(end);
+    setBSubject(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      const pos = start + token.length;
+      el.setSelectionRange(pos, pos);
+    });
+  };
+
+  const insertInBody = (token: string) => {
+    const ed = bodyEditorRef.current;
+    if (ed) {
+      ed.chain().focus().insertContent(token).run();
+    } else {
+      setBBody(b => (b || '') + token);
+    }
+  };
   const [bSaving, setBSaving] = useState(false);
   const [previewId, setPreviewId] = useState<string | null>(null);
 
