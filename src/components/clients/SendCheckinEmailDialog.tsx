@@ -343,22 +343,28 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
           <WysiwygEditor value={contractorBody} onChange={setContractorBody} minHeight="220px" />
         </div>
       ) : (
-        <div className="space-y-2">
-          <Label className="text-xs font-medium flex items-center gap-1.5">
-            <ListChecks className="w-3.5 h-3.5" /> Checklist form preview
-            <Badge variant="outline" className="text-[10px]">The contractor will tick and submit these</Badge>
-          </Label>
-          <div className="rounded-md border bg-muted/20 p-3 space-y-3 max-h-[300px] overflow-y-auto">
-            {contractorSections.map((sec, i) => (
-              <div key={i}>
-                <p className="text-xs font-semibold mb-1">{sec.title}</p>
-                <ul className="space-y-0.5 pl-3">
-                  {sec.items.map((it, j) => (
-                    <li key={j} className="text-[11px] text-muted-foreground list-disc">{it}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+        <div className="space-y-3">
+          <div className="space-y-1.5">
+            <Label className="text-xs font-medium">Message shown above the form (optional)</Label>
+            <WysiwygEditor value={contractorBody} onChange={setContractorBody} minHeight="160px" />
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs font-medium flex items-center gap-1.5">
+              <ListChecks className="w-3.5 h-3.5" /> Checklist form preview
+              <Badge variant="outline" className="text-[10px]">The contractor will tick and submit these</Badge>
+            </Label>
+            <div className="rounded-md border bg-muted/20 p-3 space-y-3 max-h-[300px] overflow-y-auto">
+              {contractorSections.map((sec, i) => (
+                <div key={i}>
+                  <p className="text-xs font-semibold mb-1">{sec.title}</p>
+                  <ul className="space-y-0.5 pl-3">
+                    {sec.items.map((it, j) => (
+                      <li key={j} className="text-[11px] text-muted-foreground list-disc">{it}</li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}
