@@ -113,8 +113,32 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
         .eq('id', m.id);
       if (error) throw error;
       setMessages(prev => prev.map(x => x.id === m.id ? { ...x, responses, submitted_at: nowIso, read_at: x.read_at || nowIso } : x));
+
+      // Notify (same as daily check-in submission)
+      try {
+        const emailSections = (responses.sections || []).map((s: any) => {
+          const items: string[] = [...(s.checked || [])];
+          (s.answers || []).forEach((a: any) => items.push(`${a.question}: ${a.answer}`));
+          return { title: s.title, checked: items };
+        });
+        const today = new Date().toISOString().slice(0, 10);
+        await supabase.functions.invoke('send-daily-checkin', {
+          body: {
+            contractorName,
+            jobTitle,
+            companyName,
+            date: today,
+            sections: emailSections,
+            additionalNotes: responses.notes || '',
+          },
+        });
+      } catch (nErr) {
+        console.warn('Notification failed:', nErr);
+      }
+
       toast({ title: 'Submitted', description: 'Your response was sent to your manager.' });
       onSubmitted?.();
+
     } catch (e: any) {
       toast({ title: 'Error', description: e.message, variant: 'destructive' });
     } finally {
