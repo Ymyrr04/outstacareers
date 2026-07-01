@@ -70,7 +70,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
   const resendNotification = async (m: any) => {
     setResending(m.id);
     try {
-      await notifyTeamRef.current?.(m, m.responses || { sections: [], notes: '' });
+      await notifyTeam(m, m.responses || { sections: [], notes: '' });
       toast({ title: 'Sent', description: 'Notification re-sent to the team.' });
     } catch (e: any) {
       toast({ title: 'Failed', description: e?.message || 'Could not send', variant: 'destructive' });
