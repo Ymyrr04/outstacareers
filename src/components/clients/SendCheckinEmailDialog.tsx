@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
-import { Send, Loader2 } from 'lucide-react';
+import { Send, Loader2, MessageSquare } from 'lucide-react';
 
 interface SendCheckinEmailDialogProps {
   open: boolean;
@@ -120,10 +120,6 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
     const body = target === 'client' ? clientBody : contractorBody;
     const name = target === 'client' ? clientFirstName : contractor.contractorFirstName;
 
-    if (!email) {
-      toast({ title: 'No email', description: `No ${target} email found`, variant: 'destructive' });
-      return;
-    }
     if (!subject || !body) {
       toast({ title: 'Missing content', description: 'Subject and body are required', variant: 'destructive' });
       return;
@@ -131,33 +127,55 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
 
     setSending(target);
     try {
-      const { data, error } = await supabase.functions.invoke('send-contractor-email', {
-        body: {
-          contractorAssignmentId: contractor.assignmentId,
-          subject,
-          bodyHtml: body,
-          recipientEmail: email,
-          recipientName: name,
-        },
-      });
+      if (target === 'contractor') {
+        // Post to contractor's portal Check-in instead of emailing
+        const { error: msgErr } = await supabase
+          .from('contractor_checkin_messages' as any)
+          .insert({
+            contractor_assignment_id: contractor.assignmentId,
+            stage_id: stage?.id ?? null,
+            subject,
+            body_html: body,
+          } as any);
+        if (msgErr) throw msgErr;
 
-      if (error) throw error;
+        toast({
+          title: 'Posted to portal',
+          description: `${contractor.contractorFirstName} will see this in their Check-in tab.`,
+        });
+      } else {
+        if (!email) {
+          toast({ title: 'No email', description: 'No client email found', variant: 'destructive' });
+          setSending(null);
+          return;
+        }
+        const { error } = await supabase.functions.invoke('send-contractor-email', {
+          body: {
+            contractorAssignmentId: contractor.assignmentId,
+            subject,
+            bodyHtml: body,
+            recipientEmail: email,
+            recipientName: name,
+          },
+        });
+        if (error) throw error;
 
-      // Also log to checkin emails table
-      if (stage) {
-        await supabase.from('contractor_checkin_emails').insert({
-          contractor_assignment_id: contractor.assignmentId,
-          stage_id: stage.id,
-          recipient_email: email,
-          recipient_name: name,
-          subject,
-          body_html: body,
-          status: 'sent',
-          sent_at: new Date().toISOString(),
-        } as any);
+        if (stage) {
+          await supabase.from('contractor_checkin_emails').insert({
+            contractor_assignment_id: contractor.assignmentId,
+            stage_id: stage.id,
+            recipient_email: email,
+            recipient_name: name,
+            subject,
+            body_html: body,
+            status: 'sent',
+            sent_at: new Date().toISOString(),
+          } as any);
+        }
+
+        toast({ title: 'Email sent', description: `Check-in email sent to ${email}` });
       }
-
-      toast({ title: 'Email sent', description: `Check-in email sent to ${email}` });
+      onOpenChange(false);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
@@ -179,10 +197,16 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
     recipientEmail: string,
   ) => (
     <div className="space-y-3">
-      <div className="space-y-1.5">
-        <Label className="text-xs font-medium">To</Label>
-        <Input value={recipientEmail} readOnly className="text-sm bg-muted/50" />
-      </div>
+      {target === 'contractor' ? (
+        <div className="text-[11px] text-muted-foreground bg-muted/40 border border-border rounded-md px-2.5 py-1.5">
+          This will be posted to the contractor's <span className="font-medium text-foreground">Check-in tab</span> in the portal — no email will be sent.
+        </div>
+      ) : (
+        <div className="space-y-1.5">
+          <Label className="text-xs font-medium">To</Label>
+          <Input value={recipientEmail} readOnly className="text-sm bg-muted/50" />
+        </div>
+      )}
       <div className="space-y-1.5">
         <Label className="text-xs font-medium">Subject</Label>
         <Input value={subject} onChange={(e) => setSubject(e.target.value)} className="text-sm" />
@@ -194,7 +218,9 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
       <div className="flex justify-end">
         <Button size="sm" onClick={() => handleSend(target)} disabled={!!sending}>
           {sending === target ? (
-            <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> Sending...</>
+            <><Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> {target === 'contractor' ? 'Posting...' : 'Sending...'}</>
+          ) : target === 'contractor' ? (
+            <><MessageSquare className="w-3.5 h-3.5 mr-1.5" /> Post to Portal</>
           ) : (
             <><Send className="w-3.5 h-3.5 mr-1.5" /> Send Email</>
           )}
@@ -210,19 +236,19 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-sm">
-            {stage?.emoji} Send Check-in Email — {contractor?.contractorName}
+            {stage?.emoji} Send Check-in — {contractor?.contractorName}
           </DialogTitle>
         </DialogHeader>
 
         {!hasAnyTemplate ? (
           <div className="text-center py-6 text-sm text-muted-foreground">
-            No email template configured for this stage. Click the ✉️ icon on the column header to set one up.
+            No template configured for this stage. Click the ✉️ icon on the column header to set one up.
           </div>
         ) : showBothTabs ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="w-full">
-              <TabsTrigger value="client" className="flex-1 text-xs">To Client</TabsTrigger>
-              <TabsTrigger value="contractor" className="flex-1 text-xs">To Contractor</TabsTrigger>
+              <TabsTrigger value="client" className="flex-1 text-xs">Email Client</TabsTrigger>
+              <TabsTrigger value="contractor" className="flex-1 text-xs">Post to Contractor Portal</TabsTrigger>
             </TabsList>
             <TabsContent value="client" className="mt-3">
               {renderEmailForm('client', clientSubject, setClientSubject, clientBody, setClientBody, clientEmail)}

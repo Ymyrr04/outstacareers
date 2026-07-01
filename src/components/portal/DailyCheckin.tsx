@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Trash2, Check, X, Settings2 } from 'lucide-react';
+import { Loader2, Plus, Trash2, Check, X, Settings2, MessageSquare, CheckCheck } from 'lucide-react';
 
 export interface CheckinSection {
   title: string;
@@ -84,6 +84,22 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
   const [checked, setChecked] = useState<Record<string, Set<number>>>({});
   const [notes, setNotes] = useState('');
   const [recent, setRecent] = useState<any[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
+
+  const loadMessages = async () => {
+    const { data } = await supabase
+      .from('contractor_checkin_messages' as any)
+      .select('id, subject, body_html, read_at, created_at')
+      .eq('contractor_assignment_id', contractorAssignmentId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    setMessages((data as any) || []);
+  };
+
+  const markMessageRead = async (id: string) => {
+    setMessages(prev => prev.map(m => m.id === id ? { ...m, read_at: new Date().toISOString() } : m));
+    await supabase.from('contractor_checkin_messages' as any).update({ read_at: new Date().toISOString() } as any).eq('id', id);
+  };
 
   const initChecked = (s: CheckinSection[]) => {
     const m: Record<string, Set<number>> = {};
@@ -142,6 +158,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
       .order('created_at', { ascending: false })
       .limit(10);
     setRecent(hist || []);
+    await loadMessages();
 
     setLoading(false);
   };
@@ -252,6 +269,48 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
 
   return (
     <div className="space-y-6">
+      {messages.length > 0 && (
+        <Card className="border-primary/40">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <MessageSquare className="w-4 h-4 text-primary" />
+              <CardTitle className="text-base">Messages from your manager</CardTitle>
+              {messages.some(m => !m.read_at) && (
+                <span className="text-[10px] font-semibold bg-primary text-primary-foreground px-1.5 py-0.5 rounded-full">
+                  {messages.filter(m => !m.read_at).length} new
+                </span>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {messages.map((m) => (
+              <div
+                key={m.id}
+                className={`rounded-md border p-3 ${m.read_at ? 'bg-background' : 'bg-primary/5 border-primary/30'}`}
+              >
+                <div className="flex items-start justify-between gap-3 mb-2">
+                  <div>
+                    <p className="text-sm font-semibold">{m.subject}</p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {new Date(m.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                    </p>
+                  </div>
+                  {!m.read_at && (
+                    <Button variant="ghost" size="sm" className="h-7 text-[11px]" onClick={() => markMessageRead(m.id)}>
+                      <CheckCheck className="w-3 h-3 mr-1" /> Mark read
+                    </Button>
+                  )}
+                </div>
+                <div
+                  className="prose prose-sm max-w-none dark:prose-invert text-sm [&_p]:my-1"
+                  dangerouslySetInnerHTML={{ __html: m.body_html }}
+                />
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       <Card>
         <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
           <div>
