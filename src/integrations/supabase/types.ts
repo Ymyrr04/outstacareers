@@ -445,6 +445,7 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
+          is_default: boolean
           name: string
           sections: Json | null
           subject: string | null
@@ -457,6 +458,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          is_default?: boolean
           name: string
           sections?: Json | null
           subject?: string | null
@@ -469,6 +471,7 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
+          is_default?: boolean
           name?: string
           sections?: Json | null
           subject?: string | null
