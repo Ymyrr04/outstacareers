@@ -1,0 +1,1 @@
+ALTER TABLE public.contractor_checkin_messages ALTER COLUMN body_html DROP NOT NULL;
