@@ -206,6 +206,31 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
 
   useEffect(() => { load(); /* eslint-disable-next-line */ }, [contractorAssignmentId]);
 
+  // Auto-refresh manager messages: poll every 30s and refresh on tab focus,
+  // plus realtime subscription so new posts appear without a manual reload.
+  useEffect(() => {
+    if (!contractorAssignmentId) return;
+    const poll = window.setInterval(loadMessages, 30 * 1000);
+    const onFocus = () => loadMessages();
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    const channel = supabase
+      .channel(`checkin-msgs-${contractorAssignmentId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'contractor_checkin_messages', filter: `contractor_assignment_id=eq.${contractorAssignmentId}` },
+        () => loadMessages()
+      )
+      .subscribe();
+    return () => {
+      window.clearInterval(poll);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+      supabase.removeChannel(channel);
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [contractorAssignmentId]);
+
   const toggleItem = (sectionTitle: string, idx: number) => {
     setChecked(prev => {
       const next = { ...prev };
