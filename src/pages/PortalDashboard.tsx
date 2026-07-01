@@ -523,6 +523,11 @@ const PortalDashboard = () => {
   // When set, opens the "Resolve missing hours" dialog for the given date key.
   const [splitDialogKey, setSplitDialogKey] = useState<string | null>(null);
 
+  // Check-in reminder + attention badge state
+  const [hasCheckinToday, setHasCheckinToday] = useState<boolean>(true);
+  const [reminderOpen, setReminderOpen] = useState(false);
+  const [tabValue, setTabValue] = useState<'timesheet' | 'checkin' | 'leave'>('timesheet');
+
   const emptyProfileForm: ProfileForm = {
     full_name: '', phone: '', whatsapp: '', location: '', country: '',
     contact_number: '', emergency_number: '', hours_per_week: '',
