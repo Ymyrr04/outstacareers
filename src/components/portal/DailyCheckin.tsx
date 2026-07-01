@@ -12,6 +12,8 @@ import { Loader2, Plus, Trash2, Check, X, Settings2 } from 'lucide-react';
 export interface CheckinSection {
   title: string;
   items: string[];
+  color?: string;
+  enabled?: boolean;
 }
 
 const DEFAULT_SECTIONS: CheckinSection[] = [
