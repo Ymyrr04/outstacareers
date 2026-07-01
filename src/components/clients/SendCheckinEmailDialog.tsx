@@ -120,10 +120,6 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
     const body = target === 'client' ? clientBody : contractorBody;
     const name = target === 'client' ? clientFirstName : contractor.contractorFirstName;
 
-    if (!email) {
-      toast({ title: 'No email', description: `No ${target} email found`, variant: 'destructive' });
-      return;
-    }
     if (!subject || !body) {
       toast({ title: 'Missing content', description: 'Subject and body are required', variant: 'destructive' });
       return;
@@ -131,33 +127,55 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
 
     setSending(target);
     try {
-      const { data, error } = await supabase.functions.invoke('send-contractor-email', {
-        body: {
-          contractorAssignmentId: contractor.assignmentId,
-          subject,
-          bodyHtml: body,
-          recipientEmail: email,
-          recipientName: name,
-        },
-      });
+      if (target === 'contractor') {
+        // Post to contractor's portal Check-in instead of emailing
+        const { error: msgErr } = await supabase
+          .from('contractor_checkin_messages' as any)
+          .insert({
+            contractor_assignment_id: contractor.assignmentId,
+            stage_id: stage?.id ?? null,
+            subject,
+            body_html: body,
+          } as any);
+        if (msgErr) throw msgErr;
 
-      if (error) throw error;
+        toast({
+          title: 'Posted to portal',
+          description: `${contractor.contractorFirstName} will see this in their Check-in tab.`,
+        });
+      } else {
+        if (!email) {
+          toast({ title: 'No email', description: 'No client email found', variant: 'destructive' });
+          setSending(null);
+          return;
+        }
+        const { error } = await supabase.functions.invoke('send-contractor-email', {
+          body: {
+            contractorAssignmentId: contractor.assignmentId,
+            subject,
+            bodyHtml: body,
+            recipientEmail: email,
+            recipientName: name,
+          },
+        });
+        if (error) throw error;
 
-      // Also log to checkin emails table
-      if (stage) {
-        await supabase.from('contractor_checkin_emails').insert({
-          contractor_assignment_id: contractor.assignmentId,
-          stage_id: stage.id,
-          recipient_email: email,
-          recipient_name: name,
-          subject,
-          body_html: body,
-          status: 'sent',
-          sent_at: new Date().toISOString(),
-        } as any);
+        if (stage) {
+          await supabase.from('contractor_checkin_emails').insert({
+            contractor_assignment_id: contractor.assignmentId,
+            stage_id: stage.id,
+            recipient_email: email,
+            recipient_name: name,
+            subject,
+            body_html: body,
+            status: 'sent',
+            sent_at: new Date().toISOString(),
+          } as any);
+        }
+
+        toast({ title: 'Email sent', description: `Check-in email sent to ${email}` });
       }
-
-      toast({ title: 'Email sent', description: `Check-in email sent to ${email}` });
+      onOpenChange(false);
     } catch (err: any) {
       toast({ title: 'Error', description: err.message, variant: 'destructive' });
     } finally {
