@@ -247,8 +247,8 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
         ) : showBothTabs ? (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="w-full">
-              <TabsTrigger value="client" className="flex-1 text-xs">To Client</TabsTrigger>
-              <TabsTrigger value="contractor" className="flex-1 text-xs">To Contractor</TabsTrigger>
+              <TabsTrigger value="client" className="flex-1 text-xs">Email Client</TabsTrigger>
+              <TabsTrigger value="contractor" className="flex-1 text-xs">Post to Contractor Portal</TabsTrigger>
             </TabsList>
             <TabsContent value="client" className="mt-3">
               {renderEmailForm('client', clientSubject, setClientSubject, clientBody, setClientBody, clientEmail)}
