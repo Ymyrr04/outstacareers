@@ -401,12 +401,23 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
                       {(m.responses?.sections || []).map((sec: any, i: number) => (
                         <div key={i} className="text-xs">
                           <p className="font-semibold">{sec.title}</p>
-                          {sec.checked?.length > 0 ? (
+                          {sec.checked?.length > 0 && (
                             <ul className="pl-4 list-disc text-muted-foreground">
                               {sec.checked.map((it: string, j: number) => <li key={j}>{it}</li>)}
                             </ul>
-                          ) : (
-                            <p className="pl-4 text-muted-foreground italic">Nothing ticked</p>
+                          )}
+                          {sec.answers?.length > 0 && (
+                            <div className="pl-4 space-y-1 mt-0.5">
+                              {sec.answers.map((a: any, j: number) => (
+                                <div key={j}>
+                                  <p className="text-foreground/80">{a.question}</p>
+                                  <p className="pl-2 text-muted-foreground whitespace-pre-wrap">{a.answer}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {!sec.checked?.length && !sec.answers?.length && (
+                            <p className="pl-4 text-muted-foreground italic">No response</p>
                           )}
                         </div>
                       ))}
