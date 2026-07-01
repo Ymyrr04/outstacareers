@@ -440,30 +440,39 @@ export type Database = {
       }
       checkin_templates_library: {
         Row: {
+          body_html: string | null
           created_at: string
           created_by: string | null
           description: string | null
           id: string
           name: string
-          sections: Json
+          sections: Json | null
+          subject: string | null
+          template_type: string
           updated_at: string
         }
         Insert: {
+          body_html?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
           name: string
-          sections?: Json
+          sections?: Json | null
+          subject?: string | null
+          template_type?: string
           updated_at?: string
         }
         Update: {
+          body_html?: string | null
           created_at?: string
           created_by?: string | null
           description?: string | null
           id?: string
           name?: string
-          sections?: Json
+          sections?: Json | null
+          subject?: string | null
+          template_type?: string
           updated_at?: string
         }
         Relationships: []
