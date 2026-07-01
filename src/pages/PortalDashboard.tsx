@@ -687,6 +687,9 @@ const PortalDashboard = () => {
       sunday_hours_excluded: Boolean((assignment as any).sunday_hours_excluded),
       break_duration_minutes: (assignment as any).break_duration_minutes ?? null,
       break_is_paid: (assignment as any).break_is_paid ?? null,
+      timezone: (assignment as any).timezone || null,
+      checkin_reminder_enabled: Boolean((assignment as any).checkin_reminder_enabled),
+      checkin_reminder_time: (assignment as any).checkin_reminder_time || null,
     };
     setInfo(nextInfo);
     setProfileForm({
