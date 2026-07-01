@@ -308,6 +308,20 @@ export const ContractorCheckinConfig = ({ contractorAssignmentId, timezone }: Pr
           )}
         </div>
       )}
+
+      <CheckinTemplateLibraryDialog
+        open={libOpen}
+        onOpenChange={setLibOpen}
+        onApply={(tpl) => setSections(tpl.sections.map((s, i) => ({
+          title: s.title, items: s.items || [], color: s.color || COLOR_CHOICES[i % COLOR_CHOICES.length], enabled: s.enabled !== false,
+        })))}
+      />
+      <CheckinTemplateLibraryDialog
+        open={saveLibOpen}
+        onOpenChange={setSaveLibOpen}
+        saveCurrent={sections}
+      />
     </div>
   );
 };
+
