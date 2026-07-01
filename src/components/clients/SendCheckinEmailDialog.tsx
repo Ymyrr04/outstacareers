@@ -153,9 +153,11 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
       if (stage.checkin_email_subject) setClientSubject(replacePlaceholders(stage.checkin_email_subject, p));
       if (stage.checkin_email_body) setClientBody(replacePlaceholders(stage.checkin_email_body.replace(/\\n/g, '\n'), p));
 
-      if ((stage as any).contractor_email_subject) {
-        setContractorSubject(replacePlaceholders((stage as any).contractor_email_subject, p));
-      }
+      setContractorSubject(
+        (stage as any).contractor_email_subject
+          ? replacePlaceholders((stage as any).contractor_email_subject, p)
+          : `Check-in: ${stage.name}`
+      );
       const stageSections = Array.isArray((stage as any).checkin_sections)
         ? ((stage as any).checkin_sections as CheckinSection[]).filter(s => s.enabled !== false && Array.isArray(s.items) && s.items.length > 0)
         : [];
@@ -185,7 +187,7 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
       setContractorSubject(t.subject ? replacePlaceholders(t.subject, p) : `Check-in: ${t.name}`);
       setContractorBody(t.body_html ? replacePlaceholders(t.body_html, p) : contractorBody);
     } else {
-      setContractorMode('email');
+      setContractorMode(contractorSections.length > 0 ? 'checklist' : 'email');
       setContractorSubject(replacePlaceholders(t.subject || t.name || '', p));
       setContractorBody(t.body_html ? replacePlaceholders(t.body_html, p) : '');
     }
