@@ -249,6 +249,19 @@ export const PostHirePipelineKanban = () => {
         } : null}
         stage={emailTarget?.stage || null}
       />
+
+      <StageCheckinConfigDialog
+        open={!!stageCheckinTarget}
+        onOpenChange={(o) => !o && setStageCheckinTarget(null)}
+        stageId={stageCheckinTarget?.id || null}
+        stageName={stageCheckinTarget?.name}
+        onSaved={fetchAll}
+      />
+
+      <CheckinTemplateLibraryDialog
+        open={libraryOpen}
+        onOpenChange={setLibraryOpen}
+      />
     </div>
   );
 };
