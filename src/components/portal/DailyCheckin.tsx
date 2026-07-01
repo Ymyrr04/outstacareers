@@ -18,50 +18,7 @@ export interface CheckinSection {
   enabled?: boolean;
 }
 
-const DEFAULT_SECTIONS: CheckinSection[] = [
-  {
-    title: "Today's accomplishments",
-    items: [
-      'Client communication completed',
-      'Deliverables submitted or finished',
-      'Meeting or call attended',
-      'Research or planning done',
-      'Administrative tasks completed',
-      'Internal coordination done',
-    ],
-  },
-  {
-    title: 'Plans for tomorrow',
-    items: [
-      'Follow up with client',
-      'Submit or review deliverables',
-      'Attend a scheduled meeting',
-      'Continue ongoing project tasks',
-      'Planning or preparation session',
-    ],
-  },
-  {
-    title: 'Weekly goals progress',
-    items: [
-      'Main project is on track',
-      'Client satisfaction maintained',
-      'Weekly milestones being hit',
-      'Team or cross-functional collaboration is good',
-    ],
-  },
-  {
-    title: 'Blockers / struggles',
-    items: [
-      'Awaiting client feedback or response',
-      'Communication delays',
-      'Client not answering questions',
-      'Low client visibility or engagement',
-      'Technical issues or blockers',
-      'Unclear scope or instructions',
-      'Resource or access issues',
-    ],
-  },
-];
+const DEFAULT_SECTIONS: CheckinSection[] = [];
 
 
 
