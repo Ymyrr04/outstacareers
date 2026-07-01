@@ -27,6 +27,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
+import { ContractorCheckinConfig } from './ContractorCheckinConfig';
 
 interface ContractorData {
   id: string;
