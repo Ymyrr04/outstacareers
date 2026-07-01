@@ -105,6 +105,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
   };
 
   const [msgChecked, setMsgChecked] = useState<Record<string, Record<string, Set<number>>>>({});
+  const [msgAnswers, setMsgAnswers] = useState<Record<string, Record<string, Record<number, string>>>>({});
   const [msgNotes, setMsgNotes] = useState<Record<string, string>>({});
   const [msgSubmitting, setMsgSubmitting] = useState<string | null>(null);
 
@@ -118,16 +119,35 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
     });
   };
 
+  const setMsgAnswer = (msgId: string, sectionTitle: string, idx: number, value: string) => {
+    setMsgAnswers(prev => {
+      const forMsg = { ...(prev[msgId] || {}) };
+      const forSec = { ...(forMsg[sectionTitle] || {}) };
+      forSec[idx] = value;
+      forMsg[sectionTitle] = forSec;
+      return { ...prev, [msgId]: forMsg };
+    });
+  };
+
   const submitMsgForm = async (m: any) => {
     setMsgSubmitting(m.id);
     try {
       const responses: any = { sections: [], notes: msgNotes[m.id] || '' };
       (m.sections || []).forEach((sec: any) => {
         const checkedSet = msgChecked[m.id]?.[sec.title] || new Set();
-        responses.sections.push({
-          title: sec.title,
-          checked: sec.items.filter((_: any, i: number) => checkedSet.has(i)),
+        const answersFor = msgAnswers[m.id]?.[sec.title] || {};
+        const checked: string[] = [];
+        const answers: { question: string; answer: string }[] = [];
+        (sec.items || []).forEach((raw: string, i: number) => {
+          const p = parseCheckinItem(raw);
+          if (p.type === 'check') {
+            if (checkedSet.has(i)) checked.push(p.text);
+          } else {
+            const a = (answersFor[i] || '').trim();
+            if (a) answers.push({ question: p.text, answer: a });
+          }
         });
+        responses.sections.push({ title: sec.title, checked, answers });
       });
       const nowIso = new Date().toISOString();
       const { error } = await supabase
