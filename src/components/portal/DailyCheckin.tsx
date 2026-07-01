@@ -65,6 +65,19 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
   const [msgAnswers, setMsgAnswers] = useState<Record<string, Record<string, Record<number, string>>>>({});
   const [msgNotes, setMsgNotes] = useState<Record<string, string>>({});
   const [msgSubmitting, setMsgSubmitting] = useState<string | null>(null);
+  const [resending, setResending] = useState<string | null>(null);
+
+  const resendNotification = async (m: any) => {
+    setResending(m.id);
+    try {
+      await notifyTeam(m, m.responses || { sections: [], notes: '' });
+      toast({ title: 'Sent', description: 'Notification re-sent to the team.' });
+    } catch (e: any) {
+      toast({ title: 'Failed', description: e?.message || 'Could not send', variant: 'destructive' });
+    } finally {
+      setResending(null);
+    }
+  };
 
   const toggleMsgItem = (msgId: string, sectionTitle: string, idx: number) => {
     setMsgChecked(prev => {
@@ -84,6 +97,28 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
       forMsg[sectionTitle] = forSec;
       return { ...prev, [msgId]: forMsg };
     });
+  };
+
+  const notifyTeam = async (m: any, responses: any) => {
+    const emailSections = (responses?.sections || []).map((s: any) => {
+      const items: string[] = [...(s.checked || [])];
+      (s.answers || []).forEach((a: any) => items.push(`${a.question}: ${a.answer}`));
+      return { title: s.title, checked: items };
+    });
+    const today = new Date().toISOString().slice(0, 10);
+    const { data, error } = await supabase.functions.invoke('send-daily-checkin', {
+      body: {
+        contractorName,
+        jobTitle,
+        companyName,
+        date: today,
+        sections: emailSections,
+        additionalNotes: responses?.notes || '',
+      },
+    });
+    console.log('[send-daily-checkin] response', { data, error });
+    if (error) throw error;
+    return data;
   };
 
   const submitMsgForm = async (m: any) => {
@@ -114,29 +149,17 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
       if (error) throw error;
       setMessages(prev => prev.map(x => x.id === m.id ? { ...x, responses, submitted_at: nowIso, read_at: x.read_at || nowIso } : x));
 
-      // Notify (same as daily check-in submission)
       try {
-        const emailSections = (responses.sections || []).map((s: any) => {
-          const items: string[] = [...(s.checked || [])];
-          (s.answers || []).forEach((a: any) => items.push(`${a.question}: ${a.answer}`));
-          return { title: s.title, checked: items };
-        });
-        const today = new Date().toISOString().slice(0, 10);
-        await supabase.functions.invoke('send-daily-checkin', {
-          body: {
-            contractorName,
-            jobTitle,
-            companyName,
-            date: today,
-            sections: emailSections,
-            additionalNotes: responses.notes || '',
-          },
-        });
-      } catch (nErr) {
+        await notifyTeam(m, responses);
+        toast({ title: 'Submitted', description: 'Your response was sent to your manager.' });
+      } catch (nErr: any) {
         console.warn('Notification failed:', nErr);
+        toast({
+          title: 'Submitted (email pending)',
+          description: 'Response saved. Team notification failed: ' + (nErr?.message || 'unknown error'),
+          variant: 'destructive',
+        });
       }
-
-      toast({ title: 'Submitted', description: 'Your response was sent to your manager.' });
       onSubmitted?.();
 
     } catch (e: any) {
@@ -145,6 +168,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
       setMsgSubmitting(null);
     }
   };
+
 
 
   const initChecked = (s: CheckinSection[]) => {
@@ -387,8 +411,20 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
                   m.submitted_at ? (
                     <div className="space-y-2">
                       {m.body_html && <FormattedNotes content={m.body_html} className="mb-2" />}
-                      <div className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
-                        <Check className="w-3 h-3" /> Submitted {new Date(m.submitted_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
+                          <Check className="w-3 h-3" /> Submitted {new Date(m.submitted_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-7 text-[11px]"
+                          onClick={() => resendNotification(m)}
+                          disabled={resending === m.id}
+                        >
+                          {resending === m.id ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : null}
+                          Resend to team
+                        </Button>
                       </div>
                       {(m.responses?.sections || []).map((sec: any, i: number) => (
                         <div key={i} className="text-xs">
