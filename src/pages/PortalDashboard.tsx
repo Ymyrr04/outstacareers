@@ -505,6 +505,41 @@ const ProfileField = ({ label, value }: { label: string; value: string | number 
   </div>
 );
 
+// Parse timezone strings like "PHT (UTC+8)" or "EST (UTC-5)" into offset minutes.
+// Falls back to the browser's offset when the string is missing or malformed.
+function tzOffsetMinutes(tz?: string | null): number | null {
+  if (!tz) return null;
+  const m = tz.match(/UTC\s*([+-])\s*(\d{1,2})(?::?(\d{2}))?/i);
+  if (!m) return null;
+  const sign = m[1] === '-' ? -1 : 1;
+  const h = parseInt(m[2], 10);
+  const mm = m[3] ? parseInt(m[3], 10) : 0;
+  return sign * (h * 60 + mm);
+}
+
+// Returns "YYYY-MM-DD" for `now` shifted into the given TZ offset.
+function todayInTz(offsetMin: number | null): string {
+  const now = new Date();
+  const effective = offsetMin ?? -now.getTimezoneOffset();
+  const shifted = new Date(now.getTime() + (effective + now.getTimezoneOffset()) * 60000);
+  return `${shifted.getFullYear()}-${String(shifted.getMonth() + 1).padStart(2, '0')}-${String(shifted.getDate()).padStart(2, '0')}`;
+}
+
+// Minutes since midnight in the given TZ offset.
+function nowMinutesInTz(offsetMin: number | null): number {
+  const now = new Date();
+  const effective = offsetMin ?? -now.getTimezoneOffset();
+  const shifted = new Date(now.getTime() + (effective + now.getTimezoneOffset()) * 60000);
+  return shifted.getHours() * 60 + shifted.getMinutes();
+}
+
+function timeStringToMinutes(t?: string | null): number | null {
+  if (!t) return null;
+  const m = t.match(/^(\d{2}):(\d{2})/);
+  if (!m) return null;
+  return parseInt(m[1], 10) * 60 + parseInt(m[2], 10);
+}
+
 const PortalDashboard = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
