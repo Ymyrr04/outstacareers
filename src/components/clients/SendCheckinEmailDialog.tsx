@@ -183,6 +183,7 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
       const secs: CheckinSection[] = Array.isArray(t.sections) ? t.sections : [];
       setContractorSections(secs.filter(s => s.enabled !== false));
       setContractorSubject(t.subject ? replacePlaceholders(t.subject, p) : `Check-in: ${t.name}`);
+      setContractorBody(t.body_html ? replacePlaceholders(t.body_html, p) : contractorBody);
     } else {
       setContractorMode('email');
       setContractorSubject(replacePlaceholders(t.subject || t.name || '', p));
