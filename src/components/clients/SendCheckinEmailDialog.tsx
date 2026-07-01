@@ -271,10 +271,10 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
     }
   };
 
-  const emailRecipient = stage?.email_recipient || 'contractor';
-  const showClientTab = emailRecipient === 'client' || emailRecipient === 'both';
-  const showContractorTab = emailRecipient === 'contractor' || emailRecipient === 'both' || (!showClientTab);
-  const showBothTabs = showClientTab && showContractorTab;
+  // Check-ins are contractor-only — never surface the client email form here.
+  const showClientTab = false;
+  const showContractorTab = true;
+  const showBothTabs = false;
 
   const emailTemplates = templates.filter(t => t.template_type === 'email');
   const checklistTemplates = templates.filter(t => t.template_type === 'checklist');
