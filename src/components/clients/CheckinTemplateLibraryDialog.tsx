@@ -110,7 +110,8 @@ export const CheckinTemplateLibraryDialog = ({ open, onOpenChange, onApply, save
     setLoading(true);
     const { data, error } = await supabase
       .from('checkin_templates_library')
-      .select('id, name, description, sections, template_type, subject, body_html, created_at')
+      .select('id, name, description, sections, template_type, subject, body_html, is_default, created_at')
+      .order('is_default', { ascending: false })
       .order('created_at', { ascending: false });
     if (error) toast({ title: 'Failed to load templates', description: error.message, variant: 'destructive' });
     setTemplates(((data || []) as any[]).map(t => ({
