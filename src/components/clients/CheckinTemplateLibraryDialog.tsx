@@ -332,11 +332,11 @@ export const CheckinTemplateLibraryDialog = ({ open, onOpenChange, onApply, save
                 <TabsContent value="email" className="space-y-2 mt-3">
                   <div>
                     <Label className="text-xs">Subject (optional)</Label>
-                    <Input value={bSubject} onChange={e => setBSubject(e.target.value)} placeholder="Weekly check-in reminder" />
+                    <Input ref={subjectRef} value={bSubject} onChange={e => setBSubject(e.target.value)} placeholder="Weekly check-in reminder" />
                     <div className="flex flex-wrap gap-1 mt-1.5">
                       {MERGE_TAGS.map(t => (
                         <Button key={t.token} type="button" size="sm" variant="outline" className="h-6 px-2 text-[11px]"
-                          onClick={() => setBSubject(s => s + t.token)}>
+                          onClick={() => insertInSubject(t.token)}>
                           + {t.label}
                         </Button>
                       ))}
@@ -348,14 +348,14 @@ export const CheckinTemplateLibraryDialog = ({ open, onOpenChange, onApply, save
                       <div className="flex flex-wrap gap-1">
                         {MERGE_TAGS.map(t => (
                           <Button key={t.token} type="button" size="sm" variant="outline" className="h-6 px-2 text-[11px]"
-                            onClick={() => setBBody(b => (b || '') + `<span>${t.token}</span>`)}>
+                            onClick={() => insertInBody(t.token)}>
                             + {t.label}
                           </Button>
                         ))}
                       </div>
                     </div>
                     <div className="rounded-md border bg-background">
-                      <WysiwygEditor value={bBody} onChange={setBBody} placeholder="Write your email template. Format text, add links, headings, lists…" />
+                      <WysiwygEditor value={bBody} onChange={setBBody} onReady={(ed) => { bodyEditorRef.current = ed; }} placeholder="Write your email template. Format text, add links, headings, lists…" />
                     </div>
                     <p className="text-[11px] text-muted-foreground mt-1">
                       Use merge tags like <code className="text-[10px] bg-muted px-1 rounded">{'{{first_name}}'}</code> — they are automatically replaced with the contractor's info when the email is sent.
