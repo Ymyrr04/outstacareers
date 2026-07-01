@@ -1768,10 +1768,20 @@ const PortalDashboard = () => {
           </DialogContent>
         </Dialog>
 
-        <Tabs defaultValue="timesheet" className="space-y-6">
+        <Tabs value={tabValue} onValueChange={(v) => setTabValue(v as any)} className="space-y-6">
           <TabsList>
             <TabsTrigger value="timesheet">Timesheet</TabsTrigger>
-            <TabsTrigger value="checkin">Check-in</TabsTrigger>
+            <TabsTrigger value="checkin" className="relative">
+              Check-in
+              {!hasCheckinToday && (
+                <span
+                  aria-label="Check-in not submitted"
+                  className="absolute -top-1 -right-1 flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none shadow ring-2 ring-background"
+                >
+                  !
+                </span>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="leave">Leave</TabsTrigger>
           </TabsList>
           <TabsContent value="timesheet" className="space-y-6 mt-0">
