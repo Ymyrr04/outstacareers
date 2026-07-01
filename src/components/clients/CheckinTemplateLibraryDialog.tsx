@@ -46,7 +46,7 @@ const barClass = (c?: string) => {
 };
 
 const DEFAULT_NEW_SECTIONS: CheckinSection[] = [
-  { title: "Today's accomplishments", color: 'emerald', enabled: true, items: [''] },
+  { title: 'New section', color: 'emerald', enabled: true, items: [''] },
 ];
 
 const MERGE_TAGS: { label: string; token: string }[] = [
