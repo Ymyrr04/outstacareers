@@ -158,6 +158,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
       .order('created_at', { ascending: false })
       .limit(10);
     setRecent(hist || []);
+    await loadMessages();
 
     setLoading(false);
   };
