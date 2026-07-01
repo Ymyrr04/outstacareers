@@ -131,17 +131,33 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
 
   const load = async () => {
     setLoading(true);
-    const { data: tpl } = await supabase
-      .from('contractor_checkin_templates')
-      .select('sections')
-      .eq('contractor_assignment_id', contractorAssignmentId)
-      .maybeSingle();
 
+    // Priority: library default template > per-contractor template > current stage template > empty
     let secs: CheckinSection[] | null = null;
-    if (tpl?.sections && Array.isArray(tpl.sections) && tpl.sections.length > 0) {
-      secs = tpl.sections as unknown as CheckinSection[];
-    } else {
-      // Fallback: use the contractor's current pipeline stage template if set
+
+    const { data: def } = await supabase
+      .from('checkin_templates_library')
+      .select('sections, template_type')
+      .eq('is_default', true)
+      .eq('template_type', 'checklist')
+      .maybeSingle();
+    const defSecs = (def as any)?.sections;
+    if (Array.isArray(defSecs) && defSecs.length > 0) {
+      secs = defSecs as CheckinSection[];
+    }
+
+    if (!secs) {
+      const { data: tpl } = await supabase
+        .from('contractor_checkin_templates')
+        .select('sections')
+        .eq('contractor_assignment_id', contractorAssignmentId)
+        .maybeSingle();
+      if (tpl?.sections && Array.isArray(tpl.sections) && tpl.sections.length > 0) {
+        secs = tpl.sections as unknown as CheckinSection[];
+      }
+    }
+
+    if (!secs) {
       const { data: trk } = await supabase
         .from('contractor_pipeline_tracking')
         .select('current_stage_id')
@@ -158,22 +174,9 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
           secs = stageSecs as CheckinSection[];
         }
       }
-      if (!secs) {
-        // Fallback to the library template marked as default (if any)
-        const { data: def } = await supabase
-          .from('checkin_templates_library')
-          .select('sections, template_type')
-          .eq('is_default', true)
-          .eq('template_type', 'checklist')
-          .maybeSingle();
-        const defSecs = (def as any)?.sections;
-        if (Array.isArray(defSecs) && defSecs.length > 0) {
-          secs = defSecs as CheckinSection[];
-        } else {
-          secs = DEFAULT_SECTIONS;
-        }
-      }
     }
+
+    if (!secs) secs = DEFAULT_SECTIONS;
     // Hide sections the admin has toggled off
     secs = secs.filter(s => s.enabled !== false);
     setSections(secs);
