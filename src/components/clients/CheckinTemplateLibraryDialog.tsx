@@ -425,14 +425,19 @@ export const CheckinTemplateLibraryDialog = ({ open, onOpenChange, onApply, save
                 const isEmail = type === 'email';
                 const isOpen = previewId === t.id;
                 return (
-                  <div key={t.id} className="rounded-md border hover:bg-muted/30 transition">
+                  <div key={t.id} className={`rounded-md border transition ${t.is_default ? 'border-amber-400 bg-amber-50/40 dark:bg-amber-950/10' : 'hover:bg-muted/30'}`}>
                     <div className="p-3 flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded ${isEmail ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'}`}>
                             {isEmail ? <><Mail className="w-3 h-3" /> Email</> : <><ListChecks className="w-3 h-3" /> Checklist</>}
                           </span>
                           <div className="font-medium text-sm">{t.name}</div>
+                          {t.is_default && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+                              <Star className="w-3 h-3 fill-current" /> Default
+                            </span>
+                          )}
                         </div>
                         {t.description && <div className="text-xs text-muted-foreground mt-0.5">{t.description}</div>}
                         <div className="text-[11px] text-muted-foreground mt-1">
@@ -442,6 +447,18 @@ export const CheckinTemplateLibraryDialog = ({ open, onOpenChange, onApply, save
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
+                        {!isEmail && (
+                          <Button
+                            size="sm"
+                            variant={t.is_default ? 'secondary' : 'ghost'}
+                            className={t.is_default ? 'text-amber-700 dark:text-amber-300' : ''}
+                            onClick={() => setAsDefault(t.id, !t.is_default)}
+                            title={t.is_default ? 'Unset default' : 'Set as default for new contractors'}
+                          >
+                            <Star className={`w-3.5 h-3.5 mr-1 ${t.is_default ? 'fill-current' : ''}`} />
+                            {t.is_default ? 'Default' : 'Set default'}
+                          </Button>
+                        )}
                         <Button size="sm" variant="ghost" onClick={() => setPreviewId(isOpen ? null : t.id)}>
                           {isOpen ? 'Hide' : 'Preview'}
                         </Button>
