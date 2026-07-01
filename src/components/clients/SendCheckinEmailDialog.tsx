@@ -156,11 +156,17 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
       if ((stage as any).contractor_email_subject) {
         setContractorSubject(replacePlaceholders((stage as any).contractor_email_subject, p));
       }
+      const stageSections = Array.isArray((stage as any).checkin_sections)
+        ? ((stage as any).checkin_sections as CheckinSection[]).filter(s => s.enabled !== false && Array.isArray(s.items) && s.items.length > 0)
+        : [];
+
       if ((stage as any).contractor_email_body) {
         setContractorBody(replacePlaceholders((stage as any).contractor_email_body.replace(/\\n/g, '\n'), p));
+      } else {
+        setContractorBody('');
       }
-      setContractorMode('email');
-      setContractorSections([]);
+      setContractorMode(stageSections.length > 0 ? 'checklist' : 'email');
+      setContractorSections(stageSections);
       setSelectedTemplateId('');
     };
 
