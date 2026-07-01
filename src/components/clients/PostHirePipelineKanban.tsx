@@ -27,9 +27,11 @@ export const PostHirePipelineKanban = () => {
   const { toast } = useToast();
 
   const filteredTracking = useMemo(() => {
-    if (!searchQuery.trim()) return tracking;
+    // Exclude terminated contractors from the post-hire pipeline
+    const base = tracking.filter(t => t.contractor?.status !== 'terminated');
+    if (!searchQuery.trim()) return base;
     const q = searchQuery.toLowerCase();
-    return tracking.filter(t => {
+    return base.filter(t => {
       const name = t.contractor?.applicant?.full_name?.toLowerCase() || '';
       const company = t.contractor?.client?.company_name?.toLowerCase() || '';
       const title = t.contractor?.job_title?.toLowerCase() || '';
