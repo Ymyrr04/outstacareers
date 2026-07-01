@@ -178,7 +178,7 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
       setContractorSubject(t.subject ? replacePlaceholders(t.subject, p) : `Check-in: ${t.name}`);
     } else {
       setContractorMode('email');
-      setContractorSubject(t.subject ? replacePlaceholders(t.subject, p) : '');
+      setContractorSubject(replacePlaceholders(t.subject || t.name || '', p));
       setContractorBody(t.body_html ? replacePlaceholders(t.body_html, p) : '');
     }
   };
