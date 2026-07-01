@@ -27,8 +27,8 @@ export const PostHirePipelineKanban = () => {
   const { toast } = useToast();
 
   const filteredTracking = useMemo(() => {
-    // Exclude terminated contractors from the post-hire pipeline
-    const base = tracking.filter(t => t.contractor?.status !== 'terminated');
+    // Exclude terminated and resigned contractors from the post-hire pipeline
+    const base = tracking.filter(t => !['terminated', 'resigned'].includes(t.contractor?.status || ''));
     if (!searchQuery.trim()) return base;
     const q = searchQuery.toLowerCase();
     return base.filter(t => {
