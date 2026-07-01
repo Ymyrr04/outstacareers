@@ -61,12 +61,8 @@ const DEFAULT_SECTIONS: CheckinSection[] = [
   },
 ];
 
-export interface CheckinSection {
-  title: string;
-  items: string[];
-  color?: string;
-  enabled?: boolean;
-}
+
+
 
 interface Props {
   contractorAssignmentId: string;
