@@ -12,6 +12,7 @@ import { FormattedNotes } from '@/components/FormattedNotes';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Trash2, Library, Check, X, GripVertical, ChevronDown, ChevronRight, Pencil, Mail, ListChecks } from 'lucide-react';
 import type { CheckinSection } from './ContractorCheckinConfig';
+import { parseCheckinItem, encodeCheckinItem, type CheckinItemType } from '@/lib/checkinItem';
 
 export type TemplateType = 'checklist' | 'email';
 
@@ -187,7 +188,13 @@ export const CheckinTemplateLibraryDialog = ({ open, onOpenChange, onApply, save
     if (bType === 'checklist') {
       const cleaned = bSections.map(s => ({
         title: (s.title || '').trim() || 'Untitled',
-        items: (s.items || []).map(i => i.trim()).filter(Boolean),
+        items: (s.items || [])
+          .map(raw => {
+            const p = parseCheckinItem(raw);
+            const text = p.text.trim();
+            return text ? encodeCheckinItem(text, p.type) : '';
+          })
+          .filter(Boolean),
         color: s.color || 'emerald',
         enabled: s.enabled !== false,
       })).filter(s => s.items.length > 0);
@@ -310,14 +317,31 @@ export const CheckinTemplateLibraryDialog = ({ open, onOpenChange, onApply, save
                         </Button>
                       </div>
                       <div className="p-2 space-y-1.5">
-                        {sec.items.map((item, ii) => (
-                          <div key={ii} className="flex items-center gap-2">
-                            <Input value={item} onChange={e => updateItem(si, ii, e.target.value)} className="h-8 text-sm" placeholder="Checklist item" />
-                            <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeItem(si, ii)}>
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        ))}
+                        {sec.items.map((item, ii) => {
+                          const parsed = parseCheckinItem(item);
+                          const setType = (t: CheckinItemType) => updateItem(si, ii, encodeCheckinItem(parsed.text, t));
+                          const setText = (v: string) => updateItem(si, ii, encodeCheckinItem(v, parsed.type));
+                          const placeholder =
+                            parsed.type === 'short' ? 'Short answer question' :
+                            parsed.type === 'long' ? 'Long answer question' :
+                            'Checklist item';
+                          return (
+                            <div key={ii} className="flex items-center gap-2">
+                              <Select value={parsed.type} onValueChange={(v) => setType(v as CheckinItemType)}>
+                                <SelectTrigger className="h-8 w-32 text-xs shrink-0"><SelectValue /></SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="check">☑ Checklist</SelectItem>
+                                  <SelectItem value="short">— Short answer</SelectItem>
+                                  <SelectItem value="long">¶ Long answer</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              <Input value={parsed.text} onChange={e => setText(e.target.value)} className="h-8 text-sm" placeholder={placeholder} />
+                              <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeItem(si, ii)}>
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          );
+                        })}
                         <Button type="button" variant="outline" size="sm" onClick={() => addItem(si)}>
                           <Plus className="w-3.5 h-3.5 mr-1" /> Add item
                         </Button>

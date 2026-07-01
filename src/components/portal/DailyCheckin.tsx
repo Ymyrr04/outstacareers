@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Trash2, Check, X, Settings2, MessageSquare, CheckCheck } from 'lucide-react';
 import { FormattedNotes } from '@/components/FormattedNotes';
+import { parseCheckinItem } from '@/lib/checkinItem';
 
 export interface CheckinSection {
   title: string;
@@ -104,6 +105,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
   };
 
   const [msgChecked, setMsgChecked] = useState<Record<string, Record<string, Set<number>>>>({});
+  const [msgAnswers, setMsgAnswers] = useState<Record<string, Record<string, Record<number, string>>>>({});
   const [msgNotes, setMsgNotes] = useState<Record<string, string>>({});
   const [msgSubmitting, setMsgSubmitting] = useState<string | null>(null);
 
@@ -117,16 +119,35 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
     });
   };
 
+  const setMsgAnswer = (msgId: string, sectionTitle: string, idx: number, value: string) => {
+    setMsgAnswers(prev => {
+      const forMsg = { ...(prev[msgId] || {}) };
+      const forSec = { ...(forMsg[sectionTitle] || {}) };
+      forSec[idx] = value;
+      forMsg[sectionTitle] = forSec;
+      return { ...prev, [msgId]: forMsg };
+    });
+  };
+
   const submitMsgForm = async (m: any) => {
     setMsgSubmitting(m.id);
     try {
       const responses: any = { sections: [], notes: msgNotes[m.id] || '' };
       (m.sections || []).forEach((sec: any) => {
         const checkedSet = msgChecked[m.id]?.[sec.title] || new Set();
-        responses.sections.push({
-          title: sec.title,
-          checked: sec.items.filter((_: any, i: number) => checkedSet.has(i)),
+        const answersFor = msgAnswers[m.id]?.[sec.title] || {};
+        const checked: string[] = [];
+        const answers: { question: string; answer: string }[] = [];
+        (sec.items || []).forEach((raw: string, i: number) => {
+          const p = parseCheckinItem(raw);
+          if (p.type === 'check') {
+            if (checkedSet.has(i)) checked.push(p.text);
+          } else {
+            const a = (answersFor[i] || '').trim();
+            if (a) answers.push({ question: p.text, answer: a });
+          }
         });
+        responses.sections.push({ title: sec.title, checked, answers });
       });
       const nowIso = new Date().toISOString();
       const { error } = await supabase
@@ -380,12 +401,23 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
                       {(m.responses?.sections || []).map((sec: any, i: number) => (
                         <div key={i} className="text-xs">
                           <p className="font-semibold">{sec.title}</p>
-                          {sec.checked?.length > 0 ? (
+                          {sec.checked?.length > 0 && (
                             <ul className="pl-4 list-disc text-muted-foreground">
                               {sec.checked.map((it: string, j: number) => <li key={j}>{it}</li>)}
                             </ul>
-                          ) : (
-                            <p className="pl-4 text-muted-foreground italic">Nothing ticked</p>
+                          )}
+                          {sec.answers?.length > 0 && (
+                            <div className="pl-4 space-y-1 mt-0.5">
+                              {sec.answers.map((a: any, j: number) => (
+                                <div key={j}>
+                                  <p className="text-foreground/80">{a.question}</p>
+                                  <p className="pl-2 text-muted-foreground whitespace-pre-wrap">{a.answer}</p>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                          {!sec.checked?.length && !sec.answers?.length && (
+                            <p className="pl-4 text-muted-foreground italic">No response</p>
                           )}
                         </div>
                       ))}
@@ -404,17 +436,44 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
                         return (
                           <div key={si} className="rounded border bg-background p-2.5">
                             <p className="text-xs font-semibold mb-1.5">{sec.title}</p>
-                            <div className="space-y-1">
-                              {sec.items.map((it, ii) => (
-                                <label key={ii} className="flex items-start gap-2 text-xs cursor-pointer">
-                                  <Checkbox
-                                    checked={checkedSet.has(ii)}
-                                    onCheckedChange={() => toggleMsgItem(m.id, sec.title, ii)}
-                                    className="mt-0.5"
-                                  />
-                                  <span>{it}</span>
-                                </label>
-                              ))}
+                            <div className="space-y-1.5">
+                              {sec.items.map((raw, ii) => {
+                                const p = parseCheckinItem(raw);
+                                if (p.type === 'check') {
+                                  return (
+                                    <label key={ii} className="flex items-start gap-2 text-xs cursor-pointer">
+                                      <Checkbox
+                                        checked={checkedSet.has(ii)}
+                                        onCheckedChange={() => toggleMsgItem(m.id, sec.title, ii)}
+                                        className="mt-0.5"
+                                      />
+                                      <span>{p.text}</span>
+                                    </label>
+                                  );
+                                }
+                                const val = msgAnswers[m.id]?.[sec.title]?.[ii] || '';
+                                return (
+                                  <div key={ii} className="space-y-1">
+                                    <p className="text-xs text-foreground/80">{p.text}</p>
+                                    {p.type === 'short' ? (
+                                      <Input
+                                        value={val}
+                                        onChange={(e) => setMsgAnswer(m.id, sec.title, ii, e.target.value)}
+                                        className="h-8 text-xs"
+                                        placeholder="Your answer"
+                                      />
+                                    ) : (
+                                      <Textarea
+                                        value={val}
+                                        onChange={(e) => setMsgAnswer(m.id, sec.title, ii, e.target.value)}
+                                        rows={3}
+                                        className="text-xs"
+                                        placeholder="Your answer"
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         );

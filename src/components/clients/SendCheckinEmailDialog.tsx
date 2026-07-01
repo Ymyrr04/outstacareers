@@ -360,9 +360,18 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
                 <div key={i}>
                   <p className="text-xs font-semibold mb-1">{sec.title}</p>
                   <ul className="space-y-0.5 pl-3">
-                    {sec.items.map((it, j) => (
-                      <li key={j} className="text-[11px] text-muted-foreground list-disc">{it}</li>
-                    ))}
+                    {sec.items.map((it, j) => {
+                      const raw = it || '';
+                      const isShort = raw.startsWith('[[short]]');
+                      const isLong = raw.startsWith('[[long]]');
+                      const text = isShort ? raw.slice(9) : isLong ? raw.slice(8) : raw;
+                      const tag = isShort ? ' — short answer' : isLong ? ' — long answer' : '';
+                      return (
+                        <li key={j} className="text-[11px] text-muted-foreground list-disc">
+                          {text}<span className="text-[10px] opacity-70">{tag}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 </div>
               ))}
