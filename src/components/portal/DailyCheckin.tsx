@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Trash2, Check, X, Settings2, MessageSquare, CheckCheck } from 'lucide-react';
+import { FormattedNotes } from '@/components/FormattedNotes';
 
 export interface CheckinSection {
   title: string;
@@ -372,6 +373,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
                 {m.template_type === 'checklist' && Array.isArray(m.sections) ? (
                   m.submitted_at ? (
                     <div className="space-y-2">
+                      {m.body_html && <FormattedNotes content={m.body_html} className="mb-2" />}
                       <div className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
                         <Check className="w-3 h-3" /> Submitted {new Date(m.submitted_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
                       </div>
@@ -396,6 +398,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
                     </div>
                   ) : (
                     <div className="space-y-3">
+                      {m.body_html && <FormattedNotes content={m.body_html} />}
                       {(m.sections as CheckinSection[]).map((sec, si) => {
                         const checkedSet = msgChecked[m.id]?.[sec.title] || new Set<number>();
                         return (
@@ -438,10 +441,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
                     </div>
                   )
                 ) : (
-                  <div
-                    className="prose prose-sm max-w-none dark:prose-invert text-sm [&_p]:my-1"
-                    dangerouslySetInnerHTML={{ __html: m.body_html || '' }}
-                  />
+                  <FormattedNotes content={m.body_html || ''} />
                 )}
 
               </div>
