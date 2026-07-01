@@ -248,6 +248,8 @@ export const PostHirePipelineKanban = () => {
           clientName: emailTarget.item.contractor?.client?.company_name || '',
           jobTitle: emailTarget.item.contractor?.job_title || '',
           weeksElapsed: getWeeksElapsed(emailTarget.item.contractor?.start_date),
+          startDate: emailTarget.item.contractor?.start_date || null,
+
         } : null}
         stage={emailTarget?.stage || null}
       />

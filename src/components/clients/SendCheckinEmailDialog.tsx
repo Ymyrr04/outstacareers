@@ -23,6 +23,7 @@ interface SendCheckinEmailDialogProps {
     clientName: string;
     jobTitle: string;
     weeksElapsed: number;
+    startDate?: string | null;
   } | null;
   stage: {
     id: string;
@@ -83,14 +84,35 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
   const [activeTab, setActiveTab] = useState('contractor');
   const { toast } = useToast();
 
-  const placeholders = (): Record<string, string> => ({
-    contractor_first_name: contractor ? toProperCase(contractor.contractorFirstName) : '',
-    contractor_full_name: contractor ? toProperCase(contractor.contractorName) : '',
-    client_first_name: clientFirstName,
-    client_name: contractor?.clientName || '',
-    job_title: contractor?.jobTitle || 'Contractor',
-    weeks_elapsed: String(contractor?.weeksElapsed ?? ''),
-  });
+  const buildContractorPlaceholders = (clientFirst = clientFirstName): Record<string, string> => {
+    if (!contractor) return {};
+    const fullName = toProperCase(contractor.contractorName || '');
+    const firstName = toProperCase(contractor.contractorFirstName || fullName.split(' ')[0] || '');
+    const lastName = toProperCase((contractor.contractorName || '').split(' ').slice(1).join(' '));
+    const startDate = contractor.startDate
+      ? new Date(contractor.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      : '';
+    return {
+      // Contractor-sourced tokens (match Template Library merge tags)
+      first_name: firstName,
+      full_name: fullName,
+      last_name: lastName,
+      email: contractor.contractorEmail || '',
+      role: contractor.jobTitle || 'Contractor',
+      client_name: contractor.clientName || '',
+      start_date: startDate,
+      weeks_elapsed: String(contractor.weeksElapsed ?? ''),
+      // Backward-compat aliases
+      contractor_first_name: firstName,
+      contractor_full_name: fullName,
+      contractor_last_name: lastName,
+      contractor_email: contractor.contractorEmail || '',
+      job_title: contractor.jobTitle || 'Contractor',
+      client_first_name: clientFirst,
+    };
+  };
+
+  const placeholders = (): Record<string, string> => buildContractorPlaceholders();
 
   // Load library templates once when dialog opens
   useEffect(() => {
@@ -107,14 +129,8 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
   useEffect(() => {
     if (!stage || !contractor || !open) return;
 
-    const p: Record<string, string> = {
-      contractor_first_name: toProperCase(contractor.contractorFirstName),
-      contractor_full_name: toProperCase(contractor.contractorName),
-      client_first_name: '',
-      client_name: contractor.clientName || '',
-      job_title: contractor.jobTitle || 'Contractor',
-      weeks_elapsed: String(contractor.weeksElapsed),
-    };
+    const p = buildContractorPlaceholders('');
+
 
     const fetchClientContact = async () => {
       const { data: contacts } = await supabase
