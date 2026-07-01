@@ -794,13 +794,30 @@ const PortalDashboard = () => {
   const refreshCheckinToday = async () => {
     if (!info?.contractor_assignment_id) return;
     const today = todayInTz(tzOffset);
-    const { data } = await supabase
-      .from('contractor_daily_checkins')
-      .select('id')
-      .eq('contractor_assignment_id', info.contractor_assignment_id)
-      .eq('checkin_date', today)
-      .limit(1);
-    setHasCheckinToday(Boolean(data && data.length > 0));
+    // A contractor is considered "checked-in for today" if EITHER:
+    //   (a) they filed a regular daily check-in, OR
+    //   (b) they submitted a manager-sent check-in message today.
+    // Otherwise a template posted by the manager would keep the red badge on the
+    // Check-in tab even after the contractor completes and submits the form.
+    const [{ data: daily }, { data: msgs }] = await Promise.all([
+      supabase
+        .from('contractor_daily_checkins')
+        .select('id')
+        .eq('contractor_assignment_id', info.contractor_assignment_id)
+        .eq('checkin_date', today)
+        .limit(1),
+      supabase
+        .from('contractor_checkin_messages' as any)
+        .select('id')
+        .eq('contractor_assignment_id', info.contractor_assignment_id)
+        .not('submitted_at', 'is', null)
+        .gte('submitted_at', `${today}T00:00:00`)
+        .lte('submitted_at', `${today}T23:59:59.999`)
+        .limit(1),
+    ]);
+    const hasDaily = Boolean(daily && daily.length > 0);
+    const hasMsgSubmission = Boolean(msgs && (msgs as any[]).length > 0);
+    setHasCheckinToday(hasDaily || hasMsgSubmission);
   };
 
   useEffect(() => {
