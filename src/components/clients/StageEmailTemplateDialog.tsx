@@ -82,13 +82,13 @@ export const StageEmailTemplateDialog = ({ open, onOpenChange, stage, onSaved }:
       <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
-            {stage?.emoji} {stage?.name} — Contractor Email Template
+            {stage?.emoji} {stage?.name} — Contractor Check-in Template
           </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
           <p className="text-xs text-muted-foreground">
-            This template is sent to the contractor only. Clients will not receive this email.
+            This template is posted to the contractor's <span className="font-medium text-foreground">Check-in tab</span> in their portal — no email is sent.
           </p>
 
           <div className="space-y-3">
@@ -119,11 +119,11 @@ export const StageEmailTemplateDialog = ({ open, onOpenChange, stage, onSaved }:
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-xs font-medium">Body</Label>
+              <Label className="text-xs font-medium">Message</Label>
               <Textarea
                 value={contractorBody}
                 onChange={(e) => setContractorBody(e.target.value)}
-                placeholder="Write your check-in email to the contractor here..."
+                placeholder="Write your check-in message to the contractor here..."
                 rows={10}
                 className="text-sm"
               />
