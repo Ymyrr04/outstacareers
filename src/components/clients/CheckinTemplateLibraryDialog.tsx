@@ -10,7 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { WysiwygEditor } from '@/components/WysiwygEditor';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Trash2, Library, Check, X, GripVertical, ChevronDown, ChevronRight, Pencil, Mail, ListChecks } from 'lucide-react';
+import { Loader2, Plus, Trash2, Library, Check, X, GripVertical, ChevronDown, ChevronRight, Pencil, Mail, ListChecks, Star } from 'lucide-react';
 import type { CheckinSection } from './ContractorCheckinConfig';
 import { parseCheckinItem, encodeCheckinItem, type CheckinItemType } from '@/lib/checkinItem';
 
