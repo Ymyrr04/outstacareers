@@ -1098,6 +1098,8 @@ export type Database = {
           applicant_id: string
           break_duration_minutes: number | null
           break_is_paid: boolean | null
+          checkin_reminder_enabled: boolean
+          checkin_reminder_time: string | null
           client_id: string
           client_rate: number | null
           contact_number: string | null
@@ -1130,6 +1132,8 @@ export type Database = {
           applicant_id: string
           break_duration_minutes?: number | null
           break_is_paid?: boolean | null
+          checkin_reminder_enabled?: boolean
+          checkin_reminder_time?: string | null
           client_id: string
           client_rate?: number | null
           contact_number?: string | null
@@ -1162,6 +1166,8 @@ export type Database = {
           applicant_id?: string
           break_duration_minutes?: number | null
           break_is_paid?: boolean | null
+          checkin_reminder_enabled?: boolean
+          checkin_reminder_time?: string | null
           client_id?: string
           client_rate?: number | null
           contact_number?: string | null
