@@ -87,12 +87,13 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
   const [messages, setMessages] = useState<any[]>([]);
 
   const loadMessages = async () => {
-    const { data } = await supabase
-      .from('contractor_checkin_messages' as any)
-      .select('id, subject, body_html, read_at, created_at, template_type, sections, responses, submitted_at')
-      .eq('contractor_assignment_id', contractorAssignmentId)
-      .order('created_at', { ascending: false })
-      .limit(20);
+    const { data, error } = await supabase.rpc('get_contractor_checkin_messages' as any, {
+      _contractor_assignment_id: contractorAssignmentId,
+    });
+    if (error) {
+      console.error('Failed to load contractor check-in messages', error);
+      return;
+    }
     setMessages((data as any) || []);
   };
 
