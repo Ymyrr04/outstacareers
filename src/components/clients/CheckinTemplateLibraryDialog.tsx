@@ -24,6 +24,7 @@ export interface CheckinTemplate {
   template_type?: TemplateType;
   subject?: string | null;
   body_html?: string | null;
+  is_default?: boolean;
   created_at: string;
 }
 
