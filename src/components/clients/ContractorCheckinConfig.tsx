@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Trash2, GripVertical, ChevronDown, ChevronRight, Bell } from 'lucide-react';
+import { Loader2, Plus, Trash2, GripVertical, ChevronDown, ChevronRight, Bell, Library, Save } from 'lucide-react';
+import { CheckinTemplateLibraryDialog } from './CheckinTemplateLibraryDialog';
 
 export interface CheckinSection {
   title: string;
@@ -83,6 +84,8 @@ export const ContractorCheckinConfig = ({ contractorAssignmentId, timezone }: Pr
   const [reminderTime, setReminderTime] = useState<string>('5:00 PM');
   const [dragItem, setDragItem] = useState<{ s: number; i: number } | null>(null);
   const [dragSection, setDragSection] = useState<number | null>(null);
+  const [libOpen, setLibOpen] = useState(false);
+  const [saveLibOpen, setSaveLibOpen] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -221,8 +224,19 @@ export const ContractorCheckinConfig = ({ contractorAssignmentId, timezone }: Pr
                 )}
               </div>
 
+              {/* Template library actions */}
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" size="sm" variant="outline" onClick={() => setLibOpen(true)}>
+                  <Library className="w-3.5 h-3.5 mr-1" /> Load from library
+                </Button>
+                <Button type="button" size="sm" variant="outline" onClick={() => setSaveLibOpen(true)} disabled={sections.length === 0}>
+                  <Save className="w-3.5 h-3.5 mr-1" /> Save as template
+                </Button>
+              </div>
+
               {/* Sections */}
               <div className="space-y-3">
+
                 {sections.map((sec, si) => (
                   <div
                     key={si}
@@ -294,6 +308,20 @@ export const ContractorCheckinConfig = ({ contractorAssignmentId, timezone }: Pr
           )}
         </div>
       )}
+
+      <CheckinTemplateLibraryDialog
+        open={libOpen}
+        onOpenChange={setLibOpen}
+        onApply={(tpl) => setSections(tpl.sections.map((s, i) => ({
+          title: s.title, items: s.items || [], color: s.color || COLOR_CHOICES[i % COLOR_CHOICES.length], enabled: s.enabled !== false,
+        })))}
+      />
+      <CheckinTemplateLibraryDialog
+        open={saveLibOpen}
+        onOpenChange={setSaveLibOpen}
+        saveCurrent={sections}
+      />
     </div>
   );
 };
+

@@ -99,15 +99,35 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
       .eq('contractor_assignment_id', contractorAssignmentId)
       .maybeSingle();
 
-    let secs: CheckinSection[] = DEFAULT_SECTIONS;
+    let secs: CheckinSection[] | null = null;
     if (tpl?.sections && Array.isArray(tpl.sections) && tpl.sections.length > 0) {
       secs = tpl.sections as unknown as CheckinSection[];
     } else {
-      // seed default template
-      await supabase.from('contractor_checkin_templates').insert({
-        contractor_assignment_id: contractorAssignmentId,
-        sections: DEFAULT_SECTIONS as any,
-      });
+      // Fallback: use the contractor's current pipeline stage template if set
+      const { data: trk } = await supabase
+        .from('contractor_pipeline_tracking')
+        .select('current_stage_id')
+        .eq('contractor_assignment_id', contractorAssignmentId)
+        .maybeSingle();
+      if (trk?.current_stage_id) {
+        const { data: stg } = await supabase
+          .from('contractor_pipeline_stages')
+          .select('checkin_sections')
+          .eq('id', trk.current_stage_id)
+          .maybeSingle();
+        const stageSecs = (stg as any)?.checkin_sections;
+        if (Array.isArray(stageSecs) && stageSecs.length > 0) {
+          secs = stageSecs as CheckinSection[];
+        }
+      }
+      if (!secs) {
+        secs = DEFAULT_SECTIONS;
+        // seed default per-contractor template only when no stage template exists
+        await supabase.from('contractor_checkin_templates').insert({
+          contractor_assignment_id: contractorAssignmentId,
+          sections: DEFAULT_SECTIONS as any,
+        });
+      }
     }
     // Hide sections the admin has toggled off
     secs = secs.filter(s => s.enabled !== false);

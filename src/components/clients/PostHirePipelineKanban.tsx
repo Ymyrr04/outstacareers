@@ -7,18 +7,22 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
-import { Search, X, RefreshCw, Calendar, Building2, User, Clock, Mail, Send } from 'lucide-react';
+import { Search, X, RefreshCw, Calendar, Building2, User, Clock, Mail, Send, ClipboardList, Library } from 'lucide-react';
 import { differenceInDays, differenceInWeeks, format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { StageEmailTemplateDialog } from './StageEmailTemplateDialog';
 import { SendCheckinEmailDialog } from './SendCheckinEmailDialog';
+import { StageCheckinConfigDialog } from './StageCheckinConfigDialog';
+import { CheckinTemplateLibraryDialog } from './CheckinTemplateLibraryDialog';
 
 export const PostHirePipelineKanban = () => {
   const { stages, tracking, loading, moveToStage, fetchAll } = useContractorPipeline();
   const [searchQuery, setSearchQuery] = useState('');
   const [processingMilestones, setProcessingMilestones] = useState(false);
   const [editingStage, setEditingStage] = useState<ContractorPipelineStage | null>(null);
+  const [stageCheckinTarget, setStageCheckinTarget] = useState<ContractorPipelineStage | null>(null);
+  const [libraryOpen, setLibraryOpen] = useState(false);
   const [emailTarget, setEmailTarget] = useState<{ item: ContractorPipelineTracking; stage: ContractorPipelineStage } | null>(null);
   const { toast } = useToast();
 
@@ -105,6 +109,15 @@ export const PostHirePipelineKanban = () => {
         </div>
         <Tooltip>
           <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={() => setLibraryOpen(true)} className="h-8 text-xs">
+              <Library className="w-3.5 h-3.5 mr-1.5" />
+              Templates
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Manage reusable check-in templates</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
             <Button 
               variant="outline" 
               size="sm" 
@@ -119,6 +132,7 @@ export const PostHirePipelineKanban = () => {
           <TooltipContent>Auto-advance contractors and send check-in emails</TooltipContent>
         </Tooltip>
       </div>
+
 
       {/* Kanban Board */}
       <DragDropContext onDragEnd={handleDragEnd}>
@@ -149,11 +163,31 @@ export const PostHirePipelineKanban = () => {
                         {stage.checkin_email_subject ? 'Edit email template' : 'Add email template'}
                       </TooltipContent>
                     </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <button
+                          onClick={() => setStageCheckinTarget(stage)}
+                          className={`p-0.5 rounded hover:bg-background transition-colors ${
+                            Array.isArray((stage as any).checkin_sections) && (stage as any).checkin_sections.length > 0
+                              ? 'text-primary'
+                              : 'text-muted-foreground/50'
+                          }`}
+                        >
+                          <ClipboardList className="w-3 h-3" />
+                        </button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {Array.isArray((stage as any).checkin_sections) && (stage as any).checkin_sections.length > 0
+                          ? 'Edit stage check-in template'
+                          : 'Add stage check-in template'}
+                      </TooltipContent>
+                    </Tooltip>
                     <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-5">
                       {stageTracking.length}
                     </Badge>
                   </div>
                 </div>
+
 
                 {/* Column Content */}
                 <Droppable droppableId={stage.id}>
@@ -214,6 +248,19 @@ export const PostHirePipelineKanban = () => {
           weeksElapsed: getWeeksElapsed(emailTarget.item.contractor?.start_date),
         } : null}
         stage={emailTarget?.stage || null}
+      />
+
+      <StageCheckinConfigDialog
+        open={!!stageCheckinTarget}
+        onOpenChange={(o) => !o && setStageCheckinTarget(null)}
+        stageId={stageCheckinTarget?.id || null}
+        stageName={stageCheckinTarget?.name}
+        onSaved={fetchAll}
+      />
+
+      <CheckinTemplateLibraryDialog
+        open={libraryOpen}
+        onOpenChange={setLibraryOpen}
       />
     </div>
   );
