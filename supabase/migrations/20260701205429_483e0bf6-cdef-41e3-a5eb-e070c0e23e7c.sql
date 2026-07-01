@@ -1,0 +1,2 @@
+ALTER TABLE public.checkin_templates_library ADD COLUMN IF NOT EXISTS is_default BOOLEAN NOT NULL DEFAULT false;
+CREATE UNIQUE INDEX IF NOT EXISTS checkin_templates_library_one_default_idx ON public.checkin_templates_library (is_default) WHERE is_default = true;

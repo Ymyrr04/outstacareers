@@ -158,12 +158,19 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
         }
       }
       if (!secs) {
-        secs = DEFAULT_SECTIONS;
-        // seed default per-contractor template only when no stage template exists
-        await supabase.from('contractor_checkin_templates').insert({
-          contractor_assignment_id: contractorAssignmentId,
-          sections: DEFAULT_SECTIONS as any,
-        });
+        // Fallback to the library template marked as default (if any)
+        const { data: def } = await supabase
+          .from('checkin_templates_library')
+          .select('sections, template_type')
+          .eq('is_default', true)
+          .eq('template_type', 'checklist')
+          .maybeSingle();
+        const defSecs = (def as any)?.sections;
+        if (Array.isArray(defSecs) && defSecs.length > 0) {
+          secs = defSecs as CheckinSection[];
+        } else {
+          secs = DEFAULT_SECTIONS;
+        }
       }
     }
     // Hide sections the admin has toggled off

@@ -10,7 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { WysiwygEditor } from '@/components/WysiwygEditor';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Plus, Trash2, Library, Check, X, GripVertical, ChevronDown, ChevronRight, Pencil, Mail, ListChecks } from 'lucide-react';
+import { Loader2, Plus, Trash2, Library, Check, X, GripVertical, ChevronDown, ChevronRight, Pencil, Mail, ListChecks, Star } from 'lucide-react';
 import type { CheckinSection } from './ContractorCheckinConfig';
 import { parseCheckinItem, encodeCheckinItem, type CheckinItemType } from '@/lib/checkinItem';
 
@@ -24,6 +24,7 @@ export interface CheckinTemplate {
   template_type?: TemplateType;
   subject?: string | null;
   body_html?: string | null;
+  is_default?: boolean;
   created_at: string;
 }
 
@@ -109,7 +110,8 @@ export const CheckinTemplateLibraryDialog = ({ open, onOpenChange, onApply, save
     setLoading(true);
     const { data, error } = await supabase
       .from('checkin_templates_library')
-      .select('id, name, description, sections, template_type, subject, body_html, created_at')
+      .select('id, name, description, sections, template_type, subject, body_html, is_default, created_at')
+      .order('is_default', { ascending: false })
       .order('created_at', { ascending: false });
     if (error) toast({ title: 'Failed to load templates', description: error.message, variant: 'destructive' });
     setTemplates(((data || []) as any[]).map(t => ({
@@ -174,6 +176,17 @@ export const CheckinTemplateLibraryDialog = ({ open, onOpenChange, onApply, save
     const { error } = await supabase.from('checkin_templates_library').delete().eq('id', id);
     if (error) { toast({ title: 'Delete failed', description: error.message, variant: 'destructive' }); return; }
     setTemplates(prev => prev.filter(t => t.id !== id));
+  };
+
+  const setAsDefault = async (id: string, makeDefault: boolean) => {
+    if (makeDefault) {
+      // Clear any existing default first (partial unique index requires this)
+      await supabase.from('checkin_templates_library').update({ is_default: false } as any).eq('is_default', true);
+    }
+    const { error } = await supabase.from('checkin_templates_library').update({ is_default: makeDefault } as any).eq('id', id);
+    if (error) { toast({ title: 'Failed to update default', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: makeDefault ? 'Set as default template' : 'Default cleared' });
+    load();
   };
 
   const saveBuilder = async () => {
@@ -412,14 +425,19 @@ export const CheckinTemplateLibraryDialog = ({ open, onOpenChange, onApply, save
                 const isEmail = type === 'email';
                 const isOpen = previewId === t.id;
                 return (
-                  <div key={t.id} className="rounded-md border hover:bg-muted/30 transition">
+                  <div key={t.id} className={`rounded-md border transition ${t.is_default ? 'border-amber-400 bg-amber-50/40 dark:bg-amber-950/10' : 'hover:bg-muted/30'}`}>
                     <div className="p-3 flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-2 flex-wrap">
                           <span className={`inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded ${isEmail ? 'bg-blue-100 text-blue-700 dark:bg-blue-950/50 dark:text-blue-300' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'}`}>
                             {isEmail ? <><Mail className="w-3 h-3" /> Email</> : <><ListChecks className="w-3 h-3" /> Checklist</>}
                           </span>
                           <div className="font-medium text-sm">{t.name}</div>
+                          {t.is_default && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300">
+                              <Star className="w-3 h-3 fill-current" /> Default
+                            </span>
+                          )}
                         </div>
                         {t.description && <div className="text-xs text-muted-foreground mt-0.5">{t.description}</div>}
                         <div className="text-[11px] text-muted-foreground mt-1">
@@ -429,6 +447,18 @@ export const CheckinTemplateLibraryDialog = ({ open, onOpenChange, onApply, save
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
+                        {!isEmail && (
+                          <Button
+                            size="sm"
+                            variant={t.is_default ? 'secondary' : 'ghost'}
+                            className={t.is_default ? 'text-amber-700 dark:text-amber-300' : ''}
+                            onClick={() => setAsDefault(t.id, !t.is_default)}
+                            title={t.is_default ? 'Unset default' : 'Set as default for new contractors'}
+                          >
+                            <Star className={`w-3.5 h-3.5 mr-1 ${t.is_default ? 'fill-current' : ''}`} />
+                            {t.is_default ? 'Default' : 'Set default'}
+                          </Button>
+                        )}
                         <Button size="sm" variant="ghost" onClick={() => setPreviewId(isOpen ? null : t.id)}>
                           {isOpen ? 'Hide' : 'Preview'}
                         </Button>
