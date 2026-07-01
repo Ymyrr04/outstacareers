@@ -1316,9 +1316,13 @@ export type Database = {
           created_at: string
           id: string
           read_at: string | null
+          responses: Json | null
+          sections: Json | null
           sent_by: string | null
           stage_id: string | null
           subject: string
+          submitted_at: string | null
+          template_type: string
         }
         Insert: {
           body_html: string
@@ -1326,9 +1330,13 @@ export type Database = {
           created_at?: string
           id?: string
           read_at?: string | null
+          responses?: Json | null
+          sections?: Json | null
           sent_by?: string | null
           stage_id?: string | null
           subject: string
+          submitted_at?: string | null
+          template_type?: string
         }
         Update: {
           body_html?: string
@@ -1336,9 +1344,13 @@ export type Database = {
           created_at?: string
           id?: string
           read_at?: string | null
+          responses?: Json | null
+          sections?: Json | null
           sent_by?: string | null
           stage_id?: string | null
           subject?: string
+          submitted_at?: string | null
+          template_type?: string
         }
         Relationships: [
           {
