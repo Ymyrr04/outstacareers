@@ -84,6 +84,22 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
   const [checked, setChecked] = useState<Record<string, Set<number>>>({});
   const [notes, setNotes] = useState('');
   const [recent, setRecent] = useState<any[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
+
+  const loadMessages = async () => {
+    const { data } = await supabase
+      .from('contractor_checkin_messages' as any)
+      .select('id, subject, body_html, read_at, created_at')
+      .eq('contractor_assignment_id', contractorAssignmentId)
+      .order('created_at', { ascending: false })
+      .limit(20);
+    setMessages((data as any) || []);
+  };
+
+  const markMessageRead = async (id: string) => {
+    setMessages(prev => prev.map(m => m.id === id ? { ...m, read_at: new Date().toISOString() } : m));
+    await supabase.from('contractor_checkin_messages' as any).update({ read_at: new Date().toISOString() } as any).eq('id', id);
+  };
 
   const initChecked = (s: CheckinSection[]) => {
     const m: Record<string, Set<number>> = {};
