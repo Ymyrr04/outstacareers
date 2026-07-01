@@ -188,7 +188,13 @@ export const CheckinTemplateLibraryDialog = ({ open, onOpenChange, onApply, save
     if (bType === 'checklist') {
       const cleaned = bSections.map(s => ({
         title: (s.title || '').trim() || 'Untitled',
-        items: (s.items || []).map(i => i.trim()).filter(Boolean),
+        items: (s.items || [])
+          .map(raw => {
+            const p = parseCheckinItem(raw);
+            const text = p.text.trim();
+            return text ? encodeCheckinItem(text, p.type) : '';
+          })
+          .filter(Boolean),
         color: s.color || 'emerald',
         enabled: s.enabled !== false,
       })).filter(s => s.items.length > 0);
