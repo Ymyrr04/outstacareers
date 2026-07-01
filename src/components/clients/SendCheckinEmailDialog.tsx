@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Send, Loader2, MessageSquare, ListChecks, Mail } from 'lucide-react';
+import { WysiwygEditor } from '@/components/WysiwygEditor';
 
 interface SendCheckinEmailDialogProps {
   open: boolean;
@@ -177,7 +178,7 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
       setContractorSubject(t.subject ? replacePlaceholders(t.subject, p) : `Check-in: ${t.name}`);
     } else {
       setContractorMode('email');
-      setContractorSubject(t.subject ? replacePlaceholders(t.subject, p) : '');
+      setContractorSubject(replacePlaceholders(t.subject || t.name || '', p));
       setContractorBody(t.body_html ? replacePlaceholders(t.body_html, p) : '');
     }
   };
@@ -331,7 +332,7 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
       {contractorMode === 'email' ? (
         <div className="space-y-1.5">
           <Label className="text-xs font-medium">Body</Label>
-          <Textarea value={contractorBody} onChange={(e) => setContractorBody(e.target.value)} rows={8} className="text-sm" />
+          <WysiwygEditor value={contractorBody} onChange={setContractorBody} minHeight="220px" />
         </div>
       ) : (
         <div className="space-y-2">
