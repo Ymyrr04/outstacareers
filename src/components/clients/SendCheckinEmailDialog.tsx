@@ -35,6 +35,7 @@ interface SendCheckinEmailDialogProps {
     contractor_email_subject: string | null;
     contractor_email_body: string | null;
     email_recipient: string;
+    checkin_sections?: CheckinSection[] | null;
   } | null;
 }
 
