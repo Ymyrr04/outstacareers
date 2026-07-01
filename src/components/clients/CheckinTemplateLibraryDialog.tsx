@@ -178,6 +178,17 @@ export const CheckinTemplateLibraryDialog = ({ open, onOpenChange, onApply, save
     setTemplates(prev => prev.filter(t => t.id !== id));
   };
 
+  const setAsDefault = async (id: string, makeDefault: boolean) => {
+    if (makeDefault) {
+      // Clear any existing default first (partial unique index requires this)
+      await supabase.from('checkin_templates_library').update({ is_default: false } as any).eq('is_default', true);
+    }
+    const { error } = await supabase.from('checkin_templates_library').update({ is_default: makeDefault } as any).eq('id', id);
+    if (error) { toast({ title: 'Failed to update default', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: makeDefault ? 'Set as default template' : 'Default cleared' });
+    load();
+  };
+
   const saveBuilder = async () => {
     if (!bName.trim()) { toast({ title: 'Template name required', variant: 'destructive' }); return; }
 
