@@ -436,17 +436,44 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
                         return (
                           <div key={si} className="rounded border bg-background p-2.5">
                             <p className="text-xs font-semibold mb-1.5">{sec.title}</p>
-                            <div className="space-y-1">
-                              {sec.items.map((it, ii) => (
-                                <label key={ii} className="flex items-start gap-2 text-xs cursor-pointer">
-                                  <Checkbox
-                                    checked={checkedSet.has(ii)}
-                                    onCheckedChange={() => toggleMsgItem(m.id, sec.title, ii)}
-                                    className="mt-0.5"
-                                  />
-                                  <span>{it}</span>
-                                </label>
-                              ))}
+                            <div className="space-y-1.5">
+                              {sec.items.map((raw, ii) => {
+                                const p = parseCheckinItem(raw);
+                                if (p.type === 'check') {
+                                  return (
+                                    <label key={ii} className="flex items-start gap-2 text-xs cursor-pointer">
+                                      <Checkbox
+                                        checked={checkedSet.has(ii)}
+                                        onCheckedChange={() => toggleMsgItem(m.id, sec.title, ii)}
+                                        className="mt-0.5"
+                                      />
+                                      <span>{p.text}</span>
+                                    </label>
+                                  );
+                                }
+                                const val = msgAnswers[m.id]?.[sec.title]?.[ii] || '';
+                                return (
+                                  <div key={ii} className="space-y-1">
+                                    <p className="text-xs text-foreground/80">{p.text}</p>
+                                    {p.type === 'short' ? (
+                                      <Input
+                                        value={val}
+                                        onChange={(e) => setMsgAnswer(m.id, sec.title, ii, e.target.value)}
+                                        className="h-8 text-xs"
+                                        placeholder="Your answer"
+                                      />
+                                    ) : (
+                                      <Textarea
+                                        value={val}
+                                        onChange={(e) => setMsgAnswer(m.id, sec.title, ii, e.target.value)}
+                                        rows={3}
+                                        className="text-xs"
+                                        placeholder="Your answer"
+                                      />
+                                    )}
+                                  </div>
+                                );
+                              })}
                             </div>
                           </div>
                         );
