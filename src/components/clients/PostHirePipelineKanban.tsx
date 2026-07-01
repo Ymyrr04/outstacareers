@@ -109,6 +109,15 @@ export const PostHirePipelineKanban = () => {
         </div>
         <Tooltip>
           <TooltipTrigger asChild>
+            <Button variant="outline" size="sm" onClick={() => setLibraryOpen(true)} className="h-8 text-xs">
+              <Library className="w-3.5 h-3.5 mr-1.5" />
+              Templates
+            </Button>
+          </TooltipTrigger>
+          <TooltipContent>Manage reusable check-in templates</TooltipContent>
+        </Tooltip>
+        <Tooltip>
+          <TooltipTrigger asChild>
             <Button 
               variant="outline" 
               size="sm" 
@@ -123,6 +132,7 @@ export const PostHirePipelineKanban = () => {
           <TooltipContent>Auto-advance contractors and send check-in emails</TooltipContent>
         </Tooltip>
       </div>
+
 
       {/* Kanban Board */}
       <DragDropContext onDragEnd={handleDragEnd}>
