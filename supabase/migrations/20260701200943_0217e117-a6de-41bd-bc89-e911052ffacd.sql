@@ -1,0 +1,1 @@
+UPDATE public.contractor_pipeline_stages SET email_recipient = 'contractor' WHERE email_recipient <> 'contractor';
