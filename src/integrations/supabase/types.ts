@@ -3020,6 +3020,20 @@ export type Database = {
     }
     Functions: {
       applicant_exists: { Args: { _applicant_id: string }; Returns: boolean }
+      get_contractor_checkin_messages: {
+        Args: { _contractor_assignment_id: string }
+        Returns: {
+          body_html: string
+          created_at: string
+          id: string
+          read_at: string
+          responses: Json
+          sections: Json
+          subject: string
+          submitted_at: string
+          template_type: string
+        }[]
+      }
       get_my_applicant_id: { Args: never; Returns: string }
       get_my_client_id: { Args: never; Returns: string }
       get_my_contractor_assignment_id: { Args: never; Returns: string }
