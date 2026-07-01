@@ -23,6 +23,7 @@ interface SendCheckinEmailDialogProps {
     clientName: string;
     jobTitle: string;
     weeksElapsed: number;
+    startDate?: string | null;
   } | null;
   stage: {
     id: string;
