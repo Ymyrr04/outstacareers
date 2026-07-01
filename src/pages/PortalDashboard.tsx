@@ -646,7 +646,7 @@ const PortalDashboard = () => {
     // for the dashboard view and (b) join client/job info to past timesheets.
     const { data: assignmentsAll } = await supabase
       .from('contractor_assignments')
-      .select('id, applicant_id, job_title, hourly_rate, hours_per_week, regular_work_shift, contact_number, emergency_number, country, work_days, status, start_date, sunday_hours_excluded, break_duration_minutes, break_is_paid, applicant:applicants_prescreen(full_name, email, phone, whatsapp, location), client:clients(company_name)')
+      .select('id, applicant_id, job_title, hourly_rate, hours_per_week, regular_work_shift, contact_number, emergency_number, country, work_days, status, start_date, sunday_hours_excluded, break_duration_minutes, break_is_paid, timezone, checkin_reminder_enabled, checkin_reminder_time, applicant:applicants_prescreen(full_name, email, phone, whatsapp, location), client:clients(company_name)')
       .in('id', allAssignmentIds);
 
     // Pick the active assignment first; otherwise the most recently started.
