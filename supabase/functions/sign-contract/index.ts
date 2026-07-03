@@ -59,9 +59,12 @@ Deno.serve(async (req) => {
 
       const { data: signed } = await admin.storage.from("contract-templates").createSignedUrl(template!.pdf_path, 3600);
 
-      // Mark viewed on first open
-      if (envelope.status === "sent") {
-        await admin.from("contract_envelopes").update({ status: "viewed", viewed_at: new Date().toISOString() }).eq("id", envelope.id);
+      // Track view — always refresh viewed_at so it reflects the last view, not just the first
+      if (envelope.status === "sent" || envelope.status === "viewed") {
+        const nowIso = new Date().toISOString();
+        const update: Record<string, unknown> = { viewed_at: nowIso };
+        if (envelope.status === "sent") update.status = "viewed";
+        await admin.from("contract_envelopes").update(update).eq("id", envelope.id);
         await admin.from("contract_audit_events").insert({
           envelope_id: envelope.id, event_type: "viewed",
           actor_email: envelope.recipient_email, ip_address: getClientIp(req), user_agent: req.headers.get("user-agent") ?? "",

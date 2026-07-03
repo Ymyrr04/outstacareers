@@ -35,12 +35,13 @@ Deno.serve(async (req) => {
 
       const { data: signed } = await admin.storage.from("contract-signed").createSignedUrl(env.signed_pdf_path, 3600);
 
-      // Mark viewed (first time only)
-      await admin
-        .from("contract_envelopes")
-        .update({ countersign_viewed_at: new Date().toISOString() })
-        .eq("id", env.id)
-        .is("countersign_viewed_at", null);
+      // Refresh viewed timestamp on every open (unless already countersigned)
+      if (!env.countersigned_at) {
+        await admin
+          .from("contract_envelopes")
+          .update({ countersign_viewed_at: new Date().toISOString() })
+          .eq("id", env.id);
+      }
 
       // Lookup saved signature
       let saved_signature: string | null = null;
