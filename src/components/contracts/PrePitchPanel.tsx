@@ -190,7 +190,7 @@ export const PrePitchPanel = () => {
                 <p className="text-xs text-muted-foreground">{e.recipient_email}</p>
                 <p className="text-xs text-muted-foreground">
                   Sent {e.sent_at ? new Date(e.sent_at).toLocaleString() : "—"}
-                  {e.viewed_at && ` • Viewed ${new Date(e.viewed_at).toLocaleString()}`}
+                  {e.viewed_at && ` • Last viewed ${new Date(e.viewed_at).toLocaleString()}`}
                   {e.signed_at && ` • Signed ${new Date(e.signed_at).toLocaleString()}`}
                 </p>
               </div>

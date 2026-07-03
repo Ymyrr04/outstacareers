@@ -209,7 +209,7 @@ export const EnvelopesPanel = () => {
                 <p className="text-xs text-muted-foreground">{e.recipient_email} • {e.contract_templates?.name || "—"}</p>
                 <p className="text-xs text-muted-foreground">
                   Sent {e.sent_at ? new Date(e.sent_at).toLocaleString() : "—"}
-                  {e.viewed_at && ` • Viewed ${new Date(e.viewed_at).toLocaleString()}`}
+                  {e.viewed_at && ` • Last viewed ${new Date(e.viewed_at).toLocaleString()}`}
                   {e.signed_at && ` • Signed ${new Date(e.signed_at).toLocaleString()}`}
                 </p>
                 {e.countersign_sent_at && !e.countersigned_at && (
