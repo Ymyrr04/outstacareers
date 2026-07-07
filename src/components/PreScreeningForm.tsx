@@ -40,7 +40,7 @@ const prescreenSchema = z.object({
   start_availability: z.string().trim().min(1, "Start availability is required").max(200, "Must be less than 200 characters"),
   has_experience: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
   currently_working: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
-  location: z.string().trim().min(1, "Location is required").max(200, "Must be less than 200 characters"),
+  location: z.string().trim().min(1, "Country is required").max(200, "Must be less than 200 characters"),
   job_source: z.string().trim().min(1, "Please select where you learned about this job"),
 });
 
@@ -930,12 +930,12 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
           />
 
           <div className="space-y-2">
-            <Label htmlFor="location" className="text-base">Your current location (city, country) *</Label>
+            <Label htmlFor="location" className="text-base">What country are you currently located in? *</Label>
             <Input
               id="location"
               value={formData.location}
               onChange={(e) => handleTextChange("location", e.target.value)}
-              placeholder="e.g., Manila, Philippines"
+              placeholder="e.g., Philippines"
               className={`text-base h-11 ${errors.location ? "border-destructive" : ""}`}
             />
             {errors.location && <p className="text-sm text-destructive">{errors.location}</p>}
