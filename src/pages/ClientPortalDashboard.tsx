@@ -140,7 +140,7 @@ const ClientPortalDashboard = () => {
 
       const { data: cpu } = await supabase
         .from('client_portal_users')
-        .select('must_change_password, client_id, is_first_login')
+        .select('id, must_change_password, client_id, is_first_login, label')
         .eq('user_id', uid)
         .maybeSingle();
 
@@ -159,8 +159,18 @@ const ClientPortalDashboard = () => {
       }
 
       setClientId(cpu.client_id);
-      await loadData(cpu.client_id);
+      setSubLabel((cpu as any).label || null);
+
+      // Load contractor restriction list for this portal user
+      const { data: restrictions } = await supabase
+        .from('client_portal_user_contractors')
+        .select('contractor_assignment_id')
+        .eq('portal_user_id', (cpu as any).id);
+      const restrictedIds = (restrictions || []).map((r: any) => r.contractor_assignment_id);
+
+      await loadData(cpu.client_id, restrictedIds);
       setLoading(false);
+
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
