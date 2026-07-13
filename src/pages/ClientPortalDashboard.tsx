@@ -118,6 +118,8 @@ const ClientPortalDashboard = () => {
   const [userEmail, setUserEmail] = useState<string>('');
   const [clientName, setClientName] = useState<string>('');
   const [clientId, setClientId] = useState<string | null>(null);
+  const [subLabel, setSubLabel] = useState<string | null>(null);
+  const [restrictedAssignmentIds, setRestrictedAssignmentIds] = useState<string[] | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
