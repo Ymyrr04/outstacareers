@@ -652,6 +652,42 @@ export type Database = {
           },
         ]
       }
+      client_portal_user_contractors: {
+        Row: {
+          contractor_assignment_id: string
+          created_at: string
+          id: string
+          portal_user_id: string
+        }
+        Insert: {
+          contractor_assignment_id: string
+          created_at?: string
+          id?: string
+          portal_user_id: string
+        }
+        Update: {
+          contractor_assignment_id?: string
+          created_at?: string
+          id?: string
+          portal_user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_portal_user_contractors_contractor_assignment_id_fkey"
+            columns: ["contractor_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "contractor_assignments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_portal_user_contractors_portal_user_id_fkey"
+            columns: ["portal_user_id"]
+            isOneToOne: false
+            referencedRelation: "client_portal_users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_portal_users: {
         Row: {
           client_id: string
@@ -660,6 +696,7 @@ export type Database = {
           full_name: string | null
           id: string
           is_first_login: boolean
+          label: string | null
           must_change_password: boolean
           password_reset_required: boolean
           phone: string | null
@@ -676,6 +713,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_first_login?: boolean
+          label?: string | null
           must_change_password?: boolean
           password_reset_required?: boolean
           phone?: string | null
@@ -692,6 +730,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           is_first_login?: boolean
+          label?: string | null
           must_change_password?: boolean
           password_reset_required?: boolean
           phone?: string | null
@@ -3038,6 +3077,7 @@ export type Database = {
         }[]
       }
       get_my_applicant_id: { Args: never; Returns: string }
+      get_my_assigned_assignment_ids: { Args: never; Returns: string[] }
       get_my_client_id: { Args: never; Returns: string }
       get_my_contractor_assignment_id: { Args: never; Returns: string }
       has_active_interview_session: {

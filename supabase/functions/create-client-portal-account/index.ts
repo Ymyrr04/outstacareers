@@ -51,16 +51,53 @@ Deno.serve(async (req) => {
       });
     }
 
-    type Action = "create" | "reset_password" | "delete";
+    type Action = "create" | "reset_password" | "delete" | "set_contractors" | "update_label";
     const body: {
       action?: Action;
       clientId?: string;
       username?: string;
       password?: string;
       portalUserId?: string;
+      label?: string | null;
+      contractorAssignmentIds?: string[];
     } = await req.json().catch(() => ({}));
 
     const action: Action = body.action || "create";
+
+    // ---------- SET CONTRACTORS ----------
+    if (action === "set_contractors") {
+      if (!body.portalUserId) {
+        return new Response(JSON.stringify({ error: "portalUserId is required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const ids = Array.isArray(body.contractorAssignmentIds) ? body.contractorAssignmentIds : [];
+      await admin.from("client_portal_user_contractors").delete().eq("portal_user_id", body.portalUserId);
+      if (ids.length > 0) {
+        const rows = ids.map((cid) => ({ portal_user_id: body.portalUserId!, contractor_assignment_id: cid }));
+        const { error: insErr } = await admin.from("client_portal_user_contractors").insert(rows);
+        if (insErr) throw insErr;
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ---------- UPDATE LABEL ----------
+    if (action === "update_label") {
+      if (!body.portalUserId) {
+        return new Response(JSON.stringify({ error: "portalUserId is required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const label = (body.label || "").toString().trim();
+      await admin.from("client_portal_users")
+        .update({ label: label || null, updated_at: new Date().toISOString() })
+        .eq("id", body.portalUserId);
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // ---------- RESET PASSWORD ----------
     if (action === "reset_password") {
@@ -154,21 +191,30 @@ Deno.serve(async (req) => {
     });
     if (createErr) throw createErr;
 
-    const { error: insErr } = await admin.from("client_portal_users").insert({
+    const label = (body.label || "").toString().trim();
+    const { data: cpuRow, error: insErr } = await admin.from("client_portal_users").insert({
       user_id: newUser.user!.id,
       client_id: body.clientId,
       email: syntheticEmail,
       username,
       must_change_password: true,
-    });
-    if (insErr) {
+      label: label || null,
+    }).select("id").single();
+    if (insErr || !cpuRow) {
       await admin.auth.admin.deleteUser(newUser.user!.id).catch(() => {});
-      throw insErr;
+      throw insErr || new Error("Failed to insert portal user");
     }
 
-    return new Response(JSON.stringify({ success: true, username, userId: newUser.user!.id }), {
+    const contractorIds = Array.isArray(body.contractorAssignmentIds) ? body.contractorAssignmentIds : [];
+    if (contractorIds.length > 0) {
+      const rows = contractorIds.map((cid) => ({ portal_user_id: cpuRow.id, contractor_assignment_id: cid }));
+      await admin.from("client_portal_user_contractors").insert(rows);
+    }
+
+    return new Response(JSON.stringify({ success: true, username, userId: newUser.user!.id, portalUserId: cpuRow.id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (e: any) {
     console.error("create-client-portal-account error:", e);
     return new Response(JSON.stringify({ error: e?.message || String(e) }), {

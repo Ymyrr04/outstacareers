@@ -118,6 +118,8 @@ const ClientPortalDashboard = () => {
   const [userEmail, setUserEmail] = useState<string>('');
   const [clientName, setClientName] = useState<string>('');
   const [clientId, setClientId] = useState<string | null>(null);
+  const [subLabel, setSubLabel] = useState<string | null>(null);
+  const [restrictedAssignmentIds, setRestrictedAssignmentIds] = useState<string[] | null>(null);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [leaveRequests, setLeaveRequests] = useState<LeaveRequest[]>([]);
@@ -140,7 +142,7 @@ const ClientPortalDashboard = () => {
 
       const { data: cpu } = await supabase
         .from('client_portal_users')
-        .select('must_change_password, client_id, is_first_login')
+        .select('id, must_change_password, client_id, is_first_login, label')
         .eq('user_id', uid)
         .maybeSingle();
 
@@ -159,13 +161,28 @@ const ClientPortalDashboard = () => {
       }
 
       setClientId(cpu.client_id);
-      await loadData(cpu.client_id);
+      setSubLabel((cpu as any).label || null);
+
+      // Load contractor restriction list for this portal user
+      const { data: restrictions } = await supabase
+        .from('client_portal_user_contractors')
+        .select('contractor_assignment_id')
+        .eq('portal_user_id', (cpu as any).id);
+      const restrictedIds = (restrictions || []).map((r: any) => r.contractor_assignment_id);
+
+      await loadData(cpu.client_id, restrictedIds);
       setLoading(false);
+
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadData = async (cid: string) => {
+  const loadData = async (cid: string, restrictedIdsArg?: string[]) => {
+    const restrictedIds = restrictedIdsArg !== undefined ? restrictedIdsArg : (restrictedAssignmentIds || []);
+    if (restrictedIdsArg !== undefined) {
+      setRestrictedAssignmentIds(restrictedIdsArg.length > 0 ? restrictedIdsArg : null);
+    }
+
     const { data: client } = await supabase
       .from('clients')
       .select('company_name')
@@ -174,12 +191,17 @@ const ClientPortalDashboard = () => {
     if (client) setClientName(client.company_name);
 
     // Client portal must NEVER expose any pay or rate fields (hourly_rate, client_rate, invoice_total, incentives).
-    const { data: ca, error: caErr } = await supabase
+    let caQuery = supabase
       .from('contractor_assignments')
       .select('id, job_title, hours_per_week, timezone, start_date, status, sunday_hours_excluded, applicant:applicants_prescreen(full_name, email)')
       .eq('client_id', cid);
+    if (restrictedIds.length > 0) {
+      caQuery = caQuery.in('id', restrictedIds);
+    }
+    const { data: ca, error: caErr } = await caQuery;
     if (caErr) console.error(caErr);
     setAssignments((ca || []) as any);
+
 
 
     const ids = (ca || []).map((c: any) => c.id);
@@ -358,7 +380,10 @@ const ClientPortalDashboard = () => {
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-blue-600" />
-            <div className="text-sm font-semibold">{clientName || 'OutStaWorkforce'}</div>
+            <div className="text-sm font-semibold">
+              {clientName || 'OutStaWorkforce'}
+              {subLabel && <span className="text-muted-foreground font-normal"> — {subLabel}</span>}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <ProfileMenu
