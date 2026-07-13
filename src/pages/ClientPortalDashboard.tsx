@@ -380,7 +380,10 @@ const ClientPortalDashboard = () => {
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-blue-600" />
-            <div className="text-sm font-semibold">{clientName || 'OutStaWorkforce'}</div>
+            <div className="text-sm font-semibold">
+              {clientName || 'OutStaWorkforce'}
+              {subLabel && <span className="text-muted-foreground font-normal"> — {subLabel}</span>}
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <ProfileMenu
