@@ -51,16 +51,53 @@ Deno.serve(async (req) => {
       });
     }
 
-    type Action = "create" | "reset_password" | "delete";
+    type Action = "create" | "reset_password" | "delete" | "set_contractors" | "update_label";
     const body: {
       action?: Action;
       clientId?: string;
       username?: string;
       password?: string;
       portalUserId?: string;
+      label?: string | null;
+      contractorAssignmentIds?: string[];
     } = await req.json().catch(() => ({}));
 
     const action: Action = body.action || "create";
+
+    // ---------- SET CONTRACTORS ----------
+    if (action === "set_contractors") {
+      if (!body.portalUserId) {
+        return new Response(JSON.stringify({ error: "portalUserId is required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const ids = Array.isArray(body.contractorAssignmentIds) ? body.contractorAssignmentIds : [];
+      await admin.from("client_portal_user_contractors").delete().eq("portal_user_id", body.portalUserId);
+      if (ids.length > 0) {
+        const rows = ids.map((cid) => ({ portal_user_id: body.portalUserId!, contractor_assignment_id: cid }));
+        const { error: insErr } = await admin.from("client_portal_user_contractors").insert(rows);
+        if (insErr) throw insErr;
+      }
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // ---------- UPDATE LABEL ----------
+    if (action === "update_label") {
+      if (!body.portalUserId) {
+        return new Response(JSON.stringify({ error: "portalUserId is required" }), {
+          status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+      const label = (body.label || "").toString().trim();
+      await admin.from("client_portal_users")
+        .update({ label: label || null, updated_at: new Date().toISOString() })
+        .eq("id", body.portalUserId);
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     // ---------- RESET PASSWORD ----------
     if (action === "reset_password") {
