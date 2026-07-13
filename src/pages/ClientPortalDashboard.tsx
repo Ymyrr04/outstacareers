@@ -177,7 +177,8 @@ const ClientPortalDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadData = async (cid: string) => {
+  const loadData = async (cid: string, restrictedIds: string[] = []) => {
+    setRestrictedAssignmentIds(restrictedIds.length > 0 ? restrictedIds : null);
     const { data: client } = await supabase
       .from('clients')
       .select('company_name')
@@ -186,12 +187,17 @@ const ClientPortalDashboard = () => {
     if (client) setClientName(client.company_name);
 
     // Client portal must NEVER expose any pay or rate fields (hourly_rate, client_rate, invoice_total, incentives).
-    const { data: ca, error: caErr } = await supabase
+    let caQuery = supabase
       .from('contractor_assignments')
       .select('id, job_title, hours_per_week, timezone, start_date, status, sunday_hours_excluded, applicant:applicants_prescreen(full_name, email)')
       .eq('client_id', cid);
+    if (restrictedIds.length > 0) {
+      caQuery = caQuery.in('id', restrictedIds);
+    }
+    const { data: ca, error: caErr } = await caQuery;
     if (caErr) console.error(caErr);
     setAssignments((ca || []) as any);
+
 
 
     const ids = (ca || []).map((c: any) => c.id);
