@@ -191,21 +191,30 @@ Deno.serve(async (req) => {
     });
     if (createErr) throw createErr;
 
-    const { error: insErr } = await admin.from("client_portal_users").insert({
+    const label = (body.label || "").toString().trim();
+    const { data: cpuRow, error: insErr } = await admin.from("client_portal_users").insert({
       user_id: newUser.user!.id,
       client_id: body.clientId,
       email: syntheticEmail,
       username,
       must_change_password: true,
-    });
-    if (insErr) {
+      label: label || null,
+    }).select("id").single();
+    if (insErr || !cpuRow) {
       await admin.auth.admin.deleteUser(newUser.user!.id).catch(() => {});
-      throw insErr;
+      throw insErr || new Error("Failed to insert portal user");
     }
 
-    return new Response(JSON.stringify({ success: true, username, userId: newUser.user!.id }), {
+    const contractorIds = Array.isArray(body.contractorAssignmentIds) ? body.contractorAssignmentIds : [];
+    if (contractorIds.length > 0) {
+      const rows = contractorIds.map((cid) => ({ portal_user_id: cpuRow.id, contractor_assignment_id: cid }));
+      await admin.from("client_portal_user_contractors").insert(rows);
+    }
+
+    return new Response(JSON.stringify({ success: true, username, userId: newUser.user!.id, portalUserId: cpuRow.id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
+
   } catch (e: any) {
     console.error("create-client-portal-account error:", e);
     return new Response(JSON.stringify({ error: e?.message || String(e) }), {
