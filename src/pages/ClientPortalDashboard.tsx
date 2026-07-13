@@ -177,8 +177,12 @@ const ClientPortalDashboard = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const loadData = async (cid: string, restrictedIds: string[] = []) => {
-    setRestrictedAssignmentIds(restrictedIds.length > 0 ? restrictedIds : null);
+  const loadData = async (cid: string, restrictedIdsArg?: string[]) => {
+    const restrictedIds = restrictedIdsArg !== undefined ? restrictedIdsArg : (restrictedAssignmentIds || []);
+    if (restrictedIdsArg !== undefined) {
+      setRestrictedAssignmentIds(restrictedIdsArg.length > 0 ? restrictedIdsArg : null);
+    }
+
     const { data: client } = await supabase
       .from('clients')
       .select('company_name')
