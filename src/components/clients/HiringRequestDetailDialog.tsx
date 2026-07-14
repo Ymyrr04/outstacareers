@@ -1083,10 +1083,12 @@ export const HiringRequestDetailDialog = ({
                     </div>
                     {isEditing ? (
                       <div className="flex gap-2 mt-2">
-                        <Textarea
+                        <CommentEditor
                           value={editingCommentContent}
-                          onChange={(e) => setEditingCommentContent(e.target.value)}
-                          className="min-h-[60px] text-sm resize-none flex-1"
+                          onChange={setEditingCommentContent}
+                          onSubmit={() => handleEditComment(comment.id)}
+                          placeholder="Edit comment..."
+                          compact={false}
                         />
                         <div className="flex flex-col gap-1">
                           <Button
