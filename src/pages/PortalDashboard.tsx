@@ -1176,6 +1176,9 @@ const PortalDashboard = () => {
               timesheetId: tsRow.id,
             },
           }).catch((e) => console.error('notify invoke failed', e));
+          supabase.functions.invoke('append-timesheet-to-sheet', {
+            body: { timesheetId: tsRow.id },
+          }).catch((e) => console.error('sheet append failed', e));
         }
       } catch (e) {
         console.error('notify lookup failed', e);
