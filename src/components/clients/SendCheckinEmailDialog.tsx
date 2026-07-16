@@ -175,6 +175,21 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
     fetchClientContact();
   }, [stage, contractor, open]);
 
+  // Auto-select a matching library template based on the stage name
+  // (e.g. stage "Week 1 Check-in" -> template "Week 1 check in").
+  useEffect(() => {
+    if (!open || !stage || templates.length === 0 || selectedTemplateId) return;
+    const norm = (s: string) => s.toLowerCase().replace(/[-_]/g, ' ').replace(/\s+/g, ' ').trim();
+    const stageKey = norm(stage.name || '');
+    if (!stageKey) return;
+    const match =
+      templates.find(t => norm(t.name) === stageKey) ||
+      templates.find(t => norm(t.name).includes(stageKey) || stageKey.includes(norm(t.name)));
+    if (match) applyTemplate(match.id);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, stage, templates]);
+
+
   const applyTemplate = (id: string) => {
     setSelectedTemplateId(id);
     const t = templates.find(x => x.id === id);
