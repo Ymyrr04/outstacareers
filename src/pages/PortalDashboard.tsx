@@ -1803,12 +1803,12 @@ const PortalDashboard = () => {
             <TabsTrigger value="timesheet">Timesheet</TabsTrigger>
             <TabsTrigger value="checkin" className="relative">
               Check-in
-              {!hasCheckinToday && (
+              {pendingManagerCheckins > 0 && (
                 <span
-                  aria-label="Check-in not submitted"
-                  className="absolute -top-1 -right-1 flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none shadow ring-2 ring-background"
+                  aria-label="Check-in from your manager"
+                  className="absolute -top-1 -right-1 flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none shadow ring-2 ring-background"
                 >
-                  !
+                  {pendingManagerCheckins}
                 </span>
               )}
             </TabsTrigger>
