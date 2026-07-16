@@ -560,6 +560,7 @@ const PortalDashboard = () => {
 
   // Check-in reminder + attention badge state
   const [hasCheckinToday, setHasCheckinToday] = useState<boolean>(true);
+  const [pendingManagerCheckins, setPendingManagerCheckins] = useState<number>(0);
   const [reminderOpen, setReminderOpen] = useState(false);
   const [tabValue, setTabValue] = useState<'timesheet' | 'checkin' | 'leave'>('timesheet');
 
@@ -799,7 +800,7 @@ const PortalDashboard = () => {
     //   (b) they submitted a manager-sent check-in message today.
     // Otherwise a template posted by the manager would keep the red badge on the
     // Check-in tab even after the contractor completes and submits the form.
-    const [{ data: daily }, { data: msgs }] = await Promise.all([
+    const [{ data: daily }, { data: submittedMsgs }, { data: pendingMsgs }] = await Promise.all([
       supabase
         .from('contractor_daily_checkins')
         .select('id')
@@ -814,10 +815,16 @@ const PortalDashboard = () => {
         .gte('submitted_at', `${today}T00:00:00`)
         .lte('submitted_at', `${today}T23:59:59.999`)
         .limit(1),
+      supabase
+        .from('contractor_checkin_messages' as any)
+        .select('id')
+        .eq('contractor_assignment_id', info.contractor_assignment_id)
+        .is('submitted_at', null),
     ]);
     const hasDaily = Boolean(daily && daily.length > 0);
-    const hasMsgSubmission = Boolean(msgs && (msgs as any[]).length > 0);
+    const hasMsgSubmission = Boolean(submittedMsgs && (submittedMsgs as any[]).length > 0);
     setHasCheckinToday(hasDaily || hasMsgSubmission);
+    setPendingManagerCheckins((pendingMsgs as any[] | null)?.length || 0);
   };
 
   useEffect(() => {
@@ -834,6 +841,9 @@ const PortalDashboard = () => {
     const tick = () => {
       if (!info.checkin_reminder_enabled) return;
       if (hasCheckinToday) return;
+      // Only nag the contractor if their manager has actually sent a check-in
+      // that is still awaiting a response. Otherwise stay silent.
+      if (pendingManagerCheckins === 0) return;
       const reminderMin = timeStringToMinutes(info.checkin_reminder_time);
       if (reminderMin === null) return;
       const nowMin = nowMinutesInTz(tzOffset);
@@ -849,7 +859,7 @@ const PortalDashboard = () => {
     const id = window.setInterval(tick, 60 * 1000);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [info?.contractor_assignment_id, info?.checkin_reminder_enabled, info?.checkin_reminder_time, info?.timezone, hasCheckinToday]);
+  }, [info?.contractor_assignment_id, info?.checkin_reminder_enabled, info?.checkin_reminder_time, info?.timezone, hasCheckinToday, pendingManagerCheckins]);
 
   const dismissReminderForToday = () => {
     if (!info?.contractor_assignment_id) return;
@@ -1793,12 +1803,12 @@ const PortalDashboard = () => {
             <TabsTrigger value="timesheet">Timesheet</TabsTrigger>
             <TabsTrigger value="checkin" className="relative">
               Check-in
-              {!hasCheckinToday && (
+              {pendingManagerCheckins > 0 && (
                 <span
-                  aria-label="Check-in not submitted"
-                  className="absolute -top-1 -right-1 flex items-center justify-center w-4 h-4 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none shadow ring-2 ring-background"
+                  aria-label="Check-in from your manager"
+                  className="absolute -top-1 -right-1 flex items-center justify-center min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[10px] font-bold leading-none shadow ring-2 ring-background"
                 >
-                  !
+                  {pendingManagerCheckins}
                 </span>
               )}
             </TabsTrigger>
