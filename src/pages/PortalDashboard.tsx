@@ -859,7 +859,7 @@ const PortalDashboard = () => {
     const id = window.setInterval(tick, 60 * 1000);
     return () => window.clearInterval(id);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [info?.contractor_assignment_id, info?.checkin_reminder_enabled, info?.checkin_reminder_time, info?.timezone, hasCheckinToday]);
+  }, [info?.contractor_assignment_id, info?.checkin_reminder_enabled, info?.checkin_reminder_time, info?.timezone, hasCheckinToday, pendingManagerCheckins]);
 
   const dismissReminderForToday = () => {
     if (!info?.contractor_assignment_id) return;
