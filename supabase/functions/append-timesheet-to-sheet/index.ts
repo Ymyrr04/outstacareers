@@ -4,6 +4,32 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3';
 const SPREADSHEET_ID = '1HPFeleVLcfR0kyG1N4HCaEeQcEypzXquhQPbMToXQHY';
 const GATEWAY = 'https://connector-gateway.lovable.dev/google_sheets/v4';
 
+const HEADERS = [
+  'Contractor',
+  'Email',
+  'Company',
+  'Week Ending',
+  'Hours',
+  'Deposit Hours',
+  'OT',
+  'Invoice',
+  'Bonus',
+  'Status',
+  'Notes',
+  'Submitted',
+];
+
+function computeDeposit(startStr: string | null, hpw: number, weekEndingDate: string, totalHours: number) {
+  if (!startStr || !hpw) return { depositHours: 0, isDeposit: false, weekIndex: null as number | null };
+  const start = new Date(startStr);
+  const end = new Date(weekEndingDate);
+  const diffDays = Math.floor((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) return { depositHours: 0, isDeposit: false, weekIndex: null };
+  const weekIndex = Math.floor(diffDays / 7);
+  if (weekIndex > 1) return { depositHours: 0, isDeposit: false, weekIndex };
+  return { depositHours: Math.min(Number(totalHours), hpw), isDeposit: true, weekIndex };
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -20,14 +46,14 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    // Load timesheet with contractor + applicant + client
     const { data: ts, error: tsErr } = await supabase
       .from('contractor_timesheets')
       .select(`
         id, week_ending_date, total_hours, overtime_hours, submitted_at, status,
+        outsta_status, notes, incentive_amount,
         contractor_assignments!inner (
-          job_title,
-          applicants_prescreen ( full_name ),
+          job_title, start_date, hours_per_week, hourly_rate,
+          applicants_prescreen ( full_name, email ),
           clients ( company_name )
         )
       `)
@@ -38,8 +64,18 @@ Deno.serve(async (req) => {
 
     const assignment: any = ts.contractor_assignments;
     const contractorName = assignment?.applicants_prescreen?.full_name || 'Unknown';
+    const contractorEmail = assignment?.applicants_prescreen?.email || '';
     const clientName = assignment?.clients?.company_name || 'Unassigned';
-    const jobTitle = assignment?.job_title || '';
+    const hourlyRate = Number(assignment?.hourly_rate || 0);
+    const hpw = Number(assignment?.hours_per_week || 0);
+
+    const totalHours = Number(ts.total_hours ?? 0);
+    const overtime = Number(ts.overtime_hours ?? 0);
+    const bonus = Number(ts.incentive_amount ?? 0);
+    const dep = computeDeposit(assignment?.start_date, hpw, ts.week_ending_date, totalHours);
+    const regularHours = Math.max(0, totalHours - overtime);
+    const invoice = hourlyRate > 0 ? regularHours * hourlyRate : 0;
+    const status = ts.outsta_status || ts.status || '';
 
     const gwHeaders = {
       Authorization: `Bearer ${lovableKey}`,
@@ -47,7 +83,6 @@ Deno.serve(async (req) => {
       'Content-Type': 'application/json',
     };
 
-    // Get first sheet's title
     const metaRes = await fetch(
       `${GATEWAY}/spreadsheets/${SPREADSHEET_ID}?fields=sheets.properties.title`,
       { headers: gwHeaders },
@@ -59,36 +94,43 @@ Deno.serve(async (req) => {
     const meta = await metaRes.json();
     const tabName: string = meta?.sheets?.[0]?.properties?.title || 'Sheet1';
 
-    // Ensure header row exists
+    // Ensure header row matches current schema
+    const lastCol = String.fromCharCode(64 + HEADERS.length); // A=65
     const headerRes = await fetch(
-      `${GATEWAY}/spreadsheets/${SPREADSHEET_ID}/values/${tabName}!A1:F1`,
+      `${GATEWAY}/spreadsheets/${SPREADSHEET_ID}/values/${tabName}!A1:${lastCol}1`,
       { headers: gwHeaders },
     );
     const headerJson = headerRes.ok ? await headerRes.json() : { values: [] };
-    if (!headerJson.values || headerJson.values.length === 0) {
+    const existing = headerJson.values?.[0] || [];
+    const headersMatch = existing.length === HEADERS.length && HEADERS.every((h, i) => existing[i] === h);
+    if (!headersMatch) {
       await fetch(
-        `${GATEWAY}/spreadsheets/${SPREADSHEET_ID}/values/${tabName}!A1:F1?valueInputOption=USER_ENTERED`,
+        `${GATEWAY}/spreadsheets/${SPREADSHEET_ID}/values/${tabName}!A1:${lastCol}1?valueInputOption=USER_ENTERED`,
         {
           method: 'PUT',
           headers: gwHeaders,
-          body: JSON.stringify({
-            values: [['Contractor', 'Job Title', 'Client', 'Week Ending', 'Total Hours', 'Submitted At']],
-          }),
+          body: JSON.stringify({ values: [HEADERS] }),
         },
       );
     }
 
     const row = [
       contractorName,
-      jobTitle,
+      contractorEmail,
       clientName,
       ts.week_ending_date,
-      Number(ts.total_hours ?? 0),
+      totalHours,
+      dep.isDeposit ? dep.depositHours : '',
+      overtime,
+      invoice ? Number(invoice.toFixed(2)) : '',
+      bonus,
+      status,
+      ts.notes || '',
       ts.submitted_at ? new Date(ts.submitted_at).toISOString() : new Date().toISOString(),
     ];
 
     const appendRes = await fetch(
-      `${GATEWAY}/spreadsheets/${SPREADSHEET_ID}/values/${tabName}!A:F:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
+      `${GATEWAY}/spreadsheets/${SPREADSHEET_ID}/values/${tabName}!A:${lastCol}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
       {
         method: 'POST',
         headers: gwHeaders,
