@@ -540,7 +540,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
       {messages.length === 0 && (
         <Card>
           <CardContent className="py-10 text-center text-sm text-muted-foreground">
-            No check-ins yet. Your manager will send you a check-in form from the post-hire pipeline.
+            No check-ins yet. OutSta will check in with you soon :)
           </CardContent>
         </Card>
       )}
