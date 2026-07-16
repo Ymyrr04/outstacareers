@@ -560,6 +560,7 @@ const PortalDashboard = () => {
 
   // Check-in reminder + attention badge state
   const [hasCheckinToday, setHasCheckinToday] = useState<boolean>(true);
+  const [pendingManagerCheckins, setPendingManagerCheckins] = useState<number>(0);
   const [reminderOpen, setReminderOpen] = useState(false);
   const [tabValue, setTabValue] = useState<'timesheet' | 'checkin' | 'leave'>('timesheet');
 
