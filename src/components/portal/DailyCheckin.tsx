@@ -537,131 +537,14 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
         </Card>
       )}
 
-      <Card>
-        <CardHeader className="flex flex-row items-start justify-between gap-4 space-y-0">
-          <div>
-            <CardTitle>Check-in</CardTitle>
-            <CardDescription>
-              Tick what applies, add any notes, and submit. A summary is emailed to your manager.
-            </CardDescription>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => { setDraftSections(sections); setEditingTemplate(true); }}>
-            <Settings2 className="w-3.5 h-3.5 mr-1.5" /> Customize
-          </Button>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {sections.map((sec, secIdx) => {
-            const sectionCount = checked[sec.title]?.size || 0;
-            const accentMap: Record<string, { bar: string; chip: string }> = {
-              emerald: { bar: 'bg-emerald-500', chip: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20' },
-              blue:    { bar: 'bg-blue-500',    chip: 'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/20' },
-              violet:  { bar: 'bg-violet-500',  chip: 'bg-violet-500/10 text-violet-700 dark:text-violet-400 border-violet-500/20' },
-              amber:   { bar: 'bg-amber-500',   chip: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20' },
-              rose:    { bar: 'bg-rose-500',    chip: 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border-rose-500/20' },
-              cyan:    { bar: 'bg-cyan-500',    chip: 'bg-cyan-500/10 text-cyan-700 dark:text-cyan-400 border-cyan-500/20' },
-              orange:  { bar: 'bg-orange-500',  chip: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/20' },
-              pink:    { bar: 'bg-pink-500',    chip: 'bg-pink-500/10 text-pink-700 dark:text-pink-400 border-pink-500/20' },
-            };
-            const orderFallback = ['emerald','blue','violet','amber'];
-            const a = accentMap[sec.color || orderFallback[secIdx % orderFallback.length]] || accentMap.emerald;
-            return (
-              <section key={sec.title} className="rounded-lg border bg-muted/30 overflow-hidden">
-                <header className="flex items-center justify-between gap-3 px-4 py-2.5 bg-muted/60 border-b">
-                  <div className="flex items-center gap-2.5">
-                    <span className={`w-1 h-5 rounded-full ${a.bar}`} />
-                    <h3 className="text-sm font-semibold tracking-tight">{sec.title}</h3>
-                  </div>
-                  <span className={`text-[11px] font-medium px-2 py-0.5 rounded-full border ${a.chip}`}>
-                    {sectionCount}/{sec.items.length}
-                  </span>
-                </header>
-                <div className="p-3 grid grid-cols-1 md:grid-cols-2 gap-2">
-                  {sec.items.map((item, idx) => {
-                    const id = `${sec.title}-${idx}`;
-                    const isChecked = checked[sec.title]?.has(idx) || false;
-                    return (
-                      <label
-                        key={id}
-                        htmlFor={id}
-                        className={`flex items-start gap-2.5 rounded-md border px-3 py-2 cursor-pointer transition-all ${
-                          isChecked
-                            ? 'bg-primary/5 border-primary/40 shadow-sm'
-                            : 'bg-background border-border hover:bg-muted/50 hover:border-foreground/20'
-                        }`}
-                      >
-                        <Checkbox id={id} checked={isChecked} onCheckedChange={() => toggleItem(sec.title, idx)} className="mt-0.5" />
-                        <span className={`text-sm leading-snug ${isChecked ? 'font-medium text-foreground' : 'text-foreground/80'}`}>{item}</span>
-                      </label>
-                    );
-                  })}
-                  {sec.items.length === 0 && (
-                    <p className="text-xs text-muted-foreground italic col-span-full px-1 py-2">No items — click Customize to add some.</p>
-                  )}
-                </div>
-              </section>
-            );
-          })}
-
-          <div className="space-y-2 pt-2 border-t">
-            <Label htmlFor="checkin-notes" className="text-sm font-semibold">Additional notes (optional)</Label>
-            <Textarea
-              id="checkin-notes"
-              rows={3}
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="Anything else to share with your manager?"
-            />
-          </div>
-
-          <div className="flex items-center justify-between pt-2 border-t">
-            <p className="text-xs text-muted-foreground">
-              <span className="font-semibold text-foreground">{totalChecked}</span> item{totalChecked === 1 ? '' : 's'} checked
-            </p>
-            <Button onClick={handleSubmit} disabled={submitting} size="lg">
-              {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />} Submit check-in
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-
-      {editingTemplate && (
-        <Card className="border-primary/40">
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <div>
-              <CardTitle className="text-base">Customize your checklist</CardTitle>
-              <CardDescription>Add, rename, or remove items. Saved instantly to your profile.</CardDescription>
-            </div>
-            <div className="flex gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setEditingTemplate(false)} disabled={templateSaving}>
-                <X className="w-3.5 h-3.5 mr-1" /> Cancel
-              </Button>
-              <Button size="sm" onClick={handleSaveTemplate} disabled={templateSaving}>
-                {templateSaving ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Check className="w-3.5 h-3.5 mr-1" />} Save
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-5">
-            {draftSections.map((sec, si) => (
-              <div key={si} className="space-y-2">
-                <h4 className="text-sm font-semibold">{sec.title}</h4>
-                <div className="space-y-1.5">
-                  {sec.items.map((item, ii) => (
-                    <div key={ii} className="flex items-center gap-2">
-                      <Input value={item} onChange={e => updateDraftItem(si, ii, e.target.value)} className="text-sm h-8" />
-                      <Button type="button" variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeDraftItem(si, ii)}>
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </Button>
-                    </div>
-                  ))}
-                  <Button type="button" variant="outline" size="sm" onClick={() => addDraftItem(si)}>
-                    <Plus className="w-3.5 h-3.5 mr-1" /> Add item
-                  </Button>
-                </div>
-              </div>
-            ))}
+      {messages.length === 0 && (
+        <Card>
+          <CardContent className="py-10 text-center text-sm text-muted-foreground">
+            No check-ins yet. Your manager will send you a check-in form from the post-hire pipeline.
           </CardContent>
         </Card>
       )}
+
 
       {recent.length > 0 && (
         <Card>
