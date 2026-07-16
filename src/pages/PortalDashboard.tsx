@@ -841,6 +841,9 @@ const PortalDashboard = () => {
     const tick = () => {
       if (!info.checkin_reminder_enabled) return;
       if (hasCheckinToday) return;
+      // Only nag the contractor if their manager has actually sent a check-in
+      // that is still awaiting a response. Otherwise stay silent.
+      if (pendingManagerCheckins === 0) return;
       const reminderMin = timeStringToMinutes(info.checkin_reminder_time);
       if (reminderMin === null) return;
       const nowMin = nowMinutesInTz(tzOffset);
