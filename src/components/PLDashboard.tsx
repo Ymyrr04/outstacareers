@@ -1525,7 +1525,7 @@ export const PLDashboard = () => {
                           );
                         })()}
                       </TableCell>
-                      <TableCell className="text-sm max-w-xs truncate">{r.notes || '—'}</TableCell>
+                      <TableCell className="text-sm max-w-xs truncate">{renderNotesWithLinks(r.notes)}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{format(new Date(r.submitted_at), 'MMM d, h:mm a')}</TableCell>
                     </TableRow>
                   );
