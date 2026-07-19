@@ -1852,7 +1852,7 @@ export const PLDashboard = () => {
                 {r.notes && (
                   <div>
                     <h4 className="font-semibold text-sm mb-1">Submission Notes</h4>
-                    <div className="rounded-md border p-3 text-sm whitespace-pre-wrap">{r.notes}</div>
+                    <div className="rounded-md border p-3 text-sm whitespace-pre-wrap break-words">{renderNotesWithLinks(r.notes)}</div>
                   </div>
                 )}
               </div>
