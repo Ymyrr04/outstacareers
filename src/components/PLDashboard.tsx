@@ -124,6 +124,33 @@ const ClientApprovalBadge = ({
   return <Badge variant="outline" className="text-muted-foreground w-fit">Pending</Badge>;
 };
 
+const renderNotesWithLinks = (notes: string | null | undefined) => {
+  if (!notes) return '—';
+  const parts = notes.split(/(https?:\/\/[^\s]+)/g);
+  return (
+    <>
+      {parts.map((part, i) =>
+        /^https?:\/\//.test(part) ? (
+          <a
+            key={i}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-primary underline hover:opacity-80"
+          >
+            {part}
+          </a>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+};
+
+
+
 export const PLDashboard = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
@@ -1525,7 +1552,7 @@ export const PLDashboard = () => {
                           );
                         })()}
                       </TableCell>
-                      <TableCell className="text-sm max-w-xs truncate">{r.notes || '—'}</TableCell>
+                      <TableCell className="text-sm max-w-xs truncate">{renderNotesWithLinks(r.notes)}</TableCell>
                       <TableCell className="text-xs text-muted-foreground">{format(new Date(r.submitted_at), 'MMM d, h:mm a')}</TableCell>
                     </TableRow>
                   );
@@ -1825,7 +1852,7 @@ export const PLDashboard = () => {
                 {r.notes && (
                   <div>
                     <h4 className="font-semibold text-sm mb-1">Submission Notes</h4>
-                    <div className="rounded-md border p-3 text-sm whitespace-pre-wrap">{r.notes}</div>
+                    <div className="rounded-md border p-3 text-sm whitespace-pre-wrap break-words">{renderNotesWithLinks(r.notes)}</div>
                   </div>
                 )}
               </div>
