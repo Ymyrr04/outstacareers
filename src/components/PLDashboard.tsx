@@ -124,6 +124,33 @@ const ClientApprovalBadge = ({
   return <Badge variant="outline" className="text-muted-foreground w-fit">Pending</Badge>;
 };
 
+const renderNotesWithLinks = (notes: string | null | undefined) => {
+  if (!notes) return '—';
+  const parts = notes.split(/(https?:\/\/[^\s]+)/g);
+  return (
+    <>
+      {parts.map((part, i) =>
+        /^https?:\/\//.test(part) ? (
+          <a
+            key={i}
+            href={part}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="text-primary underline hover:opacity-80"
+          >
+            {part}
+          </a>
+        ) : (
+          <span key={i}>{part}</span>
+        )
+      )}
+    </>
+  );
+};
+
+
+
 export const PLDashboard = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
