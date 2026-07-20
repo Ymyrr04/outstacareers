@@ -139,6 +139,47 @@ export const ExternalScoutDashboard = () => {
     });
   };
 
+  const handleAiOptimize = async () => {
+    if (!aiPrompt.trim()) {
+      toast({ title: 'Describe who you are looking for', variant: 'destructive' });
+      return;
+    }
+    setAiParsing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('apollo-ai-parse', {
+        body: { prompt: aiPrompt.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const f = data?.filters ?? {};
+      setJobTitle(f.jobTitle || '');
+      setLocation(f.location || '');
+      setIndustry(f.industry || '');
+      setCompanyDomain(f.companyDomain || '');
+      setSkills(f.skills || '');
+      setTools(f.tools || '');
+      setSeniority(Array.isArray(f.seniority) ? f.seniority : []);
+      setDepartment(Array.isArray(f.department) ? f.department : []);
+      setEmployeeCountRange(Array.isArray(f.employeeCountRange) ? f.employeeCountRange : []);
+      if (f.industry || f.companyDomain || f.skills || f.tools || (f.seniority?.length) || (f.department?.length) || (f.employeeCountRange?.length)) {
+        setShowAdvanced(true);
+      }
+      if (!f.jobTitle) {
+        toast({ title: 'Add a job title', description: 'AI could not detect a job title from your prompt.', variant: 'destructive' });
+        return;
+      }
+      toast({ title: 'Filters applied', description: 'Running search…' });
+      await handleSearch(1, f);
+    } catch (err: any) {
+      console.error('AI optimize error', err);
+      toast({ title: 'AI optimize failed', description: err?.message || 'Please try again', variant: 'destructive' });
+    } finally {
+      setAiParsing(false);
+    }
+  };
+
+
+
   const handleSearch = async (page = 1, overrides?: {
     jobTitle?: string; location?: string; seniority?: string[]; industry?: string;
     companyDomain?: string; skills?: string; tools?: string; department?: string[];
