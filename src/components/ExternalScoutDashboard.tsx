@@ -88,6 +88,8 @@ export const ExternalScoutDashboard = () => {
   const [seniority, setSeniority] = useState<string[]>([]);
   const [industry, setIndustry] = useState('');
   const [companyDomain, setCompanyDomain] = useState('');
+  const [skills, setSkills] = useState('');
+  const [tools, setTools] = useState('');
   const [department, setDepartment] = useState<string[]>([]);
   const [employeeCountRange, setEmployeeCountRange] = useState<string[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
