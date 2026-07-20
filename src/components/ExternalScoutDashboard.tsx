@@ -153,6 +153,8 @@ export const ExternalScoutDashboard = () => {
           seniority: seniority.length > 0 ? seniority : undefined,
           industry: industry.trim() || undefined,
           company_domain: companyDomain.trim() || undefined,
+          skills: skills.trim() || undefined,
+          tools: tools.trim() || undefined,
           department: department.length > 0 ? department : undefined,
           employee_count_range: employeeCountRange.length > 0 ? employeeCountRange : undefined,
           per_page: APOLLO_PER_PAGE,
