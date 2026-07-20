@@ -20,13 +20,13 @@ serve(async (req) => {
 
     const { job_title, location, skills, tools, seniority, industry, company_domain, department, employee_count_range, per_page = 10, page = 1 } = await req.json();
 
-    if (!job_title) {
-      throw new Error('job_title is required');
+    const hasSkills = typeof skills === 'string' ? skills.trim().length > 0 : Array.isArray(skills) && skills.length > 0;
+    if (!job_title && !hasSkills) {
+      throw new Error('skills or job_title is required');
     }
 
     // Build Apollo people search request body (no api_key in body)
     const searchBody: Record<string, unknown> = {
-      q_keywords: job_title,
       page: page,
       per_page: Math.min(per_page, 100),
     };
