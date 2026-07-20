@@ -18,7 +18,7 @@ serve(async (req) => {
       throw new Error('APOLLO_API_KEY is not configured');
     }
 
-    const { job_title, location, skills, seniority, industry, company_domain, department, employee_count_range, per_page = 10, page = 1 } = await req.json();
+    const { job_title, location, skills, tools, seniority, industry, company_domain, department, employee_count_range, per_page = 10, page = 1 } = await req.json();
 
     if (!job_title) {
       throw new Error('job_title is required');
@@ -56,10 +56,20 @@ serve(async (req) => {
       searchBody.organization_num_employees_ranges = employee_count_range;
     }
 
-    // Industry is passed as keywords addition since Apollo uses tag IDs for industry filtering
-    if (industry) {
-      searchBody.q_keywords = `${job_title} ${industry}`.trim();
-    }
+    // Append skills, tools, and industry into the free-text keyword query.
+    // Apollo's people search uses q_keywords to match against profile text (skills/tools).
+    const normalizeList = (v: unknown): string[] => {
+      if (!v) return [];
+      if (Array.isArray(v)) return v.map((x) => String(x).trim()).filter(Boolean);
+      return String(v).split(',').map((x) => x.trim()).filter(Boolean);
+    };
+    const skillList = normalizeList(skills);
+    const toolList = normalizeList(tools);
+    const keywordParts: string[] = [job_title];
+    if (industry) keywordParts.push(String(industry));
+    if (skillList.length) keywordParts.push(...skillList);
+    if (toolList.length) keywordParts.push(...toolList);
+    searchBody.q_keywords = keywordParts.join(' ').trim();
 
     console.log('Apollo search request:', JSON.stringify(searchBody));
 

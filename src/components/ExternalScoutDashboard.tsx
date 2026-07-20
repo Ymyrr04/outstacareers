@@ -88,6 +88,8 @@ export const ExternalScoutDashboard = () => {
   const [seniority, setSeniority] = useState<string[]>([]);
   const [industry, setIndustry] = useState('');
   const [companyDomain, setCompanyDomain] = useState('');
+  const [skills, setSkills] = useState('');
+  const [tools, setTools] = useState('');
   const [department, setDepartment] = useState<string[]>([]);
   const [employeeCountRange, setEmployeeCountRange] = useState<string[]>([]);
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -151,6 +153,8 @@ export const ExternalScoutDashboard = () => {
           seniority: seniority.length > 0 ? seniority : undefined,
           industry: industry.trim() || undefined,
           company_domain: companyDomain.trim() || undefined,
+          skills: skills.trim() || undefined,
+          tools: tools.trim() || undefined,
           department: department.length > 0 ? department : undefined,
           employee_count_range: employeeCountRange.length > 0 ? employeeCountRange : undefined,
           per_page: APOLLO_PER_PAGE,
@@ -486,7 +490,7 @@ export const ExternalScoutDashboard = () => {
           >
             <Filter className="w-3.5 h-3.5" />
             {showAdvanced ? 'Hide' : 'Show'} Advanced Filters
-            {(industry || companyDomain || department.length > 0 || employeeCountRange.length > 0) && (
+            {(industry || companyDomain || skills || tools || department.length > 0 || employeeCountRange.length > 0) && (
               <Badge variant="secondary" className="text-xs ml-1">Active</Badge>
             )}
           </Button>
@@ -513,6 +517,28 @@ export const ExternalScoutDashboard = () => {
                   onChange={(e) => setCompanyDomain(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
+              </div>
+              <div>
+                <Label htmlFor="apollo-skills" className="font-semibold text-sm">Skills</Label>
+                <Input
+                  id="apollo-skills"
+                  placeholder="e.g. Copywriting, SEO, Bookkeeping"
+                  value={skills}
+                  onChange={(e) => setSkills(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">Comma-separated keywords</p>
+              </div>
+              <div>
+                <Label htmlFor="apollo-tools" className="font-semibold text-sm">Tools</Label>
+                <Input
+                  id="apollo-tools"
+                  placeholder="e.g. HubSpot, QuickBooks, Figma"
+                  value={tools}
+                  onChange={(e) => setTools(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">Comma-separated tools</p>
               </div>
               <div>
                 <Label className="font-semibold text-sm">Department</Label>
