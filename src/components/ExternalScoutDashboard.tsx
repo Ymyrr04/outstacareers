@@ -505,14 +505,15 @@ export const ExternalScoutDashboard = () => {
             <CardContent className="pt-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="apollo-title" className="font-semibold">Job Title *</Label>
+                  <Label htmlFor="apollo-skills-main" className="font-semibold">Skills *</Label>
                   <Input
-                    id="apollo-title"
-                    placeholder="e.g. Virtual Assistant, Customer Service Rep"
-                    value={jobTitle}
-                    onChange={(e) => setJobTitle(e.target.value)}
+                    id="apollo-skills-main"
+                    placeholder="e.g. Copywriting, SEO, Bookkeeping, Zapier"
+                    value={skills}
+                    onChange={(e) => setSkills(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                   />
+                  <p className="text-[10px] text-muted-foreground mt-1">Comma-separated — we match profiles with these skills</p>
                 </div>
                 <div>
               <Label htmlFor="apollo-location" className="font-semibold">Location</Label>
