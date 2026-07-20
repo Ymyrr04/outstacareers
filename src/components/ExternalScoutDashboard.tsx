@@ -164,8 +164,8 @@ export const ExternalScoutDashboard = () => {
       if (f.industry || f.companyDomain || f.skills || f.tools || (f.seniority?.length) || (f.department?.length) || (f.employeeCountRange?.length)) {
         setShowAdvanced(true);
       }
-      if (!f.jobTitle) {
-        toast({ title: 'Add a job title', description: 'AI could not detect a job title from your prompt.', variant: 'destructive' });
+      if (!f.skills && !f.jobTitle) {
+        toast({ title: 'Add skills', description: 'AI could not detect skills or a job title from your prompt.', variant: 'destructive' });
         return;
       }
       toast({ title: 'Filters applied', description: 'Running search…' });
@@ -196,8 +196,8 @@ export const ExternalScoutDashboard = () => {
       department: overrides?.department ?? department,
       employeeCountRange: overrides?.employeeCountRange ?? employeeCountRange,
     };
-    if (!eff.jobTitle.trim()) {
-      toast({ title: 'Job title is required', variant: 'destructive' });
+    if (!eff.skills.trim() && !eff.jobTitle.trim()) {
+      toast({ title: 'Skills are required', description: 'Enter at least one skill (or a job title).', variant: 'destructive' });
       return;
     }
 
@@ -505,14 +505,15 @@ export const ExternalScoutDashboard = () => {
             <CardContent className="pt-6 space-y-4">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                  <Label htmlFor="apollo-title" className="font-semibold">Job Title *</Label>
+                  <Label htmlFor="apollo-skills-main" className="font-semibold">Skills *</Label>
                   <Input
-                    id="apollo-title"
-                    placeholder="e.g. Virtual Assistant, Customer Service Rep"
-                    value={jobTitle}
-                    onChange={(e) => setJobTitle(e.target.value)}
+                    id="apollo-skills-main"
+                    placeholder="e.g. Copywriting, SEO, Bookkeeping, Zapier"
+                    value={skills}
+                    onChange={(e) => setSkills(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                   />
+                  <p className="text-[10px] text-muted-foreground mt-1">Comma-separated — we match profiles with these skills</p>
                 </div>
                 <div>
               <Label htmlFor="apollo-location" className="font-semibold">Location</Label>
@@ -579,7 +580,7 @@ export const ExternalScoutDashboard = () => {
           >
             <Filter className="w-3.5 h-3.5" />
             {showAdvanced ? 'Hide' : 'Show'} Advanced Filters
-            {(industry || companyDomain || skills || tools || department.length > 0 || employeeCountRange.length > 0) && (
+            {(jobTitle || industry || companyDomain || tools || department.length > 0 || employeeCountRange.length > 0) && (
               <Badge variant="secondary" className="text-xs ml-1">Active</Badge>
             )}
           </Button>
@@ -608,15 +609,15 @@ export const ExternalScoutDashboard = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="apollo-skills" className="font-semibold text-sm">Skills</Label>
+                <Label htmlFor="apollo-title" className="font-semibold text-sm">Job Title (optional)</Label>
                 <Input
-                  id="apollo-skills"
-                  placeholder="e.g. Copywriting, SEO, Bookkeeping"
-                  value={skills}
-                  onChange={(e) => setSkills(e.target.value)}
+                  id="apollo-title"
+                  placeholder="e.g. Virtual Assistant"
+                  value={jobTitle}
+                  onChange={(e) => setJobTitle(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
-                <p className="text-[10px] text-muted-foreground mt-1">Comma-separated keywords</p>
+                <p className="text-[10px] text-muted-foreground mt-1">Narrows results to a title</p>
               </div>
               <div>
                 <Label htmlFor="apollo-tools" className="font-semibold text-sm">Tools</Label>
