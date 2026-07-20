@@ -103,6 +103,8 @@ export const ExternalScoutDashboard = () => {
   const [activeTab, setActiveTab] = useState('search');
   const [apolloImports, setApolloImports] = useState<any[]>([]);
   const [loadingImports, setLoadingImports] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiParsing, setAiParsing] = useState(false);
 
   const fetchApolloImports = useCallback(async () => {
     setLoadingImports(true);
