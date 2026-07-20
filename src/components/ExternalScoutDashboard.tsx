@@ -580,7 +580,7 @@ export const ExternalScoutDashboard = () => {
           >
             <Filter className="w-3.5 h-3.5" />
             {showAdvanced ? 'Hide' : 'Show'} Advanced Filters
-            {(industry || companyDomain || skills || tools || department.length > 0 || employeeCountRange.length > 0) && (
+            {(jobTitle || industry || companyDomain || tools || department.length > 0 || employeeCountRange.length > 0) && (
               <Badge variant="secondary" className="text-xs ml-1">Active</Badge>
             )}
           </Button>
