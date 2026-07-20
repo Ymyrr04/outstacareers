@@ -12,8 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Loader2, Globe, SearchIcon, MapPin, Building2, Mail, ExternalLink,
   ChevronDown, ChevronUp, Users, Briefcase, UserPlus, CheckCircle, AlertCircle,
-  Filter, FolderOpen, Trash2, ExternalLink as LinkIcon
+  Filter, FolderOpen, Trash2, ExternalLink as LinkIcon, Sparkles
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { CopyableText } from '@/components/CopyableText';
 
 interface ApolloResult {
@@ -103,6 +104,8 @@ export const ExternalScoutDashboard = () => {
   const [activeTab, setActiveTab] = useState('search');
   const [apolloImports, setApolloImports] = useState<any[]>([]);
   const [loadingImports, setLoadingImports] = useState(false);
+  const [aiPrompt, setAiPrompt] = useState('');
+  const [aiParsing, setAiParsing] = useState(false);
 
   const fetchApolloImports = useCallback(async () => {
     setLoadingImports(true);
@@ -136,8 +139,64 @@ export const ExternalScoutDashboard = () => {
     });
   };
 
-  const handleSearch = async (page = 1) => {
-    if (!jobTitle.trim()) {
+  const handleAiOptimize = async () => {
+    if (!aiPrompt.trim()) {
+      toast({ title: 'Describe who you are looking for', variant: 'destructive' });
+      return;
+    }
+    setAiParsing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('apollo-ai-parse', {
+        body: { prompt: aiPrompt.trim() },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      const f = data?.filters ?? {};
+      setJobTitle(f.jobTitle || '');
+      setLocation(f.location || '');
+      setIndustry(f.industry || '');
+      setCompanyDomain(f.companyDomain || '');
+      setSkills(f.skills || '');
+      setTools(f.tools || '');
+      setSeniority(Array.isArray(f.seniority) ? f.seniority : []);
+      setDepartment(Array.isArray(f.department) ? f.department : []);
+      setEmployeeCountRange(Array.isArray(f.employeeCountRange) ? f.employeeCountRange : []);
+      if (f.industry || f.companyDomain || f.skills || f.tools || (f.seniority?.length) || (f.department?.length) || (f.employeeCountRange?.length)) {
+        setShowAdvanced(true);
+      }
+      if (!f.jobTitle) {
+        toast({ title: 'Add a job title', description: 'AI could not detect a job title from your prompt.', variant: 'destructive' });
+        return;
+      }
+      toast({ title: 'Filters applied', description: 'Running search…' });
+      await handleSearch(1, f);
+    } catch (err: any) {
+      console.error('AI optimize error', err);
+      toast({ title: 'AI optimize failed', description: err?.message || 'Please try again', variant: 'destructive' });
+    } finally {
+      setAiParsing(false);
+    }
+  };
+
+
+
+  const handleSearch = async (page = 1, overrides?: {
+    jobTitle?: string; location?: string; seniority?: string[]; industry?: string;
+    companyDomain?: string; skills?: string; tools?: string; department?: string[];
+    employeeCountRange?: string[];
+  }) => {
+    const eff = {
+      jobTitle: overrides?.jobTitle ?? jobTitle,
+      location: overrides?.location ?? location,
+      seniority: overrides?.seniority ?? seniority,
+      industry: overrides?.industry ?? industry,
+      companyDomain: overrides?.companyDomain ?? companyDomain,
+      skills: overrides?.skills ?? skills,
+      tools: overrides?.tools ?? tools,
+      department: overrides?.department ?? department,
+      employeeCountRange: overrides?.employeeCountRange ?? employeeCountRange,
+    };
+    if (!eff.jobTitle.trim()) {
       toast({ title: 'Job title is required', variant: 'destructive' });
       return;
     }
@@ -148,15 +207,15 @@ export const ExternalScoutDashboard = () => {
     try {
       const { data, error } = await supabase.functions.invoke('search-apollo', {
         body: {
-          job_title: jobTitle.trim(),
-          location: location.trim() || undefined,
-          seniority: seniority.length > 0 ? seniority : undefined,
-          industry: industry.trim() || undefined,
-          company_domain: companyDomain.trim() || undefined,
-          skills: skills.trim() || undefined,
-          tools: tools.trim() || undefined,
-          department: department.length > 0 ? department : undefined,
-          employee_count_range: employeeCountRange.length > 0 ? employeeCountRange : undefined,
+          job_title: eff.jobTitle.trim(),
+          location: eff.location.trim() || undefined,
+          seniority: eff.seniority.length > 0 ? eff.seniority : undefined,
+          industry: eff.industry.trim() || undefined,
+          company_domain: eff.companyDomain.trim() || undefined,
+          skills: eff.skills.trim() || undefined,
+          tools: eff.tools.trim() || undefined,
+          department: eff.department.length > 0 ? eff.department : undefined,
+          employee_count_range: eff.employeeCountRange.length > 0 ? eff.employeeCountRange : undefined,
           per_page: APOLLO_PER_PAGE,
           page,
         },
@@ -411,6 +470,36 @@ export const ExternalScoutDashboard = () => {
         </TabsList>
 
         <TabsContent value="search" className="space-y-6 mt-4">
+          {/* AI Search Assistant */}
+          <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
+            <CardContent className="pt-6 space-y-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <Label className="font-semibold">Describe who you're looking for</Label>
+                <Badge variant="secondary" className="text-[10px]">AI · Free</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                e.g. "Automation specialists in the Philippines who know Zapier, Asana and Airtable at small SaaS companies"
+              </p>
+              <Textarea
+                placeholder="Explain the role, skills, tools, seniority, location, company size…"
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleAiOptimize();
+                }}
+                rows={2}
+                className="resize-none"
+              />
+              <div className="flex justify-end">
+                <Button onClick={handleAiOptimize} disabled={aiParsing || loading} className="gap-2">
+                  {aiParsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  {aiParsing ? 'Optimizing…' : 'Optimize & Search'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Search Form */}
           <Card>
             <CardContent className="pt-6 space-y-4">
