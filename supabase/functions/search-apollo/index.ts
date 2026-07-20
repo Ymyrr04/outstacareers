@@ -56,20 +56,27 @@ serve(async (req) => {
       searchBody.organization_num_employees_ranges = employee_count_range;
     }
 
-    // Append skills, tools, and industry into the free-text keyword query.
-    // Apollo's people search uses q_keywords to match against profile text (skills/tools).
+    // Skills, tools, and industry go into q_keywords as an OR query so they broaden
+    // (not narrow) matches. Apollo treats space-separated terms as AND, so we join
+    // with " OR " and wrap multi-word phrases in quotes. Job title is already filtered
+    // via person_titles — don't duplicate it into keywords (that makes results AND-strict).
     const normalizeList = (v: unknown): string[] => {
       if (!v) return [];
       if (Array.isArray(v)) return v.map((x) => String(x).trim()).filter(Boolean);
       return String(v).split(',').map((x) => x.trim()).filter(Boolean);
     };
+    const quote = (s: string) => (s.includes(' ') ? `"${s}"` : s);
     const skillList = normalizeList(skills);
     const toolList = normalizeList(tools);
-    const keywordParts: string[] = [job_title];
-    if (industry) keywordParts.push(String(industry));
-    if (skillList.length) keywordParts.push(...skillList);
-    if (toolList.length) keywordParts.push(...toolList);
-    searchBody.q_keywords = keywordParts.join(' ').trim();
+    const keywordParts: string[] = [];
+    if (industry) keywordParts.push(quote(String(industry)));
+    if (skillList.length) keywordParts.push(...skillList.map(quote));
+    if (toolList.length) keywordParts.push(...toolList.map(quote));
+    if (keywordParts.length) {
+      searchBody.q_keywords = keywordParts.join(' OR ');
+    } else {
+      delete searchBody.q_keywords;
+    }
 
     console.log('Apollo search request:', JSON.stringify(searchBody));
 
