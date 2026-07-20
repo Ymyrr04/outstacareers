@@ -12,8 +12,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   Loader2, Globe, SearchIcon, MapPin, Building2, Mail, ExternalLink,
   ChevronDown, ChevronUp, Users, Briefcase, UserPlus, CheckCircle, AlertCircle,
-  Filter, FolderOpen, Trash2, ExternalLink as LinkIcon
+  Filter, FolderOpen, Trash2, ExternalLink as LinkIcon, Sparkles
 } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
 import { CopyableText } from '@/components/CopyableText';
 
 interface ApolloResult {
