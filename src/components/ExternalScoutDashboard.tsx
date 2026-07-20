@@ -470,6 +470,36 @@ export const ExternalScoutDashboard = () => {
         </TabsList>
 
         <TabsContent value="search" className="space-y-6 mt-4">
+          {/* AI Search Assistant */}
+          <Card className="border-primary/30 bg-gradient-to-br from-primary/5 to-transparent">
+            <CardContent className="pt-6 space-y-3">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-primary" />
+                <Label className="font-semibold">Describe who you're looking for</Label>
+                <Badge variant="secondary" className="text-[10px]">AI · Free</Badge>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                e.g. "Automation specialists in the Philippines who know Zapier, Asana and Airtable at small SaaS companies"
+              </p>
+              <Textarea
+                placeholder="Explain the role, skills, tools, seniority, location, company size…"
+                value={aiPrompt}
+                onChange={(e) => setAiPrompt(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleAiOptimize();
+                }}
+                rows={2}
+                className="resize-none"
+              />
+              <div className="flex justify-end">
+                <Button onClick={handleAiOptimize} disabled={aiParsing || loading} className="gap-2">
+                  {aiParsing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
+                  {aiParsing ? 'Optimizing…' : 'Optimize & Search'}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
           {/* Search Form */}
           <Card>
             <CardContent className="pt-6 space-y-4">
