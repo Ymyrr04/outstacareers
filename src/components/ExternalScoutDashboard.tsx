@@ -164,8 +164,8 @@ export const ExternalScoutDashboard = () => {
       if (f.industry || f.companyDomain || f.skills || f.tools || (f.seniority?.length) || (f.department?.length) || (f.employeeCountRange?.length)) {
         setShowAdvanced(true);
       }
-      if (!f.jobTitle) {
-        toast({ title: 'Add a job title', description: 'AI could not detect a job title from your prompt.', variant: 'destructive' });
+      if (!f.skills && !f.jobTitle) {
+        toast({ title: 'Add skills', description: 'AI could not detect skills or a job title from your prompt.', variant: 'destructive' });
         return;
       }
       toast({ title: 'Filters applied', description: 'Running search…' });
