@@ -196,8 +196,8 @@ export const ExternalScoutDashboard = () => {
       department: overrides?.department ?? department,
       employeeCountRange: overrides?.employeeCountRange ?? employeeCountRange,
     };
-    if (!eff.jobTitle.trim()) {
-      toast({ title: 'Job title is required', variant: 'destructive' });
+    if (!eff.skills.trim() && !eff.jobTitle.trim()) {
+      toast({ title: 'Skills are required', description: 'Enter at least one skill (or a job title).', variant: 'destructive' });
       return;
     }
 
