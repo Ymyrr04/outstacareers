@@ -519,6 +519,28 @@ export const ExternalScoutDashboard = () => {
                 />
               </div>
               <div>
+                <Label htmlFor="apollo-skills" className="font-semibold text-sm">Skills</Label>
+                <Input
+                  id="apollo-skills"
+                  placeholder="e.g. Copywriting, SEO, Bookkeeping"
+                  value={skills}
+                  onChange={(e) => setSkills(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">Comma-separated keywords</p>
+              </div>
+              <div>
+                <Label htmlFor="apollo-tools" className="font-semibold text-sm">Tools</Label>
+                <Input
+                  id="apollo-tools"
+                  placeholder="e.g. HubSpot, QuickBooks, Figma"
+                  value={tools}
+                  onChange={(e) => setTools(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                />
+                <p className="text-[10px] text-muted-foreground mt-1">Comma-separated tools</p>
+              </div>
+              <div>
                 <Label className="font-semibold text-sm">Department</Label>
                 <Popover>
                   <PopoverTrigger asChild>
