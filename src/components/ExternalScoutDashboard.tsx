@@ -609,15 +609,15 @@ export const ExternalScoutDashboard = () => {
                 />
               </div>
               <div>
-                <Label htmlFor="apollo-skills" className="font-semibold text-sm">Skills</Label>
+                <Label htmlFor="apollo-title" className="font-semibold text-sm">Job Title (optional)</Label>
                 <Input
-                  id="apollo-skills"
-                  placeholder="e.g. Copywriting, SEO, Bookkeeping"
-                  value={skills}
-                  onChange={(e) => setSkills(e.target.value)}
+                  id="apollo-title"
+                  placeholder="e.g. Virtual Assistant"
+                  value={jobTitle}
+                  onChange={(e) => setJobTitle(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
                 />
-                <p className="text-[10px] text-muted-foreground mt-1">Comma-separated keywords</p>
+                <p className="text-[10px] text-muted-foreground mt-1">Narrows results to a title</p>
               </div>
               <div>
                 <Label htmlFor="apollo-tools" className="font-semibold text-sm">Tools</Label>
