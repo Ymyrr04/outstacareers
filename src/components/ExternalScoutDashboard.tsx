@@ -136,8 +136,23 @@ export const ExternalScoutDashboard = () => {
     });
   };
 
-  const handleSearch = async (page = 1) => {
-    if (!jobTitle.trim()) {
+  const handleSearch = async (page = 1, overrides?: {
+    jobTitle?: string; location?: string; seniority?: string[]; industry?: string;
+    companyDomain?: string; skills?: string; tools?: string; department?: string[];
+    employeeCountRange?: string[];
+  }) => {
+    const eff = {
+      jobTitle: overrides?.jobTitle ?? jobTitle,
+      location: overrides?.location ?? location,
+      seniority: overrides?.seniority ?? seniority,
+      industry: overrides?.industry ?? industry,
+      companyDomain: overrides?.companyDomain ?? companyDomain,
+      skills: overrides?.skills ?? skills,
+      tools: overrides?.tools ?? tools,
+      department: overrides?.department ?? department,
+      employeeCountRange: overrides?.employeeCountRange ?? employeeCountRange,
+    };
+    if (!eff.jobTitle.trim()) {
       toast({ title: 'Job title is required', variant: 'destructive' });
       return;
     }
@@ -148,15 +163,15 @@ export const ExternalScoutDashboard = () => {
     try {
       const { data, error } = await supabase.functions.invoke('search-apollo', {
         body: {
-          job_title: jobTitle.trim(),
-          location: location.trim() || undefined,
-          seniority: seniority.length > 0 ? seniority : undefined,
-          industry: industry.trim() || undefined,
-          company_domain: companyDomain.trim() || undefined,
-          skills: skills.trim() || undefined,
-          tools: tools.trim() || undefined,
-          department: department.length > 0 ? department : undefined,
-          employee_count_range: employeeCountRange.length > 0 ? employeeCountRange : undefined,
+          job_title: eff.jobTitle.trim(),
+          location: eff.location.trim() || undefined,
+          seniority: eff.seniority.length > 0 ? eff.seniority : undefined,
+          industry: eff.industry.trim() || undefined,
+          company_domain: eff.companyDomain.trim() || undefined,
+          skills: eff.skills.trim() || undefined,
+          tools: eff.tools.trim() || undefined,
+          department: eff.department.length > 0 ? eff.department : undefined,
+          employee_count_range: eff.employeeCountRange.length > 0 ? eff.employeeCountRange : undefined,
           per_page: APOLLO_PER_PAGE,
           page,
         },
