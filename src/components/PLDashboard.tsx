@@ -158,7 +158,7 @@ const extractPayoneerUrl = (notes: string | null | undefined): string | null => 
   return m ? m[0] : null;
 };
 
-const PayoneerMatchBadge = ({ notes, expected }: { notes: string | null | undefined; expected: number | null }) => {
+const PayoneerMatchBadge = ({ notes, invoice: expected }: { notes: string | null | undefined; invoice: number | null }) => {
   const url = extractPayoneerUrl(notes);
   const [state, setState] = useState<{ amount: number | null; currency: string | null; error?: string } | null>(
     url ? payoneerCache.get(url) ?? null : null
@@ -205,9 +205,9 @@ const PayoneerMatchBadge = ({ notes, expected }: { notes: string | null | undefi
     <Badge
       variant="outline"
       className={`text-[10px] ${match ? 'border-emerald-500 text-emerald-600' : 'border-red-500 text-red-600'}`}
-      title={`Expected $${expected.toFixed(2)} · Payoneer $${state.amount.toFixed(2)} ${state.currency}`}
+      title={`Invoice $${expected.toFixed(2)} · Payoneer $${state.amount.toFixed(2)} ${state.currency}`}
     >
-      {match ? `✓ Match $${state.amount.toFixed(2)}` : `✗ Mismatch $${state.amount.toFixed(2)} vs $${expected.toFixed(2)}`}
+      {match ? `✓ Match $${state.amount.toFixed(2)}` : `✗ Mismatch $${expected.toFixed(2)} vs $${state.amount.toFixed(2)}`}
     </Badge>
   );
 };
@@ -1621,7 +1621,7 @@ export const PLDashboard = () => {
                         <div className="mt-1">
                           <PayoneerMatchBadge
                             notes={r.notes}
-                            expected={r.contractor?.hourly_rate != null ? (Number(r.total_hours) - Number(r.overtime_hours || 0)) * Number(r.contractor.hourly_rate) : null}
+                            invoice={r.contractor?.hourly_rate != null ? Number(r.total_hours) * Number(r.contractor.hourly_rate) + Number(r.incentive_amount || 0) : null}
                           />
                         </div>
                       </TableCell>
@@ -1928,7 +1928,7 @@ export const PLDashboard = () => {
                     <div className="mt-2">
                       <PayoneerMatchBadge
                         notes={r.notes}
-                        expected={r.contractor?.hourly_rate != null ? (Number(r.total_hours) - Number(r.overtime_hours || 0)) * Number(r.contractor.hourly_rate) : null}
+                        invoice={r.contractor?.hourly_rate != null ? Number(r.total_hours) * Number(r.contractor.hourly_rate) + Number(r.incentive_amount || 0) : null}
                       />
                     </div>
                   </div>
