@@ -183,7 +183,7 @@ async function loadPayoneerCache() {
   return payoneerCacheLoadingPromise;
 }
 
-const PayoneerMatchBadge = ({ notes, invoice: expected }: { notes: string | null | undefined; invoice: number | null }) => {
+const PayoneerMatchBadge = ({ notes, invoice: expected, timesheetId }: { notes: string | null | undefined; invoice: number | null; timesheetId?: string }) => {
   const url = extractPayoneerUrl(notes);
   const [state, setState] = useState<PayoneerRow | null>(url ? payoneerCache.get(url) ?? null : null);
   const [verifying, setVerifying] = useState(false);
@@ -207,7 +207,7 @@ const PayoneerMatchBadge = ({ notes, invoice: expected }: { notes: string | null
     if (!url || verifying) return;
     setVerifying(true);
     try {
-      const { data, error } = await supabase.functions.invoke('verify-payoneer-invoice', { body: { url, force: true } });
+      const { data, error } = await supabase.functions.invoke('verify-payoneer-invoice', { body: { url, force: true, timesheetId } });
       const result: PayoneerRow = error
         ? { amount: null, currency: null, error: error.message }
         : { amount: data?.amount ?? null, currency: data?.currency ?? null, error: data?.error };
@@ -217,6 +217,7 @@ const PayoneerMatchBadge = ({ notes, invoice: expected }: { notes: string | null
       setVerifying(false);
     }
   };
+
 
   if (!url) return null;
 
