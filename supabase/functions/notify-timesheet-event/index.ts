@@ -217,6 +217,22 @@ async function handleTimesheetEvent(event: EventType, timesheetId: string, reaso
 
   if (event === "timesheet_submitted" || event === "timesheet_resubmitted") {
     const isResub = event === "timesheet_resubmitted";
+
+    // Auto-fire Payoneer verification server-side (guarantees it runs even if
+    // the contractor's browser cached old code or closed the tab).
+    try {
+      const payoneerMatch = (ts.notes || "").match(/https?:\/\/(?:link\.|app\.)?payoneer\.com\/\S+/i);
+      if (payoneerMatch) {
+        supabase.functions
+          .invoke("verify-payoneer-invoice", {
+            body: { url: payoneerMatch[0], timesheetId: ts.id },
+          })
+          .catch((e) => console.error("payoneer auto-verify failed:", e));
+      }
+    } catch (e) {
+      console.error("payoneer auto-verify setup failed:", e);
+    }
+
     // Contractor confirmation
     await send(
       contractorEmail,
