@@ -167,7 +167,8 @@ export const PLReport = () => {
             .from('contractor_timesheets')
             .select('id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, notes, daily_hours')
             .in('contractor_assignment_id', ids)
-            .eq('week_ending_date', weekEndingStr);
+            .gte('week_ending_date', weekMondayStr)
+            .lte('week_ending_date', weekEndingStr);
           if (tErr) throw tErr;
           tsRows = (tData as any as Timesheet[]) || [];
         }
