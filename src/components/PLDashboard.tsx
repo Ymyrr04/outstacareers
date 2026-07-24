@@ -1616,7 +1616,15 @@ export const PLDashboard = () => {
                           );
                         })()}
                       </TableCell>
-                      <TableCell className="text-sm max-w-xs truncate">{renderNotesWithLinks(r.notes)}</TableCell>
+                      <TableCell className="text-sm max-w-xs">
+                        <div className="truncate">{renderNotesWithLinks(r.notes)}</div>
+                        <div className="mt-1">
+                          <PayoneerMatchBadge
+                            notes={r.notes}
+                            expected={r.contractor?.hourly_rate != null ? (Number(r.total_hours) - Number(r.overtime_hours || 0)) * Number(r.contractor.hourly_rate) : null}
+                          />
+                        </div>
+                      </TableCell>
                       <TableCell className="text-xs text-muted-foreground">{format(new Date(r.submitted_at), 'MMM d, h:mm a')}</TableCell>
                     </TableRow>
                   );
