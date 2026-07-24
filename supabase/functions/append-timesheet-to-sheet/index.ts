@@ -31,52 +31,9 @@ function extractPayoneerLink(text: string | null | undefined): string | null {
   return m ? m[0] : null;
 }
 
-async function fetchPayoneerAmount(url: string): Promise<{ amount: number | null; currency: string | null; error?: string }> {
-  const keys = [
-    Deno.env.get('FIRECRAWL_API_KEY'),
-    Deno.env.get('FIRECRAWL_API_KEY_2'),
-    Deno.env.get('FIRECRAWL_API_KEY_3'),
-  ].filter(Boolean) as string[];
-  if (keys.length === 0) return { amount: null, currency: null, error: 'FIRECRAWL_API_KEY not configured' };
-  let lastErr = '';
-  for (let i = 0; i < keys.length; i++) {
-    try {
-      const res = await fetch('https://api.firecrawl.dev/v2/scrape', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${keys[i]}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url,
-          formats: ['markdown'],
-          onlyMainContent: false,
-          waitFor: 5000,
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-            'Accept-Language': 'en-US,en;q=0.9',
-          },
-        }),
-      });
-      if (!res.ok) {
-        const body = await res.text();
-        lastErr = `Firecrawl key#${i + 1} ${res.status}: ${body.slice(0, 200)}`;
-        if (![401, 402, 403, 429].includes(res.status)) return { amount: null, currency: null, error: lastErr };
-        continue;
-      }
-      const json = await res.json();
-      const text: string = json?.data?.markdown || json?.markdown || json?.data?.html || json?.html || '';
-      const matches = [...text.matchAll(/([\d,]+\.\d{2})\s*(USD|EUR|GBP|AUD|CAD)/gi)];
-      let amount: number | null = null;
-      let currency: string | null = null;
-      for (const m of matches) {
-        const n = parseFloat(m[1].replace(/,/g, ''));
-        if (!isNaN(n) && (amount === null || n > amount)) { amount = n; currency = m[2].toUpperCase(); }
-      }
-      return { amount, currency, error: amount === null ? 'no amount found' : undefined };
-    } catch (e) {
-      lastErr = (e as Error).message;
-    }
-  }
-  return { amount: null, currency: null, error: lastErr || 'all Firecrawl keys failed' };
-}
+// Payoneer amounts are NOT fetched here anymore — we only read cached verifications
+// from the payoneer_verifications table. Verification only fires from the PL dashboard
+// "Verify link" button (which then syncs the amount back to this sheet).
 
 function computeDeposit(startStr: string | null, hpw: number, weekEndingDate: string, totalHours: number) {
   if (!startStr || !hpw) return { depositHours: 0, isDeposit: false, weekIndex: null as number | null };
