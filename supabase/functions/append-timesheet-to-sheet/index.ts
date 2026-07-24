@@ -30,12 +30,16 @@ function computeDeposit(startStr: string | null, hpw: number, weekEndingDate: st
   return { depositHours: Math.min(Number(totalHours), hpw), isDeposit: true, weekIndex };
 }
 
-// Sheet tab name matches PL dashboard formatting, e.g. "Week Ending Jul 24, 2026"
+// Sheet tab name shows the Monday–Sunday range for the week, e.g. "Week Ending Jul 20 - Jul 26, 2026"
 function tabNameForWeek(weekEndingDate: string): string {
   const [y, m, d] = weekEndingDate.split('-').map(Number);
-  const dt = new Date(Date.UTC(y, (m || 1) - 1, d || 1));
+  const sun = new Date(Date.UTC(y, (m || 1) - 1, d || 1));
+  const mon = new Date(sun);
+  mon.setUTCDate(sun.getUTCDate() - 6);
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-  return `Week Ending ${months[dt.getUTCMonth()]} ${dt.getUTCDate()}, ${dt.getUTCFullYear()}`;
+  const monStr = `${months[mon.getUTCMonth()]} ${mon.getUTCDate()}`;
+  const sunStr = `${months[sun.getUTCMonth()]} ${sun.getUTCDate()}, ${sun.getUTCFullYear()}`;
+  return `Week Ending ${monStr} - ${sunStr}`;
 }
 
 Deno.serve(async (req) => {
