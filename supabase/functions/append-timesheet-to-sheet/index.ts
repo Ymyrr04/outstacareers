@@ -31,52 +31,9 @@ function extractPayoneerLink(text: string | null | undefined): string | null {
   return m ? m[0] : null;
 }
 
-async function fetchPayoneerAmount(url: string): Promise<{ amount: number | null; currency: string | null; error?: string }> {
-  const keys = [
-    Deno.env.get('FIRECRAWL_API_KEY'),
-    Deno.env.get('FIRECRAWL_API_KEY_2'),
-    Deno.env.get('FIRECRAWL_API_KEY_3'),
-  ].filter(Boolean) as string[];
-  if (keys.length === 0) return { amount: null, currency: null, error: 'FIRECRAWL_API_KEY not configured' };
-  let lastErr = '';
-  for (let i = 0; i < keys.length; i++) {
-    try {
-      const res = await fetch('https://api.firecrawl.dev/v2/scrape', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${keys[i]}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          url,
-          formats: ['markdown'],
-          onlyMainContent: false,
-          waitFor: 5000,
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-            'Accept-Language': 'en-US,en;q=0.9',
-          },
-        }),
-      });
-      if (!res.ok) {
-        const body = await res.text();
-        lastErr = `Firecrawl key#${i + 1} ${res.status}: ${body.slice(0, 200)}`;
-        if (![401, 402, 403, 429].includes(res.status)) return { amount: null, currency: null, error: lastErr };
-        continue;
-      }
-      const json = await res.json();
-      const text: string = json?.data?.markdown || json?.markdown || json?.data?.html || json?.html || '';
-      const matches = [...text.matchAll(/([\d,]+\.\d{2})\s*(USD|EUR|GBP|AUD|CAD)/gi)];
-      let amount: number | null = null;
-      let currency: string | null = null;
-      for (const m of matches) {
-        const n = parseFloat(m[1].replace(/,/g, ''));
-        if (!isNaN(n) && (amount === null || n > amount)) { amount = n; currency = m[2].toUpperCase(); }
-      }
-      return { amount, currency, error: amount === null ? 'no amount found' : undefined };
-    } catch (e) {
-      lastErr = (e as Error).message;
-    }
-  }
-  return { amount: null, currency: null, error: lastErr || 'all Firecrawl keys failed' };
-}
+// Payoneer amounts are NOT fetched here anymore — we only read cached verifications
+// from the payoneer_verifications table. Verification only fires from the PL dashboard
+// "Verify link" button (which then syncs the amount back to this sheet).
 
 function computeDeposit(startStr: string | null, hpw: number, weekEndingDate: string, totalHours: number) {
   if (!startStr || !hpw) return { depositHours: 0, isDeposit: false, weekIndex: null as number | null };
@@ -224,40 +181,25 @@ Deno.serve(async (req) => {
     const invoiceRounded = invoice ? Number(invoice.toFixed(2)) : 0;
     const match = Math.abs(expectedInvoice - invoiceRounded) < 0.01 ? '✓ Match' : '✗ Mismatch';
 
-    // Cross-reference Payoneer link amount if present in notes
-    // Only run Firecrawl verification for the CURRENT week's timesheet to save credits.
-    // Current week = Monday–Sunday (EST) containing today.
-    const isCurrentWeek = (() => {
-      const nowEst = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
-      const day = nowEst.getDay(); // 0=Sun..6=Sat
-      const daysSinceMon = (day + 6) % 7;
-      const monday = new Date(nowEst);
-      monday.setDate(nowEst.getDate() - daysSinceMon);
-      monday.setHours(0, 0, 0, 0);
-      const sunday = new Date(monday);
-      sunday.setDate(monday.getDate() + 6);
-      sunday.setHours(23, 59, 59, 999);
-      const [y, m, d] = ts.week_ending_date.split('-').map(Number);
-      const wk = new Date(y, m - 1, d);
-      return wk >= monday && wk <= sunday;
-    })();
-
+    // Cross-reference Payoneer link amount — READ FROM CACHE ONLY.
+    // Firecrawl is never called here; the PL dashboard's "Verify link" button
+    // is the only trigger, and it syncs the amount back into this sheet.
     const payoneerLink = extractPayoneerLink(ts.notes);
     let payoneerAmount: number | null = null;
     let payoneerCurrency: string | null = null;
     let payoneerMatch = '';
     if (payoneerLink) {
-      if (!isCurrentWeek) {
-        payoneerMatch = '— skipped (prior week)';
+      const { data: cached } = await supabase
+        .from('payoneer_verifications')
+        .select('amount, currency, error')
+        .eq('url', payoneerLink)
+        .maybeSingle();
+      if (cached && cached.amount !== null) {
+        payoneerAmount = Number(cached.amount);
+        payoneerCurrency = cached.currency;
+        payoneerMatch = Math.abs(payoneerAmount - invoiceRounded) < 0.01 ? '✓ Match' : '✗ Mismatch';
       } else {
-        const p = await fetchPayoneerAmount(payoneerLink);
-        payoneerAmount = p.amount;
-        payoneerCurrency = p.currency;
-        if (p.amount === null) {
-          payoneerMatch = `— (${p.error || 'unavailable'})`;
-        } else {
-          payoneerMatch = Math.abs(p.amount - invoiceRounded) < 0.01 ? '✓ Match' : '✗ Mismatch';
-        }
+        payoneerMatch = '— pending verification';
       }
     } else {
       payoneerMatch = '— no link';
