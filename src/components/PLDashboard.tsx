@@ -205,9 +205,9 @@ const PayoneerMatchBadge = ({ notes, invoice: expected }: { notes: string | null
     <Badge
       variant="outline"
       className={`text-[10px] ${match ? 'border-emerald-500 text-emerald-600' : 'border-red-500 text-red-600'}`}
-      title={`Expected $${expected.toFixed(2)} · Payoneer $${state.amount.toFixed(2)} ${state.currency}`}
+      title={`Invoice $${expected.toFixed(2)} · Payoneer $${state.amount.toFixed(2)} ${state.currency}`}
     >
-      {match ? `✓ Match $${state.amount.toFixed(2)}` : `✗ Mismatch $${state.amount.toFixed(2)} vs $${expected.toFixed(2)}`}
+      {match ? `✓ Match $${state.amount.toFixed(2)}` : `✗ Mismatch $${expected.toFixed(2)} vs $${state.amount.toFixed(2)}`}
     </Badge>
   );
 };
