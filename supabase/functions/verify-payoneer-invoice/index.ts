@@ -96,7 +96,7 @@ Deno.serve(async (req) => {
       await supabase.from('payoneer_verifications').upsert({ url, amount: null, currency: null, error: 'Could not extract amount', verified_at: new Date().toISOString() });
       const debugOn = debug === true;
       return new Response(
-        JSON.stringify({ error: 'Could not extract amount from Payoneer page', amount: null, ...(debugOn ? { markdown: markdown.slice(0, 4000) } : {}) }),
+        JSON.stringify({ error: 'Could not extract amount from Payoneer page', amount: null, ...(debugOn ? { markdown: markdown.slice(0, 6000), keys: Object.keys(fcJson || {}), dataKeys: Object.keys(fcJson?.data || {}) } : {}) }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
