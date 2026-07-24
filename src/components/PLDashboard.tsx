@@ -1505,6 +1505,17 @@ export const PLDashboard = () => {
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
+            <Select value={hoursFilter} onValueChange={(v) => setHoursFilter(v as any)}>
+              <SelectTrigger className={`h-8 w-[170px] text-xs ${hoursFilter !== 'all' ? 'border-amber-500 text-amber-700 dark:text-amber-400' : ''}`}>
+                <SelectValue placeholder="Hours filter" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All hours</SelectItem>
+                <SelectItem value="mismatch">Mismatch (OT or Under)</SelectItem>
+                <SelectItem value="over">Overtime only</SelectItem>
+                <SelectItem value="under">Undertime only</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="h-8 w-[170px] text-xs">
                 <SelectValue placeholder="All statuses" />
