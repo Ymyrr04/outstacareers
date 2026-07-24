@@ -824,6 +824,15 @@ export const PLDashboard = () => {
         const field = scope === 'client' ? (r.client_approval_status || 'pending') : (r.outsta_status || 'pending');
         if (field !== val) return false;
       }
+      if (hoursFilter !== 'all') {
+        const expected = Number(r.contractor?.hours_per_week || 0);
+        const total = Number(r.total_hours || 0);
+        if (expected <= 0) return false;
+        const diff = total - expected;
+        if (Math.abs(diff) < 0.01) return false;
+        if (hoursFilter === 'over' && diff <= 0) return false;
+        if (hoursFilter === 'under' && diff >= 0) return false;
+      }
       return true;
     })
     .sort((a, b) => {
