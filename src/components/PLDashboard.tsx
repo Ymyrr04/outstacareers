@@ -177,8 +177,13 @@ const PayoneerMatchBadge = ({ notes, invoice: expected }: { notes: string | null
         .select('amount, currency, error')
         .eq('url', url)
         .maybeSingle();
-      if (row && row.amount !== null) {
-        const result = { amount: Number(row.amount), currency: row.currency };
+      if (row) {
+        // Use any prior verification result — including failures — so we don't re-hit Firecrawl.
+        const result = {
+          amount: row.amount !== null ? Number(row.amount) : null,
+          currency: row.currency,
+          error: row.error ?? undefined,
+        };
         payoneerCache.set(url, result);
         payoneerInflight.delete(url);
         return result;
