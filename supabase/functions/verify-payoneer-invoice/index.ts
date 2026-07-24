@@ -89,6 +89,7 @@ Deno.serve(async (req) => {
     const fcJson = await fcRes.json();
     const markdown: string =
       fcJson?.data?.markdown || fcJson?.markdown || fcJson?.data?.html || fcJson?.html || '';
+    console.log('FC markdown len:', markdown.length, 'preview:', markdown.slice(0, 800));
 
     const { amount, currency } = extractAmount(markdown);
     if (amount === null) {
