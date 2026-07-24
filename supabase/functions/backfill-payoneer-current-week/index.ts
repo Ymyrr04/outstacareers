@@ -43,7 +43,16 @@ async function fetchPayoneer(url: string): Promise<{ amount: number | null; curr
       const res = await fetch(`${FIRECRAWL_V2}/scrape`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${keys[i]}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url, formats: ['markdown'], onlyMainContent: false, waitFor: 2000 }),
+        body: JSON.stringify({
+          url,
+          formats: ['markdown'],
+          onlyMainContent: false,
+          waitFor: 5000,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
+            'Accept-Language': 'en-US,en;q=0.9',
+          },
+        }),
       });
       if (!res.ok) {
         lastErr = `Firecrawl key#${i + 1} ${res.status}`;
