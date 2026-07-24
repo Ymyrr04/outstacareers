@@ -98,14 +98,12 @@ Deno.serve(async (req) => {
     const fcJson = await fcRes.json();
     const markdown: string =
       fcJson?.data?.markdown || fcJson?.markdown || fcJson?.data?.html || fcJson?.html || '';
-    console.log('FC markdown len:', markdown.length, 'preview:', markdown.slice(0, 800));
 
     const { amount, currency } = extractAmount(markdown);
     if (amount === null) {
       await supabase.from('payoneer_verifications').upsert({ url, amount: null, currency: null, error: 'Could not extract amount', verified_at: new Date().toISOString() });
-      const debugOn = debug === true;
       return new Response(
-        JSON.stringify({ error: 'Could not extract amount from Payoneer page', amount: null, ...(debugOn ? { markdown: markdown.slice(0, 6000), keys: Object.keys(fcJson || {}), dataKeys: Object.keys(fcJson?.data || {}) } : {}) }),
+        JSON.stringify({ error: 'Could not extract amount from Payoneer page', amount: null }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
