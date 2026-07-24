@@ -1605,6 +1605,9 @@ export const PLDashboard = () => {
                     <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setWeekMonday(getLastCompletedMonday()); setWeekPickerOpen(false); }}>
                       Last week
                     </Button>
+                    <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setWeekMonday(getCurrentWeekMonday()); setWeekPickerOpen(false); }}>
+                      Current week
+                    </Button>
                   </div>
                   <Calendar
                     mode="single"
