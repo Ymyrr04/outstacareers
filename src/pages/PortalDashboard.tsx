@@ -1176,8 +1176,15 @@ const PortalDashboard = () => {
               timesheetId: tsRow.id,
             },
           }).catch((e) => console.error('notify invoke failed', e));
-          // Google Sheet row is written only after Payoneer verification
-          // is triggered from the PL dashboard — not on submission.
+
+          // Auto-fire Payoneer verification (edge function caches results, so
+          // repeat submissions of the same link don't consume extra credits).
+          const payoneerMatch = (combinedNotes || '').match(/https?:\/\/(?:link\.|app\.)?payoneer\.com\/\S+/i);
+          if (payoneerMatch) {
+            supabase.functions.invoke('verify-payoneer-invoice', {
+              body: { url: payoneerMatch[0], timesheetId: tsRow.id },
+            }).catch((e) => console.error('payoneer verify invoke failed', e));
+          }
         }
       } catch (e) {
         console.error('notify lookup failed', e);
