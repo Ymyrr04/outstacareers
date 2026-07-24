@@ -985,6 +985,92 @@ export const PLDashboard = () => {
   const totalIncentivesAll = filtered.reduce((s, r) => s + Number(r.incentive_amount || 0), 0);
   const totalDepositAll = filtered.reduce((s, r) => s + computeDeposit(r).depositHours, 0);
 
+  const extractPayoneerLink = (text: string | null | undefined): string | null => {
+    if (!text) return null;
+    const m = text.match(/https?:\/\/(?:link|app)\.payoneer\.com\/[^\s"'<>]+/i);
+    return m ? m[0] : null;
+  };
+
+  const handleExtractCSV = async () => {
+    if (filtered.length === 0) {
+      toast({ title: 'Nothing to extract', description: 'No submissions match the current filters.' });
+      return;
+    }
+    // Bulk-load cached Payoneer verifications for links in the current view
+    const links = Array.from(new Set(filtered.map((r) => extractPayoneerLink(r.notes)).filter(Boolean) as string[]));
+    const payoneerMap = new Map<string, { amount: number | null; currency: string | null }>();
+    if (links.length > 0) {
+      const { data } = await supabase
+        .from('payoneer_verifications')
+        .select('url, amount, currency')
+        .in('url', links);
+      (data || []).forEach((v: any) => payoneerMap.set(v.url, { amount: v.amount != null ? Number(v.amount) : null, currency: v.currency }));
+    }
+
+    const headers = [
+      'Contractor', 'Email', 'Company', 'Week Ending', 'Hours', 'Deposit Hours', 'OT',
+      'Rate', 'Invoice', 'Bonus', 'Payoneer Link', 'Payoneer Amount', 'Payoneer Match',
+      'Client Status', 'OutSta Status', 'Notes', 'Submitted (EST)',
+    ];
+
+    const esc = (v: any) => {
+      const s = v == null ? '' : String(v);
+      return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    };
+
+    const rowsCsv = filtered.map((r) => {
+      const dep = computeDeposit(r);
+      const rate = Number(r.contractor?.hourly_rate || 0);
+      const totalH = Number(r.total_hours);
+      const otH = Number(r.overtime_hours || 0);
+      const regularH = Math.max(0, totalH - otH);
+      const invoice = rate > 0 ? Number((regularH * rate).toFixed(2)) : 0;
+      const bonus = Number(r.incentive_amount || 0);
+      const link = extractPayoneerLink(r.notes);
+      const pv = link ? payoneerMap.get(link) : null;
+      const pAmount = pv?.amount != null ? `${pv.amount.toFixed(2)}${pv.currency ? ' ' + pv.currency : ''}` : (link ? 'pending' : '');
+      const pMatch = link
+        ? (pv?.amount != null ? (Math.abs(pv.amount - invoice) < 0.01 ? 'Match' : 'Mismatch') : 'pending')
+        : 'no link';
+      const submittedEst = new Date(r.submitted_at).toLocaleString('en-US', { timeZone: 'America/New_York' });
+
+      return [
+        r.contractor?.applicant?.full_name || '',
+        r.contractor?.applicant?.email || '',
+        r.contractor?.client?.company_name || '',
+        r.week_ending_date,
+        totalH.toFixed(2),
+        dep.isDeposit ? dep.depositHours.toFixed(2) : '',
+        otH.toFixed(2),
+        rate ? rate.toFixed(2) : '',
+        invoice ? invoice.toFixed(2) : '',
+        bonus.toFixed(2),
+        link || '',
+        pAmount,
+        pMatch,
+        r.client_approval_status || 'pending',
+        r.outsta_status || 'pending',
+        (r.notes || '').replace(/\s+/g, ' ').trim(),
+        submittedEst,
+      ].map(esc).join(',');
+    });
+
+    const csv = [headers.join(','), ...rowsCsv].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    const weekLabel = weekMonday
+      ? `${format(weekMonday, 'yyyy-MM-dd')}_to_${format(new Date(weekMonday.getTime() + 6 * 86400000), 'yyyy-MM-dd')}`
+      : 'all-weeks';
+    a.href = url;
+    a.download = `timesheet-submissions_${weekLabel}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    toast({ title: 'Extracted', description: `${filtered.length} submission(s) exported to CSV.` });
+  };
+
   const StatTile = ({
     label,
     value,
