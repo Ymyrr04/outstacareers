@@ -30,6 +30,11 @@ function computeDeposit(startStr: string | null, hpw: number, weekEndingDate: st
   return { depositHours: Math.min(Number(totalHours), hpw), isDeposit: true, weekIndex };
 }
 
+// Sheet tab name for a week ending date, e.g. "Week Ending 2026-07-24"
+function tabNameForWeek(weekEndingDate: string): string {
+  return `Week Ending ${weekEndingDate}`;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -83,8 +88,9 @@ Deno.serve(async (req) => {
       'Content-Type': 'application/json',
     };
 
+    // Fetch existing tabs
     const metaRes = await fetch(
-      `${GATEWAY}/spreadsheets/${SPREADSHEET_ID}?fields=sheets.properties.title`,
+      `${GATEWAY}/spreadsheets/${SPREADSHEET_ID}?fields=sheets.properties(title,sheetId)`,
       { headers: gwHeaders },
     );
     if (!metaRes.ok) {
@@ -92,12 +98,35 @@ Deno.serve(async (req) => {
       throw new Error(`Sheet metadata failed [${metaRes.status}]: ${body}`);
     }
     const meta = await metaRes.json();
-    const tabName: string = meta?.sheets?.[0]?.properties?.title || 'Sheet1';
+    const existingTabs: Array<{ title: string; sheetId: number }> =
+      (meta?.sheets || []).map((s: any) => s.properties);
 
-    // Ensure header row matches current schema
+    const tabName = tabNameForWeek(ts.week_ending_date);
+    const tabExists = existingTabs.some((t) => t.title === tabName);
+
+    // Create the week-specific tab if missing
+    if (!tabExists) {
+      const addRes = await fetch(
+        `${GATEWAY}/spreadsheets/${SPREADSHEET_ID}:batchUpdate`,
+        {
+          method: 'POST',
+          headers: gwHeaders,
+          body: JSON.stringify({
+            requests: [{ addSheet: { properties: { title: tabName } } }],
+          }),
+        },
+      );
+      if (!addRes.ok) {
+        const body = await addRes.text();
+        throw new Error(`Failed to create tab "${tabName}" [${addRes.status}]: ${body}`);
+      }
+    }
+
+    // Ensure header row on the week tab
     const lastCol = String.fromCharCode(64 + HEADERS.length); // A=65
+    const encodedTab = encodeURIComponent(`'${tabName}'`);
     const headerRes = await fetch(
-      `${GATEWAY}/spreadsheets/${SPREADSHEET_ID}/values/${tabName}!A1:${lastCol}1`,
+      `${GATEWAY}/spreadsheets/${SPREADSHEET_ID}/values/${encodedTab}!A1:${lastCol}1`,
       { headers: gwHeaders },
     );
     const headerJson = headerRes.ok ? await headerRes.json() : { values: [] };
@@ -105,7 +134,7 @@ Deno.serve(async (req) => {
     const headersMatch = existing.length === HEADERS.length && HEADERS.every((h, i) => existing[i] === h);
     if (!headersMatch) {
       await fetch(
-        `${GATEWAY}/spreadsheets/${SPREADSHEET_ID}/values/${tabName}!A1:${lastCol}1?valueInputOption=USER_ENTERED`,
+        `${GATEWAY}/spreadsheets/${SPREADSHEET_ID}/values/${encodedTab}!A1:${lastCol}1?valueInputOption=USER_ENTERED`,
         {
           method: 'PUT',
           headers: gwHeaders,
@@ -130,7 +159,7 @@ Deno.serve(async (req) => {
     ];
 
     const appendRes = await fetch(
-      `${GATEWAY}/spreadsheets/${SPREADSHEET_ID}/values/${tabName}!A:${lastCol}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
+      `${GATEWAY}/spreadsheets/${SPREADSHEET_ID}/values/${encodedTab}!A:${lastCol}:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS`,
       {
         method: 'POST',
         headers: gwHeaders,
@@ -142,7 +171,7 @@ Deno.serve(async (req) => {
       throw new Error(`Sheets append failed [${appendRes.status}]: ${body}`);
     }
 
-    return new Response(JSON.stringify({ success: true, tab: tabName }), {
+    return new Response(JSON.stringify({ success: true, tab: tabName, created: !tabExists }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   } catch (err: any) {
