@@ -1665,6 +1665,17 @@ export const PLDashboard = () => {
               <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
               <Input placeholder="Search submissions..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9 h-8 text-sm" />
             </div>
+            <Button
+              size="sm"
+              variant="outline"
+              className="h-8 text-xs gap-1"
+              onClick={handleExtractCSV}
+              disabled={loading || filtered.length === 0}
+              title="Download current submissions as CSV"
+            >
+              <Download className="w-3.5 h-3.5" />
+              Extract
+            </Button>
           </div>
         }
       >
