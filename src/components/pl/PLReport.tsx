@@ -14,6 +14,15 @@ import { format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
+import clientRateFallbackData from '@/data/clientRateFallback.json';
+
+const clientRateFallback = clientRateFallbackData as Record<string, number>;
+const normalizeName = (s: string) =>
+  s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\./g, ' ').replace(/\s+/g, ' ').trim();
+const lookupFallbackClientRate = (name: string | null | undefined): number => {
+  if (!name) return 0;
+  return clientRateFallback[normalizeName(name)] ?? 0;
+};
 
 // ============ Config: fee constants (persisted in localStorage) ============
 const FEE_STORAGE_KEY = 'pl_report_fee_settings';
@@ -222,7 +231,7 @@ export const PLReport = () => {
           } catch {}
         }
         const hourlyRate = Number(a.hourly_rate || 0);
-        const clientRate = Number(a.client_rate || 0);
+        const clientRate = Number(a.client_rate || 0) || lookupFallbackClientRate(a.applicant?.full_name);
         const standardHours = Number(a.hours_per_week || 0);
         const overtime = Number(ts?.overtime_hours || 0);
         const hasHours = actualHours > 0;
