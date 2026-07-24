@@ -2,6 +2,8 @@ import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const FIRECRAWL_V2 = 'https://api.firecrawl.dev/v2';
+const SPREADSHEET_ID = '1HPFeleVLcfR0kyG1N4HCaEeQcEypzXquhQPbMToXQHY';
+const SHEETS_GATEWAY = 'https://connector-gateway.lovable.dev/google_sheets/v4';
 
 const supabase = createClient(
   Deno.env.get('SUPABASE_URL')!,
@@ -23,11 +25,86 @@ function extractAmount(text: string): { amount: number | null; currency: string 
   return { amount, currency };
 }
 
+// Compute the sheet tab name for a given week_ending_date (YYYY-MM-DD)
+function tabNameForWeek(weekEndingDate: string): string {
+  const [y, m, d] = weekEndingDate.split('-').map(Number);
+  const ref = new Date(Date.UTC(y, (m || 1) - 1, d || 1));
+  const dow = ref.getUTCDay();
+  const daysFromMon = (dow + 6) % 7;
+  const mon = new Date(ref);
+  mon.setUTCDate(ref.getUTCDate() - daysFromMon);
+  const sun = new Date(mon);
+  sun.setUTCDate(mon.getUTCDate() + 6);
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  return `Mon ${months[mon.getUTCMonth()]} ${mon.getUTCDate()} – Sun ${months[sun.getUTCMonth()]} ${sun.getUTCDate()}, ${sun.getUTCFullYear()}`;
+}
+
+// Push the freshly-verified amount into the Google Sheet row(s) for a given timesheet.
+// Columns: L = Payoneer Link, M = Payoneer Amount, N = Payoneer Match.
+async function syncToSheet(timesheetId: string, url: string, amount: number, currency: string | null) {
+  try {
+    const lovableKey = Deno.env.get('LOVABLE_API_KEY');
+    const sheetsKey = Deno.env.get('GOOGLE_SHEETS_API_KEY');
+    if (!lovableKey || !sheetsKey) return;
+
+    const { data: ts } = await supabase
+      .from('contractor_timesheets')
+      .select('week_ending_date, total_hours, overtime_hours, incentive_amount, contractor_assignments!inner(hourly_rate)')
+      .eq('id', timesheetId)
+      .maybeSingle();
+    if (!ts) return;
+
+    const totalHours = Number(ts.total_hours ?? 0);
+    const overtime = Number(ts.overtime_hours ?? 0);
+    const regularHours = Math.max(0, totalHours - overtime);
+    const hourlyRate = Number((ts.contractor_assignments as any)?.hourly_rate || 0);
+    const invoice = hourlyRate > 0 ? Number((regularHours * hourlyRate).toFixed(2)) : 0;
+    const match = invoice && Math.abs(amount - invoice) < 0.01 ? '✓ Match' : '✗ Mismatch';
+
+    const tab = tabNameForWeek(ts.week_ending_date);
+    const encodedTab = encodeURIComponent(`'${tab}'`);
+    const gwHeaders = {
+      Authorization: `Bearer ${lovableKey}`,
+      'X-Connection-Api-Key': sheetsKey,
+      'Content-Type': 'application/json',
+    };
+
+    // Fetch column L (Payoneer Link) to locate the row
+    const res = await fetch(
+      `${SHEETS_GATEWAY}/spreadsheets/${SPREADSHEET_ID}/values/${encodedTab}!L:L`,
+      { headers: gwHeaders },
+    );
+    if (!res.ok) return;
+    const json = await res.json();
+    const rows: string[][] = json.values || [];
+    // Find all matching rows (there could be duplicate submissions)
+    const targetRows: number[] = [];
+    for (let i = 0; i < rows.length; i++) {
+      if ((rows[i]?.[0] || '').trim() === url.trim()) targetRows.push(i + 1); // 1-indexed
+    }
+    if (targetRows.length === 0) return;
+
+    const amountCell = `${amount.toFixed(2)}${currency ? ' ' + currency : ''}`;
+    for (const rowNum of targetRows) {
+      await fetch(
+        `${SHEETS_GATEWAY}/spreadsheets/${SPREADSHEET_ID}/values/${encodedTab}!M${rowNum}:N${rowNum}?valueInputOption=USER_ENTERED`,
+        {
+          method: 'PUT',
+          headers: gwHeaders,
+          body: JSON.stringify({ values: [[amountCell, match]] }),
+        },
+      );
+    }
+  } catch (e) {
+    console.error('syncToSheet failed:', (e as Error).message);
+  }
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const { url, force } = await req.json();
+    const { url, force, timesheetId } = await req.json();
     if (!url || typeof url !== 'string' || !/^https?:\/\/(link\.|app\.)?payoneer\.com\//i.test(url)) {
       return new Response(JSON.stringify({ error: 'A valid Payoneer link is required' }), {
         status: 400,
@@ -43,6 +120,8 @@ Deno.serve(async (req) => {
         .eq('url', url)
         .maybeSingle();
       if (cached && cached.amount !== null) {
+        // Also sync to sheet in case sheet row was written before verification
+        if (timesheetId) await syncToSheet(timesheetId, url, Number(cached.amount), cached.currency);
         return new Response(
           JSON.stringify({ amount: Number(cached.amount), currency: cached.currency, cached: true }),
           { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
@@ -83,7 +162,6 @@ Deno.serve(async (req) => {
       if (r.ok) { fcRes = r; break; }
       const body = await r.text();
       lastErr = `Firecrawl key#${i + 1} failed [${r.status}]: ${body}`;
-      // Only rotate on credit/rate/auth failures; otherwise stop.
       if (![401, 402, 403, 429].includes(r.status)) { fcRes = null; break; }
     }
 
@@ -109,6 +187,9 @@ Deno.serve(async (req) => {
     }
 
     await supabase.from('payoneer_verifications').upsert({ url, amount, currency, error: null, verified_at: new Date().toISOString() });
+
+    // Push the verified amount into the Google Sheet row for this submission
+    if (timesheetId) await syncToSheet(timesheetId, url, amount, currency);
 
     return new Response(JSON.stringify({ amount, currency }), {
       status: 200,
