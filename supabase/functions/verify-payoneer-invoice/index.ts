@@ -27,7 +27,7 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const { url, force, debug } = await req.json();
+    const { url, force } = await req.json();
     if (!url || typeof url !== 'string' || !/^https?:\/\/(link\.|app\.)?payoneer\.com\//i.test(url)) {
       return new Response(JSON.stringify({ error: 'A valid Payoneer link is required' }), {
         status: 400,
