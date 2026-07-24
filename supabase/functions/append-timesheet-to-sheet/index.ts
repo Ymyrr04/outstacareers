@@ -32,13 +32,24 @@ function extractPayoneerLink(text: string | null | undefined): string | null {
 }
 
 async function fetchPayoneerAmount(url: string): Promise<{ amount: number | null; currency: string | null; error?: string }> {
+  const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
+  if (!firecrawlKey) return { amount: null, currency: null, error: 'FIRECRAWL_API_KEY not configured' };
   try {
-    const res = await fetch(url, {
-      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; OutStaBot/1.0)', 'Accept': 'text/html' },
+    const res = await fetch('https://api.firecrawl.dev/v2/scrape', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${firecrawlKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ url, formats: ['markdown'], onlyMainContent: false, waitFor: 2000 }),
     });
-    if (!res.ok) return { amount: null, currency: null, error: `HTTP ${res.status}` };
-    const html = await res.text();
-    const matches = [...html.matchAll(/([\d,]+\.\d{2})\s*(USD|EUR|GBP|AUD|CAD)/gi)];
+    if (!res.ok) {
+      const body = await res.text();
+      return { amount: null, currency: null, error: `Firecrawl ${res.status}: ${body.slice(0, 200)}` };
+    }
+    const json = await res.json();
+    const text: string = json?.data?.markdown || json?.markdown || json?.data?.html || json?.html || '';
+    const matches = [...text.matchAll(/([\d,]+\.\d{2})\s*(USD|EUR|GBP|AUD|CAD)/gi)];
     let amount: number | null = null;
     let currency: string | null = null;
     for (const m of matches) {

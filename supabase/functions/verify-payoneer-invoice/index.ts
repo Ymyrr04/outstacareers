@@ -1,5 +1,22 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 
+const FIRECRAWL_V2 = 'https://api.firecrawl.dev/v2';
+
+function extractAmount(text: string): { amount: number | null; currency: string | null } {
+  if (!text) return { amount: null, currency: null };
+  const matches = [...text.matchAll(/([\d,]+\.\d{2})\s*(USD|EUR|GBP|AUD|CAD)/gi)];
+  let amount: number | null = null;
+  let currency: string | null = null;
+  for (const m of matches) {
+    const n = parseFloat(m[1].replace(/,/g, ''));
+    if (!isNaN(n) && (amount === null || n > amount)) {
+      amount = n;
+      currency = m[2].toUpperCase();
+    }
+  }
+  return { amount, currency };
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -12,35 +29,41 @@ Deno.serve(async (req) => {
       });
     }
 
-    const res = await fetch(url, {
+    const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
+    if (!firecrawlKey) {
+      return new Response(JSON.stringify({ error: 'FIRECRAWL_API_KEY not configured' }), {
+        status: 500,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    const fcRes = await fetch(`${FIRECRAWL_V2}/scrape`, {
+      method: 'POST',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; OutStaBot/1.0)',
-        'Accept': 'text/html',
+        Authorization: `Bearer ${firecrawlKey}`,
+        'Content-Type': 'application/json',
       },
+      body: JSON.stringify({
+        url,
+        formats: ['markdown'],
+        onlyMainContent: false,
+        waitFor: 2000,
+      }),
     });
 
-    if (!res.ok) {
+    if (!fcRes.ok) {
+      const body = await fcRes.text();
       return new Response(
-        JSON.stringify({ error: `Payoneer responded ${res.status}`, status: res.status }),
+        JSON.stringify({ error: `Firecrawl failed [${fcRes.status}]: ${body}`, amount: null }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
 
-    const html = await res.text();
+    const fcJson = await fcRes.json();
+    const markdown: string =
+      fcJson?.data?.markdown || fcJson?.markdown || fcJson?.data?.html || fcJson?.html || '';
 
-    // Payoneer renders amount like: "400.00 USD" or "1,234.56 USD"
-    const matches = [...html.matchAll(/([\d,]+\.\d{2})\s*(USD|EUR|GBP|AUD|CAD)/gi)];
-    // Pick the largest one to avoid catching fees/etc.
-    let amount: number | null = null;
-    let currency: string | null = null;
-    for (const m of matches) {
-      const n = parseFloat(m[1].replace(/,/g, ''));
-      if (!isNaN(n) && (amount === null || n > amount)) {
-        amount = n;
-        currency = m[2].toUpperCase();
-      }
-    }
-
+    const { amount, currency } = extractAmount(markdown);
     if (amount === null) {
       return new Response(
         JSON.stringify({ error: 'Could not extract amount from Payoneer page', amount: null }),
