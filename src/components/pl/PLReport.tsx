@@ -231,7 +231,7 @@ export const PLReport = () => {
           } catch {}
         }
         const hourlyRate = Number(a.hourly_rate || 0);
-        const clientRate = Number(a.client_rate || 0);
+        const clientRate = Number(a.client_rate || 0) || lookupFallbackClientRate(a.applicant?.full_name);
         const standardHours = Number(a.hours_per_week || 0);
         const overtime = Number(ts?.overtime_hours || 0);
         const hasHours = actualHours > 0;
