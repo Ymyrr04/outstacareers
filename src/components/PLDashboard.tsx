@@ -1143,10 +1143,14 @@ export const PLDashboard = () => {
             Leave Requests
             {leaveCount > 0 && <Badge variant="secondary" className="text-[10px]">{leaveCount}</Badge>}
           </TabsTrigger>
+          <TabsTrigger value="pl_report" className="gap-2">
+            P&amp;L Report
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
       <div className="flex flex-col gap-3">
+      {activeSubtab === 'pl_report' && <PLReport />}
       {activeSubtab === 'leave' && <AdminLeaveApplications />}
       {activeSubtab === 'contractors' && (
 
