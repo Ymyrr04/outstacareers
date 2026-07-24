@@ -1,6 +1,12 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const FIRECRAWL_V2 = 'https://api.firecrawl.dev/v2';
+
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+);
 
 function extractAmount(text: string): { amount: number | null; currency: string | null } {
   if (!text) return { amount: null, currency: null };
