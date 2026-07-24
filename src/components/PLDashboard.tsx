@@ -286,16 +286,6 @@ export const PLDashboard = () => {
   const [rows, setRows] = useState<TimesheetRow[]>([]);
   const [contractors, setContractors] = useState<ContractorRow[]>([]);
   const [search, setSearch] = useState('');
-  const getLastCompletedMonday = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const dow = today.getDay(); // 0 = Sunday
-    const lastSunday = new Date(today);
-    lastSunday.setDate(today.getDate() - (dow === 0 ? 0 : dow));
-    const lastMonday = new Date(lastSunday);
-    lastMonday.setDate(lastSunday.getDate() - 6);
-    return lastMonday;
-  };
   const mondayOf = (d: Date) => {
     const x = new Date(d);
     x.setHours(0, 0, 0, 0);
@@ -304,7 +294,13 @@ export const PLDashboard = () => {
     x.setDate(x.getDate() + diff);
     return x;
   };
-  const [weekMonday, setWeekMonday] = useState<Date | null>(() => getLastCompletedMonday());
+  const getCurrentWeekMonday = () => mondayOf(new Date());
+  const getLastCompletedMonday = () => {
+    const m = getCurrentWeekMonday();
+    m.setDate(m.getDate() - 7);
+    return m;
+  };
+  const [weekMonday, setWeekMonday] = useState<Date | null>(() => getCurrentWeekMonday());
   const [weekPickerOpen, setWeekPickerOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [hoursFilter, setHoursFilter] = useState<'all' | 'mismatch' | 'over' | 'under'>('all');
@@ -1608,6 +1604,9 @@ export const PLDashboard = () => {
                     </Button>
                     <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setWeekMonday(getLastCompletedMonday()); setWeekPickerOpen(false); }}>
                       Last week
+                    </Button>
+                    <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => { setWeekMonday(getCurrentWeekMonday()); setWeekPickerOpen(false); }}>
+                      Current week
                     </Button>
                   </div>
                   <Calendar
