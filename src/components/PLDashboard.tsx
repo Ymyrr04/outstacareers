@@ -262,6 +262,7 @@ export const PLDashboard = () => {
   const [weekMonday, setWeekMonday] = useState<Date | null>(() => getLastCompletedMonday());
   const [weekPickerOpen, setWeekPickerOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [hoursFilter, setHoursFilter] = useState<'all' | 'mismatch' | 'over' | 'under'>('all');
   const [clientPortalClientIds, setClientPortalClientIds] = useState<Set<string>>(new Set());
   const [updatingOutstaId, setUpdatingOutstaId] = useState<string | null>(null);
   const [contractorSearch, setContractorSearch] = useState('');
@@ -822,6 +823,15 @@ export const PLDashboard = () => {
         const [scope, val] = statusFilter.split(':');
         const field = scope === 'client' ? (r.client_approval_status || 'pending') : (r.outsta_status || 'pending');
         if (field !== val) return false;
+      }
+      if (hoursFilter !== 'all') {
+        const expected = Number(r.contractor?.hours_per_week || 0);
+        const total = Number(r.total_hours || 0);
+        if (expected <= 0) return false;
+        const diff = total - expected;
+        if (Math.abs(diff) < 0.01) return false;
+        if (hoursFilter === 'over' && diff <= 0) return false;
+        if (hoursFilter === 'under' && diff >= 0) return false;
       }
       return true;
     })
@@ -1495,6 +1505,17 @@ export const PLDashboard = () => {
                 <ChevronRight className="w-4 h-4" />
               </button>
             </div>
+            <Select value={hoursFilter} onValueChange={(v) => setHoursFilter(v as any)}>
+              <SelectTrigger className={`h-8 w-[170px] text-xs ${hoursFilter !== 'all' ? 'border-amber-500 text-amber-700 dark:text-amber-400' : ''}`}>
+                <SelectValue placeholder="Hours filter" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All hours</SelectItem>
+                <SelectItem value="mismatch">Mismatch (OT or Under)</SelectItem>
+                <SelectItem value="over">Overtime only</SelectItem>
+                <SelectItem value="under">Undertime only</SelectItem>
+              </SelectContent>
+            </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="h-8 w-[170px] text-xs">
                 <SelectValue placeholder="All statuses" />
