@@ -1161,7 +1161,7 @@ const PortalDashboard = () => {
         description: needsApproval ? 'Days over 10 hours are pending admin approval.' : undefined,
       });
 
-      // Fire email notifications (non-blocking)
+      // Fire email notifications + auto Payoneer verification
       try {
         const { data: tsRow } = await supabase
           .from('contractor_timesheets')
@@ -1170,6 +1170,7 @@ const PortalDashboard = () => {
           .eq('week_ending_date', weekEnding)
           .maybeSingle();
         if (tsRow?.id) {
+          // Non-blocking notify
           supabase.functions.invoke('notify-timesheet-event', {
             body: {
               event: wasFlagged ? 'timesheet_resubmitted' : 'timesheet_submitted',
@@ -1177,18 +1178,24 @@ const PortalDashboard = () => {
             },
           }).catch((e) => console.error('notify invoke failed', e));
 
-          // Auto-fire Payoneer verification (edge function caches results, so
-          // repeat submissions of the same link don't consume extra credits).
+          // Auto-fire Payoneer verification (awaited so the request isn't
+          // abandoned by the subsequent reload/cancel). Edge function caches
+          // results, so repeat submissions of the same link are free.
           const payoneerMatch = (combinedNotes || '').match(/https?:\/\/(?:link\.|app\.)?payoneer\.com\/\S+/i);
           if (payoneerMatch) {
-            supabase.functions.invoke('verify-payoneer-invoice', {
-              body: { url: payoneerMatch[0], timesheetId: tsRow.id },
-            }).catch((e) => console.error('payoneer verify invoke failed', e));
+            try {
+              await supabase.functions.invoke('verify-payoneer-invoice', {
+                body: { url: payoneerMatch[0], timesheetId: tsRow.id },
+              });
+            } catch (e) {
+              console.error('payoneer verify invoke failed', e);
+            }
           }
         }
       } catch (e) {
         console.error('notify lookup failed', e);
       }
+
 
       handleCancelEdit();
       loadAll();
