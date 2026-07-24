@@ -32,34 +32,41 @@ function extractPayoneerLink(text: string | null | undefined): string | null {
 }
 
 async function fetchPayoneerAmount(url: string): Promise<{ amount: number | null; currency: string | null; error?: string }> {
-  const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
-  if (!firecrawlKey) return { amount: null, currency: null, error: 'FIRECRAWL_API_KEY not configured' };
-  try {
-    const res = await fetch('https://api.firecrawl.dev/v2/scrape', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${firecrawlKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ url, formats: ['markdown'], onlyMainContent: false, waitFor: 2000 }),
-    });
-    if (!res.ok) {
-      const body = await res.text();
-      return { amount: null, currency: null, error: `Firecrawl ${res.status}: ${body.slice(0, 200)}` };
+  const keys = [
+    Deno.env.get('FIRECRAWL_API_KEY'),
+    Deno.env.get('FIRECRAWL_API_KEY_2'),
+    Deno.env.get('FIRECRAWL_API_KEY_3'),
+  ].filter(Boolean) as string[];
+  if (keys.length === 0) return { amount: null, currency: null, error: 'FIRECRAWL_API_KEY not configured' };
+  let lastErr = '';
+  for (let i = 0; i < keys.length; i++) {
+    try {
+      const res = await fetch('https://api.firecrawl.dev/v2/scrape', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${keys[i]}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, formats: ['markdown'], onlyMainContent: false, waitFor: 2000 }),
+      });
+      if (!res.ok) {
+        const body = await res.text();
+        lastErr = `Firecrawl key#${i + 1} ${res.status}: ${body.slice(0, 200)}`;
+        if (![401, 402, 403, 429].includes(res.status)) return { amount: null, currency: null, error: lastErr };
+        continue;
+      }
+      const json = await res.json();
+      const text: string = json?.data?.markdown || json?.markdown || json?.data?.html || json?.html || '';
+      const matches = [...text.matchAll(/([\d,]+\.\d{2})\s*(USD|EUR|GBP|AUD|CAD)/gi)];
+      let amount: number | null = null;
+      let currency: string | null = null;
+      for (const m of matches) {
+        const n = parseFloat(m[1].replace(/,/g, ''));
+        if (!isNaN(n) && (amount === null || n > amount)) { amount = n; currency = m[2].toUpperCase(); }
+      }
+      return { amount, currency, error: amount === null ? 'no amount found' : undefined };
+    } catch (e) {
+      lastErr = (e as Error).message;
     }
-    const json = await res.json();
-    const text: string = json?.data?.markdown || json?.markdown || json?.data?.html || json?.html || '';
-    const matches = [...text.matchAll(/([\d,]+\.\d{2})\s*(USD|EUR|GBP|AUD|CAD)/gi)];
-    let amount: number | null = null;
-    let currency: string | null = null;
-    for (const m of matches) {
-      const n = parseFloat(m[1].replace(/,/g, ''));
-      if (!isNaN(n) && (amount === null || n > amount)) { amount = n; currency = m[2].toUpperCase(); }
-    }
-    return { amount, currency, error: amount === null ? 'no amount found' : undefined };
-  } catch (e) {
-    return { amount: null, currency: null, error: (e as Error).message };
   }
+  return { amount: null, currency: null, error: lastErr || 'all Firecrawl keys failed' };
 }
 
 function computeDeposit(startStr: string | null, hpw: number, weekEndingDate: string, totalHours: number) {
