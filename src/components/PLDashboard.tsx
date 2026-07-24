@@ -149,8 +149,13 @@ const renderNotesWithLinks = (notes: string | null | undefined) => {
   );
 };
 
-const payoneerCache = new Map<string, { amount: number | null; currency: string | null; error?: string }>();
-const payoneerInflight = new Map<string, Promise<any>>();
+// Cache of DB verification rows (populated once per session by a single batched query).
+// Never triggers Firecrawl on its own — only reads from payoneer_verifications.
+type PayoneerRow = { amount: number | null; currency: string | null; error?: string };
+const payoneerCache = new Map<string, PayoneerRow>();
+const payoneerCacheListeners = new Set<() => void>();
+let payoneerCacheLoaded = false;
+let payoneerCacheLoadingPromise: Promise<void> | null = null;
 
 const extractPayoneerUrl = (notes: string | null | undefined): string | null => {
   if (!notes) return null;
@@ -158,55 +163,89 @@ const extractPayoneerUrl = (notes: string | null | undefined): string | null => 
   return m ? m[0] : null;
 };
 
+async function loadPayoneerCache() {
+  if (payoneerCacheLoaded) return;
+  if (payoneerCacheLoadingPromise) return payoneerCacheLoadingPromise;
+  payoneerCacheLoadingPromise = (async () => {
+    const { data } = await supabase
+      .from('payoneer_verifications')
+      .select('url, amount, currency, error');
+    (data || []).forEach((r: any) => {
+      payoneerCache.set(r.url, {
+        amount: r.amount !== null ? Number(r.amount) : null,
+        currency: r.currency,
+        error: r.error ?? undefined,
+      });
+    });
+    payoneerCacheLoaded = true;
+    payoneerCacheListeners.forEach((cb) => cb());
+  })();
+  return payoneerCacheLoadingPromise;
+}
+
 const PayoneerMatchBadge = ({ notes, invoice: expected }: { notes: string | null | undefined; invoice: number | null }) => {
   const url = extractPayoneerUrl(notes);
-  const [state, setState] = useState<{ amount: number | null; currency: string | null; error?: string } | null>(
-    url ? payoneerCache.get(url) ?? null : null
-  );
-  const [loading, setLoading] = useState(false);
+  const [state, setState] = useState<PayoneerRow | null>(url ? payoneerCache.get(url) ?? null : null);
+  const [verifying, setVerifying] = useState(false);
+  const [, force] = useState(0);
 
   useEffect(() => {
     if (!url) return;
-    const cached = payoneerCache.get(url);
-    if (cached) { setState(cached); return; }
-    setLoading(true);
-    const p = payoneerInflight.get(url) ?? (async () => {
-      // Try persisted verification first
-      const { data: row } = await supabase
-        .from('payoneer_verifications')
-        .select('amount, currency, error')
-        .eq('url', url)
-        .maybeSingle();
-      if (row) {
-        // Use any prior verification result — including failures — so we don't re-hit Firecrawl.
-        const result = {
-          amount: row.amount !== null ? Number(row.amount) : null,
-          currency: row.currency,
-          error: row.error ?? undefined,
-        };
-        payoneerCache.set(url, result);
-        payoneerInflight.delete(url);
-        return result;
-      }
-      const { data, error } = await supabase.functions.invoke('verify-payoneer-invoice', { body: { url } });
-      const result = error ? { amount: null, currency: null, error: error.message } : data;
-      payoneerCache.set(url, result);
-      payoneerInflight.delete(url);
-      return result;
-    })();
-    payoneerInflight.set(url, p);
-    p.then((r) => setState(r)).finally(() => setLoading(false));
+    if (payoneerCache.has(url)) {
+      setState(payoneerCache.get(url)!);
+      return;
+    }
+    loadPayoneerCache().then(() => {
+      setState(payoneerCache.get(url) ?? null);
+    });
+    const listener = () => force((n) => n + 1);
+    payoneerCacheListeners.add(listener);
+    return () => { payoneerCacheListeners.delete(listener); };
   }, [url]);
 
+  const runVerify = async () => {
+    if (!url || verifying) return;
+    setVerifying(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('verify-payoneer-invoice', { body: { url, force: true } });
+      const result: PayoneerRow = error
+        ? { amount: null, currency: null, error: error.message }
+        : { amount: data?.amount ?? null, currency: data?.currency ?? null, error: data?.error };
+      payoneerCache.set(url, result);
+      setState(result);
+    } finally {
+      setVerifying(false);
+    }
+  };
+
   if (!url) return null;
-  if (loading || !state) {
-    return <Badge variant="outline" className="text-[10px] text-muted-foreground">Checking…</Badge>;
+
+  // No verification on record — show a manual verify button (no auto Firecrawl call on refresh).
+  if (!state) {
+    return (
+      <button
+        type="button"
+        onClick={runVerify}
+        disabled={verifying}
+        className="text-[10px] px-2 py-0.5 rounded border border-dashed border-muted-foreground/40 text-muted-foreground hover:bg-muted/40 disabled:opacity-60"
+        title="Click to verify this Payoneer link (uses 1 Firecrawl credit)"
+      >
+        {verifying ? 'Verifying…' : 'Verify link'}
+      </button>
+    );
   }
+
   if (state.error || state.amount == null) {
     return (
-      <Badge variant="outline" className="text-[10px] border-muted-foreground/40 text-muted-foreground" title={state.error || 'Amount not found'}>
-        Invoice: unknown
-      </Badge>
+      <button
+        type="button"
+        onClick={runVerify}
+        disabled={verifying}
+        className="text-[10px] px-2 py-0.5 rounded border border-muted-foreground/40 text-muted-foreground hover:bg-muted/40 disabled:opacity-60"
+        title={state.error || 'Amount not found — click to retry'}
+      >
+        {verifying ? 'Verifying…' : 'Invoice: unknown · retry'}
+      </button>
     );
   }
   if (expected == null) {
