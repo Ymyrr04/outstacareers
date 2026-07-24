@@ -154,7 +154,7 @@ const payoneerInflight = new Map<string, Promise<any>>();
 
 const extractPayoneerUrl = (notes: string | null | undefined): string | null => {
   if (!notes) return null;
-  const m = notes.match(/https?:\/\/link\.payoneer\.com\/[^\s]+/i);
+  const m = notes.match(/https?:\/\/(?:link|app)\.payoneer\.com\/[^\s]+/i);
   return m ? m[0] : null;
 };
 
