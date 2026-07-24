@@ -1,0 +1,1 @@
+DELETE FROM public.payoneer_verifications WHERE amount IS NULL;
