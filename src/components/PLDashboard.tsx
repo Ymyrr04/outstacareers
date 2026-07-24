@@ -158,7 +158,7 @@ const extractPayoneerUrl = (notes: string | null | undefined): string | null => 
   return m ? m[0] : null;
 };
 
-const PayoneerMatchBadge = ({ notes, expected }: { notes: string | null | undefined; expected: number | null }) => {
+const PayoneerMatchBadge = ({ notes, invoice: expected }: { notes: string | null | undefined; invoice: number | null }) => {
   const url = extractPayoneerUrl(notes);
   const [state, setState] = useState<{ amount: number | null; currency: string | null; error?: string } | null>(
     url ? payoneerCache.get(url) ?? null : null
