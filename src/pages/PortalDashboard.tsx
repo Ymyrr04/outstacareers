@@ -1176,9 +1176,8 @@ const PortalDashboard = () => {
               timesheetId: tsRow.id,
             },
           }).catch((e) => console.error('notify invoke failed', e));
-          supabase.functions.invoke('append-timesheet-to-sheet', {
-            body: { timesheetId: tsRow.id },
-          }).catch((e) => console.error('sheet append failed', e));
+          // Google Sheet row is written only after Payoneer verification
+          // is triggered from the PL dashboard — not on submission.
         }
       } catch (e) {
         console.error('notify lookup failed', e);
