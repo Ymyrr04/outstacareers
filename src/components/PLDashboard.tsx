@@ -171,6 +171,18 @@ const PayoneerMatchBadge = ({ notes, invoice: expected }: { notes: string | null
     if (cached) { setState(cached); return; }
     setLoading(true);
     const p = payoneerInflight.get(url) ?? (async () => {
+      // Try persisted verification first
+      const { data: row } = await supabase
+        .from('payoneer_verifications')
+        .select('amount, currency, error')
+        .eq('url', url)
+        .maybeSingle();
+      if (row && row.amount !== null) {
+        const result = { amount: Number(row.amount), currency: row.currency };
+        payoneerCache.set(url, result);
+        payoneerInflight.delete(url);
+        return result;
+      }
       const { data, error } = await supabase.functions.invoke('verify-payoneer-invoice', { body: { url } });
       const result = error ? { amount: null, currency: null, error: error.message } : data;
       payoneerCache.set(url, result);

@@ -2639,6 +2639,30 @@ export type Database = {
         }
         Relationships: []
       }
+      payoneer_verifications: {
+        Row: {
+          amount: number | null
+          currency: string | null
+          error: string | null
+          url: string
+          verified_at: string
+        }
+        Insert: {
+          amount?: number | null
+          currency?: string | null
+          error?: string | null
+          url: string
+          verified_at?: string
+        }
+        Update: {
+          amount?: number | null
+          currency?: string | null
+          error?: string | null
+          url?: string
+          verified_at?: string
+        }
+        Relationships: []
+      }
       pipeline_stages: {
         Row: {
           created_at: string

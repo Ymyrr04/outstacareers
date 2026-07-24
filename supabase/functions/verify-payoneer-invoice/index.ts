@@ -1,6 +1,12 @@
 import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
+import { createClient } from 'npm:@supabase/supabase-js@2';
 
 const FIRECRAWL_V2 = 'https://api.firecrawl.dev/v2';
+
+const supabase = createClient(
+  Deno.env.get('SUPABASE_URL')!,
+  Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+);
 
 function extractAmount(text: string): { amount: number | null; currency: string | null } {
   if (!text) return { amount: null, currency: null };
@@ -21,12 +27,27 @@ Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
-    const { url } = await req.json();
-    if (!url || typeof url !== 'string' || !/^https?:\/\/(link\.)?payoneer\.com\//i.test(url)) {
+    const { url, force } = await req.json();
+    if (!url || typeof url !== 'string' || !/^https?:\/\/(link\.|app\.)?payoneer\.com\//i.test(url)) {
       return new Response(JSON.stringify({ error: 'A valid Payoneer link is required' }), {
         status: 400,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
+    }
+
+    // Return cached verification if we already have an amount (unless forced)
+    if (!force) {
+      const { data: cached } = await supabase
+        .from('payoneer_verifications')
+        .select('amount, currency, error')
+        .eq('url', url)
+        .maybeSingle();
+      if (cached && cached.amount !== null) {
+        return new Response(
+          JSON.stringify({ amount: Number(cached.amount), currency: cached.currency, cached: true }),
+          { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
     }
 
     const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
@@ -53,8 +74,10 @@ Deno.serve(async (req) => {
 
     if (!fcRes.ok) {
       const body = await fcRes.text();
+      const err = `Firecrawl failed [${fcRes.status}]: ${body}`;
+      await supabase.from('payoneer_verifications').upsert({ url, amount: null, currency: null, error: err, verified_at: new Date().toISOString() });
       return new Response(
-        JSON.stringify({ error: `Firecrawl failed [${fcRes.status}]: ${body}`, amount: null }),
+        JSON.stringify({ error: err, amount: null }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
@@ -65,11 +88,14 @@ Deno.serve(async (req) => {
 
     const { amount, currency } = extractAmount(markdown);
     if (amount === null) {
+      await supabase.from('payoneer_verifications').upsert({ url, amount: null, currency: null, error: 'Could not extract amount', verified_at: new Date().toISOString() });
       return new Response(
         JSON.stringify({ error: 'Could not extract amount from Payoneer page', amount: null }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
+
+    await supabase.from('payoneer_verifications').upsert({ url, amount, currency, error: null, verified_at: new Date().toISOString() });
 
     return new Response(JSON.stringify({ amount, currency }), {
       status: 200,
