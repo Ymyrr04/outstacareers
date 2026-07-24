@@ -50,34 +50,38 @@ Deno.serve(async (req) => {
       }
     }
 
-    const firecrawlKey = Deno.env.get('FIRECRAWL_API_KEY');
-    if (!firecrawlKey) {
+    const firecrawlKeys = [
+      Deno.env.get('FIRECRAWL_API_KEY'),
+      Deno.env.get('FIRECRAWL_API_KEY_2'),
+      Deno.env.get('FIRECRAWL_API_KEY_3'),
+    ].filter(Boolean) as string[];
+    if (firecrawlKeys.length === 0) {
       return new Response(JSON.stringify({ error: 'FIRECRAWL_API_KEY not configured' }), {
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
 
-    const fcRes = await fetch(`${FIRECRAWL_V2}/scrape`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${firecrawlKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        url,
-        formats: ['markdown'],
-        onlyMainContent: false,
-        waitFor: 2000,
-      }),
-    });
+    let fcRes: Response | null = null;
+    let lastErr = '';
+    for (let i = 0; i < firecrawlKeys.length; i++) {
+      const key = firecrawlKeys[i];
+      const r = await fetch(`${FIRECRAWL_V2}/scrape`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url, formats: ['markdown'], onlyMainContent: false, waitFor: 2000 }),
+      });
+      if (r.ok) { fcRes = r; break; }
+      const body = await r.text();
+      lastErr = `Firecrawl key#${i + 1} failed [${r.status}]: ${body}`;
+      // Only rotate on credit/rate/auth failures; otherwise stop.
+      if (![401, 402, 403, 429].includes(r.status)) { fcRes = null; break; }
+    }
 
-    if (!fcRes.ok) {
-      const body = await fcRes.text();
-      const err = `Firecrawl failed [${fcRes.status}]: ${body}`;
-      await supabase.from('payoneer_verifications').upsert({ url, amount: null, currency: null, error: err, verified_at: new Date().toISOString() });
+    if (!fcRes) {
+      await supabase.from('payoneer_verifications').upsert({ url, amount: null, currency: null, error: lastErr, verified_at: new Date().toISOString() });
       return new Response(
-        JSON.stringify({ error: err, amount: null }),
+        JSON.stringify({ error: lastErr, amount: null }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
