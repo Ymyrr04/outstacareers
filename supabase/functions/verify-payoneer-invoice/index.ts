@@ -66,7 +66,7 @@ Deno.serve(async (req) => {
     const { amount, currency } = extractAmount(markdown);
     if (amount === null) {
       return new Response(
-        JSON.stringify({ error: 'Could not extract amount', amount: null, keys: Object.keys(fcJson || {}), dataKeys: fcJson?.data ? Object.keys(fcJson.data) : [], preview: markdown.slice(0, 1500), raw: JSON.stringify(fcJson).slice(0, 1500) }),
+        JSON.stringify({ error: 'Could not extract amount from Payoneer page', amount: null }),
         { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
       );
     }
