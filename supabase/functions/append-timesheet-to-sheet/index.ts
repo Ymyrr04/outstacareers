@@ -16,11 +16,40 @@ const HEADERS = [
   'Rate',
   'Expected Invoice',
   'Match',
+  'Payoneer Link',
+  'Payoneer Amount',
+  'Payoneer Match',
   'Bonus',
   'Status',
   'Notes',
   'Submitted',
 ];
+
+function extractPayoneerLink(text: string | null | undefined): string | null {
+  if (!text) return null;
+  const m = text.match(/https?:\/\/(?:link\.)?payoneer\.com\/[^\s"'<>]+/i);
+  return m ? m[0] : null;
+}
+
+async function fetchPayoneerAmount(url: string): Promise<{ amount: number | null; currency: string | null; error?: string }> {
+  try {
+    const res = await fetch(url, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; OutStaBot/1.0)', 'Accept': 'text/html' },
+    });
+    if (!res.ok) return { amount: null, currency: null, error: `HTTP ${res.status}` };
+    const html = await res.text();
+    const matches = [...html.matchAll(/([\d,]+\.\d{2})\s*(USD|EUR|GBP|AUD|CAD)/gi)];
+    let amount: number | null = null;
+    let currency: string | null = null;
+    for (const m of matches) {
+      const n = parseFloat(m[1].replace(/,/g, ''));
+      if (!isNaN(n) && (amount === null || n > amount)) { amount = n; currency = m[2].toUpperCase(); }
+    }
+    return { amount, currency, error: amount === null ? 'no amount found' : undefined };
+  } catch (e) {
+    return { amount: null, currency: null, error: (e as Error).message };
+  }
+}
 
 function computeDeposit(startStr: string | null, hpw: number, weekEndingDate: string, totalHours: number) {
   if (!startStr || !hpw) return { depositHours: 0, isDeposit: false, weekIndex: null as number | null };
