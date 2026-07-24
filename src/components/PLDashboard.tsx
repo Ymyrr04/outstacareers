@@ -149,6 +149,70 @@ const renderNotesWithLinks = (notes: string | null | undefined) => {
   );
 };
 
+const payoneerCache = new Map<string, { amount: number | null; currency: string | null; error?: string }>();
+const payoneerInflight = new Map<string, Promise<any>>();
+
+const extractPayoneerUrl = (notes: string | null | undefined): string | null => {
+  if (!notes) return null;
+  const m = notes.match(/https?:\/\/link\.payoneer\.com\/[^\s]+/i);
+  return m ? m[0] : null;
+};
+
+const PayoneerMatchBadge = ({ notes, expected }: { notes: string | null | undefined; expected: number | null }) => {
+  const url = extractPayoneerUrl(notes);
+  const [state, setState] = useState<{ amount: number | null; currency: string | null; error?: string } | null>(
+    url ? payoneerCache.get(url) ?? null : null
+  );
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!url) return;
+    const cached = payoneerCache.get(url);
+    if (cached) { setState(cached); return; }
+    setLoading(true);
+    const p = payoneerInflight.get(url) ?? (async () => {
+      const { data, error } = await supabase.functions.invoke('verify-payoneer-invoice', { body: { url } });
+      const result = error ? { amount: null, currency: null, error: error.message } : data;
+      payoneerCache.set(url, result);
+      payoneerInflight.delete(url);
+      return result;
+    })();
+    payoneerInflight.set(url, p);
+    p.then((r) => setState(r)).finally(() => setLoading(false));
+  }, [url]);
+
+  if (!url) return null;
+  if (loading || !state) {
+    return <Badge variant="outline" className="text-[10px] text-muted-foreground">Checking…</Badge>;
+  }
+  if (state.error || state.amount == null) {
+    return (
+      <Badge variant="outline" className="text-[10px] border-muted-foreground/40 text-muted-foreground" title={state.error || 'Amount not found'}>
+        Invoice: unknown
+      </Badge>
+    );
+  }
+  if (expected == null) {
+    return (
+      <Badge variant="outline" className="text-[10px]">
+        Invoice: ${state.amount.toFixed(2)} {state.currency}
+      </Badge>
+    );
+  }
+  const diff = Math.abs(state.amount - expected);
+  const match = diff < 0.01;
+  return (
+    <Badge
+      variant="outline"
+      className={`text-[10px] ${match ? 'border-emerald-500 text-emerald-600' : 'border-red-500 text-red-600'}`}
+      title={`Expected $${expected.toFixed(2)} · Payoneer $${state.amount.toFixed(2)} ${state.currency}`}
+    >
+      {match ? `✓ Match $${state.amount.toFixed(2)}` : `✗ Mismatch $${state.amount.toFixed(2)} vs $${expected.toFixed(2)}`}
+    </Badge>
+  );
+};
+
+
 
 
 export const PLDashboard = () => {
@@ -1552,7 +1616,15 @@ export const PLDashboard = () => {
                           );
                         })()}
                       </TableCell>
-                      <TableCell className="text-sm max-w-xs truncate">{renderNotesWithLinks(r.notes)}</TableCell>
+                      <TableCell className="text-sm max-w-xs">
+                        <div className="truncate">{renderNotesWithLinks(r.notes)}</div>
+                        <div className="mt-1">
+                          <PayoneerMatchBadge
+                            notes={r.notes}
+                            expected={r.contractor?.hourly_rate != null ? (Number(r.total_hours) - Number(r.overtime_hours || 0)) * Number(r.contractor.hourly_rate) : null}
+                          />
+                        </div>
+                      </TableCell>
                       <TableCell className="text-xs text-muted-foreground">{format(new Date(r.submitted_at), 'MMM d, h:mm a')}</TableCell>
                     </TableRow>
                   );
@@ -1853,6 +1925,12 @@ export const PLDashboard = () => {
                   <div>
                     <h4 className="font-semibold text-sm mb-1">Submission Notes</h4>
                     <div className="rounded-md border p-3 text-sm whitespace-pre-wrap break-words">{renderNotesWithLinks(r.notes)}</div>
+                    <div className="mt-2">
+                      <PayoneerMatchBadge
+                        notes={r.notes}
+                        expected={r.contractor?.hourly_rate != null ? (Number(r.total_hours) - Number(r.overtime_hours || 0)) * Number(r.contractor.hourly_rate) : null}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
