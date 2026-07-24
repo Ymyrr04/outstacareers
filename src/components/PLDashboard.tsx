@@ -2007,6 +2007,7 @@ export const PLDashboard = () => {
                     <div className="mt-2">
                       <PayoneerMatchBadge
                         notes={r.notes}
+                        timesheetId={r.id}
                         invoice={r.contractor?.hourly_rate != null ? Number(r.total_hours) * Number(r.contractor.hourly_rate) + Number(r.incentive_amount || 0) : null}
                       />
                     </div>
