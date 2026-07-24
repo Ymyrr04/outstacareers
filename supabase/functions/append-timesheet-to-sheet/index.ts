@@ -33,12 +33,17 @@ function computeDeposit(startStr: string | null, hpw: number, weekEndingDate: st
   return { depositHours: Math.min(Number(totalHours), hpw), isDeposit: true, weekIndex };
 }
 
-// Sheet tab name matches PL header, e.g. "Mon Jul 20 – Sun Jul 26, 2026"
+// Sheet tab name matches the PL dashboard week header (Mon–Sun range containing
+// the submission's week_ending_date), e.g. "Mon Jul 20 – Sun Jul 26, 2026"
 function tabNameForWeek(weekEndingDate: string): string {
   const [y, m, d] = weekEndingDate.split('-').map(Number);
-  const sun = new Date(Date.UTC(y, (m || 1) - 1, d || 1));
-  const mon = new Date(sun);
-  mon.setUTCDate(sun.getUTCDate() - 6);
+  const ref = new Date(Date.UTC(y, (m || 1) - 1, d || 1));
+  const dow = ref.getUTCDay(); // 0=Sun..6=Sat
+  const daysFromMon = (dow + 6) % 7; // Mon->0, Sun->6
+  const mon = new Date(ref);
+  mon.setUTCDate(ref.getUTCDate() - daysFromMon);
+  const sun = new Date(mon);
+  sun.setUTCDate(mon.getUTCDate() + 6);
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const monStr = `Mon ${months[mon.getUTCMonth()]} ${mon.getUTCDate()}`;
   const sunStr = `Sun ${months[sun.getUTCMonth()]} ${sun.getUTCDate()}, ${sun.getUTCFullYear()}`;
