@@ -27,7 +27,7 @@ const HEADERS = [
 
 function extractPayoneerLink(text: string | null | undefined): string | null {
   if (!text) return null;
-  const m = text.match(/https?:\/\/(?:link\.)?payoneer\.com\/[^\s"'<>]+/i);
+  const m = text.match(/https?:\/\/(?:link|app)\.payoneer\.com\/[^\s"'<>]+/i);
   return m ? m[0] : null;
 }
 
