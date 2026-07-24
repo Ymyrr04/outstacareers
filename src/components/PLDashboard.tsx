@@ -262,6 +262,7 @@ export const PLDashboard = () => {
   const [weekMonday, setWeekMonday] = useState<Date | null>(() => getLastCompletedMonday());
   const [weekPickerOpen, setWeekPickerOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [hoursFilter, setHoursFilter] = useState<'all' | 'mismatch' | 'over' | 'under'>('all');
   const [clientPortalClientIds, setClientPortalClientIds] = useState<Set<string>>(new Set());
   const [updatingOutstaId, setUpdatingOutstaId] = useState<string | null>(null);
   const [contractorSearch, setContractorSearch] = useState('');
