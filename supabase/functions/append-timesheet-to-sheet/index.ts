@@ -133,7 +133,13 @@ Deno.serve(async (req) => {
     }
 
     // Ensure header row on the week tab
-    const lastCol = String.fromCharCode(64 + HEADERS.length); // A=65
+    // Compute last column letter (supports beyond Z)
+    const colLetter = (n: number) => {
+      let s = '';
+      while (n > 0) { const r = (n - 1) % 26; s = String.fromCharCode(65 + r) + s; n = Math.floor((n - 1) / 26); }
+      return s;
+    };
+    const lastCol = colLetter(HEADERS.length);
     const encodedTab = encodeURIComponent(`'${tabName}'`);
     const headerRes = await fetch(
       `${GATEWAY}/spreadsheets/${SPREADSHEET_ID}/values/${encodedTab}!A1:${lastCol}1`,
@@ -153,6 +159,10 @@ Deno.serve(async (req) => {
       );
     }
 
+    const expectedInvoice = Number((regularHours * hourlyRate).toFixed(2));
+    const invoiceRounded = invoice ? Number(invoice.toFixed(2)) : 0;
+    const match = Math.abs(expectedInvoice - invoiceRounded) < 0.01 ? '✓ Match' : '✗ Mismatch';
+
     const row = [
       contractorName,
       contractorEmail,
@@ -161,7 +171,10 @@ Deno.serve(async (req) => {
       totalHours,
       dep.isDeposit ? dep.depositHours : '',
       overtime,
-      invoice ? Number(invoice.toFixed(2)) : '',
+      invoice ? invoiceRounded : '',
+      hourlyRate || '',
+      expectedInvoice || '',
+      match,
       bonus,
       status,
       ts.notes || '',
