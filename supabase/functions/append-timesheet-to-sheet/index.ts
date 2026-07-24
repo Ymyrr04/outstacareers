@@ -197,6 +197,24 @@ Deno.serve(async (req) => {
     const invoiceRounded = invoice ? Number(invoice.toFixed(2)) : 0;
     const match = Math.abs(expectedInvoice - invoiceRounded) < 0.01 ? '✓ Match' : '✗ Mismatch';
 
+    // Cross-reference Payoneer link amount if present in notes
+    const payoneerLink = extractPayoneerLink(ts.notes);
+    let payoneerAmount: number | null = null;
+    let payoneerCurrency: string | null = null;
+    let payoneerMatch = '';
+    if (payoneerLink) {
+      const p = await fetchPayoneerAmount(payoneerLink);
+      payoneerAmount = p.amount;
+      payoneerCurrency = p.currency;
+      if (p.amount === null) {
+        payoneerMatch = `— (${p.error || 'unavailable'})`;
+      } else {
+        payoneerMatch = Math.abs(p.amount - invoiceRounded) < 0.01 ? '✓ Match' : '✗ Mismatch';
+      }
+    } else {
+      payoneerMatch = '— no link';
+    }
+
     const row = [
       contractorName,
       contractorEmail,
@@ -209,6 +227,9 @@ Deno.serve(async (req) => {
       hourlyRate || '',
       expectedInvoice || '',
       match,
+      payoneerLink || '',
+      payoneerAmount !== null ? `${payoneerAmount.toFixed(2)}${payoneerCurrency ? ' ' + payoneerCurrency : ''}` : '',
+      payoneerMatch,
       bonus,
       status,
       ts.notes || '',
