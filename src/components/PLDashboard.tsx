@@ -1925,6 +1925,12 @@ export const PLDashboard = () => {
                   <div>
                     <h4 className="font-semibold text-sm mb-1">Submission Notes</h4>
                     <div className="rounded-md border p-3 text-sm whitespace-pre-wrap break-words">{renderNotesWithLinks(r.notes)}</div>
+                    <div className="mt-2">
+                      <PayoneerMatchBadge
+                        notes={r.notes}
+                        expected={r.contractor?.hourly_rate != null ? (Number(r.total_hours) - Number(r.overtime_hours || 0)) * Number(r.contractor.hourly_rate) : null}
+                      />
+                    </div>
                   </div>
                 )}
               </div>
