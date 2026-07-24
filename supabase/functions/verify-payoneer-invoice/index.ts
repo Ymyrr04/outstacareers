@@ -82,7 +82,15 @@ async function syncToSheet(timesheetId: string, url: string, amount: number, cur
     for (let i = 0; i < rows.length; i++) {
       if ((rows[i]?.[0] || '').trim() === url.trim()) targetRows.push(i + 1); // 1-indexed
     }
-    if (targetRows.length === 0) return;
+
+    // If no row exists yet for this submission, append a full row via the
+    // append function (which now reads the freshly-cached amount from DB).
+    if (targetRows.length === 0) {
+      await supabase.functions.invoke('append-timesheet-to-sheet', {
+        body: { timesheetId },
+      });
+      return;
+    }
 
     const amountCell = `${amount.toFixed(2)}${currency ? ' ' + currency : ''}`;
     for (const rowNum of targetRows) {
