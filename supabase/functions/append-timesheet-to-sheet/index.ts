@@ -209,18 +209,39 @@ Deno.serve(async (req) => {
     const match = Math.abs(expectedInvoice - invoiceRounded) < 0.01 ? '✓ Match' : '✗ Mismatch';
 
     // Cross-reference Payoneer link amount if present in notes
+    // Only run Firecrawl verification for the CURRENT week's timesheet to save credits.
+    // Current week = Monday–Sunday (EST) containing today.
+    const isCurrentWeek = (() => {
+      const nowEst = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/New_York' }));
+      const day = nowEst.getDay(); // 0=Sun..6=Sat
+      const daysSinceMon = (day + 6) % 7;
+      const monday = new Date(nowEst);
+      monday.setDate(nowEst.getDate() - daysSinceMon);
+      monday.setHours(0, 0, 0, 0);
+      const sunday = new Date(monday);
+      sunday.setDate(monday.getDate() + 6);
+      sunday.setHours(23, 59, 59, 999);
+      const [y, m, d] = ts.week_ending_date.split('-').map(Number);
+      const wk = new Date(y, m - 1, d);
+      return wk >= monday && wk <= sunday;
+    })();
+
     const payoneerLink = extractPayoneerLink(ts.notes);
     let payoneerAmount: number | null = null;
     let payoneerCurrency: string | null = null;
     let payoneerMatch = '';
     if (payoneerLink) {
-      const p = await fetchPayoneerAmount(payoneerLink);
-      payoneerAmount = p.amount;
-      payoneerCurrency = p.currency;
-      if (p.amount === null) {
-        payoneerMatch = `— (${p.error || 'unavailable'})`;
+      if (!isCurrentWeek) {
+        payoneerMatch = '— skipped (prior week)';
       } else {
-        payoneerMatch = Math.abs(p.amount - invoiceRounded) < 0.01 ? '✓ Match' : '✗ Mismatch';
+        const p = await fetchPayoneerAmount(payoneerLink);
+        payoneerAmount = p.amount;
+        payoneerCurrency = p.currency;
+        if (p.amount === null) {
+          payoneerMatch = `— (${p.error || 'unavailable'})`;
+        } else {
+          payoneerMatch = Math.abs(p.amount - invoiceRounded) < 0.01 ? '✓ Match' : '✗ Mismatch';
+        }
       }
     } else {
       payoneerMatch = '— no link';
