@@ -866,7 +866,9 @@ export const PLDashboard = () => {
         const field = scope === 'client' ? (r.client_approval_status || 'pending') : (r.outsta_status || 'pending');
         if (field !== val) return false;
       }
-      if (hoursFilter !== 'all') {
+      if (hoursFilter === 'bonus') {
+        if (Number(r.incentive_amount || 0) <= 0) return false;
+      } else if (hoursFilter !== 'all') {
         const expected = Number(r.contractor?.hours_per_week || 0);
         const total = Number(r.total_hours || 0);
         if (expected <= 0) return false;
