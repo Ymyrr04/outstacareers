@@ -1651,6 +1651,7 @@ export const PLDashboard = () => {
                 <SelectItem value="mismatch">Mismatch (OT or Under)</SelectItem>
                 <SelectItem value="over">Overtime only</SelectItem>
                 <SelectItem value="under">Undertime only</SelectItem>
+                <SelectItem value="bonus">With bonus</SelectItem>
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
