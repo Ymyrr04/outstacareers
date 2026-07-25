@@ -1820,8 +1820,16 @@ export const PLDashboard = () => {
       )}
 
       {activeSubtab === 'submissions' && weekMonday && (() => {
-        const submittedIds = new Set(filtered.map((r) => r.contractor_assignment_id));
+        const weekStart = new Date(weekMonday); weekStart.setHours(0,0,0,0);
         const weekEnd = new Date(weekMonday); weekEnd.setDate(weekEnd.getDate() + 6); weekEnd.setHours(23,59,59,999);
+        const submittedIds = new Set(
+          externalRows
+            .filter((r) => {
+              const we = r.week_ending_date ? new Date(r.week_ending_date + 'T12:00:00').getTime() : 0;
+              return we >= weekStart.getTime() && we <= weekEnd.getTime();
+            })
+            .map((r) => r.contractor_assignment_id)
+        );
         const nonSubmitters = externalContractors
           .filter((c) => ['active', 'rendering'].includes((c.status || '').toLowerCase()))
           .filter((c) => !submittedIds.has(c.id))
