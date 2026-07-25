@@ -304,7 +304,7 @@ export const PLDashboard = () => {
   const [weekMonday, setWeekMonday] = useState<Date | null>(() => getCurrentWeekMonday());
   const [weekPickerOpen, setWeekPickerOpen] = useState(false);
   const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [hoursFilter, setHoursFilter] = useState<'all' | 'mismatch' | 'over' | 'under'>('all');
+  const [hoursFilter, setHoursFilter] = useState<'all' | 'mismatch' | 'over' | 'under' | 'bonus'>('all');
   const [clientPortalClientIds, setClientPortalClientIds] = useState<Set<string>>(new Set());
   const [updatingOutstaId, setUpdatingOutstaId] = useState<string | null>(null);
   const [contractorSearch, setContractorSearch] = useState('');
@@ -866,7 +866,9 @@ export const PLDashboard = () => {
         const field = scope === 'client' ? (r.client_approval_status || 'pending') : (r.outsta_status || 'pending');
         if (field !== val) return false;
       }
-      if (hoursFilter !== 'all') {
+      if (hoursFilter === 'bonus') {
+        if (Number(r.incentive_amount || 0) <= 0) return false;
+      } else if (hoursFilter !== 'all') {
         const expected = Number(r.contractor?.hours_per_week || 0);
         const total = Number(r.total_hours || 0);
         if (expected <= 0) return false;
@@ -1649,6 +1651,7 @@ export const PLDashboard = () => {
                 <SelectItem value="mismatch">Mismatch (OT or Under)</SelectItem>
                 <SelectItem value="over">Overtime only</SelectItem>
                 <SelectItem value="under">Undertime only</SelectItem>
+                <SelectItem value="bonus">With bonus</SelectItem>
               </SelectContent>
             </Select>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
