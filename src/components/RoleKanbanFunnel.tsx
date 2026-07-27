@@ -16,11 +16,12 @@ import {
   ContextMenuSubContent,
 } from '@/components/ui/context-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity, FileSignature, Loader2, Tag as TagIcon, X as XIcon } from 'lucide-react';
+import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity, FileSignature, Loader2, Tag as TagIcon, X as XIcon, Briefcase } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { TagEditorDialog } from '@/components/TagEditorDialog';
+import { SuitableRoleEditorDialog } from '@/components/SuitableRoleEditorDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { priorityGate } from '@/lib/priorityGate';
@@ -93,6 +94,7 @@ interface Candidate {
   is_starred: boolean;
   stage_entered_at: string | null;
   tags: string[];
+  suitable_roles: string[];
 }
 
 interface RoleKanbanFunnelProps {
@@ -241,6 +243,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [tagFilterOpen, setTagFilterOpen] = useState(false);
   const [tagFilterSearch, setTagFilterSearch] = useState('');
+  const [selectedSuitableRoles, setSelectedSuitableRoles] = useState<string[]>([]);
+  const [suitableRoleFilterOpen, setSuitableRoleFilterOpen] = useState(false);
+  const [suitableRoleFilterSearch, setSuitableRoleFilterSearch] = useState('');
 
   // Cache fully-enriched candidate lists keyed by `${role}|${jobFilter}|${admin}`.
   // Persisted to sessionStorage so refreshes within the same tab session
@@ -463,7 +468,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       while (true) {
         let q = supabase
           .from('applicants_prescreen')
-          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags')
+          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags, suitable_roles')
           .in('status', statuses);
         if (rolesToFetch) {
           q = q.in('job_title', rolesToFetch);
@@ -490,7 +495,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
         while (true) {
           const { data } = await supabase
             .from('applicants_prescreen')
-            .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags')
+            .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags, suitable_roles')
             .in('job_title', rolesToFetch)
             .in('status', statuses)
             .order('total_score', { ascending: false, nullsFirst: false })
@@ -504,7 +509,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       } else {
         const { data } = await supabase
           .from('applicants_prescreen')
-          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags')
+          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags, suitable_roles')
           .eq('job_title', role)
           .in('status', statuses)
           .order('total_score', { ascending: false, nullsFirst: false });
@@ -516,6 +521,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       ...a,
       is_starred: a.is_starred ?? false,
       tags: Array.isArray(a.tags) ? a.tags : [],
+      suitable_roles: Array.isArray((a as any).suitable_roles) ? (a as any).suitable_roles : [],
       interview_overall_score: null,
       interview_status: null,
       interview_started_at: null,
@@ -844,8 +850,20 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [candidates]);
 
+  const allSuitableRoles = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of candidates) {
+      if (Array.isArray(c.suitable_roles)) c.suitable_roles.forEach(r => r && set.add(r));
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [candidates]);
+
   const handleTagsUpdated = useCallback((id: string, tags: string[]) => {
     setCandidates(prev => prev.map(c => (c.id === id ? { ...c, tags } : c)));
+  }, []);
+
+  const handleSuitableRolesUpdated = useCallback((id: string, suitable_roles: string[]) => {
+    setCandidates(prev => prev.map(c => (c.id === id ? { ...c, suitable_roles } : c)));
   }, []);
 
   const filteredCandidates = useMemo(() => {
@@ -872,8 +890,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
         Array.isArray(c.tags) && c.tags.some(t => wanted.has(String(t).toLowerCase()))
       );
     }
+
+    if (selectedSuitableRoles.length > 0) {
+      const wanted = new Set(selectedSuitableRoles.map(r => r.toLowerCase()));
+      result = result.filter(c =>
+        Array.isArray(c.suitable_roles) && c.suitable_roles.some(r => wanted.has(String(r).toLowerCase()))
+      );
+    }
     return result;
-  }, [candidates, candidateSearch, selectedAdmin, adminJobTitlesMap, selectedTags]);
+  }, [candidates, candidateSearch, selectedAdmin, adminJobTitlesMap, selectedTags, selectedSuitableRoles]);
 
   const stageGroups = useMemo(() => {
     const groups: Record<string, Candidate[]> = {};
@@ -1120,17 +1145,96 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
               </div>
             </PopoverContent>
           </Popover>
+
+          <Popover open={suitableRoleFilterOpen} onOpenChange={setSuitableRoleFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "h-9 gap-1.5 text-sm",
+                  selectedSuitableRoles.length > 0 && "border-emerald-500 text-emerald-700 dark:text-emerald-400"
+                )}
+              >
+                <Briefcase className="w-3.5 h-3.5" />
+                Suitable Role
+                {selectedSuitableRoles.length > 0 && (
+                  <Badge variant="secondary" className="ml-0.5 h-5 px-1.5 text-[10px]">
+                    {selectedSuitableRoles.length}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-64 p-2">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold">Filter by suitable role</p>
+                {selectedSuitableRoles.length > 0 && (
+                  <button
+                    onClick={() => setSelectedSuitableRoles([])}
+                    className="text-[11px] text-muted-foreground hover:text-foreground"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <Input
+                placeholder="Search suitable roles..."
+                value={suitableRoleFilterSearch}
+                onChange={(e) => setSuitableRoleFilterSearch(e.target.value)}
+                className="h-8 text-xs mb-2"
+              />
+              <div className="max-h-64 overflow-y-auto space-y-0.5">
+                {allSuitableRoles.length === 0 && (
+                  <p className="text-xs text-muted-foreground py-2 text-center">
+                    No suitable roles yet. Right-click a candidate to add one.
+                  </p>
+                )}
+                {allSuitableRoles
+                  .filter(r => r.toLowerCase().includes(suitableRoleFilterSearch.toLowerCase()))
+                  .map(role => {
+                    const checked = selectedSuitableRoles.includes(role);
+                    return (
+                      <label
+                        key={role}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer text-sm"
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(v) => {
+                            setSelectedSuitableRoles(prev =>
+                              v ? [...prev, role] : prev.filter(r => r !== role)
+                            );
+                          }}
+                        />
+                        <span className="flex-1 truncate">{role}</span>
+                      </label>
+                    );
+                  })}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
-      {selectedTags.length > 0 && (
+      {(selectedTags.length > 0 || selectedSuitableRoles.length > 0) && (
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-xs text-muted-foreground">Filtering by:</span>
           {selectedTags.map(tag => (
-            <Badge key={tag} variant="secondary" className="gap-1 pr-1">
+            <Badge key={`t-${tag}`} variant="secondary" className="gap-1 pr-1">
               {tag}
               <button
                 onClick={() => setSelectedTags(prev => prev.filter(t => t !== tag))}
+                className="hover:bg-background/60 rounded-sm p-0.5"
+              >
+                <XIcon className="w-3 h-3" />
+              </button>
+            </Badge>
+          ))}
+          {selectedSuitableRoles.map(role => (
+            <Badge key={`sr-${role}`} variant="secondary" className="gap-1 pr-1 bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300">
+              {role}
+              <button
+                onClick={() => setSelectedSuitableRoles(prev => prev.filter(r => r !== role))}
                 className="hover:bg-background/60 rounded-sm p-0.5"
               >
                 <XIcon className="w-3 h-3" />
@@ -1344,6 +1448,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                             hasPrimaryProfile={primaryProfileIds.has(candidate.id)}
                             knownTags={allTags}
                             onTagsUpdated={handleTagsUpdated}
+                            knownSuitableRoles={allSuitableRoles}
+                            onSuitableRolesUpdated={handleSuitableRolesUpdated}
                           />
                         ))
                       )}
@@ -1448,9 +1554,11 @@ interface CandidateCardProps {
   hasPrimaryProfile?: boolean;
   knownTags: string[];
   onTagsUpdated: (id: string, tags: string[]) => void;
+  knownSuitableRoles: string[];
+  onSuitableRolesUpdated: (id: string, roles: string[]) => void;
 }
 
-const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle, hasAdditionalProfile, hasPrimaryProfile, knownTags, onTagsUpdated }: CandidateCardProps) => {
+const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle, hasAdditionalProfile, hasPrimaryProfile, knownTags, onTagsUpdated, knownSuitableRoles, onSuitableRolesUpdated }: CandidateCardProps) => {
   const { getDisplayName: getStageDisplayName } = useStageSettings();
   const [showDetails, setShowDetails] = useState(false);
   const [showDetailsTab, setShowDetailsTab] = useState<string | undefined>(undefined); // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -1479,6 +1587,9 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
   const [mountTags, setMountTags] = useState(false);
   const [showTags, setShowTags] = useState(false);
   const openTags = useCallback(() => { setMountTags(true); setShowTags(true); }, []);
+  const [mountSuitable, setMountSuitable] = useState(false);
+  const [showSuitable, setShowSuitable] = useState(false);
+  const openSuitable = useCallback(() => { setMountSuitable(true); setShowSuitable(true); }, []);
 
   const openDetails = useCallback(() => { setMountDetails(true); setShowDetails(true); }, []);
   const openSendEmail = useCallback(() => { setMountSendEmail(true); setShowSendEmail(true); }, []);
@@ -1666,11 +1777,20 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
                 })()}
                 <ApplicationHistoryBadge email={candidate.email} currentId={candidate.id} phone={candidate.phone} />
               </div>
-              {candidate.tags && candidate.tags.length > 0 && (
+              {((candidate.tags && candidate.tags.length > 0) || (candidate.suitable_roles && candidate.suitable_roles.length > 0)) && (
                 <div className="pl-3.5 flex items-center gap-1 flex-wrap">
-                  {candidate.tags.map(tag => (
+                  {candidate.suitable_roles?.map(role => (
                     <span
-                      key={tag}
+                      key={`sr-${role}`}
+                      className="inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-900"
+                    >
+                      <Briefcase className="w-2 h-2" />
+                      {role}
+                    </span>
+                  ))}
+                  {candidate.tags?.map(tag => (
+                    <span
+                      key={`t-${tag}`}
                       className="inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20"
                     >
                       <TagIcon className="w-2 h-2" />
@@ -1790,6 +1910,16 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
             {candidate.tags && candidate.tags.length > 0 && (
               <span className="ml-auto text-[10px] text-muted-foreground">
                 {candidate.tags.length}
+              </span>
+            )}
+          </ContextMenuItem>
+
+          <ContextMenuItem onClick={openSuitable}>
+            <Briefcase className="w-4 h-4 mr-2" />
+            Suitable Role
+            {candidate.suitable_roles && candidate.suitable_roles.length > 0 && (
+              <span className="ml-auto text-[10px] text-muted-foreground">
+                {candidate.suitable_roles.length}
               </span>
             )}
           </ContextMenuItem>
@@ -1964,6 +2094,18 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
           initialTags={candidate.tags || []}
           knownTags={knownTags}
           onSaved={(tags) => onTagsUpdated(candidate.id, tags)}
+        />
+      )}
+
+      {mountSuitable && (
+        <SuitableRoleEditorDialog
+          open={showSuitable}
+          onOpenChange={setShowSuitable}
+          applicantId={candidate.id}
+          applicantName={candidate.full_name}
+          initialRoles={candidate.suitable_roles || []}
+          knownRoles={knownSuitableRoles}
+          onSaved={(roles) => onSuitableRolesUpdated(candidate.id, roles)}
         />
       )}
     </>
