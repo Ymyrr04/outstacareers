@@ -460,7 +460,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       while (true) {
         let q = supabase
           .from('applicants_prescreen')
-          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred')
+          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags')
           .in('status', statuses);
         if (rolesToFetch) {
           q = q.in('job_title', rolesToFetch);
@@ -487,7 +487,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
         while (true) {
           const { data } = await supabase
             .from('applicants_prescreen')
-            .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred')
+            .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags')
             .in('job_title', rolesToFetch)
             .in('status', statuses)
             .order('total_score', { ascending: false, nullsFirst: false })
@@ -501,7 +501,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       } else {
         const { data } = await supabase
           .from('applicants_prescreen')
-          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred')
+          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags')
           .eq('job_title', role)
           .in('status', statuses)
           .order('total_score', { ascending: false, nullsFirst: false });
