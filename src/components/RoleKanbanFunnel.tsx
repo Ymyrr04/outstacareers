@@ -246,6 +246,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   const [selectedSuitableRoles, setSelectedSuitableRoles] = useState<string[]>([]);
   const [suitableRoleFilterOpen, setSuitableRoleFilterOpen] = useState(false);
   const [suitableRoleFilterSearch, setSuitableRoleFilterSearch] = useState('');
+  const [profileSearch, setProfileSearch] = useState('');
+  const [appliedProfileSearch, setAppliedProfileSearch] = useState('');
+  const [profileTextMap, setProfileTextMap] = useState<Map<string, string>>(new Map());
 
   // Cache fully-enriched candidate lists keyed by `${role}|${jobFilter}|${admin}`.
   // Persisted to sessionStorage so refreshes within the same tab session
@@ -635,22 +638,34 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     (async () => {
       const foundAdditional = new Set<string>();
       const foundPrimary = new Set<string>();
+      const textMap = new Map<string, string>();
       const chunk = 500;
       for (let i = 0; i < ids.length; i += chunk) {
         const batch = ids.slice(i, i + chunk);
         const [{ data: addData }, { data: primData }] = await Promise.all([
-          supabase.from('candidate_additional_profiles').select('applicant_id').in('applicant_id', batch),
+          supabase.from('candidate_additional_profiles').select('applicant_id, title, content').in('applicant_id', batch),
           supabase.from('applicants_prescreen').select('id, candidate_profile').in('id', batch),
         ]);
-        for (const row of addData || []) foundAdditional.add(row.applicant_id);
+        for (const row of addData || []) {
+          foundAdditional.add(row.applicant_id);
+          const prev = textMap.get(row.applicant_id) || '';
+          const extra = `${(row as any).title || ''}\n${(row as any).content || ''}`;
+          textMap.set(row.applicant_id, prev ? `${prev}\n${extra}` : extra);
+        }
         for (const row of primData || []) {
           const p = (row as { id: string; candidate_profile: string | null }).candidate_profile;
-          if (p && String(p).trim().length > 0) foundPrimary.add((row as { id: string }).id);
+          const id = (row as { id: string }).id;
+          if (p && String(p).trim().length > 0) {
+            foundPrimary.add(id);
+            const prev = textMap.get(id) || '';
+            textMap.set(id, prev ? `${prev}\n${p}` : p);
+          }
         }
       }
       if (!cancelled) {
         setAdditionalProfileIds(foundAdditional);
         setPrimaryProfileIds(foundPrimary);
+        setProfileTextMap(textMap);
       }
     })();
     return () => { cancelled = true; };
