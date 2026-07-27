@@ -246,6 +246,7 @@ export type Database = {
           start_availability: string
           status: string
           submitted_at: string
+          suitable_roles: string[]
           tags: string[]
           total_score: number | null
           us_timezone_ok: boolean
@@ -302,6 +303,7 @@ export type Database = {
           start_availability: string
           status?: string
           submitted_at?: string
+          suitable_roles?: string[]
           tags?: string[]
           total_score?: number | null
           us_timezone_ok: boolean
@@ -358,6 +360,7 @@ export type Database = {
           start_availability?: string
           status?: string
           submitted_at?: string
+          suitable_roles?: string[]
           tags?: string[]
           total_score?: number | null
           us_timezone_ok?: boolean

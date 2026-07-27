@@ -1,0 +1,2 @@
+ALTER TABLE public.applicants_prescreen ADD COLUMN IF NOT EXISTS suitable_roles text[] NOT NULL DEFAULT '{}'::text[];
+CREATE INDEX IF NOT EXISTS idx_applicants_prescreen_suitable_roles ON public.applicants_prescreen USING GIN (suitable_roles);
