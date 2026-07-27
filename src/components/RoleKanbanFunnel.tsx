@@ -1784,6 +1784,16 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
             Activity
           </ContextMenuItem>
 
+          <ContextMenuItem onClick={openTags}>
+            <TagIcon className="w-4 h-4 mr-2" />
+            Tags
+            {candidate.tags && candidate.tags.length > 0 && (
+              <span className="ml-auto text-[10px] text-muted-foreground">
+                {candidate.tags.length}
+              </span>
+            )}
+          </ContextMenuItem>
+
           {candidate.cv_file_url && (
             <ContextMenuItem onClick={openCvPreview}>
               <FileText className="w-4 h-4 mr-2" />
