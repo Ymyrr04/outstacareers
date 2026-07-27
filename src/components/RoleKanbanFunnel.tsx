@@ -1052,8 +1052,93 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
             <option value="all">All Jobs</option>
             <option value="inactive">Inactive Jobs</option>
           </select>
+
+          <Popover open={tagFilterOpen} onOpenChange={setTagFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "h-9 gap-1.5 text-sm",
+                  selectedTags.length > 0 && "border-primary text-primary"
+                )}
+              >
+                <TagIcon className="w-3.5 h-3.5" />
+                Tags
+                {selectedTags.length > 0 && (
+                  <Badge variant="secondary" className="ml-0.5 h-5 px-1.5 text-[10px]">
+                    {selectedTags.length}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-64 p-2">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold">Filter by tag</p>
+                {selectedTags.length > 0 && (
+                  <button
+                    onClick={() => setSelectedTags([])}
+                    className="text-[11px] text-muted-foreground hover:text-foreground"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <Input
+                placeholder="Search tags..."
+                value={tagFilterSearch}
+                onChange={(e) => setTagFilterSearch(e.target.value)}
+                className="h-8 text-xs mb-2"
+              />
+              <div className="max-h-64 overflow-y-auto space-y-0.5">
+                {allTags.length === 0 && (
+                  <p className="text-xs text-muted-foreground py-2 text-center">
+                    No tags yet. Right-click a candidate to add one.
+                  </p>
+                )}
+                {allTags
+                  .filter(t => t.toLowerCase().includes(tagFilterSearch.toLowerCase()))
+                  .map(tag => {
+                    const checked = selectedTags.includes(tag);
+                    return (
+                      <label
+                        key={tag}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer text-sm"
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(v) => {
+                            setSelectedTags(prev =>
+                              v ? [...prev, tag] : prev.filter(t => t !== tag)
+                            );
+                          }}
+                        />
+                        <span className="flex-1 truncate">{tag}</span>
+                      </label>
+                    );
+                  })}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
+
+      {selectedTags.length > 0 && (
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-xs text-muted-foreground">Filtering by:</span>
+          {selectedTags.map(tag => (
+            <Badge key={tag} variant="secondary" className="gap-1 pr-1">
+              {tag}
+              <button
+                onClick={() => setSelectedTags(prev => prev.filter(t => t !== tag))}
+                className="hover:bg-background/60 rounded-sm p-0.5"
+              >
+                <XIcon className="w-3 h-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
