@@ -16,7 +16,11 @@ import {
   ContextMenuSubContent,
 } from '@/components/ui/context-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity, FileSignature, Loader2 } from 'lucide-react';
+import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity, FileSignature, Loader2, Tag as TagIcon, X as XIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { TagEditorDialog } from '@/components/TagEditorDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { priorityGate } from '@/lib/priorityGate';
