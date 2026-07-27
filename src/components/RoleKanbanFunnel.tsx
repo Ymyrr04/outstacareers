@@ -1476,6 +1476,9 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
   const [mountInterviewResults, setMountInterviewResults] = useState(false);
   const [mountProfile, setMountProfile] = useState(false);
   const [mountActivity, setMountActivity] = useState(false);
+  const [mountTags, setMountTags] = useState(false);
+  const [showTags, setShowTags] = useState(false);
+  const openTags = useCallback(() => { setMountTags(true); setShowTags(true); }, []);
 
   const openDetails = useCallback(() => { setMountDetails(true); setShowDetails(true); }, []);
   const openSendEmail = useCallback(() => { setMountSendEmail(true); setShowSendEmail(true); }, []);
