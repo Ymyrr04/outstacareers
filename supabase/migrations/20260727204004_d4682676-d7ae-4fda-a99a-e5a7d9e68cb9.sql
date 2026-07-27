@@ -1,0 +1,2 @@
+ALTER TABLE public.applicants_prescreen ADD COLUMN IF NOT EXISTS tags text[] NOT NULL DEFAULT '{}'::text[];
+CREATE INDEX IF NOT EXISTS applicants_prescreen_tags_gin_idx ON public.applicants_prescreen USING gin (tags);
