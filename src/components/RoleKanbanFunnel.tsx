@@ -21,6 +21,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { TagEditorDialog } from '@/components/TagEditorDialog';
+import { SuitableRoleEditorDialog } from '@/components/SuitableRoleEditorDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { priorityGate } from '@/lib/priorityGate';
@@ -93,6 +94,7 @@ interface Candidate {
   is_starred: boolean;
   stage_entered_at: string | null;
   tags: string[];
+  suitable_roles: string[];
 }
 
 interface RoleKanbanFunnelProps {
@@ -241,6 +243,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [tagFilterOpen, setTagFilterOpen] = useState(false);
   const [tagFilterSearch, setTagFilterSearch] = useState('');
+  const [selectedSuitableRoles, setSelectedSuitableRoles] = useState<string[]>([]);
+  const [suitableRoleFilterOpen, setSuitableRoleFilterOpen] = useState(false);
+  const [suitableRoleFilterSearch, setSuitableRoleFilterSearch] = useState('');
 
   // Cache fully-enriched candidate lists keyed by `${role}|${jobFilter}|${admin}`.
   // Persisted to sessionStorage so refreshes within the same tab session
@@ -463,7 +468,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       while (true) {
         let q = supabase
           .from('applicants_prescreen')
-          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags')
+          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags, suitable_roles')
           .in('status', statuses);
         if (rolesToFetch) {
           q = q.in('job_title', rolesToFetch);
@@ -490,7 +495,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
         while (true) {
           const { data } = await supabase
             .from('applicants_prescreen')
-            .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags')
+            .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags, suitable_roles')
             .in('job_title', rolesToFetch)
             .in('status', statuses)
             .order('total_score', { ascending: false, nullsFirst: false })
@@ -504,7 +509,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       } else {
         const { data } = await supabase
           .from('applicants_prescreen')
-          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags')
+          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags, suitable_roles')
           .eq('job_title', role)
           .in('status', statuses)
           .order('total_score', { ascending: false, nullsFirst: false });
@@ -516,6 +521,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       ...a,
       is_starred: a.is_starred ?? false,
       tags: Array.isArray(a.tags) ? a.tags : [],
+      suitable_roles: Array.isArray((a as any).suitable_roles) ? (a as any).suitable_roles : [],
       interview_overall_score: null,
       interview_status: null,
       interview_started_at: null,
@@ -844,8 +850,20 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     return Array.from(set).sort((a, b) => a.localeCompare(b));
   }, [candidates]);
 
+  const allSuitableRoles = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of candidates) {
+      if (Array.isArray(c.suitable_roles)) c.suitable_roles.forEach(r => r && set.add(r));
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [candidates]);
+
   const handleTagsUpdated = useCallback((id: string, tags: string[]) => {
     setCandidates(prev => prev.map(c => (c.id === id ? { ...c, tags } : c)));
+  }, []);
+
+  const handleSuitableRolesUpdated = useCallback((id: string, suitable_roles: string[]) => {
+    setCandidates(prev => prev.map(c => (c.id === id ? { ...c, suitable_roles } : c)));
   }, []);
 
   const filteredCandidates = useMemo(() => {
@@ -872,8 +890,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
         Array.isArray(c.tags) && c.tags.some(t => wanted.has(String(t).toLowerCase()))
       );
     }
+
+    if (selectedSuitableRoles.length > 0) {
+      const wanted = new Set(selectedSuitableRoles.map(r => r.toLowerCase()));
+      result = result.filter(c =>
+        Array.isArray(c.suitable_roles) && c.suitable_roles.some(r => wanted.has(String(r).toLowerCase()))
+      );
+    }
     return result;
-  }, [candidates, candidateSearch, selectedAdmin, adminJobTitlesMap, selectedTags]);
+  }, [candidates, candidateSearch, selectedAdmin, adminJobTitlesMap, selectedTags, selectedSuitableRoles]);
 
   const stageGroups = useMemo(() => {
     const groups: Record<string, Candidate[]> = {};
