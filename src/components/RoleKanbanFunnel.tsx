@@ -16,7 +16,11 @@ import {
   ContextMenuSubContent,
 } from '@/components/ui/context-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity, FileSignature, Loader2 } from 'lucide-react';
+import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity, FileSignature, Loader2, Tag as TagIcon, X as XIcon } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Button } from '@/components/ui/button';
+import { TagEditorDialog } from '@/components/TagEditorDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { priorityGate } from '@/lib/priorityGate';
@@ -88,6 +92,7 @@ interface Candidate {
   cv_file_url: string | null;
   is_starred: boolean;
   stage_entered_at: string | null;
+  tags: string[];
 }
 
 interface RoleKanbanFunnelProps {
@@ -233,6 +238,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   });
   const [adminList, setAdminList] = useState<{ id: string; name: string }[]>([]);
   const [adminJobTitlesMap, setAdminJobTitlesMap] = useState<Record<string, string[]>>({});
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tagFilterOpen, setTagFilterOpen] = useState(false);
+  const [tagFilterSearch, setTagFilterSearch] = useState('');
 
   // Cache fully-enriched candidate lists keyed by `${role}|${jobFilter}|${admin}`.
   // Persisted to sessionStorage so refreshes within the same tab session
@@ -455,7 +463,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       while (true) {
         let q = supabase
           .from('applicants_prescreen')
-          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred')
+          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags')
           .in('status', statuses);
         if (rolesToFetch) {
           q = q.in('job_title', rolesToFetch);
@@ -482,7 +490,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
         while (true) {
           const { data } = await supabase
             .from('applicants_prescreen')
-            .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred')
+            .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags')
             .in('job_title', rolesToFetch)
             .in('status', statuses)
             .order('total_score', { ascending: false, nullsFirst: false })
@@ -496,7 +504,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       } else {
         const { data } = await supabase
           .from('applicants_prescreen')
-          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred')
+          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags')
           .eq('job_title', role)
           .in('status', statuses)
           .order('total_score', { ascending: false, nullsFirst: false });
@@ -507,6 +515,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     const mapToCandidate = (rows: any[]) => rows.map(a => ({
       ...a,
       is_starred: a.is_starred ?? false,
+      tags: Array.isArray(a.tags) ? a.tags : [],
       interview_overall_score: null,
       interview_status: null,
       interview_started_at: null,
@@ -827,6 +836,18 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     toast.success(`Deleted ${candidate.full_name}`);
   }, []);
 
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of candidates) {
+      if (Array.isArray(c.tags)) c.tags.forEach(t => t && set.add(t));
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [candidates]);
+
+  const handleTagsUpdated = useCallback((id: string, tags: string[]) => {
+    setCandidates(prev => prev.map(c => (c.id === id ? { ...c, tags } : c)));
+  }, []);
+
   const filteredCandidates = useMemo(() => {
     let result = candidates;
 
@@ -844,8 +865,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
         (c.location && c.location.toLowerCase().includes(term))
       );
     }
+
+    if (selectedTags.length > 0) {
+      const wanted = new Set(selectedTags.map(t => t.toLowerCase()));
+      result = result.filter(c =>
+        Array.isArray(c.tags) && c.tags.some(t => wanted.has(String(t).toLowerCase()))
+      );
+    }
     return result;
-  }, [candidates, candidateSearch, selectedAdmin, adminJobTitlesMap]);
+  }, [candidates, candidateSearch, selectedAdmin, adminJobTitlesMap, selectedTags]);
 
   const stageGroups = useMemo(() => {
     const groups: Record<string, Candidate[]> = {};
@@ -1024,8 +1052,93 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
             <option value="all">All Jobs</option>
             <option value="inactive">Inactive Jobs</option>
           </select>
+
+          <Popover open={tagFilterOpen} onOpenChange={setTagFilterOpen}>
+            <PopoverTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                className={cn(
+                  "h-9 gap-1.5 text-sm",
+                  selectedTags.length > 0 && "border-primary text-primary"
+                )}
+              >
+                <TagIcon className="w-3.5 h-3.5" />
+                Tags
+                {selectedTags.length > 0 && (
+                  <Badge variant="secondary" className="ml-0.5 h-5 px-1.5 text-[10px]">
+                    {selectedTags.length}
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-64 p-2">
+              <div className="flex items-center justify-between mb-2">
+                <p className="text-xs font-semibold">Filter by tag</p>
+                {selectedTags.length > 0 && (
+                  <button
+                    onClick={() => setSelectedTags([])}
+                    className="text-[11px] text-muted-foreground hover:text-foreground"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
+              <Input
+                placeholder="Search tags..."
+                value={tagFilterSearch}
+                onChange={(e) => setTagFilterSearch(e.target.value)}
+                className="h-8 text-xs mb-2"
+              />
+              <div className="max-h-64 overflow-y-auto space-y-0.5">
+                {allTags.length === 0 && (
+                  <p className="text-xs text-muted-foreground py-2 text-center">
+                    No tags yet. Right-click a candidate to add one.
+                  </p>
+                )}
+                {allTags
+                  .filter(t => t.toLowerCase().includes(tagFilterSearch.toLowerCase()))
+                  .map(tag => {
+                    const checked = selectedTags.includes(tag);
+                    return (
+                      <label
+                        key={tag}
+                        className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer text-sm"
+                      >
+                        <Checkbox
+                          checked={checked}
+                          onCheckedChange={(v) => {
+                            setSelectedTags(prev =>
+                              v ? [...prev, tag] : prev.filter(t => t !== tag)
+                            );
+                          }}
+                        />
+                        <span className="flex-1 truncate">{tag}</span>
+                      </label>
+                    );
+                  })}
+              </div>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
+
+      {selectedTags.length > 0 && (
+        <div className="flex items-center gap-1.5 flex-wrap">
+          <span className="text-xs text-muted-foreground">Filtering by:</span>
+          {selectedTags.map(tag => (
+            <Badge key={tag} variant="secondary" className="gap-1 pr-1">
+              {tag}
+              <button
+                onClick={() => setSelectedTags(prev => prev.filter(t => t !== tag))}
+                className="hover:bg-background/60 rounded-sm p-0.5"
+              >
+                <XIcon className="w-3 h-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
 
       {loading ? (
         <div className="flex items-center justify-center py-12">
@@ -1229,6 +1342,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                             onSelectToggle={() => toggleCardSelection(candidate)}
                             hasAdditionalProfile={additionalProfileIds.has(candidate.id)}
                             hasPrimaryProfile={primaryProfileIds.has(candidate.id)}
+                            knownTags={allTags}
+                            onTagsUpdated={handleTagsUpdated}
                           />
                         ))
                       )}
@@ -1331,9 +1446,11 @@ interface CandidateCardProps {
   onSelectToggle?: () => void;
   hasAdditionalProfile?: boolean;
   hasPrimaryProfile?: boolean;
+  knownTags: string[];
+  onTagsUpdated: (id: string, tags: string[]) => void;
 }
 
-const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle, hasAdditionalProfile, hasPrimaryProfile }: CandidateCardProps) => {
+const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle, hasAdditionalProfile, hasPrimaryProfile, knownTags, onTagsUpdated }: CandidateCardProps) => {
   const { getDisplayName: getStageDisplayName } = useStageSettings();
   const [showDetails, setShowDetails] = useState(false);
   const [showDetailsTab, setShowDetailsTab] = useState<string | undefined>(undefined); // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -1359,6 +1476,9 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
   const [mountInterviewResults, setMountInterviewResults] = useState(false);
   const [mountProfile, setMountProfile] = useState(false);
   const [mountActivity, setMountActivity] = useState(false);
+  const [mountTags, setMountTags] = useState(false);
+  const [showTags, setShowTags] = useState(false);
+  const openTags = useCallback(() => { setMountTags(true); setShowTags(true); }, []);
 
   const openDetails = useCallback(() => { setMountDetails(true); setShowDetails(true); }, []);
   const openSendEmail = useCallback(() => { setMountSendEmail(true); setShowSendEmail(true); }, []);
@@ -1546,6 +1666,19 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
                 })()}
                 <ApplicationHistoryBadge email={candidate.email} currentId={candidate.id} phone={candidate.phone} />
               </div>
+              {candidate.tags && candidate.tags.length > 0 && (
+                <div className="pl-3.5 flex items-center gap-1 flex-wrap">
+                  {candidate.tags.map(tag => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20"
+                    >
+                      <TagIcon className="w-2 h-2" />
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {showRoleLabel && (
@@ -1649,6 +1782,16 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
           <ContextMenuItem onClick={openActivity}>
             <Activity className="w-4 h-4 mr-2" />
             Activity
+          </ContextMenuItem>
+
+          <ContextMenuItem onClick={openTags}>
+            <TagIcon className="w-4 h-4 mr-2" />
+            Tags
+            {candidate.tags && candidate.tags.length > 0 && (
+              <span className="ml-auto text-[10px] text-muted-foreground">
+                {candidate.tags.length}
+              </span>
+            )}
           </ContextMenuItem>
 
           {candidate.cv_file_url && (
@@ -1810,6 +1953,18 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
             )}
           </DialogContent>
         </Dialog>
+      )}
+
+      {mountTags && (
+        <TagEditorDialog
+          open={showTags}
+          onOpenChange={setShowTags}
+          applicantId={candidate.id}
+          applicantName={candidate.full_name}
+          initialTags={candidate.tags || []}
+          knownTags={knownTags}
+          onSaved={(tags) => onTagsUpdated(candidate.id, tags)}
+        />
       )}
     </>
   );
