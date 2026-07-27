@@ -912,8 +912,24 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
         Array.isArray(c.suitable_roles) && c.suitable_roles.some(r => wanted.has(String(r).toLowerCase()))
       );
     }
+
+    if (appliedProfileSearch.trim()) {
+      // Split on comma or whitespace so users can search multiple terms (AND match).
+      const terms = appliedProfileSearch
+        .toLowerCase()
+        .split(/[,\s]+/)
+        .map(t => t.trim())
+        .filter(Boolean);
+      if (terms.length > 0) {
+        result = result.filter(c => {
+          const text = (profileTextMap.get(c.id) || '').toLowerCase();
+          if (!text) return false;
+          return terms.every(t => text.includes(t));
+        });
+      }
+    }
     return result;
-  }, [candidates, candidateSearch, selectedAdmin, adminJobTitlesMap, selectedTags, selectedSuitableRoles]);
+  }, [candidates, candidateSearch, selectedAdmin, adminJobTitlesMap, selectedTags, selectedSuitableRoles, appliedProfileSearch, profileTextMap]);
 
   const stageGroups = useMemo(() => {
     const groups: Record<string, Candidate[]> = {};
@@ -1070,6 +1086,41 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
               }}
               className="pl-8 h-9 w-[260px] text-sm border-blue-400 focus:border-blue-500 focus:ring-blue-500"
             />
+          </div>
+
+          <div className="relative">
+            <Briefcase className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-600" />
+            <Input
+              placeholder="Skills / Tools / Proficiency..."
+              value={profileSearch}
+              onChange={(e) => setProfileSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  setAppliedProfileSearch(profileSearch);
+                }
+              }}
+              onBlur={() => setAppliedProfileSearch(profileSearch)}
+              className={cn(
+                "pl-8 h-9 w-[240px] text-sm border-emerald-400 focus:border-emerald-500 focus:ring-emerald-500",
+                appliedProfileSearch !== profileSearch && profileSearch.trim() && "pr-16"
+              )}
+              title="Scans candidate profile text. Press Enter. Space or comma separated = AND match."
+            />
+            {appliedProfileSearch !== profileSearch && profileSearch.trim() && (
+              <span className="absolute right-8 top-1/2 -translate-y-1/2 text-[9px] text-muted-foreground bg-muted px-1 py-0.5 rounded pointer-events-none">
+                Enter
+              </span>
+            )}
+            {(profileSearch || appliedProfileSearch) && (
+              <button
+                onClick={() => { setProfileSearch(''); setAppliedProfileSearch(''); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Clear profile search"
+              >
+                <XIcon className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           <select
@@ -1231,7 +1282,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
         </div>
       </div>
 
-      {(selectedTags.length > 0 || selectedSuitableRoles.length > 0) && (
+      {(selectedTags.length > 0 || selectedSuitableRoles.length > 0 || appliedProfileSearch.trim()) && (
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-xs text-muted-foreground">Filtering by:</span>
           {selectedTags.map(tag => (
