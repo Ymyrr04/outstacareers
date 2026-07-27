@@ -92,6 +92,7 @@ interface Candidate {
   cv_file_url: string | null;
   is_starred: boolean;
   stage_entered_at: string | null;
+  tags: string[];
 }
 
 interface RoleKanbanFunnelProps {
