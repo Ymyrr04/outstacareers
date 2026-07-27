@@ -1666,6 +1666,19 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
                 })()}
                 <ApplicationHistoryBadge email={candidate.email} currentId={candidate.id} phone={candidate.phone} />
               </div>
+              {candidate.tags && candidate.tags.length > 0 && (
+                <div className="pl-3.5 flex items-center gap-1 flex-wrap">
+                  {candidate.tags.map(tag => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary border border-primary/20"
+                    >
+                      <TagIcon className="w-2 h-2" />
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
             </div>
 
             {showRoleLabel && (
