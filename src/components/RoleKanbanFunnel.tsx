@@ -246,6 +246,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   const [selectedSuitableRoles, setSelectedSuitableRoles] = useState<string[]>([]);
   const [suitableRoleFilterOpen, setSuitableRoleFilterOpen] = useState(false);
   const [suitableRoleFilterSearch, setSuitableRoleFilterSearch] = useState('');
+  const [profileSearch, setProfileSearch] = useState('');
+  const [appliedProfileSearch, setAppliedProfileSearch] = useState('');
+  const [profileTextMap, setProfileTextMap] = useState<Map<string, string>>(new Map());
 
   // Cache fully-enriched candidate lists keyed by `${role}|${jobFilter}|${admin}`.
   // Persisted to sessionStorage so refreshes within the same tab session
@@ -635,22 +638,34 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     (async () => {
       const foundAdditional = new Set<string>();
       const foundPrimary = new Set<string>();
+      const textMap = new Map<string, string>();
       const chunk = 500;
       for (let i = 0; i < ids.length; i += chunk) {
         const batch = ids.slice(i, i + chunk);
         const [{ data: addData }, { data: primData }] = await Promise.all([
-          supabase.from('candidate_additional_profiles').select('applicant_id').in('applicant_id', batch),
+          supabase.from('candidate_additional_profiles').select('applicant_id, title, content').in('applicant_id', batch),
           supabase.from('applicants_prescreen').select('id, candidate_profile').in('id', batch),
         ]);
-        for (const row of addData || []) foundAdditional.add(row.applicant_id);
+        for (const row of addData || []) {
+          foundAdditional.add(row.applicant_id);
+          const prev = textMap.get(row.applicant_id) || '';
+          const extra = `${(row as any).title || ''}\n${(row as any).content || ''}`;
+          textMap.set(row.applicant_id, prev ? `${prev}\n${extra}` : extra);
+        }
         for (const row of primData || []) {
           const p = (row as { id: string; candidate_profile: string | null }).candidate_profile;
-          if (p && String(p).trim().length > 0) foundPrimary.add((row as { id: string }).id);
+          const id = (row as { id: string }).id;
+          if (p && String(p).trim().length > 0) {
+            foundPrimary.add(id);
+            const prev = textMap.get(id) || '';
+            textMap.set(id, prev ? `${prev}\n${p}` : p);
+          }
         }
       }
       if (!cancelled) {
         setAdditionalProfileIds(foundAdditional);
         setPrimaryProfileIds(foundPrimary);
+        setProfileTextMap(textMap);
       }
     })();
     return () => { cancelled = true; };
@@ -897,8 +912,24 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
         Array.isArray(c.suitable_roles) && c.suitable_roles.some(r => wanted.has(String(r).toLowerCase()))
       );
     }
+
+    if (appliedProfileSearch.trim()) {
+      // Split on comma or whitespace so users can search multiple terms (AND match).
+      const terms = appliedProfileSearch
+        .toLowerCase()
+        .split(/[,\s]+/)
+        .map(t => t.trim())
+        .filter(Boolean);
+      if (terms.length > 0) {
+        result = result.filter(c => {
+          const text = (profileTextMap.get(c.id) || '').toLowerCase();
+          if (!text) return false;
+          return terms.every(t => text.includes(t));
+        });
+      }
+    }
     return result;
-  }, [candidates, candidateSearch, selectedAdmin, adminJobTitlesMap, selectedTags, selectedSuitableRoles]);
+  }, [candidates, candidateSearch, selectedAdmin, adminJobTitlesMap, selectedTags, selectedSuitableRoles, appliedProfileSearch, profileTextMap]);
 
   const stageGroups = useMemo(() => {
     const groups: Record<string, Candidate[]> = {};
@@ -1055,6 +1086,41 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
               }}
               className="pl-8 h-9 w-[260px] text-sm border-blue-400 focus:border-blue-500 focus:ring-blue-500"
             />
+          </div>
+
+          <div className="relative">
+            <Briefcase className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-emerald-600" />
+            <Input
+              placeholder="Skills / Tools / Proficiency..."
+              value={profileSearch}
+              onChange={(e) => setProfileSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  setAppliedProfileSearch(profileSearch);
+                }
+              }}
+              onBlur={() => setAppliedProfileSearch(profileSearch)}
+              className={cn(
+                "pl-8 h-9 w-[240px] text-sm border-emerald-400 focus:border-emerald-500 focus:ring-emerald-500",
+                appliedProfileSearch !== profileSearch && profileSearch.trim() && "pr-16"
+              )}
+              title="Scans candidate profile text. Press Enter. Space or comma separated = AND match."
+            />
+            {appliedProfileSearch !== profileSearch && profileSearch.trim() && (
+              <span className="absolute right-8 top-1/2 -translate-y-1/2 text-[9px] text-muted-foreground bg-muted px-1 py-0.5 rounded pointer-events-none">
+                Enter
+              </span>
+            )}
+            {(profileSearch || appliedProfileSearch) && (
+              <button
+                onClick={() => { setProfileSearch(''); setAppliedProfileSearch(''); }}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                aria-label="Clear profile search"
+              >
+                <XIcon className="w-3.5 h-3.5" />
+              </button>
+            )}
           </div>
 
           <select
@@ -1216,7 +1282,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
         </div>
       </div>
 
-      {(selectedTags.length > 0 || selectedSuitableRoles.length > 0) && (
+      {(selectedTags.length > 0 || selectedSuitableRoles.length > 0 || appliedProfileSearch.trim()) && (
         <div className="flex items-center gap-1.5 flex-wrap">
           <span className="text-xs text-muted-foreground">Filtering by:</span>
           {selectedTags.map(tag => (
