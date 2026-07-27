@@ -1342,6 +1342,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                             onSelectToggle={() => toggleCardSelection(candidate)}
                             hasAdditionalProfile={additionalProfileIds.has(candidate.id)}
                             hasPrimaryProfile={primaryProfileIds.has(candidate.id)}
+                            knownTags={allTags}
+                            onTagsUpdated={handleTagsUpdated}
                           />
                         ))
                       )}
