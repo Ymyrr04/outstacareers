@@ -512,6 +512,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     const mapToCandidate = (rows: any[]) => rows.map(a => ({
       ...a,
       is_starred: a.is_starred ?? false,
+      tags: Array.isArray(a.tags) ? a.tags : [],
       interview_overall_score: null,
       interview_status: null,
       interview_started_at: null,
