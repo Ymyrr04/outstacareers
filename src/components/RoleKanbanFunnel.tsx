@@ -1444,6 +1444,8 @@ interface CandidateCardProps {
   onSelectToggle?: () => void;
   hasAdditionalProfile?: boolean;
   hasPrimaryProfile?: boolean;
+  knownTags: string[];
+  onTagsUpdated: (id: string, tags: string[]) => void;
 }
 
 const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle, hasAdditionalProfile, hasPrimaryProfile }: CandidateCardProps) => {
