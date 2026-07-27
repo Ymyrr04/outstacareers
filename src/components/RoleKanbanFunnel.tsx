@@ -1954,6 +1954,18 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
           </DialogContent>
         </Dialog>
       )}
+
+      {mountTags && (
+        <TagEditorDialog
+          open={showTags}
+          onOpenChange={setShowTags}
+          applicantId={candidate.id}
+          applicantName={candidate.full_name}
+          initialTags={candidate.tags || []}
+          knownTags={knownTags}
+          onSaved={(tags) => onTagsUpdated(candidate.id, tags)}
+        />
+      )}
     </>
   );
 };
