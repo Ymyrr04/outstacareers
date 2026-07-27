@@ -836,6 +836,18 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     toast.success(`Deleted ${candidate.full_name}`);
   }, []);
 
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    for (const c of candidates) {
+      if (Array.isArray(c.tags)) c.tags.forEach(t => t && set.add(t));
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [candidates]);
+
+  const handleTagsUpdated = useCallback((id: string, tags: string[]) => {
+    setCandidates(prev => prev.map(c => (c.id === id ? { ...c, tags } : c)));
+  }, []);
+
   const filteredCandidates = useMemo(() => {
     let result = candidates;
 
@@ -853,8 +865,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
         (c.location && c.location.toLowerCase().includes(term))
       );
     }
+
+    if (selectedTags.length > 0) {
+      const wanted = new Set(selectedTags.map(t => t.toLowerCase()));
+      result = result.filter(c =>
+        Array.isArray(c.tags) && c.tags.some(t => wanted.has(String(t).toLowerCase()))
+      );
+    }
     return result;
-  }, [candidates, candidateSearch, selectedAdmin, adminJobTitlesMap]);
+  }, [candidates, candidateSearch, selectedAdmin, adminJobTitlesMap, selectedTags]);
 
   const stageGroups = useMemo(() => {
     const groups: Record<string, Candidate[]> = {};
