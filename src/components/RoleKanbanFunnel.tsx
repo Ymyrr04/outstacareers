@@ -238,6 +238,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   });
   const [adminList, setAdminList] = useState<{ id: string; name: string }[]>([]);
   const [adminJobTitlesMap, setAdminJobTitlesMap] = useState<Record<string, string[]>>({});
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [tagFilterOpen, setTagFilterOpen] = useState(false);
+  const [tagFilterSearch, setTagFilterSearch] = useState('');
 
   // Cache fully-enriched candidate lists keyed by `${role}|${jobFilter}|${admin}`.
   // Persisted to sessionStorage so refreshes within the same tab session
