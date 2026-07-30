@@ -16,7 +16,8 @@ import {
   ListChecks,
   Loader2,
   PlayCircle,
-  Clipboard
+  Clipboard,
+  Sparkles
 } from 'lucide-react';
 
 interface InterviewQuestion {
@@ -107,12 +108,32 @@ function HighlightedText({ text, pastedContent }: { text: string; pastedContent:
   return <p className="text-sm whitespace-pre-wrap">{result}</p>;
 }
 
+interface WrapUpData {
+  previous_roles?: { role: string; years: number | null; months: number | null }[];
+  total_years_experience?: string;
+  highlight_skills?: string[];
+  industries?: { industry: string; years: number | null; months: number | null }[];
+  tools?: { tool: string; years: number | null; months: number | null }[];
+  other_suitable_roles?: string;
+  salary_expectation?: string;
+  career_goals?: string;
+  additional_details?: string;
+}
+
+const formatDuration = (years: number | null | undefined, months: number | null | undefined) => {
+  const parts: string[] = [];
+  if (years) parts.push(`${years} yr${years === 1 ? '' : 's'}`);
+  if (months) parts.push(`${months} mo${months === 1 ? '' : 's'}`);
+  return parts.join(' ') || '—';
+};
+
 export function InterviewResultsView({ sessionId, session }: InterviewResultsViewProps) {
   const [questions, setQuestions] = useState<InterviewQuestion[]>([]);
   const [answers, setAnswers] = useState<InterviewAnswer[]>([]);
   // signedUrls state removed - URLs are stored directly in database
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('overview');
+  const [wrapUp, setWrapUp] = useState<WrapUpData | null>(null);
 
   useEffect(() => {
     const fetchData = async () => {
