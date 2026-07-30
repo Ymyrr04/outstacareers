@@ -180,8 +180,9 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
       formData.us_timezone_ok !== null &&
       formData.has_experience !== null &&
       formData.currently_working !== null &&
-      formData.employment_status.trim() !== "" &&
-      (formData.employment_status === "No" || formData.last_day_with_employer.trim() !== "") &&
+      (formData.currently_working !== true ||
+        (formData.employment_status.trim() !== "" && formData.last_day_with_employer.trim() !== "")) &&
+
       jobSourceValid
     );
   };
