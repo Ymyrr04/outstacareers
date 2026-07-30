@@ -924,7 +924,7 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
           />
 
           <YesNoQuestion 
-            label="Are you currently working for another client or company?" 
+            label="Are you still currently Employed or Rendering your notice?" 
             field="currently_working" 
             value={formData.currently_working} 
           />
