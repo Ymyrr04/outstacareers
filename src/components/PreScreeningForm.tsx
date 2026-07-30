@@ -1246,7 +1246,7 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }:
             </Button>
             <Button
               onClick={handleCvSubmit}
-              disabled={!cvFile || isScoring || isExtractingText}
+              disabled={(!previewMode && !cvFile) || isScoring || isExtractingText}
               className="flex-1"
             >
               {isScoring ? (
