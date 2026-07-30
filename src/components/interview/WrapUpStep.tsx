@@ -14,18 +14,18 @@ import { Sparkles, ArrowRight, Loader2, Plus, X } from "lucide-react";
 
 export interface RoleEntry {
   role: string;
-  years: number;
-  months: number;
+  years: number | null;
+  months: number | null;
 }
 export interface IndustryEntry {
   industry: string;
-  years: number;
-  months: number;
+  years: number | null;
+  months: number | null;
 }
 export interface ToolEntry {
   tool: string;
-  years: number;
-  months: number;
+  years: number | null;
+  months: number | null;
 }
 
 export interface WrapUpResponses {
@@ -41,30 +41,15 @@ export interface WrapUpResponses {
 }
 
 const EMPTY: WrapUpResponses = {
-  previous_roles: [{ role: "", years: 0, months: 0 }],
+  previous_roles: [{ role: "", years: null, months: null }],
   total_years_experience: "",
   highlight_skills: [""],
-  industries: [{ industry: "", years: 0, months: 0 }],
-  tools: [{ tool: "", years: 0, months: 0 }],
+  industries: [{ industry: "", years: null, months: null }],
+  tools: [{ tool: "", years: null, months: null }],
   other_suitable_roles: "",
   salary_expectation: "",
   career_goals: "",
   additional_details: "",
-};
-
-const SAMPLE: WrapUpResponses = {
-  previous_roles: [
-    { role: "Social Media Manager", years: 2, months: 6 },
-    { role: "Executive Assistant", years: 1, months: 0 },
-  ],
-  total_years_experience: "5",
-  highlight_skills: ["Cold calling", "Invoicing", "Data analysis"],
-  industries: [{ industry: "Legal", years: 1, months: 3 }],
-  tools: [{ tool: "QuickBooks", years: 3, months: 0 }],
-  other_suitable_roles: "Executive Assistant, Customer Support",
-  salary_expectation: "$800 – $1,200/month",
-  career_goals: "Grow into an operations lead role.",
-  additional_details: "Available to start immediately.",
 };
 
 const YEARS = Array.from({ length: 21 }, (_, i) => i);
@@ -82,17 +67,17 @@ function DurationSelects({
   months,
   onChange,
 }: {
-  years: number;
-  months: number;
+  years: number | null;
+  months: number | null;
   onChange: (patch: { years?: number; months?: number }) => void;
 }) {
   return (
     <div className="grid grid-cols-2 gap-2">
       <div className="space-y-1">
         <span className="text-xs text-muted-foreground">Years</span>
-        <Select value={String(years)} onValueChange={(v) => onChange({ years: Number(v) })}>
+        <Select value={years === null ? undefined : String(years)} onValueChange={(v) => onChange({ years: Number(v) })}>
           <SelectTrigger className="bg-background">
-            <SelectValue />
+            <SelectValue placeholder="Years" />
           </SelectTrigger>
           <SelectContent className="bg-popover z-50 max-h-60">
             {YEARS.map((y) => (
@@ -103,9 +88,9 @@ function DurationSelects({
       </div>
       <div className="space-y-1">
         <span className="text-xs text-muted-foreground">Months</span>
-        <Select value={String(months)} onValueChange={(v) => onChange({ months: Number(v) })}>
+        <Select value={months === null ? undefined : String(months)} onValueChange={(v) => onChange({ months: Number(v) })}>
           <SelectTrigger className="bg-background">
-            <SelectValue />
+            <SelectValue placeholder="Months" />
           </SelectTrigger>
           <SelectContent className="bg-popover z-50 max-h-60">
             {MONTHS.map((m) => (
@@ -150,7 +135,7 @@ function RemoveButton({ onClick, disabled }: { onClick: () => void; disabled: bo
 }
 
 export function WrapUpStep({ onSubmit, submitting = false, previewMode = false }: WrapUpStepProps) {
-  const [values, setValues] = useState<WrapUpResponses>(previewMode ? SAMPLE : EMPTY);
+  const [values, setValues] = useState<WrapUpResponses>(EMPTY);
 
   const set = <K extends keyof WrapUpResponses>(key: K, value: WrapUpResponses[K]) =>
     setValues((prev) => ({ ...prev, [key]: value }));
@@ -220,7 +205,7 @@ export function WrapUpStep({ onSubmit, submitting = false, previewMode = false }
           ))}
           <AddButton
             onClick={() =>
-              set("previous_roles", [...values.previous_roles, { role: "", years: 0, months: 0 }])
+              set("previous_roles", [...values.previous_roles, { role: "", years: null, months: null }])
             }
           />
         </div>
@@ -336,7 +321,7 @@ export function WrapUpStep({ onSubmit, submitting = false, previewMode = false }
             </div>
           ))}
           <AddButton
-            onClick={() => set("industries", [...values.industries, { industry: "", years: 0, months: 0 }])}
+            onClick={() => set("industries", [...values.industries, { industry: "", years: null, months: null }])}
           />
         </div>
 
@@ -381,7 +366,7 @@ export function WrapUpStep({ onSubmit, submitting = false, previewMode = false }
             </div>
           ))}
           <AddButton
-            onClick={() => set("tools", [...values.tools, { tool: "", years: 0, months: 0 }])}
+            onClick={() => set("tools", [...values.tools, { tool: "", years: null, months: null }])}
           />
         </div>
 
