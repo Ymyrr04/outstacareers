@@ -33,6 +33,7 @@ interface AssessmentDetails {
   experience_highlights: ExperienceHighlight[];
   strengths: string[];
   concerns: string[];
+  recommended_roles?: { role: string; fit_score: number; reason?: string }[];
 }
 
 interface ScoreResponse {
@@ -112,7 +113,10 @@ You MUST return ONLY valid JSON with NO additional text. The JSON must have this
       {"role": "<job title>", "company": "<company name if available>", "duration": "<time period if available>", "relevance": "<why this is relevant to the role>"}
     ],
     "strengths": ["<key strength 1>", "<key strength 2>"],
-    "concerns": ["<potential concern or gap if any>"]
+    "concerns": ["<potential concern or gap if any>"],
+    "recommended_roles": [
+      {"role": "<other job role this candidate is well suited for>", "fit_score": <number 0-100>, "reason": "<1 sentence why they fit that role>"}
+    ]
   },
   "extracted_skills": ["<skill 1>", "<skill 2>", ...],
   "extracted_tools": ["<tool 1>", "<tool 2>", ...],
@@ -129,7 +133,12 @@ IMPORTANT for extracted metadata:
 - Be thorough - extract ALL skills and tools mentioned, not just job-relevant ones
 - Normalize names (e.g., "MS Excel" -> "Excel", "Google Sheets" -> "Google Workspace")
 - Include language skills as skills
-- Include certifications as skills`;
+- Include certifications as skills
+
+IMPORTANT for recommended_roles:
+- Independently of the job applied for, recommend 3-5 OTHER roles the candidate would be viable for based on their CV (e.g. "Executive Virtual Assistant", "Customer Support Specialist", "Sales Development Rep", "Bookkeeper")
+- Score each role's viability 0-100 based on their actual experience, skills and tools
+- Sort by fit_score descending and do NOT repeat the role they applied for`;
 
     const userPrompt = `Evaluate this candidate's CV for the following job:
 
@@ -245,13 +254,29 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
         missing_tools: [],
         experience_highlights: [],
         strengths: [],
-        concerns: []
+        concerns: [],
+        recommended_roles: []
       },
       // New extracted metadata
       extracted_skills: Array.isArray(scoreResult.extracted_skills) ? scoreResult.extracted_skills : [],
       extracted_tools: Array.isArray(scoreResult.extracted_tools) ? scoreResult.extracted_tools : [],
       years_of_experience: typeof scoreResult.years_of_experience === 'number' ? scoreResult.years_of_experience : null
     };
+
+    // Normalize recommended roles
+    validatedResult.assessment_details.recommended_roles = Array.isArray(
+      (scoreResult.assessment_details as any)?.recommended_roles
+    )
+      ? (scoreResult.assessment_details as any).recommended_roles
+          .map((r: any) => ({
+            role: String(r?.role ?? '').trim(),
+            fit_score: Math.max(0, Math.min(100, Number(r?.fit_score) || 0)),
+            reason: r?.reason ? String(r.reason) : undefined,
+          }))
+          .filter((r: any) => r.role)
+          .sort((a: any, b: any) => b.fit_score - a.fit_score)
+          .slice(0, 5)
+      : [];
 
     // Recalculate total to ensure accuracy (max 100)
     validatedResult.total_score = 

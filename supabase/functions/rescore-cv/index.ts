@@ -322,7 +322,26 @@ You MUST also extract searchable metadata from the CV:
 2. extracted_tools: List ALL software/tools/platforms mentioned
 3. years_of_experience: Estimate total professional experience in years (null if unclear)
 
-You MUST return ONLY valid JSON with NO additional text.`;
+You MUST return ONLY valid JSON with NO additional text, with this structure:
+{
+  "role_experience_score": <0-50>,
+  "skills_tools_score": <0-45>,
+  "availability_setup_score": <0-5>,
+  "summary": "<max 3 sentences>",
+  "assessment_details": {
+    "matched_tools": [{"tool": "<name>", "found": true, "context": "<snippet from CV>"}],
+    "missing_tools": ["<required tool/skill not found>"],
+    "experience_highlights": [{"role": "<title>", "company": "<company>", "duration": "<period>", "relevance": "<why relevant>"}],
+    "strengths": ["<strength>"],
+    "concerns": ["<concern>"],
+    "recommended_roles": [{"role": "<other role they fit>", "fit_score": <0-100>, "reason": "<1 sentence>"}]
+  },
+  "extracted_skills": ["<skill>"],
+  "extracted_tools": ["<tool>"],
+  "years_of_experience": <number or null>
+}
+
+For recommended_roles: independently of the job applied for, recommend 3-5 OTHER roles the candidate is viable for, each scored 0-100 for viability, sorted descending, excluding the role they applied for.`;
 
     const userPrompt = `Evaluate this candidate's CV for the following job:
 
