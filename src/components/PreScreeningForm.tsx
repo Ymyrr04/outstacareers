@@ -374,8 +374,10 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }:
     if (previewMode) {
       toast({
         title: "Preview mode",
-        description: "Nothing was submitted — this is an admin preview of the application flow.",
+        description: "Running the assessment preview — nothing will be saved.",
       });
+      setInterviewSessionId('preview');
+      setCurrentStep('interview');
       return;
     }
 
@@ -1244,7 +1246,7 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }:
             </Button>
             <Button
               onClick={handleCvSubmit}
-              disabled={!cvFile || isScoring || isExtractingText}
+              disabled={(!previewMode && !cvFile) || isScoring || isExtractingText}
               className="flex-1"
             >
               {isScoring ? (
@@ -1289,6 +1291,7 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }:
           applicantName={formData.full_name}
           onComplete={handleInterviewComplete}
           onBack={() => setCurrentStep('cv-upload')}
+          previewMode={previewMode}
         />
       )}
     </>

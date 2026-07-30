@@ -19,6 +19,8 @@ interface InterviewSessionProps {
   applicantName: string;
   onComplete: () => void;
   onBack: () => void;
+  /** Admin preview: runs the full flow without writing anything to the database. */
+  previewMode?: boolean;
 }
 
 interface VoiceQuestion {
@@ -57,7 +59,8 @@ export function InterviewSession({
   cvText,
   applicantName,
   onComplete,
-  onBack
+  onBack,
+  previewMode = false
 }: InterviewSessionProps) {
   const [currentStep, setCurrentStep] = useState<InterviewStep>('loading');
   const [voiceQuestions, setVoiceQuestions] = useState<VoiceQuestion[]>([]);
@@ -93,6 +96,11 @@ export function InterviewSession({
     setError(null);
 
     try {
+      if (previewMode) {
+        await generateQuestions();
+        return;
+      }
+
       // First, check if questions already exist for this session (resume case)
       const { data: existingQuestions, error: fetchError } = await supabase
         .from('interview_questions')
@@ -251,7 +259,7 @@ export function InterviewSession({
         }))
       ];
 
-      if (allQuestionsToInsert.length > 0) {
+      if (!previewMode && allQuestionsToInsert.length > 0) {
         const { data: insertedQuestions, error: insertError } = await supabase
           .from('interview_questions')
           .insert(allQuestionsToInsert)
@@ -307,6 +315,7 @@ export function InterviewSession({
   };
 
   const saveAnswerToDb = async (answer: Answer) => {
+    if (previewMode) return true;
     try {
       const { error: answerError } = await supabase
         .from('interview_answers')
@@ -386,6 +395,11 @@ export function InterviewSession({
   };
 
   const handleWrapUpSubmit = async (responses: WrapUpResponses) => {
+    if (previewMode) {
+      console.log('[preview] wrap-up responses', responses);
+      submitInterview();
+      return;
+    }
     try {
       await supabase
         .from('interview_sessions')
@@ -399,6 +413,11 @@ export function InterviewSession({
 
   const submitInterview = async () => {
     setCurrentStep('submitting');
+
+    if (previewMode) {
+      setTimeout(() => setCurrentStep('complete'), 800);
+      return;
+    }
 
     try {
       console.log(`Submitting interview with ${answers.length} answers (already saved to DB)`);
