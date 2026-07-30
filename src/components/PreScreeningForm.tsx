@@ -23,7 +23,10 @@ interface PreScreeningFormProps {
   };
   onClose: () => void;
   mode?: 'modal' | 'page';
+  /** Admin preview: prefills sample answers and never saves an application. */
+  previewMode?: boolean;
 }
+
 
 const prescreenSchema = z.object({
   full_name: z.string().trim().min(1, "Full name is required").max(100, "Name must be less than 100 characters"),
