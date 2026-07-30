@@ -525,6 +525,11 @@ export function InterviewSession({
     );
   }
 
+  if (currentStep === 'wrapup') {
+    return <WrapUpStep onSubmit={handleWrapUpSubmit} />;
+  }
+
+
   if (currentStep === 'submitting') {
     return (
       <div className="text-center py-12">
