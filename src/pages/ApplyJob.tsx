@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, useSearchParams } from "react-router-dom";
 import { Helmet } from "react-helmet-async";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,8 @@ interface Job {
 const ApplyJob = () => {
   const { jobId } = useParams<{ jobId: string }>();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const previewMode = searchParams.get("preview") === "1";
   const [job, setJob] = useState<Job | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -113,6 +115,7 @@ const ApplyJob = () => {
                 }}
                 onClose={handleComplete}
                 mode="page"
+                previewMode={previewMode}
               />
             </CardContent>
           </Card>
