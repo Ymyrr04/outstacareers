@@ -40,7 +40,7 @@ const prescreenSchema = z.object({
   start_availability: z.string().trim().min(1, "Start availability is required").max(200, "Must be less than 200 characters"),
   has_experience: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
   currently_working: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
-  employment_status: z.string().trim().min(1, "Please select an option"),
+  employment_status: z.string().trim(),
   location: z.string().trim().min(1, "Country is required").max(200, "Must be less than 200 characters"),
   job_source: z.string().trim().min(1, "Please select where you learned about this job"),
 });
@@ -416,8 +416,8 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
           start_availability: formData.start_availability,
           has_experience: formData.has_experience,
           currently_working: formData.currently_working,
-          employment_status: formData.employment_status,
-          last_day_with_employer: formData.employment_status === "No" ? null : formData.last_day_with_employer,
+          employment_status: formData.currently_working === true ? formData.employment_status : "No",
+          last_day_with_employer: formData.currently_working === true ? formData.last_day_with_employer : null,
           location: formData.location,
           job_title: job.title,
           job_id: job.id,
@@ -974,7 +974,7 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
           )}
 
 
-          {(formData.employment_status === "Employed" || formData.employment_status === "Rendering") && (
+          {formData.currently_working === true && (formData.employment_status === "Employed" || formData.employment_status === "Rendering") && (
             <div className="space-y-2">
               <Label htmlFor="last_day_with_employer" className="text-base">
                 When will be your last day with your current employer? *
