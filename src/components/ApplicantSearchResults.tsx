@@ -38,7 +38,7 @@ import {
   ClipboardList,
   Smartphone,
   Monitor,
-  MessageCircle
+  MessageCircle,
   Target,
 } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
