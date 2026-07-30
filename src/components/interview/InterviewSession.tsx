@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { VoiceQuestionStep } from "./VoiceQuestionStep";
 import { TextQuestionStep } from "./TextQuestionStep";
+import { WrapUpStep, type WrapUpResponses } from "./WrapUpStep";
 
 interface InterviewSessionProps {
   sessionId: string;
@@ -44,7 +45,7 @@ interface Answer {
   pasted_content?: string | null;
 }
 
-type InterviewStep = 'loading' | 'voice' | 'text' | 'submitting' | 'complete' | 'no_questions' | 'error';
+type InterviewStep = 'loading' | 'voice' | 'text' | 'wrapup' | 'submitting' | 'complete' | 'no_questions' | 'error';
 
 export function InterviewSession({
   sessionId,
@@ -378,10 +379,22 @@ export function InterviewSession({
         setCurrentStep('text');
         setCurrentQuestionIndex(0);
       } else {
-        // All sections complete
-        submitInterview();
+        // All question sections complete — show final wrap-up questions
+        setCurrentStep('wrapup');
       }
     }
+  };
+
+  const handleWrapUpSubmit = async (responses: WrapUpResponses) => {
+    try {
+      await supabase
+        .from('interview_sessions')
+        .update({ wrapup_responses: responses as any })
+        .eq('id', sessionId);
+    } catch (e) {
+      console.error('Failed to save wrap-up responses', e);
+    }
+    submitInterview();
   };
 
   const submitInterview = async () => {
@@ -389,6 +402,7 @@ export function InterviewSession({
 
     try {
       console.log(`Submitting interview with ${answers.length} answers (already saved to DB)`);
+
 
       const { data, error: assessError } = await supabase.functions.invoke('assess-interview', {
         body: {
@@ -510,6 +524,11 @@ export function InterviewSession({
       </div>
     );
   }
+
+  if (currentStep === 'wrapup') {
+    return <WrapUpStep onSubmit={handleWrapUpSubmit} />;
+  }
+
 
   if (currentStep === 'submitting') {
     return (

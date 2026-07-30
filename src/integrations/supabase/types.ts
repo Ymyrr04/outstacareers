@@ -2486,6 +2486,7 @@ export type Database = {
           status: string
           technical_score: number | null
           updated_at: string
+          wrapup_responses: Json | null
         }
         Insert: {
           admin_notified_at?: string | null
@@ -2509,6 +2510,7 @@ export type Database = {
           status?: string
           technical_score?: number | null
           updated_at?: string
+          wrapup_responses?: Json | null
         }
         Update: {
           admin_notified_at?: string | null
@@ -2532,6 +2534,7 @@ export type Database = {
           status?: string
           technical_score?: number | null
           updated_at?: string
+          wrapup_responses?: Json | null
         }
         Relationships: [
           {
