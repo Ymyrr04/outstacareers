@@ -1298,6 +1298,15 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }:
   if (isPageMode) {
     return (
       <div className="w-full">
+        {previewMode && (
+          <div className="flex items-start gap-2 px-6 py-3 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-900">
+            <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+            <p className="text-sm text-amber-800 dark:text-amber-300">
+              <span className="font-semibold">Admin preview.</span> Sample answers are pre-filled and nothing is saved — no application will be created.
+            </p>
+          </div>
+        )}
+
         <div className="border-b border-border px-6 py-4">
           <h3 className="font-bold text-lg text-foreground">
             {currentStep === 'prescreening' && 'Pre-Screening Questions'}
