@@ -564,6 +564,108 @@ export function InterviewResultsView({ sessionId, session }: InterviewResultsVie
             </div>
           )}
         </TabsContent>
+
+        {/* Final Details Tab */}
+        <TabsContent value="details" className="space-y-4 mt-4">
+          <div className="flex items-center gap-2 mb-2">
+            <Sparkles className="w-5 h-5 text-purple-600" />
+            <h4 className="font-semibold">A Few Final Details</h4>
+          </div>
+
+          {!wrapUp ? (
+            <p className="text-sm text-muted-foreground">The candidate did not submit any final details.</p>
+          ) : (
+            <div className="space-y-4">
+              {(wrapUp.previous_roles?.length ?? 0) > 0 && (
+                <div className="p-3 bg-muted/30 rounded-lg border">
+                  <p className="text-sm font-medium mb-2">Previous Roles</p>
+                  <ul className="space-y-1">
+                    {wrapUp.previous_roles!.map((r, i) => (
+                      <li key={i} className="text-sm flex justify-between gap-3">
+                        <span>{r.role}</span>
+                        <span className="text-muted-foreground text-xs">{formatDuration(r.years, r.months)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {wrapUp.total_years_experience && (
+                <div className="p-3 bg-muted/30 rounded-lg border">
+                  <p className="text-sm font-medium mb-1">Total Years of Relevant Experience</p>
+                  <p className="text-sm text-muted-foreground">{wrapUp.total_years_experience} years</p>
+                </div>
+              )}
+
+              {(wrapUp.highlight_skills?.length ?? 0) > 0 && (
+                <div className="p-3 bg-muted/30 rounded-lg border">
+                  <p className="text-sm font-medium mb-2">Highlighted Skills</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {wrapUp.highlight_skills!.map((s, i) => (
+                      <Badge key={i} variant="secondary">{s}</Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {(wrapUp.industries?.length ?? 0) > 0 && (
+                <div className="p-3 bg-muted/30 rounded-lg border">
+                  <p className="text-sm font-medium mb-2">Industries</p>
+                  <ul className="space-y-1">
+                    {wrapUp.industries!.map((r, i) => (
+                      <li key={i} className="text-sm flex justify-between gap-3">
+                        <span>{r.industry}</span>
+                        <span className="text-muted-foreground text-xs">{formatDuration(r.years, r.months)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {(wrapUp.tools?.length ?? 0) > 0 && (
+                <div className="p-3 bg-muted/30 rounded-lg border">
+                  <p className="text-sm font-medium mb-2">Software / Tools</p>
+                  <ul className="space-y-1">
+                    {wrapUp.tools!.map((r, i) => (
+                      <li key={i} className="text-sm flex justify-between gap-3">
+                        <span>{r.tool}</span>
+                        <span className="text-muted-foreground text-xs">{formatDuration(r.years, r.months)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {wrapUp.other_suitable_roles && (
+                <div className="p-3 bg-muted/30 rounded-lg border">
+                  <p className="text-sm font-medium mb-1">Other Roles They'd Fit</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{wrapUp.other_suitable_roles}</p>
+                </div>
+              )}
+
+              {wrapUp.salary_expectation && (
+                <div className="p-3 bg-muted/30 rounded-lg border">
+                  <p className="text-sm font-medium mb-1">Expected Monthly Salary</p>
+                  <p className="text-sm text-muted-foreground">{wrapUp.salary_expectation}</p>
+                </div>
+              )}
+
+              {wrapUp.career_goals && (
+                <div className="p-3 bg-muted/30 rounded-lg border">
+                  <p className="text-sm font-medium mb-1">Career Goals (Next 2 Years)</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{wrapUp.career_goals}</p>
+                </div>
+              )}
+
+              {wrapUp.additional_details && (
+                <div className="p-3 bg-muted/30 rounded-lg border">
+                  <p className="text-sm font-medium mb-1">Additional Details</p>
+                  <p className="text-sm text-muted-foreground whitespace-pre-wrap">{wrapUp.additional_details}</p>
+                </div>
+              )}
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
     </div>
   );
