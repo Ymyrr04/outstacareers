@@ -207,6 +207,12 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
       return;
     }
 
+    if (formData.employment_status !== "No" && !formData.last_day_with_employer.trim()) {
+      setErrors(prev => ({ ...prev, last_day_with_employer: "Please provide your last day" }));
+      return;
+    }
+
+
     // Move to CV upload step
     setCurrentStep('cv-upload');
   };
