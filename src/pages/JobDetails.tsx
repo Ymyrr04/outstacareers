@@ -109,7 +109,7 @@ const JobDetails = () => {
     if (!job) return;
     
     const productionOrigin = 'https://outstahub.com';
-    const jobUrl = `${productionOrigin}${generateJobUrl(job.title, job.id)}`;
+    const jobUrl = `${productionOrigin}/job/${job.id}`;
     
     try {
       await navigator.clipboard.writeText(jobUrl);
