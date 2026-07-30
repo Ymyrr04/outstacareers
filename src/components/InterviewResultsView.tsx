@@ -262,7 +262,7 @@ export function InterviewResultsView({ sessionId, session }: InterviewResultsVie
       )}
       
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-4" onMouseDown={(e) => e.stopPropagation()}>
+        <TabsList className="grid w-full grid-cols-5" onMouseDown={(e) => e.stopPropagation()}>
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="experience" className="flex items-center gap-1">
             <Mic className="w-3 h-3" />
@@ -275,6 +275,10 @@ export function InterviewResultsView({ sessionId, session }: InterviewResultsVie
           <TabsTrigger value="personality" className="flex items-center gap-1">
             <ListChecks className="w-3 h-3" />
             MCQ
+          </TabsTrigger>
+          <TabsTrigger value="details" className="flex items-center gap-1">
+            <Sparkles className="w-3 h-3" />
+            Details
           </TabsTrigger>
         </TabsList>
 
