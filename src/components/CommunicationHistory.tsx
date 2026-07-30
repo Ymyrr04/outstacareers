@@ -15,7 +15,7 @@ import { sanitizeHtml, sanitizeEmailReply } from '@/lib/sanitize';
 import { 
   Mail, Clock, CheckCircle, XCircle, AlertTriangle, 
   Loader2, Send, Ban, ChevronDown, ChevronUp,
-  Reply, RefreshCw, Inbox, MessageSquare, CornerUpLeft
+  Reply, RefreshCw, Inbox, MessageSquare, CornerUpLeft, Eye
 } from 'lucide-react';
 
 interface CommunicationHistoryProps {
