@@ -1894,6 +1894,23 @@ const Admin = () => {
                             <Link2 className="w-4 h-4 mr-1" />
                             Copy Link
                           </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              const url = `${window.location.origin}/apply/${job.id}?preview=1`;
+                              navigator.clipboard.writeText(url).catch(() => {});
+                              window.open(url, '_blank', 'noopener,noreferrer');
+                              toast({
+                                title: "Test flow opened",
+                                description: `Preview link for "${job.title}" copied to clipboard.`,
+                              });
+                            }}
+                          >
+                            <FlaskConical className="w-4 h-4 mr-1" />
+                            Test Flow
+                          </Button>
+
                           <EditJobDialog job={job} onJobUpdated={fetchJobs} />
                           <Button
                             variant="outline"
