@@ -44,7 +44,7 @@ interface Answer {
   pasted_content?: string | null;
 }
 
-type InterviewStep = 'loading' | 'voice' | 'text' | 'submitting' | 'complete' | 'no_questions' | 'error';
+type InterviewStep = 'loading' | 'voice' | 'text' | 'wrapup' | 'submitting' | 'complete' | 'no_questions' | 'error';
 
 export function InterviewSession({
   sessionId,
