@@ -138,6 +138,8 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
     start_availability: "",
     has_experience: null,
     currently_working: null,
+    employment_status: "",
+    last_day_with_employer: "",
     location: "",
     honeypot_field: "",
     job_source: "",
