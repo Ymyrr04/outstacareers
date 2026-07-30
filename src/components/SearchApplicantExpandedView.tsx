@@ -222,6 +222,25 @@ export const SearchApplicantExpandedView = ({
                       </div>
                     )}
                   </div>
+
+                  {applicant.ai_assessment_details.recommended_roles?.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                        <Target className="w-4 h-4 text-purple-600" /> Other Roles They May Fit
+                      </p>
+                      <div className="space-y-2">
+                        {applicant.ai_assessment_details.recommended_roles.map((r, idx) => (
+                          <div key={idx} className="p-2 bg-purple-50 dark:bg-purple-950/30 rounded text-sm">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="font-medium text-purple-700 dark:text-purple-400">{r.role}</span>
+                              <Badge variant="outline" className="text-xs">{r.fit_score}/100 fit</Badge>
+                            </div>
+                            {r.reason && <p className="text-xs text-muted-foreground mt-1">{r.reason}</p>}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               )}
             </div>
