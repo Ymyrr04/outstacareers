@@ -40,6 +40,7 @@ const prescreenSchema = z.object({
   start_availability: z.string().trim().min(1, "Start availability is required").max(200, "Must be less than 200 characters"),
   has_experience: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
   currently_working: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
+  employment_status: z.string().trim().min(1, "Please select an option"),
   location: z.string().trim().min(1, "Country is required").max(200, "Must be less than 200 characters"),
   job_source: z.string().trim().min(1, "Please select where you learned about this job"),
 });
