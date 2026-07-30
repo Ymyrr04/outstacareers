@@ -1,13 +1,22 @@
-import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
+import { createClient } from "npm:@supabase/supabase-js@2.39.3";
+import nodemailer from "npm:nodemailer@6.9.14";
+
+// Strip non-ASCII (en dashes, smart quotes) so subjects don't get mangled
+function asciiSubject(s: string): string {
+  return String(s)
+    .replace(/[\u2013\u2014]/g, "-")
+    .replace(/[\u2018\u2019]/g, "'")
+    .replace(/[\u201C\u201D]/g, '"')
+    .replace(/[^\x20-\x7E]/g, "")
+    .trim();
+}
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-serve(async (req: Request) => {
+Deno.serve(async (req: Request) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -98,16 +107,11 @@ serve(async (req: Request) => {
       );
     }
 
-    const client = new SMTPClient({
-      connection: {
-        hostname: "smtp.gmail.com",
-        port: 465,
-        tls: true,
-        auth: {
-          username: gmailUser,
-          password: gmailAppPassword,
-        },
-      },
+    const client = nodemailer.createTransport({
+      host: "smtp.gmail.com",
+      port: 465,
+      secure: true,
+      auth: { user: gmailUser, pass: gmailAppPassword },
     });
 
     let processed = 0;
@@ -122,11 +126,11 @@ serve(async (req: Request) => {
 
       const emailHtml = `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;"><p>Hi ${firstName},</p><p>We've completed an initial review of your CV, and based on that assessment, your background appears to be a good fit for the <strong>${applicant.job_title}</strong> role.</p><p>However, it appears that the interview assessment was not completed. This assessment is an important part of evaluating your skills and experience, and an incomplete submission will significantly impact your overall score and eligibility to move forward to the final interview.</p><p>Your progress has been saved. Please resume and complete the assessment using the link below if you wish to continue being considered for the role.</p><p style="margin: 24px 0; text-align: center;"><a href="${resumeLink}" style="background-color: #f59e0b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">Resume My Interview</a></p><p><strong>Important:</strong> Please complete the assessment within 2 hours to avoid further impact on your application.</p><p>If you experience any technical issues, notify us immediately.</p><p>Best regards,<br>The OutSta Recruitment Team</p></div>`;
 
-      const subject = `Reminder: Complete Your Interview - ${applicant.job_title}`;
+      const subject = asciiSubject(`Reminder: Complete Your Interview - ${applicant.job_title}`);
 
       try {
-        await client.send({
-             from: `OutSta Recruitment <${gmailUser}>`,
+        await client.sendMail({
+          from: `OutSta Recruitment <${gmailUser}>`,
           to: applicant.email,
           subject,
           html: emailHtml,
@@ -167,10 +171,10 @@ serve(async (req: Request) => {
 
       const emailHtml = `<div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;"><p>Hi ${firstName},</p><p>This is a final reminder that your interview assessment for the <strong>${applicant.job_title}</strong> position remains incomplete.</p><p>We understand that unexpected circumstances can arise, but unfortunately, we cannot move forward with incomplete applications. If we don't receive your completed assessment soon, your application will be marked as withdrawn.</p><p>Your progress is still saved. Click below to resume where you left off:</p><p style="margin: 24px 0; text-align: center;"><a href="${resumeLink}" style="background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block; font-weight: bold;">Complete My Interview Now</a></p><p>If you're experiencing technical difficulties or need assistance, please reply to this email immediately.</p><p>We hope to see your completed application.</p><p>Best regards,<br>The OutSta Recruitment Team</p></div>`;
 
-      const subject = `Final Reminder: Your Interview Assessment Is Still Incomplete - ${applicant.job_title}`;
+      const subject = asciiSubject(`Final Reminder: Your Interview Assessment Is Still Incomplete - ${applicant.job_title}`);
 
       try {
-        await client.send({
+        await client.sendMail({
           from: `OutSta Recruitment <${gmailUser}>`,
           to: applicant.email,
           subject,
@@ -204,7 +208,6 @@ serve(async (req: Request) => {
       }
     }
 
-    await client.close();
 
     console.log(`Reminder processing complete. Sent: ${processed}, Failed: ${failed}`);
 
