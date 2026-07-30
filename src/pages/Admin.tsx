@@ -132,12 +132,19 @@ interface ExperienceHighlight {
   relevance: string;
 }
 
+interface RecommendedRole {
+  role: string;
+  fit_score: number;
+  reason?: string;
+}
+
 interface AssessmentDetails {
   matched_tools: ToolMatch[];
   missing_tools: string[];
   experience_highlights: ExperienceHighlight[];
   strengths: string[];
   concerns: string[];
+  recommended_roles?: RecommendedRole[];
 }
 
 interface InterviewSession {
