@@ -251,6 +251,7 @@ export type Database = {
           suitable_roles: string[]
           tags: string[]
           total_score: number | null
+          upcoming_plans: string | null
           us_timezone_ok: boolean
           vocaroo_link: string | null
           voice_recording_url: string | null
@@ -310,6 +311,7 @@ export type Database = {
           suitable_roles?: string[]
           tags?: string[]
           total_score?: number | null
+          upcoming_plans?: string | null
           us_timezone_ok: boolean
           vocaroo_link?: string | null
           voice_recording_url?: string | null
@@ -369,6 +371,7 @@ export type Database = {
           suitable_roles?: string[]
           tags?: string[]
           total_score?: number | null
+          upcoming_plans?: string | null
           us_timezone_ok?: boolean
           vocaroo_link?: string | null
           voice_recording_url?: string | null
