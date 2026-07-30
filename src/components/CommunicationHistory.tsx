@@ -15,7 +15,7 @@ import { sanitizeHtml, sanitizeEmailReply } from '@/lib/sanitize';
 import { 
   Mail, Clock, CheckCircle, XCircle, AlertTriangle, 
   Loader2, Send, Ban, ChevronDown, ChevronUp,
-  Reply, RefreshCw, Inbox, MessageSquare, CornerUpLeft
+  Reply, RefreshCw, Inbox, MessageSquare, CornerUpLeft, Eye
 } from 'lucide-react';
 
 interface CommunicationHistoryProps {
@@ -151,6 +151,7 @@ export function CommunicationHistory({
   const [showRepliesOnly, setShowRepliesOnly] = useState<Set<string>>(new Set());
   const [cancelingId, setCancelingId] = useState<string | null>(null);
   const [sendingNowId, setSendingNowId] = useState<string | null>(null);
+  const [previewEmail, setPreviewEmail] = useState<{ subject: string; recipient_email: string; body_html: string; scheduled_for: string } | null>(null);
   
   // Reply compose state
   const [showReplyComposer, setShowReplyComposer] = useState(false);
@@ -542,6 +543,14 @@ export function CommunicationHistory({
                           </p>
                         </div>
                         <div className="flex flex-col gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setPreviewEmail(email as any)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Preview
+                          </Button>
                           <Button
                             variant="outline"
                             size="sm"
@@ -971,6 +980,31 @@ export function CommunicationHistory({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Scheduled Email Preview */}
+      <Dialog open={!!previewEmail} onOpenChange={(o) => !o && setPreviewEmail(null)}>
+        <DialogContent className="max-w-3xl w-[95vw] max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              {previewEmail?.subject}
+            </DialogTitle>
+            <DialogDescription>
+              To: {previewEmail?.recipient_email}
+              {previewEmail?.scheduled_for && (
+                <> · Sends {format(new Date(previewEmail.scheduled_for), 'MMMM do, yyyy h:mm a')}</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="flex-1 max-h-[65vh]">
+            <div
+              className="prose prose-sm dark:prose-invert max-w-none rounded-md border p-4 bg-background"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewEmail?.body_html || '<p>No content</p>') }}
+            />
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </Dialog>
+
   );
 }
