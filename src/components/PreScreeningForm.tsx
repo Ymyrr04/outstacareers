@@ -63,6 +63,8 @@ type FormData = {
   start_availability: string;
   has_experience: boolean | null;
   currently_working: boolean | null;
+  employment_status: string;
+  last_day_with_employer: string;
   location: string;
   honeypot_field: string;
   job_source: string;
