@@ -379,10 +379,22 @@ export function InterviewSession({
         setCurrentStep('text');
         setCurrentQuestionIndex(0);
       } else {
-        // All sections complete
-        submitInterview();
+        // All question sections complete — show final wrap-up questions
+        setCurrentStep('wrapup');
       }
     }
+  };
+
+  const handleWrapUpSubmit = async (responses: WrapUpResponses) => {
+    try {
+      await supabase
+        .from('interview_sessions')
+        .update({ wrapup_responses: responses as any })
+        .eq('id', sessionId);
+    } catch (e) {
+      console.error('Failed to save wrap-up responses', e);
+    }
+    submitInterview();
   };
 
   const submitInterview = async () => {
@@ -390,6 +402,7 @@ export function InterviewSession({
 
     try {
       console.log(`Submitting interview with ${answers.length} answers (already saved to DB)`);
+
 
       const { data, error: assessError } = await supabase.functions.invoke('assess-interview', {
         body: {
