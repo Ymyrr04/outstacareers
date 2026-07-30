@@ -140,15 +140,20 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   const [hiredCandidate, setHiredCandidate] = useState<Candidate | null>(null);
   const [showHiredDialog, setShowHiredDialog] = useState(false);
   const { getTemplateByTrigger } = useEmailTemplates();
+  const [pendingStageEmail, setPendingStageEmail] = useState<
+    (PendingStageEmail & { applicantId: string; templateId: string }) | null
+  >(null);
 
-  // Trigger automated email for a status change (matching Admin.tsx behavior).
+  // Build the email payload for a status change (matching Admin.tsx behavior).
   // Skips for_interview/siv (which need manual customization via dialog).
-  const triggerStatusEmail = useCallback(async (candidate: Candidate, newStatus: string) => {
+  const buildStatusEmail = useCallback((candidate: Candidate, newStatus: string) => {
     const trigger = statusToTrigger[newStatus];
-    if (!trigger) return;
-    if (trigger === 'for_interview' || trigger === 'siv') return;
+    if (!trigger) return null;
+    if (trigger === 'for_interview' || trigger === 'siv') return null;
     const template = getTemplateByTrigger(trigger);
-    if (!template || !template.is_enabled) return;
+    if (!template || !template.is_enabled) return null;
+    const recipientEmail = (candidate as any).email;
+    if (!recipientEmail) return null;
 
     const firstName = (candidate.full_name || '').split(' ')[0];
     const replacements: Record<string, string> = {
@@ -162,34 +167,56 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       s
     );
 
-    const scheduleFor = template.delay_hours > 0
-      ? addMinutes(new Date(), template.delay_hours).toISOString()
-      : undefined;
+    return {
+      applicantId: candidate.id,
+      templateId: template.id,
+      candidateName: candidate.full_name || '',
+      recipientEmail,
+      newStatus,
+      subject: apply(template.subject),
+      bodyHtml: apply(template.body_html),
+      scheduleFor: template.delay_hours > 0
+        ? addMinutes(new Date(), template.delay_hours).toISOString()
+        : undefined,
+    };
+  }, [getTemplateByTrigger]);
 
+  const sendStatusEmail = useCallback(async (
+    payload: { applicantId: string; templateId: string; recipientEmail: string; newStatus: string; candidateName: string; scheduleFor?: string },
+    subject: string,
+    bodyHtml: string,
+  ) => {
     try {
       const { data, error } = await supabase.functions.invoke('send-applicant-email', {
         body: {
-          applicantId: candidate.id,
-          templateId: template.id,
-          subject: apply(template.subject),
-          bodyHtml: apply(template.body_html),
-          recipientEmail: (candidate as any).email,
-          applicantStatusAtSend: newStatus,
+          applicantId: payload.applicantId,
+          templateId: payload.templateId,
+          subject,
+          bodyHtml,
+          recipientEmail: payload.recipientEmail,
+          applicantStatusAtSend: payload.newStatus,
           isAutomated: true,
-          scheduleFor,
+          scheduleFor: payload.scheduleFor,
         },
       });
       if (error) throw error;
       if (data?.scheduled) {
-        toast.success(`Email scheduled for ${candidate.full_name}`);
+        toast.success(`Email scheduled for ${payload.candidateName}`);
       } else {
-        toast.success(`Email sent to ${candidate.full_name}`);
+        toast.success(`Email sent to ${payload.candidateName}`);
       }
     } catch (err: any) {
       console.error('Automated email failed:', err);
-      toast.error(`Status updated, but email failed for ${candidate.full_name}`);
+      toast.error(`Status updated, but email failed for ${payload.candidateName}`);
     }
-  }, [getTemplateByTrigger]);
+  }, []);
+
+  // Bulk moves keep the fire-and-forget behavior (no per-candidate dialog).
+  const triggerStatusEmail = useCallback(async (candidate: Candidate, newStatus: string) => {
+    const payload = buildStatusEmail(candidate, newStatus);
+    if (!payload) return;
+    await sendStatusEmail(payload, payload.subject, payload.bodyHtml);
+  }, [buildStatusEmail, sendStatusEmail]);
 
 
   // ---- Multi-select (bulk action) state ----
