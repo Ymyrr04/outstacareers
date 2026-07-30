@@ -728,6 +728,76 @@ export const ClientAnalyticsDashboard = () => {
     ];
   }, [contractors]);
 
+  // Hires per Admin (from contractor "Hired By") + tenure/retention comparison
+  const TENURE_BUCKETS: { key: string; label: string; days: number }[] = [
+    { key: 'w1', label: '1 wk', days: 7 },
+    { key: 'w2', label: '2 wks', days: 14 },
+    { key: 'm1', label: '1 mo', days: 30 },
+    { key: 'm3', label: '3 mos', days: 90 },
+    { key: 'm6', label: '6 mos', days: 180 },
+  ];
+
+  const hiresByAdmin = useMemo(() => {
+    const now = Date.now();
+    const map: Record<string, {
+      name: string;
+      hired: number;
+      active: number;
+      separated: number;
+      buckets: Record<string, number>;
+      tenureSum: number;
+      tenureCount: number;
+    }> = {};
+
+    contractors.forEach((c) => {
+      const raw = (c as any).hired_by as string | null;
+      if (!raw) return;
+      const name = getAdminDisplayName(raw) || 'Unassigned';
+      if (!map[name]) {
+        map[name] = {
+          name,
+          hired: 0,
+          active: 0,
+          separated: 0,
+          buckets: Object.fromEntries(TENURE_BUCKETS.map(b => [b.key, 0])),
+          tenureSum: 0,
+          tenureCount: 0,
+        };
+      }
+      const entry = map[name];
+      entry.hired += 1;
+      const isActive = c.status === 'active' || c.status === 'rendering' || c.status === 'scheduled';
+      if (isActive) entry.active += 1; else entry.separated += 1;
+
+      if (c.start_date) {
+        const start = new Date(c.start_date).getTime();
+        const end = c.end_date ? new Date(c.end_date).getTime() : now;
+        const days = Math.max(0, Math.floor((end - start) / 86400000));
+        entry.tenureSum += days;
+        entry.tenureCount += 1;
+        TENURE_BUCKETS.forEach((b) => {
+          if (days >= b.days) entry.buckets[b.key] += 1;
+        });
+      }
+    });
+
+    return Object.values(map)
+      .map((e) => ({
+        ...e,
+        retention: e.hired > 0 ? Math.round((e.active / e.hired) * 100) : 0,
+        avgTenure: e.tenureCount > 0 ? Math.round(e.tenureSum / e.tenureCount) : 0,
+        bucketPct: Object.fromEntries(
+          TENURE_BUCKETS.map(b => [
+            b.key,
+            e.tenureCount > 0 ? Math.round((e.buckets[b.key] / e.tenureCount) * 100) : 0,
+          ])
+        ) as Record<string, number>,
+      }))
+      .sort((a, b) => b.hired - a.hired);
+  }, [contractors]);
+
+
+
   // 5. Contractors by Role (Job Title)
   const contractorsByRole = useMemo(() => {
     const roleMap: Record<string, number> = {};
