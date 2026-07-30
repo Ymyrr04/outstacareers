@@ -944,27 +944,27 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
             value={formData.currently_working} 
           />
 
-          <div className="space-y-2">
-            <Label className="text-base">Please select your current status *</Label>
-            <RadioGroup
-              value={formData.employment_status}
-              onValueChange={(value) => {
-                handleTextChange("employment_status", value);
-                if (value === "No") handleTextChange("last_day_with_employer", "");
-              }}
-              className="flex flex-wrap gap-6"
-            >
-              {["No", "Employed", "Rendering"].map((opt) => (
-                <div key={opt} className="flex items-center space-x-2">
-                  <RadioGroupItem value={opt} id={`employment_status_${opt}`} />
-                  <Label htmlFor={`employment_status_${opt}`} className="text-base font-normal cursor-pointer">
-                    {opt}
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-            {errors.employment_status && <p className="text-sm text-destructive">{errors.employment_status}</p>}
-          </div>
+          {formData.currently_working === true && (
+            <div className="space-y-2">
+              <Label className="text-base">Please select your current status *</Label>
+              <RadioGroup
+                value={formData.employment_status}
+                onValueChange={(value) => handleTextChange("employment_status", value)}
+                className="flex flex-wrap gap-6"
+              >
+                {["Employed", "Rendering"].map((opt) => (
+                  <div key={opt} className="flex items-center space-x-2">
+                    <RadioGroupItem value={opt} id={`employment_status_${opt}`} />
+                    <Label htmlFor={`employment_status_${opt}`} className="text-base font-normal cursor-pointer">
+                      {opt}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+              {errors.employment_status && <p className="text-sm text-destructive">{errors.employment_status}</p>}
+            </div>
+          )}
+
 
           {(formData.employment_status === "Employed" || formData.employment_status === "Rendering") && (
             <div className="space-y-2">
