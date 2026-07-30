@@ -1081,6 +1081,24 @@ export default function ApplicantSearchResults({
                     <p className="text-sm font-medium">Start Availability</p>
                     <p className="text-sm text-muted-foreground">{applicant.start_availability || 'Not specified'}</p>
                   </div>
+                  {(applicant as any).employment_status && (
+                    <div>
+                      <p className="text-sm font-medium">Employment Status</p>
+                      <p className="text-sm text-muted-foreground">{(applicant as any).employment_status}</p>
+                    </div>
+                  )}
+                  {(applicant as any).last_day_with_employer && (
+                    <div>
+                      <p className="text-sm font-medium">Last Day With Employer</p>
+                      <p className="text-sm text-muted-foreground">{(applicant as any).last_day_with_employer}</p>
+                    </div>
+                  )}
+                  {(applicant as any).upcoming_plans && (
+                    <div className="col-span-2">
+                      <p className="text-sm font-medium">Plans Next 3 Months</p>
+                      <p className="text-sm text-muted-foreground">{(applicant as any).upcoming_plans}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             )}
