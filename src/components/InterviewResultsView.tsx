@@ -140,7 +140,7 @@ export function InterviewResultsView({ sessionId, session }: InterviewResultsVie
       setLoading(true);
       
       // Fetch questions and answers in parallel
-      const [questionsRes, answersRes] = await Promise.all([
+      const [questionsRes, answersRes, sessionRes] = await Promise.all([
         supabase
           .from('interview_questions')
           .select('*')
@@ -149,7 +149,12 @@ export function InterviewResultsView({ sessionId, session }: InterviewResultsVie
         supabase
           .from('interview_answers')
           .select('*')
-          .eq('session_id', sessionId)
+          .eq('session_id', sessionId),
+        supabase
+          .from('interview_sessions')
+          .select('wrapup_responses')
+          .eq('id', sessionId)
+          .maybeSingle()
       ]);
 
       if (questionsRes.data) {
@@ -164,6 +169,8 @@ export function InterviewResultsView({ sessionId, session }: InterviewResultsVie
         // Voice recording URLs are stored as public URLs directly in the database
         // No need to generate signed/public URLs - use them directly
       }
+
+      setWrapUp((sessionRes.data?.wrapup_responses as WrapUpData | null) ?? null);
       
       setLoading(false);
     };
