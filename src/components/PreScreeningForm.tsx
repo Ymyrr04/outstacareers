@@ -1147,6 +1147,21 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
             </div>
           </div>
 
+          {/* Reminder before uploading */}
+          <div className="p-4 bg-amber-50 dark:bg-amber-950/30 rounded-lg border border-amber-300 dark:border-amber-800">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-6 h-6 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="text-base font-medium text-foreground">Reminder before you proceed</p>
+                <ul className="text-base text-muted-foreground mt-1 list-disc pl-5 space-y-1">
+                  <li>Your CV should be in <strong>English</strong> if you are applying for a Bilingual role.</li>
+                  <li>Your CV should be the <strong>most updated version</strong> — this will heavily impact your assessment.</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+
+
           <div 
             className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors ${
               cvFile ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
