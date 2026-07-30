@@ -545,7 +545,7 @@ export function InterviewSession({
   }
 
   if (currentStep === 'wrapup') {
-    return <WrapUpStep onSubmit={handleWrapUpSubmit} />;
+    return <WrapUpStep onSubmit={handleWrapUpSubmit} previewMode={previewMode} />;
   }
 
 
