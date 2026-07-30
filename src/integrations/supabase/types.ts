@@ -214,6 +214,7 @@ export type Database = {
           details_viewed_at: string | null
           device_type: string | null
           email: string
+          employment_status: string | null
           extracted_skills: string[] | null
           extracted_tools: string[] | null
           file_hash: string | null
@@ -231,6 +232,7 @@ export type Database = {
           job_source: string | null
           job_title: string
           laptop_or_pc: boolean
+          last_day_with_employer: string | null
           location: string
           noise_canceling_headset: boolean
           notes: string | null
@@ -271,6 +273,7 @@ export type Database = {
           details_viewed_at?: string | null
           device_type?: string | null
           email: string
+          employment_status?: string | null
           extracted_skills?: string[] | null
           extracted_tools?: string[] | null
           file_hash?: string | null
@@ -288,6 +291,7 @@ export type Database = {
           job_source?: string | null
           job_title: string
           laptop_or_pc: boolean
+          last_day_with_employer?: string | null
           location: string
           noise_canceling_headset: boolean
           notes?: string | null
@@ -328,6 +332,7 @@ export type Database = {
           details_viewed_at?: string | null
           device_type?: string | null
           email?: string
+          employment_status?: string | null
           extracted_skills?: string[] | null
           extracted_tools?: string[] | null
           file_hash?: string | null
@@ -345,6 +350,7 @@ export type Database = {
           job_source?: string | null
           job_title?: string
           laptop_or_pc?: boolean
+          last_day_with_employer?: string | null
           location?: string
           noise_canceling_headset?: boolean
           notes?: string | null
