@@ -32,6 +32,7 @@ interface ContractorData {
   job_title: string | null;
   country: string | null;
   notes: string | null;
+  hired_by: string | null;
   applicant: {
     id: string;
     full_name: string | null;
