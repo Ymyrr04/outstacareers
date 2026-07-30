@@ -1557,6 +1557,18 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
         </div>
       )}
 
+      <StageEmailConfirmDialog
+        pending={pendingStageEmail}
+        onOpenChange={(open) => { if (!open) setPendingStageEmail(null); }}
+        onConfirm={async (subject, bodyHtml) => {
+          if (!pendingStageEmail) return;
+          await sendStatusEmail(pendingStageEmail, subject, bodyHtml);
+          setPendingStageEmail(null);
+        }}
+      />
+
+
+
       {hiredCandidate && (
         <HiredAssignmentDialog
           open={showHiredDialog}
