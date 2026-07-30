@@ -546,6 +546,14 @@ export function CommunicationHistory({
                           <Button
                             variant="outline"
                             size="sm"
+                            onClick={() => setPreviewEmail(email as any)}
+                          >
+                            <Eye className="h-4 w-4 mr-1" />
+                            Preview
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
                             onClick={() => handleSendNow(email)}
                             disabled={sendingNowId === email.id || cancelingId === email.id}
                             className="text-green-600 hover:text-green-700 hover:bg-green-50"
