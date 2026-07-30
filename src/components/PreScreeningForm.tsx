@@ -40,7 +40,7 @@ const prescreenSchema = z.object({
   start_availability: z.string().trim().min(1, "Start availability is required").max(200, "Must be less than 200 characters"),
   has_experience: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
   currently_working: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
-  employment_status: z.string().trim().min(1, "Please select an option"),
+  employment_status: z.string().trim(),
   location: z.string().trim().min(1, "Country is required").max(200, "Must be less than 200 characters"),
   job_source: z.string().trim().min(1, "Please select where you learned about this job"),
 });
@@ -180,8 +180,9 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
       formData.us_timezone_ok !== null &&
       formData.has_experience !== null &&
       formData.currently_working !== null &&
-      formData.employment_status.trim() !== "" &&
-      (formData.employment_status === "No" || formData.last_day_with_employer.trim() !== "") &&
+      (formData.currently_working !== true ||
+        (formData.employment_status.trim() !== "" && formData.last_day_with_employer.trim() !== "")) &&
+
       jobSourceValid
     );
   };
@@ -207,10 +208,17 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
       return;
     }
 
-    if (formData.employment_status !== "No" && !formData.last_day_with_employer.trim()) {
-      setErrors(prev => ({ ...prev, last_day_with_employer: "Please provide your last day" }));
-      return;
+    if (formData.currently_working === true) {
+      if (!formData.employment_status.trim()) {
+        setErrors(prev => ({ ...prev, employment_status: "Please select an option" }));
+        return;
+      }
+      if (!formData.last_day_with_employer.trim()) {
+        setErrors(prev => ({ ...prev, last_day_with_employer: "Please provide your last day" }));
+        return;
+      }
     }
+
 
 
     // Move to CV upload step
@@ -408,8 +416,8 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
           start_availability: formData.start_availability,
           has_experience: formData.has_experience,
           currently_working: formData.currently_working,
-          employment_status: formData.employment_status,
-          last_day_with_employer: formData.employment_status === "No" ? null : formData.last_day_with_employer,
+          employment_status: formData.currently_working === true ? formData.employment_status : "No",
+          last_day_with_employer: formData.currently_working === true ? formData.last_day_with_employer : null,
           location: formData.location,
           job_title: job.title,
           job_id: job.id,
@@ -944,29 +952,29 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
             value={formData.currently_working} 
           />
 
-          <div className="space-y-2">
-            <Label className="text-base">Please select your current status *</Label>
-            <RadioGroup
-              value={formData.employment_status}
-              onValueChange={(value) => {
-                handleTextChange("employment_status", value);
-                if (value === "No") handleTextChange("last_day_with_employer", "");
-              }}
-              className="flex flex-wrap gap-6"
-            >
-              {["No", "Employed", "Rendering"].map((opt) => (
-                <div key={opt} className="flex items-center space-x-2">
-                  <RadioGroupItem value={opt} id={`employment_status_${opt}`} />
-                  <Label htmlFor={`employment_status_${opt}`} className="text-base font-normal cursor-pointer">
-                    {opt}
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-            {errors.employment_status && <p className="text-sm text-destructive">{errors.employment_status}</p>}
-          </div>
+          {formData.currently_working === true && (
+            <div className="space-y-2">
+              <Label className="text-base">Please select your current status *</Label>
+              <RadioGroup
+                value={formData.employment_status}
+                onValueChange={(value) => handleTextChange("employment_status", value)}
+                className="flex flex-wrap gap-6"
+              >
+                {["Employed", "Rendering"].map((opt) => (
+                  <div key={opt} className="flex items-center space-x-2">
+                    <RadioGroupItem value={opt} id={`employment_status_${opt}`} />
+                    <Label htmlFor={`employment_status_${opt}`} className="text-base font-normal cursor-pointer">
+                      {opt}
+                    </Label>
+                  </div>
+                ))}
+              </RadioGroup>
+              {errors.employment_status && <p className="text-sm text-destructive">{errors.employment_status}</p>}
+            </div>
+          )}
 
-          {(formData.employment_status === "Employed" || formData.employment_status === "Rendering") && (
+
+          {formData.currently_working === true && (formData.employment_status === "Employed" || formData.employment_status === "Rendering") && (
             <div className="space-y-2">
               <Label htmlFor="last_day_with_employer" className="text-base">
                 When will be your last day with your current employer? *
