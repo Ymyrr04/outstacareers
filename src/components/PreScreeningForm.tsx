@@ -101,7 +101,7 @@ interface IncompleteData {
   expiresAt: string;
 }
 
-const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProps) => {
+const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }: PreScreeningFormProps) => {
   const isPageMode = mode === 'page';
   const [currentStep, setCurrentStep] = useState<Step>('prescreening');
   const [isSubmitting, setIsSubmitting] = useState(false);
