@@ -23,7 +23,10 @@ interface PreScreeningFormProps {
   };
   onClose: () => void;
   mode?: 'modal' | 'page';
+  /** Admin preview: prefills sample answers and never saves an application. */
+  previewMode?: boolean;
 }
+
 
 const prescreenSchema = z.object({
   full_name: z.string().trim().min(1, "Full name is required").max(100, "Name must be less than 100 characters"),
@@ -98,7 +101,7 @@ interface IncompleteData {
   expiresAt: string;
 }
 
-const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProps) => {
+const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }: PreScreeningFormProps) => {
   const isPageMode = mode === 'page';
   const [currentStep, setCurrentStep] = useState<Step>('prescreening');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -122,7 +125,32 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
   const [cooldownData, setCooldownData] = useState<CooldownData | null>(null);
   const [incompleteData, setIncompleteData] = useState<IncompleteData | null>(null);
   
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<FormData>(previewMode ? {
+    full_name: "Preview Candidate",
+    email: "preview@example.com",
+    phone_country_code: "+63|Philippines",
+    phone: "9171234567",
+    whatsapp_country_code: "+63|Philippines",
+    whatsapp: "",
+    home_office: true,
+    noise_canceling_headset: true,
+    laptop_or_pc: true,
+    good_internet: true,
+    internet_speed: "https://www.speedtest.net/result/preview",
+    power_backup: true,
+    can_work_40_50: true,
+    us_timezone_ok: true,
+    start_availability: "Immediately",
+    upcoming_plans: "None",
+    has_experience: true,
+    currently_working: false,
+    employment_status: "",
+    last_day_with_employer: "",
+    location: "Philippines",
+    honeypot_field: "",
+    job_source: "LinkedIn",
+    job_source_other: "",
+  } : {
     full_name: "",
     email: "",
     phone_country_code: "+63|Philippines",
@@ -148,6 +176,7 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
     job_source: "",
     job_source_other: "",
   });
+
 
   const handleTextChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -342,10 +371,19 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
   };
 
   const handleCvSubmit = async () => {
+    if (previewMode) {
+      toast({
+        title: "Preview mode",
+        description: "Nothing was submitted — this is an admin preview of the application flow.",
+      });
+      return;
+    }
+
     if (!cvFile) {
       setErrors(prev => ({ ...prev, cv: "Please upload your CV" }));
       return;
     }
+
 
     if (isExtractingText) {
       toast({
@@ -1260,6 +1298,15 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
   if (isPageMode) {
     return (
       <div className="w-full">
+        {previewMode && (
+          <div className="flex items-start gap-2 px-6 py-3 bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-900">
+            <AlertCircle className="w-4 h-4 text-amber-600 mt-0.5 shrink-0" />
+            <p className="text-sm text-amber-800 dark:text-amber-300">
+              <span className="font-semibold">Admin preview.</span> Sample answers are pre-filled and nothing is saved — no application will be created.
+            </p>
+          </div>
+        )}
+
         <div className="border-b border-border px-6 py-4">
           <h3 className="font-bold text-lg text-foreground">
             {currentStep === 'prescreening' && 'Pre-Screening Questions'}
