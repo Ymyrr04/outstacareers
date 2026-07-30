@@ -418,7 +418,10 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
           power_backup: formData.power_backup,
           can_work_40_50: formData.can_work_40_50,
           us_timezone_ok: formData.us_timezone_ok,
-          start_availability: formData.start_availability,
+          start_availability: formData.currently_working === true
+            ? (formData.last_day_with_employer ? `After ${formData.last_day_with_employer}` : "Currently employed")
+            : formData.start_availability,
+
           has_experience: formData.has_experience,
           currently_working: formData.currently_working,
           employment_status: formData.currently_working === true ? formData.employment_status : "No",
