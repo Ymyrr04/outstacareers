@@ -125,7 +125,32 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }:
   const [cooldownData, setCooldownData] = useState<CooldownData | null>(null);
   const [incompleteData, setIncompleteData] = useState<IncompleteData | null>(null);
   
-  const [formData, setFormData] = useState<FormData>({
+  const [formData, setFormData] = useState<FormData>(previewMode ? {
+    full_name: "Preview Candidate",
+    email: "preview@example.com",
+    phone_country_code: "+63|Philippines",
+    phone: "9171234567",
+    whatsapp_country_code: "+63|Philippines",
+    whatsapp: "",
+    home_office: true,
+    noise_canceling_headset: true,
+    laptop_or_pc: true,
+    good_internet: true,
+    internet_speed: "https://www.speedtest.net/result/preview",
+    power_backup: true,
+    can_work_40_50: true,
+    us_timezone_ok: true,
+    start_availability: "Immediately",
+    upcoming_plans: "None",
+    has_experience: true,
+    currently_working: false,
+    employment_status: "",
+    last_day_with_employer: "",
+    location: "Philippines",
+    honeypot_field: "",
+    job_source: "LinkedIn",
+    job_source_other: "",
+  } : {
     full_name: "",
     email: "",
     phone_country_code: "+63|Philippines",
@@ -151,6 +176,7 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }:
     job_source: "",
     job_source_other: "",
   });
+
 
   const handleTextChange = (field: keyof FormData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
