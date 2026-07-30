@@ -1604,8 +1604,79 @@ export const ClientAnalyticsDashboard = () => {
     </DraggableCard>
   );
 
+  const renderHiresByAdminCard = () => (
+    <DraggableCard cardId="hiresByAdmin">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2 pl-5">
+            <Users className="w-4 h-4" />
+            Hires per Admin &amp; Retention by Duration of Stay
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="whitespace-nowrap">Admin</TableHead>
+                  <TableHead className="text-right">Hired</TableHead>
+                  <TableHead className="text-right">Active</TableHead>
+                  <TableHead className="text-right">Retention</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">Avg stay</TableHead>
+                  {TENURE_BUCKETS.map((b) => (
+                    <TableHead key={b.key} className="text-right whitespace-nowrap" title={`% of hires that stayed at least ${b.label}`}>
+                      ≥ {b.label}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {hiresByAdmin.map((a) => (
+                  <TableRow key={a.name}>
+                    <TableCell className="font-medium whitespace-nowrap">{a.name}</TableCell>
+                    <TableCell className="text-right">{a.hired}</TableCell>
+                    <TableCell className="text-right">{a.active}</TableCell>
+                    <TableCell className={`text-right font-medium ${
+                      a.retention >= 80 ? 'text-green-600' : a.retention >= 50 ? 'text-amber-600' : 'text-red-600'
+                    }`}>
+                      {a.retention}%
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground whitespace-nowrap">{a.avgTenure}d</TableCell>
+                    {TENURE_BUCKETS.map((b) => (
+                      <TableCell key={b.key} className="text-right">
+                        <span className={
+                          a.bucketPct[b.key] >= 80 ? 'text-green-600' :
+                          a.bucketPct[b.key] >= 50 ? 'text-amber-600' : 'text-red-600'
+                        }>
+                          {a.bucketPct[b.key]}%
+                        </span>
+                        <span className="text-[10px] text-muted-foreground ml-1">({a.buckets[b.key]})</span>
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+                {hiresByAdmin.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5 + TENURE_BUCKETS.length} className="text-center text-sm text-muted-foreground py-4">
+                      No "Hired By" data available
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-3">
+            Duration of stay = start date to end date (or today if still active). Percentages show how many of that admin's hires reached each milestone.
+          </p>
+        </CardContent>
+      </Card>
+    </DraggableCard>
+  );
+
   const cardRenderers: Record<CardId, () => JSX.Element> = {
     industry: renderIndustryCard,
+    hiresByAdmin: renderHiresByAdminCard,
+
     leadsFrom: renderLeadsFromCard,
     applicationSources: renderApplicationSourcesCard,
     roles: renderRolesCard,
