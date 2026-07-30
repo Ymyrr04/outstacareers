@@ -6,6 +6,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { VoiceQuestionStep } from "./VoiceQuestionStep";
 import { TextQuestionStep } from "./TextQuestionStep";
+import { WrapUpStep, type WrapUpResponses } from "./WrapUpStep";
 
 interface InterviewSessionProps {
   sessionId: string;
