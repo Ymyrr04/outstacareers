@@ -37,7 +37,7 @@ const prescreenSchema = z.object({
   power_backup: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
   can_work_40_50: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
   us_timezone_ok: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
-  start_availability: z.string().trim().min(1, "Start availability is required").max(200, "Must be less than 200 characters"),
+  start_availability: z.string().trim().max(200, "Must be less than 200 characters"),
   has_experience: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
   currently_working: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
   employment_status: z.string().trim(),
@@ -169,7 +169,6 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
       formData.email.trim() !== "" &&
       formData.phone.trim() !== "" &&
       formData.internet_speed.trim() !== "" &&
-      formData.start_availability.trim() !== "" &&
       formData.location.trim() !== "" &&
       formData.home_office !== null &&
       formData.noise_canceling_headset !== null &&
@@ -180,6 +179,7 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
       formData.us_timezone_ok !== null &&
       formData.has_experience !== null &&
       formData.currently_working !== null &&
+      (formData.currently_working !== false || formData.start_availability.trim() !== "") &&
       (formData.currently_working !== true ||
         (formData.employment_status.trim() !== "" && formData.last_day_with_employer.trim() !== "")) &&
 
@@ -205,6 +205,11 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
     // Validate job_source_other if "Other" is selected
     if (formData.job_source === "Other" && !formData.job_source_other.trim()) {
       setErrors(prev => ({ ...prev, job_source_other: "Please specify where you found this job" }));
+      return;
+    }
+
+    if (formData.currently_working === false && !formData.start_availability.trim()) {
+      setErrors(prev => ({ ...prev, start_availability: "Start availability is required" }));
       return;
     }
 
@@ -928,18 +933,6 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
             value={formData.us_timezone_ok} 
           />
 
-          <div className="space-y-2">
-            <Label htmlFor="start_availability" className="text-base">How soon can you start? *</Label>
-            <Input
-              id="start_availability"
-              value={formData.start_availability}
-              onChange={(e) => handleTextChange("start_availability", e.target.value)}
-              placeholder="e.g., Immediately, 2 weeks notice"
-              className={`text-base h-11 ${errors.start_availability ? "border-destructive" : ""}`}
-            />
-            {errors.start_availability && <p className="text-sm text-destructive">{errors.start_availability}</p>}
-          </div>
-
           <YesNoQuestion 
             label="Do you have experience in a similar role?" 
             field="has_experience" 
@@ -951,6 +944,20 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
             field="currently_working" 
             value={formData.currently_working} 
           />
+
+          {formData.currently_working === false && (
+            <div className="space-y-2">
+              <Label htmlFor="start_availability" className="text-base">How soon can you start? *</Label>
+              <Input
+                id="start_availability"
+                value={formData.start_availability}
+                onChange={(e) => handleTextChange("start_availability", e.target.value)}
+                placeholder="e.g., Immediately, 2 weeks notice"
+                className={`text-base h-11 ${errors.start_availability ? "border-destructive" : ""}`}
+              />
+              {errors.start_availability && <p className="text-sm text-destructive">{errors.start_availability}</p>}
+            </div>
+          )}
 
           {formData.currently_working === true && (
             <div className="space-y-2">
