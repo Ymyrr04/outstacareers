@@ -980,6 +980,31 @@ export function CommunicationHistory({
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Scheduled Email Preview */}
+      <Dialog open={!!previewEmail} onOpenChange={(o) => !o && setPreviewEmail(null)}>
+        <DialogContent className="max-w-3xl w-[95vw] max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Eye className="h-4 w-4" />
+              {previewEmail?.subject}
+            </DialogTitle>
+            <DialogDescription>
+              To: {previewEmail?.recipient_email}
+              {previewEmail?.scheduled_for && (
+                <> · Sends {format(new Date(previewEmail.scheduled_for), 'MMMM do, yyyy h:mm a')}</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <ScrollArea className="flex-1 max-h-[65vh]">
+            <div
+              className="prose prose-sm dark:prose-invert max-w-none rounded-md border p-4 bg-background"
+              dangerouslySetInnerHTML={{ __html: sanitizeHtml(previewEmail?.body_html || '<p>No content</p>') }}
+            />
+          </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </Dialog>
+
   );
 }
