@@ -3,7 +3,7 @@ import { getErrorMessageSync } from "@/lib/errors";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Star, Check, X, RefreshCw, Loader2, Download, Mic, Phone, Mail, MessageCircle, User, Zap, Briefcase, CheckCircle, AlertTriangle, ClipboardList, FileText, Pencil, Save } from 'lucide-react';
+import { Star, Check, X, RefreshCw, Loader2, Download, Mic, Phone, Mail, MessageCircle, User, Zap, Briefcase, CheckCircle, AlertTriangle, ClipboardList, FileText, Pencil, Save, Target } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { InterviewResultsFetcher } from '@/components/InterviewResultsFetcher';
 import { CandidateProfileSection } from '@/components/CandidateProfileSection';
