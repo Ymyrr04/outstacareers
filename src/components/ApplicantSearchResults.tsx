@@ -39,6 +39,7 @@ import {
   Smartphone,
   Monitor,
   MessageCircle
+  Target,
 } from 'lucide-react';
 import { CopyableText } from '@/components/CopyableText';
 import { ApplicantNotesEditor, type ApplicantNotesEditorRef } from '@/components/ApplicantNotesEditor';
