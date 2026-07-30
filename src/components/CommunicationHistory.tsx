@@ -151,6 +151,7 @@ export function CommunicationHistory({
   const [showRepliesOnly, setShowRepliesOnly] = useState<Set<string>>(new Set());
   const [cancelingId, setCancelingId] = useState<string | null>(null);
   const [sendingNowId, setSendingNowId] = useState<string | null>(null);
+  const [previewEmail, setPreviewEmail] = useState<{ subject: string; recipient_email: string; body_html: string; scheduled_for: string } | null>(null);
   
   // Reply compose state
   const [showReplyComposer, setShowReplyComposer] = useState(false);
