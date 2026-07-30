@@ -342,10 +342,19 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
   };
 
   const handleCvSubmit = async () => {
+    if (previewMode) {
+      toast({
+        title: "Preview mode",
+        description: "Nothing was submitted — this is an admin preview of the application flow.",
+      });
+      return;
+    }
+
     if (!cvFile) {
       setErrors(prev => ({ ...prev, cv: "Please upload your CV" }));
       return;
     }
+
 
     if (isExtractingText) {
       toast({
