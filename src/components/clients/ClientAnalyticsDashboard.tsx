@@ -2,6 +2,7 @@
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
+import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
@@ -32,6 +33,7 @@ interface ContractorData {
   job_title: string | null;
   country: string | null;
   notes: string | null;
+  hired_by: string | null;
   applicant: {
     id: string;
     full_name: string | null;
@@ -54,14 +56,15 @@ interface ClientData {
   created_at: string;
 }
 
-type CardId = 'industry' | 'leadsFrom' | 'roles' | 'country' | 'monthlyHires' | 'separations' | 'retentionCompany' | 'retentionIndustry' | 'retentionRole' | 'applicationSources' | 'retentionBilingual';
+type CardId = 'industry' | 'leadsFrom' | 'roles' | 'country' | 'monthlyHires' | 'separations' | 'retentionCompany' | 'retentionIndustry' | 'retentionRole' | 'applicationSources' | 'retentionBilingual' | 'hiresByAdmin';
 
 type SortField = 'hired' | 'active' | 'retention';
 type SortDirection = 'asc' | 'desc';
 
 const COLORS = ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#84cc16'];
 
-const DEFAULT_CARD_ORDER: CardId[] = ['industry', 'leadsFrom', 'applicationSources', 'roles', 'country', 'monthlyHires', 'separations', 'retentionBilingual', 'retentionCompany', 'retentionIndustry', 'retentionRole'];
+const DEFAULT_CARD_ORDER: CardId[] = ['industry', 'leadsFrom', 'applicationSources', 'roles', 'country', 'monthlyHires', 'separations', 'hiresByAdmin', 'retentionBilingual', 'retentionCompany', 'retentionIndustry', 'retentionRole'];
+
 
 interface ApplicationSourceData {
   name: string;
@@ -725,6 +728,76 @@ export const ClientAnalyticsDashboard = () => {
       },
     ];
   }, [contractors]);
+
+  // Hires per Admin (from contractor "Hired By") + tenure/retention comparison
+  const TENURE_BUCKETS: { key: string; label: string; days: number }[] = [
+    { key: 'w1', label: '1 wk', days: 7 },
+    { key: 'w2', label: '2 wks', days: 14 },
+    { key: 'm1', label: '1 mo', days: 30 },
+    { key: 'm3', label: '3 mos', days: 90 },
+    { key: 'm6', label: '6 mos', days: 180 },
+  ];
+
+  const hiresByAdmin = useMemo(() => {
+    const now = Date.now();
+    const map: Record<string, {
+      name: string;
+      hired: number;
+      active: number;
+      separated: number;
+      buckets: Record<string, number>;
+      tenureSum: number;
+      tenureCount: number;
+    }> = {};
+
+    contractors.forEach((c) => {
+      const raw = (c as any).hired_by as string | null;
+      if (!raw) return;
+      const name = getAdminDisplayName(raw) || 'Unassigned';
+      if (!map[name]) {
+        map[name] = {
+          name,
+          hired: 0,
+          active: 0,
+          separated: 0,
+          buckets: Object.fromEntries(TENURE_BUCKETS.map(b => [b.key, 0])),
+          tenureSum: 0,
+          tenureCount: 0,
+        };
+      }
+      const entry = map[name];
+      entry.hired += 1;
+      const isActive = c.status === 'active' || c.status === 'rendering' || c.status === 'scheduled';
+      if (isActive) entry.active += 1; else entry.separated += 1;
+
+      if (c.start_date) {
+        const start = new Date(c.start_date).getTime();
+        const end = c.end_date ? new Date(c.end_date).getTime() : now;
+        const days = Math.max(0, Math.floor((end - start) / 86400000));
+        entry.tenureSum += days;
+        entry.tenureCount += 1;
+        TENURE_BUCKETS.forEach((b) => {
+          if (days >= b.days) entry.buckets[b.key] += 1;
+        });
+      }
+    });
+
+    return Object.values(map)
+      .map((e) => ({
+        ...e,
+        retention: e.hired > 0 ? Math.round((e.active / e.hired) * 100) : 0,
+        avgTenure: e.tenureCount > 0 ? Math.round(e.tenureSum / e.tenureCount) : 0,
+        bucketPct: Object.fromEntries(
+          TENURE_BUCKETS.map(b => [
+            b.key,
+            e.tenureCount > 0 ? Math.round((e.buckets[b.key] / e.tenureCount) * 100) : 0,
+          ])
+        ) as Record<string, number>,
+      }))
+      .sort((a, b) => b.hired - a.hired);
+  }, [contractors]);
+
+
 
   // 5. Contractors by Role (Job Title)
   const contractorsByRole = useMemo(() => {
@@ -1531,8 +1604,79 @@ export const ClientAnalyticsDashboard = () => {
     </DraggableCard>
   );
 
+  const renderHiresByAdminCard = () => (
+    <DraggableCard cardId="hiresByAdmin">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2 pl-5">
+            <Users className="w-4 h-4" />
+            Hires per Admin &amp; Retention by Duration of Stay
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="whitespace-nowrap">Admin</TableHead>
+                  <TableHead className="text-right">Hired</TableHead>
+                  <TableHead className="text-right">Active</TableHead>
+                  <TableHead className="text-right">Retention</TableHead>
+                  <TableHead className="text-right whitespace-nowrap">Avg stay</TableHead>
+                  {TENURE_BUCKETS.map((b) => (
+                    <TableHead key={b.key} className="text-right whitespace-nowrap" title={`% of hires that stayed at least ${b.label}`}>
+                      ≥ {b.label}
+                    </TableHead>
+                  ))}
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {hiresByAdmin.map((a) => (
+                  <TableRow key={a.name}>
+                    <TableCell className="font-medium whitespace-nowrap">{a.name}</TableCell>
+                    <TableCell className="text-right">{a.hired}</TableCell>
+                    <TableCell className="text-right">{a.active}</TableCell>
+                    <TableCell className={`text-right font-medium ${
+                      a.retention >= 80 ? 'text-green-600' : a.retention >= 50 ? 'text-amber-600' : 'text-red-600'
+                    }`}>
+                      {a.retention}%
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground whitespace-nowrap">{a.avgTenure}d</TableCell>
+                    {TENURE_BUCKETS.map((b) => (
+                      <TableCell key={b.key} className="text-right">
+                        <span className={
+                          a.bucketPct[b.key] >= 80 ? 'text-green-600' :
+                          a.bucketPct[b.key] >= 50 ? 'text-amber-600' : 'text-red-600'
+                        }>
+                          {a.bucketPct[b.key]}%
+                        </span>
+                        <span className="text-[10px] text-muted-foreground ml-1">({a.buckets[b.key]})</span>
+                      </TableCell>
+                    ))}
+                  </TableRow>
+                ))}
+                {hiresByAdmin.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={5 + TENURE_BUCKETS.length} className="text-center text-sm text-muted-foreground py-4">
+                      No "Hired By" data available
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <p className="text-[10px] text-muted-foreground mt-3">
+            Duration of stay = start date to end date (or today if still active). Percentages show how many of that admin's hires reached each milestone.
+          </p>
+        </CardContent>
+      </Card>
+    </DraggableCard>
+  );
+
   const cardRenderers: Record<CardId, () => JSX.Element> = {
     industry: renderIndustryCard,
+    hiresByAdmin: renderHiresByAdminCard,
+
     leadsFrom: renderLeadsFromCard,
     applicationSources: renderApplicationSourcesCard,
     roles: renderRolesCard,
