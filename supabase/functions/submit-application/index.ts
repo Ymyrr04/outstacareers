@@ -509,6 +509,8 @@ serve(async (req) => {
       start_availability: body.start_availability?.trim() || '',
       has_experience: body.has_experience,
       currently_working: body.currently_working,
+      employment_status: body.employment_status?.trim() || null,
+      last_day_with_employer: body.last_day_with_employer?.trim() || null,
       location: body.location?.trim() || '',
       job_title: body.job_title,
       job_id: body.job_id,
