@@ -38,6 +38,7 @@ const prescreenSchema = z.object({
   can_work_40_50: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
   us_timezone_ok: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
   start_availability: z.string().trim().max(200, "Must be less than 200 characters"),
+  upcoming_plans: z.string().trim().max(500, "Must be less than 500 characters"),
   has_experience: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
   currently_working: z.boolean().nullable().refine(val => val !== null, "Please select an option"),
   employment_status: z.string().trim(),
@@ -61,6 +62,7 @@ type FormData = {
   can_work_40_50: boolean | null;
   us_timezone_ok: boolean | null;
   start_availability: string;
+  upcoming_plans: string;
   has_experience: boolean | null;
   currently_working: boolean | null;
   employment_status: string;
@@ -136,6 +138,7 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
     can_work_40_50: null,
     us_timezone_ok: null,
     start_availability: "",
+    upcoming_plans: "",
     has_experience: null,
     currently_working: null,
     employment_status: "",
@@ -179,7 +182,8 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
       formData.us_timezone_ok !== null &&
       formData.has_experience !== null &&
       formData.currently_working !== null &&
-      (formData.currently_working !== false || formData.start_availability.trim() !== "") &&
+      (formData.currently_working !== false ||
+        (formData.start_availability.trim() !== "" && formData.upcoming_plans.trim() !== "")) &&
       (formData.currently_working !== true ||
         (formData.employment_status.trim() !== "" && formData.last_day_with_employer.trim() !== "")) &&
 
@@ -210,6 +214,11 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
 
     if (formData.currently_working === false && !formData.start_availability.trim()) {
       setErrors(prev => ({ ...prev, start_availability: "Start availability is required" }));
+      return;
+    }
+
+    if (formData.currently_working === false && !formData.upcoming_plans.trim()) {
+      setErrors(prev => ({ ...prev, upcoming_plans: "Please answer this question" }));
       return;
     }
 
@@ -424,6 +433,7 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
 
           has_experience: formData.has_experience,
           currently_working: formData.currently_working,
+          upcoming_plans: formData.currently_working === false ? formData.upcoming_plans : null,
           employment_status: formData.currently_working === true ? formData.employment_status : "No",
           last_day_with_employer: formData.currently_working === true ? formData.last_day_with_employer : null,
           location: formData.location,
@@ -959,6 +969,25 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
                 className={`text-base h-11 ${errors.start_availability ? "border-destructive" : ""}`}
               />
               {errors.start_availability && <p className="text-sm text-destructive">{errors.start_availability}</p>}
+            </div>
+          )}
+
+          {formData.currently_working === false && (
+            <div className="space-y-2">
+              <Label htmlFor="upcoming_plans" className="text-base">
+                Do you have any plans for the next 3 months? *
+              </Label>
+              <p className="text-sm text-muted-foreground">
+                e.g. vacation, taking exams, or anything that could potentially affect your work schedule
+              </p>
+              <Input
+                id="upcoming_plans"
+                value={formData.upcoming_plans}
+                onChange={(e) => handleTextChange("upcoming_plans", e.target.value)}
+                placeholder="e.g., None, or 1-week vacation in September"
+                className={`text-base h-11 ${errors.upcoming_plans ? "border-destructive" : ""}`}
+              />
+              {errors.upcoming_plans && <p className="text-sm text-destructive">{errors.upcoming_plans}</p>}
             </div>
           )}
 
