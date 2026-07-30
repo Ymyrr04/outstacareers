@@ -408,6 +408,8 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal' }: PreScreeningFormProp
           start_availability: formData.start_availability,
           has_experience: formData.has_experience,
           currently_working: formData.currently_working,
+          employment_status: formData.employment_status,
+          last_day_with_employer: formData.employment_status === "No" ? null : formData.last_day_with_employer,
           location: formData.location,
           job_title: job.title,
           job_id: job.id,
