@@ -740,7 +740,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     toast.success(`Moved ${candidate.full_name} to ${newStage}`);
     // Ask the admin to review/edit the stage email before sending
     const payload = buildStatusEmail(candidate, newStage);
-    if (payload) setPendingStageEmail(payload);
+    if (payload) {
+      setPendingStageEmail(payload);
+    } else {
+      setStageNote({ applicantId: candidate.id, candidateName: candidate.full_name, newStatus: newStage });
+    }
   }, [updateCandidateStageInState, buildStatusEmail]);
 
   // Bulk move: update every selected candidate to the target stage in one DB call,
