@@ -1559,13 +1559,33 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
 
       <StageEmailConfirmDialog
         pending={pendingStageEmail}
-        onOpenChange={(open) => { if (!open) setPendingStageEmail(null); }}
+        onOpenChange={(open) => {
+          if (!open && pendingStageEmail) {
+            setStageNote({
+              applicantId: pendingStageEmail.applicantId,
+              candidateName: pendingStageEmail.candidateName,
+              newStatus: pendingStageEmail.newStatus,
+            });
+            setPendingStageEmail(null);
+          }
+        }}
         onConfirm={async (subject, bodyHtml) => {
           if (!pendingStageEmail) return;
           await sendStatusEmail(pendingStageEmail, subject, bodyHtml);
+          setStageNote({
+            applicantId: pendingStageEmail.applicantId,
+            candidateName: pendingStageEmail.candidateName,
+            newStatus: pendingStageEmail.newStatus,
+          });
           setPendingStageEmail(null);
         }}
       />
+
+      <StageNoteDialog
+        pending={stageNote}
+        onOpenChange={(open) => { if (!open) setStageNote(null); }}
+      />
+
 
 
 
