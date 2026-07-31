@@ -145,6 +145,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   const [pendingStageEmail, setPendingStageEmail] = useState<
     (PendingStageEmail & { applicantId: string; templateId: string }) | null
   >(null);
+  const [stageNote, setStageNote] = useState<PendingStageNote | null>(null);
+
 
   // Build the email payload for a status change (matching Admin.tsx behavior).
   // Skips for_interview/siv (which need manual customization via dialog).
