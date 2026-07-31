@@ -478,9 +478,11 @@ export const PLDashboard = () => {
   useEffect(() => {
     let cancelled = false;
     const loadLeaveCount = async () => {
+      // Only surface NEW (pending, not yet reviewed) leave entries
       const { count } = await supabase
         .from('contractor_leave_applications' as any)
-        .select('*', { count: 'exact', head: true });
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'pending');
       if (!cancelled) setLeaveCount(count || 0);
     };
     loadLeaveCount();
