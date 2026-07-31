@@ -41,6 +41,7 @@ import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import { useEmailTemplates, statusToTrigger } from '@/hooks/useEmailTemplates';
 import { addMinutes } from 'date-fns';
 import { StageEmailConfirmDialog, type PendingStageEmail } from '@/components/StageEmailConfirmDialog';
+import { StageNoteDialog, type PendingStageNote } from '@/components/StageNoteDialog';
 import { useStageSettings } from '@/hooks/useStageSettings';
 
 const FUNNEL_STAGES = [
@@ -144,6 +145,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   const [pendingStageEmail, setPendingStageEmail] = useState<
     (PendingStageEmail & { applicantId: string; templateId: string }) | null
   >(null);
+  const [stageNote, setStageNote] = useState<PendingStageNote | null>(null);
+
 
   // Build the email payload for a status change (matching Admin.tsx behavior).
   // Skips for_interview/siv (which need manual customization via dialog).
@@ -737,7 +740,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     toast.success(`Moved ${candidate.full_name} to ${newStage}`);
     // Ask the admin to review/edit the stage email before sending
     const payload = buildStatusEmail(candidate, newStage);
-    if (payload) setPendingStageEmail(payload);
+    if (payload) {
+      setPendingStageEmail(payload);
+    } else {
+      setStageNote({ applicantId: candidate.id, candidateName: candidate.full_name, newStatus: newStage });
+    }
   }, [updateCandidateStageInState, buildStatusEmail]);
 
   // Bulk move: update every selected candidate to the target stage in one DB call,
@@ -1559,13 +1566,33 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
 
       <StageEmailConfirmDialog
         pending={pendingStageEmail}
-        onOpenChange={(open) => { if (!open) setPendingStageEmail(null); }}
+        onOpenChange={(open) => {
+          if (!open && pendingStageEmail) {
+            setStageNote({
+              applicantId: pendingStageEmail.applicantId,
+              candidateName: pendingStageEmail.candidateName,
+              newStatus: pendingStageEmail.newStatus,
+            });
+            setPendingStageEmail(null);
+          }
+        }}
         onConfirm={async (subject, bodyHtml) => {
           if (!pendingStageEmail) return;
           await sendStatusEmail(pendingStageEmail, subject, bodyHtml);
+          setStageNote({
+            applicantId: pendingStageEmail.applicantId,
+            candidateName: pendingStageEmail.candidateName,
+            newStatus: pendingStageEmail.newStatus,
+          });
           setPendingStageEmail(null);
         }}
       />
+
+      <StageNoteDialog
+        pending={stageNote}
+        onOpenChange={(open) => { if (!open) setStageNote(null); }}
+      />
+
 
 
 
