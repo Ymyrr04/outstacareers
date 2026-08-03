@@ -1746,8 +1746,88 @@ export const ClientAnalyticsDashboard = () => {
           </p>
         </CardContent>
       </Card>
+
+      <Sheet open={!!selectedAdmin} onOpenChange={(o) => !o && setSelectedAdmin(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{selectedAdmin} — Hires by Role</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {adminRoleTotalHires} total hires across {adminRoleBreakdown.length} role{adminRoleBreakdown.length === 1 ? '' : 's'}
+            </p>
+
+            {/* Role distribution */}
+            <div className="space-y-1.5">
+              {adminRoleBreakdown.map((r) => {
+                const pct = adminRoleTotalHires > 0 ? Math.round((r.hired / adminRoleTotalHires) * 100) : 0;
+                return (
+                  <div key={r.role} className="flex items-center gap-2">
+                    <span className="text-xs w-40 truncate" title={r.role}>{r.role}</span>
+                    <div className="flex-1 h-2 rounded bg-muted overflow-hidden">
+                      <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground w-10 text-right">{pct}%</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Role</TableHead>
+                    <TableHead className="text-right">Hired</TableHead>
+                    <TableHead className="text-right">Active</TableHead>
+                    <TableHead className="text-right">Retention</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Avg stay</TableHead>
+                    {TENURE_BUCKETS.map((b) => (
+                      <TableHead key={b.key} className="text-right whitespace-nowrap">≥ {b.label}</TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {adminRoleBreakdown.map((r) => (
+                    <TableRow key={r.role}>
+                      <TableCell className="font-medium whitespace-nowrap">{r.role}</TableCell>
+                      <TableCell className="text-right">{r.hired}</TableCell>
+                      <TableCell className="text-right">{r.active}</TableCell>
+                      <TableCell className={`text-right font-medium ${
+                        r.retention >= 80 ? 'text-green-600' : r.retention >= 50 ? 'text-amber-600' : 'text-red-600'
+                      }`}>
+                        {r.retention}%
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground whitespace-nowrap">{r.avgTenure}d</TableCell>
+                      {TENURE_BUCKETS.map((b) => (
+                        <TableCell key={b.key} className="text-right">
+                          <span className={
+                            r.bucketPct[b.key] >= 80 ? 'text-green-600' :
+                            r.bucketPct[b.key] >= 50 ? 'text-amber-600' : 'text-red-600'
+                          }>
+                            {r.bucketPct[b.key]}%
+                          </span>
+                          <span className="text-[10px] text-muted-foreground ml-1">({r.buckets[b.key]})</span>
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                  {adminRoleBreakdown.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5 + TENURE_BUCKETS.length} className="text-center text-sm text-muted-foreground py-4">
+                        No hires found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </DraggableCard>
   );
+
 
   const cardRenderers: Record<CardId, () => JSX.Element> = {
     industry: renderIndustryCard,
