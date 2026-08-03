@@ -4,8 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { WysiwygEditor } from '@/components/WysiwygEditor';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { Loader2, Send, Pencil, Eye } from 'lucide-react';
+
+const ADMIN_SENDERS = [
+  { email: 'mark@outsta.io', name: 'Mark' },
+  { email: 'kristine@outsta.io', name: 'Kristine' },
+  { email: 'czarina@outsta.io', name: 'Czarina' },
+  { email: 'eduardo@outsta.io', name: 'Eduardo' },
+  { email: 'jil@outsta.io', name: 'Jil' },
+];
 
 export interface PendingStageEmail {
   candidateName: string;
