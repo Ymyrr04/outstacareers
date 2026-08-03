@@ -190,6 +190,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     subject: string,
     bodyHtml: string,
     cc?: string[],
+    sendAsEmail?: string,
   ) => {
     try {
       const { data, error } = await supabase.functions.invoke('send-applicant-email', {
@@ -200,9 +201,10 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
           bodyHtml,
           recipientEmail: payload.recipientEmail,
           applicantStatusAtSend: payload.newStatus,
-          isAutomated: true,
+          isAutomated: !sendAsEmail,
           scheduleFor: payload.scheduleFor,
           cc: cc && cc.length > 0 ? cc : undefined,
+          sendAsEmail,
         },
       });
 
@@ -1579,9 +1581,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
             setPendingStageEmail(null);
           }
         }}
-        onConfirm={async (subject, bodyHtml, cc) => {
+        onConfirm={async (subject, bodyHtml, cc, sendAsEmail) => {
           if (!pendingStageEmail) return;
-          await sendStatusEmail(pendingStageEmail, subject, bodyHtml, cc);
+          await sendStatusEmail(pendingStageEmail, subject, bodyHtml, cc, sendAsEmail);
 
           setStageNote({
             applicantId: pendingStageEmail.applicantId,

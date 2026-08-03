@@ -4,8 +4,17 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { WysiwygEditor } from '@/components/WysiwygEditor';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { sanitizeHtml } from '@/lib/sanitize';
 import { Loader2, Send, Pencil, Eye } from 'lucide-react';
+
+const ADMIN_SENDERS = [
+  { email: 'mark@outsta.io', name: 'Mark' },
+  { email: 'kristine@outsta.io', name: 'Kristine' },
+  { email: 'czarina@outsta.io', name: 'Czarina' },
+  { email: 'eduardo@outsta.io', name: 'Eduardo' },
+  { email: 'jil@outsta.io', name: 'Jil' },
+];
 
 export interface PendingStageEmail {
   candidateName: string;
@@ -19,7 +28,7 @@ export interface PendingStageEmail {
 interface Props {
   pending: PendingStageEmail | null;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (subject: string, bodyHtml: string, cc: string[]) => Promise<void> | void;
+  onConfirm: (subject: string, bodyHtml: string, cc: string[], sendAsEmail?: string) => Promise<void> | void;
 }
 
 export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Props) {
@@ -28,6 +37,7 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
   const DEFAULT_CC = 'jil@outsta.io';
   const [cc, setCc] = useState(DEFAULT_CC);
   const [showCc, setShowCc] = useState(true);
+  const [sendAsEmail, setSendAsEmail] = useState('default');
   const [editing, setEditing] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -37,6 +47,7 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
       setBodyHtml(pending.bodyHtml);
       setCc(DEFAULT_CC);
       setShowCc(true);
+      setSendAsEmail('default');
       setEditing(false);
       setSending(false);
     }
@@ -52,7 +63,7 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
   const handleConfirm = async () => {
     setSending(true);
     try {
-      await onConfirm(subject, bodyHtml, ccList);
+      await onConfirm(subject, bodyHtml, ccList, sendAsEmail !== 'default' ? sendAsEmail : undefined);
       onOpenChange(false);
     } finally {
       setSending(false);
@@ -76,6 +87,23 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label>From</Label>
+            <Select value={sendAsEmail} onValueChange={setSendAsEmail}>
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Select sender..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">Recruitment (default)</SelectItem>
+                {ADMIN_SENDERS.map((a) => (
+                  <SelectItem key={a.email} value={a.email}>
+                    {a.name} ({a.email})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <Label className="text-xs text-muted-foreground">To</Label>
