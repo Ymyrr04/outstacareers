@@ -6,6 +6,8 @@ import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Building2, TrendingUp, TrendingDown, Users, GripVertical, ArrowUpDown, ArrowUp, ArrowDown, Globe, UserPlus, Languages } from 'lucide-react';
@@ -796,6 +798,72 @@ export const ClientAnalyticsDashboard = () => {
       }))
       .sort((a, b) => b.hired - a.hired);
   }, [contractors]);
+
+  // Drill-down: selected admin's hires grouped by role
+  const [selectedAdmin, setSelectedAdmin] = useState<string | null>(null);
+
+  const adminRoleBreakdown = useMemo(() => {
+    if (!selectedAdmin) return [];
+    const now = Date.now();
+    const map: Record<string, {
+      role: string;
+      hired: number;
+      active: number;
+      buckets: Record<string, number>;
+      tenureSum: number;
+      tenureCount: number;
+    }> = {};
+
+    contractors.forEach((c) => {
+      const raw = (c as any).hired_by as string | null;
+      if (!raw) return;
+      if ((getAdminDisplayName(raw) || 'Unassigned') !== selectedAdmin) return;
+      const role = c.job_title || 'Unknown';
+      if (!map[role]) {
+        map[role] = {
+          role,
+          hired: 0,
+          active: 0,
+          buckets: Object.fromEntries(TENURE_BUCKETS.map(b => [b.key, 0])),
+          tenureSum: 0,
+          tenureCount: 0,
+        };
+      }
+      const entry = map[role];
+      entry.hired += 1;
+      const isActive = c.status === 'active' || c.status === 'rendering' || c.status === 'scheduled';
+      if (isActive) entry.active += 1;
+
+      if (c.start_date) {
+        const start = new Date(c.start_date).getTime();
+        const end = c.end_date ? new Date(c.end_date).getTime() : now;
+        const days = Math.max(0, Math.floor((end - start) / 86400000));
+        entry.tenureSum += days;
+        entry.tenureCount += 1;
+        TENURE_BUCKETS.forEach((b) => {
+          if (days >= b.days) entry.buckets[b.key] += 1;
+        });
+      }
+    });
+
+    return Object.values(map)
+      .map((e) => ({
+        ...e,
+        retention: e.hired > 0 ? Math.round((e.active / e.hired) * 100) : 0,
+        avgTenure: e.tenureCount > 0 ? Math.round(e.tenureSum / e.tenureCount) : 0,
+        bucketPct: Object.fromEntries(
+          TENURE_BUCKETS.map(b => [
+            b.key,
+            e.tenureCount > 0 ? Math.round((e.buckets[b.key] / e.tenureCount) * 100) : 0,
+          ])
+        ) as Record<string, number>,
+      }))
+      .sort((a, b) => b.hired - a.hired);
+  }, [contractors, selectedAdmin]);
+
+  const adminRoleTotalHires = adminRoleBreakdown.reduce((s, r) => s + r.hired, 0);
+
+
 
 
 
@@ -1633,7 +1701,15 @@ export const ClientAnalyticsDashboard = () => {
               <TableBody>
                 {hiresByAdmin.map((a) => (
                   <TableRow key={a.name}>
-                    <TableCell className="font-medium whitespace-nowrap">{a.name}</TableCell>
+                    <TableCell className="font-medium whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedAdmin(a.name)}
+                        className="hover:underline underline-offset-2 cursor-pointer text-left hover:text-primary transition-colors"
+                      >
+                        {a.name}
+                      </button>
+                    </TableCell>
                     <TableCell className="text-right">{a.hired}</TableCell>
                     <TableCell className="text-right">{a.active}</TableCell>
                     <TableCell className={`text-right font-medium ${
@@ -1670,8 +1746,88 @@ export const ClientAnalyticsDashboard = () => {
           </p>
         </CardContent>
       </Card>
+
+      <Sheet open={!!selectedAdmin} onOpenChange={(o) => !o && setSelectedAdmin(null)}>
+        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle>{selectedAdmin} — Hires by Role</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-4">
+            <p className="text-sm text-muted-foreground">
+              {adminRoleTotalHires} total hires across {adminRoleBreakdown.length} role{adminRoleBreakdown.length === 1 ? '' : 's'}
+            </p>
+
+            {/* Role distribution */}
+            <div className="space-y-1.5">
+              {adminRoleBreakdown.map((r) => {
+                const pct = adminRoleTotalHires > 0 ? Math.round((r.hired / adminRoleTotalHires) * 100) : 0;
+                return (
+                  <div key={r.role} className="flex items-center gap-2">
+                    <span className="text-xs w-40 truncate" title={r.role}>{r.role}</span>
+                    <div className="flex-1 h-2 rounded bg-muted overflow-hidden">
+                      <div className="h-full bg-primary" style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground w-10 text-right">{pct}%</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="whitespace-nowrap">Role</TableHead>
+                    <TableHead className="text-right">Hired</TableHead>
+                    <TableHead className="text-right">Active</TableHead>
+                    <TableHead className="text-right">Retention</TableHead>
+                    <TableHead className="text-right whitespace-nowrap">Avg stay</TableHead>
+                    {TENURE_BUCKETS.map((b) => (
+                      <TableHead key={b.key} className="text-right whitespace-nowrap">≥ {b.label}</TableHead>
+                    ))}
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {adminRoleBreakdown.map((r) => (
+                    <TableRow key={r.role}>
+                      <TableCell className="font-medium whitespace-nowrap">{r.role}</TableCell>
+                      <TableCell className="text-right">{r.hired}</TableCell>
+                      <TableCell className="text-right">{r.active}</TableCell>
+                      <TableCell className={`text-right font-medium ${
+                        r.retention >= 80 ? 'text-green-600' : r.retention >= 50 ? 'text-amber-600' : 'text-red-600'
+                      }`}>
+                        {r.retention}%
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground whitespace-nowrap">{r.avgTenure}d</TableCell>
+                      {TENURE_BUCKETS.map((b) => (
+                        <TableCell key={b.key} className="text-right">
+                          <span className={
+                            r.bucketPct[b.key] >= 80 ? 'text-green-600' :
+                            r.bucketPct[b.key] >= 50 ? 'text-amber-600' : 'text-red-600'
+                          }>
+                            {r.bucketPct[b.key]}%
+                          </span>
+                          <span className="text-[10px] text-muted-foreground ml-1">({r.buckets[b.key]})</span>
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))}
+                  {adminRoleBreakdown.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={5 + TENURE_BUCKETS.length} className="text-center text-sm text-muted-foreground py-4">
+                        No hires found
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </DraggableCard>
   );
+
 
   const cardRenderers: Record<CardId, () => JSX.Element> = {
     industry: renderIndustryCard,
