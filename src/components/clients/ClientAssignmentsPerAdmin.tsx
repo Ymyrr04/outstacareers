@@ -44,7 +44,7 @@ const fmtDuration = (days: number | null) => {
 };
 
 const rateColor = (pct: number) =>
-  pct < 20 ? 'text-green-600' : pct <= 40 ? 'text-amber-600' : 'text-red-600';
+  pct >= 80 ? 'text-green-600' : pct >= 60 ? 'text-amber-600' : 'text-red-600';
 
 export const ClientAssignmentsPerAdmin = ({ contractors }: { contractors: AssignmentRow[] }) => {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -139,12 +139,12 @@ export const ClientAssignmentsPerAdmin = ({ contractors }: { contractors: Assign
     return Object.values(admins)
       .map((a) => ({
         ...a,
-        rate: a.hired > 0 ? Math.round((a.terminated / a.hired) * 100) : 0,
+        rate: a.hired > 0 ? Math.round((a.active / a.hired) * 100) : 0,
         clientRows: Object.values(a.clients)
           .map((cl) => ({
             ...cl,
             roleList: Array.from(cl.roles).sort(),
-            rate: cl.hired > 0 ? Math.round((cl.terminated / cl.hired) * 100) : 0,
+            rate: cl.hired > 0 ? Math.round((cl.active / cl.hired) * 100) : 0,
           }))
           .sort((x, y) => y.hired - x.hired),
       }))
@@ -154,7 +154,7 @@ export const ClientAssignmentsPerAdmin = ({ contractors }: { contractors: Assign
   const stats = useMemo(() => {
     const pairs = new Set(filtered.map((c) => `${c.adminName}|||${c.clientName}`));
     const total = filtered.length;
-    const terminated = filtered.filter((c) => !c.active).length;
+    const activeCount = filtered.filter((c) => c.active).length;
     const activeByAdmin: Record<string, number> = {};
     filtered.forEach((c) => {
       if (c.active) activeByAdmin[c.adminName] = (activeByAdmin[c.adminName] || 0) + 1;
@@ -162,7 +162,7 @@ export const ClientAssignmentsPerAdmin = ({ contractors }: { contractors: Assign
     const top = Object.entries(activeByAdmin).sort((a, b) => b[1] - a[1])[0];
     return {
       relationships: pairs.size,
-      rate: total > 0 ? Math.round((terminated / total) * 100) : 0,
+      rate: total > 0 ? Math.round((activeCount / total) * 100) : 0,
       topAdmin: top ? top[0] : '—',
       topAdminCount: top ? top[1] : 0,
     };
@@ -254,12 +254,12 @@ export const ClientAssignmentsPerAdmin = ({ contractors }: { contractors: Assign
             </div>
           </div>
           <div className="rounded-lg border p-3 flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-red-500/10">
-              <Percent className="w-4 h-4 text-red-600" />
+            <div className="p-2 rounded-lg bg-green-500/10">
+              <Percent className="w-4 h-4 text-green-600" />
             </div>
             <div>
               <p className={`text-xl font-bold ${rateColor(stats.rate)}`}>{stats.rate}%</p>
-              <p className="text-xs text-muted-foreground">Overall termination rate</p>
+              <p className="text-xs text-muted-foreground">Overall retention rate</p>
             </div>
           </div>
           <div className="rounded-lg border p-3 flex items-center gap-3">
@@ -338,7 +338,7 @@ export const ClientAssignmentsPerAdmin = ({ contractors }: { contractors: Assign
                 <TableHead className="text-right whitespace-nowrap">Total Hired</TableHead>
                 <TableHead className="text-right">Active</TableHead>
                 <TableHead className="text-right">Terminated</TableHead>
-                <TableHead className="text-right whitespace-nowrap">Termination Rate</TableHead>
+                <TableHead className="text-right whitespace-nowrap">Retention Rate</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -400,7 +400,7 @@ export const ClientAssignmentsPerAdmin = ({ contractors }: { contractors: Assign
           </Table>
         </div>
         <p className="text-[10px] text-muted-foreground">
-          Termination rate = terminated ÷ total hired. Click an admin row to collapse, a client name for details, or a role pill to filter.
+          Retention rate = active ÷ total hired. Click an admin row to collapse, a client name for details, or a role pill to filter.
         </p>
       </CardContent>
 
