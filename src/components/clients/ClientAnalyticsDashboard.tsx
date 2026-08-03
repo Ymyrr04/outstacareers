@@ -1788,7 +1788,12 @@ export const ClientAnalyticsDashboard = () => {
       </Card>
 
       <Sheet open={!!selectedAdmin} onOpenChange={(o) => !o && setSelectedAdmin(null)}>
-        <SheetContent side="right" className="w-full sm:max-w-2xl overflow-y-auto">
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-none sm:w-[92vw] lg:w-[80vw] xl:w-[70vw] overflow-y-auto"
+          onPointerDownOutside={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
+        >
           <SheetHeader>
             <SheetTitle>{selectedAdmin} — Hires by Role</SheetTitle>
           </SheetHeader>
