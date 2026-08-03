@@ -19,12 +19,14 @@ export interface PendingStageEmail {
 interface Props {
   pending: PendingStageEmail | null;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (subject: string, bodyHtml: string) => Promise<void> | void;
+  onConfirm: (subject: string, bodyHtml: string, cc: string[]) => Promise<void> | void;
 }
 
 export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Props) {
   const [subject, setSubject] = useState('');
   const [bodyHtml, setBodyHtml] = useState('');
+  const [cc, setCc] = useState('');
+  const [showCc, setShowCc] = useState(false);
   const [editing, setEditing] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -32,6 +34,8 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
     if (pending) {
       setSubject(pending.subject);
       setBodyHtml(pending.bodyHtml);
+      setCc('');
+      setShowCc(false);
       setEditing(false);
       setSending(false);
     }
@@ -39,15 +43,21 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
 
   if (!pending) return null;
 
+  const ccList = cc
+    .split(/[,;\s]+/)
+    .map((e) => e.trim())
+    .filter((e) => e.includes('@'));
+
   const handleConfirm = async () => {
     setSending(true);
     try {
-      await onConfirm(subject, bodyHtml);
+      await onConfirm(subject, bodyHtml, ccList);
       onOpenChange(false);
     } finally {
       setSending(false);
     }
   };
+
 
   return (
     <Dialog open={!!pending} onOpenChange={(o) => { if (!o) onOpenChange(false); }}>
@@ -66,9 +76,29 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
 
         <div className="space-y-4 py-2">
           <div className="space-y-1">
-            <Label className="text-xs text-muted-foreground">To</Label>
+            <div className="flex items-center justify-between">
+              <Label className="text-xs text-muted-foreground">To</Label>
+              {!showCc && (
+                <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={() => setShowCc(true)}>
+                  Add CC
+                </Button>
+              )}
+            </div>
             <p className="text-sm font-medium">{pending.recipientEmail}</p>
           </div>
+
+          {showCc && (
+            <div className="space-y-2">
+              <Label>CC</Label>
+              <Input
+                value={cc}
+                onChange={(e) => setCc(e.target.value)}
+                placeholder="name@outsta.io, other@example.com"
+              />
+              <p className="text-xs text-muted-foreground">Separate multiple emails with commas.</p>
+            </div>
+          )}
+
 
           <div className="space-y-2">
             <Label>Subject</Label>
