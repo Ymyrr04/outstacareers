@@ -211,6 +211,7 @@ export const ContractorsDashboard = () => {
     position: { asc: 'position_asc', desc: 'position_desc' },
     rate: { asc: 'rate_asc', desc: 'rate_desc' },
     country: { asc: 'country_asc', desc: 'country_desc' },
+    hiredBy: { asc: 'hired_by_asc', desc: 'hired_by_desc' },
   };
 
   const handleHeaderSort = (columnKey: string) => {
