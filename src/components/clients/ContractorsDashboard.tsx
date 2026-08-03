@@ -211,6 +211,7 @@ export const ContractorsDashboard = () => {
     position: { asc: 'position_asc', desc: 'position_desc' },
     rate: { asc: 'rate_asc', desc: 'rate_desc' },
     country: { asc: 'country_asc', desc: 'country_desc' },
+    hiredBy: { asc: 'hired_by_asc', desc: 'hired_by_desc' },
   };
 
   const handleHeaderSort = (columnKey: string) => {
@@ -520,6 +521,10 @@ export const ContractorsDashboard = () => {
           return (a.country || a.applicant?.location || '').localeCompare(b.country || b.applicant?.location || '');
         case 'country_desc':
           return (b.country || b.applicant?.location || '').localeCompare(a.country || a.applicant?.location || '');
+        case 'hired_by_asc':
+          return getAdminDisplayName(a.hired_by, '').localeCompare(getAdminDisplayName(b.hired_by, ''));
+        case 'hired_by_desc':
+          return getAdminDisplayName(b.hired_by, '').localeCompare(getAdminDisplayName(a.hired_by, ''));
         default:
           return 0;
       }
@@ -897,7 +902,7 @@ export const ContractorsDashboard = () => {
                       {visibleColumns.source && <TableHead className="min-w-[100px]">Source</TableHead>}
                       {visibleColumns.notes && <TableHead className="min-w-[200px]">Notes</TableHead>}
                       {visibleColumns.separationNote && <TableHead className="min-w-[200px]">Separation Note</TableHead>}
-                      {visibleColumns.hiredBy && <TableHead className="min-w-[120px]">Hired By</TableHead>}
+                      {visibleColumns.hiredBy && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('hiredBy')}>Hired By {getSortIcon('hiredBy')}</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1236,7 +1241,7 @@ export const ContractorsDashboard = () => {
                         {visibleColumns.source && <TableHead className="min-w-[100px]">Source</TableHead>}
                         {visibleColumns.separationNote && <TableHead className="min-w-[200px]">Separation Note</TableHead>}
                         {visibleColumns.notes && <TableHead className="min-w-[200px]">Notes</TableHead>}
-                        {visibleColumns.hiredBy && <TableHead className="min-w-[120px]">Hired By</TableHead>}
+                        {visibleColumns.hiredBy && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('hiredBy')}>Hired By {getSortIcon('hiredBy')}</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
