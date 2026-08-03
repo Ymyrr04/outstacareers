@@ -797,6 +797,72 @@ export const ClientAnalyticsDashboard = () => {
       .sort((a, b) => b.hired - a.hired);
   }, [contractors]);
 
+  // Drill-down: selected admin's hires grouped by role
+  const [selectedAdmin, setSelectedAdmin] = useState<string | null>(null);
+
+  const adminRoleBreakdown = useMemo(() => {
+    if (!selectedAdmin) return [];
+    const now = Date.now();
+    const map: Record<string, {
+      role: string;
+      hired: number;
+      active: number;
+      buckets: Record<string, number>;
+      tenureSum: number;
+      tenureCount: number;
+    }> = {};
+
+    contractors.forEach((c) => {
+      const raw = (c as any).hired_by as string | null;
+      if (!raw) return;
+      if ((getAdminDisplayName(raw) || 'Unassigned') !== selectedAdmin) return;
+      const role = c.job_title || 'Unknown';
+      if (!map[role]) {
+        map[role] = {
+          role,
+          hired: 0,
+          active: 0,
+          buckets: Object.fromEntries(TENURE_BUCKETS.map(b => [b.key, 0])),
+          tenureSum: 0,
+          tenureCount: 0,
+        };
+      }
+      const entry = map[role];
+      entry.hired += 1;
+      const isActive = c.status === 'active' || c.status === 'rendering' || c.status === 'scheduled';
+      if (isActive) entry.active += 1;
+
+      if (c.start_date) {
+        const start = new Date(c.start_date).getTime();
+        const end = c.end_date ? new Date(c.end_date).getTime() : now;
+        const days = Math.max(0, Math.floor((end - start) / 86400000));
+        entry.tenureSum += days;
+        entry.tenureCount += 1;
+        TENURE_BUCKETS.forEach((b) => {
+          if (days >= b.days) entry.buckets[b.key] += 1;
+        });
+      }
+    });
+
+    return Object.values(map)
+      .map((e) => ({
+        ...e,
+        retention: e.hired > 0 ? Math.round((e.active / e.hired) * 100) : 0,
+        avgTenure: e.tenureCount > 0 ? Math.round(e.tenureSum / e.tenureCount) : 0,
+        bucketPct: Object.fromEntries(
+          TENURE_BUCKETS.map(b => [
+            b.key,
+            e.tenureCount > 0 ? Math.round((e.buckets[b.key] / e.tenureCount) * 100) : 0,
+          ])
+        ) as Record<string, number>,
+      }))
+      .sort((a, b) => b.hired - a.hired);
+  }, [contractors, selectedAdmin]);
+
+  const adminRoleTotalHires = adminRoleBreakdown.reduce((s, r) => s + r.hired, 0);
+
+
+
 
 
   // 5. Contractors by Role (Job Title)
