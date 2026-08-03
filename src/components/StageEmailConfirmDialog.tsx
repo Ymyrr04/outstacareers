@@ -25,8 +25,9 @@ interface Props {
 export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Props) {
   const [subject, setSubject] = useState('');
   const [bodyHtml, setBodyHtml] = useState('');
-  const [cc, setCc] = useState('');
-  const [showCc, setShowCc] = useState(false);
+  const DEFAULT_CC = 'jil@outsta.io';
+  const [cc, setCc] = useState(DEFAULT_CC);
+  const [showCc, setShowCc] = useState(true);
   const [editing, setEditing] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -34,8 +35,8 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
     if (pending) {
       setSubject(pending.subject);
       setBodyHtml(pending.bodyHtml);
-      setCc('');
-      setShowCc(false);
+      setCc(DEFAULT_CC);
+      setShowCc(true);
       setEditing(false);
       setSending(false);
     }
