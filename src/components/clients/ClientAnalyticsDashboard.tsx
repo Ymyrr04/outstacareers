@@ -1870,7 +1870,10 @@ export const ClientAnalyticsDashboard = () => {
           </div>
         </SheetContent>
       </Sheet>
+
+      <ClientAssignmentsPerAdmin contractors={contractors as any} />
     </DraggableCard>
+
   );
 
 
