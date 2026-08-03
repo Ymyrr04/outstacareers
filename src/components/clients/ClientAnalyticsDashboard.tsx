@@ -1815,18 +1815,18 @@ export const ClientAnalyticsDashboard = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="whitespace-nowrap">Role</TableHead>
-                    <TableHead className="text-right">Hired</TableHead>
-                    <TableHead className="text-right">Active</TableHead>
-                    <TableHead className="text-right">Retention</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Avg stay</TableHead>
+                    <TableHead className="whitespace-nowrap cursor-pointer select-none" onClick={() => toggleAdminRoleSort('role')}>Role{adminRoleSortIcon('role')}</TableHead>
+                    <TableHead className="text-right cursor-pointer select-none" onClick={() => toggleAdminRoleSort('hired')}>Hired{adminRoleSortIcon('hired')}</TableHead>
+                    <TableHead className="text-right cursor-pointer select-none" onClick={() => toggleAdminRoleSort('active')}>Active{adminRoleSortIcon('active')}</TableHead>
+                    <TableHead className="text-right cursor-pointer select-none" onClick={() => toggleAdminRoleSort('retention')}>Retention{adminRoleSortIcon('retention')}</TableHead>
+                    <TableHead className="text-right whitespace-nowrap cursor-pointer select-none" onClick={() => toggleAdminRoleSort('avgTenure')}>Avg stay{adminRoleSortIcon('avgTenure')}</TableHead>
                     {TENURE_BUCKETS.map((b) => (
-                      <TableHead key={b.key} className="text-right whitespace-nowrap">≥ {b.label}</TableHead>
+                      <TableHead key={b.key} className="text-right whitespace-nowrap cursor-pointer select-none" onClick={() => toggleAdminRoleSort(b.key)}>≥ {b.label}{adminRoleSortIcon(b.key)}</TableHead>
                     ))}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {adminRoleBreakdown.map((r) => (
+                  {sortedAdminRoleBreakdown.map((r) => (
                     <TableRow key={r.role}>
                       <TableCell className="font-medium whitespace-nowrap">{r.role}</TableCell>
                       <TableCell className="text-right">{r.hired}</TableCell>
