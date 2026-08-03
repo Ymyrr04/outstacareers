@@ -867,7 +867,9 @@ export const ClientAnalyticsDashboard = () => {
   const [adminRoleSortKey, setAdminRoleSortKey] = useState<string>('hired');
   const [adminRoleSortDir, setAdminRoleSortDir] = useState<'asc' | 'desc'>('desc');
 
-  const toggleAdminRoleSort = (key: string) => {
+  const toggleAdminRoleSort = (key: string, e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
     if (adminRoleSortKey === key) {
       setAdminRoleSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
     } else {
