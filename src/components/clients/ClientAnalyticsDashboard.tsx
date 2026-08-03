@@ -863,6 +863,44 @@ export const ClientAnalyticsDashboard = () => {
 
   const adminRoleTotalHires = adminRoleBreakdown.reduce((s, r) => s + r.hired, 0);
 
+  // Sorting for the drill-down role table
+  const [roleSortKey, setRoleSortKey] = useState<string>('hired');
+  const [roleSortDir, setRoleSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const toggleRoleSort = (key: string) => {
+    if (roleSortKey === key) {
+      setRoleSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setRoleSortKey(key);
+      setRoleSortDir(key === 'role' ? 'asc' : 'desc');
+    }
+  };
+
+  const sortedAdminRoleBreakdown = useMemo(() => {
+    const rows = [...adminRoleBreakdown];
+    const dir = roleSortDir === 'asc' ? 1 : -1;
+    rows.sort((a, b) => {
+      let av: number | string;
+      let bv: number | string;
+      if (roleSortKey === 'role') { av = a.role.toLowerCase(); bv = b.role.toLowerCase(); }
+      else if (roleSortKey === 'hired') { av = a.hired; bv = b.hired; }
+      else if (roleSortKey === 'active') { av = a.active; bv = b.active; }
+      else if (roleSortKey === 'retention') { av = a.retention; bv = b.retention; }
+      else if (roleSortKey === 'avgTenure') { av = a.avgTenure; bv = b.avgTenure; }
+      else { av = a.bucketPct[roleSortKey] ?? 0; bv = b.bucketPct[roleSortKey] ?? 0; }
+      if (av < bv) return -1 * dir;
+      if (av > bv) return 1 * dir;
+      return b.hired - a.hired;
+    });
+    return rows;
+  }, [adminRoleBreakdown, roleSortKey, roleSortDir]);
+
+  const roleSortIcon = (key: string) =>
+    roleSortKey !== key ? <ArrowUpDown className="w-3 h-3 inline ml-1 opacity-40" />
+      : roleSortDir === 'asc' ? <ArrowUp className="w-3 h-3 inline ml-1" />
+      : <ArrowDown className="w-3 h-3 inline ml-1" />;
+
+
 
 
 
