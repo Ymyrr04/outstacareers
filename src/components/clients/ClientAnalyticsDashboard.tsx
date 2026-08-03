@@ -6,6 +6,8 @@ import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Building2, TrendingUp, TrendingDown, Users, GripVertical, ArrowUpDown, ArrowUp, ArrowDown, Globe, UserPlus, Languages } from 'lucide-react';
