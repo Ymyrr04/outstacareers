@@ -1822,13 +1822,13 @@ export const ClientAnalyticsDashboard = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="whitespace-nowrap cursor-pointer select-none" onClick={() => toggleAdminRoleSort('role')}>Role{adminRoleSortIcon('role')}</TableHead>
-                    <TableHead className="text-right cursor-pointer select-none" onClick={() => toggleAdminRoleSort('hired')}>Hired{adminRoleSortIcon('hired')}</TableHead>
-                    <TableHead className="text-right cursor-pointer select-none" onClick={() => toggleAdminRoleSort('active')}>Active{adminRoleSortIcon('active')}</TableHead>
-                    <TableHead className="text-right cursor-pointer select-none" onClick={() => toggleAdminRoleSort('retention')}>Retention{adminRoleSortIcon('retention')}</TableHead>
-                    <TableHead className="text-right whitespace-nowrap cursor-pointer select-none" onClick={() => toggleAdminRoleSort('avgTenure')}>Avg stay{adminRoleSortIcon('avgTenure')}</TableHead>
+                    <TableHead className="whitespace-nowrap cursor-pointer select-none" onClick={(e) => toggleAdminRoleSort('role', e)}>Role{adminRoleSortIcon('role')}</TableHead>
+                    <TableHead className="text-right cursor-pointer select-none" onClick={(e) => toggleAdminRoleSort('hired', e)}>Hired{adminRoleSortIcon('hired')}</TableHead>
+                    <TableHead className="text-right cursor-pointer select-none" onClick={(e) => toggleAdminRoleSort('active', e)}>Active{adminRoleSortIcon('active')}</TableHead>
+                    <TableHead className="text-right cursor-pointer select-none" onClick={(e) => toggleAdminRoleSort('retention', e)}>Retention{adminRoleSortIcon('retention')}</TableHead>
+                    <TableHead className="text-right whitespace-nowrap cursor-pointer select-none" onClick={(e) => toggleAdminRoleSort('avgTenure', e)}>Avg stay{adminRoleSortIcon('avgTenure')}</TableHead>
                     {TENURE_BUCKETS.map((b) => (
-                      <TableHead key={b.key} className="text-right whitespace-nowrap cursor-pointer select-none" onClick={() => toggleAdminRoleSort(b.key)}>≥ {b.label}{adminRoleSortIcon(b.key)}</TableHead>
+                      <TableHead key={b.key} className="text-right whitespace-nowrap cursor-pointer select-none" onClick={(e) => toggleAdminRoleSort(b.key, e)}>≥ {b.label}{adminRoleSortIcon(b.key)}</TableHead>
                     ))}
                   </TableRow>
                 </TableHeader>
