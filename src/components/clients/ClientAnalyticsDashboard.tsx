@@ -863,6 +863,44 @@ export const ClientAnalyticsDashboard = () => {
 
   const adminRoleTotalHires = adminRoleBreakdown.reduce((s, r) => s + r.hired, 0);
 
+  // Sorting for the drill-down role table
+  const [adminRoleSortKey, setAdminRoleSortKey] = useState<string>('hired');
+  const [adminRoleSortDir, setAdminRoleSortDir] = useState<'asc' | 'desc'>('desc');
+
+  const toggleAdminRoleSort = (key: string) => {
+    if (adminRoleSortKey === key) {
+      setAdminRoleSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setAdminRoleSortKey(key);
+      setAdminRoleSortDir(key === 'role' ? 'asc' : 'desc');
+    }
+  };
+
+  const sortedAdminRoleBreakdown = useMemo(() => {
+    const rows = [...adminRoleBreakdown];
+    const dir = adminRoleSortDir === 'asc' ? 1 : -1;
+    rows.sort((a, b) => {
+      let av: number | string;
+      let bv: number | string;
+      if (adminRoleSortKey === 'role') { av = a.role.toLowerCase(); bv = b.role.toLowerCase(); }
+      else if (adminRoleSortKey === 'hired') { av = a.hired; bv = b.hired; }
+      else if (adminRoleSortKey === 'active') { av = a.active; bv = b.active; }
+      else if (adminRoleSortKey === 'retention') { av = a.retention; bv = b.retention; }
+      else if (adminRoleSortKey === 'avgTenure') { av = a.avgTenure; bv = b.avgTenure; }
+      else { av = a.bucketPct[adminRoleSortKey] ?? 0; bv = b.bucketPct[adminRoleSortKey] ?? 0; }
+      if (av < bv) return -1 * dir;
+      if (av > bv) return 1 * dir;
+      return b.hired - a.hired;
+    });
+    return rows;
+  }, [adminRoleBreakdown, adminRoleSortKey, adminRoleSortDir]);
+
+  const adminRoleSortIcon = (key: string) =>
+    adminRoleSortKey !== key ? <ArrowUpDown className="w-3 h-3 inline ml-1 opacity-40" />
+      : adminRoleSortDir === 'asc' ? <ArrowUp className="w-3 h-3 inline ml-1" />
+      : <ArrowDown className="w-3 h-3 inline ml-1" />;
+
+
 
 
 
@@ -1777,18 +1815,18 @@ export const ClientAnalyticsDashboard = () => {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="whitespace-nowrap">Role</TableHead>
-                    <TableHead className="text-right">Hired</TableHead>
-                    <TableHead className="text-right">Active</TableHead>
-                    <TableHead className="text-right">Retention</TableHead>
-                    <TableHead className="text-right whitespace-nowrap">Avg stay</TableHead>
+                    <TableHead className="whitespace-nowrap cursor-pointer select-none" onClick={() => toggleAdminRoleSort('role')}>Role{adminRoleSortIcon('role')}</TableHead>
+                    <TableHead className="text-right cursor-pointer select-none" onClick={() => toggleAdminRoleSort('hired')}>Hired{adminRoleSortIcon('hired')}</TableHead>
+                    <TableHead className="text-right cursor-pointer select-none" onClick={() => toggleAdminRoleSort('active')}>Active{adminRoleSortIcon('active')}</TableHead>
+                    <TableHead className="text-right cursor-pointer select-none" onClick={() => toggleAdminRoleSort('retention')}>Retention{adminRoleSortIcon('retention')}</TableHead>
+                    <TableHead className="text-right whitespace-nowrap cursor-pointer select-none" onClick={() => toggleAdminRoleSort('avgTenure')}>Avg stay{adminRoleSortIcon('avgTenure')}</TableHead>
                     {TENURE_BUCKETS.map((b) => (
-                      <TableHead key={b.key} className="text-right whitespace-nowrap">≥ {b.label}</TableHead>
+                      <TableHead key={b.key} className="text-right whitespace-nowrap cursor-pointer select-none" onClick={() => toggleAdminRoleSort(b.key)}>≥ {b.label}{adminRoleSortIcon(b.key)}</TableHead>
                     ))}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {adminRoleBreakdown.map((r) => (
+                  {sortedAdminRoleBreakdown.map((r) => (
                     <TableRow key={r.role}>
                       <TableCell className="font-medium whitespace-nowrap">{r.role}</TableCell>
                       <TableCell className="text-right">{r.hired}</TableCell>
