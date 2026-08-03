@@ -28,7 +28,7 @@ export interface PendingStageEmail {
 interface Props {
   pending: PendingStageEmail | null;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (subject: string, bodyHtml: string, cc: string[]) => Promise<void> | void;
+  onConfirm: (subject: string, bodyHtml: string, cc: string[], sendAsEmail?: string) => Promise<void> | void;
 }
 
 export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Props) {
@@ -37,6 +37,7 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
   const DEFAULT_CC = 'jil@outsta.io';
   const [cc, setCc] = useState(DEFAULT_CC);
   const [showCc, setShowCc] = useState(true);
+  const [sendAsEmail, setSendAsEmail] = useState('default');
   const [editing, setEditing] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -46,6 +47,7 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
       setBodyHtml(pending.bodyHtml);
       setCc(DEFAULT_CC);
       setShowCc(true);
+      setSendAsEmail('default');
       setEditing(false);
       setSending(false);
     }
@@ -61,7 +63,7 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
   const handleConfirm = async () => {
     setSending(true);
     try {
-      await onConfirm(subject, bodyHtml, ccList);
+      await onConfirm(subject, bodyHtml, ccList, sendAsEmail !== 'default' ? sendAsEmail : undefined);
       onOpenChange(false);
     } finally {
       setSending(false);
