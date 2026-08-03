@@ -87,6 +87,23 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label>From</Label>
+            <Select value={sendAsEmail} onValueChange={setSendAsEmail}>
+              <SelectTrigger className="h-9">
+                <SelectValue placeholder="Select sender..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="default">Recruitment (default)</SelectItem>
+                {ADMIN_SENDERS.map((a) => (
+                  <SelectItem key={a.email} value={a.email}>
+                    {a.name} ({a.email})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
           <div className="space-y-1">
             <div className="flex items-center justify-between">
               <Label className="text-xs text-muted-foreground">To</Label>
