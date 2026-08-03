@@ -521,6 +521,10 @@ export const ContractorsDashboard = () => {
           return (a.country || a.applicant?.location || '').localeCompare(b.country || b.applicant?.location || '');
         case 'country_desc':
           return (b.country || b.applicant?.location || '').localeCompare(a.country || a.applicant?.location || '');
+        case 'hired_by_asc':
+          return getAdminDisplayName(a.hired_by, '').localeCompare(getAdminDisplayName(b.hired_by, ''));
+        case 'hired_by_desc':
+          return getAdminDisplayName(b.hired_by, '').localeCompare(getAdminDisplayName(a.hired_by, ''));
         default:
           return 0;
       }
