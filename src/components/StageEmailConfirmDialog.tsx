@@ -19,12 +19,14 @@ export interface PendingStageEmail {
 interface Props {
   pending: PendingStageEmail | null;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (subject: string, bodyHtml: string) => Promise<void> | void;
+  onConfirm: (subject: string, bodyHtml: string, cc: string[]) => Promise<void> | void;
 }
 
 export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Props) {
   const [subject, setSubject] = useState('');
   const [bodyHtml, setBodyHtml] = useState('');
+  const [cc, setCc] = useState('');
+  const [showCc, setShowCc] = useState(false);
   const [editing, setEditing] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -32,6 +34,8 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
     if (pending) {
       setSubject(pending.subject);
       setBodyHtml(pending.bodyHtml);
+      setCc('');
+      setShowCc(false);
       setEditing(false);
       setSending(false);
     }
@@ -39,15 +43,21 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
 
   if (!pending) return null;
 
+  const ccList = cc
+    .split(/[,;\s]+/)
+    .map((e) => e.trim())
+    .filter((e) => e.includes('@'));
+
   const handleConfirm = async () => {
     setSending(true);
     try {
-      await onConfirm(subject, bodyHtml);
+      await onConfirm(subject, bodyHtml, ccList);
       onOpenChange(false);
     } finally {
       setSending(false);
     }
   };
+
 
   return (
     <Dialog open={!!pending} onOpenChange={(o) => { if (!o) onOpenChange(false); }}>
