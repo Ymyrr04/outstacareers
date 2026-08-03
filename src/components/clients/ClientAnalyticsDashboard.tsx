@@ -1701,7 +1701,15 @@ export const ClientAnalyticsDashboard = () => {
               <TableBody>
                 {hiresByAdmin.map((a) => (
                   <TableRow key={a.name}>
-                    <TableCell className="font-medium whitespace-nowrap">{a.name}</TableCell>
+                    <TableCell className="font-medium whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedAdmin(a.name)}
+                        className="hover:underline underline-offset-2 cursor-pointer text-left hover:text-primary transition-colors"
+                      >
+                        {a.name}
+                      </button>
+                    </TableCell>
                     <TableCell className="text-right">{a.hired}</TableCell>
                     <TableCell className="text-right">{a.active}</TableCell>
                     <TableCell className={`text-right font-medium ${
