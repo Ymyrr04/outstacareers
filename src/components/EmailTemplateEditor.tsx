@@ -375,6 +375,9 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
                                       <span className="font-medium truncate text-xs">
                                         {getTemplateName(template)}
                                       </span>
+                                      {template.is_default && (
+                                        <Badge variant="secondary" className="text-[10px] px-1.5">DEFAULT</Badge>
+                                      )}
                                       {!template.is_enabled && (
                                         <Badge variant="outline" className="text-[10px] px-1.5 opacity-60">OFF</Badge>
                                       )}
