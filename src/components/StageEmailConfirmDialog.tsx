@@ -79,10 +79,27 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
     .map((e) => e.trim())
     .filter((e) => e.includes('@'));
 
+  const options = pending.templateOptions || [];
+
+  const handleTemplateChange = (id: string) => {
+    setTemplateId(id);
+    const opt = options.find((o) => o.id === id);
+    if (opt) {
+      setSubject(opt.subject);
+      setBodyHtml(opt.bodyHtml);
+    }
+  };
+
   const handleConfirm = async () => {
     setSending(true);
     try {
-      await onConfirm(subject, bodyHtml, ccList, sendAsEmail !== 'default' ? sendAsEmail : undefined);
+      await onConfirm(
+        subject,
+        bodyHtml,
+        ccList,
+        sendAsEmail !== 'default' ? sendAsEmail : undefined,
+        templateId || pending.templateId,
+      );
       onOpenChange(false);
     } finally {
       setSending(false);
@@ -106,6 +123,24 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          {options.length > 1 && (
+            <div className="space-y-2">
+              <Label>Template</Label>
+              <Select value={templateId} onValueChange={handleTemplateChange}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Select template..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {options.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      {o.label}{o.isDefault ? ' (default)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>From</Label>
             <Select value={sendAsEmail} onValueChange={setSendAsEmail}>
