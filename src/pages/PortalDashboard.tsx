@@ -314,10 +314,12 @@ const formatTimeDisplay = (hhmm: string): string => {
 
 const WEEKDAY_NAMES = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-// Returns the Monday of the current week (week starts Monday)
+// Returns the Monday of the current week (week starts Monday).
+// Uses local calendar formatting — toISOString() would shift the date by a day
+// for viewers whose UTC offset pushes local midnight into another UTC day.
 const getDefaultWeekStart = () => {
   const monday = startOfWeek(new Date(), { weekStartsOn: 1 });
-  return monday.toISOString().split('T')[0];
+  return format(monday, 'yyyy-MM-dd');
 };
 
 // Build the list of date keys (yyyy-MM-dd) inclusive between from and to
