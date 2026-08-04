@@ -105,7 +105,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
       (s.answers || []).forEach((a: any) => items.push(`${a.question}: ${a.answer}`));
       return { title: s.title, checked: items };
     });
-    const today = new Date().toISOString().slice(0, 10);
+    const today = estToday();
     const { data, error } = await supabase.functions.invoke('send-daily-checkin', {
       body: {
         contractorName,
