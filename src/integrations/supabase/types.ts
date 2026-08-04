@@ -2220,6 +2220,7 @@ export type Database = {
           created_at: string
           delay_hours: number | null
           id: string
+          is_default: boolean
           is_enabled: boolean
           name: string | null
           status_trigger: string
@@ -2232,6 +2233,7 @@ export type Database = {
           created_at?: string
           delay_hours?: number | null
           id?: string
+          is_default?: boolean
           is_enabled?: boolean
           name?: string | null
           status_trigger: string
@@ -2244,6 +2246,7 @@ export type Database = {
           created_at?: string
           delay_hours?: number | null
           id?: string
+          is_default?: boolean
           is_enabled?: boolean
           name?: string | null
           status_trigger?: string
