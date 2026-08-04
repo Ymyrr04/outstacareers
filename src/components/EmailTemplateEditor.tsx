@@ -429,7 +429,19 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
                             {editForm.is_enabled ? 'Enabled' : 'Disabled'}
                           </Label>
                         </div>
+                        {selectedTemplate.is_default ? (
+                          <Badge className="text-[10px]">Default for this stage</Badge>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setDefaultTemplate(selectedTemplate.id)}
+                          >
+                            Set as stage default
+                          </Button>
+                        )}
                       </div>
+
 
                       <div className="flex items-center gap-2">
                         <Button
