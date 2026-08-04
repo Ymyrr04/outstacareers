@@ -132,7 +132,7 @@ const availableTriggers = [
 ];
 
 export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorProps) {
-  const { templates, loading, updateTemplate, createTemplate, deleteTemplate } = useEmailTemplates();
+  const { templates, loading, updateTemplate, createTemplate, deleteTemplate, setDefaultTemplate } = useEmailTemplates();
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [editForm, setEditForm] = useState({
     name: '',
@@ -375,6 +375,9 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
                                       <span className="font-medium truncate text-xs">
                                         {getTemplateName(template)}
                                       </span>
+                                      {template.is_default && (
+                                        <Badge variant="secondary" className="text-[10px] px-1.5">DEFAULT</Badge>
+                                      )}
                                       {!template.is_enabled && (
                                         <Badge variant="outline" className="text-[10px] px-1.5 opacity-60">OFF</Badge>
                                       )}
@@ -429,7 +432,19 @@ export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorP
                             {editForm.is_enabled ? 'Enabled' : 'Disabled'}
                           </Label>
                         </div>
+                        {selectedTemplate.is_default ? (
+                          <Badge className="text-[10px]">Default for this stage</Badge>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setDefaultTemplate(selectedTemplate.id)}
+                          >
+                            Set as stage default
+                          </Button>
+                        )}
                       </div>
+
 
                       <div className="flex items-center gap-2">
                         <Button

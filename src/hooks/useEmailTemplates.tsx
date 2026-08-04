@@ -9,10 +9,21 @@ export interface EmailTemplate {
   subject: string;
   body_html: string;
   is_enabled: boolean;
+  is_default?: boolean;
   delay_hours: number;
   created_at: string;
   updated_at: string;
 }
+
+// Resolve the pipeline stage key for a template trigger.
+// e.g. 'bench' -> 'bench', 'custom_bench_1777991397569' -> 'bench'
+export const getStageKeyForTrigger = (trigger: string): string => {
+  if (trigger.startsWith('custom_')) {
+    const parts = trigger.split('_');
+    if (parts.length >= 3) return parts.slice(1, -1).join('_');
+  }
+  return trigger;
+};
 
 export interface EmailLog {
   id: string;
@@ -247,6 +258,49 @@ export function useEmailTemplates() {
     return templates.find(t => t.status_trigger === trigger);
   };
 
+  // All templates that belong to a pipeline stage (base + custom variants)
+  const getTemplatesForStage = useCallback((stageKey: string) => {
+    return templates
+      .filter(t => getStageKeyForTrigger(t.status_trigger) === stageKey && t.is_enabled)
+      .sort((a, b) => Number(!!b.is_default) - Number(!!a.is_default));
+  }, [templates]);
+
+  // The template that should be pre-selected for a stage:
+  // explicitly marked default → base trigger template → first available.
+  const getDefaultTemplateByTrigger = useCallback((stageKey: string) => {
+    const stageTemplates = getTemplatesForStage(stageKey);
+    return (
+      stageTemplates.find(t => t.is_default) ||
+      stageTemplates.find(t => t.status_trigger === stageKey) ||
+      stageTemplates[0]
+    );
+  }, [getTemplatesForStage]);
+
+  const setDefaultTemplate = async (id: string) => {
+    const target = templates.find(t => t.id === id);
+    if (!target) return false;
+    const stageKey = getStageKeyForTrigger(target.status_trigger);
+    const siblings = templates.filter(
+      t => getStageKeyForTrigger(t.status_trigger) === stageKey && t.id !== id && t.is_default
+    );
+
+    for (const s of siblings) {
+      await supabase.from('email_templates').update({ is_default: false } as any).eq('id', s.id);
+    }
+    const { error } = await supabase
+      .from('email_templates')
+      .update({ is_default: true } as any)
+      .eq('id', id);
+
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return false;
+    }
+    await fetchTemplates();
+    toast({ title: 'Default set', description: 'This template will be used for this stage.' });
+    return true;
+  };
+
   return {
     templates,
     loading,
@@ -255,6 +309,9 @@ export function useEmailTemplates() {
     createTemplate,
     deleteTemplate,
     getTemplateByTrigger,
+    getTemplatesForStage,
+    getDefaultTemplateByTrigger,
+    setDefaultTemplate,
   };
 }
 

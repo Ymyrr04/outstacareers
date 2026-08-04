@@ -16,6 +16,15 @@ const ADMIN_SENDERS = [
   { email: 'jil@outsta.io', name: 'Jil' },
 ];
 
+export interface StageTemplateOption {
+  id: string;
+  label: string;
+  isDefault?: boolean;
+  subject: string;
+  bodyHtml: string;
+  scheduleFor?: string;
+}
+
 export interface PendingStageEmail {
   candidateName: string;
   recipientEmail: string;
@@ -23,12 +32,20 @@ export interface PendingStageEmail {
   subject: string;
   bodyHtml: string;
   scheduleFor?: string;
+  templateId?: string;
+  templateOptions?: StageTemplateOption[];
 }
 
 interface Props {
   pending: PendingStageEmail | null;
   onOpenChange: (open: boolean) => void;
-  onConfirm: (subject: string, bodyHtml: string, cc: string[], sendAsEmail?: string) => Promise<void> | void;
+  onConfirm: (
+    subject: string,
+    bodyHtml: string,
+    cc: string[],
+    sendAsEmail?: string,
+    templateId?: string,
+  ) => Promise<void> | void;
 }
 
 export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Props) {
@@ -38,6 +55,7 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
   const [cc, setCc] = useState(DEFAULT_CC);
   const [showCc, setShowCc] = useState(true);
   const [sendAsEmail, setSendAsEmail] = useState('default');
+  const [templateId, setTemplateId] = useState<string>('');
   const [editing, setEditing] = useState(false);
   const [sending, setSending] = useState(false);
 
@@ -48,6 +66,7 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
       setCc(DEFAULT_CC);
       setShowCc(true);
       setSendAsEmail('default');
+      setTemplateId(pending.templateId || '');
       setEditing(false);
       setSending(false);
     }
@@ -60,10 +79,27 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
     .map((e) => e.trim())
     .filter((e) => e.includes('@'));
 
+  const options = pending.templateOptions || [];
+
+  const handleTemplateChange = (id: string) => {
+    setTemplateId(id);
+    const opt = options.find((o) => o.id === id);
+    if (opt) {
+      setSubject(opt.subject);
+      setBodyHtml(opt.bodyHtml);
+    }
+  };
+
   const handleConfirm = async () => {
     setSending(true);
     try {
-      await onConfirm(subject, bodyHtml, ccList, sendAsEmail !== 'default' ? sendAsEmail : undefined);
+      await onConfirm(
+        subject,
+        bodyHtml,
+        ccList,
+        sendAsEmail !== 'default' ? sendAsEmail : undefined,
+        templateId || pending.templateId,
+      );
       onOpenChange(false);
     } finally {
       setSending(false);
@@ -87,6 +123,24 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
         </DialogHeader>
 
         <div className="space-y-4 py-2">
+          {options.length > 1 && (
+            <div className="space-y-2">
+              <Label>Template</Label>
+              <Select value={templateId} onValueChange={handleTemplateChange}>
+                <SelectTrigger className="h-9">
+                  <SelectValue placeholder="Select template..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {options.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>
+                      {o.label}{o.isDefault ? ' (default)' : ''}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>From</Label>
             <Select value={sendAsEmail} onValueChange={setSendAsEmail}>
