@@ -132,7 +132,7 @@ const availableTriggers = [
 ];
 
 export function EmailTemplateEditor({ open, onOpenChange }: EmailTemplateEditorProps) {
-  const { templates, loading, updateTemplate, createTemplate, deleteTemplate } = useEmailTemplates();
+  const { templates, loading, updateTemplate, createTemplate, deleteTemplate, setDefaultTemplate } = useEmailTemplates();
   const [selectedTemplate, setSelectedTemplate] = useState<EmailTemplate | null>(null);
   const [editForm, setEditForm] = useState({
     name: '',
