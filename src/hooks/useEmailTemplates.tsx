@@ -9,10 +9,21 @@ export interface EmailTemplate {
   subject: string;
   body_html: string;
   is_enabled: boolean;
+  is_default?: boolean;
   delay_hours: number;
   created_at: string;
   updated_at: string;
 }
+
+// Resolve the pipeline stage key for a template trigger.
+// e.g. 'bench' -> 'bench', 'custom_bench_1777991397569' -> 'bench'
+export const getStageKeyForTrigger = (trigger: string): string => {
+  if (trigger.startsWith('custom_')) {
+    const parts = trigger.split('_');
+    if (parts.length >= 3) return parts.slice(1, -1).join('_');
+  }
+  return trigger;
+};
 
 export interface EmailLog {
   id: string;
