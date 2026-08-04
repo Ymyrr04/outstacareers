@@ -306,7 +306,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
         title: sec.title,
         checked: Array.from(checked[sec.title] || []).sort((a, b) => a - b).map(i => sec.items[i]).filter(Boolean),
       }));
-      const today = new Date().toISOString().slice(0, 10);
+      const today = estToday();
 
       const { data: inserted, error } = await supabase
         .from('contractor_daily_checkins')
