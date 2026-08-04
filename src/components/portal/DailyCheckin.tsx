@@ -11,6 +11,16 @@ import { Loader2, Plus, Trash2, Check, X, Settings2, MessageSquare, CheckCheck }
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { parseCheckinItem } from '@/lib/checkinItem';
 
+// Today's calendar date in US Eastern (app-wide standard), not UTC.
+const estToday = () =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/New_York',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date());
+
+
 export interface CheckinSection {
   title: string;
   items: string[];
