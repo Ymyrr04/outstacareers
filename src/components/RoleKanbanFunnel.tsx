@@ -1592,9 +1592,13 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
             setPendingStageEmail(null);
           }
         }}
-        onConfirm={async (subject, bodyHtml, cc, sendAsEmail) => {
+        onConfirm={async (subject, bodyHtml, cc, sendAsEmail, templateId) => {
           if (!pendingStageEmail) return;
-          await sendStatusEmail(pendingStageEmail, subject, bodyHtml, cc, sendAsEmail);
+          const chosen = pendingStageEmail.templateOptions?.find(o => o.id === templateId);
+          await sendStatusEmail(
+            { ...pendingStageEmail, templateId: templateId || pendingStageEmail.templateId, scheduleFor: chosen?.scheduleFor ?? pendingStageEmail.scheduleFor },
+            subject, bodyHtml, cc, sendAsEmail,
+          );
 
           setStageNote({
             applicantId: pendingStageEmail.applicantId,
