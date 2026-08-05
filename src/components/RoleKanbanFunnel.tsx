@@ -141,7 +141,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   const [sortOption, setSortOption] = useState<'score-desc' | 'score-asc' | 'name-asc' | 'name-desc' | 'newest' | 'oldest' | 'assessed'>('score-desc');
   const [hiredCandidate, setHiredCandidate] = useState<Candidate | null>(null);
   const [showHiredDialog, setShowHiredDialog] = useState(false);
-  const { getTemplateByTrigger, getTemplatesForStage, getDefaultTemplateByTrigger } = useEmailTemplates();
+  const { templates, getTemplateByTrigger, getDefaultTemplateByTrigger } = useEmailTemplates();
   const [pendingStageEmail, setPendingStageEmail] = useState<
     (PendingStageEmail & { applicantId: string; templateId: string }) | null
   >(null);
@@ -172,10 +172,10 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       s
     );
 
-    const options = getTemplatesForStage(trigger).map((t) => ({
+    const options = templates.filter((t) => t.is_enabled).map((t) => ({
       id: t.id,
       label: t.name || t.status_trigger,
-      isDefault: !!t.is_default || (t.status_trigger === trigger && !getTemplatesForStage(trigger).some(x => x.is_default)),
+      isDefault: t.id === template.id,
       subject: apply(t.subject),
       bodyHtml: apply(t.body_html),
       scheduleFor: t.delay_hours > 0 ? addMinutes(new Date(), t.delay_hours).toISOString() : undefined,
@@ -194,7 +194,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
         ? addMinutes(new Date(), template.delay_hours).toISOString()
         : undefined,
     };
-  }, [getDefaultTemplateByTrigger, getTemplatesForStage]);
+  }, [getDefaultTemplateByTrigger, templates]);
 
   const sendStatusEmail = useCallback(async (
     payload: { applicantId: string; templateId: string; recipientEmail: string; newStatus: string; candidateName: string; scheduleFor?: string },
