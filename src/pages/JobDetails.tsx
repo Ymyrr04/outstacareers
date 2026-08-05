@@ -220,7 +220,7 @@ const JobDetails = () => {
               {job.responsibilities && job.responsibilities.length > 0 && (
                 <div className="mb-8">
                   <h2 className="text-2xl font-semibold text-foreground mb-4">
-                    Key Responsibilities
+                    What you will do:
                   </h2>
                   <ul className="space-y-3">
                     {job.responsibilities.map((resp, idx) => (
