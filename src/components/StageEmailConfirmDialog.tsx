@@ -123,9 +123,9 @@ export function StageEmailConfirmDialog({ pending, onOpenChange, onConfirm }: Pr
         </DialogHeader>
 
         <div className="space-y-4 py-2">
-          {options.length > 1 && (
+          {options.length > 0 && (
             <div className="space-y-2">
-              <Label>Template</Label>
+              <Label>Email template</Label>
               <Select value={templateId} onValueChange={handleTemplateChange}>
                 <SelectTrigger className="h-9">
                   <SelectValue placeholder="Select template..." />
