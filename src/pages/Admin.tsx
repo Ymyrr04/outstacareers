@@ -268,7 +268,7 @@ const Admin = () => {
   const [emailTemplateEditorOpen, setEmailTemplateEditorOpen] = useState(false);
   const [communicationHistoryApplicant, setCommunicationHistoryApplicant] = useState<{ id: string; name: string; email: string } | null>(null);
   const [sendEmailApplicant, setSendEmailApplicant] = useState<{ id: string; full_name: string; email: string; job_title: string; status: string; preselectedTemplate?: string } | null>(null);
-  const { templates, getTemplateByTrigger } = useEmailTemplates();
+  const { templates, getDefaultTemplateByTrigger } = useEmailTemplates();
   const { unreadCounts, unreadApplicants, markAsRead: markMessagesAsRead, markAllAsRead, fetchUnreadCounts } = useUnreadMessageCounts();
   const { replies: allReplies, fetching: fetchingReplies, fetchNewReplies } = useEmailReplies();
   const [unreadPopoverOpen, setUnreadPopoverOpen] = useState(false);
@@ -1246,7 +1246,7 @@ const Admin = () => {
 
     // Send automated emails for each applicant (skip interview/SIV which need manual customization)
     const trigger = statusToTrigger[newStatus];
-    const template = trigger ? getTemplateByTrigger(trigger) : null;
+    const template = trigger ? getDefaultTemplateByTrigger(trigger) : null;
     let emailsSent = 0;
     let emailsScheduled = 0;
     let emailsFailed = 0;
@@ -1377,7 +1377,7 @@ const Admin = () => {
       // Send automated email if template is enabled
       const trigger = statusToTrigger[newStatus];
       if (trigger) {
-        const template = getTemplateByTrigger(trigger);
+        const template = getDefaultTemplateByTrigger(trigger);
         if (template && template.is_enabled) {
           // Process template variables - extract first name from full name
           const firstName = applicant.full_name.split(' ')[0];

@@ -62,9 +62,12 @@ export const statusToTrigger: Record<string, string> = {
   'SIV': 'siv',
   'Client Interview': 'client_interview',
   'Hired': 'hired',
-  'Bench': 'bench',
+  // These two database statuses have legacy display names:
+  // `Bench` is shown as Talent Pipeline, while `Talent Pool` is shown as Bench.
+  // Email triggers must follow the name admins see in the pipeline.
+  'Bench': 'talent_pool',
   'Reject': 'reject',
-  'Talent Pool': 'talent_pool',
+  'Talent Pool': 'bench',
   'Cold Talent Pool': 'cold_talent_pool',
 };
 

@@ -164,7 +164,7 @@ export const MyApplicantsDashboard = () => {
   const expandedRowRef = useRef<HTMLTableRowElement>(null);
   
   const { unreadCounts, markAsRead: markMessagesAsRead } = useUnreadMessageCounts();
-  const { templates, getTemplateByTrigger } = useEmailTemplates();
+  const { templates, getDefaultTemplateByTrigger } = useEmailTemplates();
 
   // Handle Escape key and click-outside to close expanded row
   useEffect(() => {
@@ -457,7 +457,7 @@ export const MyApplicantsDashboard = () => {
       // Send automated email if template is enabled
       const trigger = statusToTrigger[newStatus];
       if (trigger) {
-        const template = getTemplateByTrigger(trigger);
+        const template = getDefaultTemplateByTrigger(trigger);
         if (template && template.is_enabled) {
           // Process template variables - extract first name from full name
           const firstName = applicant.full_name.split(' ')[0];
