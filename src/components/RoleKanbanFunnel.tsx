@@ -1574,6 +1574,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                             onTagsUpdated={handleTagsUpdated}
                             knownSuitableRoles={allSuitableRoles}
                             onSuitableRolesUpdated={handleSuitableRolesUpdated}
+                            onReprofiled={handleReprofiled}
                           />
                         ))
                       )}
