@@ -16,12 +16,13 @@ import {
   ContextMenuSubContent,
 } from '@/components/ui/context-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity, FileSignature, Loader2, Tag as TagIcon, X as XIcon, Briefcase } from 'lucide-react';
+import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity, FileSignature, Loader2, Tag as TagIcon, X as XIcon, Briefcase, UserCog } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { TagEditorDialog } from '@/components/TagEditorDialog';
 import { SuitableRoleEditorDialog } from '@/components/SuitableRoleEditorDialog';
+import { ReprofilingDialog } from '@/components/ReprofilingDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { priorityGate } from '@/lib/priorityGate';
@@ -933,6 +934,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     setCandidates(prev => prev.map(c => (c.id === id ? { ...c, suitable_roles } : c)));
   }, []);
 
+  const handleReprofiled = useCallback(() => {
+    fetchCandidates(selectedRole);
+  }, [fetchCandidates, selectedRole]);
+
+
   const filteredCandidates = useMemo(() => {
     let result = candidates;
 
@@ -1568,6 +1574,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                             onTagsUpdated={handleTagsUpdated}
                             knownSuitableRoles={allSuitableRoles}
                             onSuitableRolesUpdated={handleSuitableRolesUpdated}
+                            onReprofiled={handleReprofiled}
                           />
                         ))
                       )}
@@ -1711,9 +1718,10 @@ interface CandidateCardProps {
   onTagsUpdated: (id: string, tags: string[]) => void;
   knownSuitableRoles: string[];
   onSuitableRolesUpdated: (id: string, roles: string[]) => void;
+  onReprofiled: () => void;
 }
 
-const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle, hasAdditionalProfile, hasPrimaryProfile, knownTags, onTagsUpdated, knownSuitableRoles, onSuitableRolesUpdated }: CandidateCardProps) => {
+const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle, hasAdditionalProfile, hasPrimaryProfile, knownTags, onTagsUpdated, knownSuitableRoles, onSuitableRolesUpdated, onReprofiled }: CandidateCardProps) => {
   const { getDisplayName: getStageDisplayName } = useStageSettings();
   const [showDetails, setShowDetails] = useState(false);
   const [showDetailsTab, setShowDetailsTab] = useState<string | undefined>(undefined); // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -1745,6 +1753,21 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
   const [mountSuitable, setMountSuitable] = useState(false);
   const [showSuitable, setShowSuitable] = useState(false);
   const openSuitable = useCallback(() => { setMountSuitable(true); setShowSuitable(true); }, []);
+  const [mountReprofile, setMountReprofile] = useState(false);
+  const [showReprofile, setShowReprofile] = useState(false);
+  const [reprofileOrigin, setReprofileOrigin] = useState<{ original_job_id: string | null; original_job_title: string | null }>({ original_job_id: null, original_job_title: null });
+  const openReprofile = useCallback(async () => {
+    setMountReprofile(true);
+    setShowReprofile(true);
+    const { data } = await supabase
+      .from('applicants_prescreen')
+      .select('original_job_id, original_job_title')
+      .eq('id', candidate.id)
+      .maybeSingle();
+    if (data) setReprofileOrigin({ original_job_id: data.original_job_id, original_job_title: data.original_job_title });
+  }, [candidate.id]);
+
+
 
   const openDetails = useCallback(() => { setMountDetails(true); setShowDetails(true); }, []);
   const openSendEmail = useCallback(() => { setMountSendEmail(true); setShowSendEmail(true); }, []);
@@ -2069,6 +2092,11 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
             )}
           </ContextMenuItem>
 
+          <ContextMenuItem onClick={openReprofile}>
+            <UserCog className="w-4 h-4 mr-2" />
+            Reprofile
+          </ContextMenuItem>
+
           <ContextMenuItem onClick={openSuitable}>
             <Briefcase className="w-4 h-4 mr-2" />
             Suitable Role
@@ -2261,6 +2289,24 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
           initialRoles={candidate.suitable_roles || []}
           knownRoles={knownSuitableRoles}
           onSaved={(roles) => onSuitableRolesUpdated(candidate.id, roles)}
+        />
+      )}
+
+      {mountReprofile && (
+        <ReprofilingDialog
+          open={showReprofile}
+          onOpenChange={setShowReprofile}
+          applicant={{
+            id: candidate.id,
+            full_name: candidate.full_name,
+            email: candidate.email,
+            job_title: candidate.job_title,
+            job_id: candidate.job_id,
+            original_job_id: reprofileOrigin.original_job_id,
+            original_job_title: reprofileOrigin.original_job_title,
+            status: candidate.status,
+          }}
+          onReprofiled={onReprofiled}
         />
       )}
     </>
