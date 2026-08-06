@@ -1753,6 +1753,21 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
   const [mountSuitable, setMountSuitable] = useState(false);
   const [showSuitable, setShowSuitable] = useState(false);
   const openSuitable = useCallback(() => { setMountSuitable(true); setShowSuitable(true); }, []);
+  const [mountReprofile, setMountReprofile] = useState(false);
+  const [showReprofile, setShowReprofile] = useState(false);
+  const [reprofileOrigin, setReprofileOrigin] = useState<{ original_job_id: string | null; original_job_title: string | null }>({ original_job_id: null, original_job_title: null });
+  const openReprofile = useCallback(async () => {
+    setMountReprofile(true);
+    setShowReprofile(true);
+    const { data } = await supabase
+      .from('applicants_prescreen')
+      .select('original_job_id, original_job_title')
+      .eq('id', candidate.id)
+      .maybeSingle();
+    if (data) setReprofileOrigin({ original_job_id: data.original_job_id, original_job_title: data.original_job_title });
+  }, [candidate.id]);
+
+
 
   const openDetails = useCallback(() => { setMountDetails(true); setShowDetails(true); }, []);
   const openSendEmail = useCallback(() => { setMountSendEmail(true); setShowSendEmail(true); }, []);
