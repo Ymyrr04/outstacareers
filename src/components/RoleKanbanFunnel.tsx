@@ -1718,9 +1718,10 @@ interface CandidateCardProps {
   onTagsUpdated: (id: string, tags: string[]) => void;
   knownSuitableRoles: string[];
   onSuitableRolesUpdated: (id: string, roles: string[]) => void;
+  onReprofiled: () => void;
 }
 
-const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle, hasAdditionalProfile, hasPrimaryProfile, knownTags, onTagsUpdated, knownSuitableRoles, onSuitableRolesUpdated }: CandidateCardProps) => {
+const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle, hasAdditionalProfile, hasPrimaryProfile, knownTags, onTagsUpdated, knownSuitableRoles, onSuitableRolesUpdated, onReprofiled }: CandidateCardProps) => {
   const { getDisplayName: getStageDisplayName } = useStageSettings();
   const [showDetails, setShowDetails] = useState(false);
   const [showDetailsTab, setShowDetailsTab] = useState<string | undefined>(undefined); // eslint-disable-line @typescript-eslint/no-unused-vars
