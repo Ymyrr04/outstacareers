@@ -2286,6 +2286,24 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
           onSaved={(roles) => onSuitableRolesUpdated(candidate.id, roles)}
         />
       )}
+
+      {mountReprofile && (
+        <ReprofilingDialog
+          open={showReprofile}
+          onOpenChange={setShowReprofile}
+          applicant={{
+            id: candidate.id,
+            full_name: candidate.full_name,
+            email: candidate.email,
+            job_title: candidate.job_title,
+            job_id: candidate.job_id,
+            original_job_id: reprofileOrigin.original_job_id,
+            original_job_title: reprofileOrigin.original_job_title,
+            status: candidate.status,
+          }}
+          onReprofiled={onReprofiled}
+        />
+      )}
     </>
   );
 };
