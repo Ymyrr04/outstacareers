@@ -2092,6 +2092,11 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
             )}
           </ContextMenuItem>
 
+          <ContextMenuItem onClick={openReprofile}>
+            <UserCog className="w-4 h-4 mr-2" />
+            Reprofile
+          </ContextMenuItem>
+
           <ContextMenuItem onClick={openSuitable}>
             <Briefcase className="w-4 h-4 mr-2" />
             Suitable Role
