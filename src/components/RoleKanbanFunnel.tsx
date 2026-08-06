@@ -22,6 +22,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { TagEditorDialog } from '@/components/TagEditorDialog';
 import { SuitableRoleEditorDialog } from '@/components/SuitableRoleEditorDialog';
+import { ReprofilingDialog } from '@/components/ReprofilingDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { priorityGate } from '@/lib/priorityGate';
