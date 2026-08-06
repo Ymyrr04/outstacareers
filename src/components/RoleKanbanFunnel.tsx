@@ -934,6 +934,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     setCandidates(prev => prev.map(c => (c.id === id ? { ...c, suitable_roles } : c)));
   }, []);
 
+  const handleReprofiled = useCallback(() => {
+    fetchCandidates(selectedRole);
+  }, [fetchCandidates, selectedRole]);
+
+
   const filteredCandidates = useMemo(() => {
     let result = candidates;
 
