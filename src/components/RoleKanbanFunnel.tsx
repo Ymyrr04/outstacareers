@@ -1019,16 +1019,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
           }
           return (b.total_score ?? -1) - (a.total_score ?? -1);
         }
-        case 'score-asc': {
-          const aDone = a.interview_overall_score !== null ? 1 : 0;
-          const bDone = b.interview_overall_score !== null ? 1 : 0;
-          if (bDone !== aDone) return bDone - aDone;
-          if (aDone && bDone) {
-            const diff = (a.interview_overall_score ?? -1) - (b.interview_overall_score ?? -1);
-            if (diff !== 0) return diff;
-          }
-          return (a.total_score ?? -1) - (b.total_score ?? -1);
-        }
+        case 'score-asc': return (a.total_score ?? -1) - (b.total_score ?? -1);
         case 'name-asc': return a.full_name.localeCompare(b.full_name);
         case 'name-desc': return b.full_name.localeCompare(a.full_name);
         case 'newest': return new Date(b.submitted_at).getTime() - new Date(a.submitted_at).getTime();
