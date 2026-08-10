@@ -328,15 +328,23 @@ export function WysiwygEditor({
       {showBubbleMenu && bubbleMenuPos && (
         <div 
           ref={bubbleMenuRef}
-          className="absolute z-50 flex items-center gap-0.5 p-1 bg-background border rounded-lg shadow-lg animate-fade-in"
+          className="absolute z-50 flex items-center gap-0.5 p-1 bg-background border rounded-lg shadow-lg animate-fade-in [&>*]:pointer-events-auto"
           style={{ 
             top: bubbleMenuPos.top, 
             left: bubbleMenuPos.left,
             transform: 'translateX(-50%)',
+            pointerEvents: 'none',
           }}
           onMouseEnter={() => setIsHoveringMenu(true)}
           onMouseLeave={() => setIsHoveringMenu(false)}
-          onMouseDown={(e) => e.preventDefault()} // Prevent losing selection when clicking toolbar
+          onMouseDown={(e) => {
+            // Only block the default (which would clear the selection) when a
+            // toolbar control is clicked. Clicks on empty toolbar space fall
+            // through to the text underneath.
+            if ((e.target as HTMLElement).closest('button')) {
+              e.preventDefault();
+            }
+          }}
         >
           <Button
             type="button"
