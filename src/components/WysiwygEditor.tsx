@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { TextSelection } from '@tiptap/pm/state';
 import { useState, useEffect, useCallback } from 'react';
 
 interface WysiwygEditorProps {
@@ -67,6 +68,24 @@ export function WysiwygEditor({
       attributes: {
         class: 'prose prose-sm max-w-none focus:outline-none px-3 py-2',
         style: `min-height: ${minHeight}`,
+      },
+      handleDOMEvents: {
+        mousedown: (view, event) => {
+          if (event.button !== 0 || event.shiftKey || event.metaKey || event.ctrlKey || event.altKey) {
+            return false;
+          }
+
+          const position = view.posAtCoords({ left: event.clientX, top: event.clientY });
+          if (!position) return false;
+
+          // Explicitly collapse an existing range selection at the clicked
+          // character. This keeps caret placement reliable inside dialogs,
+          // where the browser can otherwise preserve the previous selection.
+          const resolvedPosition = view.state.doc.resolve(position.pos);
+          view.dispatch(view.state.tr.setSelection(TextSelection.near(resolvedPosition)));
+          view.focus();
+          return false;
+        },
       },
       handlePaste: (view, event) => {
         // Check if we have HTML content
