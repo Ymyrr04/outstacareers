@@ -34,7 +34,10 @@ export function WysiwygEditor({
   const [showBubbleMenu, setShowBubbleMenu] = useState(false);
   const [hasSelection, setHasSelection] = useState(false);
   const [isHoveringMenu, setIsHoveringMenu] = useState(false);
-  const [isMouseDown, setIsMouseDown] = useState(false);
+  const isMouseDownRef = useRef(false);
+  const hasSelectionRef = useRef(false);
+  const showBubbleMenuRef = useRef(false);
+
   const editorRef = useRef<HTMLDivElement>(null);
   const bubbleMenuRef = useRef<HTMLDivElement>(null);
   const mousePos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
