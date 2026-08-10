@@ -34,42 +34,48 @@ export function WysiwygEditor({
   const [showBubbleMenu, setShowBubbleMenu] = useState(false);
   const [hasSelection, setHasSelection] = useState(false);
   const [isHoveringMenu, setIsHoveringMenu] = useState(false);
-  const [isMouseDown, setIsMouseDown] = useState(false);
+  const isMouseDownRef = useRef(false);
+  const hasSelectionRef = useRef(false);
+  const showBubbleMenuRef = useRef(false);
+
   const editorRef = useRef<HTMLDivElement>(null);
   const bubbleMenuRef = useRef<HTMLDivElement>(null);
   const mousePos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Keep refs in sync with state (refs are used inside document listeners)
+  useEffect(() => { hasSelectionRef.current = hasSelection; }, [hasSelection]);
+  useEffect(() => { showBubbleMenuRef.current = showBubbleMenu; }, [showBubbleMenu]);
+
   // Track mouse down/up to show toolbar only after selection is complete
   useEffect(() => {
     const handleMouseDown = (e: MouseEvent) => {
-      // Don't hide menu if clicking inside it
+      // Don't hide menu if clicking a control inside it
       if (bubbleMenuRef.current && bubbleMenuRef.current.contains(e.target as Node)) {
         return;
       }
 
       // Only react to mousedowns that originate inside this editor instance.
-      // Without this guard, every click anywhere on the page triggers a
-      // re-render between mousedown and focus, which can swallow the click
-      // on the contenteditable area (especially inside Radix dialogs).
       if (!editorRef.current || !editorRef.current.contains(e.target as Node)) {
         return;
       }
 
-      setIsMouseDown(true);
-      setShowBubbleMenu(false);
+      isMouseDownRef.current = true;
+      if (showBubbleMenuRef.current) {
+        setShowBubbleMenu(false);
+      }
       if (showTimeoutRef.current) {
         clearTimeout(showTimeoutRef.current);
       }
     };
-    
+
     const handleMouseUp = () => {
-      setIsMouseDown(false);
+      isMouseDownRef.current = false;
       // Show bubble menu with delay after mouse is released (if there's a selection)
-      if (hasSelection) {
+      if (hasSelectionRef.current) {
         showTimeoutRef.current = setTimeout(() => {
           setShowBubbleMenu(true);
-        }, 150); // 150ms delay
+        }, 150);
       }
     };
 
@@ -82,33 +88,30 @@ export function WysiwygEditor({
         clearTimeout(showTimeoutRef.current);
       }
     };
-  }, [hasSelection]);
+  }, []);
 
   // Track mouse position ONLY during selection (before menu is shown)
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       mousePos.current = { x: e.clientX, y: e.clientY };
-      
-      // Only update position while dragging (before menu appears)
-      // Once showBubbleMenu is true, stop tracking - the position is locked
-      if (isMouseDown && hasSelection && !showBubbleMenu && editorRef.current) {
+
+      if (isMouseDownRef.current && hasSelectionRef.current && !showBubbleMenuRef.current && editorRef.current) {
         const editorRect = editorRef.current.getBoundingClientRect();
-        
-        // Position relative to editor, centered on mouse X
+
         let left = e.clientX - editorRect.left;
         const menuHalfWidth = 120;
         left = Math.max(menuHalfWidth, Math.min(left, editorRect.width - menuHalfWidth));
-        
-        // Position above the mouse cursor
+
         const top = e.clientY - editorRect.top - 50;
-        
+
         setBubbleMenuPos({ top: Math.max(0, top), left });
       }
     };
 
     document.addEventListener('mousemove', handleMouseMove);
     return () => document.removeEventListener('mousemove', handleMouseMove);
-  }, [isMouseDown, hasSelection, showBubbleMenu]);
+  }, []);
+
 
   const editor = useEditor({
     extensions: [
@@ -325,15 +328,23 @@ export function WysiwygEditor({
       {showBubbleMenu && bubbleMenuPos && (
         <div 
           ref={bubbleMenuRef}
-          className="absolute z-50 flex items-center gap-0.5 p-1 bg-background border rounded-lg shadow-lg animate-fade-in"
+          className="absolute z-50 flex items-center gap-0.5 p-1 bg-background border rounded-lg shadow-lg animate-fade-in [&>*]:pointer-events-auto"
           style={{ 
             top: bubbleMenuPos.top, 
             left: bubbleMenuPos.left,
             transform: 'translateX(-50%)',
+            pointerEvents: 'none',
           }}
           onMouseEnter={() => setIsHoveringMenu(true)}
           onMouseLeave={() => setIsHoveringMenu(false)}
-          onMouseDown={(e) => e.preventDefault()} // Prevent losing selection when clicking toolbar
+          onMouseDown={(e) => {
+            // Only block the default (which would clear the selection) when a
+            // toolbar control is clicked. Clicks on empty toolbar space fall
+            // through to the text underneath.
+            if ((e.target as HTMLElement).closest('button')) {
+              e.preventDefault();
+            }
+          }}
         >
           <Button
             type="button"
