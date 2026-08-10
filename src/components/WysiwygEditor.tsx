@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 interface WysiwygEditorProps {
   value: string;
@@ -30,87 +30,6 @@ export function WysiwygEditor({
 }: WysiwygEditorProps) {
   const [linkUrl, setLinkUrl] = useState('');
   const [linkPopoverOpen, setLinkPopoverOpen] = useState(false);
-  const [bubbleMenuPos, setBubbleMenuPos] = useState<{ top: number; left: number } | null>(null);
-  const [showBubbleMenu, setShowBubbleMenu] = useState(false);
-  const [hasSelection, setHasSelection] = useState(false);
-  const [isHoveringMenu, setIsHoveringMenu] = useState(false);
-  const isMouseDownRef = useRef(false);
-  const hasSelectionRef = useRef(false);
-  const showBubbleMenuRef = useRef(false);
-
-  const editorRef = useRef<HTMLDivElement>(null);
-  const bubbleMenuRef = useRef<HTMLDivElement>(null);
-  const mousePos = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const showTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Keep refs in sync with state (refs are used inside document listeners)
-  useEffect(() => { hasSelectionRef.current = hasSelection; }, [hasSelection]);
-  useEffect(() => { showBubbleMenuRef.current = showBubbleMenu; }, [showBubbleMenu]);
-
-  // Track mouse down/up to show toolbar only after selection is complete
-  useEffect(() => {
-    const handleMouseDown = (e: MouseEvent) => {
-      // Don't hide menu if clicking a control inside it
-      if (bubbleMenuRef.current && bubbleMenuRef.current.contains(e.target as Node)) {
-        return;
-      }
-
-      // Only react to mousedowns that originate inside this editor instance.
-      if (!editorRef.current || !editorRef.current.contains(e.target as Node)) {
-        return;
-      }
-
-      isMouseDownRef.current = true;
-      if (showBubbleMenuRef.current) {
-        setShowBubbleMenu(false);
-      }
-      if (showTimeoutRef.current) {
-        clearTimeout(showTimeoutRef.current);
-      }
-    };
-
-    const handleMouseUp = () => {
-      isMouseDownRef.current = false;
-      // Show bubble menu with delay after mouse is released (if there's a selection)
-      if (hasSelectionRef.current) {
-        showTimeoutRef.current = setTimeout(() => {
-          setShowBubbleMenu(true);
-        }, 150);
-      }
-    };
-
-    document.addEventListener('mousedown', handleMouseDown);
-    document.addEventListener('mouseup', handleMouseUp);
-    return () => {
-      document.removeEventListener('mousedown', handleMouseDown);
-      document.removeEventListener('mouseup', handleMouseUp);
-      if (showTimeoutRef.current) {
-        clearTimeout(showTimeoutRef.current);
-      }
-    };
-  }, []);
-
-  // Track mouse position ONLY during selection (before menu is shown)
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      mousePos.current = { x: e.clientX, y: e.clientY };
-
-      if (isMouseDownRef.current && hasSelectionRef.current && !showBubbleMenuRef.current && editorRef.current) {
-        const editorRect = editorRef.current.getBoundingClientRect();
-
-        let left = e.clientX - editorRect.left;
-        const menuHalfWidth = 120;
-        left = Math.max(menuHalfWidth, Math.min(left, editorRect.width - menuHalfWidth));
-
-        const top = e.clientY - editorRect.top - 50;
-
-        setBubbleMenuPos({ top: Math.max(0, top), left });
-      }
-    };
-
-    document.addEventListener('mousemove', handleMouseMove);
-    return () => document.removeEventListener('mousemove', handleMouseMove);
-  }, []);
 
 
   const editor = useEditor({
@@ -143,30 +62,6 @@ export function WysiwygEditor({
       const html = editor.getHTML();
       // Convert empty paragraph to empty string
       onChange(html === '<p></p>' ? '' : html);
-    },
-    onSelectionUpdate: ({ editor }) => {
-      const { from, to } = editor.state.selection;
-      if (from === to || editor.state.selection.empty) {
-        setHasSelection(false);
-        setShowBubbleMenu(false);
-        setBubbleMenuPos(null);
-        if (showTimeoutRef.current) {
-          clearTimeout(showTimeoutRef.current);
-        }
-        return;
-      }
-      
-      setHasSelection(true);
-      
-      // Set initial position based on current mouse position (will be shown after mouseup)
-      if (editorRef.current) {
-        const editorRect = editorRef.current.getBoundingClientRect();
-        let left = mousePos.current.x - editorRect.left;
-        const menuHalfWidth = 120;
-        left = Math.max(menuHalfWidth, Math.min(left, editorRect.width - menuHalfWidth));
-        const top = mousePos.current.y - editorRect.top - 50;
-        setBubbleMenuPos({ top: Math.max(0, top), left });
-      }
     },
     editorProps: {
       attributes: {
@@ -323,95 +218,7 @@ export function WysiwygEditor({
   }
 
   return (
-    <div className="border rounded-md overflow-hidden bg-background relative" ref={editorRef}>
-      {/* Floating Bubble Menu - appears when text is selected and mouse is released */}
-      {showBubbleMenu && bubbleMenuPos && (
-        <div 
-          ref={bubbleMenuRef}
-          className="absolute z-50 flex items-center gap-0.5 p-1 bg-background border rounded-lg shadow-lg animate-fade-in [&>*]:pointer-events-auto"
-          style={{ 
-            top: bubbleMenuPos.top, 
-            left: bubbleMenuPos.left,
-            transform: 'translateX(-50%)',
-            pointerEvents: 'none',
-          }}
-          onMouseEnter={() => setIsHoveringMenu(true)}
-          onMouseLeave={() => setIsHoveringMenu(false)}
-          onMouseDown={(e) => {
-            // Only block the default (which would clear the selection) when a
-            // toolbar control is clicked. Clicks on empty toolbar space fall
-            // through to the text underneath.
-            if ((e.target as HTMLElement).closest('button')) {
-              e.preventDefault();
-            }
-          }}
-        >
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className={`h-7 w-7 p-0 ${editor.isActive('bold') ? 'bg-primary text-primary-foreground' : ''}`}
-            onClick={() => editor.chain().focus().toggleBold().run()}
-            title="Bold"
-          >
-            <Bold className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className={`h-7 w-7 p-0 ${editor.isActive('italic') ? 'bg-primary text-primary-foreground' : ''}`}
-            onClick={() => editor.chain().focus().toggleItalic().run()}
-            title="Italic"
-          >
-            <Italic className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className={`h-7 w-7 p-0 ${editor.isActive('underline') ? 'bg-primary text-primary-foreground' : ''}`}
-            onClick={() => editor.chain().focus().toggleUnderline().run()}
-            title="Underline"
-          >
-            <UnderlineIcon className="h-3.5 w-3.5" />
-          </Button>
-          <div className="w-px h-4 bg-border mx-0.5" />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className={`h-7 w-7 p-0 ${editor.isActive('bulletList') ? 'bg-primary text-primary-foreground' : ''}`}
-            onClick={() => editor.chain().focus().toggleBulletList().run()}
-            title="Bullet List"
-          >
-            <List className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className={`h-7 w-7 p-0 ${editor.isActive('orderedList') ? 'bg-primary text-primary-foreground' : ''}`}
-            onClick={() => editor.chain().focus().toggleOrderedList().run()}
-            title="Numbered List"
-          >
-            <ListOrdered className="h-3.5 w-3.5" />
-          </Button>
-          <div className="w-px h-4 bg-border mx-0.5" />
-          <Button
-            type="button"
-            variant="ghost"
-            size="sm"
-            className={`h-7 px-2 gap-1 ${editor.isActive('link') ? 'bg-primary text-primary-foreground' : ''}`}
-            onClick={() => setLinkPopoverOpen(true)}
-            title="Link"
-          >
-            <LinkIcon className="h-3.5 w-3.5" />
-            <span className="text-xs">Link</span>
-          </Button>
-        </div>
-      )}
-
+    <div className="border rounded-md overflow-hidden bg-background relative">
       {/* Static Toolbar */}
       <div className="flex items-center gap-0.5 p-1 border-b bg-muted/30">
         <Button
