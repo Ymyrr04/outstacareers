@@ -11,6 +11,8 @@ import { RoleHistorySection } from '@/components/RoleHistorySection';
 import { ApplicationHistorySection } from '@/components/ApplicationHistorySection';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { CVImagePreview } from '@/components/CVImagePreview';
+import { PreScreeningResponsesCard } from '@/components/PreScreeningResponsesCard';
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { PaginatedApplicant } from '@/hooks/usePaginatedApplicants';
