@@ -467,7 +467,7 @@ const ClientPortalDashboard = () => {
                       {filteredRows.map(r => {
                         const sundayHrs = r.sunday_hours_excluded && r.daily_hours
                           ? Object.entries(r.daily_hours).reduce((s, [date, val]: [string, any]) => {
-                              const isSunday = new Date(`${date}T00:00:00`).getDay() === 0;
+                              const isSunday = new Date(`${date}T12:00:00Z`).getUTCDay() === 0;
                               return s + (isSunday ? (parseFloat(val?.hours) || 0) : 0);
                             }, 0)
                           : 0;
@@ -600,7 +600,7 @@ const ContractorProfilePanel = ({ assignments, clientName }: { assignments: Assi
 
               <div>
                 {a.start_date ? (
-                  <span className="text-muted-foreground">Hired: <span className="font-medium text-foreground">{format(new Date(a.start_date), 'MMM d, yyyy')}</span></span>
+                  <span className="text-muted-foreground">Hired: <span className="font-medium text-foreground">{estMonthDay(a.start_date)}</span></span>
                 ) : (
                   <span className="italic text-muted-foreground">Hire date not set</span>
                 )}
@@ -759,7 +759,7 @@ const TimesheetDetail = ({
               </Button>
               {row.client_reviewed_at && (
                 <p className="text-xs text-muted-foreground text-center">
-                  Last reviewed {format(new Date(row.client_reviewed_at), 'MMM d, yyyy h:mm a')}
+                  Last reviewed {fmtDateEST(row.client_reviewed_at, { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })} ET
                 </p>
               )}
             </div>
