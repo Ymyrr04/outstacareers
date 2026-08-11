@@ -312,6 +312,8 @@ const Admin = () => {
   
   // Applicants admin filter state
   const [applicantAdminFilter, setApplicantAdminFilter] = useState<string>('all');
+  const [preScreeningFlagFilter, setPreScreeningFlagFilter] = useState<string>('all');
+
   
   // Batch CV scan state
   const [batchScanning, setBatchScanning] = useState(false);
