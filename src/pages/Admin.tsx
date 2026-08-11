@@ -216,7 +216,10 @@ interface Applicant {
   details_viewed_at: string | null;
   is_starred: boolean;
   device_type: string | null;
+  pre_screening_responses?: any;
+  pre_screening_flagged?: boolean | null;
 }
+
 
 type SortOption = 'newest' | 'oldest' | 'score-desc' | 'score-asc' | 'starred' | 'completed-assessment';
 
