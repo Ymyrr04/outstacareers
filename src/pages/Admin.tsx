@@ -2741,6 +2741,12 @@ const Admin = () => {
                               <Star className={`w-4 h-4 ${applicant.is_starred ? 'fill-current' : ''}`} />
                             </button>
                             <CopyableText text={applicant.full_name} className="font-semibold hover:underline" />
+                            {applicant.pre_screening_flagged && (
+                              <span className="flex-shrink-0 text-amber-500" title="Pre-screening flag">
+                                <Flag className="w-4 h-4 fill-current" />
+                              </span>
+                            )}
+
                             {/* Device type icon */}
                             {applicant.device_type && (
                               <span 
