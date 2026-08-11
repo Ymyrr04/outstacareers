@@ -142,6 +142,23 @@ serve(async (req) => {
       recipients = match
         ? [match]
         : [{ email: String(onlyEmail), firstName: firstNameFrom(null, String(onlyEmail)) }];
+    } else if (Array.isArray(explicitRecipients) && explicitRecipients.length > 0) {
+      // Targeted blast: caller supplies the matched recipient list.
+      const seen = new Set<string>();
+      recipients = [];
+      for (const r of explicitRecipients) {
+        const email = String(r?.email || "").trim().toLowerCase();
+        if (!email || seen.has(email)) continue;
+        seen.add(email);
+        recipients.push({ email, firstName: firstNameFrom(r?.fullName ?? null, email) });
+      }
+      for (const admin of INTERNAL_RECIPIENTS) {
+        const email = admin.email.toLowerCase();
+        if (!seen.has(email)) {
+          seen.add(email);
+          recipients.push(admin);
+        }
+      }
     } else {
       const { data: tp, error: tpErr } = await supabase
         .from("applicants_prescreen")
