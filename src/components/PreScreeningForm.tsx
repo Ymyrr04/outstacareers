@@ -109,6 +109,9 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }:
   const [isSuccess, setIsSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showSpeedtestSample, setShowSpeedtestSample] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [preScreeningResponses, setPreScreeningResponses] = useState<PreScreeningResponses | null>(null);
+
   
   // CV related state
   const [cvFile, setCvFile] = useState<File | null>(null);
