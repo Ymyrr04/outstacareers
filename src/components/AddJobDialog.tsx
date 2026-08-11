@@ -20,6 +20,7 @@ import { Plus, X, Linkedin } from 'lucide-react';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import JobInterviewQuestionsManager from '@/components/JobInterviewQuestionsManager';
 import { JobDescriptionParser } from '@/components/JobDescriptionParser';
+import JobBlastTargetingDialog from '@/components/JobBlastTargetingDialog';
 
 interface CustomQuestion {
   id?: string;
@@ -94,6 +95,8 @@ const formatPhpMonthlyRange = (min: number, max: number): string => {
 
 const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
   const [open, setOpen] = useState(false);
+  const [blastOpen, setBlastOpen] = useState(false);
+  const [blastJob, setBlastJob] = useState<{ id: string; title: string; description: string | null; qualifications: string[]; responsibilities: string[] } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [formData, setFormData] = useState({
@@ -312,6 +315,7 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
