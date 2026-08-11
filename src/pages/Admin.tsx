@@ -13,7 +13,9 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck, UserCircle, Target, Globe, TrendingDown, FileSignature, FlaskConical } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck, UserCircle, Target, Globe, TrendingDown, FileSignature, FlaskConical, Flag } from 'lucide-react';
+import { PreScreeningResponsesCard } from '@/components/PreScreeningResponsesCard';
+
 import { ContractsManager } from '@/components/contracts/ContractsManager';
 import { exportJobs, exportApplicants, exportAllData } from '@/lib/exportUtils';
 import { parseBooleanSearch } from '@/lib/booleanSearchParser';
@@ -216,7 +218,10 @@ interface Applicant {
   details_viewed_at: string | null;
   is_starred: boolean;
   device_type: string | null;
+  pre_screening_responses?: any;
+  pre_screening_flagged?: boolean | null;
 }
+
 
 type SortOption = 'newest' | 'oldest' | 'score-desc' | 'score-asc' | 'starred' | 'completed-assessment';
 
@@ -309,6 +314,8 @@ const Admin = () => {
   
   // Applicants admin filter state
   const [applicantAdminFilter, setApplicantAdminFilter] = useState<string>('all');
+  const [preScreeningFlagFilter, setPreScreeningFlagFilter] = useState<string>('all');
+
   
   // Batch CV scan state
   const [batchScanning, setBatchScanning] = useState(false);
@@ -2445,6 +2452,17 @@ const Admin = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                      <Select value={preScreeningFlagFilter} onValueChange={setPreScreeningFlagFilter}>
+                        <SelectTrigger className="w-[190px]">
+                          <SelectValue placeholder="Pre-screening flag" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Pre-screening: All</SelectItem>
+                          <SelectItem value="flagged">Flagged</SelectItem>
+                          <SelectItem value="not-flagged">Not flagged</SelectItem>
+                        </SelectContent>
+                      </Select>
+
                       <Select value={sortOption} onValueChange={(v) => setSortOption(v as SortOption)}>
                         <SelectTrigger className="w-[180px]">
                           <SelectValue placeholder="Sort by..." />
@@ -2543,6 +2561,12 @@ const Admin = () => {
                   // Filter by status first, then by admin filter, then by search term (with Boolean support)
                   const statusApplicants = applicants.filter(a => {
                     if (a.status !== status) return false;
+
+                    // Pre-screening flag filter
+                    if (preScreeningFlagFilter === 'flagged' && !a.pre_screening_flagged) return false;
+                    if (preScreeningFlagFilter === 'not-flagged' && a.pre_screening_flagged) return false;
+                    
+
                     
                     // Admin filter: match by job's assigned admin
                     if (applicantAdminFilter !== 'all') {
@@ -2717,6 +2741,12 @@ const Admin = () => {
                               <Star className={`w-4 h-4 ${applicant.is_starred ? 'fill-current' : ''}`} />
                             </button>
                             <CopyableText text={applicant.full_name} className="font-semibold hover:underline" />
+                            {applicant.pre_screening_flagged && (
+                              <span className="flex-shrink-0 text-amber-500" title="Pre-screening flag">
+                                <Flag className="w-4 h-4 fill-current" />
+                              </span>
+                            )}
+
                             {/* Device type icon */}
                             {applicant.device_type && (
                               <span 
@@ -3132,7 +3162,14 @@ const Admin = () => {
 
                       {expandedApplicant === applicant.id && (
                         <div className="mt-4 pt-4 border-t border-border" onMouseDown={(e) => e.stopPropagation()}>
+                          <div className="mb-6">
+                            <PreScreeningResponsesCard
+                              responses={applicant.pre_screening_responses}
+                              flagged={applicant.pre_screening_flagged}
+                            />
+                          </div>
                           {/* Assessment Tabs - CV vs Interview */}
+
                           <Tabs value={activeAssessmentTab} onValueChange={(val) => setActiveAssessmentTab(val as 'cv' | 'interview')} className="mb-6">
                             <TabsList className="grid w-full grid-cols-2" onMouseDown={(e) => e.stopPropagation()}>
                               <TabsTrigger value="cv" className="flex items-center gap-2">

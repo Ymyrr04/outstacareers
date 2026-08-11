@@ -11,6 +11,8 @@ import { z } from "zod";
 import speedtestSample from "@/assets/speedtest-sample.png";
 import { InterviewSession } from "./interview/InterviewSession";
 import { CountryCodeSelect } from "./CountryCodeSelect";
+import PreScreeningConfirmDialog, { PreScreeningResponses, isPreScreeningFlagged } from "./PreScreeningConfirmDialog";
+
 
 interface PreScreeningFormProps {
   job: {
@@ -109,6 +111,9 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }:
   const [isSuccess, setIsSuccess] = useState(false);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [showSpeedtestSample, setShowSpeedtestSample] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [preScreeningResponses, setPreScreeningResponses] = useState<PreScreeningResponses | null>(null);
+
   
   // CV related state
   const [cvFile, setCvFile] = useState<File | null>(null);
@@ -262,11 +267,16 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }:
       }
     }
 
+    // Show the confirmation modal before moving to CV upload
+    setShowConfirmDialog(true);
+  };
 
-
-    // Move to CV upload step
+  const handleConfirmDialogSubmit = (responses: PreScreeningResponses) => {
+    setPreScreeningResponses(responses);
+    setShowConfirmDialog(false);
     setCurrentStep('cv-upload');
   };
+
 
   const extractTextFromFile = async (file: File): Promise<string> => {
     const arrayBuffer = await file.arrayBuffer();
@@ -488,7 +498,10 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }:
           job_source: formData.job_source === "Other" && formData.job_source_other.trim() 
             ? `Other: ${formData.job_source_other.trim()}` 
             : formData.job_source,
+          pre_screening_responses: preScreeningResponses,
+          pre_screening_flagged: preScreeningResponses ? isPreScreeningFlagged(preScreeningResponses) : false,
         },
+
       });
 
       // Handle special error responses
@@ -773,6 +786,12 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }:
   // Form content (shared between page and modal modes)
   const formContent = (
     <>
+      <PreScreeningConfirmDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        onConfirm={handleConfirmDialogSubmit}
+      />
+
       {/* Disclaimer for interview step */}
       {currentStep === 'interview' && (
         <div className="mb-4 p-3 bg-muted/50 rounded-lg border border-border">

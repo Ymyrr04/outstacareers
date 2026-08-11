@@ -11,6 +11,8 @@ import { RoleHistorySection } from '@/components/RoleHistorySection';
 import { ApplicationHistorySection } from '@/components/ApplicationHistorySection';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { CVImagePreview } from '@/components/CVImagePreview';
+import { PreScreeningResponsesCard } from '@/components/PreScreeningResponsesCard';
+
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import type { PaginatedApplicant } from '@/hooks/usePaginatedApplicants';
@@ -75,7 +77,14 @@ export const SearchApplicantExpandedView = ({
 
   return (
     <div onMouseDown={(e) => e.stopPropagation()}>
+      <div className="mb-6">
+        <PreScreeningResponsesCard
+          responses={(applicant as any).pre_screening_responses}
+          flagged={(applicant as any).pre_screening_flagged}
+        />
+      </div>
       {/* Assessment Tabs */}
+
       <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as 'cv' | 'interview')} className="mb-6">
         <TabsList className="grid w-full grid-cols-2" onMouseDown={(e) => e.stopPropagation()}>
           <TabsTrigger value="cv" className="flex items-center gap-2">

@@ -241,6 +241,8 @@ export type Database = {
           phone: string | null
           power_backup: boolean
           pre_archive_status: string | null
+          pre_screening_flagged: boolean
+          pre_screening_responses: Json | null
           ranking_status: string | null
           reprofiled_at: string | null
           role_experience_score: number | null
@@ -301,6 +303,8 @@ export type Database = {
           phone?: string | null
           power_backup: boolean
           pre_archive_status?: string | null
+          pre_screening_flagged?: boolean
+          pre_screening_responses?: Json | null
           ranking_status?: string | null
           reprofiled_at?: string | null
           role_experience_score?: number | null
@@ -361,6 +365,8 @@ export type Database = {
           phone?: string | null
           power_backup?: boolean
           pre_archive_status?: string | null
+          pre_screening_flagged?: boolean
+          pre_screening_responses?: Json | null
           ranking_status?: string | null
           reprofiled_at?: string | null
           role_experience_score?: number | null
