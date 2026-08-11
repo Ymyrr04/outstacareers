@@ -570,6 +570,13 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
         </form>
       </DialogContent>
     </Dialog>
+    <JobBlastTargetingDialog
+      open={blastOpen}
+      onOpenChange={setBlastOpen}
+      jobId={blastJob?.id ?? null}
+      job={blastJob}
+    />
+    </>
   );
 };
 
