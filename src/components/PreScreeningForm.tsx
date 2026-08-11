@@ -262,11 +262,16 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }:
       }
     }
 
+    // Show the confirmation modal before moving to CV upload
+    setShowConfirmDialog(true);
+  };
 
-
-    // Move to CV upload step
+  const handleConfirmDialogSubmit = (responses: PreScreeningResponses) => {
+    setPreScreeningResponses(responses);
+    setShowConfirmDialog(false);
     setCurrentStep('cv-upload');
   };
+
 
   const extractTextFromFile = async (file: File): Promise<string> => {
     const arrayBuffer = await file.arrayBuffer();
