@@ -786,6 +786,12 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }:
   // Form content (shared between page and modal modes)
   const formContent = (
     <>
+      <PreScreeningConfirmDialog
+        open={showConfirmDialog}
+        onOpenChange={setShowConfirmDialog}
+        onConfirm={handleConfirmDialogSubmit}
+      />
+
       {/* Disclaimer for interview step */}
       {currentStep === 'interview' && (
         <div className="mb-4 p-3 bg-muted/50 rounded-lg border border-border">
