@@ -498,7 +498,10 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }:
           job_source: formData.job_source === "Other" && formData.job_source_other.trim() 
             ? `Other: ${formData.job_source_other.trim()}` 
             : formData.job_source,
+          pre_screening_responses: preScreeningResponses,
+          pre_screening_flagged: preScreeningResponses ? isPreScreeningFlagged(preScreeningResponses) : false,
         },
+
       });
 
       // Handle special error responses
