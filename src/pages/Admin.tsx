@@ -2450,6 +2450,17 @@ const Admin = () => {
                           ))}
                         </SelectContent>
                       </Select>
+                      <Select value={preScreeningFlagFilter} onValueChange={setPreScreeningFlagFilter}>
+                        <SelectTrigger className="w-[190px]">
+                          <SelectValue placeholder="Pre-screening flag" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="all">Pre-screening: All</SelectItem>
+                          <SelectItem value="flagged">Flagged</SelectItem>
+                          <SelectItem value="not-flagged">Not flagged</SelectItem>
+                        </SelectContent>
+                      </Select>
+
                       <Select value={sortOption} onValueChange={(v) => setSortOption(v as SortOption)}>
                         <SelectTrigger className="w-[180px]">
                           <SelectValue placeholder="Sort by..." />
