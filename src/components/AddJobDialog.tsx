@@ -20,6 +20,7 @@ import { Plus, X, Linkedin } from 'lucide-react';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import JobInterviewQuestionsManager from '@/components/JobInterviewQuestionsManager';
 import { JobDescriptionParser } from '@/components/JobDescriptionParser';
+import JobBlastTargetingDialog from '@/components/JobBlastTargetingDialog';
 
 interface CustomQuestion {
   id?: string;
@@ -94,6 +95,8 @@ const formatPhpMonthlyRange = (min: number, max: number): string => {
 
 const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
   const [open, setOpen] = useState(false);
+  const [blastOpen, setBlastOpen] = useState(false);
+  const [blastJob, setBlastJob] = useState<{ id: string; title: string; description: string | null; qualifications: string[]; responsibilities: string[] } | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
   const [formData, setFormData] = useState({
@@ -282,13 +285,16 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
       description: 'Job added successfully!',
     });
 
-    // Fire-and-forget: blast new job email to internal admins (test mode)
+    // Open targeting dialog so the admin picks who receives the new-job blast
     if (newJob) {
-      supabase.functions
-        .invoke('blast-new-job', { body: { jobId: newJob.id } })
-        .then(({ error: blastError }) => {
-          if (blastError) console.error('blast-new-job error:', blastError);
-        });
+      setBlastJob({
+        id: newJob.id,
+        title: formData.title,
+        description: formData.description,
+        qualifications: formData.qualifications.filter((q) => q.trim()),
+        responsibilities: formData.responsibilities.filter((r) => r.trim()),
+      });
+      setBlastOpen(true);
     }
     setFormData({
       title: '',
@@ -309,6 +315,7 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
   };
 
   return (
+    <>
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
@@ -563,6 +570,13 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
         </form>
       </DialogContent>
     </Dialog>
+    <JobBlastTargetingDialog
+      open={blastOpen}
+      onOpenChange={setBlastOpen}
+      jobId={blastJob?.id ?? null}
+      job={blastJob}
+    />
+    </>
   );
 };
 
