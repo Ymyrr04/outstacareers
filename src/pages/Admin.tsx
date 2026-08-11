@@ -2559,6 +2559,12 @@ const Admin = () => {
                   // Filter by status first, then by admin filter, then by search term (with Boolean support)
                   const statusApplicants = applicants.filter(a => {
                     if (a.status !== status) return false;
+
+                    // Pre-screening flag filter
+                    if (preScreeningFlagFilter === 'flagged' && !a.pre_screening_flagged) return false;
+                    if (preScreeningFlagFilter === 'not-flagged' && a.pre_screening_flagged) return false;
+                    
+
                     
                     // Admin filter: match by job's assigned admin
                     if (applicantAdminFilter !== 'all') {
