@@ -282,13 +282,16 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
       description: 'Job added successfully!',
     });
 
-    // Fire-and-forget: blast new job email to internal admins (test mode)
+    // Open targeting dialog so the admin picks who receives the new-job blast
     if (newJob) {
-      supabase.functions
-        .invoke('blast-new-job', { body: { jobId: newJob.id } })
-        .then(({ error: blastError }) => {
-          if (blastError) console.error('blast-new-job error:', blastError);
-        });
+      setBlastJob({
+        id: newJob.id,
+        title: formData.title,
+        description: formData.description,
+        qualifications: formData.qualifications.filter((q) => q.trim()),
+        responsibilities: formData.responsibilities.filter((r) => r.trim()),
+      });
+      setBlastOpen(true);
     }
     setFormData({
       title: '',
