@@ -75,7 +75,14 @@ export const SearchApplicantExpandedView = ({
 
   return (
     <div onMouseDown={(e) => e.stopPropagation()}>
+      <div className="mb-6">
+        <PreScreeningResponsesCard
+          responses={(applicant as any).pre_screening_responses}
+          flagged={(applicant as any).pre_screening_flagged}
+        />
+      </div>
       {/* Assessment Tabs */}
+
       <Tabs value={activeTab} onValueChange={(val) => setActiveTab(val as 'cv' | 'interview')} className="mb-6">
         <TabsList className="grid w-full grid-cols-2" onMouseDown={(e) => e.stopPropagation()}>
           <TabsTrigger value="cv" className="flex items-center gap-2">
