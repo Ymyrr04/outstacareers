@@ -2205,7 +2205,17 @@ const PortalDashboard = () => {
                                 />
                               </div>
                               <div />
-                              <div className="flex flex-wrap items-center gap-2">
+                              <div className="space-y-1 min-w-0">
+                                <Label htmlFor={`note${ordinal}-${k}`} className="text-[11px] font-medium text-muted-foreground">Note (optional)</Label>
+                                <Input
+                                  id={`note${ordinal}-${k}`}
+                                  placeholder="e.g. returned after client meeting"
+                                  value={s.note || ''}
+                                  onChange={(e) => setShift({ note: e.target.value })}
+                                  className="bg-background border-2 h-10"
+                                />
+                              </div>
+                              <div className="md:col-span-5 flex flex-wrap items-center gap-2">
                                 <Button
                                   type="button"
                                   variant="ghost"
@@ -2230,6 +2240,7 @@ const PortalDashboard = () => {
                                 )}
                               </div>
                             </div>
+
                             );
                           })}
 
