@@ -2724,8 +2724,9 @@ const PortalDashboard = () => {
                       // Seed the split-shift row. Pre-fill time_in_2 with the first shift's
                       // time_out as a starting point; leave time_out_2 empty for the user to fill.
                       updateDay(k, {
-                        time_in_2: entry.time_in_2 || entry.time_out || '',
-                        time_out_2: entry.time_out_2 || '',
+                        shifts: (entry.shifts && entry.shifts.length > 0)
+                          ? entry.shifts
+                          : [{ time_in: entry.time_out || '', time_out: '' }],
                       });
                       setSplitDialogKey(null);
                     }}
