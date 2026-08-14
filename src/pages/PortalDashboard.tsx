@@ -180,10 +180,10 @@ const DOW_TO_SHORT: Record<number, string> = { 0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 
 const DEFAULT_WORK_DAYS: string[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
 
-interface Shift {
+type Shift = {
   time_in: string;  // "HH:MM" 24h
   time_out: string; // "HH:MM" 24h
-}
+};
 interface DayEntry {
   time_in: string;  // "HH:MM" 24h — first shift
   time_out: string; // "HH:MM" 24h — first shift
