@@ -681,15 +681,15 @@ const TimesheetDetail = ({
                         </TableCell>
                         <TableCell className="text-sm">
                           {val?.time_in ? `${to12h(val.time_in)} EST` : '—'}
-                          {val?.time_in_2 ? (
-                            <div className="text-xs text-muted-foreground mt-0.5">+ {to12h(val.time_in_2)} EST</div>
-                          ) : null}
+                          {(val?.shifts?.length ? val.shifts : (val?.time_in_2 ? [{ time_in: val.time_in_2, time_out: val.time_out_2 }] : [])).map((s: any, i: number) => (
+                            s?.time_in ? <div key={i} className="text-xs text-muted-foreground mt-0.5">+ {to12h(s.time_in)} EST</div> : null
+                          ))}
                         </TableCell>
                         <TableCell className="text-sm">
                           {val?.time_out ? `${to12h(val.time_out)} EST` : '—'}
-                          {val?.time_out_2 ? (
-                            <div className="text-xs text-muted-foreground mt-0.5">+ {to12h(val.time_out_2)} EST</div>
-                          ) : null}
+                          {(val?.shifts?.length ? val.shifts : (val?.time_out_2 ? [{ time_in: val.time_in_2, time_out: val.time_out_2 }] : [])).map((s: any, i: number) => (
+                            s?.time_out ? <div key={i} className="text-xs text-muted-foreground mt-0.5">+ {to12h(s.time_out)} EST</div> : null
+                          ))}
                         </TableCell>
                         <TableCell className="text-right">{fmtHours(val?.hours || 0)}</TableCell>
                         <TableCell className="text-sm text-muted-foreground">{val?.reason || ''}</TableCell>
