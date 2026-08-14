@@ -1112,24 +1112,27 @@ const PortalDashboard = () => {
     if (!validateNumbers()) return;
     const ot = parseFloat(overtimeHours || '0');
 
-    const dailyPayload: Record<string, { hours: number; time_in?: string; time_out?: string; time_in_2?: string; time_out_2?: string; reason?: string; weekday?: string }> = {};
+    const dailyPayload: Record<string, { hours: number; time_in?: string; time_out?: string; time_in_2?: string; time_out_2?: string; shifts?: Shift[]; reason?: string; weekday?: string }> = {};
     dateKeys.forEach((k) => {
       const h = parseFloat(days[k]?.hours || '0') || 0;
       const reason = days[k]?.reason?.trim() || '';
       const time_in = days[k]?.time_in || '';
       const time_out = days[k]?.time_out || '';
-      const time_in_2 = days[k]?.time_in_2 || '';
-      const time_out_2 = days[k]?.time_out_2 || '';
+      // Additional shifts (unlimited). The first extra shift is also written to
+      // time_in_2 / time_out_2 for backwards compatibility with existing readers.
+      const extras = (days[k]?.shifts || []).filter((s) => s.time_in || s.time_out);
       dailyPayload[k] = {
         hours: h,
         weekday: dayLabel(k),
         ...(time_in ? { time_in } : {}),
         ...(time_out ? { time_out } : {}),
-        ...(time_in_2 ? { time_in_2 } : {}),
-        ...(time_out_2 ? { time_out_2 } : {}),
+        ...(extras[0]?.time_in ? { time_in_2: extras[0].time_in } : {}),
+        ...(extras[0]?.time_out ? { time_out_2: extras[0].time_out } : {}),
+        ...(extras.length ? { shifts: extras } : {}),
         ...(reason ? { reason } : {}),
       };
     });
+
 
     setSubmitting(true);
     try {
