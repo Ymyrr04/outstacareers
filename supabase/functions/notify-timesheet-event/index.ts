@@ -169,7 +169,7 @@ function dailyTable(daily: Record<string, any> | null | undefined) {
       : (d.time_in_2 && d.time_out_2 ? [{ time_in: d.time_in_2, time_out: d.time_out_2 }] : []);
     const t2 = extras
       .filter((s: any) => s?.time_in && s?.time_out)
-      .map((s: any) => ` &nbsp;|&nbsp; ${fmtTime12(s.time_in)}–${fmtTime12(s.time_out)}`)
+      .map((s: any) => ` &nbsp;|&nbsp; ${fmtTime12(s.time_in)}–${fmtTime12(s.time_out)}${s.note ? ` (${String(s.note).replace(/</g, "&lt;")})` : ""}`)
       .join("");
     const reasonCell = hasReason ? `<td style="padding:8px 12px;border-bottom:1px solid #eef0f3;color:#475569;vertical-align:top">${(d.reason || "").toString().replace(/</g, "&lt;")}</td>` : "";
     return `<tr>

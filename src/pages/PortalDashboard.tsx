@@ -183,6 +183,7 @@ const DEFAULT_WORK_DAYS: string[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 type Shift = {
   time_in: string;  // "HH:MM" 24h
   time_out: string; // "HH:MM" 24h
+  note?: string;    // optional note for this shift
 };
 interface DayEntry {
   time_in: string;  // "HH:MM" 24h — first shift
@@ -351,7 +352,7 @@ const buildDateKeys = (from: string, to: string): string[] => {
 const readShifts = (d: { time_in_2?: string; time_out_2?: string; shifts?: Shift[] } | undefined): Shift[] => {
   if (!d) return [];
   if (Array.isArray(d.shifts) && d.shifts.length > 0) {
-    return d.shifts.map((s) => ({ time_in: s?.time_in || '', time_out: s?.time_out || '' }));
+    return d.shifts.map((s) => ({ time_in: s?.time_in || '', time_out: s?.time_out || '', note: s?.note || '' }));
   }
   if (d.time_in_2 || d.time_out_2) return [{ time_in: d.time_in_2 || '', time_out: d.time_out_2 || '' }];
   return [];
@@ -1131,7 +1132,9 @@ const PortalDashboard = () => {
       const time_out = days[k]?.time_out || '';
       // Additional shifts (unlimited). The first extra shift is also written to
       // time_in_2 / time_out_2 for backwards compatibility with existing readers.
-      const extras = (days[k]?.shifts || []).filter((s) => s.time_in || s.time_out);
+      const extras = (days[k]?.shifts || [])
+        .filter((s) => s.time_in || s.time_out)
+        .map((s) => ({ time_in: s.time_in, time_out: s.time_out, ...(s.note?.trim() ? { note: s.note.trim() } : {}) }));
       dailyPayload[k] = {
         hours: h,
         weekday: dayLabel(k),
@@ -2205,7 +2208,17 @@ const PortalDashboard = () => {
                                 />
                               </div>
                               <div />
-                              <div className="flex flex-wrap items-center gap-2">
+                              <div className="space-y-1 min-w-0">
+                                <Label htmlFor={`note${ordinal}-${k}`} className="text-[11px] font-medium text-muted-foreground">Note (optional)</Label>
+                                <Input
+                                  id={`note${ordinal}-${k}`}
+                                  placeholder="e.g. returned after client meeting"
+                                  value={s.note || ''}
+                                  onChange={(e) => setShift({ note: e.target.value })}
+                                  className="bg-background border-2 h-10"
+                                />
+                              </div>
+                              <div className="md:col-span-5 flex flex-wrap items-center gap-2">
                                 <Button
                                   type="button"
                                   variant="ghost"
@@ -2230,6 +2243,7 @@ const PortalDashboard = () => {
                                 )}
                               </div>
                             </div>
+
                             );
                           })}
 
