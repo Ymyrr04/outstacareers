@@ -692,7 +692,12 @@ const TimesheetDetail = ({
                           ))}
                         </TableCell>
                         <TableCell className="text-right">{fmtHours(val?.hours || 0)}</TableCell>
-                        <TableCell className="text-sm text-muted-foreground">{val?.reason || ''}</TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {val?.reason || ''}
+                          {(val?.shifts || []).map((s: any, i: number) => (
+                            s?.note ? <div key={i} className="text-xs mt-0.5">Shift {i + 2}: {s.note}</div> : null
+                          ))}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
