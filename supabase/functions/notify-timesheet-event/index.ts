@@ -164,7 +164,13 @@ function dailyTable(daily: Record<string, any> | null | undefined) {
   const rows = keys.map((k) => {
     const d = daily[k] || {};
     const t1 = d.time_in && d.time_out ? `${fmtTime12(d.time_in)}–${fmtTime12(d.time_out)}` : "";
-    const t2 = d.time_in_2 && d.time_out_2 ? ` &nbsp;|&nbsp; ${fmtTime12(d.time_in_2)}–${fmtTime12(d.time_out_2)}` : "";
+    const extras = Array.isArray(d.shifts) && d.shifts.length
+      ? d.shifts
+      : (d.time_in_2 && d.time_out_2 ? [{ time_in: d.time_in_2, time_out: d.time_out_2 }] : []);
+    const t2 = extras
+      .filter((s: any) => s?.time_in && s?.time_out)
+      .map((s: any) => ` &nbsp;|&nbsp; ${fmtTime12(s.time_in)}–${fmtTime12(s.time_out)}`)
+      .join("");
     const reasonCell = hasReason ? `<td style="padding:8px 12px;border-bottom:1px solid #eef0f3;color:#475569;vertical-align:top">${(d.reason || "").toString().replace(/</g, "&lt;")}</td>` : "";
     return `<tr>
       <td style="width:28%;padding:8px 12px;border-bottom:1px solid #eef0f3;vertical-align:top;white-space:nowrap">${d.weekday || ""} ${fmtDate(k)}</td>

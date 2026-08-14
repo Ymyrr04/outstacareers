@@ -180,12 +180,15 @@ const DOW_TO_SHORT: Record<number, string> = { 0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 
 const DEFAULT_WORK_DAYS: string[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
 
-interface DayEntry {
+type Shift = {
   time_in: string;  // "HH:MM" 24h
   time_out: string; // "HH:MM" 24h
-  time_in_2?: string;  // optional second/split shift "HH:MM" 24h
-  time_out_2?: string; // optional second/split shift "HH:MM" 24h
-  hours: string;    // computed string e.g. "8.50" (sum of both shifts)
+};
+interface DayEntry {
+  time_in: string;  // "HH:MM" 24h — first shift
+  time_out: string; // "HH:MM" 24h — first shift
+  shifts?: Shift[]; // additional shifts (2nd, 3rd, ... unlimited)
+  hours: string;    // computed string e.g. "8.50" (sum of all shifts)
   reason: string;
 }
 interface Timesheet {
@@ -198,7 +201,7 @@ interface Timesheet {
   status: string;
   outsta_status?: string | null;
   submitted_at: string;
-  daily_hours: Record<string, { hours: number; time_in?: string; time_out?: string; time_in_2?: string; time_out_2?: string; reason?: string }> | null;
+  daily_hours: Record<string, { hours: number; time_in?: string; time_out?: string; time_in_2?: string; time_out_2?: string; shifts?: Shift[]; reason?: string }> | null;
   client_approval_status?: string | null;
   client_flag_reason?: string | null;
   client_reviewed_at?: string | null;
@@ -241,19 +244,21 @@ const computeHours = (
   return applyBreakDeduction(raw, breakMinutes, breakIsPaid);
 };
 
-// Compute total billable day hours = shift 1 + optional split shift.
+// Compute total billable day hours = shift 1 + every additional shift.
 // Each shift gets the unpaid-break deduction applied independently when configured.
 const computeDayBillable = (
-  entry: Pick<DayEntry, 'time_in' | 'time_out' | 'time_in_2' | 'time_out_2'>,
+  entry: Pick<DayEntry, 'time_in' | 'time_out' | 'shifts'>,
   breakMinutes?: number | null,
   breakIsPaid?: boolean | null
 ): number => {
   const h1 = computeHours(entry.time_in, entry.time_out, breakMinutes, breakIsPaid);
-  const h2 = entry.time_in_2 && entry.time_out_2
-    ? computeHours(entry.time_in_2, entry.time_out_2, breakMinutes, breakIsPaid)
-    : 0;
-  return Math.round((h1 + h2) * 100) / 100;
+  const rest = (entry.shifts || []).reduce(
+    (sum, s) => sum + (s.time_in && s.time_out ? computeHours(s.time_in, s.time_out, breakMinutes, breakIsPaid) : 0),
+    0
+  );
+  return Math.round((h1 + rest) * 100) / 100;
 };
+
 
 // Convert stored break (always minutes) into the profile form's display unit.
 const breakStateToForm = (
@@ -339,6 +344,17 @@ const buildDateKeys = (from: string, to: string): string[] => {
     out.push(format(addDays(start, i), 'yyyy-MM-dd'));
   }
   return out;
+};
+
+// Read additional shifts from a stored daily_hours entry, falling back to the
+// legacy time_in_2 / time_out_2 pair for timesheets saved before unlimited shifts.
+const readShifts = (d: { time_in_2?: string; time_out_2?: string; shifts?: Shift[] } | undefined): Shift[] => {
+  if (!d) return [];
+  if (Array.isArray(d.shifts) && d.shifts.length > 0) {
+    return d.shifts.map((s) => ({ time_in: s?.time_in || '', time_out: s?.time_out || '' }));
+  }
+  if (d.time_in_2 || d.time_out_2) return [{ time_in: d.time_in_2 || '', time_out: d.time_out_2 || '' }];
+  return [];
 };
 
 const emptyDaysFor = (keys: string[]): Record<string, DayEntry> =>
@@ -1107,24 +1123,27 @@ const PortalDashboard = () => {
     if (!validateNumbers()) return;
     const ot = parseFloat(overtimeHours || '0');
 
-    const dailyPayload: Record<string, { hours: number; time_in?: string; time_out?: string; time_in_2?: string; time_out_2?: string; reason?: string; weekday?: string }> = {};
+    const dailyPayload: Record<string, { hours: number; time_in?: string; time_out?: string; time_in_2?: string; time_out_2?: string; shifts?: Shift[]; reason?: string; weekday?: string }> = {};
     dateKeys.forEach((k) => {
       const h = parseFloat(days[k]?.hours || '0') || 0;
       const reason = days[k]?.reason?.trim() || '';
       const time_in = days[k]?.time_in || '';
       const time_out = days[k]?.time_out || '';
-      const time_in_2 = days[k]?.time_in_2 || '';
-      const time_out_2 = days[k]?.time_out_2 || '';
+      // Additional shifts (unlimited). The first extra shift is also written to
+      // time_in_2 / time_out_2 for backwards compatibility with existing readers.
+      const extras = (days[k]?.shifts || []).filter((s) => s.time_in || s.time_out);
       dailyPayload[k] = {
         hours: h,
         weekday: dayLabel(k),
         ...(time_in ? { time_in } : {}),
         ...(time_out ? { time_out } : {}),
-        ...(time_in_2 ? { time_in_2 } : {}),
-        ...(time_out_2 ? { time_out_2 } : {}),
+        ...(extras[0]?.time_in ? { time_in_2: extras[0].time_in } : {}),
+        ...(extras[0]?.time_out ? { time_out_2: extras[0].time_out } : {}),
+        ...(extras.length ? { shifts: extras } : {}),
         ...(reason ? { reason } : {}),
       };
     });
+
 
     setSubmitting(true);
     try {
@@ -1243,8 +1262,7 @@ const PortalDashboard = () => {
         if (d) next[k] = {
           time_in: d.time_in || '',
           time_out: d.time_out || '',
-          time_in_2: d.time_in_2 || '',
-          time_out_2: d.time_out_2 || '',
+          shifts: readShifts(d),
           hours: d.hours != null ? String(d.hours) : '',
           reason: d.reason || '',
         };
@@ -1257,8 +1275,7 @@ const PortalDashboard = () => {
         if (d) next[k] = {
           time_in: d.time_in || '',
           time_out: d.time_out || '',
-          time_in_2: d.time_in_2 || '',
-          time_out_2: d.time_out_2 || '',
+          shifts: readShifts(d),
           hours: d.hours != null ? String(d.hours) : '',
           reason: d.reason || '',
         };
@@ -1483,7 +1500,7 @@ const PortalDashboard = () => {
     if (!hasRegularShift) return;
     if (isRegularApplied(k)) {
       // Clear primary shift AND any split shift on this day
-      updateDay(k, { time_in: '', time_out: '', time_in_2: '', time_out_2: '' });
+      updateDay(k, { time_in: '', time_out: '', shifts: [] });
     } else {
       updateDay(k, { time_in: regularShift24.start, time_out: regularShift24.end });
     }
@@ -1512,7 +1529,7 @@ const PortalDashboard = () => {
     setDays((prev) => {
       const merged = { ...prev[k], ...patch } as DayEntry;
       // Recompute hours whenever any time field is touched (shift 1 or split shift 2)
-      if ('time_in' in patch || 'time_out' in patch || 'time_in_2' in patch || 'time_out_2' in patch) {
+      if ('time_in' in patch || 'time_out' in patch || 'shifts' in patch) {
         const h = computeDayBillable(merged, info?.break_duration_minutes, info?.break_is_paid);
         merged.hours = h > 0 ? String(h) : '';
       }
@@ -2026,7 +2043,8 @@ const PortalDashboard = () => {
                         ? 'border-l-4 border-l-amber-500'
                         : '';
 
-                      const hasSplit = !!(entry.time_in_2 || entry.time_out_2);
+                      const extraShifts = entry.shifts || [];
+                      const hasSplit = extraShifts.length > 0;
                       const shortBy = perDayExpected != null && validHours < perDayExpected
                         ? Number((perDayExpected - validHours).toFixed(2))
                         : 0;
@@ -2154,46 +2172,67 @@ const PortalDashboard = () => {
                           </div>
 
 
-                          {hasSplit && (
-                            <div className="mt-2 grid grid-cols-1 md:grid-cols-[110px_100px_100px_72px_1fr] gap-2.5 md:gap-3 items-center">
+                          {extraShifts.map((s, si) => {
+                            const ordinal = si + 2;
+                            const suffix = ordinal === 2 ? '2nd' : ordinal === 3 ? '3rd' : `${ordinal}th`;
+                            const setShift = (patch: Partial<Shift>) =>
+                              updateDay(k, {
+                                shifts: extraShifts.map((x, xi) => (xi === si ? { ...x, ...patch } : x)),
+                              });
+                            return (
+                            <div key={si} className="mt-2 grid grid-cols-1 md:grid-cols-[110px_100px_100px_72px_1fr] gap-2.5 md:gap-3 items-center">
                               <div className="text-[11px] font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300">
-                                Split shift
+                                Shift {ordinal}
                               </div>
                               <div className="space-y-1">
-                                <Label htmlFor={`tin2-${k}`} className="text-[11px] font-medium text-muted-foreground">Time in (2nd)</Label>
+                                <Label htmlFor={`tin${ordinal}-${k}`} className="text-[11px] font-medium text-muted-foreground">Time in ({suffix})</Label>
                                 <FlexibleTimeInput
-                                  id={`tin2-${k}`}
-                                  value={entry.time_in_2 || ''}
-                                  onChange={(v) => updateDay(k, { time_in_2: v })}
-                                  ariaLabel={`${label} ${format(date, 'MMM d')} second shift time in`}
+                                  id={`tin${ordinal}-${k}`}
+                                  value={s.time_in || ''}
+                                  onChange={(v) => setShift({ time_in: v })}
+                                  ariaLabel={`${label} ${format(date, 'MMM d')} shift ${ordinal} time in`}
                                   className={timeInputClass}
                                 />
                               </div>
                               <div className="space-y-1">
-                                <Label htmlFor={`tout2-${k}`} className="text-[11px] font-medium text-muted-foreground">Time out (2nd)</Label>
+                                <Label htmlFor={`tout${ordinal}-${k}`} className="text-[11px] font-medium text-muted-foreground">Time out ({suffix})</Label>
                                 <FlexibleTimeInput
-                                  id={`tout2-${k}`}
-                                  value={entry.time_out_2 || ''}
-                                  onChange={(v) => updateDay(k, { time_out_2: v })}
-                                  ariaLabel={`${label} ${format(date, 'MMM d')} second shift time out`}
+                                  id={`tout${ordinal}-${k}`}
+                                  value={s.time_out || ''}
+                                  onChange={(v) => setShift({ time_out: v })}
+                                  ariaLabel={`${label} ${format(date, 'MMM d')} shift ${ordinal} time out`}
                                   className={timeInputClass}
                                 />
                               </div>
                               <div />
-                              <div>
+                              <div className="flex flex-wrap items-center gap-2">
                                 <Button
                                   type="button"
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => updateDay(k, { time_in_2: '', time_out_2: '' })}
+                                  onClick={() => updateDay(k, { shifts: extraShifts.filter((_, xi) => xi !== si) })}
                                   className="h-8 text-xs text-muted-foreground hover:text-destructive"
                                 >
                                   <X className="h-3.5 w-3.5" />
-                                  Remove split shift
+                                  Remove shift {ordinal}
                                 </Button>
+                                {si === extraShifts.length - 1 && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => updateDay(k, { shifts: [...extraShifts, { time_in: s.time_out || '', time_out: '' }] })}
+                                    className="h-8 text-xs border-teal-500/60 text-teal-700 hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-950/40"
+                                  >
+                                    <Split className="h-3.5 w-3.5" />
+                                    Add another shift
+                                  </Button>
+                                )}
                               </div>
                             </div>
-                          )}
+                            );
+                          })}
+
 
                           {!hasSplit && isMissing && validHours > 0 && shortBy > 0.01 && (
                             <div className="mt-2 flex items-center gap-2">
@@ -2685,8 +2724,9 @@ const PortalDashboard = () => {
                       // Seed the split-shift row. Pre-fill time_in_2 with the first shift's
                       // time_out as a starting point; leave time_out_2 empty for the user to fill.
                       updateDay(k, {
-                        time_in_2: entry.time_in_2 || entry.time_out || '',
-                        time_out_2: entry.time_out_2 || '',
+                        shifts: (entry.shifts && entry.shifts.length > 0)
+                          ? entry.shifts
+                          : [{ time_in: entry.time_out || '', time_out: '' }],
                       });
                       setSplitDialogKey(null);
                     }}
