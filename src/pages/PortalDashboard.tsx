@@ -346,6 +346,17 @@ const buildDateKeys = (from: string, to: string): string[] => {
   return out;
 };
 
+// Read additional shifts from a stored daily_hours entry, falling back to the
+// legacy time_in_2 / time_out_2 pair for timesheets saved before unlimited shifts.
+const readShifts = (d: { time_in_2?: string; time_out_2?: string; shifts?: Shift[] } | undefined): Shift[] => {
+  if (!d) return [];
+  if (Array.isArray(d.shifts) && d.shifts.length > 0) {
+    return d.shifts.map((s) => ({ time_in: s?.time_in || '', time_out: s?.time_out || '' }));
+  }
+  if (d.time_in_2 || d.time_out_2) return [{ time_in: d.time_in_2 || '', time_out: d.time_out_2 || '' }];
+  return [];
+};
+
 const emptyDaysFor = (keys: string[]): Record<string, DayEntry> =>
   Object.fromEntries(keys.map((k) => [k, { time_in: '', time_out: '', hours: '', reason: '' }]));
 
@@ -1251,8 +1262,7 @@ const PortalDashboard = () => {
         if (d) next[k] = {
           time_in: d.time_in || '',
           time_out: d.time_out || '',
-          time_in_2: d.time_in_2 || '',
-          time_out_2: d.time_out_2 || '',
+          shifts: readShifts(d),
           hours: d.hours != null ? String(d.hours) : '',
           reason: d.reason || '',
         };
@@ -1265,8 +1275,7 @@ const PortalDashboard = () => {
         if (d) next[k] = {
           time_in: d.time_in || '',
           time_out: d.time_out || '',
-          time_in_2: d.time_in_2 || '',
-          time_out_2: d.time_out_2 || '',
+          shifts: readShifts(d),
           hours: d.hours != null ? String(d.hours) : '',
           reason: d.reason || '',
         };
@@ -1491,7 +1500,7 @@ const PortalDashboard = () => {
     if (!hasRegularShift) return;
     if (isRegularApplied(k)) {
       // Clear primary shift AND any split shift on this day
-      updateDay(k, { time_in: '', time_out: '', time_in_2: '', time_out_2: '' });
+      updateDay(k, { time_in: '', time_out: '', shifts: [] });
     } else {
       updateDay(k, { time_in: regularShift24.start, time_out: regularShift24.end });
     }
@@ -1520,7 +1529,7 @@ const PortalDashboard = () => {
     setDays((prev) => {
       const merged = { ...prev[k], ...patch } as DayEntry;
       // Recompute hours whenever any time field is touched (shift 1 or split shift 2)
-      if ('time_in' in patch || 'time_out' in patch || 'time_in_2' in patch || 'time_out_2' in patch) {
+      if ('time_in' in patch || 'time_out' in patch || 'shifts' in patch) {
         const h = computeDayBillable(merged, info?.break_duration_minutes, info?.break_is_paid);
         merged.hours = h > 0 ? String(h) : '';
       }
@@ -2034,7 +2043,8 @@ const PortalDashboard = () => {
                         ? 'border-l-4 border-l-amber-500'
                         : '';
 
-                      const hasSplit = !!(entry.time_in_2 || entry.time_out_2);
+                      const extraShifts = entry.shifts || [];
+                      const hasSplit = extraShifts.length > 0;
                       const shortBy = perDayExpected != null && validHours < perDayExpected
                         ? Number((perDayExpected - validHours).toFixed(2))
                         : 0;
