@@ -180,12 +180,15 @@ const DOW_TO_SHORT: Record<number, string> = { 0: 'Sun', 1: 'Mon', 2: 'Tue', 3: 
 const DEFAULT_WORK_DAYS: string[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
 
 
-interface DayEntry {
+interface Shift {
   time_in: string;  // "HH:MM" 24h
   time_out: string; // "HH:MM" 24h
-  time_in_2?: string;  // optional second/split shift "HH:MM" 24h
-  time_out_2?: string; // optional second/split shift "HH:MM" 24h
-  hours: string;    // computed string e.g. "8.50" (sum of both shifts)
+}
+interface DayEntry {
+  time_in: string;  // "HH:MM" 24h — first shift
+  time_out: string; // "HH:MM" 24h — first shift
+  shifts?: Shift[]; // additional shifts (2nd, 3rd, ... unlimited)
+  hours: string;    // computed string e.g. "8.50" (sum of all shifts)
   reason: string;
 }
 interface Timesheet {
@@ -198,7 +201,7 @@ interface Timesheet {
   status: string;
   outsta_status?: string | null;
   submitted_at: string;
-  daily_hours: Record<string, { hours: number; time_in?: string; time_out?: string; time_in_2?: string; time_out_2?: string; reason?: string }> | null;
+  daily_hours: Record<string, { hours: number; time_in?: string; time_out?: string; time_in_2?: string; time_out_2?: string; shifts?: Shift[]; reason?: string }> | null;
   client_approval_status?: string | null;
   client_flag_reason?: string | null;
   client_reviewed_at?: string | null;
@@ -241,19 +244,21 @@ const computeHours = (
   return applyBreakDeduction(raw, breakMinutes, breakIsPaid);
 };
 
-// Compute total billable day hours = shift 1 + optional split shift.
+// Compute total billable day hours = shift 1 + every additional shift.
 // Each shift gets the unpaid-break deduction applied independently when configured.
 const computeDayBillable = (
-  entry: Pick<DayEntry, 'time_in' | 'time_out' | 'time_in_2' | 'time_out_2'>,
+  entry: Pick<DayEntry, 'time_in' | 'time_out' | 'shifts'>,
   breakMinutes?: number | null,
   breakIsPaid?: boolean | null
 ): number => {
   const h1 = computeHours(entry.time_in, entry.time_out, breakMinutes, breakIsPaid);
-  const h2 = entry.time_in_2 && entry.time_out_2
-    ? computeHours(entry.time_in_2, entry.time_out_2, breakMinutes, breakIsPaid)
-    : 0;
-  return Math.round((h1 + h2) * 100) / 100;
+  const rest = (entry.shifts || []).reduce(
+    (sum, s) => sum + (s.time_in && s.time_out ? computeHours(s.time_in, s.time_out, breakMinutes, breakIsPaid) : 0),
+    0
+  );
+  return Math.round((h1 + rest) * 100) / 100;
 };
+
 
 // Convert stored break (always minutes) into the profile form's display unit.
 const breakStateToForm = (
