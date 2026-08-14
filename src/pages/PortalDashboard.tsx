@@ -2172,46 +2172,67 @@ const PortalDashboard = () => {
                           </div>
 
 
-                          {hasSplit && (
-                            <div className="mt-2 grid grid-cols-1 md:grid-cols-[110px_100px_100px_72px_1fr] gap-2.5 md:gap-3 items-center">
+                          {extraShifts.map((s, si) => {
+                            const ordinal = si + 2;
+                            const suffix = ordinal === 2 ? '2nd' : ordinal === 3 ? '3rd' : `${ordinal}th`;
+                            const setShift = (patch: Partial<Shift>) =>
+                              updateDay(k, {
+                                shifts: extraShifts.map((x, xi) => (xi === si ? { ...x, ...patch } : x)),
+                              });
+                            return (
+                            <div key={si} className="mt-2 grid grid-cols-1 md:grid-cols-[110px_100px_100px_72px_1fr] gap-2.5 md:gap-3 items-center">
                               <div className="text-[11px] font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300">
-                                Split shift
+                                Shift {ordinal}
                               </div>
                               <div className="space-y-1">
-                                <Label htmlFor={`tin2-${k}`} className="text-[11px] font-medium text-muted-foreground">Time in (2nd)</Label>
+                                <Label htmlFor={`tin${ordinal}-${k}`} className="text-[11px] font-medium text-muted-foreground">Time in ({suffix})</Label>
                                 <FlexibleTimeInput
-                                  id={`tin2-${k}`}
-                                  value={entry.time_in_2 || ''}
-                                  onChange={(v) => updateDay(k, { time_in_2: v })}
-                                  ariaLabel={`${label} ${format(date, 'MMM d')} second shift time in`}
+                                  id={`tin${ordinal}-${k}`}
+                                  value={s.time_in || ''}
+                                  onChange={(v) => setShift({ time_in: v })}
+                                  ariaLabel={`${label} ${format(date, 'MMM d')} shift ${ordinal} time in`}
                                   className={timeInputClass}
                                 />
                               </div>
                               <div className="space-y-1">
-                                <Label htmlFor={`tout2-${k}`} className="text-[11px] font-medium text-muted-foreground">Time out (2nd)</Label>
+                                <Label htmlFor={`tout${ordinal}-${k}`} className="text-[11px] font-medium text-muted-foreground">Time out ({suffix})</Label>
                                 <FlexibleTimeInput
-                                  id={`tout2-${k}`}
-                                  value={entry.time_out_2 || ''}
-                                  onChange={(v) => updateDay(k, { time_out_2: v })}
-                                  ariaLabel={`${label} ${format(date, 'MMM d')} second shift time out`}
+                                  id={`tout${ordinal}-${k}`}
+                                  value={s.time_out || ''}
+                                  onChange={(v) => setShift({ time_out: v })}
+                                  ariaLabel={`${label} ${format(date, 'MMM d')} shift ${ordinal} time out`}
                                   className={timeInputClass}
                                 />
                               </div>
                               <div />
-                              <div>
+                              <div className="flex flex-wrap items-center gap-2">
                                 <Button
                                   type="button"
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() => updateDay(k, { time_in_2: '', time_out_2: '' })}
+                                  onClick={() => updateDay(k, { shifts: extraShifts.filter((_, xi) => xi !== si) })}
                                   className="h-8 text-xs text-muted-foreground hover:text-destructive"
                                 >
                                   <X className="h-3.5 w-3.5" />
-                                  Remove split shift
+                                  Remove shift {ordinal}
                                 </Button>
+                                {si === extraShifts.length - 1 && (
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => updateDay(k, { shifts: [...extraShifts, { time_in: s.time_out || '', time_out: '' }] })}
+                                    className="h-8 text-xs border-teal-500/60 text-teal-700 hover:bg-teal-50 dark:text-teal-300 dark:hover:bg-teal-950/40"
+                                  >
+                                    <Split className="h-3.5 w-3.5" />
+                                    Add another shift
+                                  </Button>
+                                )}
                               </div>
                             </div>
-                          )}
+                            );
+                          })}
+
 
                           {!hasSplit && isMissing && validHours > 0 && shortBy > 0.01 && (
                             <div className="mt-2 flex items-center gap-2">
