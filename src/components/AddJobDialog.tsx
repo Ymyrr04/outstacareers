@@ -21,6 +21,7 @@ import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import JobInterviewQuestionsManager from '@/components/JobInterviewQuestionsManager';
 import { JobDescriptionParser } from '@/components/JobDescriptionParser';
 import JobBlastTargetingDialog from '@/components/JobBlastTargetingDialog';
+import JobClientSelect from '@/components/JobClientSelect';
 
 interface CustomQuestion {
   id?: string;
@@ -107,6 +108,7 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
     qualifications: ['', '', '', '', ''] as string[],
     responsibilities: ['', '', '', '', ''] as string[],
     assigned_admin_id: '' as string,
+    client_id: '' as string,
     post_to_linkedin: false,
   });
   const [convertedRate, setConvertedRate] = useState<string | null>(null);
@@ -239,6 +241,7 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
       qualifications: filteredQualifications.length > 0 ? filteredQualifications : null,
       responsibilities: filteredResponsibilities.length > 0 ? filteredResponsibilities : null,
       assigned_admin_id: formData.assigned_admin_id || null,
+      client_id: formData.client_id || null,
       post_to_linkedin: formData.post_to_linkedin,
     }).select().single();
 
@@ -304,6 +307,7 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
       qualifications: ['', '', '', '', ''],
       responsibilities: ['', '', '', '', ''],
       assigned_admin_id: '',
+      client_id: '',
       post_to_linkedin: false,
     });
     setConvertedRate(null);
@@ -384,6 +388,11 @@ const AddJobDialog = ({ onJobAdded }: AddJobDialogProps) => {
               </SelectContent>
             </Select>
           </div>
+
+          <JobClientSelect
+            value={formData.client_id}
+            onChange={(client_id) => setFormData({ ...formData, client_id })}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="assigned_admin">Assigned Admin (optional)</Label>
