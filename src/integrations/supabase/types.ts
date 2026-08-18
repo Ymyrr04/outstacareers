@@ -2607,6 +2607,7 @@ export type Database = {
         Row: {
           apply_url: string | null
           assigned_admin_id: string | null
+          client_id: string | null
           created_at: string
           department: string | null
           description: string | null
@@ -2627,6 +2628,7 @@ export type Database = {
         Insert: {
           apply_url?: string | null
           assigned_admin_id?: string | null
+          client_id?: string | null
           created_at?: string
           department?: string | null
           description?: string | null
@@ -2647,6 +2649,7 @@ export type Database = {
         Update: {
           apply_url?: string | null
           assigned_admin_id?: string | null
+          client_id?: string | null
           created_at?: string
           department?: string | null
           description?: string | null
@@ -2664,7 +2667,15 @@ export type Database = {
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "jobs_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       payoneer_verifications: {
         Row: {

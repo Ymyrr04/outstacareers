@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Pencil, Plus, X, Linkedin } from 'lucide-react';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
+import JobClientSelect from '@/components/JobClientSelect';
 import JobInterviewQuestionsManager from '@/components/JobInterviewQuestionsManager';
 import { JobDescriptionParser } from '@/components/JobDescriptionParser';
 
@@ -48,6 +49,7 @@ interface Job {
   qualifications?: string[] | null;
   responsibilities?: string[] | null;
   assigned_admin_id?: string | null;
+  client_id?: string | null;
   post_to_linkedin?: boolean | null;
   linkedin_post_url?: string | null;
   linkedin_posted_at?: string | null;
@@ -118,6 +120,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
       ? job.responsibilities
       : ['', '', '', '', ''] as string[],
     assigned_admin_id: job.assigned_admin_id || '',
+    client_id: job.client_id || '',
     post_to_linkedin: job.post_to_linkedin ?? false,
   });
   const [convertedRate, setConvertedRate] = useState<string | null>(null);
@@ -234,6 +237,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
           ? job.responsibilities
           : ['', '', '', '', ''],
         assigned_admin_id: job.assigned_admin_id || '',
+    client_id: job.client_id || '',
         post_to_linkedin: job.post_to_linkedin ?? false,
       });
       setConvertedRate(null);
@@ -294,6 +298,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
         qualifications: filteredQualifications.length > 0 ? filteredQualifications : null,
         responsibilities: filteredResponsibilities.length > 0 ? filteredResponsibilities : null,
         assigned_admin_id: formData.assigned_admin_id || null,
+        client_id: formData.client_id || null,
         post_to_linkedin: formData.post_to_linkedin,
       })
       .eq('id', job.id);
@@ -385,6 +390,12 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
               </SelectContent>
             </Select>
           </div>
+
+          <JobClientSelect
+            id="edit-job-client"
+            value={formData.client_id}
+            onChange={(client_id) => setFormData({ ...formData, client_id })}
+          />
 
           <div className="space-y-2">
             <Label htmlFor="edit-assigned_admin">Assigned Admin</Label>
