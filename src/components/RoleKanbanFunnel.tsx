@@ -288,6 +288,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   });
   const [adminList, setAdminList] = useState<{ id: string; name: string }[]>([]);
   const [adminJobTitlesMap, setAdminJobTitlesMap] = useState<Record<string, string[]>>({});
+  const [roleClientMap, setRoleClientMap] = useState<Record<string, string>>({});
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [tagFilterOpen, setTagFilterOpen] = useState(false);
   const [tagFilterSearch, setTagFilterSearch] = useState('');
@@ -391,9 +392,19 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   useEffect(() => {
     const fetchJobs = async () => {
       const [activeResult, allResult] = await Promise.all([
-        supabase.from('jobs').select('title, assigned_admin_id').eq('is_active', true).order('title'),
-        supabase.from('jobs').select('title, assigned_admin_id').order('title'),
+        supabase.from('jobs').select('title, assigned_admin_id, client_id').eq('is_active', true).order('title'),
+        supabase.from('jobs').select('title, assigned_admin_id, client_id').order('title'),
       ]);
+
+      // Map role title -> client company name (internal visibility only)
+      const { data: clientRows } = await supabase.from('clients').select('id, company_name');
+      const clientNameById = new Map((clientRows || []).map((c: any) => [c.id, c.company_name]));
+      const roleClients: Record<string, string> = {};
+      for (const j of [...(allResult.data || []), ...(activeResult.data || [])]) {
+        const name = (j as any).client_id ? clientNameById.get((j as any).client_id) : null;
+        if (j.title && name) roleClients[j.title] = name;
+      }
+      setRoleClientMap(roleClients);
       const filterTitle = (data: any[]) => (data || []).map(j => j.title).filter(t => t && !/^\$?\d+(\.\d+)?$/.test(t.trim()));
       setActiveRoles(filterTitle(activeResult.data));
       setAllRoles(filterTitle(allResult.data));
@@ -1116,7 +1127,10 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                     All Roles
                   </button>
                   {filteredRoles
-                    .filter((r) => r.toLowerCase().includes(roleSearch.toLowerCase()))
+                    .filter((r) => {
+                      const q = roleSearch.toLowerCase();
+                      return r.toLowerCase().includes(q) || (roleClientMap[r] || '').toLowerCase().includes(q);
+                    })
                     .sort((a, b) => a.localeCompare(b))
                     .map((role) => (
                       <button
@@ -1132,10 +1146,20 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                           setRoleSearch('');
                         }}
                       >
-                        {role}
+                        <span className="flex items-center justify-between gap-2">
+                          <span className="truncate">{role}</span>
+                          {roleClientMap[role] && (
+                            <span className="shrink-0 text-xs text-muted-foreground truncate max-w-[45%]">
+                              {roleClientMap[role]}
+                            </span>
+                          )}
+                        </span>
                       </button>
                     ))}
-                  {filteredRoles.filter((r) => r.toLowerCase().includes(roleSearch.toLowerCase())).length === 0 && (
+                  {filteredRoles.filter((r) => {
+                    const q = roleSearch.toLowerCase();
+                    return r.toLowerCase().includes(q) || (roleClientMap[r] || '').toLowerCase().includes(q);
+                  }).length === 0 && (
                     <p className="px-3 py-2 text-sm text-muted-foreground">No roles found.</p>
                   )}
                 </div>
