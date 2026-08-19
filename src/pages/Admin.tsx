@@ -362,7 +362,7 @@ const Admin = () => {
   const [isExporting, setIsExporting] = useState(false);
   
   // Main tab state for layout control
-  const validTabs = ['jobs', 'applicants', 'funnel', 'pipeline', 'post-hire', 'clients', 'contractors', 'contracts', 'analytics', 'talent-scout', 'external-scout', 'workflow', 'settings'];
+  const validTabs = ['jobs', 'applicants', 'funnel', 'pipeline', 'post-hire', 'clients', 'contractors', 'contracts', 'analytics', 'calendar', 'talent-scout', 'external-scout', 'workflow', 'settings'];
   const [activeMainTab, setActiveMainTab] = useState(() => {
     if (urlTab && validTabs.includes(urlTab)) return urlTab;
     return 'jobs';
@@ -1695,6 +1695,13 @@ const Admin = () => {
                 Analytics
               </TabsTrigger>
             )}
+            {canViewTab('calendar') && (
+              <TabsTrigger value="calendar" className="flex items-center gap-2">
+                <CalendarPlus className="w-4 h-4" />
+                Calendar
+              </TabsTrigger>
+            )}
+
             {canViewTab('talent-scout') && (
               <TabsTrigger value="talent-scout" className="flex items-center gap-2">
                 <Target className="w-4 h-4" />
