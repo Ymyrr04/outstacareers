@@ -53,12 +53,55 @@ export const AddActivityModal = ({
   const [description, setDescription] = useState('');
   const [repeat, setRepeat] = useState('none');
   const [error, setError] = useState<string | null>(null);
+  const [customTypes, setCustomTypes] = useState<{ value: string; label: string }[]>([]);
+  const [addingType, setAddingType] = useState(false);
+  const [newType, setNewType] = useState('');
+  const [creatingType, setCreatingType] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const allTypes = [
+    ...EVENT_TYPES.map((t) => ({ value: t.value, label: t.label })),
+    ...customTypes.filter((c) => !EVENT_TYPES.some((t) => t.value === c.value)),
+  ];
+
+  const loadTypes = async () => {
+    const { data } = await supabase
+      .from('calendar_event_types')
+      .select('value,label')
+      .order('label', { ascending: true });
+    setCustomTypes((data as { value: string; label: string }[]) || []);
+  };
+
+  useEffect(() => {
+    if (open) loadTypes();
+  }, [open]);
+
+  const handleCreateType = async () => {
+    const label = newType.trim();
+    if (!label) return;
+    const value = label.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    if (!value) return;
+    setCreatingType(true);
+    const { error: dbError } = await supabase
+      .from('calendar_event_types')
+      .insert({ label, value, created_by: currentUserId ?? null });
+    setCreatingType(false);
+    if (dbError && !dbError.message.includes('duplicate')) {
+      toast({ title: 'Could not save type', description: dbError.message, variant: 'destructive' });
+      return;
+    }
+    await loadTypes();
+    setType(value);
+    setNewType('');
+    setAddingType(false);
+  };
 
   useEffect(() => {
     if (!open) return;
     setTitle('');
     setType('task');
+    setAddingType(false);
+    setNewType('');
     setDescription('');
     setRepeat('none');
     setError(null);
@@ -126,14 +169,44 @@ export const AddActivityModal = ({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label>Type</Label>
-              <Select value={type} onValueChange={setType}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {EVENT_TYPES.map((t) => (
-                    <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {addingType ? (
+                <div className="flex gap-2">
+                  <Input
+                    autoFocus
+                    value={newType}
+                    onChange={(e) => setNewType(e.target.value)}
+                    placeholder="New type name"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') { e.preventDefault(); handleCreateType(); }
+                      if (e.key === 'Escape') { setAddingType(false); setNewType(''); }
+                    }}
+                  />
+                  <Button type="button" size="sm" onClick={handleCreateType} disabled={creatingType}>
+                    Save
+                  </Button>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => { setAddingType(false); setNewType(''); }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              ) : (
+                <Select
+                  value={type}
+                  onValueChange={(v) => (v === '__new__' ? setAddingType(true) : setType(v))}
+                >
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {allTypes.map((t) => (
+                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                    ))}
+                    <SelectItem value="__new__">+ Add new type…</SelectItem>
+                  </SelectContent>
+                </Select>
+              )}
             </div>
             <div className="space-y-1.5">
               <Label>Owner</Label>
