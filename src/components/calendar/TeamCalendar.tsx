@@ -358,7 +358,9 @@ export const TeamCalendar = () => {
 
             {/* admin lanes */}
             {admins.map((admin) => {
-              const laneEvents = dayEvents.filter((e) => e.created_by === admin.user_id);
+              const laneEvents = dayEvents.filter(
+                (e) => e.created_by === admin.user_id || (e.assigned_to || []).includes(admin.user_id)
+              );
               return (
                 <div key={admin.user_id} className="flex-1 min-w-[120px] border-l-[0.5px] border-border">
                   <div
