@@ -136,7 +136,7 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
             <Badge variant="secondary" style={{ background: color.bg, color: color.text }}>
               {eventTypeLabel(event.event_type)}
             </Badge>
-            {event.is_recurring && <Badge variant="outline">Weekly</Badge>}
+            {event.is_recurring && <Badge variant="outline">{recurrenceLabel(event.recurrence_rule)}</Badge>}
           </div>
           <p className="text-xs text-muted-foreground">
             {formatMinutes(event.start_time)} – {formatMinutes(event.end_time)} ET
