@@ -58,48 +58,68 @@ const HourActivitiesPanel = ({
   hour,
   events,
   admins,
+  currentUserId,
   onClose,
   onPick,
+  onChanged,
 }: {
   hour: number;
   events: CalendarEvent[];
   admins: CalendarAdmin[];
+  currentUserId?: string;
   onClose: () => void;
   onPick: (ev: CalendarEvent) => void;
+  onChanged: () => void;
 }) => {
   const nextHour = hour + 60;
-  return (
-    <Card className="relative mt-0 p-4 border-[0.5px] max-h-[70vh] overflow-y-auto">
-      <div className="absolute right-2 top-2">
-        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose} title="Close">
-          <X className="h-4 w-4" />
-        </Button>
-      </div>
-      <p className="text-xs text-muted-foreground">Activities</p>
-      <p className="text-sm font-medium">
-        {formatMinutes(hour)} – {formatMinutes(nextHour)} ET
-      </p>
-      <p className="mt-0.5 text-xs text-muted-foreground">
-        {events.length} {events.length === 1 ? 'activity' : 'activities'}
-      </p>
+  const sorted = events.slice().sort((a, b) => a.start_time - b.start_time);
+  const expanded = sorted.length > 0 && sorted.length <= 5;
 
-      <div className="mt-3 space-y-2">
-        {events.length === 0 && (
-          <p className="text-xs text-muted-foreground py-4 text-center">
-            No activities scheduled this hour.
+  return (
+    <div className="max-h-[70vh] overflow-y-auto pr-1">
+      <div className="flex items-center justify-between mb-2 sticky top-0 bg-background/95 backdrop-blur px-1 py-1 rounded">
+        <div>
+          <p className="text-xs text-muted-foreground">Activities</p>
+          <p className="text-sm font-medium">
+            {formatMinutes(hour)} – {formatMinutes(nextHour)} ET
           </p>
-        )}
-        {events
-          .slice()
-          .sort((a, b) => a.start_time - b.start_time)
-          .map((ev) => {
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="text-xs text-muted-foreground">
+            {events.length} {events.length === 1 ? 'activity' : 'activities'}
+          </span>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose} title="Close">
+            <X className="h-4 w-4" />
+          </Button>
+        </div>
+      </div>
+
+      {events.length === 0 && (
+        <Card className="p-4 border-[0.5px] text-center">
+          <p className="text-xs text-muted-foreground">No activities scheduled this hour.</p>
+        </Card>
+      )}
+
+      {expanded
+        ? sorted.map((ev) => (
+            <ActivityDetailPanel
+              key={ev.id}
+              event={ev}
+              admins={admins}
+              currentUserId={currentUserId}
+              onClose={onClose}
+              onChanged={onChanged}
+              className="mt-0 mb-3"
+            />
+          ))
+        : sorted.map((ev) => {
             const admin = admins.find((a) => a.user_id === ev.created_by);
             const color = admin?.color ?? colorForUserId(ev.created_by);
             return (
               <button
                 key={ev.id}
                 onClick={() => onPick(ev)}
-                className="w-full text-left rounded-md p-2 hover:bg-muted/60 transition-colors"
+                className="w-full text-left rounded-md p-2 mb-2 hover:bg-muted/60 transition-colors"
                 style={{
                   background: color.bg,
                   borderLeft: `3px solid ${color.main}`,
@@ -120,8 +140,7 @@ const HourActivitiesPanel = ({
               </button>
             );
           })}
-      </div>
-    </Card>
+    </div>
   );
 };
 
@@ -455,8 +474,10 @@ export const TeamCalendar = () => {
                 (e) => e.start_time < selectedHour + 60 && e.end_time > selectedHour
               )}
               admins={admins}
+              currentUserId={user?.id}
               onClose={() => setSelectedHour(null)}
               onPick={(ev) => setSelectedEvent(ev)}
+              onChanged={refetch}
             />
           </div>
         )}
