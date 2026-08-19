@@ -66,6 +66,7 @@ export const TeamCalendar = () => {
   });
   const [selectedDate, setSelectedDate] = useState(today);
   const [selectedEvent, setSelectedEvent] = useState<CalendarEvent | null>(null);
+  const [selectedHour, setSelectedHour] = useState<number | null>(null);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [modalDate, setModalDate] = useState(today);
