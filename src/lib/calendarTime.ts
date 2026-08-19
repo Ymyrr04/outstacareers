@@ -3,15 +3,15 @@ export const ET_TZ = 'America/New_York';
 export const ET_LABEL = 'ET (Eastern Time)';
 
 export const ADMIN_PALETTE = [
-  { name: 'Purple', main: '#534AB7', bg: '#EEEDFE', text: '#3C3489' },
-  { name: 'Teal', main: '#0F6E56', bg: '#E1F5EE', text: '#085041' },
-  { name: 'Coral', main: '#993C1D', bg: '#FAECE7', text: '#712B13' },
-  { name: 'Blue', main: '#185FA5', bg: '#E6F1FB', text: '#0C447C' },
-  { name: 'Amber', main: '#B45309', bg: '#FFFBEB', text: '#92400E' },
-  { name: 'Pink', main: '#9D174D', bg: '#FDF2F8', text: '#831843' },
-  { name: 'Lime', main: '#3F6212', bg: '#F7FEE7', text: '#365314' },
-  { name: 'Indigo', main: '#3730A3', bg: '#EEF2FF', text: '#312E81' },
-  { name: 'Cyan', main: '#0E7490', bg: '#ECFEFF', text: '#164E63' },
+  { name: 'Purple', main: '#3F35B0', bg: '#DAD6F7', text: '#2A2178' },
+  { name: 'Teal', main: '#0A5642', bg: '#C5E9D9', text: '#05392B' },
+  { name: 'Coral', main: '#7A2E15', bg: '#F2D2C8', text: '#521E0C' },
+  { name: 'Blue', main: '#0F4A8C', bg: '#C5DCF2', text: '#0A3464' },
+  { name: 'Amber', main: '#8F4009', bg: '#FFE6B8', text: '#6B2E05' },
+  { name: 'Pink', main: '#7A0E3C', bg: '#F5C9DD', text: '#56082A' },
+  { name: 'Lime', main: '#2F4A0C', bg: '#DDEFB0', text: '#1F3308' },
+  { name: 'Indigo', main: '#2A2480', bg: '#D2DAF5', text: '#1C1860' },
+  { name: 'Cyan', main: '#0A5A70', bg: '#BFEAF2', text: '#064150' },
 ] as const;
 
 export const GRAY_COLOR = { name: 'Gray', main: '#6B7280', bg: '#F3F4F6', text: '#374151' };
