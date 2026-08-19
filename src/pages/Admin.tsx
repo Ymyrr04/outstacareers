@@ -23,6 +23,7 @@ import { useBackgroundExport } from '@/hooks/useBackgroundExport';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useEmailReplies } from '@/hooks/useEmailTemplates';
 import { ClientsDashboard, ContractorsDashboard, ClientAnalyticsDashboard, HiringPipelineKanban } from '@/components/clients';
+import TeamCalendar from '@/components/calendar/TeamCalendar';
 import { SalesPipeline } from '@/components/sales/SalesPipeline';
 import { PostHirePipelineKanban } from '@/components/clients/PostHirePipelineKanban';
 import { generateJobUrl } from '@/lib/slugify';
@@ -3782,6 +3783,12 @@ const Admin = () => {
           <TabsContent value="analytics" className="space-y-6">
             <ClientAnalyticsDashboard />
           </TabsContent>
+
+          {/* Team Activity Calendar Tab */}
+          <TabsContent value="calendar" className="space-y-6">
+            <TeamCalendar />
+          </TabsContent>
+
 
           {/* Funnel Tab */}
           <TabsContent value="funnel" className="space-y-6" keepMounted>
