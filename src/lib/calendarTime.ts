@@ -114,7 +114,8 @@ export const daysBetween = (a: string, b: string) =>
 export const dayOfMonth = (dateStr: string) => parseDateString(dateStr).getDate();
 
 export const eventTypeLabel = (t: string) =>
-  EVENT_TYPES.find((e) => e.value === t)?.label ?? t;
+  EVENT_TYPES.find((e) => e.value === t)?.label ??
+  t.split('-').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
 export const DAY_START_MIN = 0; // 12:00 AM ET
 export const DAY_END_MIN = 24 * 60; // 11:59 PM ET (24-hour span)
