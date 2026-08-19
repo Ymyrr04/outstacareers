@@ -21,7 +21,9 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   date: string;
   defaultStart: number;
+  defaultEnd?: number;
   defaultAdminId?: string;
+  defaultAssignees?: string[];
   admins: CalendarAdmin[];
   currentUserId?: string;
   onSaved: (date: string) => void;
@@ -32,7 +34,9 @@ export const AddActivityModal = ({
   onOpenChange,
   date,
   defaultStart,
+  defaultEnd,
   defaultAdminId,
+  defaultAssignees,
   admins,
   currentUserId,
   onSaved,
@@ -57,11 +61,11 @@ export const AddActivityModal = ({
     setDescription('');
     setRepeatWeekly(false);
     setError(null);
-    setExtraAssignees([]);
+    setExtraAssignees(defaultAssignees ?? []);
     setAdminId(defaultAdminId || currentUserId || admins[0]?.user_id || '');
     setStart(minutesToInput(defaultStart));
-    setEnd(minutesToInput(Math.min(defaultStart + 60, 23 * 60 + 59)));
-  }, [open, defaultStart, defaultAdminId, currentUserId, admins]);
+    setEnd(minutesToInput(Math.min(defaultEnd ?? defaultStart + 60, 23 * 60 + 59)));
+  }, [open, defaultStart, defaultEnd, defaultAdminId, defaultAssignees, currentUserId, admins]);
 
   const handleSave = async () => {
     setError(null);
