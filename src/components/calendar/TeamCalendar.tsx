@@ -375,6 +375,19 @@ export const TeamCalendar = () => {
             />
           </div>
         )}
+        {!selectedEvent && selectedHour !== null && (
+          <div className="w-[340px] shrink-0 hidden lg:block sticky top-4">
+            <HourActivitiesPanel
+              hour={selectedHour}
+              events={dayEvents.filter(
+                (e) => e.start_time < selectedHour + 60 && e.end_time > selectedHour
+              )}
+              admins={admins}
+              onClose={() => setSelectedHour(null)}
+              onPick={(ev) => setSelectedEvent(ev)}
+            />
+          </div>
+        )}
         </div>
 
         {selectedEvent && (
