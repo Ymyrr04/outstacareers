@@ -203,13 +203,16 @@ export const AddActivityModal = ({
             />
           </div>
 
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="ce-repeat"
-              checked={repeatWeekly}
-              onCheckedChange={(v) => setRepeatWeekly(v === true)}
-            />
-            <Label htmlFor="ce-repeat" className="font-normal">Repeat weekly</Label>
+          <div className="space-y-1.5">
+            <Label>Repeat</Label>
+            <Select value={repeat} onValueChange={setRepeat}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {RECURRENCE_OPTIONS.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <p className="text-xs text-muted-foreground">All times are in Eastern Time (ET)</p>
