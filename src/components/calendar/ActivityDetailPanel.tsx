@@ -12,7 +12,7 @@ import {
 import { X, Plus, Trash2 } from 'lucide-react';
 import { CalendarAdmin } from '@/hooks/useCalendarAdmins';
 import { CalendarEvent } from '@/hooks/useCalendarEvents';
-import { formatMinutes, eventTypeLabel, colorForIndex } from '@/lib/calendarTime';
+import { formatMinutes, eventTypeLabel, colorForIndex, recurrenceLabel } from '@/lib/calendarTime';
 import { useToast } from '@/hooks/use-toast';
 
 interface Comment {
