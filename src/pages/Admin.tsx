@@ -1660,6 +1660,12 @@ const Admin = () => {
                 Client Pipeline
               </TabsTrigger>
             )}
+            {canViewTab('calendar') && (
+              <TabsTrigger value="calendar" className="flex items-center gap-2">
+                <CalendarPlus className="w-4 h-4" />
+                Calendar
+              </TabsTrigger>
+            )}
             {canViewTab('sales-pipeline') && (
               <TabsTrigger value="sales-pipeline" className="flex items-center gap-2">
                 <Target className="w-4 h-4" />
@@ -1696,12 +1702,7 @@ const Admin = () => {
                 Analytics
               </TabsTrigger>
             )}
-            {canViewTab('calendar') && (
-              <TabsTrigger value="calendar" className="flex items-center gap-2">
-                <CalendarPlus className="w-4 h-4" />
-                Calendar
-              </TabsTrigger>
-            )}
+
 
             {canViewTab('talent-scout') && (
               <TabsTrigger value="talent-scout" className="flex items-center gap-2">
