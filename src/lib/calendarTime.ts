@@ -104,3 +104,11 @@ export const DAY_START_MIN = 8 * 60; // 8:00 AM ET
 export const DAY_END_MIN = 20 * 60; // 8:00 PM ET
 export const SLOT_HEIGHT = 28; // px per 30 minutes
 export const PX_PER_MIN = SLOT_HEIGHT / 30;
+
+/** Deterministic palette color for a user id (fallback when admin list lacks the creator). */
+export const colorForUserId = (userId?: string | null) => {
+  if (!userId) return GRAY_COLOR;
+  let h = 0;
+  for (let i = 0; i < userId.length; i++) h = (h * 31 + userId.charCodeAt(i)) >>> 0;
+  return ADMIN_PALETTE[h % ADMIN_PALETTE.length];
+};
