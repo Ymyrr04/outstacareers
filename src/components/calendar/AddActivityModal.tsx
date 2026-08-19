@@ -57,6 +57,7 @@ export const AddActivityModal = ({
     setDescription('');
     setRepeatWeekly(false);
     setError(null);
+    setExtraAssignees([]);
     setAdminId(defaultAdminId || currentUserId || admins[0]?.user_id || '');
     setStart(minutesToInput(defaultStart));
     setEnd(minutesToInput(Math.min(defaultStart + 60, 23 * 60 + 59)));
