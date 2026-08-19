@@ -262,7 +262,7 @@ export const TeamCalendar = () => {
             {admins.map((admin) => {
               const laneEvents = dayEvents.filter((e) => e.created_by === admin.user_id);
               return (
-                <div key={admin.user_id} className="w-[120px] shrink-0 border-l-[0.5px] border-border">
+                <div key={admin.user_id} className="flex-1 min-w-[120px] border-l-[0.5px] border-border">
                   <div
                     className="flex h-9 items-center gap-1.5 px-2 border-b-[0.5px] border-border"
                     style={{ background: admin.color.bg }}
