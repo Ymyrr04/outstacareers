@@ -86,7 +86,7 @@ export const AddActivityModal = ({
       end_time: e,
       event_type: type,
       created_by: owner,
-      assigned_to: owner ? [owner] : [],
+      assigned_to: Array.from(new Set([...(owner ? [owner] : []), ...extraAssignees])),
       is_recurring: repeatWeekly,
       recurrence_rule: repeatWeekly ? 'weekly' : null,
     });
