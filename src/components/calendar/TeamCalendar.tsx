@@ -190,6 +190,7 @@ export const TeamCalendar = () => {
     const next = addDays(selectedDate, delta);
     setSelectedDate(next);
     setSelectedEvent(null);
+    setSelectedHour(null);
     const d = parseDateString(next);
     setMonthCursor(new Date(d.getFullYear(), d.getMonth(), 1));
   };
