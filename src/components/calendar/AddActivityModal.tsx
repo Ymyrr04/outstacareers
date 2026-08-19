@@ -129,7 +129,7 @@ export const AddActivityModal = ({
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label>Admin</Label>
+              <Label>Owner</Label>
               <Select value={adminId} onValueChange={setAdminId}>
                 <SelectTrigger><SelectValue placeholder="Select admin" /></SelectTrigger>
                 <SelectContent>
@@ -140,6 +140,38 @@ export const AddActivityModal = ({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label>Also assign to</Label>
+              <button
+                type="button"
+                className="text-xs text-muted-foreground hover:text-foreground"
+                onClick={() =>
+                  setExtraAssignees(
+                    extraAssignees.length === admins.length ? [] : admins.map((a) => a.user_id)
+                  )
+                }
+              >
+                {extraAssignees.length === admins.length ? 'Clear all' : 'Select all'}
+              </button>
+            </div>
+            <div className="max-h-36 overflow-y-auto rounded-md border p-2 space-y-1.5">
+              {admins.map((a) => (
+                <label key={a.user_id} className="flex items-center gap-2 text-sm cursor-pointer">
+                  <Checkbox
+                    checked={extraAssignees.includes(a.user_id)}
+                    onCheckedChange={(v) =>
+                      setExtraAssignees((prev) =>
+                        v === true ? [...prev, a.user_id] : prev.filter((id) => id !== a.user_id)
+                      )
+                    }
+                  />
+                  <span className="font-normal">{a.name}</span>
+                </label>
+              ))}
             </div>
           </div>
 
