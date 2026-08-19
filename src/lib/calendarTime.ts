@@ -97,6 +97,22 @@ export const EVENT_TYPES = [
   { value: 'followup', label: 'Follow-up' },
 ] as const;
 
+export const RECURRENCE_OPTIONS = [
+  { value: 'none', label: 'Does not repeat' },
+  { value: 'weekly', label: 'Weekly' },
+  { value: 'biweekly', label: 'Bi-weekly' },
+  { value: 'monthly', label: 'Monthly' },
+] as const;
+
+export const recurrenceLabel = (r?: string | null) =>
+  RECURRENCE_OPTIONS.find((o) => o.value === r)?.label ?? 'Weekly';
+
+/** Whole days between two YYYY-MM-DD strings. */
+export const daysBetween = (a: string, b: string) =>
+  Math.round((parseDateString(b).getTime() - parseDateString(a).getTime()) / 86400000);
+
+export const dayOfMonth = (dateStr: string) => parseDateString(dateStr).getDate();
+
 export const eventTypeLabel = (t: string) =>
   EVENT_TYPES.find((e) => e.value === t)?.label ?? t;
 

@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { CalendarAdmin } from '@/hooks/useCalendarAdmins';
 import {
   EVENT_TYPES,
+  RECURRENCE_OPTIONS,
   formatDateLong,
   inputToMinutes,
   minutesToInput,
@@ -50,7 +51,7 @@ export const AddActivityModal = ({
   const [start, setStart] = useState('09:00');
   const [end, setEnd] = useState('10:00');
   const [description, setDescription] = useState('');
-  const [repeatWeekly, setRepeatWeekly] = useState(false);
+  const [repeat, setRepeat] = useState('none');
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -59,7 +60,7 @@ export const AddActivityModal = ({
     setTitle('');
     setType('task');
     setDescription('');
-    setRepeatWeekly(false);
+    setRepeat('none');
     setError(null);
     setExtraAssignees(defaultAssignees ?? []);
     setAdminId(defaultAdminId || currentUserId || admins[0]?.user_id || '');
@@ -91,8 +92,8 @@ export const AddActivityModal = ({
       event_type: type,
       created_by: owner,
       assigned_to: Array.from(new Set([...(owner ? [owner] : []), ...extraAssignees])),
-      is_recurring: repeatWeekly,
-      recurrence_rule: repeatWeekly ? 'weekly' : null,
+      is_recurring: repeat !== 'none',
+      recurrence_rule: repeat === 'none' ? null : repeat,
     });
     setSaving(false);
     if (dbError) {
@@ -203,13 +204,16 @@ export const AddActivityModal = ({
             />
           </div>
 
-          <div className="flex items-center gap-2">
-            <Checkbox
-              id="ce-repeat"
-              checked={repeatWeekly}
-              onCheckedChange={(v) => setRepeatWeekly(v === true)}
-            />
-            <Label htmlFor="ce-repeat" className="font-normal">Repeat weekly</Label>
+          <div className="space-y-1.5">
+            <Label>Repeat</Label>
+            <Select value={repeat} onValueChange={setRepeat}>
+              <SelectTrigger><SelectValue /></SelectTrigger>
+              <SelectContent>
+                {RECURRENCE_OPTIONS.map((r) => (
+                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <p className="text-xs text-muted-foreground">All times are in Eastern Time (ET)</p>

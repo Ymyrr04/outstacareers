@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { weekdayOf } from '@/lib/calendarTime';
+import { weekdayOf, daysBetween, dayOfMonth } from '@/lib/calendarTime';
 
 export interface CalendarEvent {
   id: string;
@@ -48,8 +48,12 @@ export const useCalendarEvents = (rangeStart: string, rangeEnd: string) => {
       return events
         .filter((e) => {
           if (e.event_date === dateStr) return true;
-          if (e.is_recurring && e.recurrence_rule === 'weekly') {
-            return e.event_date < dateStr && weekdayOf(e.event_date) === dow;
+          if (e.is_recurring && e.event_date < dateStr) {
+            const rule = e.recurrence_rule || 'weekly';
+            if (rule === 'weekly') return weekdayOf(e.event_date) === dow;
+            if (rule === 'biweekly')
+              return weekdayOf(e.event_date) === dow && daysBetween(e.event_date, dateStr) % 14 === 0;
+            if (rule === 'monthly') return dayOfMonth(e.event_date) === dayOfMonth(dateStr);
           }
           return false;
         })
