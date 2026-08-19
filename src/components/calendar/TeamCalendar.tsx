@@ -15,6 +15,7 @@ import {
   SLOT_HEIGHT,
   addDays,
   colorForIndex,
+  colorForUserId,
   formatDateLong,
   formatMinutes,
   nowMinutesET,
@@ -176,7 +177,7 @@ export const TeamCalendar = () => {
               <div className="mt-1 space-y-1">
                 {dayEvents.slice(0, 2).map((ev) => {
                   const admin = admins.find((a) => a.user_id === ev.created_by);
-                  const color = admin?.color ?? colorForIndex(99);
+                  const color = admin?.color ?? colorForUserId(ev.created_by);
                   return (
                     <div
                       key={ev.id}
@@ -184,7 +185,9 @@ export const TeamCalendar = () => {
                       style={{
                         background: color.bg,
                         color: color.text,
-                        borderLeft: `2px solid ${color.main}`,
+                        borderLeft: `3px solid ${color.main}`,
+                        border: `0.5px solid ${color.main}55`,
+                        borderLeftWidth: 3,
                       }}
                     >
                       {ev.title}
