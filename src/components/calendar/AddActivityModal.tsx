@@ -42,6 +42,7 @@ export const AddActivityModal = ({
   const [title, setTitle] = useState('');
   const [type, setType] = useState('task');
   const [adminId, setAdminId] = useState('');
+  const [extraAssignees, setExtraAssignees] = useState<string[]>([]);
   const [start, setStart] = useState('09:00');
   const [end, setEnd] = useState('10:00');
   const [description, setDescription] = useState('');
