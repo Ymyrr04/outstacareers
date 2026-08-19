@@ -357,15 +357,32 @@ export const TeamCalendar = () => {
         </div>
 
         {selectedEvent && (
-          <ActivityDetailPanel
-            event={dayEvents.find((e) => e.id === selectedEvent.id) ?? selectedEvent}
-            admins={admins}
-            currentUserId={user?.id}
-            onClose={() => setSelectedEvent(null)}
-            onChanged={refetch}
-          />
+          <div className="w-[340px] shrink-0 hidden lg:block sticky top-4">
+            <ActivityDetailPanel
+              event={dayEvents.find((e) => e.id === selectedEvent.id) ?? selectedEvent}
+              admins={admins}
+              currentUserId={user?.id}
+              onClose={() => setSelectedEvent(null)}
+              onChanged={refetch}
+              className="mt-0 max-h-[70vh] overflow-y-auto"
+            />
+          </div>
+        )}
+        </div>
+
+        {selectedEvent && (
+          <div className="lg:hidden">
+            <ActivityDetailPanel
+              event={dayEvents.find((e) => e.id === selectedEvent.id) ?? selectedEvent}
+              admins={admins}
+              currentUserId={user?.id}
+              onClose={() => setSelectedEvent(null)}
+              onChanged={refetch}
+            />
+          </div>
         )}
       </Card>
+
     );
   };
 
