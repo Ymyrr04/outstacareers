@@ -87,7 +87,16 @@ const HourActivitiesPanel = ({
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">
             {events.length} {events.length === 1 ? 'activity' : 'activities'}
+            {(() => {
+              const people = new Set<string>();
+              events.forEach((e) => {
+                if (e.created_by) people.add(e.created_by);
+                (e.assigned_to || []).forEach((id) => people.add(id));
+              });
+              return people.size > 0 ? ` · ${people.size} people` : '';
+            })()}
           </span>
+
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose} title="Close">
             <X className="h-4 w-4" />
           </Button>
