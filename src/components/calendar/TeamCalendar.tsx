@@ -474,8 +474,10 @@ export const TeamCalendar = () => {
                 (e) => e.start_time < selectedHour + 60 && e.end_time > selectedHour
               )}
               admins={admins}
+              currentUserId={user?.id}
               onClose={() => setSelectedHour(null)}
               onPick={(ev) => setSelectedEvent(ev)}
+              onChanged={refetch}
             />
           </div>
         )}
