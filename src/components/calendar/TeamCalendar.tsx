@@ -374,6 +374,9 @@ export const TeamCalendar = () => {
               <ChevronRight className="h-4 w-4" />
             </Button>
             <span className="text-xs text-muted-foreground">{ET_LABEL}</span>
+            {selIsMulti && (
+              <span className="text-xs text-primary">Right-click the selection to add an activity</span>
+            )}
           </div>
           <div className="flex items-center gap-4 flex-wrap">
             <Legend admins={admins} />
