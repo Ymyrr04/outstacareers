@@ -21,7 +21,13 @@ export const useCalendarAdmins = () => {
     try {
       const { data, error } = await supabase.functions.invoke('get-admin-users');
       if (error) throw error;
-      const list: Array<{ user_id: string; email: string }> = data?.adminUsers || [];
+      const rawList: Array<{ user_id: string; email: string }> = data?.adminUsers || [];
+      // Admins excluded from the team calendar
+      const EXCLUDED = ['sean@outsta.io', 'test-admin'];
+      const list = rawList.filter((a) => {
+        const email = (a.email || '').toLowerCase();
+        return !EXCLUDED.some((x) => email.includes(x));
+      });
 
       const { data: colorRows } = await supabase
         .from('calendar_admin_colors')
