@@ -471,6 +471,30 @@ export type Database = {
           },
         ]
       }
+      calendar_event_types: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          value: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label: string
+          value: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          value?: string
+        }
+        Relationships: []
+      }
       calendar_events: {
         Row: {
           assigned_to: string[]
