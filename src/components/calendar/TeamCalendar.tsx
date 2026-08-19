@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
@@ -171,6 +171,28 @@ export const TeamCalendar = () => {
   const [modalDate, setModalDate] = useState(today);
   const [modalStart, setModalStart] = useState(9 * 60);
   const [modalAdmin, setModalAdmin] = useState<string | undefined>();
+  const [modalEnd, setModalEnd] = useState<number | undefined>();
+  const [modalAssignees, setModalAssignees] = useState<string[]>([]);
+
+  // Drag-to-select cells in the day grid
+  const [dragSel, setDragSel] = useState<{ a1: number; a2: number; s1: number; s2: number } | null>(null);
+  const draggingRef = useRef(false);
+
+  useEffect(() => {
+    const up = () => { draggingRef.current = false; };
+    window.addEventListener('mouseup', up);
+    return () => window.removeEventListener('mouseup', up);
+  }, []);
+
+  const selBounds = dragSel
+    ? {
+        aMin: Math.min(dragSel.a1, dragSel.a2),
+        aMax: Math.max(dragSel.a1, dragSel.a2),
+        sMin: Math.min(dragSel.s1, dragSel.s2),
+        sMax: Math.max(dragSel.s1, dragSel.s2),
+      }
+    : null;
+  const selIsMulti = !!selBounds && (selBounds.aMax > selBounds.aMin || selBounds.sMax > selBounds.sMin);
 
   const monthStart = toDateString(new Date(monthCursor.getFullYear(), monthCursor.getMonth(), 1));
   const monthEnd = toDateString(new Date(monthCursor.getFullYear(), monthCursor.getMonth() + 1, 0));
@@ -193,11 +215,32 @@ export const TeamCalendar = () => {
     return cells;
   }, [monthCursor]);
 
-  const openModal = (date: string, start: number, adminId?: string) => {
+  const openModal = (
+    date: string,
+    start: number,
+    adminId?: string,
+    end?: number,
+    assignees?: string[]
+  ) => {
     setModalDate(date);
     setModalStart(start);
     setModalAdmin(adminId);
+    setModalEnd(end);
+    setModalAssignees(assignees ?? []);
     setModalOpen(true);
+  };
+
+  const openModalForSelection = () => {
+    if (!selBounds) return;
+    const laneAdmins = admins.slice(selBounds.aMin, selBounds.aMax + 1).map((a) => a.user_id);
+    openModal(
+      selectedDate,
+      selBounds.sMin,
+      laneAdmins[0],
+      selBounds.sMax + 30,
+      laneAdmins
+    );
+    setDragSel(null);
   };
 
   const handleSaved = (date: string) => {
@@ -366,7 +409,7 @@ export const TeamCalendar = () => {
             </div>
 
             {/* admin lanes */}
-            {admins.map((admin) => {
+            {admins.map((admin, adminIdx) => {
               const laneEvents = dayEvents.filter(
                 (e) => e.created_by === admin.user_id || (e.assigned_to || []).includes(admin.user_id)
               );
@@ -386,11 +429,39 @@ export const TeamCalendar = () => {
                     {Array.from({ length: totalMinutes / 30 }).map((_, i) => {
                       const slotStart = DAY_START_MIN + i * 30;
                       const isHour = slotStart % 60 === 0;
+                      const isSelected =
+                        !!selBounds &&
+                        adminIdx >= selBounds.aMin &&
+                        adminIdx <= selBounds.aMax &&
+                        slotStart >= selBounds.sMin &&
+                        slotStart <= selBounds.sMax;
                       return (
                         <button
                           key={slotStart}
-                          onClick={() => openModal(selectedDate, slotStart, admin.user_id)}
-                          className="absolute left-0 right-0 hover:bg-muted/40"
+                          onMouseDown={(e) => {
+                            if (e.button !== 0) return;
+                            e.preventDefault();
+                            draggingRef.current = true;
+                            setSelectedEvent(null);
+                            setDragSel({ a1: adminIdx, a2: adminIdx, s1: slotStart, s2: slotStart });
+                          }}
+                          onMouseEnter={() => {
+                            if (!draggingRef.current) return;
+                            setDragSel((prev) => (prev ? { ...prev, a2: adminIdx, s2: slotStart } : prev));
+                          }}
+                          onMouseUp={() => {
+                            draggingRef.current = false;
+                            if (!selIsMulti) {
+                              setDragSel(null);
+                              openModal(selectedDate, slotStart, admin.user_id);
+                            }
+                          }}
+                          onContextMenu={(e) => {
+                            if (!selIsMulti) return;
+                            e.preventDefault();
+                            openModalForSelection();
+                          }}
+                          className={`absolute left-0 right-0 ${isSelected ? 'bg-primary/20' : 'hover:bg-muted/40'}`}
                           style={{
                             top: i * SLOT_HEIGHT,
                             height: SLOT_HEIGHT,
@@ -518,7 +589,9 @@ export const TeamCalendar = () => {
         onOpenChange={setModalOpen}
         date={modalDate}
         defaultStart={modalStart}
+        defaultEnd={modalEnd}
         defaultAdminId={modalAdmin}
+        defaultAssignees={modalAssignees}
         admins={admins}
         currentUserId={user?.id}
         onSaved={handleSaved}
