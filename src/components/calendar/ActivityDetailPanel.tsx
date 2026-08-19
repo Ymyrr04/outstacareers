@@ -28,6 +28,7 @@ interface Props {
   currentUserId?: string;
   onClose: () => void;
   onChanged: () => void;
+  className?: string;
 }
 
 const Avatar = ({ admin, size = 24 }: { admin?: CalendarAdmin; size?: number }) => {
