@@ -51,7 +51,7 @@ const Avatar = ({ admin, size = 24 }: { admin?: CalendarAdmin; size?: number }) 
   );
 };
 
-export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onChanged }: Props) => {
+export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onChanged, className }: Props) => {
   const { toast } = useToast();
   const owner = admins.find((a) => a.user_id === event.created_by);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -118,7 +118,7 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
   const color = owner?.color ?? colorForIndex(99);
 
   return (
-    <Card className="relative mt-4 p-4 border-[0.5px]">
+    <Card className={`relative mt-4 p-4 border-[0.5px] ${className ?? ''}`}>
       <div className="absolute right-2 top-2 flex gap-1">
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={deleteEvent} title="Delete activity">
           <Trash2 className="h-3.5 w-3.5" />
