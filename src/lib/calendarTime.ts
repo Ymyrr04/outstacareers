@@ -100,8 +100,8 @@ export const EVENT_TYPES = [
 export const eventTypeLabel = (t: string) =>
   EVENT_TYPES.find((e) => e.value === t)?.label ?? t;
 
-export const DAY_START_MIN = 8 * 60; // 8:00 AM ET
-export const DAY_END_MIN = 20 * 60; // 8:00 PM ET
+export const DAY_START_MIN = 0; // 12:00 AM ET
+export const DAY_END_MIN = 24 * 60; // 11:59 PM ET (24-hour span)
 export const SLOT_HEIGHT = 28; // px per 30 minutes
 export const PX_PER_MIN = SLOT_HEIGHT / 30;
 
