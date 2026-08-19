@@ -54,6 +54,77 @@ const Legend = ({ admins }: { admins: CalendarAdmin[] }) => (
   </div>
 );
 
+const HourActivitiesPanel = ({
+  hour,
+  events,
+  admins,
+  onClose,
+  onPick,
+}: {
+  hour: number;
+  events: CalendarEvent[];
+  admins: CalendarAdmin[];
+  onClose: () => void;
+  onPick: (ev: CalendarEvent) => void;
+}) => {
+  const nextHour = hour + 60;
+  return (
+    <Card className="relative mt-0 p-4 border-[0.5px] max-h-[70vh] overflow-y-auto">
+      <div className="absolute right-2 top-2">
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={onClose} title="Close">
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+      <p className="text-xs text-muted-foreground">Activities</p>
+      <p className="text-sm font-medium">
+        {formatMinutes(hour)} – {formatMinutes(nextHour)} ET
+      </p>
+      <p className="mt-0.5 text-xs text-muted-foreground">
+        {events.length} {events.length === 1 ? 'activity' : 'activities'}
+      </p>
+
+      <div className="mt-3 space-y-2">
+        {events.length === 0 && (
+          <p className="text-xs text-muted-foreground py-4 text-center">
+            No activities scheduled this hour.
+          </p>
+        )}
+        {events
+          .slice()
+          .sort((a, b) => a.start_time - b.start_time)
+          .map((ev) => {
+            const admin = admins.find((a) => a.user_id === ev.created_by);
+            const color = admin?.color ?? colorForUserId(ev.created_by);
+            return (
+              <button
+                key={ev.id}
+                onClick={() => onPick(ev)}
+                className="w-full text-left rounded-md p-2 hover:bg-muted/60 transition-colors"
+                style={{
+                  background: color.bg,
+                  borderLeft: `3px solid ${color.main}`,
+                  border: `0.5px solid ${color.main}55`,
+                  borderLeftWidth: 3,
+                  borderRadius: 5,
+                }}
+              >
+                <div className="flex items-center gap-2">
+                  <AdminDot admin={admin} size={18} />
+                  <span className="text-xs font-medium truncate" style={{ color: color.text }}>
+                    {ev.title}
+                  </span>
+                </div>
+                <p className="text-[10px] opacity-80 mt-0.5" style={{ color: color.text }}>
+                  {admin?.name ?? 'Unassigned'} · {formatMinutes(ev.start_time)} – {formatMinutes(ev.end_time)}
+                </p>
+              </button>
+            );
+          })}
+      </div>
+    </Card>
+  );
+};
+
 export const TeamCalendar = () => {
   const { user } = useAuth();
   const { admins } = useCalendarAdmins();
