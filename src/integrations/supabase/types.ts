@@ -421,6 +421,104 @@ export type Database = {
         }
         Relationships: []
       }
+      calendar_admin_colors: {
+        Row: {
+          color_index: number
+          created_at: string
+          user_id: string
+        }
+        Insert: {
+          color_index: number
+          created_at?: string
+          user_id: string
+        }
+        Update: {
+          color_index?: number
+          created_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      calendar_event_comments: {
+        Row: {
+          comment: string
+          commented_by: string
+          created_at: string
+          event_id: string
+          id: string
+        }
+        Insert: {
+          comment: string
+          commented_by: string
+          created_at?: string
+          event_id: string
+          id?: string
+        }
+        Update: {
+          comment?: string
+          commented_by?: string
+          created_at?: string
+          event_id?: string
+          id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "calendar_event_comments_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      calendar_events: {
+        Row: {
+          assigned_to: string[]
+          created_at: string
+          created_by: string
+          description: string | null
+          end_time: number
+          event_date: string
+          event_type: string
+          id: string
+          is_recurring: boolean
+          recurrence_rule: string | null
+          start_time: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          assigned_to?: string[]
+          created_at?: string
+          created_by: string
+          description?: string | null
+          end_time: number
+          event_date: string
+          event_type?: string
+          id?: string
+          is_recurring?: boolean
+          recurrence_rule?: string | null
+          start_time: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          assigned_to?: string[]
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          end_time?: number
+          event_date?: string
+          event_type?: string
+          id?: string
+          is_recurring?: boolean
+          recurrence_rule?: string | null
+          start_time?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       candidate_additional_profiles: {
         Row: {
           applicant_id: string
