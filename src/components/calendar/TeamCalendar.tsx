@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCalendarAdmins, CalendarAdmin } from '@/hooks/useCalendarAdmins';
 import { useCalendarEvents, CalendarEvent } from '@/hooks/useCalendarEvents';
