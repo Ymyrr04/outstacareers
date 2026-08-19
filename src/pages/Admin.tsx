@@ -23,6 +23,7 @@ import { useBackgroundExport } from '@/hooks/useBackgroundExport';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useEmailReplies } from '@/hooks/useEmailTemplates';
 import { ClientsDashboard, ContractorsDashboard, ClientAnalyticsDashboard, HiringPipelineKanban } from '@/components/clients';
+import TeamCalendar from '@/components/calendar/TeamCalendar';
 import { SalesPipeline } from '@/components/sales/SalesPipeline';
 import { PostHirePipelineKanban } from '@/components/clients/PostHirePipelineKanban';
 import { generateJobUrl } from '@/lib/slugify';
@@ -362,7 +363,7 @@ const Admin = () => {
   const [isExporting, setIsExporting] = useState(false);
   
   // Main tab state for layout control
-  const validTabs = ['jobs', 'applicants', 'funnel', 'pipeline', 'post-hire', 'clients', 'contractors', 'contracts', 'analytics', 'talent-scout', 'external-scout', 'workflow', 'settings'];
+  const validTabs = ['jobs', 'applicants', 'funnel', 'pipeline', 'post-hire', 'clients', 'contractors', 'contracts', 'analytics', 'calendar', 'talent-scout', 'external-scout', 'workflow', 'settings'];
   const [activeMainTab, setActiveMainTab] = useState(() => {
     if (urlTab && validTabs.includes(urlTab)) return urlTab;
     return 'jobs';
@@ -1695,6 +1696,13 @@ const Admin = () => {
                 Analytics
               </TabsTrigger>
             )}
+            {canViewTab('calendar') && (
+              <TabsTrigger value="calendar" className="flex items-center gap-2">
+                <CalendarPlus className="w-4 h-4" />
+                Calendar
+              </TabsTrigger>
+            )}
+
             {canViewTab('talent-scout') && (
               <TabsTrigger value="talent-scout" className="flex items-center gap-2">
                 <Target className="w-4 h-4" />
@@ -3775,6 +3783,12 @@ const Admin = () => {
           <TabsContent value="analytics" className="space-y-6">
             <ClientAnalyticsDashboard />
           </TabsContent>
+
+          {/* Team Activity Calendar Tab */}
+          <TabsContent value="calendar" className="space-y-6">
+            <TeamCalendar />
+          </TabsContent>
+
 
           {/* Funnel Tab */}
           <TabsContent value="funnel" className="space-y-6" keepMounted>
