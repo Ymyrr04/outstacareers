@@ -1,0 +1,1 @@
+ALTER TABLE public.applicants_prescreen ADD COLUMN IF NOT EXISTS interview_invite_sent_at timestamptz;
