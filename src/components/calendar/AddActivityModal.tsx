@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSlackNotifications } from '@/hooks/useSlackNotifications';
 import { CalendarAdmin } from '@/hooks/useCalendarAdmins';
 import {
   EVENT_TYPES,
