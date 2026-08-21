@@ -368,8 +368,8 @@ export const TeamCalendar = () => {
     const dayEvents = eventsForDate(selectedDate);
     const totalMinutes = DAY_END_MIN - DAY_START_MIN;
     const gridHeight = totalMinutes * PX_PER_MIN;
-    const hours: number[] = [];
-    for (let m = DAY_START_MIN; m <= DAY_END_MIN; m += 60) hours.push(m);
+    const ticks: number[] = [];
+    for (let m = DAY_START_MIN; m <= DAY_END_MIN; m += 30) ticks.push(m);
     const nowMin = nowMinutesET();
     const showNowLine = selectedDate === today && nowMin >= DAY_START_MIN && nowMin <= DAY_END_MIN;
 
