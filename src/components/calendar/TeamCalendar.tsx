@@ -368,8 +368,8 @@ export const TeamCalendar = () => {
     const dayEvents = eventsForDate(selectedDate);
     const totalMinutes = DAY_END_MIN - DAY_START_MIN;
     const gridHeight = totalMinutes * PX_PER_MIN;
-    const hours: number[] = [];
-    for (let m = DAY_START_MIN; m <= DAY_END_MIN; m += 60) hours.push(m);
+    const ticks: number[] = [];
+    for (let m = DAY_START_MIN; m <= DAY_END_MIN; m += 30) ticks.push(m);
     const nowMin = nowMinutesET();
     const showNowLine = selectedDate === today && nowMin >= DAY_START_MIN && nowMin <= DAY_END_MIN;
 
@@ -407,21 +407,28 @@ export const TeamCalendar = () => {
             <div className="w-[52px] shrink-0">
               <div className="h-9 border-b-[0.5px] border-border" />
               <div className="relative" style={{ height: gridHeight }}>
-                {hours.map((m) => (
-                  <button
-                    key={m}
-                    onClick={() => { setSelectedHour(m); setSelectedEvent(null); }}
-                    title={`Show activities at ${formatMinutes(m)}`}
-                    className={`absolute right-1 -translate-y-1/2 text-[10px] rounded px-1 py-0.5 transition-colors ${
-                      selectedHour === m
-                        ? 'bg-primary text-primary-foreground font-semibold'
-                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                    }`}
-                    style={{ top: (m - DAY_START_MIN) * PX_PER_MIN }}
-                  >
-                    {formatMinutes(m)}
-                  </button>
-                ))}
+                {ticks.map((m) => {
+                  const isHour = m % 60 === 0;
+                  return (
+                    <button
+                      key={m}
+                      onClick={() => { setSelectedHour(m); setSelectedEvent(null); }}
+                      title={`Show activities at ${formatMinutes(m)}`}
+                      className={`absolute right-1 -translate-y-1/2 rounded px-1 py-0.5 transition-colors ${
+                        isHour
+                          ? selectedHour === m
+                            ? 'bg-primary text-primary-foreground font-semibold text-[10px]'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground text-[10px] font-medium'
+                          : selectedHour === m
+                            ? 'bg-primary text-primary-foreground text-[9px]'
+                            : 'text-muted-foreground/50 hover:bg-muted hover:text-foreground text-[9px]'
+                      }`}
+                      style={{ top: (m - DAY_START_MIN) * PX_PER_MIN }}
+                    >
+                      {formatMinutes(m)}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
