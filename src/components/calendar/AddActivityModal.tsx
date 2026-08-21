@@ -15,7 +15,9 @@ import {
   formatDateLong,
   inputToMinutes,
   minutesToInput,
+  PipelineLink,
 } from '@/lib/calendarTime';
+import PipelineLinkSelect from './PipelineLinkSelect';
 
 interface Props {
   open: boolean;
@@ -52,6 +54,7 @@ export const AddActivityModal = ({
   const [end, setEnd] = useState('10:00');
   const [description, setDescription] = useState('');
   const [repeat, setRepeat] = useState('none');
+  const [pipelineLink, setPipelineLink] = useState<PipelineLink | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [customTypes, setCustomTypes] = useState<{ value: string; label: string }[]>([]);
   const [addingType, setAddingType] = useState(false);
@@ -104,6 +107,7 @@ export const AddActivityModal = ({
     setNewType('');
     setDescription('');
     setRepeat('none');
+    setPipelineLink(null);
     setError(null);
     setExtraAssignees(defaultAssignees ?? []);
     setAdminId(defaultAdminId || currentUserId || admins[0]?.user_id || '');
@@ -137,6 +141,7 @@ export const AddActivityModal = ({
       assigned_to: Array.from(new Set([...(owner ? [owner] : []), ...extraAssignees])),
       is_recurring: repeat !== 'none',
       recurrence_rule: repeat === 'none' ? null : repeat,
+      pipeline_link: pipelineLink as unknown as Record<string, string> | null,
     });
     setSaving(false);
     if (dbError) {
@@ -275,6 +280,11 @@ export const AddActivityModal = ({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Optional details"
             />
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Link to pipeline (optional)</Label>
+            <PipelineLinkSelect value={pipelineLink} onChange={setPipelineLink} />
           </div>
 
           <div className="space-y-1.5">

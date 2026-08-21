@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { ChevronLeft, ChevronRight, Plus, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Plus, X, Flag, Link2, CheckCircle2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCalendarAdmins, CalendarAdmin } from '@/hooks/useCalendarAdmins';
 import { useCalendarEvents, CalendarEvent } from '@/hooks/useCalendarEvents';
@@ -16,6 +16,8 @@ import {
   addDays,
   colorForIndex,
   colorForUserId,
+  isDeadline,
+  DEADLINE_COLOR,
   formatDateLong,
   formatMinutes,
   nowMinutesET,
@@ -315,26 +317,38 @@ export const TeamCalendar = () => {
                 isToday ? 'bg-primary/5' : ''
               }`}
             >
-              <span className={`text-xs ${isToday ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
-                {parseDateString(date).getDate()}
+              <span className="flex items-center justify-between">
+                <span className={`text-xs ${isToday ? 'font-semibold text-primary' : 'text-muted-foreground'}`}>
+                  {parseDateString(date).getDate()}
+                </span>
+                {dayEvents.some((ev) => isDeadline(ev.event_type)) && (
+                  <Flag className="h-3 w-3" style={{ color: DEADLINE_COLOR.main }} />
+                )}
               </span>
               <div className="mt-1 space-y-1">
                 {dayEvents.slice(0, 2).map((ev) => {
                   const admin = admins.find((a) => a.user_id === ev.created_by);
-                  const color = admin?.color ?? colorForUserId(ev.created_by);
+                  const deadline = isDeadline(ev.event_type);
+                  const color = deadline ? DEADLINE_COLOR : admin?.color ?? colorForUserId(ev.created_by);
+                  const done = !!ev.is_done;
                   return (
                     <div
                       key={ev.id}
-                      className="truncate rounded-[3px] px-1 py-0.5 text-[11px]"
+                      className={`flex items-center gap-1 truncate rounded-[3px] px-1 py-0.5 text-[11px] ${
+                        done ? 'line-through' : ''
+                      }`}
                       style={{
                         background: color.bg,
                         color: color.text,
                         borderLeft: `3px solid ${color.main}`,
                         border: `0.5px solid ${color.main}55`,
                         borderLeftWidth: 3,
+                        opacity: done ? 0.6 : 1,
                       }}
                     >
-                      {ev.title}
+                      {deadline && <Flag className="h-2.5 w-2.5 shrink-0" />}
+                      <span className="truncate">{ev.title}</span>
+                      {ev.pipeline_link && <Link2 className="h-2.5 w-2.5 shrink-0 opacity-70" />}
                     </div>
                   );
                 })}
@@ -494,7 +508,9 @@ export const TeamCalendar = () => {
                         (Math.min(ev.end_time, DAY_END_MIN) - Math.max(ev.start_time, DAY_START_MIN)) * PX_PER_MIN
                       );
                       const selected = selectedEvent?.id === ev.id;
-                      const color = admin.color;
+                      const deadline = isDeadline(ev.event_type);
+                      const color = deadline ? DEADLINE_COLOR : admin.color;
+                      const done = !!ev.is_done;
                       return (
                         <button
                           key={ev.id}
@@ -509,20 +525,35 @@ export const TeamCalendar = () => {
                             border: selected ? `1.5px solid ${color.main}` : `0.5px solid ${color.main}55`,
                             borderLeftWidth: 3,
                             borderRadius: 5,
+                            opacity: done ? 0.6 : 1,
+                            textDecoration: done ? 'line-through' : undefined,
                           }}
                         >
+                          {done && (
+                            <CheckCircle2 className="absolute right-1 top-0.5 h-3 w-3 text-emerald-600" />
+                          )}
                           {height <= 28 ? (
-                            <span className="block truncate text-[10px] leading-[16px]">
-                              {admin.initial} {ev.title}
+                            <span className="flex items-center gap-1 truncate text-[10px] leading-[16px]">
+                              {deadline ? <Flag className="h-2.5 w-2.5 shrink-0" /> : <span>{admin.initial}</span>}
+                              <span className="truncate">{ev.title}</span>
+                              {ev.pipeline_link && <Link2 className="h-2.5 w-2.5 shrink-0 opacity-70" />}
                             </span>
                           ) : height <= 70 ? (
                             <>
-                              <span className="block text-[10px] leading-tight line-clamp-2">{ev.title}</span>
+                              <span className="flex items-center gap-1 text-[10px] leading-tight">
+                                {deadline && <Flag className="h-2.5 w-2.5 shrink-0" />}
+                                <span className="truncate">{ev.title}</span>
+                                {ev.pipeline_link && <Link2 className="h-2.5 w-2.5 shrink-0 opacity-70" />}
+                              </span>
                               <span className="block text-[9px] opacity-80">● {formatMinutes(ev.start_time)}</span>
                             </>
                           ) : (
                             <>
-                              <span className="block text-[11px] leading-tight line-clamp-2">{ev.title}</span>
+                              <span className="flex items-center gap-1 text-[11px] leading-tight">
+                                {deadline && <Flag className="h-3 w-3 shrink-0" />}
+                                <span className="truncate">{ev.title}</span>
+                                {ev.pipeline_link && <Link2 className="h-3 w-3 shrink-0 opacity-70" />}
+                              </span>
                               <span className="block text-[9px] opacity-80">● {admin.name}</span>
                               <span className="block text-[9px] opacity-80">
                                 {formatMinutes(ev.start_time)} – {formatMinutes(ev.end_time)}

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { weekdayOf, daysBetween, dayOfMonth } from '@/lib/calendarTime';
+import { weekdayOf, daysBetween, dayOfMonth, PipelineLink } from '@/lib/calendarTime';
 
 export interface CalendarEvent {
   id: string;
@@ -14,6 +14,9 @@ export interface CalendarEvent {
   assigned_to: string[];
   is_recurring: boolean;
   recurrence_rule: string | null;
+  pipeline_link?: PipelineLink | null;
+  is_done?: boolean | null;
+  meeting_notes?: string | null;
 }
 
 /** Fetches events inside [start, end] plus every recurring event that started on/before end. */
@@ -33,7 +36,7 @@ export const useCalendarEvents = (rangeStart: string, rangeEnd: string) => {
       console.error('Error loading calendar events:', error);
       setEvents([]);
     } else {
-      setEvents((data || []) as CalendarEvent[]);
+      setEvents((data || []) as unknown as CalendarEvent[]);
     }
     setLoading(false);
   }, [rangeStart, rangeEnd]);
