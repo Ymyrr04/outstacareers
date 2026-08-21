@@ -72,6 +72,17 @@ export const MeetingNotesDialog = ({ open, onOpenChange, event, adminName, curre
 
     setSaving(false);
     toast({ title: 'Meeting notes saved' });
+
+    // Fire Slack notification (non-blocking)
+    if (currentUserEmail) {
+      notifyCalendarUpdate({
+        updatedByEmail: currentUserEmail,
+        activityTitle: event.title,
+        eventDate: event.event_date,
+        updateType: 'notes',
+      }).catch((err) => console.error('[Slack] Calendar update notification failed:', err));
+    }
+
     onOpenChange(false);
     onSaved();
   };
