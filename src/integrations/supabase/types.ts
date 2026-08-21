@@ -505,7 +505,9 @@ export type Database = {
           event_date: string
           event_type: string
           id: string
+          is_done: boolean
           is_recurring: boolean
+          meeting_notes: string | null
           pipeline_link: Json | null
           recurrence_rule: string | null
           start_time: number
@@ -521,7 +523,9 @@ export type Database = {
           event_date: string
           event_type?: string
           id?: string
+          is_done?: boolean
           is_recurring?: boolean
+          meeting_notes?: string | null
           pipeline_link?: Json | null
           recurrence_rule?: string | null
           start_time: number
@@ -537,7 +541,9 @@ export type Database = {
           event_date?: string
           event_type?: string
           id?: string
+          is_done?: boolean
           is_recurring?: boolean
+          meeting_notes?: string | null
           pipeline_link?: Json | null
           recurrence_rule?: string | null
           start_time?: number
@@ -924,6 +930,7 @@ export type Database = {
       clients: {
         Row: {
           address: string | null
+          calendar_notes: Json | null
           company_links: string | null
           company_name: string
           contractor_count: number | null
@@ -939,6 +946,7 @@ export type Database = {
         }
         Insert: {
           address?: string | null
+          calendar_notes?: Json | null
           company_links?: string | null
           company_name: string
           contractor_count?: number | null
@@ -954,6 +962,7 @@ export type Database = {
         }
         Update: {
           address?: string | null
+          calendar_notes?: Json | null
           company_links?: string | null
           company_name?: string
           contractor_count?: number | null
