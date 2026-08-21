@@ -141,7 +141,7 @@ export const AddActivityModal = ({
       assigned_to: Array.from(new Set([...(owner ? [owner] : []), ...extraAssignees])),
       is_recurring: repeat !== 'none',
       recurrence_rule: repeat === 'none' ? null : repeat,
-      pipeline_link: pipelineLink,
+      pipeline_link: pipelineLink as unknown as Record<string, string> | null,
     });
     setSaving(false);
     if (dbError) {

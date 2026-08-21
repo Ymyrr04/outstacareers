@@ -36,7 +36,7 @@ export const useCalendarEvents = (rangeStart: string, rangeEnd: string) => {
       console.error('Error loading calendar events:', error);
       setEvents([]);
     } else {
-      setEvents((data || []) as CalendarEvent[]);
+      setEvents((data || []) as unknown as CalendarEvent[]);
     }
     setLoading(false);
   }, [rangeStart, rangeEnd]);
