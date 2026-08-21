@@ -27,57 +27,36 @@ interface StatusChangePayload {
   changedByEmail: string;
 }
 
-// Slack notifications temporarily disabled
-async function invokeSlackNotification(_payload: Record<string, unknown>) {
-  // Return success without calling API to avoid 401 errors
-  // Re-enable by uncommenting the code below once Slack connector is authenticated
-  console.log('[Slack] Notifications disabled - would have sent:', _payload.type);
-  return { success: true, data: null };
-  
-  /*
+async function invokeSlackNotification(payload: Record<string, unknown>) {
   try {
     const { data, error } = await supabase.functions.invoke('send-slack-notification', {
       body: payload,
     });
 
     if (error) {
-      console.error('Slack notification error:', error);
+      console.error('[Slack] Notification error:', error);
       return { success: false, error: error.message };
     }
 
     return { success: true, data };
   } catch (err) {
-    console.error('Failed to send Slack notification:', err);
+    console.error('[Slack] Failed to send notification:', err);
     return { success: false, error: err instanceof Error ? err.message : 'Unknown error' };
   }
-  */
 }
 
 export function useSlackNotifications() {
   const notifyMention = async (payload: MentionPayload) => {
-    return invokeSlackNotification({
-      type: 'mention',
-      ...payload,
-    });
+    return invokeSlackNotification({ type: 'mention', ...payload });
   };
 
   const notifyNewRequest = async (payload: NewRequestPayload) => {
-    return invokeSlackNotification({
-      type: 'new_request',
-      ...payload,
-    });
+    return invokeSlackNotification({ type: 'new_request', ...payload });
   };
 
   const notifyStatusChange = async (payload: StatusChangePayload) => {
-    return invokeSlackNotification({
-      type: 'status_change',
-      ...payload,
-    });
+    return invokeSlackNotification({ type: 'status_change', ...payload });
   };
 
-  return {
-    notifyMention,
-    notifyNewRequest,
-    notifyStatusChange,
-  };
+  return { notifyMention, notifyNewRequest, notifyStatusChange };
 }
