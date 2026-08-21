@@ -2721,6 +2721,7 @@ const Admin = () => {
                   return (
                   <Card 
                     key={applicant.id}
+                    id={`applicant-${applicant.id}`}
                     ref={expandedApplicant === applicant.id ? expandedCardRef : undefined}
                     draggable={!expandedApplicant}
                     onDragStart={(e) => {
