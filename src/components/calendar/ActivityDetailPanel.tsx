@@ -65,7 +65,7 @@ const Avatar = ({ admin, size = 24 }: { admin?: CalendarAdmin; size?: number }) 
 
 export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onChanged, className }: Props) => {
   const { toast } = useToast();
-  const { notifyCalendarComment } = useSlackNotifications();
+  const { notifyCalendarComment, notifyCalendarUpdate } = useSlackNotifications();
   const owner = admins.find((a) => a.user_id === event.created_by);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
