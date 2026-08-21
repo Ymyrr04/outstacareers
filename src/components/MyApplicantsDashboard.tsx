@@ -300,6 +300,14 @@ export const MyApplicantsDashboard = () => {
     fetchData();
   }, [fetchAdminUsers, fetchData]);
 
+  // Refresh when a job's assigned admin (or other details) changes elsewhere in the app
+  useEffect(() => {
+    const onJobUpdated = () => fetchData();
+    window.addEventListener('job-updated', onJobUpdated);
+    return () => window.removeEventListener('job-updated', onJobUpdated);
+  }, [fetchData]);
+
+
   // Real-time subscription for applicants_prescreen changes
   useEffect(() => {
     if (!user) return;
