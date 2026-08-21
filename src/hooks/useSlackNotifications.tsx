@@ -45,6 +45,9 @@ interface CalendarCommentPayload {
   activityTitleForComment: string;
   eventDateForComment: string;
   mentionedEmails?: string[];
+  assignedToEmails?: string[];
+  createdByEmail?: string;
+
 }
 
 interface CalendarUpdatePayload {
