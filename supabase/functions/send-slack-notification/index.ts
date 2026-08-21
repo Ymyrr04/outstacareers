@@ -58,6 +58,25 @@ async function mentionOrName(email: string | null | undefined): Promise<string> 
   return id ? `<@${id}>` : getDisplayName(email);
 }
 
+// Resolve auth user IDs -> emails (used when the DB trigger fires the notification)
+async function resolveEmails(ids: string[]): Promise<string[]> {
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key || !ids.length) return [];
+  const admin = createClient(url, key);
+  const out: string[] = [];
+  for (const id of ids) {
+    try {
+      const { data } = await admin.auth.admin.getUserById(id);
+      if (data?.user?.email) out.push(data.user.email);
+    } catch (e) {
+      console.error("resolveEmails failed for", id, e);
+    }
+  }
+  return out;
+}
+
+
 
 interface SlackPayload {
   type: "mention" | "new_request" | "status_change" | "calendar_activity" | "calendar_comment" | "calendar_update";
@@ -69,6 +88,9 @@ interface SlackPayload {
   requestTitle?: string;
   clientName?: string;
   createdByEmail?: string;
+  createdById?: string;
+  assignedToIds?: string[];
+
   priority?: string;
   industry?: string;
   oldStage?: string;
@@ -250,10 +272,18 @@ Deno.serve(async (req) => {
         { type: "divider" },
       ];
     } else if (payload.type === "calendar_activity") {
+      // When fired from the DB trigger we only get user IDs — resolve them to emails.
+      if (!payload.createdByEmail && payload.createdById) {
+        payload.createdByEmail = (await resolveEmails([payload.createdById]))[0];
+      }
+      if ((!payload.assignedToEmails || !payload.assignedToEmails.length) && payload.assignedToIds?.length) {
+        payload.assignedToEmails = await resolveEmails(payload.assignedToIds);
+      }
       const createdByName = getDisplayName(payload.createdByEmail);
       const assignedEmails = (payload.assignedToEmails || []).filter(Boolean);
       const assignedMentions = await Promise.all(assignedEmails.map((e) => mentionOrName(e)));
       const assignedStr = assignedMentions.length ? assignedMentions.join(", ") : "Unassigned";
+
 
       const timeRange = `${minutesToTime(payload.startTime || 0)} - ${minutesToTime(payload.endTime || 0)}`;
       const dateLabel = formatDateET(payload.eventDate || "");

@@ -1,0 +1,1 @@
+revoke execute on function public.notify_slack_calendar_event() from public, anon, authenticated;

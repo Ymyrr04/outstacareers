@@ -151,22 +151,8 @@ export const AddActivityModal = ({
       toast({ title: 'Could not save activity', description: dbError.message, variant: 'destructive' });
       return;
     }
-    // Fire Slack notification (fire-and-forget)
-    const creatorEmail = admins.find((a) => a.user_id === currentUserId)?.email;
-    const assignedToEmails = assignedToIds
-      .map((id) => admins.find((a) => a.user_id === id)?.email)
-      .filter(Boolean) as string[];
-    notifyCalendarActivity({
-      activityTitle: title.trim(),
-      eventType: type,
-      eventDate: date,
-      startTime: s,
-      endTime: e,
-      createdByEmail: creatorEmail || '',
-      assignedToEmails,
-      activityDescription: description.trim() || undefined,
-      pipelineLinkName: pipelineLink?.name || undefined,
-    }).catch((err) => console.error('[Slack] calendar activity notification failed:', err));
+    // Slack notification is fired server-side by a database trigger on insert.
+
     onOpenChange(false);
     onSaved(date);
   };
