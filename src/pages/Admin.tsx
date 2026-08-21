@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo, useCallback, useRef, useTransition } from 'react';
 import { format } from 'date-fns';
-import { useNavigate, Link, useParams } from 'react-router-dom';
+import { useNavigate, Link, useParams, useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -233,6 +233,7 @@ const Admin = () => {
   const { user, isAdmin, loading, signOut } = useAuth();
   const navigate = useNavigate();
   const { tab: urlTab } = useParams<{ tab?: string }>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { canViewTab, loading: tabPermissionsLoading } = useTabPermissions();
   const [jobs, setJobs] = useState<Job[]>([]);
@@ -409,6 +410,27 @@ const Admin = () => {
       setActiveMainTab(urlTab);
     }
   }, [urlTab]);
+
+  // Deep link: /admin/applicants?applicant=<id> — focus & expand that applicant
+  const handledDeepLinkRef = useRef<string | null>(null);
+  useEffect(() => {
+    const applicantId = searchParams.get('applicant');
+    if (!applicantId || applicantsLoading) return;
+    if (handledDeepLinkRef.current === applicantId) return;
+    const target = applicants.find(a => a.id === applicantId);
+    if (!target) return;
+    handledDeepLinkRef.current = applicantId;
+    setSearchTerm(target.email || target.full_name || '');
+    setExpandedApplicant(applicantId);
+    setTimeout(() => {
+      document.getElementById(`applicant-${applicantId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 400);
+    const next = new URLSearchParams(searchParams);
+    next.delete('applicant');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, applicants, applicantsLoading]);
+
+
 
   // Handle tab switching with transition to prevent UI freeze
   const handleMainTabChange = useCallback((newTab: string) => {
@@ -2699,6 +2721,7 @@ const Admin = () => {
                   return (
                   <Card 
                     key={applicant.id}
+                    id={`applicant-${applicant.id}`}
                     ref={expandedApplicant === applicant.id ? expandedCardRef : undefined}
                     draggable={!expandedApplicant}
                     onDragStart={(e) => {

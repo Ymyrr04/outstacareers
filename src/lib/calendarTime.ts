@@ -121,9 +121,9 @@ export const pipelineLinkStyle = (type: PipelineLink['type']) => {
 };
 
 export const pipelineLinkHref = (link: PipelineLink) => {
-  if (link.type === 'applicant') return `/admin?tab=applicants&applicant=${link.id}`;
-  if (link.type === 'client') return `/admin?tab=clients&client=${link.id}`;
-  return `/admin?tab=jobs&job=${link.id}`;
+  if (link.type === 'applicant') return `/admin/applicants?applicant=${link.id}`;
+  if (link.type === 'client') return `/admin/clients?client=${link.id}`;
+  return `/admin/jobs?job=${link.id}`;
 };
 
 export const RECURRENCE_OPTIONS = [
