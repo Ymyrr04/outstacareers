@@ -19,6 +19,7 @@ function getDisplayName(email: string | null | undefined): string {
 
 interface SlackPayload {
   type: "mention" | "new_request" | "status_change" | "calendar_activity";
+  channel?: string;
   mentionedEmail?: string;
   mentionedByEmail?: string;
   commentContent?: string;
