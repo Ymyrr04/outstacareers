@@ -432,7 +432,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       setAdminJobTitlesMap(Object.fromEntries(adminMap));
     };
     fetchJobs();
+    const onJobUpdated = () => fetchJobs();
+    window.addEventListener('job-updated', onJobUpdated);
+    return () => window.removeEventListener('job-updated', onJobUpdated);
   }, []);
+
 
   const filteredRoles = useMemo(() => {
     let base: string[];

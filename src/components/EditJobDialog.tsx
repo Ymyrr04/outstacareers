@@ -316,6 +316,9 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
       });
       setOpen(false);
       onJobUpdated();
+      // Let pipeline views (funnel, my applicants) pick up admin/role changes immediately.
+      window.dispatchEvent(new CustomEvent('job-updated', { detail: { jobId: job.id } }));
+
     }
 
     setIsLoading(false);
