@@ -58,6 +58,25 @@ async function mentionOrName(email: string | null | undefined): Promise<string> 
   return id ? `<@${id}>` : getDisplayName(email);
 }
 
+// Resolve auth user IDs -> emails (used when the DB trigger fires the notification)
+async function resolveEmails(ids: string[]): Promise<string[]> {
+  const url = Deno.env.get("SUPABASE_URL");
+  const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+  if (!url || !key || !ids.length) return [];
+  const admin = createClient(url, key);
+  const out: string[] = [];
+  for (const id of ids) {
+    try {
+      const { data } = await admin.auth.admin.getUserById(id);
+      if (data?.user?.email) out.push(data.user.email);
+    } catch (e) {
+      console.error("resolveEmails failed for", id, e);
+    }
+  }
+  return out;
+}
+
+
 
 interface SlackPayload {
   type: "mention" | "new_request" | "status_change" | "calendar_activity" | "calendar_comment" | "calendar_update";
