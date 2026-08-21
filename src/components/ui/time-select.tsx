@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 export const TIME_OPTIONS: { value: string; label: string }[] = (() => {
   const out: { value: string; label: string }[] = [];
-  for (let m = 0; m < 24 * 60; m += 30) {
+  for (let m = 0; m < 24 * 60; m += 15) {
     const h = Math.floor(m / 60);
     const min = m % 60;
     const value = `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
