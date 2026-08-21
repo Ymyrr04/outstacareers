@@ -95,7 +95,36 @@ export const EVENT_TYPES = [
   { value: 'meeting', label: 'Meeting' },
   { value: 'interview', label: 'Interview' },
   { value: 'followup', label: 'Follow-up' },
+  { value: 'deadline', label: 'Deadline' },
 ] as const;
+
+export interface PipelineLink {
+  type: 'applicant' | 'client' | 'job';
+  id: string;
+  name: string;
+}
+
+/** Red styling used for deadline-type activities. */
+export const DEADLINE_COLOR = {
+  name: 'Deadline',
+  main: '#DC2626',
+  bg: '#FEF2F2',
+  text: '#991B1B',
+};
+
+export const isDeadline = (eventType?: string | null) => eventType === 'deadline';
+
+export const pipelineLinkStyle = (type: PipelineLink['type']) => {
+  if (type === 'applicant') return { bg: '#EDE9FE', text: '#5B21B6', border: '#7C3AED', label: 'Applicant' };
+  if (type === 'client') return { bg: '#DCFCE7', text: '#166534', border: '#16A34A', label: 'Client' };
+  return { bg: '#FEF3C7', text: '#92400E', border: '#D97706', label: 'Job' };
+};
+
+export const pipelineLinkHref = (link: PipelineLink) => {
+  if (link.type === 'applicant') return `/admin?tab=applicants&applicant=${link.id}`;
+  if (link.type === 'client') return `/admin?tab=clients&client=${link.id}`;
+  return `/admin?tab=jobs&job=${link.id}`;
+};
 
 export const RECURRENCE_OPTIONS = [
   { value: 'none', label: 'Does not repeat' },
