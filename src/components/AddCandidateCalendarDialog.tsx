@@ -100,22 +100,8 @@ export function AddCandidateCalendarDialog({
       toast.error(getErrorMessageSync(error, 'Failed to create calendar activity'));
       return;
     }
-    // Fire Slack notification (fire-and-forget)
-    const creatorEmail = admins.find((a) => a.user_id === user?.id)?.email;
-    const assignedToEmails = assignedToIds
-      .map((id) => admins.find((a) => a.user_id === id)?.email)
-      .filter(Boolean) as string[];
-    notifyCalendarActivity({
-      activityTitle: title.trim(),
-      eventType: type,
-      eventDate: date,
-      startTime: s,
-      endTime: e,
-      createdByEmail: creatorEmail || '',
-      assignedToEmails,
-      activityDescription: description.trim() || undefined,
-      pipelineLinkName: `Applicant: ${applicantName}`,
-    }).catch((err) => console.error('[Slack] calendar activity notification failed:', err));
+    // Slack notification is fired server-side by a database trigger on insert.
+
     toast.success('Activity added to calendar');
     onOpenChange(false);
   };
