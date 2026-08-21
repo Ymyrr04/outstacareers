@@ -172,6 +172,7 @@ Deno.serve(async (req) => {
 
     if (payload.type === "mention") {
       const mentionedName = getDisplayName(payload.mentionedEmail);
+      const mentionedTag = await mentionOrName(payload.mentionedEmail);
       const mentionedByName = getDisplayName(payload.mentionedByEmail);
       const cleanComment = (payload.commentContent || "")
         .replace(/<[^>]*>/g, "")
@@ -181,8 +182,9 @@ Deno.serve(async (req) => {
       blocks = [
         {
           type: "section",
-          text: { type: "mrkdwn", text: `🔔 *${mentionedByName}* mentioned *${mentionedName}*` },
+          text: { type: "mrkdwn", text: `🔔 *${mentionedByName}* mentioned ${mentionedTag}` },
         },
+
         {
           type: "section",
           fields: [
