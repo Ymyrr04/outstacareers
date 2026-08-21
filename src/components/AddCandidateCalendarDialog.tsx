@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { TimeSelect } from '@/components/ui/time-select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -156,11 +157,11 @@ export function AddCandidateCalendarDialog({
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="acc-start" className="text-xs">Start (ET)</Label>
-              <Input id="acc-start" type="time" value={start} onChange={(e) => setStart(e.target.value)} />
+              <TimeSelect id="acc-start" value={start} onChange={setStart} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="acc-end" className="text-xs">End (ET)</Label>
-              <Input id="acc-end" type="time" value={end} onChange={(e) => setEnd(e.target.value)} />
+              <TimeSelect id="acc-end" value={end} onChange={setEnd} />
             </div>
           </div>
 
