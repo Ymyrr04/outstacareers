@@ -44,7 +44,9 @@ interface CalendarCommentPayload {
   commentText: string;
   activityTitleForComment: string;
   eventDateForComment: string;
+  mentionedEmails?: string[];
 }
+
 
 async function invokeSlackNotification(payload: Record<string, unknown>) {
   try {
