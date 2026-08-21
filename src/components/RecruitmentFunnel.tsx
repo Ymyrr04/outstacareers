@@ -302,7 +302,7 @@ export const RecruitmentFunnel = () => {
     const overallConversionRate = totalActive > 0 ? (totalHired / totalActive) * 100 : 0;
 
     // Find bottleneck: stage with highest current count excluding end-states (Reject/Talent Pool/Hired)
-    const actionableStages = ['For Review', 'For Interview', 'SIV', 'Pitch', 'Client Interview', 'Bench'] as const;
+    const actionableStages = ['For Review', 'Qualified', 'For Interview', 'SIV', 'Pitch', 'Client Interview', 'Bench'] as const;
     let bottleneckStage = '';
     let bottleneckCount = 0;
     for (const stage of actionableStages) {

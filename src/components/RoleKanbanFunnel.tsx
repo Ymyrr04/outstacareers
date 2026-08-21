@@ -507,7 +507,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     //  Phase 2 (background): Reject / Archive (filtered) + Bench / Talent Pool
     //  Bench/Talent Pool ignore the admin filter, but DO respect the selected
     //  role and the Active/All/Inactive jobs filter.
-    const PRIORITY_STATUSES = ['For Review', 'For Interview', 'SIV', 'Pitch', 'Client Interview', 'Hired'];
+    const PRIORITY_STATUSES = ['For Review', 'Qualified', 'For Interview', 'SIV', 'Pitch', 'Client Interview', 'Hired'];
     const BACKGROUND_STATUSES = ['Reject', 'Archive', 'Archived'];
     const UNFILTERED_STATUSES = ['Bench', 'Talent Pool', 'Cold Talent Pool'];
 
