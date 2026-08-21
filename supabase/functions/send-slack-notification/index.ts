@@ -17,6 +17,48 @@ function getDisplayName(email: string | null | undefined): string {
   return EMAIL_TO_NAME[email.toLowerCase()] || email.split("@")[0];
 }
 
+// Resolve an email to a Slack user ID so we can @-mention them.
+const slackUserIdCache = new Map<string, string | null>();
+
+async function lookupSlackUserId(email: string): Promise<string | null> {
+  const key = email.toLowerCase();
+  if (slackUserIdCache.has(key)) return slackUserIdCache.get(key)!;
+
+  const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
+  const SLACK_API_KEY = Deno.env.get("SLACK_API_KEY");
+  if (!LOVABLE_API_KEY || !SLACK_API_KEY) return null;
+
+  try {
+    const res = await fetch(
+      `${GATEWAY_URL}/users.lookupByEmail?email=${encodeURIComponent(key)}`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${LOVABLE_API_KEY}`,
+          "X-Connection-Api-Key": SLACK_API_KEY,
+        },
+      },
+    );
+    const data = await res.json();
+    const id = res.ok && data.ok ? (data.user?.id ?? null) : null;
+    if (!id) console.log(`Slack user lookup failed for ${key}: ${data?.error ?? res.status}`);
+    slackUserIdCache.set(key, id);
+    return id;
+  } catch (e) {
+    console.error("users.lookupByEmail error:", e);
+    slackUserIdCache.set(key, null);
+    return null;
+  }
+}
+
+// Returns "<@U123>" when the email maps to a Slack user, else the display name.
+async function mentionOrName(email: string | null | undefined): Promise<string> {
+  if (!email) return "Someone";
+  const id = await lookupSlackUserId(email);
+  return id ? `<@${id}>` : getDisplayName(email);
+}
+
+
 interface SlackPayload {
   type: "mention" | "new_request" | "status_change" | "calendar_activity" | "calendar_comment";
   channel?: string;
