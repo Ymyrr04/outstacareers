@@ -67,6 +67,58 @@ export const AddActivityModal = ({
   const [newType, setNewType] = useState('');
   const [creatingType, setCreatingType] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [dayEvents, setDayEvents] = useState<
+    { title: string; start_time: number; end_time: number; assigned_to: string[] | null; created_by: string | null }[]
+  >([]);
+
+  // Load events occurring on this date (including recurring ones) to detect conflicts
+  useEffect(() => {
+    if (!open || !date) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('calendar_events')
+        .select('title,event_date,start_time,end_time,assigned_to,created_by,is_recurring,recurrence_rule')
+        .or(`event_date.eq.${date},is_recurring.eq.true`);
+      if (cancelled) return;
+      const dow = weekdayOf(date);
+      const occurring = (data || []).filter((e: any) => {
+        if (e.event_date === date) return true;
+        if (e.is_recurring && e.event_date < date) {
+          const rule = e.recurrence_rule || 'weekly';
+          if (rule === 'weekly') return weekdayOf(e.event_date) === dow;
+          if (rule === 'biweekly')
+            return weekdayOf(e.event_date) === dow && daysBetween(e.event_date, date) % 14 === 0;
+          if (rule === 'monthly') return dayOfMonth(e.event_date) === dayOfMonth(date);
+        }
+        return false;
+      });
+      setDayEvents(occurring as any);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, date]);
+
+  const startMin = inputToMinutes(start);
+  const endMin = inputToMinutes(end);
+
+  /** admin user_id -> conflicting event (first overlap found) */
+  const conflicts = new Map<string, { title: string; start_time: number; end_time: number }>();
+  if (endMin > startMin) {
+    for (const ev of dayEvents) {
+      if (!(ev.start_time < endMin && ev.end_time > startMin)) continue;
+      const people = new Set<string>([...(ev.assigned_to || []), ...(ev.created_by ? [ev.created_by] : [])]);
+      for (const p of people) {
+        if (!conflicts.has(p)) conflicts.set(p, ev);
+      }
+    }
+  }
+
+  const conflictLabel = (userId: string) => {
+    const c = conflicts.get(userId);
+    return c ? `Busy ${formatMinutes(c.start_time)}–${formatMinutes(c.end_time)} · ${c.title}` : null;
+  };
 
   const allTypes = [
     ...EVENT_TYPES.map((t) => ({ value: t.value, label: t.label })),
