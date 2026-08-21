@@ -88,6 +88,8 @@ interface SlackPayload {
   commentText?: string;
   activityTitleForComment?: string;
   eventDateForComment?: string;
+  mentionedEmails?: string[];
+
 }
 
 function minutesToTime(min: number): string {
@@ -299,6 +301,11 @@ Deno.serve(async (req) => {
         .replace(/<[^>]*>/g, "")
         .substring(0, 300);
 
+      const mentionTags: string[] = [];
+      for (const email of payload.mentionedEmails || []) {
+        mentionTags.push(await mentionOrName(email));
+      }
+
       text = `💬 ${commentedByName} commented on "${payload.activityTitleForComment || "Calendar activity"}"`;
       blocks = [
         {
@@ -319,8 +326,12 @@ Deno.serve(async (req) => {
             text: `*Comment:*\n>${cleanComment}${cleanComment.length >= 300 ? "..." : ""}`,
           },
         },
+        ...(mentionTags.length
+          ? [{ type: "section", text: { type: "mrkdwn", text: `*Mentioned:* ${mentionTags.join(" ")}` } }]
+          : []),
         { type: "divider" },
       ];
+
     } else {
       return new Response(
         JSON.stringify({ success: false, error: "Invalid notification type" }),

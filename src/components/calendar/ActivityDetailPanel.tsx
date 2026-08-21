@@ -110,14 +110,31 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
 
     // Fire Slack notification (non-blocking)
     const commenter = admins.find((a) => a.user_id === currentUserId);
+    // Resolve @mentions typed in the comment to admin emails
+    const plain = text.replace(/<[^>]*>/g, ' ');
+    const mentionedEmails = Array.from(
+      new Set(
+        admins
+          .filter((a) => {
+            if (!a.email || a.user_id === currentUserId) return false;
+            const names = [a.name, a.name?.split(' ')[0], a.email.split('@')[0]].filter(Boolean) as string[];
+            return names.some((n) =>
+              new RegExp(`@${n.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\b`, 'i').test(plain),
+            );
+          })
+          .map((a) => a.email),
+      ),
+    );
     if (commenter?.email) {
       notifyCalendarComment({
         commentByEmail: commenter.email,
         commentText: text,
         activityTitleForComment: event.title,
         eventDateForComment: event.event_date,
+        mentionedEmails,
       }).catch((err) => console.error('[Slack] Calendar comment notification failed:', err));
     }
+
   };
 
   const toggleAssignee = async (userId: string) => {
