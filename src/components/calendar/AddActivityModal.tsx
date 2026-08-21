@@ -14,8 +14,12 @@ import {
   EVENT_TYPES,
   RECURRENCE_OPTIONS,
   formatDateLong,
+  formatMinutes,
   inputToMinutes,
   minutesToInput,
+  weekdayOf,
+  daysBetween,
+  dayOfMonth,
   PipelineLink,
 } from '@/lib/calendarTime';
 import PipelineLinkSelect from './PipelineLinkSelect';
@@ -63,6 +67,58 @@ export const AddActivityModal = ({
   const [newType, setNewType] = useState('');
   const [creatingType, setCreatingType] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [dayEvents, setDayEvents] = useState<
+    { title: string; start_time: number; end_time: number; assigned_to: string[] | null; created_by: string | null }[]
+  >([]);
+
+  // Load events occurring on this date (including recurring ones) to detect conflicts
+  useEffect(() => {
+    if (!open || !date) return;
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase
+        .from('calendar_events')
+        .select('title,event_date,start_time,end_time,assigned_to,created_by,is_recurring,recurrence_rule')
+        .or(`event_date.eq.${date},is_recurring.eq.true`);
+      if (cancelled) return;
+      const dow = weekdayOf(date);
+      const occurring = (data || []).filter((e: any) => {
+        if (e.event_date === date) return true;
+        if (e.is_recurring && e.event_date < date) {
+          const rule = e.recurrence_rule || 'weekly';
+          if (rule === 'weekly') return weekdayOf(e.event_date) === dow;
+          if (rule === 'biweekly')
+            return weekdayOf(e.event_date) === dow && daysBetween(e.event_date, date) % 14 === 0;
+          if (rule === 'monthly') return dayOfMonth(e.event_date) === dayOfMonth(date);
+        }
+        return false;
+      });
+      setDayEvents(occurring as any);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, date]);
+
+  const startMin = inputToMinutes(start);
+  const endMin = inputToMinutes(end);
+
+  /** admin user_id -> conflicting event (first overlap found) */
+  const conflicts = new Map<string, { title: string; start_time: number; end_time: number }>();
+  if (endMin > startMin) {
+    for (const ev of dayEvents) {
+      if (!(ev.start_time < endMin && ev.end_time > startMin)) continue;
+      const people = new Set<string>([...(ev.assigned_to || []), ...(ev.created_by ? [ev.created_by] : [])]);
+      for (const p of people) {
+        if (!conflicts.has(p)) conflicts.set(p, ev);
+      }
+    }
+  }
+
+  const conflictLabel = (userId: string) => {
+    const c = conflicts.get(userId);
+    return c ? `Busy ${formatMinutes(c.start_time)}–${formatMinutes(c.end_time)} · ${c.title}` : null;
+  };
 
   const allTypes = [
     ...EVENT_TYPES.map((t) => ({ value: t.value, label: t.label })),
@@ -130,8 +186,17 @@ export const AddActivityModal = ({
       setError('End time must be after start time');
       return;
     }
-    setSaving(true);
     const owner = adminId || currentUserId;
+    if (owner && conflicts.has(owner)) {
+      setError(`Owner is not available — ${conflictLabel(owner)}`);
+      return;
+    }
+    const busyPicked = extraAssignees.filter((id) => conflicts.has(id));
+    if (busyPicked.length) {
+      setError('Some selected admins already have an activity at this time');
+      return;
+    }
+    setSaving(true);
     const assignedToIds = Array.from(new Set([...(owner ? [owner] : []), ...extraAssignees]));
     const { error: dbError } = await supabase.from('calendar_events').insert({
       title: title.trim(),
@@ -223,13 +288,19 @@ export const AddActivityModal = ({
               <Select value={adminId} onValueChange={setAdminId}>
                 <SelectTrigger><SelectValue placeholder="Select admin" /></SelectTrigger>
                 <SelectContent>
-                  {admins.map((a) => (
-                    <SelectItem key={a.user_id} value={a.user_id}>
-                      {a.initial} — {a.name}
-                    </SelectItem>
-                  ))}
+                  {admins.map((a) => {
+                    const busy = conflicts.has(a.user_id);
+                    return (
+                      <SelectItem key={a.user_id} value={a.user_id} disabled={busy}>
+                        {a.initial} — {a.name}{busy ? ' (busy)' : ''}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
+              {conflicts.has(adminId) && (
+                <p className="text-xs text-destructive">{conflictLabel(adminId)}</p>
+              )}
             </div>
           </div>
 
@@ -239,29 +310,43 @@ export const AddActivityModal = ({
               <button
                 type="button"
                 className="text-xs text-muted-foreground hover:text-foreground"
-                onClick={() =>
-                  setExtraAssignees(
-                    extraAssignees.length === admins.length ? [] : admins.map((a) => a.user_id)
-                  )
-                }
+                onClick={() => {
+                  const free = admins.filter((a) => !conflicts.has(a.user_id)).map((a) => a.user_id);
+                  setExtraAssignees(extraAssignees.length >= free.length && free.length > 0 ? [] : free);
+                }}
               >
-                {extraAssignees.length === admins.length ? 'Clear all' : 'Select all'}
+                {extraAssignees.length > 0 ? 'Clear all' : 'Select all available'}
               </button>
             </div>
             <div className="max-h-36 overflow-y-auto rounded-md border p-2 space-y-1.5">
-              {admins.map((a) => (
-                <label key={a.user_id} className="flex items-center gap-2 text-sm cursor-pointer">
-                  <Checkbox
-                    checked={extraAssignees.includes(a.user_id)}
-                    onCheckedChange={(v) =>
-                      setExtraAssignees((prev) =>
-                        v === true ? [...prev, a.user_id] : prev.filter((id) => id !== a.user_id)
-                      )
-                    }
-                  />
-                  <span className="font-normal">{a.name}</span>
-                </label>
-              ))}
+              {admins.map((a) => {
+                const busy = conflicts.has(a.user_id);
+                return (
+                  <label
+                    key={a.user_id}
+                    className={`flex items-center gap-2 text-sm ${
+                      busy ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                    }`}
+                    title={conflictLabel(a.user_id) ?? undefined}
+                  >
+                    <Checkbox
+                      disabled={busy}
+                      checked={!busy && extraAssignees.includes(a.user_id)}
+                      onCheckedChange={(v) =>
+                        setExtraAssignees((prev) =>
+                          v === true ? [...prev, a.user_id] : prev.filter((id) => id !== a.user_id)
+                        )
+                      }
+                    />
+                    <span className="font-normal">{a.name}</span>
+                    {busy && (
+                      <span className="ml-auto text-[11px] text-muted-foreground truncate max-w-[55%]">
+                        {conflictLabel(a.user_id)}
+                      </span>
+                    )}
+                  </label>
+                );
+              })}
             </div>
           </div>
 
