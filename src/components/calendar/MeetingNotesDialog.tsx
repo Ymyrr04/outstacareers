@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSlackNotifications } from '@/hooks/useSlackNotifications';
 import { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { formatMinutes, formatDateLong, pipelineLinkStyle } from '@/lib/calendarTime';
 
@@ -19,6 +20,7 @@ interface Props {
 
 export const MeetingNotesDialog = ({ open, onOpenChange, event, adminName, currentUserEmail, onSaved }: Props) => {
   const { toast } = useToast();
+  const { notifyCalendarUpdate } = useSlackNotifications();
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const link = event.pipeline_link || null;
