@@ -13,10 +13,11 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   event: CalendarEvent;
   adminName?: string;
+  currentUserEmail?: string;
   onSaved: () => void;
 }
 
-export const MeetingNotesDialog = ({ open, onOpenChange, event, adminName, onSaved }: Props) => {
+export const MeetingNotesDialog = ({ open, onOpenChange, event, adminName, currentUserEmail, onSaved }: Props) => {
   const { toast } = useToast();
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
