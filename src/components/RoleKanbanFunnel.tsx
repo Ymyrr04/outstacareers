@@ -99,6 +99,7 @@ interface Candidate {
   job_id: string | null;
   cv_file_url: string | null;
   is_starred: boolean;
+  interview_invite_sent_at: string | null;
   stage_entered_at: string | null;
   tags: string[];
   suitable_roles: string[];
@@ -534,7 +535,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       while (true) {
         let q = supabase
           .from('applicants_prescreen')
-          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags, suitable_roles')
+          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, interview_invite_sent_at, tags, suitable_roles')
           .in('status', statuses);
         if (rolesToFetch) {
           q = q.in('job_title', rolesToFetch);
@@ -561,7 +562,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
         while (true) {
           const { data } = await supabase
             .from('applicants_prescreen')
-            .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags, suitable_roles')
+            .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, interview_invite_sent_at, tags, suitable_roles')
             .in('job_title', rolesToFetch)
             .in('status', statuses)
             .order('total_score', { ascending: false, nullsFirst: false })
@@ -575,7 +576,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       } else {
         const { data } = await supabase
           .from('applicants_prescreen')
-          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, tags, suitable_roles')
+          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, interview_invite_sent_at, tags, suitable_roles')
           .eq('job_title', role)
           .in('status', statuses)
           .order('total_score', { ascending: false, nullsFirst: false });
@@ -586,6 +587,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     const mapToCandidate = (rows: any[]) => rows.map(a => ({
       ...a,
       is_starred: a.is_starred ?? false,
+      interview_invite_sent_at: a.interview_invite_sent_at ?? null,
       tags: Array.isArray(a.tags) ? a.tags : [],
       suitable_roles: Array.isArray((a as any).suitable_roles) ? (a as any).suitable_roles : [],
       interview_overall_score: null,
@@ -1948,6 +1950,15 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
                 )}
                 {candidate.is_starred && (
                   <Star className="w-3 h-3 text-yellow-500 fill-yellow-500 shrink-0" />
+                )}
+                {candidate.interview_invite_sent_at && (
+                  <span
+                    title={`Interview invite sent ${new Date(candidate.interview_invite_sent_at).toLocaleString('en-US', { timeZone: 'America/New_York' })} ET`}
+                    className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-500 text-white shadow-sm ring-1 ring-indigo-600 shrink-0"
+                  >
+                    <Send className="w-3 h-3" />
+                    Invited
+                  </span>
                 )}
               </div>
               <div className="pl-3.5 flex items-center gap-1.5 flex-wrap">
