@@ -9,10 +9,20 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X, Plus, Trash2, CheckCircle2, Undo2, NotebookPen, Flag } from 'lucide-react';
 import { CalendarAdmin } from '@/hooks/useCalendarAdmins';
 import { CalendarEvent } from '@/hooks/useCalendarEvents';
-import { formatMinutes, eventTypeLabel, colorForIndex, recurrenceLabel } from '@/lib/calendarTime';
+import {
+  formatMinutes,
+  eventTypeLabel,
+  colorForIndex,
+  recurrenceLabel,
+  pipelineLinkStyle,
+  pipelineLinkHref,
+  isDeadline,
+  DEADLINE_COLOR,
+} from '@/lib/calendarTime';
+import MeetingNotesDialog from './MeetingNotesDialog';
 import { useToast } from '@/hooks/use-toast';
 
 interface Comment {
@@ -57,6 +67,12 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
   const [posting, setPosting] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
+  const [togglingDone, setTogglingDone] = useState(false);
+  const link = event.pipeline_link || null;
+  const linkStyle = link ? pipelineLinkStyle(link.type) : null;
+  const deadline = isDeadline(event.event_type);
+  const done = !!event.is_done;
 
   const loadComments = useCallback(async () => {
     const { data } = await supabase
@@ -105,6 +121,20 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
     onChanged();
   };
 
+  const toggleDone = async () => {
+    setTogglingDone(true);
+    const { error } = await supabase
+      .from('calendar_events')
+      .update({ is_done: !done })
+      .eq('id', event.id);
+    setTogglingDone(false);
+    if (error) {
+      toast({ title: 'Could not update status', description: error.message, variant: 'destructive' });
+      return;
+    }
+    onChanged();
+  };
+
   const deleteEvent = async () => {
     const { error } = await supabase.from('calendar_events').delete().eq('id', event.id);
     if (error) {
@@ -115,11 +145,19 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
     onChanged();
   };
 
-  const color = owner?.color ?? colorForIndex(99);
+  const color = deadline ? DEADLINE_COLOR : owner?.color ?? colorForIndex(99);
 
   return (
-    <Card className={`relative mt-4 p-4 border-[0.5px] ${className ?? ''}`}>
-      <div className="absolute right-2 top-2 flex gap-1">
+    <Card
+      className={`relative mt-4 p-4 border-[0.5px] ${className ?? ''}`}
+      style={
+        deadline
+          ? { background: DEADLINE_COLOR.bg, borderLeft: `3px solid ${DEADLINE_COLOR.main}` }
+          : undefined
+      }
+    >
+      <div className="absolute right-2 top-2 flex items-center gap-1">
+        {done && <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={deleteEvent} title="Delete activity">
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
@@ -128,8 +166,17 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
         </Button>
       </div>
 
-      <div className="flex items-center gap-3">
-        <Avatar admin={owner} size={34} />
+      <div className={`flex items-center gap-3 ${done ? 'opacity-60' : ''}`}>
+        {deadline ? (
+          <span
+            className="inline-flex h-[34px] w-[34px] items-center justify-center rounded-full"
+            style={{ background: DEADLINE_COLOR.bg, border: `1px solid ${DEADLINE_COLOR.main}` }}
+          >
+            <Flag className="h-4 w-4" style={{ color: DEADLINE_COLOR.main }} />
+          </span>
+        ) : (
+          <Avatar admin={owner} size={34} />
+        )}
         <div className="min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="text-sm font-medium">{owner?.name ?? 'Unassigned'}</span>
@@ -144,11 +191,31 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
         </div>
       </div>
 
-      <p className="mt-3 text-sm font-medium">{event.title}</p>
+      <p className={`mt-3 text-sm font-medium ${done ? 'line-through opacity-60' : ''}`}>{event.title}</p>
+
+      {link && linkStyle && (
+        <a
+          href={pipelineLinkHref(link)}
+          className="mt-2 inline-flex items-center rounded-full px-2 py-0.5 text-xs hover:opacity-80"
+          style={{ background: linkStyle.bg, color: linkStyle.text, border: `1px solid ${linkStyle.border}55` }}
+        >
+          {linkStyle.label}: {link.name}
+        </a>
+      )}
 
       {event.description && (
         <div className="mt-2 rounded-md bg-muted/50 p-3 text-sm text-muted-foreground whitespace-pre-wrap">
           {event.description}
+        </div>
+      )}
+
+      {event.meeting_notes && (
+        <div
+          className="mt-3 rounded-md p-3 text-sm whitespace-pre-wrap"
+          style={{ background: '#FFFBEB', border: '1px solid #FCD34D', color: '#92400E' }}
+        >
+          <p className="text-xs font-medium mb-1">Meeting notes</p>
+          {event.meeting_notes}
         </div>
       )}
 
@@ -179,6 +246,28 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
             ))}
           </PopoverContent>
         </Popover>
+        <Button
+          variant={done ? 'secondary' : 'outline'}
+          size="sm"
+          className="h-6 px-2 text-xs"
+          onClick={toggleDone}
+          disabled={togglingDone}
+        >
+          {done ? (
+            <>
+              <Undo2 className="h-3 w-3 mr-1" /> Undo
+            </>
+          ) : (
+            <>
+              <CheckCircle2 className="h-3 w-3 mr-1" /> Done
+            </>
+          )}
+        </Button>
+        {event.event_type === 'meeting' && (
+          <Button variant="outline" size="sm" className="h-6 px-2 text-xs" onClick={() => setNotesOpen(true)}>
+            <NotebookPen className="h-3 w-3 mr-1" /> {event.meeting_notes ? 'Edit notes' : 'Add notes'}
+          </Button>
+        )}
       </div>
 
       <div className="mt-4 space-y-2">
@@ -224,6 +313,16 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
           </Button>
         </div>
       </div>
+
+      {event.event_type === 'meeting' && (
+        <MeetingNotesDialog
+          open={notesOpen}
+          onOpenChange={setNotesOpen}
+          event={event}
+          adminName={owner?.name}
+          onSaved={onChanged}
+        />
+      )}
     </Card>
   );
 };
