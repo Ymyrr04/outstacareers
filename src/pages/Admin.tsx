@@ -73,6 +73,7 @@ import { PLDashboard } from '@/components/PLDashboard';
 // Status options for applicant tracking - new pipeline order
 const APPLICANT_STATUS_FOLDERS = [
   'For Review',
+  'Qualified',
   'For Interview',
   'SIV',
   'Pitch',
@@ -87,6 +88,7 @@ const APPLICANT_STATUS_FOLDERS = [
 // Dropdown options include all statuses (For Review can be selected to move back)
 const APPLICANT_STATUS_OPTIONS = [
   'For Review',
+  'Qualified',
   'For Interview',
   'SIV',
   'Pitch',
@@ -97,6 +99,7 @@ const APPLICANT_STATUS_OPTIONS = [
   'Archive',
   'Talent Pool'
 ] as const;
+
 
 const getStageDisplayName = (stage: string): string => {
   if (stage === 'Talent Pool') return 'Bench';

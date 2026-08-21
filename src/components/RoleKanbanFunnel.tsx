@@ -47,6 +47,7 @@ import { useStageSettings } from '@/hooks/useStageSettings';
 
 const FUNNEL_STAGES = [
   'For Review',
+  'Qualified',
   'For Interview',
   'SIV',
   'Pitch',
@@ -60,7 +61,9 @@ const FUNNEL_STAGES = [
 
 const STAGE_COLORS: Record<string, { bg: string; header: string; dot: string }> = {
   'For Review': { bg: 'bg-blue-50 dark:bg-blue-950/20', header: 'bg-blue-500', dot: 'bg-blue-400' },
+  'Qualified': { bg: 'bg-cyan-50 dark:bg-cyan-950/20', header: 'bg-cyan-600', dot: 'bg-cyan-500' },
   'For Interview': { bg: 'bg-indigo-50 dark:bg-indigo-950/20', header: 'bg-indigo-500', dot: 'bg-indigo-400' },
+
   'SIV': { bg: 'bg-violet-50 dark:bg-violet-950/20', header: 'bg-violet-500', dot: 'bg-violet-400' },
   'Pitch': { bg: 'bg-fuchsia-50 dark:bg-fuchsia-950/20', header: 'bg-fuchsia-500', dot: 'bg-fuchsia-400' },
   'Client Interview': { bg: 'bg-purple-50 dark:bg-purple-950/20', header: 'bg-purple-500', dot: 'bg-purple-400' },
@@ -504,7 +507,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     //  Phase 2 (background): Reject / Archive (filtered) + Bench / Talent Pool
     //  Bench/Talent Pool ignore the admin filter, but DO respect the selected
     //  role and the Active/All/Inactive jobs filter.
-    const PRIORITY_STATUSES = ['For Review', 'For Interview', 'SIV', 'Pitch', 'Client Interview', 'Hired'];
+    const PRIORITY_STATUSES = ['For Review', 'Qualified', 'For Interview', 'SIV', 'Pitch', 'Client Interview', 'Hired'];
     const BACKGROUND_STATUSES = ['Reject', 'Archive', 'Archived'];
     const UNFILTERED_STATUSES = ['Bench', 'Talent Pool', 'Cold Talent Pool'];
 
