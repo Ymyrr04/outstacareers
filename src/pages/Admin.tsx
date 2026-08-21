@@ -411,6 +411,27 @@ const Admin = () => {
     }
   }, [urlTab]);
 
+  // Deep link: /admin/applicants?applicant=<id> — focus & expand that applicant
+  const handledDeepLinkRef = useRef<string | null>(null);
+  useEffect(() => {
+    const applicantId = searchParams.get('applicant');
+    if (!applicantId || applicantsLoading) return;
+    if (handledDeepLinkRef.current === applicantId) return;
+    const target = applicants.find(a => a.id === applicantId);
+    if (!target) return;
+    handledDeepLinkRef.current = applicantId;
+    setSearchTerm(target.email || target.full_name || '');
+    setExpandedApplicant(applicantId);
+    setTimeout(() => {
+      document.getElementById(`applicant-${applicantId}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 400);
+    const next = new URLSearchParams(searchParams);
+    next.delete('applicant');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, applicants, applicantsLoading]);
+
+
+
   // Handle tab switching with transition to prevent UI freeze
   const handleMainTabChange = useCallback((newTab: string) => {
     // Show loading immediately for heavy tabs
