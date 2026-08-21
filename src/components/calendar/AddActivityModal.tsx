@@ -279,13 +279,19 @@ export const AddActivityModal = ({
               <Select value={adminId} onValueChange={setAdminId}>
                 <SelectTrigger><SelectValue placeholder="Select admin" /></SelectTrigger>
                 <SelectContent>
-                  {admins.map((a) => (
-                    <SelectItem key={a.user_id} value={a.user_id}>
-                      {a.initial} — {a.name}
-                    </SelectItem>
-                  ))}
+                  {admins.map((a) => {
+                    const busy = conflicts.has(a.user_id);
+                    return (
+                      <SelectItem key={a.user_id} value={a.user_id} disabled={busy}>
+                        {a.initial} — {a.name}{busy ? ' (busy)' : ''}
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
+              {conflicts.has(adminId) && (
+                <p className="text-xs text-destructive">{conflictLabel(adminId)}</p>
+              )}
             </div>
           </div>
 
@@ -295,29 +301,43 @@ export const AddActivityModal = ({
               <button
                 type="button"
                 className="text-xs text-muted-foreground hover:text-foreground"
-                onClick={() =>
-                  setExtraAssignees(
-                    extraAssignees.length === admins.length ? [] : admins.map((a) => a.user_id)
-                  )
-                }
+                onClick={() => {
+                  const free = admins.filter((a) => !conflicts.has(a.user_id)).map((a) => a.user_id);
+                  setExtraAssignees(extraAssignees.length >= free.length && free.length > 0 ? [] : free);
+                }}
               >
-                {extraAssignees.length === admins.length ? 'Clear all' : 'Select all'}
+                {extraAssignees.length > 0 ? 'Clear all' : 'Select all available'}
               </button>
             </div>
             <div className="max-h-36 overflow-y-auto rounded-md border p-2 space-y-1.5">
-              {admins.map((a) => (
-                <label key={a.user_id} className="flex items-center gap-2 text-sm cursor-pointer">
-                  <Checkbox
-                    checked={extraAssignees.includes(a.user_id)}
-                    onCheckedChange={(v) =>
-                      setExtraAssignees((prev) =>
-                        v === true ? [...prev, a.user_id] : prev.filter((id) => id !== a.user_id)
-                      )
-                    }
-                  />
-                  <span className="font-normal">{a.name}</span>
-                </label>
-              ))}
+              {admins.map((a) => {
+                const busy = conflicts.has(a.user_id);
+                return (
+                  <label
+                    key={a.user_id}
+                    className={`flex items-center gap-2 text-sm ${
+                      busy ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                    }`}
+                    title={conflictLabel(a.user_id) ?? undefined}
+                  >
+                    <Checkbox
+                      disabled={busy}
+                      checked={!busy && extraAssignees.includes(a.user_id)}
+                      onCheckedChange={(v) =>
+                        setExtraAssignees((prev) =>
+                          v === true ? [...prev, a.user_id] : prev.filter((id) => id !== a.user_id)
+                        )
+                      }
+                    />
+                    <span className="font-normal">{a.name}</span>
+                    {busy && (
+                      <span className="ml-auto text-[11px] text-muted-foreground truncate max-w-[55%]">
+                        {conflictLabel(a.user_id)}
+                      </span>
+                    )}
+                  </label>
+                );
+              })}
             </div>
           </div>
 
