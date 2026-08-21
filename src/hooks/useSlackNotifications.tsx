@@ -47,6 +47,14 @@ interface CalendarCommentPayload {
   mentionedEmails?: string[];
 }
 
+interface CalendarUpdatePayload {
+  updatedByEmail: string;
+  activityTitle: string;
+  eventDate: string;
+  updateType: string;
+  updateDetail?: string;
+}
+
 
 async function invokeSlackNotification(payload: Record<string, unknown>) {
   try {
@@ -87,5 +95,9 @@ export function useSlackNotifications() {
     return invokeSlackNotification({ type: 'calendar_comment', ...payload });
   };
 
-  return { notifyMention, notifyNewRequest, notifyStatusChange, notifyCalendarActivity, notifyCalendarComment };
+  const notifyCalendarUpdate = async (payload: CalendarUpdatePayload) => {
+    return invokeSlackNotification({ type: 'calendar_update', ...payload });
+  };
+
+  return { notifyMention, notifyNewRequest, notifyStatusChange, notifyCalendarActivity, notifyCalendarComment, notifyCalendarUpdate };
 }

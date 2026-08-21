@@ -5,6 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSlackNotifications } from '@/hooks/useSlackNotifications';
 import { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { formatMinutes, formatDateLong, pipelineLinkStyle } from '@/lib/calendarTime';
 
@@ -13,11 +14,13 @@ interface Props {
   onOpenChange: (open: boolean) => void;
   event: CalendarEvent;
   adminName?: string;
+  currentUserEmail?: string;
   onSaved: () => void;
 }
 
-export const MeetingNotesDialog = ({ open, onOpenChange, event, adminName, onSaved }: Props) => {
+export const MeetingNotesDialog = ({ open, onOpenChange, event, adminName, currentUserEmail, onSaved }: Props) => {
   const { toast } = useToast();
+  const { notifyCalendarUpdate } = useSlackNotifications();
   const [notes, setNotes] = useState('');
   const [saving, setSaving] = useState(false);
   const link = event.pipeline_link || null;
@@ -69,6 +72,17 @@ export const MeetingNotesDialog = ({ open, onOpenChange, event, adminName, onSav
 
     setSaving(false);
     toast({ title: 'Meeting notes saved' });
+
+    // Fire Slack notification (non-blocking)
+    if (currentUserEmail) {
+      notifyCalendarUpdate({
+        updatedByEmail: currentUserEmail,
+        activityTitle: event.title,
+        eventDate: event.event_date,
+        updateType: 'notes',
+      }).catch((err) => console.error('[Slack] Calendar update notification failed:', err));
+    }
+
     onOpenChange(false);
     onSaved();
   };
