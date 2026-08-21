@@ -84,7 +84,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
     }
     const owner = calAdmin || userId;
     const { error } = await supabase.from('calendar_events').insert({
-      title: `${pending.newStatus} — ${pending.candidateName}`,
+      title: calTitle.trim() || `${pending.newStatus} — ${pending.candidateName}`,
       description: calDesc.trim() || null,
       event_date: calDate,
       start_time: s,
@@ -173,6 +173,10 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
 
           {addToCalendar && (
             <div className="space-y-3 pt-1">
+              <div className="space-y-1.5">
+                <Label htmlFor="sn-title" className="text-xs">Activity title</Label>
+                <Input id="sn-title" value={calTitle} onChange={(e) => setCalTitle(e.target.value)} placeholder="Activity title" />
+              </div>
               <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-1.5">
                   <Label htmlFor="sn-date" className="text-xs">Date</Label>
