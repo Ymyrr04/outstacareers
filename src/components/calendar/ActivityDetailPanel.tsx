@@ -408,6 +408,7 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
           onOpenChange={setNotesOpen}
           event={event}
           adminName={owner?.name}
+          currentUserEmail={admins.find((a) => a.user_id === currentUserId)?.email}
           onSaved={onChanged}
         />
       )}
