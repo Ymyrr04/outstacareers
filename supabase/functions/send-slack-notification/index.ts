@@ -163,6 +163,7 @@ Deno.serve(async (req) => {
   const CHANNEL_BY_TYPE: Record<string, string | undefined> = {
     calendar_activity: Deno.env.get("SLACK_CHANNEL_CALENDAR") || undefined,
     calendar_comment: Deno.env.get("SLACK_CHANNEL_CALENDAR") || undefined,
+    calendar_update: Deno.env.get("SLACK_CHANNEL_CALENDAR") || undefined,
     mention: Deno.env.get("SLACK_CHANNEL_MENTIONS") || undefined,
     new_request: Deno.env.get("SLACK_CHANNEL_REQUESTS") || undefined,
     status_change: Deno.env.get("SLACK_CHANNEL_STATUS") || undefined,
