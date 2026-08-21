@@ -2114,6 +2114,11 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
             Notes
           </ContextMenuItem>
 
+          <ContextMenuItem onClick={openCalendar}>
+            <Calendar className="w-4 h-4 mr-2" />
+            Add to calendar
+          </ContextMenuItem>
+
           <ContextMenuItem onClick={openProfile}>
             <UserCircle className="w-4 h-4 mr-2" />
             Profile
