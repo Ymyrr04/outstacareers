@@ -180,6 +180,55 @@ Deno.serve(async (req) => {
         },
         { type: "divider" },
       ];
+    } else if (payload.type === "calendar_activity") {
+      const createdByName = getDisplayName(payload.createdByEmail);
+      const assignedNames = (payload.assignedToEmails || [])
+        .map((e) => getDisplayName(e))
+        .filter((n) => n && n !== "Someone");
+      const assignedStr = assignedNames.length ? assignedNames.join(", ") : "Unassigned";
+      const timeRange = `${minutesToTime(payload.startTime || 0)} - ${minutesToTime(payload.endTime || 0)}`;
+      const dateLabel = formatDateET(payload.eventDate || "");
+      const typeLabel = (payload.eventType || "activity")
+        .replace(/[-_]/g, " ")
+        .replace(/\b\w/g, (c) => c.toUpperCase());
+      const emoji = payload.eventType === "deadline" ? "🚩" : payload.eventType === "meeting" ? "📅" : "📆";
+
+      text = `${emoji} New calendar activity: ${payload.activityTitle} (${typeLabel})`;
+      blocks = [
+        {
+          type: "section",
+          text: { type: "mrkdwn", text: `${emoji} *New Calendar Activity Added*` },
+        },
+        {
+          type: "section",
+          fields: [
+            { type: "mrkdwn", text: `*Activity:*\n${payload.activityTitle || "Untitled"}` },
+            { type: "mrkdwn", text: `*Type:*\n${typeLabel}` },
+            { type: "mrkdwn", text: `*When:*\n${dateLabel} • ${timeRange} ET` },
+            { type: "mrkdwn", text: `*Assigned to:*\n${assignedStr}` },
+            { type: "mrkdwn", text: `*Added by:*\n${createdByName}` },
+          ],
+        },
+      ];
+
+      if (payload.pipelineLinkName) {
+        blocks.push({
+          type: "section",
+          text: { type: "mrkdwn", text: `*Linked to:*\n${payload.pipelineLinkName}` },
+        });
+      }
+
+      if (payload.activityDescription) {
+        const cleanDesc = payload.activityDescription.replace(/<[^>]*>/g, "").substring(0, 200);
+        if (cleanDesc) {
+          blocks.push({
+            type: "section",
+            text: { type: "mrkdwn", text: `*Details:*\n>${cleanDesc}${cleanDesc.length >= 200 ? "..." : ""}` },
+          });
+        }
+      }
+
+      blocks.push({ type: "divider" });
     } else {
       return new Response(
         JSON.stringify({ success: false, error: "Invalid notification type" }),
