@@ -60,7 +60,7 @@ async function mentionOrName(email: string | null | undefined): Promise<string> 
 
 
 interface SlackPayload {
-  type: "mention" | "new_request" | "status_change" | "calendar_activity" | "calendar_comment";
+  type: "mention" | "new_request" | "status_change" | "calendar_activity" | "calendar_comment" | "calendar_update";
   channel?: string;
   mentionedEmail?: string;
   mentionedByEmail?: string;
@@ -89,7 +89,10 @@ interface SlackPayload {
   activityTitleForComment?: string;
   eventDateForComment?: string;
   mentionedEmails?: string[];
-
+  // Calendar update
+  updatedByEmail?: string;
+  updateType?: string;
+  updateDetail?: string;
 }
 
 function minutesToTime(min: number): string {

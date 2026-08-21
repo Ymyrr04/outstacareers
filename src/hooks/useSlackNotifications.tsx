@@ -47,6 +47,14 @@ interface CalendarCommentPayload {
   mentionedEmails?: string[];
 }
 
+interface CalendarUpdatePayload {
+  updatedByEmail: string;
+  activityTitle: string;
+  eventDate: string;
+  updateType: string;
+  updateDetail?: string;
+}
+
 
 async function invokeSlackNotification(payload: Record<string, unknown>) {
   try {
