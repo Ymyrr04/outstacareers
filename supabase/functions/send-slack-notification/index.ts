@@ -244,7 +244,8 @@ Deno.serve(async (req) => {
       );
     }
 
-    const data = await postToSlack(SLACK_CHANNEL, text, blocks);
+    const targetChannel = payload.channel || CHANNEL_BY_TYPE[payload.type] || DEFAULT_CHANNEL;
+    const data = await postToSlack(targetChannel, text, blocks);
     console.log("Slack message sent:", data.ts);
 
     return new Response(
