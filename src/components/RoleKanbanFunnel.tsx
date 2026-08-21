@@ -1807,6 +1807,10 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
 
 
 
+  const [mountCalendar, setMountCalendar] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const openCalendar = useCallback(() => { setMountCalendar(true); setShowCalendar(true); }, []);
+
   const openDetails = useCallback(() => { setMountDetails(true); setShowDetails(true); }, []);
   const openSendEmail = useCallback(() => { setMountSendEmail(true); setShowSendEmail(true); }, []);
   const openHistory = useCallback(() => { setMountHistory(true); setShowHistory(true); }, []);
