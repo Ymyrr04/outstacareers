@@ -39,6 +39,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
   const [calType, setCalType] = useState('task');
   const [calAdmin, setCalAdmin] = useState('');
   const [calDesc, setCalDesc] = useState('');
+  const [calTitle, setCalTitle] = useState('');
 
   useEffect(() => {
     if (!pending) return;
@@ -50,6 +51,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
     setCalEnd('11:00');
     setCalType('task');
     setCalDesc(`Stage moved to ${pending.newStatus} — ${pending.candidateName}`);
+    setCalTitle(`${pending.newStatus} — ${pending.candidateName}`);
 
     let cancelled = false;
     (async () => {
