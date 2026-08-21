@@ -139,9 +139,10 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
 
   const toggleAssignee = async (userId: string) => {
     const current = event.assigned_to || [];
-    const next = current.includes(userId)
-      ? current.filter((id) => id !== userId)
-      : [...current, userId];
+    const isAdding = !current.includes(userId);
+    const next = isAdding
+      ? [...current, userId]
+      : current.filter((id) => id !== userId);
     const { error } = await supabase
       .from('calendar_events')
       .update({ assigned_to: next })
@@ -151,6 +152,19 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
       return;
     }
     onChanged();
+
+    // Fire Slack notification (non-blocking)
+    const admin = admins.find((a) => a.user_id === userId);
+    const actor = admins.find((a) => a.user_id === currentUserId);
+    if (actor?.email) {
+      notifyCalendarUpdate({
+        updatedByEmail: actor.email,
+        activityTitle: event.title,
+        eventDate: event.event_date,
+        updateType: isAdding ? 'assigned' : 'unassigned',
+        updateDetail: isAdding ? `Assigned ${admin?.name ?? 'someone'}` : `Removed ${admin?.name ?? 'someone'}`,
+      }).catch((err) => console.error('[Slack] Calendar update notification failed:', err));
+    }
   };
 
   const toggleDone = async () => {
@@ -165,6 +179,17 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
       return;
     }
     onChanged();
+
+    // Fire Slack notification (non-blocking)
+    const actor = admins.find((a) => a.user_id === currentUserId);
+    if (actor?.email) {
+      notifyCalendarUpdate({
+        updatedByEmail: actor.email,
+        activityTitle: event.title,
+        eventDate: event.event_date,
+        updateType: done ? 'undo' : 'done',
+      }).catch((err) => console.error('[Slack] Calendar update notification failed:', err));
+    }
   };
 
   const deleteEvent = async () => {
@@ -173,6 +198,18 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
       toast({ title: 'Could not delete activity', description: error.message, variant: 'destructive' });
       return;
     }
+
+    // Fire Slack notification (non-blocking) before closing
+    const actor = admins.find((a) => a.user_id === currentUserId);
+    if (actor?.email) {
+      notifyCalendarUpdate({
+        updatedByEmail: actor.email,
+        activityTitle: event.title,
+        eventDate: event.event_date,
+        updateType: 'deleted',
+      }).catch((err) => console.error('[Slack] Calendar update notification failed:', err));
+    }
+
     onClose();
     onChanged();
   };
