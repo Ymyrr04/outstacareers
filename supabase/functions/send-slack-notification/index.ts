@@ -340,6 +340,19 @@ Deno.serve(async (req) => {
         mentionTags.push(await mentionOrName(email));
       }
 
+      // Always notify assignees + creator of the task
+      const notifyEmails = Array.from(
+        new Set(
+          [...(payload.assignedToEmails || []), payload.createdByEmail]
+            .filter(Boolean)
+            .filter((e) => e !== payload.commentByEmail) as string[],
+        ),
+      );
+      const notifyTags: string[] = [];
+      for (const email of notifyEmails) {
+        notifyTags.push(await mentionOrName(email));
+      }
+
       text = `💬 ${commentedByName} commented on "${payload.activityTitleForComment || "Calendar activity"}"`;
       blocks = [
         {
@@ -360,11 +373,15 @@ Deno.serve(async (req) => {
             text: `*Comment:*\n>${cleanComment}${cleanComment.length >= 300 ? "..." : ""}`,
           },
         },
+        ...(notifyTags.length
+          ? [{ type: "section", text: { type: "mrkdwn", text: `*Assigned / Created by:* ${notifyTags.join(" ")}` } }]
+          : []),
         ...(mentionTags.length
           ? [{ type: "section", text: { type: "mrkdwn", text: `*Mentioned:* ${mentionTags.join(" ")}` } }]
           : []),
         { type: "divider" },
       ];
+
 
     } else if (payload.type === "calendar_update") {
       const updatedByName = getDisplayName(payload.updatedByEmail);
