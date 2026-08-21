@@ -495,7 +495,7 @@ export const TeamCalendar = () => {
                           style={{
                             top: i * SLOT_HEIGHT,
                             height: SLOT_HEIGHT,
-                            borderTop: `${isHour ? 1 : 0.5}px solid hsl(var(--border))`,
+                            borderTop: `${isHour ? 1 : isHalf ? 0.5 : 0.5}px solid ${isHour ? 'hsl(var(--border))' : isHalf ? 'hsl(var(--border) / 0.5)' : 'hsl(var(--border) / 0.25)'}`,
                           }}
                         />
                       );
