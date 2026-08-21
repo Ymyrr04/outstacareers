@@ -243,10 +243,10 @@ Deno.serve(async (req) => {
       ];
     } else if (payload.type === "calendar_activity") {
       const createdByName = getDisplayName(payload.createdByEmail);
-      const assignedNames = (payload.assignedToEmails || [])
-        .map((e) => getDisplayName(e))
-        .filter((n) => n && n !== "Someone");
-      const assignedStr = assignedNames.length ? assignedNames.join(", ") : "Unassigned";
+      const assignedEmails = (payload.assignedToEmails || []).filter(Boolean);
+      const assignedMentions = await Promise.all(assignedEmails.map((e) => mentionOrName(e)));
+      const assignedStr = assignedMentions.length ? assignedMentions.join(", ") : "Unassigned";
+
       const timeRange = `${minutesToTime(payload.startTime || 0)} - ${minutesToTime(payload.endTime || 0)}`;
       const dateLabel = formatDateET(payload.eventDate || "");
       const typeLabel = (payload.eventType || "activity")
