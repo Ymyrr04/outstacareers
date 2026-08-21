@@ -2356,6 +2356,16 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
           onReprofiled={onReprofiled}
         />
       )}
+
+      {mountCalendar && (
+        <AddCandidateCalendarDialog
+          open={showCalendar}
+          onOpenChange={setShowCalendar}
+          applicantId={candidate.id}
+          applicantName={candidate.full_name}
+          jobId={candidate.job_id}
+        />
+      )}
     </>
   );
 };
