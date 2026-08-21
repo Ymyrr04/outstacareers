@@ -189,11 +189,11 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="sn-start" className="text-xs">Start (ET)</Label>
-                  <Input id="sn-start" type="time" value={calStart} onChange={(e) => setCalStart(e.target.value)} />
+                  <TimeSelect id="sn-start" value={calStart} onChange={setCalStart} />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="sn-end" className="text-xs">End (ET)</Label>
-                  <Input id="sn-end" type="time" value={calEnd} onChange={(e) => setCalEnd(e.target.value)} />
+                  <TimeSelect id="sn-end" value={calEnd} onChange={setCalEnd} />
                 </div>
               </div>
 
