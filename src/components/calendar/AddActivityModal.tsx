@@ -353,11 +353,11 @@ export const AddActivityModal = ({
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-1.5">
               <Label htmlFor="ce-start">Start (ET)</Label>
-              <Input id="ce-start" type="time" value={start} onChange={(e) => setStart(e.target.value)} />
+              <TimeSelect id="ce-start" value={start} onChange={setStart} />
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="ce-end">End (ET)</Label>
-              <Input id="ce-end" type="time" value={end} onChange={(e) => setEnd(e.target.value)} />
+              <TimeSelect id="ce-end" value={end} onChange={setEnd} />
             </div>
           </div>
 
