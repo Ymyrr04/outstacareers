@@ -88,6 +88,9 @@ interface SlackPayload {
   requestTitle?: string;
   clientName?: string;
   createdByEmail?: string;
+  createdById?: string;
+  assignedToIds?: string[];
+
   priority?: string;
   industry?: string;
   oldStage?: string;
