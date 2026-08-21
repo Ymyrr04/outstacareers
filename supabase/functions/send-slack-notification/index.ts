@@ -18,7 +18,7 @@ function getDisplayName(email: string | null | undefined): string {
 }
 
 interface SlackPayload {
-  type: "mention" | "new_request" | "status_change";
+  type: "mention" | "new_request" | "status_change" | "calendar_activity";
   mentionedEmail?: string;
   mentionedByEmail?: string;
   commentContent?: string;
@@ -31,6 +31,38 @@ interface SlackPayload {
   oldStage?: string;
   newStage?: string;
   changedByEmail?: string;
+  // Calendar activity
+  activityTitle?: string;
+  eventType?: string;
+  eventDate?: string;
+  startTime?: number;
+  endTime?: number;
+  assignedToEmails?: string[];
+  activityDescription?: string;
+  pipelineLinkName?: string;
+}
+
+function minutesToTime(min: number): string {
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  const period = h >= 12 ? "PM" : "AM";
+  const hr = h % 12 === 0 ? 12 : h % 12;
+  return `${hr}:${m.toString().padStart(2, "0")} ${period}`;
+}
+
+function formatDateET(dateStr: string): string {
+  if (!dateStr) return "";
+  try {
+    const d = new Date(dateStr + "T00:00:00");
+    return d.toLocaleDateString("en-US", {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+      timeZone: "America/New_York",
+    });
+  } catch {
+    return dateStr;
+  }
 }
 
 async function postToSlack(channel: string, text: string, blocks: unknown[]) {
