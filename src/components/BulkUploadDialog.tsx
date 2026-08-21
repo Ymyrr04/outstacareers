@@ -376,7 +376,7 @@ export default function BulkUploadDialog({ jobs, onUploadComplete }: BulkUploadD
                 <SelectValue placeholder="Choose a role..." />
               </SelectTrigger>
               <SelectContent>
-                {jobs.filter(j => j.id).map(job => (
+                {[...jobs].filter(j => j.id).sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' })).map(job => (
                   <SelectItem key={job.id} value={job.id}>
                     {job.title}
                   </SelectItem>
