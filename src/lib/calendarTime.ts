@@ -148,8 +148,8 @@ export const eventTypeLabel = (t: string) =>
 
 export const DAY_START_MIN = 0; // 12:00 AM ET
 export const DAY_END_MIN = 24 * 60; // 11:59 PM ET (24-hour span)
-export const SLOT_HEIGHT = 28; // px per 30 minutes
-export const PX_PER_MIN = SLOT_HEIGHT / 30;
+export const SLOT_HEIGHT = 14; // px per 15 minutes
+export const PX_PER_MIN = SLOT_HEIGHT / 15;
 
 /** Deterministic palette color for a user id (fallback when admin list lacks the creator). */
 export const colorForUserId = (userId?: string | null) => {

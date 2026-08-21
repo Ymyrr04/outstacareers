@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 
 export const TIME_OPTIONS: { value: string; label: string }[] = (() => {
   const out: { value: string; label: string }[] = [];
-  for (let m = 0; m < 24 * 60; m += 30) {
+  for (let m = 0; m < 24 * 60; m += 15) {
     const h = Math.floor(m / 60);
     const min = m % 60;
     const value = `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}`;
@@ -34,9 +34,9 @@ interface TimeSelectProps {
   disabled?: boolean;
 }
 
-/** 30-minute increment time picker (12-hour labels, 24-hour "HH:mm" value). */
+/** 15-minute increment time picker (12-hour labels, 24-hour "HH:mm" value). */
 export function TimeSelect({ id, value, onChange, className, disabled }: TimeSelectProps) {
-  // Include the current value even if it isn't on a 30-minute boundary.
+  // Include the current value even if it isn't on a 15-minute boundary.
   const options = React.useMemo(() => {
     if (value && !TIME_OPTIONS.some((o) => o.value === value)) {
       return [...TIME_OPTIONS, { value, label: formatTimeLabel(value) }].sort((a, b) =>

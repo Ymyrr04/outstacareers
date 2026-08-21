@@ -239,7 +239,7 @@ export const TeamCalendar = () => {
       selectedDate,
       selBounds.sMin,
       laneAdmins[0],
-      selBounds.sMax + 30,
+      selBounds.sMax + 15,
       laneAdmins
     );
     setDragSel(null);
@@ -369,7 +369,7 @@ export const TeamCalendar = () => {
     const totalMinutes = DAY_END_MIN - DAY_START_MIN;
     const gridHeight = totalMinutes * PX_PER_MIN;
     const ticks: number[] = [];
-    for (let m = DAY_START_MIN; m <= DAY_END_MIN; m += 30) ticks.push(m);
+    for (let m = DAY_START_MIN; m <= DAY_END_MIN; m += 15) ticks.push(m);
     const nowMin = nowMinutesET();
     const showNowLine = selectedDate === today && nowMin >= DAY_START_MIN && nowMin <= DAY_END_MIN;
 
@@ -409,6 +409,7 @@ export const TeamCalendar = () => {
               <div className="relative" style={{ height: gridHeight }}>
                 {ticks.map((m) => {
                   const isHour = m % 60 === 0;
+                  const isHalf = m % 30 === 0;
                   return (
                     <button
                       key={m}
@@ -419,13 +420,17 @@ export const TeamCalendar = () => {
                           ? selectedHour === m
                             ? 'bg-primary text-primary-foreground font-semibold text-[10px]'
                             : 'text-muted-foreground hover:bg-muted hover:text-foreground text-[10px] font-medium'
-                          : selectedHour === m
-                            ? 'bg-primary text-primary-foreground text-[9px]'
-                            : 'text-muted-foreground/50 hover:bg-muted hover:text-foreground text-[9px]'
+                          : isHalf
+                            ? selectedHour === m
+                              ? 'bg-primary text-primary-foreground text-[9px]'
+                              : 'text-muted-foreground/50 hover:bg-muted hover:text-foreground text-[9px]'
+                            : selectedHour === m
+                              ? 'bg-primary text-primary-foreground text-[8px]'
+                              : 'text-muted-foreground/25 hover:bg-muted hover:text-foreground text-[8px]'
                       }`}
                       style={{ top: (m - DAY_START_MIN) * PX_PER_MIN }}
                     >
-                      {formatMinutes(m)}
+                      {isHour || isHalf ? formatMinutes(m) : ''}
                     </button>
                   );
                 })}
@@ -450,9 +455,10 @@ export const TeamCalendar = () => {
                   </div>
                   <div className="relative" style={{ height: gridHeight }}>
                     {/* slots */}
-                    {Array.from({ length: totalMinutes / 30 }).map((_, i) => {
-                      const slotStart = DAY_START_MIN + i * 30;
+                    {Array.from({ length: totalMinutes / 15 }).map((_, i) => {
+                      const slotStart = DAY_START_MIN + i * 15;
                       const isHour = slotStart % 60 === 0;
+                      const isHalf = slotStart % 30 === 0;
                       const isSelected =
                         !!selBounds &&
                         adminIdx >= selBounds.aMin &&
@@ -489,7 +495,7 @@ export const TeamCalendar = () => {
                           style={{
                             top: i * SLOT_HEIGHT,
                             height: SLOT_HEIGHT,
-                            borderTop: `${isHour ? 1 : 0.5}px solid hsl(var(--border))`,
+                            borderTop: `${isHour ? 1 : isHalf ? 0.5 : 0.5}px solid ${isHour ? 'hsl(var(--border))' : isHalf ? 'hsl(var(--border) / 0.5)' : 'hsl(var(--border) / 0.25)'}`,
                           }}
                         />
                       );
