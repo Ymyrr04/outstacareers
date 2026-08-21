@@ -16,7 +16,7 @@ import {
   ContextMenuSubContent,
 } from '@/components/ui/context-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity, FileSignature, Loader2, Tag as TagIcon, X as XIcon, Briefcase, UserCog } from 'lucide-react';
+import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity, FileSignature, Loader2, Tag as TagIcon, X as XIcon, Briefcase, UserCog, Calendar } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
@@ -43,6 +43,7 @@ import { useEmailTemplates, statusToTrigger } from '@/hooks/useEmailTemplates';
 import { addMinutes } from 'date-fns';
 import { StageEmailConfirmDialog, type PendingStageEmail } from '@/components/StageEmailConfirmDialog';
 import { StageNoteDialog, type PendingStageNote } from '@/components/StageNoteDialog';
+import { AddCandidateCalendarDialog } from '@/components/AddCandidateCalendarDialog';
 import { useStageSettings } from '@/hooks/useStageSettings';
 
 const FUNNEL_STAGES = [
@@ -1806,6 +1807,10 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
 
 
 
+  const [mountCalendar, setMountCalendar] = useState(false);
+  const [showCalendar, setShowCalendar] = useState(false);
+  const openCalendar = useCallback(() => { setMountCalendar(true); setShowCalendar(true); }, []);
+
   const openDetails = useCallback(() => { setMountDetails(true); setShowDetails(true); }, []);
   const openSendEmail = useCallback(() => { setMountSendEmail(true); setShowSendEmail(true); }, []);
   const openHistory = useCallback(() => { setMountHistory(true); setShowHistory(true); }, []);
@@ -2109,6 +2114,11 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
             Notes
           </ContextMenuItem>
 
+          <ContextMenuItem onClick={openCalendar}>
+            <Calendar className="w-4 h-4 mr-2" />
+            Add to calendar
+          </ContextMenuItem>
+
           <ContextMenuItem onClick={openProfile}>
             <UserCircle className="w-4 h-4 mr-2" />
             Profile
@@ -2344,6 +2354,16 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
             status: candidate.status,
           }}
           onReprofiled={onReprofiled}
+        />
+      )}
+
+      {mountCalendar && (
+        <AddCandidateCalendarDialog
+          open={showCalendar}
+          onOpenChange={setShowCalendar}
+          applicantId={candidate.id}
+          applicantName={candidate.full_name}
+          jobId={candidate.job_id}
         />
       )}
     </>
