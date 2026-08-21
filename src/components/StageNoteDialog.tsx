@@ -1,11 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { NotesEditor } from '@/components/NotesEditor';
 import { supabase } from '@/integrations/supabase/client';
 import { getErrorMessageSync } from '@/lib/errors';
-import { Loader2, Save } from 'lucide-react';
+import { Loader2, Save, CalendarPlus } from 'lucide-react';
 import { toast } from 'sonner';
+import { useCalendarAdmins } from '@/hooks/useCalendarAdmins';
+import { EVENT_TYPES, inputToMinutes, todayET } from '@/lib/calendarTime';
 
 export interface PendingStageNote {
   applicantId: string;
@@ -22,15 +29,77 @@ interface Props {
 export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
+  const { admins } = useCalendarAdmins();
+
+  // Calendar section
+  const [addToCalendar, setAddToCalendar] = useState(false);
+  const [calDate, setCalDate] = useState(todayET());
+  const [calStart, setCalStart] = useState('10:00');
+  const [calEnd, setCalEnd] = useState('11:00');
+  const [calType, setCalType] = useState('task');
+  const [calAdmin, setCalAdmin] = useState('');
+  const [calDesc, setCalDesc] = useState('');
 
   useEffect(() => {
-    if (pending) {
-      setContent('');
-      setSaving(false);
-    }
+    if (!pending) return;
+    setContent('');
+    setSaving(false);
+    setAddToCalendar(false);
+    setCalDate(todayET());
+    setCalStart('10:00');
+    setCalEnd('11:00');
+    setCalType('task');
+    setCalDesc(`Stage moved to ${pending.newStatus} — ${pending.candidateName}`);
+
+    let cancelled = false;
+    (async () => {
+      const [{ data: { user } }, { data: applicant }] = await Promise.all([
+        supabase.auth.getUser(),
+        supabase.from('applicants_prescreen').select('job_id').eq('id', pending.applicantId).maybeSingle(),
+      ]);
+      let adminId = user?.id || '';
+      if (applicant?.job_id) {
+        const { data: job } = await supabase
+          .from('jobs')
+          .select('assigned_admin_id')
+          .eq('id', applicant.job_id)
+          .maybeSingle();
+        if (job?.assigned_admin_id) adminId = job.assigned_admin_id;
+      }
+      if (!cancelled) setCalAdmin(adminId);
+    })();
+    return () => { cancelled = true; };
   }, [pending]);
 
   if (!pending) return null;
+
+  const createCalendarEvent = async (userId: string | undefined) => {
+    const s = inputToMinutes(calStart);
+    const e = inputToMinutes(calEnd);
+    if (e <= s) {
+      toast.error('Calendar end time must be after start time');
+      return false;
+    }
+    const owner = calAdmin || userId;
+    const { error } = await supabase.from('calendar_events').insert({
+      title: `${pending.newStatus} — ${pending.candidateName}`,
+      description: calDesc.trim() || null,
+      event_date: calDate,
+      start_time: s,
+      end_time: e,
+      event_type: calType,
+      created_by: owner,
+      assigned_to: owner ? [owner] : [],
+      is_recurring: false,
+      recurrence_rule: null,
+      pipeline_link: { type: 'applicant', id: pending.applicantId, name: pending.candidateName },
+    });
+    if (error) {
+      toast.error(getErrorMessageSync(error, 'Failed to create calendar activity'));
+      return false;
+    }
+    return true;
+  };
 
   const handleSave = async () => {
     if (!content || content === '<p></p>') {
@@ -44,19 +113,36 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
       content,
       created_by: user?.id || null,
     });
-    setSaving(false);
     if (error) {
+      setSaving(false);
       toast.error(getErrorMessageSync(error, 'Failed to save note'));
       return;
     }
-    toast.success('Note added');
+
+    let calendarCreated = false;
+    if (addToCalendar) calendarCreated = await createCalendarEvent(user?.id);
+    setSaving(false);
+
+    toast.success(calendarCreated ? 'Stage updated and calendar activity created' : 'Note added');
     onSaved?.();
+    onOpenChange(false);
+  };
+
+  const handleSkip = async () => {
+    if (addToCalendar) {
+      setSaving(true);
+      const { data: { user } } = await supabase.auth.getUser();
+      const ok = await createCalendarEvent(user?.id);
+      setSaving(false);
+      if (!ok) return;
+      toast.success('Stage updated and calendar activity created');
+    }
     onOpenChange(false);
   };
 
   return (
     <Dialog open={!!pending} onOpenChange={(o) => { if (!o) onOpenChange(false); }}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg max-h-[88vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add a note</DialogTitle>
           <DialogDescription>
@@ -73,8 +159,73 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
           autoFocus
         />
 
+        <div className="rounded-md border p-3 space-y-3">
+          <label className="flex items-center gap-2 text-sm cursor-pointer">
+            <Checkbox
+              checked={addToCalendar}
+              onCheckedChange={(v) => setAddToCalendar(v === true)}
+            />
+            <CalendarPlus className="w-4 h-4 text-muted-foreground" />
+            <span>Add to calendar</span>
+          </label>
+
+          {addToCalendar && (
+            <div className="space-y-3 pt-1">
+              <div className="grid grid-cols-3 gap-2">
+                <div className="space-y-1.5">
+                  <Label htmlFor="sn-date" className="text-xs">Date</Label>
+                  <Input id="sn-date" type="date" value={calDate} onChange={(e) => setCalDate(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="sn-start" className="text-xs">Start (ET)</Label>
+                  <Input id="sn-start" type="time" value={calStart} onChange={(e) => setCalStart(e.target.value)} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="sn-end" className="text-xs">End (ET)</Label>
+                  <Input id="sn-end" type="time" value={calEnd} onChange={(e) => setCalEnd(e.target.value)} />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Activity type</Label>
+                  <Select value={calType} onValueChange={setCalType}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {EVENT_TYPES.map((t) => (
+                        <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Assigned to</Label>
+                  <Select value={calAdmin} onValueChange={setCalAdmin}>
+                    <SelectTrigger><SelectValue placeholder="Select admin" /></SelectTrigger>
+                    <SelectContent>
+                      {admins.map((a) => (
+                        <SelectItem key={a.user_id} value={a.user_id}>{a.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="sn-desc" className="text-xs">Description</Label>
+                <Textarea id="sn-desc" rows={2} value={calDesc} onChange={(e) => setCalDesc(e.target.value)} />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label className="text-xs">Link</Label>
+                <Input readOnly value={`Applicant · ${pending.candidateName}`} className="bg-muted" />
+              </div>
+            </div>
+          )}
+        </div>
+
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={saving}>
+          <Button variant="ghost" onClick={handleSkip} disabled={saving}>
             Skip
           </Button>
           <Button onClick={handleSave} disabled={saving}>
