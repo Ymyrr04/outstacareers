@@ -46,6 +46,7 @@ export const AddActivityModal = ({
   onSaved,
 }: Props) => {
   const { toast } = useToast();
+  const { notifyCalendarActivity } = useSlackNotifications();
   const titleRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState('');
   const [type, setType] = useState('task');
