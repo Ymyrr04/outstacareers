@@ -269,10 +269,18 @@ Deno.serve(async (req) => {
         { type: "divider" },
       ];
     } else if (payload.type === "calendar_activity") {
+      // When fired from the DB trigger we only get user IDs — resolve them to emails.
+      if (!payload.createdByEmail && payload.createdById) {
+        payload.createdByEmail = (await resolveEmails([payload.createdById]))[0];
+      }
+      if ((!payload.assignedToEmails || !payload.assignedToEmails.length) && payload.assignedToIds?.length) {
+        payload.assignedToEmails = await resolveEmails(payload.assignedToIds);
+      }
       const createdByName = getDisplayName(payload.createdByEmail);
       const assignedEmails = (payload.assignedToEmails || []).filter(Boolean);
       const assignedMentions = await Promise.all(assignedEmails.map((e) => mentionOrName(e)));
       const assignedStr = assignedMentions.length ? assignedMentions.join(", ") : "Unassigned";
+
 
       const timeRange = `${minutesToTime(payload.startTime || 0)} - ${minutesToTime(payload.endTime || 0)}`;
       const dateLabel = formatDateET(payload.eventDate || "");
