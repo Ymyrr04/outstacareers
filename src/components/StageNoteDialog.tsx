@@ -31,6 +31,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
   const [content, setContent] = useState('');
   const [saving, setSaving] = useState(false);
   const { admins } = useCalendarAdmins();
+  const { notifyCalendarActivity } = useSlackNotifications();
 
   // Calendar section
   const [addToCalendar, setAddToCalendar] = useState(false);
