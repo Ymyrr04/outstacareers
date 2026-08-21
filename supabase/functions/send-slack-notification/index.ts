@@ -101,7 +101,14 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const SLACK_CHANNEL = Deno.env.get("SLACK_CHANNEL") || "#hiring-pipeline";
+  const DEFAULT_CHANNEL = Deno.env.get("SLACK_CHANNEL") || "#hiring-pipeline";
+  // Optional per-type channel routing (Slack channel name or ID)
+  const CHANNEL_BY_TYPE: Record<string, string | undefined> = {
+    calendar_activity: Deno.env.get("SLACK_CHANNEL_CALENDAR") || undefined,
+    mention: Deno.env.get("SLACK_CHANNEL_MENTIONS") || undefined,
+    new_request: Deno.env.get("SLACK_CHANNEL_REQUESTS") || undefined,
+    status_change: Deno.env.get("SLACK_CHANNEL_STATUS") || undefined,
+  };
 
   try {
     const payload: SlackPayload = await req.json();
