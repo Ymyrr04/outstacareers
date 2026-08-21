@@ -125,6 +125,11 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
           .map((a) => a.email),
       ),
     );
+    // Always notify the people assigned to the task and its creator
+    const assignedToEmails = (event.assigned_to || [])
+      .map((id) => admins.find((a) => a.user_id === id)?.email)
+      .filter(Boolean) as string[];
+    const creatorEmail = admins.find((a) => a.user_id === event.created_by)?.email;
     if (commenter?.email) {
       notifyCalendarComment({
         commentByEmail: commenter.email,
@@ -132,8 +137,11 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
         activityTitleForComment: event.title,
         eventDateForComment: event.event_date,
         mentionedEmails,
+        assignedToEmails,
+        createdByEmail: creatorEmail || undefined,
       }).catch((err) => console.error('[Slack] Calendar comment notification failed:', err));
     }
+
 
   };
 
