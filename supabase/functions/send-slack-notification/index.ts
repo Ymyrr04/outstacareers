@@ -336,6 +336,49 @@ Deno.serve(async (req) => {
         { type: "divider" },
       ];
 
+    } else if (payload.type === "calendar_update") {
+      const updatedByName = getDisplayName(payload.updatedByEmail);
+      const dateLabel = formatDateET(payload.eventDate || "");
+      const updateType = payload.updateType || "updated";
+
+      const emojiMap: Record<string, string> = {
+        done: "✅",
+        undo: "↩️",
+        assigned: "👤",
+        unassigned: "👤",
+        notes: "📝",
+        deleted: "🗑️",
+      };
+      const emoji = emojiMap[updateType] || "✏️";
+
+      const labelMap: Record<string, string> = {
+        done: "marked as done",
+        undo: "reopened (undone)",
+        assigned: "assigned",
+        unassigned: "unassigned",
+        notes: "updated meeting notes",
+        deleted: "deleted",
+      };
+      const actionLabel = labelMap[updateType] || "updated";
+
+      text = `${emoji} ${updatedByName} ${actionLabel} "${payload.activityTitle || "Calendar activity"}"`;
+      blocks = [
+        {
+          type: "section",
+          text: { type: "mrkdwn", text: `${emoji} *${updatedByName}* ${actionLabel} a calendar activity` },
+        },
+        {
+          type: "section",
+          fields: [
+            { type: "mrkdwn", text: `*Activity:*\n${payload.activityTitle || "Untitled"}` },
+            { type: "mrkdwn", text: `*Date:*\n${dateLabel}` },
+          ],
+        },
+        ...(payload.updateDetail
+          ? [{ type: "section", text: { type: "mrkdwn", text: `*Detail:*\n${payload.updateDetail}` } }]
+          : []),
+        { type: "divider" },
+      ];
     } else {
       return new Response(
         JSON.stringify({ success: false, error: "Invalid notification type" }),
