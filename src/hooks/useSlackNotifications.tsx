@@ -70,5 +70,9 @@ export function useSlackNotifications() {
     return invokeSlackNotification({ type: 'status_change', ...payload });
   };
 
-  return { notifyMention, notifyNewRequest, notifyStatusChange };
+  const notifyCalendarActivity = async (payload: CalendarActivityPayload) => {
+    return invokeSlackNotification({ type: 'calendar_activity', ...payload });
+  };
+
+  return { notifyMention, notifyNewRequest, notifyStatusChange, notifyCalendarActivity };
 }
