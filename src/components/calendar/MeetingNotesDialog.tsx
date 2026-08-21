@@ -56,7 +56,7 @@ export const MeetingNotesDialog = ({ open, onOpenChange, event, adminName, onSav
       };
       const { error: clientError } = await supabase
         .from('clients')
-        .update({ calendar_notes: [...existing, entry] as unknown as Record<string, unknown>[] })
+        .update({ calendar_notes: [...existing, entry] as unknown as string })
         .eq('id', link.id);
       if (clientError) {
         toast({
