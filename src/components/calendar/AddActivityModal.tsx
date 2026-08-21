@@ -186,8 +186,17 @@ export const AddActivityModal = ({
       setError('End time must be after start time');
       return;
     }
-    setSaving(true);
     const owner = adminId || currentUserId;
+    if (owner && conflicts.has(owner)) {
+      setError(`Owner is not available — ${conflictLabel(owner)}`);
+      return;
+    }
+    const busyPicked = extraAssignees.filter((id) => conflicts.has(id));
+    if (busyPicked.length) {
+      setError('Some selected admins already have an activity at this time');
+      return;
+    }
+    setSaving(true);
     const assignedToIds = Array.from(new Set([...(owner ? [owner] : []), ...extraAssignees]));
     const { error: dbError } = await supabase.from('calendar_events').insert({
       title: title.trim(),
