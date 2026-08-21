@@ -88,6 +88,8 @@ interface SlackPayload {
   commentText?: string;
   activityTitleForComment?: string;
   eventDateForComment?: string;
+  mentionedEmails?: string[];
+
 }
 
 function minutesToTime(min: number): string {
