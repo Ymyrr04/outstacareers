@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { NotesEditor } from '@/components/NotesEditor';
 import { supabase } from '@/integrations/supabase/client';
 import { getErrorMessageSync } from '@/lib/errors';
+import { useSlackNotifications } from '@/hooks/useSlackNotifications';
 import { Loader2, Save, CalendarPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCalendarAdmins } from '@/hooks/useCalendarAdmins';
