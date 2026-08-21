@@ -23,6 +23,7 @@ import {
   DEADLINE_COLOR,
 } from '@/lib/calendarTime';
 import MeetingNotesDialog from './MeetingNotesDialog';
+import { CandidateDetailDialog } from '@/components/CandidateDetailDialog';
 import { useToast } from '@/hooks/use-toast';
 
 interface Comment {
@@ -69,6 +70,7 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
   const [posting, setPosting] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [togglingDone, setTogglingDone] = useState(false);
+  const [candidateOpen, setCandidateOpen] = useState(false);
   const link = event.pipeline_link || null;
   const linkStyle = link ? pipelineLinkStyle(link.type) : null;
   const deadline = isDeadline(event.event_type);
