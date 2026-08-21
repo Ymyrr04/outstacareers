@@ -85,6 +85,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
       return false;
     }
     const owner = calAdmin || userId;
+    const assignedToIds = owner ? [owner] : [];
     const { error } = await supabase.from('calendar_events').insert({
       title: calTitle.trim() || `${pending.newStatus} — ${pending.candidateName}`,
       description: calDesc.trim() || null,
@@ -93,7 +94,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
       end_time: e,
       event_type: calType,
       created_by: owner,
-      assigned_to: owner ? [owner] : [],
+      assigned_to: assignedToIds,
       is_recurring: false,
       recurrence_rule: null,
       pipeline_link: { type: 'applicant', id: pending.applicantId, name: pending.candidateName },
@@ -102,6 +103,22 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
       toast.error(getErrorMessageSync(error, 'Failed to create calendar activity'));
       return false;
     }
+    // Fire Slack notification (fire-and-forget)
+    const creatorEmail = admins.find((a) => a.user_id === userId)?.email;
+    const assignedToEmails = assignedToIds
+      .map((id) => admins.find((a) => a.user_id === id)?.email)
+      .filter(Boolean) as string[];
+    notifyCalendarActivity({
+      activityTitle: calTitle.trim() || `${pending.newStatus} — ${pending.candidateName}`,
+      eventType: calType,
+      eventDate: calDate,
+      startTime: s,
+      endTime: e,
+      createdByEmail: creatorEmail || '',
+      assignedToEmails,
+      activityDescription: calDesc.trim() || undefined,
+      pipelineLinkName: `Applicant: ${pending.candidateName}`,
+    }).catch((err) => console.error('[Slack] calendar activity notification failed:', err));
     return true;
   };
 
