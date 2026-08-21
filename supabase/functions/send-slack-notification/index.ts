@@ -59,17 +59,22 @@ function minutesToTime(min: number): string {
 function formatDateET(dateStr: string): string {
   if (!dateStr) return "";
   try {
-    const d = new Date(dateStr + "T00:00:00");
-    return d.toLocaleDateString("en-US", {
+    // dateStr is a plain calendar date (YYYY-MM-DD) already in ET.
+    // Parse it as UTC and format as UTC so no timezone shift occurs.
+    const [y, m, d] = dateStr.split("-").map(Number);
+    if (!y || !m || !d) return dateStr;
+    const dt = new Date(Date.UTC(y, m - 1, d));
+    return dt.toLocaleDateString("en-US", {
       weekday: "short",
       month: "short",
       day: "numeric",
-      timeZone: "America/New_York",
+      timeZone: "UTC",
     });
   } catch {
     return dateStr;
   }
 }
+
 
 async function postToSlack(channel: string, text: string, blocks: unknown[]) {
   const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
