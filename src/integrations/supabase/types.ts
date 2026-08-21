@@ -225,6 +225,7 @@ export type Database = {
           honeypot_field: string | null
           id: string
           internet_speed: string
+          interview_invite_sent_at: string | null
           ip_hash: string | null
           is_available: boolean | null
           is_starred: boolean | null
@@ -287,6 +288,7 @@ export type Database = {
           honeypot_field?: string | null
           id?: string
           internet_speed: string
+          interview_invite_sent_at?: string | null
           ip_hash?: string | null
           is_available?: boolean | null
           is_starred?: boolean | null
@@ -349,6 +351,7 @@ export type Database = {
           honeypot_field?: string | null
           id?: string
           internet_speed?: string
+          interview_invite_sent_at?: string | null
           ip_hash?: string | null
           is_available?: boolean | null
           is_starred?: boolean | null

@@ -132,6 +132,11 @@ export function InterviewInviteDialog({ open, onOpenChange, applicant }: Intervi
 
       if (error) throw error;
 
+      await supabase
+        .from('applicants_prescreen')
+        .update({ interview_invite_sent_at: new Date().toISOString() })
+        .eq('id', applicant.id);
+
       toast({
         title: "Interview invite sent!",
         description: `Email sent to ${applicant.email}`,
