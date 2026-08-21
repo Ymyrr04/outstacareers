@@ -27,6 +27,18 @@ interface StatusChangePayload {
   changedByEmail: string;
 }
 
+interface CalendarActivityPayload {
+  activityTitle: string;
+  eventType: string;
+  eventDate: string;
+  startTime: number;
+  endTime: number;
+  createdByEmail: string;
+  assignedToEmails: string[];
+  activityDescription?: string;
+  pipelineLinkName?: string;
+}
+
 async function invokeSlackNotification(payload: Record<string, unknown>) {
   try {
     const { data, error } = await supabase.functions.invoke('send-slack-notification', {
