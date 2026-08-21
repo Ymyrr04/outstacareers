@@ -8,6 +8,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSlackNotifications } from '@/hooks/useSlackNotifications';
 import { CalendarAdmin } from '@/hooks/useCalendarAdmins';
 import {
   EVENT_TYPES,
@@ -45,6 +46,7 @@ export const AddActivityModal = ({
   onSaved,
 }: Props) => {
   const { toast } = useToast();
+  const { notifyCalendarActivity } = useSlackNotifications();
   const titleRef = useRef<HTMLInputElement>(null);
   const [title, setTitle] = useState('');
   const [type, setType] = useState('task');
@@ -130,6 +132,7 @@ export const AddActivityModal = ({
     }
     setSaving(true);
     const owner = adminId || currentUserId;
+    const assignedToIds = Array.from(new Set([...(owner ? [owner] : []), ...extraAssignees]));
     const { error: dbError } = await supabase.from('calendar_events').insert({
       title: title.trim(),
       description: description.trim() || null,
@@ -138,7 +141,7 @@ export const AddActivityModal = ({
       end_time: e,
       event_type: type,
       created_by: owner,
-      assigned_to: Array.from(new Set([...(owner ? [owner] : []), ...extraAssignees])),
+      assigned_to: assignedToIds,
       is_recurring: repeat !== 'none',
       recurrence_rule: repeat === 'none' ? null : repeat,
       pipeline_link: pipelineLink as unknown as Record<string, string> | null,
@@ -148,6 +151,22 @@ export const AddActivityModal = ({
       toast({ title: 'Could not save activity', description: dbError.message, variant: 'destructive' });
       return;
     }
+    // Fire Slack notification (fire-and-forget)
+    const creatorEmail = admins.find((a) => a.user_id === currentUserId)?.email;
+    const assignedToEmails = assignedToIds
+      .map((id) => admins.find((a) => a.user_id === id)?.email)
+      .filter(Boolean) as string[];
+    notifyCalendarActivity({
+      activityTitle: title.trim(),
+      eventType: type,
+      eventDate: date,
+      startTime: s,
+      endTime: e,
+      createdByEmail: creatorEmail || '',
+      assignedToEmails,
+      activityDescription: description.trim() || undefined,
+      pipelineLinkName: pipelineLink?.name || undefined,
+    }).catch((err) => console.error('[Slack] calendar activity notification failed:', err));
     onOpenChange(false);
     onSaved(date);
   };

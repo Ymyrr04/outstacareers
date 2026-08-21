@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { getErrorMessageSync } from '@/lib/errors';
+import { useSlackNotifications } from '@/hooks/useSlackNotifications';
 import { Loader2, CalendarPlus } from 'lucide-react';
 import { toast } from 'sonner';
 import { useCalendarAdmins } from '@/hooks/useCalendarAdmins';
@@ -29,6 +30,7 @@ export function AddCandidateCalendarDialog({
   jobId,
 }: Props) {
   const { admins } = useCalendarAdmins();
+  const { notifyCalendarActivity } = useSlackNotifications();
   const [title, setTitle] = useState('');
   const [type, setType] = useState('followup');
   const [adminId, setAdminId] = useState('');
@@ -79,6 +81,7 @@ export function AddCandidateCalendarDialog({
     setSaving(true);
     const { data: { user } } = await supabase.auth.getUser();
     const owner = adminId || user?.id;
+    const assignedToIds = owner ? [owner] : [];
     const { error } = await supabase.from('calendar_events').insert({
       title: title.trim(),
       description: description.trim() || null,
@@ -87,7 +90,7 @@ export function AddCandidateCalendarDialog({
       end_time: e,
       event_type: type,
       created_by: owner,
-      assigned_to: owner ? [owner] : [],
+      assigned_to: assignedToIds,
       is_recurring: false,
       recurrence_rule: null,
       pipeline_link: { type: 'applicant', id: applicantId, name: applicantName },
@@ -97,6 +100,22 @@ export function AddCandidateCalendarDialog({
       toast.error(getErrorMessageSync(error, 'Failed to create calendar activity'));
       return;
     }
+    // Fire Slack notification (fire-and-forget)
+    const creatorEmail = admins.find((a) => a.user_id === user?.id)?.email;
+    const assignedToEmails = assignedToIds
+      .map((id) => admins.find((a) => a.user_id === id)?.email)
+      .filter(Boolean) as string[];
+    notifyCalendarActivity({
+      activityTitle: title.trim(),
+      eventType: type,
+      eventDate: date,
+      startTime: s,
+      endTime: e,
+      createdByEmail: creatorEmail || '',
+      assignedToEmails,
+      activityDescription: description.trim() || undefined,
+      pipelineLinkName: `Applicant: ${applicantName}`,
+    }).catch((err) => console.error('[Slack] calendar activity notification failed:', err));
     toast.success('Activity added to calendar');
     onOpenChange(false);
   };
