@@ -30,6 +30,7 @@ export function AddCandidateCalendarDialog({
   jobId,
 }: Props) {
   const { admins } = useCalendarAdmins();
+  const { notifyCalendarActivity } = useSlackNotifications();
   const [title, setTitle] = useState('');
   const [type, setType] = useState('followup');
   const [adminId, setAdminId] = useState('');
