@@ -506,6 +506,7 @@ export type Database = {
           event_type: string
           id: string
           is_recurring: boolean
+          pipeline_link: Json | null
           recurrence_rule: string | null
           start_time: number
           title: string
@@ -521,6 +522,7 @@ export type Database = {
           event_type?: string
           id?: string
           is_recurring?: boolean
+          pipeline_link?: Json | null
           recurrence_rule?: string | null
           start_time: number
           title: string
@@ -536,6 +538,7 @@ export type Database = {
           event_type?: string
           id?: string
           is_recurring?: boolean
+          pipeline_link?: Json | null
           recurrence_rule?: string | null
           start_time?: number
           title?: string
