@@ -13,6 +13,7 @@ import { toast } from 'sonner';
 // Canonical superset of pipeline stages used across admin.
 const ALL_STAGES = [
   'For Review',
+  'Qualified',
   'For Interview',
   'SIV',
   'Pitch',
@@ -28,6 +29,7 @@ const ALL_STAGES = [
 
 const DEFAULT_COLORS: Record<string, string> = {
   'For Review': '#3b82f6',
+  'Qualified': '#0891b2',
   'For Interview': '#6366f1',
   'SIV': '#8b5cf6',
   'Pitch': '#d946ef',
@@ -40,6 +42,7 @@ const DEFAULT_COLORS: Record<string, string> = {
   'Archive': '#6b7280',
   'Archived': '#6b7280',
 };
+
 
 const DEFAULT_DISPLAY: Record<string, string> = {
   'Talent Pool': 'Bench',

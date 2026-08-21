@@ -23,7 +23,9 @@ import { StageTimingBreakdown, type StageTiming, type TransitionTiming } from '@
 
 const FUNNEL_STAGES = [
   'For Review',
+  'Qualified',
   'For Interview',
+
   'SIV',
   'Pitch',
   'Client Interview',
