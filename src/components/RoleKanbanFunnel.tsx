@@ -43,6 +43,7 @@ import { useEmailTemplates, statusToTrigger } from '@/hooks/useEmailTemplates';
 import { addMinutes } from 'date-fns';
 import { StageEmailConfirmDialog, type PendingStageEmail } from '@/components/StageEmailConfirmDialog';
 import { StageNoteDialog, type PendingStageNote } from '@/components/StageNoteDialog';
+import { AddCandidateCalendarDialog } from '@/components/AddCandidateCalendarDialog';
 import { useStageSettings } from '@/hooks/useStageSettings';
 
 const FUNNEL_STAGES = [
