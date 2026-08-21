@@ -18,7 +18,7 @@ function getDisplayName(email: string | null | undefined): string {
 }
 
 interface SlackPayload {
-  type: "mention" | "new_request" | "status_change" | "calendar_activity";
+  type: "mention" | "new_request" | "status_change" | "calendar_activity" | "calendar_comment";
   channel?: string;
   mentionedEmail?: string;
   mentionedByEmail?: string;
@@ -41,6 +41,11 @@ interface SlackPayload {
   assignedToEmails?: string[];
   activityDescription?: string;
   pipelineLinkName?: string;
+  // Calendar comment
+  commentByEmail?: string;
+  commentText?: string;
+  activityTitleForComment?: string;
+  eventDateForComment?: string;
 }
 
 function minutesToTime(min: number): string {
@@ -105,6 +110,7 @@ Deno.serve(async (req) => {
   // Optional per-type channel routing (Slack channel name or ID)
   const CHANNEL_BY_TYPE: Record<string, string | undefined> = {
     calendar_activity: Deno.env.get("SLACK_CHANNEL_CALENDAR") || undefined,
+    calendar_comment: Deno.env.get("SLACK_CHANNEL_CALENDAR") || undefined,
     mention: Deno.env.get("SLACK_CHANNEL_MENTIONS") || undefined,
     new_request: Deno.env.get("SLACK_CHANNEL_REQUESTS") || undefined,
     status_change: Deno.env.get("SLACK_CHANNEL_STATUS") || undefined,
@@ -237,6 +243,35 @@ Deno.serve(async (req) => {
       }
 
       blocks.push({ type: "divider" });
+    } else if (payload.type === "calendar_comment") {
+      const commentedByName = getDisplayName(payload.commentByEmail);
+      const dateLabel = formatDateET(payload.eventDateForComment || "");
+      const cleanComment = (payload.commentText || "")
+        .replace(/<[^>]*>/g, "")
+        .substring(0, 300);
+
+      text = `💬 ${commentedByName} commented on "${payload.activityTitleForComment || "Calendar activity"}"`;
+      blocks = [
+        {
+          type: "section",
+          text: { type: "mrkdwn", text: `💬 *${commentedByName}* commented on a calendar activity` },
+        },
+        {
+          type: "section",
+          fields: [
+            { type: "mrkdwn", text: `*Activity:*\n${payload.activityTitleForComment || "Untitled"}` },
+            { type: "mrkdwn", text: `*Date:*\n${dateLabel}` },
+          ],
+        },
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `*Comment:*\n>${cleanComment}${cleanComment.length >= 300 ? "..." : ""}`,
+          },
+        },
+        { type: "divider" },
+      ];
     } else {
       return new Response(
         JSON.stringify({ success: false, error: "Invalid notification type" }),

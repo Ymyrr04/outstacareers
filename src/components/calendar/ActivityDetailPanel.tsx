@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { useSlackNotifications } from '@/hooks/useSlackNotifications';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -64,6 +65,7 @@ const Avatar = ({ admin, size = 24 }: { admin?: CalendarAdmin; size?: number }) 
 
 export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onChanged, className }: Props) => {
   const { toast } = useToast();
+  const { notifyCalendarComment } = useSlackNotifications();
   const owner = admins.find((a) => a.user_id === event.created_by);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -105,6 +107,17 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
     }
     setNewComment('');
     loadComments();
+
+    // Fire Slack notification (non-blocking)
+    const commenter = admins.find((a) => a.user_id === currentUserId);
+    if (commenter?.email) {
+      notifyCalendarComment({
+        commentByEmail: commenter.email,
+        commentText: text,
+        activityTitleForComment: event.title,
+        eventDateForComment: event.event_date,
+      }).catch((err) => console.error('[Slack] Calendar comment notification failed:', err));
+    }
   };
 
   const toggleAssignee = async (userId: string) => {

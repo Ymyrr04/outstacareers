@@ -39,6 +39,13 @@ interface CalendarActivityPayload {
   pipelineLinkName?: string;
 }
 
+interface CalendarCommentPayload {
+  commentByEmail: string;
+  commentText: string;
+  activityTitleForComment: string;
+  eventDateForComment: string;
+}
+
 async function invokeSlackNotification(payload: Record<string, unknown>) {
   try {
     const { data, error } = await supabase.functions.invoke('send-slack-notification', {
@@ -74,5 +81,9 @@ export function useSlackNotifications() {
     return invokeSlackNotification({ type: 'calendar_activity', ...payload });
   };
 
-  return { notifyMention, notifyNewRequest, notifyStatusChange, notifyCalendarActivity };
+  const notifyCalendarComment = async (payload: CalendarCommentPayload) => {
+    return invokeSlackNotification({ type: 'calendar_comment', ...payload });
+  };
+
+  return { notifyMention, notifyNewRequest, notifyStatusChange, notifyCalendarActivity, notifyCalendarComment };
 }
