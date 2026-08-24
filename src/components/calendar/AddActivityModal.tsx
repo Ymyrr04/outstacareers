@@ -241,7 +241,7 @@ export const AddActivityModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[520px]">
+      <DialogContent className="sm:max-w-[520px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Add activity</DialogTitle>
         </DialogHeader>
