@@ -28,6 +28,51 @@ import {
   todayET,
 } from '@/lib/calendarTime';
 
+/**
+ * Compute a side-by-side column layout for overlapping calendar events so
+ * they never stack on top of each other (each remains independently clickable).
+ * Returns a map of event id -> { col (0-based), cols (total columns in its cluster) }.
+ */
+function computeOverlapLayout(events: { id: string; start_time: number; end_time: number }[]): Map<string, { col: number; cols: number }> {
+  const result = new Map<string, { col: number; cols: number }>();
+  if (events.length === 0) return result;
+  const sorted = [...events].sort((a, b) => a.start_time - b.start_time || a.end_time - b.end_time);
+  const colEnds: number[] = [];
+  const colOf = new Map<string, number>();
+  for (const ev of sorted) {
+    let placed = false;
+    for (let ci = 0; ci < colEnds.length; ci++) {
+      if (colEnds[ci] <= ev.start_time) {
+        colOf.set(ev.id, ci);
+        colEnds[ci] = ev.end_time;
+        placed = true;
+        break;
+      }
+    }
+    if (!placed) {
+      colOf.set(ev.id, colEnds.length);
+      colEnds.push(ev.end_time);
+    }
+  }
+  let i = 0;
+  while (i < sorted.length) {
+    let clusterEnd = sorted[i].end_time;
+    let maxCol = colOf.get(sorted[i].id)!;
+    let j = i;
+    while (j < sorted.length && sorted[j].start_time < clusterEnd) {
+      clusterEnd = Math.max(clusterEnd, sorted[j].end_time);
+      maxCol = Math.max(maxCol, colOf.get(sorted[j].id)!);
+      j++;
+    }
+    const cols = maxCol + 1;
+    for (let k = i; k < j; k++) {
+      result.set(sorted[k].id, { col: colOf.get(sorted[k].id)!, cols });
+    }
+    i = j;
+  }
+  return result;
+}
+
 const AdminDot = ({ admin, size = 18 }: { admin?: CalendarAdmin; size?: number }) => {
   const color = admin?.color ?? colorForIndex(99);
   return (
@@ -467,6 +512,7 @@ export const TeamCalendar = () => {
                   !e.time_tbd &&
                   (e.created_by === admin.user_id || (e.assigned_to || []).includes(admin.user_id))
               );
+              const laneLayout = computeOverlapLayout(laneEvents);
 
               return (
                 <div key={admin.user_id} className="flex-1 min-w-[120px] border-l-[0.5px] border-border">
@@ -550,14 +596,19 @@ export const TeamCalendar = () => {
                       const deadline = isDeadline(ev.event_type);
                       const color = deadline ? DEADLINE_COLOR : admin.color;
                       const done = !!ev.is_done;
+                      const lay = laneLayout.get(ev.id) ?? { col: 0, cols: 1 };
+                      const leftPct = (lay.col / lay.cols) * 100;
+                      const widthPct = (1 / lay.cols) * 100;
                       return (
                         <button
                           key={ev.id}
                           onClick={() => setSelectedEvent(ev)}
-                          className="absolute left-[2px] right-[2px] z-10 overflow-hidden px-1 py-0.5 text-left"
+                          className="absolute z-10 overflow-hidden px-1 py-0.5 text-left"
                           style={{
                             top,
                             height,
+                            left: `calc(${leftPct}% + 2px)`,
+                            width: `calc(${widthPct}% - 4px)`,
                             background: color.bg,
                             color: color.text,
                             borderLeft: `3px solid ${color.main}`,
