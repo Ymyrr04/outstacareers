@@ -107,7 +107,7 @@ export const MyCalendarDialog = ({ open, onOpenChange, currentUserId }: Props) =
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open && !addOpen} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <div className="flex items-center justify-between gap-3 pr-8">
