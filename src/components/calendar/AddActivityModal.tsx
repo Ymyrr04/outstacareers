@@ -237,6 +237,8 @@ export const AddActivityModal = ({
       pipeline_link: pipelineLink as unknown as Record<string, string> | null,
       is_open_task: isUnassigned,
       time_tbd: noTime,
+      notify_slack: notifySlack,
+
     } as never);
     setSaving(false);
     if (dbError) {
