@@ -185,14 +185,30 @@ export const AddActivityModal = ({
 
   useEffect(() => {
     if (!open) return;
-    setTitle('');
-    setType('task');
     setAddingType(false);
     setNewType('');
+    setError(null);
+
+    if (editEvent) {
+      setTitle(editEvent.title);
+      setType(editEvent.event_type);
+      setDescription(editEvent.description ?? '');
+      setRepeat(editEvent.is_recurring ? editEvent.recurrence_rule || 'weekly' : 'none');
+      setPipelineLink(editEvent.pipeline_link ?? null);
+      setNoTime(!!editEvent.time_tbd);
+      setNotifySlack(false);
+      setAdminId(editEvent.is_open_task ? UNASSIGNED : editEvent.created_by || '');
+      setExtraAssignees((editEvent.assigned_to || []).filter((id) => id !== editEvent.created_by));
+      setStart(minutesToInput(editEvent.start_time));
+      setEnd(minutesToInput(editEvent.end_time));
+      return;
+    }
+
+    setTitle('');
+    setType('task');
     setDescription('');
     setRepeat('none');
     setPipelineLink(null);
-    setError(null);
     setNoTime(false);
     setNotifySlack(false);
     setExtraAssignees(defaultAssignees ?? []);
@@ -200,7 +216,7 @@ export const AddActivityModal = ({
     setAdminId(defaultAdminId || currentUserId || admins[0]?.user_id || '');
     setStart(minutesToInput(defaultStart));
     setEnd(minutesToInput(Math.min(defaultEnd ?? defaultStart + 60, 23 * 60 + 59)));
-  }, [open, defaultStart, defaultEnd, defaultAdminId, defaultAssignees, currentUserId, admins]);
+  }, [open, editEvent, defaultStart, defaultEnd, defaultAdminId, defaultAssignees, currentUserId, admins]);
 
   const handleSave = async () => {
     setError(null);
