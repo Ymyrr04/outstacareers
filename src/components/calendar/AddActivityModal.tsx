@@ -190,7 +190,9 @@ export const AddActivityModal = ({
     setPipelineLink(null);
     setError(null);
     setNoTime(false);
+    setNotifySlack(false);
     setExtraAssignees(defaultAssignees ?? []);
+
     setAdminId(defaultAdminId || currentUserId || admins[0]?.user_id || '');
     setStart(minutesToInput(defaultStart));
     setEnd(minutesToInput(Math.min(defaultEnd ?? defaultStart + 60, 23 * 60 + 59)));
