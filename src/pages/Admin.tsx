@@ -295,7 +295,12 @@ const Admin = () => {
   useEffect(() => {
     void fetchOpenTaskCount();
     const intervalId = window.setInterval(() => void fetchOpenTaskCount(), 30000);
-    return () => window.clearInterval(intervalId);
+    const onChange = () => void fetchOpenTaskCount();
+    window.addEventListener('open-tasks-changed', onChange);
+    return () => {
+      window.clearInterval(intervalId);
+      window.removeEventListener('open-tasks-changed', onChange);
+    };
   }, [fetchOpenTaskCount]);
 
   // Background auto-sync so new candidate replies are stored before opening a thread
