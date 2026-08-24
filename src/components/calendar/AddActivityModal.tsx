@@ -486,7 +486,7 @@ export const AddActivityModal = ({
           <span className="text-xs text-muted-foreground self-center">{formatDateLong(date)}</span>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={saving}>Save activity</Button>
+            <Button onClick={handleSave} disabled={saving}>{editEvent ? 'Save changes' : 'Save activity'}</Button>
           </div>
         </DialogFooter>
       </DialogContent>
