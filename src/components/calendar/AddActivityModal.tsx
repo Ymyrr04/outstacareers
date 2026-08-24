@@ -397,7 +397,7 @@ export const AddActivityModal = ({
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="ce-start">Start (ET)</Label>
-                  <TimeSelect id="ce-start" value={start} onChange={setStart} />
+                  <TimeSelect id="ce-start" value={start} onChange={handleStartChange} />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="ce-end">End (ET)</Label>
