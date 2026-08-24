@@ -281,8 +281,18 @@ Deno.serve(async (req) => {
       }
       const createdByName = getDisplayName(payload.createdByEmail);
       const assignedEmails = (payload.assignedToEmails || []).filter(Boolean);
-      const assignedMentions = await Promise.all(assignedEmails.map((e) => mentionOrName(e)));
-      const assignedStr = assignedMentions.length ? assignedMentions.join(", ") : "Unassigned";
+      let assignedStr: string;
+      if (assignedEmails.length) {
+        const assignedMentions = await Promise.all(assignedEmails.map((e) => mentionOrName(e)));
+        assignedStr = assignedMentions.join(", ");
+      } else {
+        // Unassigned / open task — ping every admin so anyone can pick it up.
+        const allAdminMentions = await Promise.all(
+          Object.keys(EMAIL_TO_NAME).map((e) => mentionOrName(e)),
+        );
+        assignedStr = `Unassigned — up for grabs ${allAdminMentions.join(" ")}`;
+      }
+
 
 
       const timeRange = `${minutesToTime(payload.startTime || 0)} - ${minutesToTime(payload.endTime || 0)}`;
