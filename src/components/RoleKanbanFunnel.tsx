@@ -136,6 +136,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   const [roleSearch, setRoleSearch] = useState('');
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const pipelineScrollRef = useRef<HTMLDivElement>(null);
+  const lastAutoRevealKeyRef = useRef('');
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [additionalProfileIds, setAdditionalProfileIds] = useState<Set<string>>(new Set());
   const [primaryProfileIds, setPrimaryProfileIds] = useState<Set<string>>(new Set());
@@ -1087,6 +1089,36 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     [stageGroups]
   );
 
+  // A selected role can have applicants only in stages beyond the initial
+  // viewport (for example Talent Pool or Reject). Reveal the first populated
+  // stage once per filter result so the board never appears falsely empty.
+  useEffect(() => {
+    if (loading || totalInPipeline === 0) return;
+
+    const firstPopulatedStage = orderedFunnelStages.find(
+      stage => stageGroups[stage]?.length > 0
+    );
+    if (!firstPopulatedStage) return;
+
+    const revealKey = `${selectedRole}|${selectedAdmin}|${jobFilter}|${filteredRolesKey}|${firstPopulatedStage}`;
+    if (lastAutoRevealKeyRef.current === revealKey) return;
+    lastAutoRevealKeyRef.current = revealKey;
+
+    const container = pipelineScrollRef.current;
+    const stageColumn = container?.querySelector<HTMLElement>(
+      `[data-pipeline-stage="${CSS.escape(firstPopulatedStage)}"]`
+    );
+    if (!container || !stageColumn) return;
+
+    const stageLeft = stageColumn.offsetLeft;
+    const stageRight = stageLeft + stageColumn.offsetWidth;
+    const visibleLeft = container.scrollLeft;
+    const visibleRight = visibleLeft + container.clientWidth;
+    if (stageLeft < visibleLeft || stageRight > visibleRight) {
+      container.scrollTo({ left: Math.max(0, stageLeft - 12), behavior: 'smooth' });
+    }
+  }, [loading, totalInPipeline, orderedFunnelStages, stageGroups, selectedRole, selectedAdmin, jobFilter, filteredRolesKey]);
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-3 flex-wrap">
@@ -1432,7 +1464,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       ) : !selectedRole ? (
         <p className="py-8 text-center text-sm text-muted-foreground">Select a role to view its pipeline.</p>
       ) : (
-        <div className="w-full overflow-x-auto">
+        <div ref={pipelineScrollRef} className="w-full overflow-x-auto">
           <div className="flex gap-3 pb-4 min-w-max">
             {orderedFunnelStages.map((stage) => {
               const colors = STAGE_COLORS[stage];
@@ -1443,6 +1475,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
               return (
                 <div
                   key={stage}
+                  data-pipeline-stage={stage}
                   className={cn(
                     'flex flex-col w-[248px] shrink-0 rounded-lg border-2 overflow-hidden transition-all duration-150',
                     dropTargetStage === stage && draggedCandidate
