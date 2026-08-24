@@ -514,6 +514,7 @@ export type Database = {
           is_open_task: boolean
           is_recurring: boolean
           meeting_notes: string | null
+          notify_slack: boolean
           pipeline_link: Json | null
           recurrence_rule: string | null
           start_time: number
@@ -536,6 +537,7 @@ export type Database = {
           is_open_task?: boolean
           is_recurring?: boolean
           meeting_notes?: string | null
+          notify_slack?: boolean
           pipeline_link?: Json | null
           recurrence_rule?: string | null
           start_time: number
@@ -558,6 +560,7 @@ export type Database = {
           is_open_task?: boolean
           is_recurring?: boolean
           meeting_notes?: string | null
+          notify_slack?: boolean
           pipeline_link?: Json | null
           recurrence_rule?: string | null
           start_time?: number
