@@ -382,7 +382,7 @@ export const AddActivityModal = ({
                 {extraAssignees.length > 0 ? 'Clear all' : 'Select all available'}
               </button>
             </div>
-            <div className="max-h-36 overflow-y-auto rounded-md border p-2 space-y-1.5">
+            <div className="max-h-44 overflow-y-auto rounded-md border p-2 space-y-1.5">
               {admins.map((a) => {
                 const busy = conflicts.has(a.user_id);
                 return (
@@ -402,9 +402,9 @@ export const AddActivityModal = ({
                         )
                       }
                     />
-                    <span className="font-normal">{a.name}</span>
+                    <span className="font-normal shrink-0">{a.name}</span>
                     {busy && (
-                      <span className="ml-auto text-[11px] text-muted-foreground truncate max-w-[55%]">
+                      <span className="ml-auto text-[11px] text-muted-foreground truncate">
                         {conflictLabel(a.user_id)}
                       </span>
                     )}
