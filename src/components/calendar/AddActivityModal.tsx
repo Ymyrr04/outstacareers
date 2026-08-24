@@ -40,6 +40,8 @@ interface Props {
   admins: CalendarAdmin[];
   currentUserId?: string;
   onSaved: (date: string) => void;
+  /** When provided, the modal edits this existing activity instead of creating a new one. */
+  editEvent?: import('@/hooks/useCalendarEvents').CalendarEvent | null;
 }
 
 export const AddActivityModal = ({
@@ -53,6 +55,7 @@ export const AddActivityModal = ({
   admins,
   currentUserId,
   onSaved,
+  editEvent,
 }: Props) => {
   const { toast } = useToast();
   const { notifyCalendarActivity } = useSlackNotifications();
