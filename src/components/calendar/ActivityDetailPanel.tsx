@@ -10,7 +10,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { X, Plus, Trash2, CheckCircle2, Undo2, NotebookPen, Flag } from 'lucide-react';
+import { X, Plus, Trash2, CheckCircle2, Undo2, NotebookPen, Flag, Pencil } from 'lucide-react';
 import { CalendarAdmin } from '@/hooks/useCalendarAdmins';
 import { CalendarEvent } from '@/hooks/useCalendarEvents';
 import {
@@ -24,6 +24,7 @@ import {
   DEADLINE_COLOR,
 } from '@/lib/calendarTime';
 import MeetingNotesDialog from './MeetingNotesDialog';
+import AddActivityModal from './AddActivityModal';
 import { CandidateDetailDialog } from '@/components/CandidateDetailDialog';
 import { useToast } from '@/hooks/use-toast';
 
@@ -73,6 +74,7 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
   const [notesOpen, setNotesOpen] = useState(false);
   const [togglingDone, setTogglingDone] = useState(false);
   const [candidateOpen, setCandidateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const link = event.pipeline_link || null;
   const linkStyle = link ? pipelineLinkStyle(link.type) : null;
   const deadline = isDeadline(event.event_type);
