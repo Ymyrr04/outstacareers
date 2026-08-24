@@ -423,7 +423,7 @@ export const TeamCalendar = () => {
 
         <div className="flex gap-4 items-start">
 
-        <div className="overflow-x-auto flex-1 min-w-0">
+        <div className="overflow-x-auto overflow-y-hidden overscroll-y-auto flex-1 min-w-0">
           <div className="flex w-full">
             {/* time column */}
             <div className="w-[52px] shrink-0">
