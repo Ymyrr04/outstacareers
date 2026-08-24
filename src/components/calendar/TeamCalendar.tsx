@@ -596,14 +596,19 @@ export const TeamCalendar = () => {
                       const deadline = isDeadline(ev.event_type);
                       const color = deadline ? DEADLINE_COLOR : admin.color;
                       const done = !!ev.is_done;
+                      const lay = laneLayout.get(ev.id) ?? { col: 0, cols: 1 };
+                      const leftPct = (lay.col / lay.cols) * 100;
+                      const widthPct = (1 / lay.cols) * 100;
                       return (
                         <button
                           key={ev.id}
                           onClick={() => setSelectedEvent(ev)}
-                          className="absolute left-[2px] right-[2px] z-10 overflow-hidden px-1 py-0.5 text-left"
+                          className="absolute z-10 overflow-hidden px-1 py-0.5 text-left"
                           style={{
                             top,
                             height,
+                            left: `calc(${leftPct}% + 2px)`,
+                            width: `calc(${widthPct}% - 4px)`,
                             background: color.bg,
                             color: color.text,
                             borderLeft: `3px solid ${color.main}`,
