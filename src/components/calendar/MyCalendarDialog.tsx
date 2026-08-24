@@ -94,7 +94,7 @@ export const MyCalendarDialog = ({ open, onOpenChange, currentUserId }: Props) =
       </button>
       <span className="shrink-0 text-xs text-muted-foreground">
         {formatDate(e.event_date)}
-        {!e.time_tbd && ` · ${formatMinutes(e.start_time)} ET`}
+        {!e.time_tbd && ` · ${formatMinutes(e.start_time)}${e.end_time != null ? `–${formatMinutes(e.end_time)}` : ''} ET`}
       </span>
     </div>
   );
