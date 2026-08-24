@@ -25,6 +25,10 @@ import {
 } from '@/lib/calendarTime';
 import PipelineLinkSelect from './PipelineLinkSelect';
 
+const UNASSIGNED = '__unassigned__';
+
+
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -59,9 +63,11 @@ export const AddActivityModal = ({
   const [extraAssignees, setExtraAssignees] = useState<string[]>([]);
   const [start, setStart] = useState('09:00');
   const [end, setEnd] = useState('10:00');
+  const [noTime, setNoTime] = useState(false);
   const [description, setDescription] = useState('');
   const [repeat, setRepeat] = useState('none');
   const [pipelineLink, setPipelineLink] = useState<PipelineLink | null>(null);
+
   const [error, setError] = useState<string | null>(null);
   const [customTypes, setCustomTypes] = useState<{ value: string; label: string }[]>([]);
   const [addingType, setAddingType] = useState(false);
@@ -101,8 +107,10 @@ export const AddActivityModal = ({
     };
   }, [open, date]);
 
+  const isUnassigned = adminId === UNASSIGNED;
   const startMin = inputToMinutes(start);
   const endMin = inputToMinutes(end);
+
 
   /** admin user_id -> conflicting event (first overlap found) */
   const conflicts = new Map<string, { title: string; start_time: number; end_time: number }>();
@@ -168,6 +176,7 @@ export const AddActivityModal = ({
     setRepeat('none');
     setPipelineLink(null);
     setError(null);
+    setNoTime(false);
     setExtraAssignees(defaultAssignees ?? []);
     setAdminId(defaultAdminId || currentUserId || admins[0]?.user_id || '');
     setStart(minutesToInput(defaultStart));
@@ -181,24 +190,28 @@ export const AddActivityModal = ({
       titleRef.current?.focus();
       return;
     }
-    const s = inputToMinutes(start);
-    const e = inputToMinutes(end);
-    if (e <= s) {
+    const s = noTime ? 9 * 60 : inputToMinutes(start);
+    const e = noTime ? 10 * 60 : inputToMinutes(end);
+    if (!noTime && e <= s) {
       setError('End time must be after start time');
       return;
     }
-    const owner = adminId || currentUserId;
-    if (owner && conflicts.has(owner)) {
-      setError(`Owner is not available — ${conflictLabel(owner)}`);
-      return;
-    }
-    const busyPicked = extraAssignees.filter((id) => conflicts.has(id));
-    if (busyPicked.length) {
-      setError('Some selected admins already have an activity at this time');
-      return;
+    const owner = isUnassigned ? currentUserId : adminId || currentUserId;
+    if (!isUnassigned && !noTime) {
+      if (owner && conflicts.has(owner)) {
+        setError(`Owner is not available — ${conflictLabel(owner)}`);
+        return;
+      }
+      const busyPicked = extraAssignees.filter((id) => conflicts.has(id));
+      if (busyPicked.length) {
+        setError('Some selected admins already have an activity at this time');
+        return;
+      }
     }
     setSaving(true);
-    const assignedToIds = Array.from(new Set([...(owner ? [owner] : []), ...extraAssignees]));
+    const assignedToIds = isUnassigned
+      ? []
+      : Array.from(new Set([...(owner ? [owner] : []), ...extraAssignees]));
     const { error: dbError } = await supabase.from('calendar_events').insert({
       title: title.trim(),
       description: description.trim() || null,
@@ -211,7 +224,9 @@ export const AddActivityModal = ({
       is_recurring: repeat !== 'none',
       recurrence_rule: repeat === 'none' ? null : repeat,
       pipeline_link: pipelineLink as unknown as Record<string, string> | null,
-    });
+      is_open_task: isUnassigned,
+      time_tbd: noTime,
+    } as never);
     setSaving(false);
     if (dbError) {
       toast({ title: 'Could not save activity', description: dbError.message, variant: 'destructive' });
@@ -222,6 +237,7 @@ export const AddActivityModal = ({
     onOpenChange(false);
     onSaved(date);
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -289,6 +305,7 @@ export const AddActivityModal = ({
               <Select value={adminId} onValueChange={setAdminId}>
                 <SelectTrigger><SelectValue placeholder="Select admin" /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value={UNASSIGNED}>🙌 Unassigned — anyone can take it</SelectItem>
                   {admins.map((a) => {
                     const busy = conflicts.has(a.user_id);
                     return (
@@ -299,12 +316,19 @@ export const AddActivityModal = ({
                   })}
                 </SelectContent>
               </Select>
-              {conflicts.has(adminId) && (
+              {!isUnassigned && conflicts.has(adminId) && (
                 <p className="text-xs text-destructive">{conflictLabel(adminId)}</p>
               )}
             </div>
+
           </div>
 
+          {isUnassigned ? (
+            <p className="rounded-md border-[0.5px] border-dashed bg-muted/30 p-2 text-xs text-muted-foreground">
+              This task will appear in the “Up for grabs” band on the calendar. Anyone on the team can take it
+              and set a time.
+            </p>
+          ) : (
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label>Also assign to</Label>
@@ -350,17 +374,28 @@ export const AddActivityModal = ({
               })}
             </div>
           </div>
+          )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="ce-start">Start (ET)</Label>
-              <TimeSelect id="ce-start" value={start} onChange={setStart} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="ce-end">End (ET)</Label>
-              <TimeSelect id="ce-end" value={end} onChange={setEnd} />
-            </div>
+
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox checked={noTime} onCheckedChange={(v) => setNoTime(v === true)} />
+              <span>No specific time yet (any admin can set it)</span>
+            </label>
+            {!noTime && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="ce-start">Start (ET)</Label>
+                  <TimeSelect id="ce-start" value={start} onChange={setStart} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ce-end">End (ET)</Label>
+                  <TimeSelect id="ce-end" value={end} onChange={setEnd} />
+                </div>
+              </div>
+            )}
           </div>
+
 
           <div className="space-y-1.5">
             <Label htmlFor="ce-desc">Description</Label>

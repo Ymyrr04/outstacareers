@@ -501,6 +501,8 @@ export type Database = {
       calendar_events: {
         Row: {
           assigned_to: string[]
+          claimed_at: string | null
+          claimed_by: string | null
           created_at: string
           created_by: string
           description: string | null
@@ -509,16 +511,20 @@ export type Database = {
           event_type: string
           id: string
           is_done: boolean
+          is_open_task: boolean
           is_recurring: boolean
           meeting_notes: string | null
           pipeline_link: Json | null
           recurrence_rule: string | null
           start_time: number
+          time_tbd: boolean
           title: string
           updated_at: string
         }
         Insert: {
           assigned_to?: string[]
+          claimed_at?: string | null
+          claimed_by?: string | null
           created_at?: string
           created_by: string
           description?: string | null
@@ -527,16 +533,20 @@ export type Database = {
           event_type?: string
           id?: string
           is_done?: boolean
+          is_open_task?: boolean
           is_recurring?: boolean
           meeting_notes?: string | null
           pipeline_link?: Json | null
           recurrence_rule?: string | null
           start_time: number
+          time_tbd?: boolean
           title: string
           updated_at?: string
         }
         Update: {
           assigned_to?: string[]
+          claimed_at?: string | null
+          claimed_by?: string | null
           created_at?: string
           created_by?: string
           description?: string | null
@@ -545,11 +555,13 @@ export type Database = {
           event_type?: string
           id?: string
           is_done?: boolean
+          is_open_task?: boolean
           is_recurring?: boolean
           meeting_notes?: string | null
           pipeline_link?: Json | null
           recurrence_rule?: string | null
           start_time?: number
+          time_tbd?: boolean
           title?: string
           updated_at?: string
         }

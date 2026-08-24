@@ -17,7 +17,11 @@ export interface CalendarEvent {
   pipeline_link?: PipelineLink | null;
   is_done?: boolean | null;
   meeting_notes?: string | null;
+  is_open_task?: boolean | null;
+  time_tbd?: boolean | null;
+  claimed_by?: string | null;
 }
+
 
 /** Fetches events inside [start, end] plus every recurring event that started on/before end. */
 export const useCalendarEvents = (rangeStart: string, rangeEnd: string) => {

@@ -7,6 +7,8 @@ import { useCalendarAdmins, CalendarAdmin } from '@/hooks/useCalendarAdmins';
 import { useCalendarEvents, CalendarEvent } from '@/hooks/useCalendarEvents';
 import AddActivityModal from './AddActivityModal';
 import ActivityDetailPanel from './ActivityDetailPanel';
+import OpenTasksBar from './OpenTasksBar';
+
 import {
   ET_LABEL,
   DAY_END_MIN,
@@ -201,7 +203,7 @@ export const TeamCalendar = () => {
 
   const rangeStart = view === 'month' ? monthStart : selectedDate;
   const rangeEnd = view === 'month' ? monthEnd : selectedDate;
-  const { eventsForDate, refetch } = useCalendarEvents(rangeStart, rangeEnd);
+  const { events, eventsForDate, refetch } = useCalendarEvents(rangeStart, rangeEnd);
 
   const monthLabel = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(monthCursor);
 
@@ -299,7 +301,16 @@ export const TeamCalendar = () => {
         </div>
       </div>
 
+      <OpenTasksBar
+        events={events.filter((e) => e.is_open_task || e.time_tbd)}
+        admins={admins}
+        currentUserId={user?.id}
+        onChanged={refetch}
+        onSelect={(ev) => goToDay(ev.event_date)}
+      />
+
       <div className="grid grid-cols-7 gap-px bg-border rounded-md overflow-hidden border-[0.5px]">
+
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
           <div key={d} className="bg-muted/40 py-1.5 text-center text-xs text-muted-foreground">
             {d}
@@ -400,7 +411,16 @@ export const TeamCalendar = () => {
           </div>
         </div>
 
+        <OpenTasksBar
+          events={dayEvents.filter((e) => e.is_open_task || e.time_tbd)}
+          admins={admins}
+          currentUserId={user?.id}
+          onChanged={refetch}
+          onSelect={(ev) => setSelectedEvent(ev)}
+        />
+
         <div className="flex gap-4 items-start">
+
         <div className="overflow-x-auto flex-1 min-w-0">
           <div className="flex w-full">
             {/* time column */}
@@ -440,8 +460,12 @@ export const TeamCalendar = () => {
             {/* admin lanes */}
             {admins.map((admin, adminIdx) => {
               const laneEvents = dayEvents.filter(
-                (e) => e.created_by === admin.user_id || (e.assigned_to || []).includes(admin.user_id)
+                (e) =>
+                  !e.is_open_task &&
+                  !e.time_tbd &&
+                  (e.created_by === admin.user_id || (e.assigned_to || []).includes(admin.user_id))
               );
+
               return (
                 <div key={admin.user_id} className="flex-1 min-w-[120px] border-l-[0.5px] border-border">
                   <div
