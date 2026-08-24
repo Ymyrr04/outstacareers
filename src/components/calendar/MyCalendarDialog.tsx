@@ -8,6 +8,9 @@ import { useCalendarAdmins } from '@/hooks/useCalendarAdmins';
 import { formatMinutes, eventTypeLabel } from '@/lib/calendarTime';
 import { useToast } from '@/hooks/use-toast';
 import ActivityDetailPanel from './ActivityDetailPanel';
+import AddActivityModal from './AddActivityModal';
+import { Button } from '@/components/ui/button';
+import { Plus } from 'lucide-react';
 
 interface Props {
   open: boolean;
@@ -29,6 +32,9 @@ export const MyCalendarDialog = ({ open, onOpenChange, currentUserId }: Props) =
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [loading, setLoading] = useState(false);
   const [selected, setSelected] = useState<CalendarEvent | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+
+  const todayET = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/New_York' }).format(new Date());
 
   const load = useCallback(async () => {
     if (!currentUserId) return;
@@ -104,7 +110,12 @@ export const MyCalendarDialog = ({ open, onOpenChange, currentUserId }: Props) =
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>My Calendar</DialogTitle>
+            <div className="flex items-center justify-between gap-3 pr-8">
+              <DialogTitle>My Calendar</DialogTitle>
+              <Button size="sm" onClick={() => setAddOpen(true)}>
+                <Plus className="mr-1 h-4 w-4" /> Add task
+              </Button>
+            </div>
           </DialogHeader>
           {loading && <p className="text-sm text-muted-foreground">Loading…</p>}
           {!loading && events.length === 0 && (
@@ -119,6 +130,21 @@ export const MyCalendarDialog = ({ open, onOpenChange, currentUserId }: Props) =
           )}
         </DialogContent>
       </Dialog>
+
+      <AddActivityModal
+        open={addOpen}
+        onOpenChange={setAddOpen}
+        date={todayET}
+        defaultStart={9 * 60}
+        defaultAdminId={currentUserId}
+        defaultAssignees={currentUserId ? [currentUserId] : []}
+        admins={admins}
+        currentUserId={currentUserId}
+        onSaved={() => {
+          setAddOpen(false);
+          load();
+        }}
+      />
 
       <Dialog open={!!selected} onOpenChange={(v) => !v && setSelected(null)}>
         <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
