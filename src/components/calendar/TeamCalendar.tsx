@@ -226,12 +226,47 @@ export const TeamCalendar = () => {
   // Drag-to-select cells in the day grid
   const [dragSel, setDragSel] = useState<{ a1: number; a2: number; s1: number; s2: number } | null>(null);
   const draggingRef = useRef(false);
+  const wrapperRef = useRef<HTMLDivElement>(null);
+  const pinnedRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const up = () => { draggingRef.current = false; };
     window.addEventListener('mouseup', up);
     return () => window.removeEventListener('mouseup', up);
   }, []);
+
+  // Pin the day-view header (open tasks + admin lane headers) to the top of the
+  // viewport while scrolling. Done in JS because the header lives inside the
+  // horizontal scroll wrapper (to stay aligned with the lanes), and CSS
+  // position:sticky is trapped by the overflow-x container.
+  useEffect(() => {
+    if (view !== 'day') return;
+    const wrapper = wrapperRef.current;
+    const pinned = pinnedRef.current;
+    if (!wrapper || !pinned) return;
+    let raf = 0;
+    const update = () => {
+      raf = 0;
+      const wTop = wrapper.getBoundingClientRect().top;
+      const ph = pinned.offsetHeight;
+      const max = wrapper.offsetHeight - ph;
+      const ty = Math.max(0, Math.min(-wTop, max));
+      pinned.style.transform = ty > 0 ? `translateY(${ty}px)` : '';
+    };
+    const schedule = () => { if (!raf) raf = requestAnimationFrame(update); };
+    document.addEventListener('scroll', schedule, true);
+    window.addEventListener('resize', schedule);
+    const ro = new ResizeObserver(schedule);
+    ro.observe(wrapper);
+    ro.observe(pinned);
+    update();
+    return () => {
+      document.removeEventListener('scroll', schedule, true);
+      window.removeEventListener('resize', schedule);
+      ro.disconnect();
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [view]);
 
   const selBounds = dragSel
     ? {
@@ -456,23 +491,38 @@ export const TeamCalendar = () => {
           </div>
         </div>
 
-        <div className="sticky top-0 z-30 -mx-4 px-4 pb-1 pt-1 bg-background/95 backdrop-blur border-b border-border">
-          <OpenTasksBar
-            events={dayEvents.filter((e) => e.is_open_task || e.time_tbd)}
-            admins={admins}
-            currentUserId={user?.id}
-            onChanged={refetch}
-            onSelect={(ev) => setSelectedEvent(ev)}
-          />
-        </div>
-
         <div className="flex gap-4 items-start">
 
-        <div className="overflow-x-auto overflow-y-hidden overscroll-y-auto flex-1 min-w-0">
+        <div ref={wrapperRef} className="overflow-x-auto overflow-y-hidden overscroll-y-auto flex-1 min-w-0">
+          {/* Pinned header: open tasks + admin lane headers — stays at the top while scrolling */}
+          <div ref={pinnedRef} className="relative z-30 bg-background border-b border-border">
+            <OpenTasksBar
+              events={dayEvents.filter((e) => e.is_open_task || e.time_tbd)}
+              admins={admins}
+              currentUserId={user?.id}
+              onChanged={refetch}
+              onSelect={(ev) => setSelectedEvent(ev)}
+            />
+            <div className="flex w-full">
+              <div className="w-[52px] shrink-0 h-9" />
+              {admins.map((admin) => (
+                <div
+                  key={admin.user_id}
+                  className="flex h-9 flex-1 min-w-[120px] items-center gap-1.5 border-l-[0.5px] border-border px-2"
+                  style={{ background: admin.color.bg }}
+                >
+                  <AdminDot admin={admin} size={24} />
+                  <span className="truncate text-xs" style={{ color: admin.color.text }}>
+                    {admin.name}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+
           <div className="flex w-full">
             {/* time column */}
             <div className="w-[52px] shrink-0">
-              <div className="h-9 border-b-[0.5px] border-border" />
               <div className="relative" style={{ height: gridHeight }}>
                 {ticks.map((m) => {
                   const isHour = m % 60 === 0;
@@ -516,15 +566,6 @@ export const TeamCalendar = () => {
 
               return (
                 <div key={admin.user_id} className="flex-1 min-w-[120px] border-l-[0.5px] border-border">
-                  <div
-                    className="flex h-9 items-center gap-1.5 px-2 border-b-[0.5px] border-border"
-                    style={{ background: admin.color.bg }}
-                  >
-                    <AdminDot admin={admin} size={24} />
-                    <span className="truncate text-xs" style={{ color: admin.color.text }}>
-                      {admin.name}
-                    </span>
-                  </div>
                   <div className="relative" style={{ height: gridHeight }}>
                     {/* slots */}
                     {Array.from({ length: totalMinutes / 15 }).map((_, i) => {
