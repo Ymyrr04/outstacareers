@@ -1637,6 +1637,20 @@ const Admin = () => {
           </div>
           <div className="flex items-center gap-4">
             <ThemeToggle />
+            {openTaskCount > 0 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => handleMainTabChange('calendar')}
+                title={`${openTaskCount} up-for-grabs task${openTaskCount === 1 ? '' : 's'}`}
+              >
+                <ClipboardList className="w-4 h-4 mr-2" />
+                Task
+                <Badge variant="destructive" className="ml-2 h-5 min-w-[20px] px-1 text-[10px] justify-center">
+                  {openTaskCount}
+                </Badge>
+              </Button>
+            )}
             <Button 
               variant="outline" 
               size="sm" 
