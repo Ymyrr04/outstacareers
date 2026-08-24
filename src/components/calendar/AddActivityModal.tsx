@@ -170,6 +170,7 @@ export const AddActivityModal = ({
     setRepeat('none');
     setPipelineLink(null);
     setError(null);
+    setNoTime(false);
     setExtraAssignees(defaultAssignees ?? []);
     setAdminId(defaultAdminId || currentUserId || admins[0]?.user_id || '');
     setStart(minutesToInput(defaultStart));
@@ -183,24 +184,28 @@ export const AddActivityModal = ({
       titleRef.current?.focus();
       return;
     }
-    const s = inputToMinutes(start);
-    const e = inputToMinutes(end);
-    if (e <= s) {
+    const s = noTime ? 9 * 60 : inputToMinutes(start);
+    const e = noTime ? 10 * 60 : inputToMinutes(end);
+    if (!noTime && e <= s) {
       setError('End time must be after start time');
       return;
     }
-    const owner = adminId || currentUserId;
-    if (owner && conflicts.has(owner)) {
-      setError(`Owner is not available — ${conflictLabel(owner)}`);
-      return;
-    }
-    const busyPicked = extraAssignees.filter((id) => conflicts.has(id));
-    if (busyPicked.length) {
-      setError('Some selected admins already have an activity at this time');
-      return;
+    const owner = isUnassigned ? currentUserId : adminId || currentUserId;
+    if (!isUnassigned && !noTime) {
+      if (owner && conflicts.has(owner)) {
+        setError(`Owner is not available — ${conflictLabel(owner)}`);
+        return;
+      }
+      const busyPicked = extraAssignees.filter((id) => conflicts.has(id));
+      if (busyPicked.length) {
+        setError('Some selected admins already have an activity at this time');
+        return;
+      }
     }
     setSaving(true);
-    const assignedToIds = Array.from(new Set([...(owner ? [owner] : []), ...extraAssignees]));
+    const assignedToIds = isUnassigned
+      ? []
+      : Array.from(new Set([...(owner ? [owner] : []), ...extraAssignees]));
     const { error: dbError } = await supabase.from('calendar_events').insert({
       title: title.trim(),
       description: description.trim() || null,
@@ -213,7 +218,9 @@ export const AddActivityModal = ({
       is_recurring: repeat !== 'none',
       recurrence_rule: repeat === 'none' ? null : repeat,
       pipeline_link: pipelineLink as unknown as Record<string, string> | null,
-    });
+      is_open_task: isUnassigned,
+      time_tbd: noTime,
+    } as never);
     setSaving(false);
     if (dbError) {
       toast({ title: 'Could not save activity', description: dbError.message, variant: 'destructive' });
@@ -224,6 +231,7 @@ export const AddActivityModal = ({
     onOpenChange(false);
     onSaved(date);
   };
+
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
