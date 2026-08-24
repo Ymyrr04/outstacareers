@@ -75,6 +75,8 @@ export const AddActivityModal = ({
     setEnd(minutesToInput(eMin));
   };
   const [noTime, setNoTime] = useState(false);
+  const [notifySlack, setNotifySlack] = useState(false);
+
   const [description, setDescription] = useState('');
   const [repeat, setRepeat] = useState('none');
   const [pipelineLink, setPipelineLink] = useState<PipelineLink | null>(null);
