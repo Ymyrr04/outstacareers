@@ -283,6 +283,21 @@ const Admin = () => {
   const { replies: allReplies, fetching: fetchingReplies, fetchNewReplies } = useEmailReplies();
   const [unreadPopoverOpen, setUnreadPopoverOpen] = useState(false);
 
+  // "Up for grabs" open tasks — shown as a Task notification in the header
+  const [openTaskCount, setOpenTaskCount] = useState(0);
+  const fetchOpenTaskCount = useCallback(async () => {
+    const { count } = await supabase
+      .from('calendar_events')
+      .select('id', { count: 'exact', head: true })
+      .eq('is_open_task', true);
+    setOpenTaskCount(count ?? 0);
+  }, []);
+  useEffect(() => {
+    void fetchOpenTaskCount();
+    const intervalId = window.setInterval(() => void fetchOpenTaskCount(), 30000);
+    return () => window.clearInterval(intervalId);
+  }, [fetchOpenTaskCount]);
+
   // Background auto-sync so new candidate replies are stored before opening a thread
   useEffect(() => {
     const runBackgroundReplySync = async () => {
