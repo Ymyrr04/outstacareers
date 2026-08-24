@@ -1082,7 +1082,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     }
 
     return groups;
-  }, [filteredCandidates, sortOption, additionalProfileIds, primaryProfileIds]);
+  }, [filteredCandidates, sortOption, additionalProfileIds, primaryProfileIds, orderedFunnelStages]);
 
   const totalInPipeline = useMemo(
     () => Object.values(stageGroups).reduce((sum, arr) => sum + arr.length, 0),
