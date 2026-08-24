@@ -209,17 +209,6 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
       return;
     }
 
-    // Fire Slack notification (non-blocking) before closing
-    const actor = admins.find((a) => a.user_id === currentUserId);
-    if (actor?.email) {
-      notifyCalendarUpdate({
-        updatedByEmail: actor.email,
-        activityTitle: event.title,
-        eventDate: event.event_date,
-        updateType: 'deleted',
-      }).catch((err) => console.error('[Slack] Calendar update notification failed:', err));
-    }
-
     onClose();
     onChanged();
   };
