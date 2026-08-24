@@ -411,13 +411,15 @@ export const TeamCalendar = () => {
           </div>
         </div>
 
-        <OpenTasksBar
-          events={dayEvents.filter((e) => e.is_open_task || e.time_tbd)}
-          admins={admins}
-          currentUserId={user?.id}
-          onChanged={refetch}
-          onSelect={(ev) => setSelectedEvent(ev)}
-        />
+        <div className="sticky top-0 z-30 -mx-4 px-4 pb-1 pt-1 bg-background/95 backdrop-blur border-b border-border">
+          <OpenTasksBar
+            events={dayEvents.filter((e) => e.is_open_task || e.time_tbd)}
+            admins={admins}
+            currentUserId={user?.id}
+            onChanged={refetch}
+            onSelect={(ev) => setSelectedEvent(ev)}
+          />
+        </div>
 
         <div className="flex gap-4 items-start">
 
