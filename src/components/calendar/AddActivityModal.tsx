@@ -291,6 +291,7 @@ export const AddActivityModal = ({
               <Select value={adminId} onValueChange={setAdminId}>
                 <SelectTrigger><SelectValue placeholder="Select admin" /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value={UNASSIGNED}>🙌 Unassigned — anyone can take it</SelectItem>
                   {admins.map((a) => {
                     const busy = conflicts.has(a.user_id);
                     return (
@@ -301,12 +302,19 @@ export const AddActivityModal = ({
                   })}
                 </SelectContent>
               </Select>
-              {conflicts.has(adminId) && (
+              {!isUnassigned && conflicts.has(adminId) && (
                 <p className="text-xs text-destructive">{conflictLabel(adminId)}</p>
               )}
             </div>
+
           </div>
 
+          {isUnassigned ? (
+            <p className="rounded-md border-[0.5px] border-dashed bg-muted/30 p-2 text-xs text-muted-foreground">
+              This task will appear in the “Up for grabs” band on the calendar. Anyone on the team can take it
+              and set a time.
+            </p>
+          ) : (
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
               <Label>Also assign to</Label>
@@ -352,17 +360,28 @@ export const AddActivityModal = ({
               })}
             </div>
           </div>
+          )}
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label htmlFor="ce-start">Start (ET)</Label>
-              <TimeSelect id="ce-start" value={start} onChange={setStart} />
-            </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="ce-end">End (ET)</Label>
-              <TimeSelect id="ce-end" value={end} onChange={setEnd} />
-            </div>
+
+          <div className="space-y-2">
+            <label className="flex items-center gap-2 text-sm">
+              <Checkbox checked={noTime} onCheckedChange={(v) => setNoTime(v === true)} />
+              <span>No specific time yet (any admin can set it)</span>
+            </label>
+            {!noTime && (
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="ce-start">Start (ET)</Label>
+                  <TimeSelect id="ce-start" value={start} onChange={setStart} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="ce-end">End (ET)</Label>
+                  <TimeSelect id="ce-end" value={end} onChange={setEnd} />
+                </div>
+              </div>
+            )}
           </div>
+
 
           <div className="space-y-1.5">
             <Label htmlFor="ce-desc">Description</Label>
