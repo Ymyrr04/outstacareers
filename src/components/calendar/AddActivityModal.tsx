@@ -75,6 +75,8 @@ export const AddActivityModal = ({
     setEnd(minutesToInput(eMin));
   };
   const [noTime, setNoTime] = useState(false);
+  const [notifySlack, setNotifySlack] = useState(false);
+
   const [description, setDescription] = useState('');
   const [repeat, setRepeat] = useState('none');
   const [pipelineLink, setPipelineLink] = useState<PipelineLink | null>(null);
@@ -188,7 +190,9 @@ export const AddActivityModal = ({
     setPipelineLink(null);
     setError(null);
     setNoTime(false);
+    setNotifySlack(false);
     setExtraAssignees(defaultAssignees ?? []);
+
     setAdminId(defaultAdminId || currentUserId || admins[0]?.user_id || '');
     setStart(minutesToInput(defaultStart));
     setEnd(minutesToInput(Math.min(defaultEnd ?? defaultStart + 60, 23 * 60 + 59)));
@@ -237,6 +241,8 @@ export const AddActivityModal = ({
       pipeline_link: pipelineLink as unknown as Record<string, string> | null,
       is_open_task: isUnassigned,
       time_tbd: noTime,
+      notify_slack: notifySlack,
+
     } as never);
     setSaving(false);
     if (dbError) {
@@ -387,6 +393,20 @@ export const AddActivityModal = ({
           </div>
           )}
 
+
+          <label className="flex items-start gap-2 text-sm rounded-md border p-3 cursor-pointer">
+            <Checkbox
+              className="mt-0.5"
+              checked={notifySlack}
+              onCheckedChange={(v) => setNotifySlack(v === true)}
+            />
+            <span>
+              Needs the team's attention
+              <span className="block text-xs text-muted-foreground">
+                Sends a Slack notification. Leave unchecked to save quietly.
+              </span>
+            </span>
+          </label>
 
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-sm">
