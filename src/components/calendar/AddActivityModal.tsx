@@ -25,6 +25,10 @@ import {
 } from '@/lib/calendarTime';
 import PipelineLinkSelect from './PipelineLinkSelect';
 
+const UNASSIGNED = '__unassigned__';
+
+
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -103,8 +107,10 @@ export const AddActivityModal = ({
     };
   }, [open, date]);
 
+  const isUnassigned = adminId === UNASSIGNED;
   const startMin = inputToMinutes(start);
   const endMin = inputToMinutes(end);
+
 
   /** admin user_id -> conflicting event (first overlap found) */
   const conflicts = new Map<string, { title: string; start_time: number; end_time: number }>();
