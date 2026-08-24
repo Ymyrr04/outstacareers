@@ -394,6 +394,20 @@ export const AddActivityModal = ({
           )}
 
 
+          <label className="flex items-start gap-2 text-sm rounded-md border p-3 cursor-pointer">
+            <Checkbox
+              className="mt-0.5"
+              checked={notifySlack}
+              onCheckedChange={(v) => setNotifySlack(v === true)}
+            />
+            <span>
+              Needs the team's attention
+              <span className="block text-xs text-muted-foreground">
+                Sends a Slack notification. Leave unchecked to save quietly.
+              </span>
+            </span>
+          </label>
+
           <div className="space-y-2">
             <label className="flex items-center gap-2 text-sm">
               <Checkbox checked={noTime} onCheckedChange={(v) => setNoTime(v === true)} />
