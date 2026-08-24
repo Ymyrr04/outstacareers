@@ -91,7 +91,7 @@ export const AddActivityModal = ({
   const [creatingType, setCreatingType] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dayEvents, setDayEvents] = useState<
-    { title: string; start_time: number; end_time: number; assigned_to: string[] | null; created_by: string | null }[]
+    { id: string; title: string; start_time: number; end_time: number; assigned_to: string[] | null; created_by: string | null }[]
   >([]);
 
   // Load events occurring on this date (including recurring ones) to detect conflicts
@@ -101,11 +101,12 @@ export const AddActivityModal = ({
     (async () => {
       const { data } = await supabase
         .from('calendar_events')
-        .select('title,event_date,start_time,end_time,assigned_to,created_by,is_recurring,recurrence_rule')
+        .select('id,title,event_date,start_time,end_time,assigned_to,created_by,is_recurring,recurrence_rule')
         .or(`event_date.eq.${date},is_recurring.eq.true`);
       if (cancelled) return;
       const dow = weekdayOf(date);
       const occurring = (data || []).filter((e: any) => {
+        if (editEvent && e.id === editEvent.id) return false;
         if (e.event_date === date) return true;
         if (e.is_recurring && e.event_date < date) {
           const rule = e.recurrence_rule || 'weekly';
@@ -121,7 +122,7 @@ export const AddActivityModal = ({
     return () => {
       cancelled = true;
     };
-  }, [open, date]);
+  }, [open, date, editEvent]);
 
   const isUnassigned = adminId === UNASSIGNED;
   const startMin = inputToMinutes(start);
