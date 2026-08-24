@@ -6,6 +6,7 @@ import { TimeSelect } from '@/components/ui/time-select';
 import { HandHeart, Loader2, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useSlackNotifications } from '@/hooks/useSlackNotifications';
 import { CalendarEvent } from '@/hooks/useCalendarEvents';
 import { CalendarAdmin } from '@/hooks/useCalendarAdmins';
 import { formatMinutes, inputToMinutes, minutesToInput } from '@/lib/calendarTime';
@@ -21,6 +22,7 @@ interface Props {
 /** "Up for grabs" band — unassigned tasks anyone on the team can claim. */
 export const OpenTasksBar = ({ events, admins, currentUserId, onChanged, onSelect }: Props) => {
   const { toast } = useToast();
+  const { notifyCalendarUpdate } = useSlackNotifications();
   const [busyId, setBusyId] = useState<string | null>(null);
   const [times, setTimes] = useState<Record<string, { start: string; end: string }>>({});
 
@@ -65,7 +67,19 @@ export const OpenTasksBar = ({ events, admins, currentUserId, onChanged, onSelec
       toast({ title: 'Could not take this task', description: error.message, variant: 'destructive' });
       return;
     }
-    toast({ title: 'Task assigned to you' });
+    const me = admins.find((a) => a.user_id === currentUserId);
+    const startMin = ev.time_tbd ? s : ev.start_time;
+    const endMin = ev.time_tbd ? e : ev.end_time;
+    if (me?.email) {
+      void notifyCalendarUpdate({
+        updatedByEmail: me.email,
+        activityTitle: ev.title,
+        eventDate: ev.event_date,
+        updateType: 'assigned',
+        updateDetail: `${me.name} took an open task — added to their calendar for ${formatMinutes(startMin)} – ${formatMinutes(endMin)}`,
+      });
+    }
+    toast({ title: 'Added to your calendar', description: `${ev.title} · ${formatMinutes(startMin)} – ${formatMinutes(endMin)}` });
     onChanged();
   };
 
