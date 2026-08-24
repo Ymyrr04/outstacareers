@@ -59,9 +59,11 @@ export const AddActivityModal = ({
   const [extraAssignees, setExtraAssignees] = useState<string[]>([]);
   const [start, setStart] = useState('09:00');
   const [end, setEnd] = useState('10:00');
+  const [noTime, setNoTime] = useState(false);
   const [description, setDescription] = useState('');
   const [repeat, setRepeat] = useState('none');
   const [pipelineLink, setPipelineLink] = useState<PipelineLink | null>(null);
+
   const [error, setError] = useState<string | null>(null);
   const [customTypes, setCustomTypes] = useState<{ value: string; label: string }[]>([]);
   const [addingType, setAddingType] = useState(false);
