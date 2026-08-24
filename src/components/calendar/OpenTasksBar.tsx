@@ -81,6 +81,7 @@ export const OpenTasksBar = ({ events, admins, currentUserId, onChanged, onSelec
     }
     toast({ title: 'Added to your calendar', description: `${ev.title} · ${formatMinutes(startMin)} – ${formatMinutes(endMin)}` });
     onChanged();
+    window.dispatchEvent(new CustomEvent('open-tasks-changed'));
   };
 
   return (
