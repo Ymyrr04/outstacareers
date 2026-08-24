@@ -693,6 +693,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     setCandidates(enriched);
   }, [activeRoles, allRoles, jobFilter, filteredRoles, selectedAdmin, persistCache]);
 
+  // Signature of the role set currently in scope (changes when a job's assigned
+  // admin changes, so the selected admin's pipeline refetches instead of
+  // showing the roles/candidates from the previous assignment).
+  const filteredRolesKey = useMemo(() => filteredRoles.slice().sort().join(','), [filteredRoles]);
+
   useEffect(() => {
     if (selectedRole === ALL_ROLES_KEY && activeRoles.length === 0 && allRoles.length === 0) return;
     if (selectedRole) fetchCandidates(selectedRole);
@@ -700,7 +705,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     // filteredRoles/jobFilter recompute, which would cause redundant refetches
     // while the user sits on the page (e.g., admin map loading in stages).
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedRole, jobFilter, selectedAdmin, activeRoles.length, allRoles.length]);
+  }, [selectedRole, jobFilter, selectedAdmin, activeRoles.length, allRoles.length, filteredRolesKey]);
+
 
   // Fetch which loaded candidates have profiles (primary or additional)
   useEffect(() => {
