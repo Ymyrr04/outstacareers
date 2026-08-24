@@ -495,7 +495,7 @@ export const TeamCalendar = () => {
 
         <div ref={wrapperRef} className="overflow-x-auto overflow-y-hidden overscroll-y-auto flex-1 min-w-0">
           {/* Pinned header: open tasks + admin lane headers — stays at the top while scrolling */}
-          <div ref={pinnedRef} className="relative z-30 bg-background border-b border-border">
+          <div ref={pinnedRef} data-calendar-pinned className="relative z-30 bg-background border-b border-border">
             <OpenTasksBar
               events={dayEvents.filter((e) => e.is_open_task || e.time_tbd)}
               admins={admins}
