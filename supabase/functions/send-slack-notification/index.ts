@@ -280,11 +280,18 @@ Deno.serve(async (req) => {
         payload.assignedToEmails = await resolveEmails(payload.assignedToIds);
       }
       const createdByName = getDisplayName(payload.createdByEmail);
-      const assignedEmails = (payload.assignedToEmails || []).filter(Boolean);
+      // Don't mention the owner again in the assigned list — they're already shown as "Added by".
+      const creatorEmail = (payload.createdByEmail || "").toLowerCase();
+      const assignedEmails = (payload.assignedToEmails || [])
+        .filter(Boolean)
+        .filter((e) => e.toLowerCase() !== creatorEmail);
       let assignedStr: string;
       if (assignedEmails.length) {
         const assignedMentions = await Promise.all(assignedEmails.map((e) => mentionOrName(e)));
         assignedStr = assignedMentions.join(", ");
+      } else if ((payload.assignedToEmails || []).filter(Boolean).length) {
+        // The only assignee was the owner themselves.
+        assignedStr = `${createdByName} (owner)`;
       } else {
         // Unassigned / open task — ping every admin so anyone can pick it up.
         const allAdminMentions = await Promise.all(
