@@ -203,7 +203,7 @@ export const TeamCalendar = () => {
 
   const rangeStart = view === 'month' ? monthStart : selectedDate;
   const rangeEnd = view === 'month' ? monthEnd : selectedDate;
-  const { eventsForDate, refetch } = useCalendarEvents(rangeStart, rangeEnd);
+  const { events, eventsForDate, refetch } = useCalendarEvents(rangeStart, rangeEnd);
 
   const monthLabel = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(monthCursor);
 
