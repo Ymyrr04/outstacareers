@@ -1642,7 +1642,12 @@ const Admin = () => {
           </div>
           <div className="flex items-center gap-4">
             <ThemeToggle />
+            <Button variant="outline" size="sm" onClick={() => setMyCalendarOpen(true)}>
+              <CalendarIcon className="w-4 h-4 mr-2" />
+              My Calendar
+            </Button>
             {openTaskCount > 0 && (
+
               <Button
                 variant="outline"
                 size="sm"
