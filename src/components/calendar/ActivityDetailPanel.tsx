@@ -10,7 +10,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from '@/components/ui/popover';
-import { X, Plus, Trash2, CheckCircle2, Undo2, NotebookPen, Flag } from 'lucide-react';
+import { X, Plus, Trash2, CheckCircle2, Undo2, NotebookPen, Flag, Pencil } from 'lucide-react';
 import { CalendarAdmin } from '@/hooks/useCalendarAdmins';
 import { CalendarEvent } from '@/hooks/useCalendarEvents';
 import {
@@ -24,6 +24,7 @@ import {
   DEADLINE_COLOR,
 } from '@/lib/calendarTime';
 import MeetingNotesDialog from './MeetingNotesDialog';
+import AddActivityModal from './AddActivityModal';
 import { CandidateDetailDialog } from '@/components/CandidateDetailDialog';
 import { useToast } from '@/hooks/use-toast';
 
@@ -73,6 +74,7 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
   const [notesOpen, setNotesOpen] = useState(false);
   const [togglingDone, setTogglingDone] = useState(false);
   const [candidateOpen, setCandidateOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const link = event.pipeline_link || null;
   const linkStyle = link ? pipelineLinkStyle(link.type) : null;
   const deadline = isDeadline(event.event_type);
@@ -235,6 +237,9 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
     >
       <div className="absolute right-2 top-2 flex items-center gap-1">
         {done && <CheckCircle2 className="h-4 w-4 text-emerald-600" />}
+        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setEditOpen(true)} title="Edit activity">
+          <Pencil className="h-3.5 w-3.5" />
+        </Button>
         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={deleteEvent} title="Delete activity">
           <Trash2 className="h-3.5 w-3.5" />
         </Button>
@@ -242,6 +247,21 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
           <X className="h-4 w-4" />
         </Button>
       </div>
+
+      <AddActivityModal
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        date={event.event_date}
+        defaultStart={event.start_time}
+        defaultEnd={event.end_time}
+        admins={admins}
+        currentUserId={currentUserId}
+        editEvent={event}
+        onSaved={() => {
+          setEditOpen(false);
+          onChanged();
+        }}
+      />
 
       <div className={`flex items-center gap-3 ${done ? 'opacity-60' : ''}`}>
         {deadline ? (

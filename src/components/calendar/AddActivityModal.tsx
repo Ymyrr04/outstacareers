@@ -40,6 +40,8 @@ interface Props {
   admins: CalendarAdmin[];
   currentUserId?: string;
   onSaved: (date: string) => void;
+  /** When provided, the modal edits this existing activity instead of creating a new one. */
+  editEvent?: import('@/hooks/useCalendarEvents').CalendarEvent | null;
 }
 
 export const AddActivityModal = ({
@@ -53,6 +55,7 @@ export const AddActivityModal = ({
   admins,
   currentUserId,
   onSaved,
+  editEvent,
 }: Props) => {
   const { toast } = useToast();
   const { notifyCalendarActivity } = useSlackNotifications();
@@ -88,7 +91,7 @@ export const AddActivityModal = ({
   const [creatingType, setCreatingType] = useState(false);
   const [saving, setSaving] = useState(false);
   const [dayEvents, setDayEvents] = useState<
-    { title: string; start_time: number; end_time: number; assigned_to: string[] | null; created_by: string | null }[]
+    { id: string; title: string; start_time: number; end_time: number; assigned_to: string[] | null; created_by: string | null }[]
   >([]);
 
   // Load events occurring on this date (including recurring ones) to detect conflicts
@@ -98,11 +101,12 @@ export const AddActivityModal = ({
     (async () => {
       const { data } = await supabase
         .from('calendar_events')
-        .select('title,event_date,start_time,end_time,assigned_to,created_by,is_recurring,recurrence_rule')
+        .select('id,title,event_date,start_time,end_time,assigned_to,created_by,is_recurring,recurrence_rule')
         .or(`event_date.eq.${date},is_recurring.eq.true`);
       if (cancelled) return;
       const dow = weekdayOf(date);
       const occurring = (data || []).filter((e: any) => {
+        if (editEvent && e.id === editEvent.id) return false;
         if (e.event_date === date) return true;
         if (e.is_recurring && e.event_date < date) {
           const rule = e.recurrence_rule || 'weekly';
@@ -118,7 +122,7 @@ export const AddActivityModal = ({
     return () => {
       cancelled = true;
     };
-  }, [open, date]);
+  }, [open, date, editEvent]);
 
   const isUnassigned = adminId === UNASSIGNED;
   const startMin = inputToMinutes(start);
@@ -181,14 +185,30 @@ export const AddActivityModal = ({
 
   useEffect(() => {
     if (!open) return;
-    setTitle('');
-    setType('task');
     setAddingType(false);
     setNewType('');
+    setError(null);
+
+    if (editEvent) {
+      setTitle(editEvent.title);
+      setType(editEvent.event_type);
+      setDescription(editEvent.description ?? '');
+      setRepeat(editEvent.is_recurring ? editEvent.recurrence_rule || 'weekly' : 'none');
+      setPipelineLink(editEvent.pipeline_link ?? null);
+      setNoTime(!!editEvent.time_tbd);
+      setNotifySlack(false);
+      setAdminId(editEvent.is_open_task ? UNASSIGNED : editEvent.created_by || '');
+      setExtraAssignees((editEvent.assigned_to || []).filter((id) => id !== editEvent.created_by));
+      setStart(minutesToInput(editEvent.start_time));
+      setEnd(minutesToInput(editEvent.end_time));
+      return;
+    }
+
+    setTitle('');
+    setType('task');
     setDescription('');
     setRepeat('none');
     setPipelineLink(null);
-    setError(null);
     setNoTime(false);
     setNotifySlack(false);
     setExtraAssignees(defaultAssignees ?? []);
@@ -196,7 +216,7 @@ export const AddActivityModal = ({
     setAdminId(defaultAdminId || currentUserId || admins[0]?.user_id || '');
     setStart(minutesToInput(defaultStart));
     setEnd(minutesToInput(Math.min(defaultEnd ?? defaultStart + 60, 23 * 60 + 59)));
-  }, [open, defaultStart, defaultEnd, defaultAdminId, defaultAssignees, currentUserId, admins]);
+  }, [open, editEvent, defaultStart, defaultEnd, defaultAdminId, defaultAssignees, currentUserId, admins]);
 
   const handleSave = async () => {
     setError(null);
@@ -227,7 +247,7 @@ export const AddActivityModal = ({
     const assignedToIds = isUnassigned
       ? []
       : Array.from(new Set([...(owner ? [owner] : []), ...extraAssignees]));
-    const { error: dbError } = await supabase.from('calendar_events').insert({
+    const payload = {
       title: title.trim(),
       description: description.trim() || null,
       event_date: date,
@@ -242,8 +262,10 @@ export const AddActivityModal = ({
       is_open_task: isUnassigned,
       time_tbd: noTime,
       notify_slack: notifySlack,
-
-    } as never);
+    };
+    const { error: dbError } = editEvent
+      ? await supabase.from('calendar_events').update(payload as never).eq('id', editEvent.id)
+      : await supabase.from('calendar_events').insert(payload as never);
     setSaving(false);
     if (dbError) {
       toast({ title: 'Could not save activity', description: dbError.message, variant: 'destructive' });
@@ -260,7 +282,7 @@ export const AddActivityModal = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[520px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add activity</DialogTitle>
+          <DialogTitle>{editEvent ? 'Edit activity' : 'Add activity'}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -464,7 +486,7 @@ export const AddActivityModal = ({
           <span className="text-xs text-muted-foreground self-center">{formatDateLong(date)}</span>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={saving}>Save activity</Button>
+            <Button onClick={handleSave} disabled={saving}>{editEvent ? 'Save changes' : 'Save activity'}</Button>
           </div>
         </DialogFooter>
       </DialogContent>
