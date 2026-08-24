@@ -316,10 +316,36 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
       )}
 
       <div className="mt-4 flex items-center gap-2 flex-wrap">
+        <span className="text-xs text-muted-foreground">Owner</span>
+        <span className="inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5">
+          <Avatar admin={owner} size={20} />
+          <span className="text-xs">{owner?.name ?? 'Unassigned'}</span>
+        </span>
+      </div>
+
+      <div className="mt-2 flex items-center gap-2 flex-wrap">
         <span className="text-xs text-muted-foreground">Assigned to</span>
-        {(event.assigned_to || []).map((id) => (
-          <Avatar key={id} admin={admins.find((a) => a.user_id === id)} size={22} />
-        ))}
+        {(event.assigned_to || []).length === 0 && (
+          <span className="text-xs text-muted-foreground">No one assigned</span>
+        )}
+        {(event.assigned_to || []).map((id) => {
+          const a = admins.find((x) => x.user_id === id);
+          return (
+            <span key={id} className="inline-flex items-center gap-1 rounded-full border pl-1 pr-1 py-0.5">
+              <Avatar admin={a} size={20} />
+              <span className="text-xs">{a?.name ?? 'Admin'}</span>
+              <button
+                type="button"
+                onClick={() => toggleAssignee(id)}
+                title={`Unassign ${a?.name ?? 'admin'}`}
+                className="rounded-full p-0.5 text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </span>
+          );
+        })}
+
         <Popover>
           <PopoverTrigger asChild>
             <Button variant="outline" size="sm" className="h-6 px-2 text-xs">
