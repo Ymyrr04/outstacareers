@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck, UserCircle, Target, Globe, TrendingDown, FileSignature, FlaskConical, Flag } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck, UserCircle, Target, Globe, TrendingDown, FileSignature, FlaskConical, Flag, Calendar as CalendarIcon } from 'lucide-react';
 import { PreScreeningResponsesCard } from '@/components/PreScreeningResponsesCard';
 
 import { ContractsManager } from '@/components/contracts/ContractsManager';
@@ -24,6 +24,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { useEmailReplies } from '@/hooks/useEmailTemplates';
 import { ClientsDashboard, ContractorsDashboard, ClientAnalyticsDashboard, HiringPipelineKanban } from '@/components/clients';
 import TeamCalendar from '@/components/calendar/TeamCalendar';
+import MyCalendarDialog from '@/components/calendar/MyCalendarDialog';
 import { SalesPipeline } from '@/components/sales/SalesPipeline';
 import { PostHirePipelineKanban } from '@/components/clients/PostHirePipelineKanban';
 import { generateJobUrl } from '@/lib/slugify';
@@ -285,6 +286,7 @@ const Admin = () => {
 
   // "Up for grabs" open tasks — shown as a Task notification in the header
   const [openTaskCount, setOpenTaskCount] = useState(0);
+  const [myCalendarOpen, setMyCalendarOpen] = useState(false);
   const fetchOpenTaskCount = useCallback(async () => {
     const { count } = await supabase
       .from('calendar_events')
@@ -1629,6 +1631,7 @@ const Admin = () => {
 
   return (
     <div className="min-h-screen bg-background">
+      <MyCalendarDialog open={myCalendarOpen} onOpenChange={setMyCalendarOpen} currentUserId={user?.id} />
       <header className="border-b bg-card">
         <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
