@@ -432,10 +432,17 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       setAdminJobTitlesMap(Object.fromEntries(adminMap));
     };
     fetchJobs();
-    const onJobUpdated = () => fetchJobs();
+    const onJobUpdated = () => {
+      // Job/admin assignment changed elsewhere: drop cached candidate lists so
+      // the newly assigned admin's pipeline rebuilds from fresh data.
+      candidateCacheRef.current.clear();
+      try { sessionStorage.removeItem(SS_CACHE_KEY); } catch { /* ignore */ }
+      fetchJobs();
+    };
     window.addEventListener('job-updated', onJobUpdated);
     return () => window.removeEventListener('job-updated', onJobUpdated);
   }, []);
+
 
 
   const filteredRoles = useMemo(() => {
