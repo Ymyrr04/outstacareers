@@ -247,7 +247,7 @@ export const AddActivityModal = ({
     const assignedToIds = isUnassigned
       ? []
       : Array.from(new Set([...(owner ? [owner] : []), ...extraAssignees]));
-    const { error: dbError } = await supabase.from('calendar_events').insert({
+    const payload = {
       title: title.trim(),
       description: description.trim() || null,
       event_date: date,
@@ -262,8 +262,10 @@ export const AddActivityModal = ({
       is_open_task: isUnassigned,
       time_tbd: noTime,
       notify_slack: notifySlack,
-
-    } as never);
+    };
+    const { error: dbError } = editEvent
+      ? await supabase.from('calendar_events').update(payload as never).eq('id', editEvent.id)
+      : await supabase.from('calendar_events').insert(payload as never);
     setSaving(false);
     if (dbError) {
       toast({ title: 'Could not save activity', description: dbError.message, variant: 'destructive' });
@@ -280,7 +282,7 @@ export const AddActivityModal = ({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[520px] max-h-[85vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add activity</DialogTitle>
+          <DialogTitle>{editEvent ? 'Edit activity' : 'Add activity'}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
