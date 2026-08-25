@@ -100,6 +100,7 @@ export const AddActivityModal = ({
   const [newType, setNewType] = useState('');
   const [creatingType, setCreatingType] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [conflictWarnings, setConflictWarnings] = useState<string[]>([]);
   const [dayEvents, setDayEvents] = useState<
     { id: string; title: string; start_time: number; end_time: number; assigned_to: string[] | null; created_by: string | null }[]
   >([]);
