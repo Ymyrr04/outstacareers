@@ -367,7 +367,7 @@ export const AddActivityModal = ({
                   {admins.map((a) => {
                     const busy = conflicts.has(a.user_id);
                     return (
-                      <SelectItem key={a.user_id} value={a.user_id} disabled={busy}>
+                      <SelectItem key={a.user_id} value={a.user_id}>
                         {a.initial} — {a.name}{busy ? ' (busy)' : ''}
                       </SelectItem>
                     );
