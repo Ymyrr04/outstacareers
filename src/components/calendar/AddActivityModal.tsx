@@ -407,14 +407,13 @@ export const AddActivityModal = ({
                 return (
                   <label
                     key={a.user_id}
-                    className={`flex items-center gap-2 text-sm ${
-                      busy ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                    className={`flex items-center gap-2 text-sm cursor-pointer ${
+                      busy ? 'opacity-70' : ''
                     }`}
                     title={conflictLabel(a.user_id) ?? undefined}
                   >
                     <Checkbox
-                      disabled={busy}
-                      checked={!busy && extraAssignees.includes(a.user_id)}
+                      checked={extraAssignees.includes(a.user_id)}
                       onCheckedChange={(v) =>
                         setExtraAssignees((prev) =>
                           v === true ? [...prev, a.user_id] : prev.filter((id) => id !== a.user_id)
