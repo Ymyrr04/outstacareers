@@ -228,7 +228,7 @@ export const AddActivityModal = ({
     setEnd(minutesToInput(Math.min(defaultEnd ?? defaultStart + 60, 23 * 60 + 59)));
   }, [open, editEvent, defaultStart, defaultEnd, defaultAdminId, defaultAssignees, currentUserId, admins]);
 
-  const handleSave = async () => {
+  const handleSave = async (force = false) => {
     setError(null);
     if (!title.trim()) {
       setError('Title is required');
@@ -242,17 +242,25 @@ export const AddActivityModal = ({
       return;
     }
     const owner = isUnassigned ? currentUserId : adminId || currentUserId;
-    if (!isUnassigned && !noTime) {
+    if (!isUnassigned && !noTime && !force) {
+      const warnings: string[] = [];
       if (owner && conflicts.has(owner)) {
-        setError(`Owner is not available — ${conflictLabel(owner)}`);
-        return;
+        const name = admins.find((a) => a.user_id === owner)?.name ?? 'Owner';
+        warnings.push(`${name} (owner) — ${conflictLabel(owner)}`);
       }
-      const busyPicked = extraAssignees.filter((id) => conflicts.has(id));
-      if (busyPicked.length) {
-        setError('Some selected admins already have an activity at this time');
+      extraAssignees
+        .filter((id) => conflicts.has(id) && id !== owner)
+        .forEach((id) => {
+          const name = admins.find((a) => a.user_id === id)?.name ?? 'Admin';
+          warnings.push(`${name} — ${conflictLabel(id)}`);
+        });
+      if (warnings.length) {
+        setConflictWarnings(warnings);
         return;
       }
     }
+    setConflictWarnings([]);
+
     setSaving(true);
     const assignedToIds = isUnassigned
       ? []
