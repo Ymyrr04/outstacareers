@@ -504,12 +504,43 @@ export const AddActivityModal = ({
           <span className="text-xs text-muted-foreground self-center">{formatDateLong(date)}</span>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={saving}>{editEvent ? 'Save changes' : 'Save activity'}</Button>
+            <Button onClick={() => handleSave()} disabled={saving}>{editEvent ? 'Save changes' : 'Save activity'}</Button>
           </div>
         </DialogFooter>
       </DialogContent>
+
+      <AlertDialog open={conflictWarnings.length > 0} onOpenChange={(o) => !o && setConflictWarnings([])}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Scheduling conflict</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>These people already have something booked at this time:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  {conflictWarnings.map((w, i) => (
+                    <li key={i}>{w}</li>
+                  ))}
+                </ul>
+                <p>You can still save this activity as a double-booking.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Go back</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConflictWarnings([]);
+                handleSave(true);
+              }}
+            >
+              Save anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
+
 };
 
 export default AddActivityModal;
