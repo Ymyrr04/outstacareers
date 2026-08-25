@@ -24,6 +24,16 @@ import {
   PipelineLink,
 } from '@/lib/calendarTime';
 import PipelineLinkSelect from './PipelineLinkSelect';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const UNASSIGNED = '__unassigned__';
 
