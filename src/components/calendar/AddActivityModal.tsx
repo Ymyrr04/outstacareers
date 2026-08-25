@@ -24,6 +24,16 @@ import {
   PipelineLink,
 } from '@/lib/calendarTime';
 import PipelineLinkSelect from './PipelineLinkSelect';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const UNASSIGNED = '__unassigned__';
 
@@ -90,6 +100,7 @@ export const AddActivityModal = ({
   const [newType, setNewType] = useState('');
   const [creatingType, setCreatingType] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [conflictWarnings, setConflictWarnings] = useState<string[]>([]);
   const [dayEvents, setDayEvents] = useState<
     { id: string; title: string; start_time: number; end_time: number; assigned_to: string[] | null; created_by: string | null }[]
   >([]);
@@ -218,7 +229,7 @@ export const AddActivityModal = ({
     setEnd(minutesToInput(Math.min(defaultEnd ?? defaultStart + 60, 23 * 60 + 59)));
   }, [open, editEvent, defaultStart, defaultEnd, defaultAdminId, defaultAssignees, currentUserId, admins]);
 
-  const handleSave = async () => {
+  const handleSave = async (force = false) => {
     setError(null);
     if (!title.trim()) {
       setError('Title is required');
@@ -232,17 +243,25 @@ export const AddActivityModal = ({
       return;
     }
     const owner = isUnassigned ? currentUserId : adminId || currentUserId;
-    if (!isUnassigned && !noTime) {
+    if (!isUnassigned && !noTime && !force) {
+      const warnings: string[] = [];
       if (owner && conflicts.has(owner)) {
-        setError(`Owner is not available — ${conflictLabel(owner)}`);
-        return;
+        const name = admins.find((a) => a.user_id === owner)?.name ?? 'Owner';
+        warnings.push(`${name} (owner) — ${conflictLabel(owner)}`);
       }
-      const busyPicked = extraAssignees.filter((id) => conflicts.has(id));
-      if (busyPicked.length) {
-        setError('Some selected admins already have an activity at this time');
+      extraAssignees
+        .filter((id) => conflicts.has(id) && id !== owner)
+        .forEach((id) => {
+          const name = admins.find((a) => a.user_id === id)?.name ?? 'Admin';
+          warnings.push(`${name} — ${conflictLabel(id)}`);
+        });
+      if (warnings.length) {
+        setConflictWarnings(warnings);
         return;
       }
     }
+    setConflictWarnings([]);
+
     setSaving(true);
     const assignedToIds = isUnassigned
       ? []
@@ -348,7 +367,7 @@ export const AddActivityModal = ({
                   {admins.map((a) => {
                     const busy = conflicts.has(a.user_id);
                     return (
-                      <SelectItem key={a.user_id} value={a.user_id} disabled={busy}>
+                      <SelectItem key={a.user_id} value={a.user_id}>
                         {a.initial} — {a.name}{busy ? ' (busy)' : ''}
                       </SelectItem>
                     );
@@ -388,14 +407,13 @@ export const AddActivityModal = ({
                 return (
                   <label
                     key={a.user_id}
-                    className={`flex items-center gap-2 text-sm ${
-                      busy ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'
+                    className={`flex items-center gap-2 text-sm cursor-pointer ${
+                      busy ? 'opacity-70' : ''
                     }`}
                     title={conflictLabel(a.user_id) ?? undefined}
                   >
                     <Checkbox
-                      disabled={busy}
-                      checked={!busy && extraAssignees.includes(a.user_id)}
+                      checked={extraAssignees.includes(a.user_id)}
                       onCheckedChange={(v) =>
                         setExtraAssignees((prev) =>
                           v === true ? [...prev, a.user_id] : prev.filter((id) => id !== a.user_id)
@@ -486,12 +504,43 @@ export const AddActivityModal = ({
           <span className="text-xs text-muted-foreground self-center">{formatDateLong(date)}</span>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button onClick={handleSave} disabled={saving}>{editEvent ? 'Save changes' : 'Save activity'}</Button>
+            <Button onClick={() => handleSave()} disabled={saving}>{editEvent ? 'Save changes' : 'Save activity'}</Button>
           </div>
         </DialogFooter>
       </DialogContent>
+
+      <AlertDialog open={conflictWarnings.length > 0} onOpenChange={(o) => !o && setConflictWarnings([])}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Scheduling conflict</AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>These people already have something booked at this time:</p>
+                <ul className="list-disc pl-5 space-y-1">
+                  {conflictWarnings.map((w, i) => (
+                    <li key={i}>{w}</li>
+                  ))}
+                </ul>
+                <p>You can still save this activity as a double-booking.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Go back</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                setConflictWarnings([]);
+                handleSave(true);
+              }}
+            >
+              Save anyway
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
+
 };
 
 export default AddActivityModal;
