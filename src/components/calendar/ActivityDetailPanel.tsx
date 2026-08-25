@@ -110,9 +110,9 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
     setNewComment('');
     loadComments();
 
-    // Fire Slack notification (non-blocking)
+    // Slack notification: only when the task OWNER comments AND mentions another admin
     const commenter = admins.find((a) => a.user_id === currentUserId);
-    // Resolve @mentions typed in the comment to admin emails
+    const isOwner = event.created_by === currentUserId;
     const plain = text.replace(/<[^>]*>/g, ' ');
     const mentionedEmails = Array.from(
       new Set(
@@ -127,22 +127,18 @@ export const ActivityDetailPanel = ({ event, admins, currentUserId, onClose, onC
           .map((a) => a.email),
       ),
     );
-    // Always notify the people assigned to the task and its creator
-    const assignedToEmails = (event.assigned_to || [])
-      .map((id) => admins.find((a) => a.user_id === id)?.email)
-      .filter(Boolean) as string[];
-    const creatorEmail = admins.find((a) => a.user_id === event.created_by)?.email;
-    if (commenter?.email) {
+
+    if (isOwner && commenter?.email && mentionedEmails.length > 0) {
       notifyCalendarComment({
         commentByEmail: commenter.email,
         commentText: text,
         activityTitleForComment: event.title,
         eventDateForComment: event.event_date,
         mentionedEmails,
-        assignedToEmails,
-        createdByEmail: creatorEmail || undefined,
+        assignedToEmails: [],
       }).catch((err) => console.error('[Slack] Calendar comment notification failed:', err));
     }
+
 
 
   };
