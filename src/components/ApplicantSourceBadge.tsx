@@ -21,6 +21,7 @@ const sourceLabels: Record<string, string> = {
   'linkedin': 'LinkedIn',
   'indeed': 'Indeed',
   'facebook': 'Facebook',
+  'threads': 'Threads',
   'referral': 'Referral',
   'company_website': 'Company Website',
   'other': 'Other',
