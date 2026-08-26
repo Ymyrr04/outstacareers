@@ -81,6 +81,7 @@ type FormData = {
 const JOB_SOURCE_OPTIONS = [
   'LinkedIn',
   'Facebook',
+  'Threads',
   'Referral',
   'Job Board (Indeed, Glassdoor, etc.)',
   'Google Search',
