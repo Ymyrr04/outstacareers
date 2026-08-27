@@ -330,7 +330,8 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       // Retention/separations counted only within the current-year cohort
       // (contractors hired/started in 2026), not all-time assignments.
       const ytdActive = ytdAssignments.filter((a) => a.status === 'active').length;
-      const retentionRate =
+      // Placeholder; recomputed below as the average of per-admin retention rates.
+      let retentionRate =
         ytdAssignments.length > 0 ? Math.round((ytdActive / ytdAssignments.length) * 100) : 0;
       const stays = assignments
         .filter((a) => a.start_date)
@@ -365,6 +366,15 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         .slice(0, 4);
       const bestEntry = adminLeaderboard[0];
       const bestAdmin = bestEntry ? `${bestEntry.name} · ${bestEntry.ytdHires} hires` : '—';
+      // Average retention = mean of the leaderboard admins' individual retention rates
+      // (unweighted), matching how retention is reported per admin.
+      if (adminLeaderboard.length > 0) {
+        const exact = Object.entries(perAdmin)
+          .filter(([name]) => adminLeaderboard.some((a) => a.name === name))
+          .map(([, s]) => (s.total > 0 ? (s.active / s.total) * 100 : 0));
+        retentionRate = Math.round(exact.reduce((s, v) => s + v, 0) / exact.length);
+      }
+
 
       // --- PL ---
       const timesheets = (timesheetsRes.data || []) as any[];
