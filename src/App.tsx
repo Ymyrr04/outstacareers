@@ -33,6 +33,8 @@ import ClientPortalDashboard from "./pages/ClientPortalDashboard";
 import ClientPortalSetup from "./pages/ClientPortalSetup";
 import ClientPortalResetPassword from "./pages/ClientPortalResetPassword";
 import DomainGuard from "./components/DomainGuard";
+import DesignPreviewToggle from "./components/DesignPreviewToggle";
+
 
 const queryClient = new QueryClient({
   defaultOptions: {
