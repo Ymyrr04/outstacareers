@@ -260,3 +260,55 @@ html:not(.dark) .admin-shell select {
   border-color: hsl(var(--brand-border));
   border-radius: 6px;
 }
+
+/* ---------- Badges & pills ---------- */
+html:not(.dark) .admin-shell .inline-flex.rounded-full.border,
+html:not(.dark) .admin-shell [class*="rounded-full"][class*="px-2.5"][class*="text-xs"] {
+  border-radius: 8px;
+  font-size: 9px;
+  padding: 2px 7px;
+  font-weight: 500;
+}
+
+/* ---------- Kanban columns & cards ---------- */
+html:not(.dark) .admin-shell .kanban-column-body {
+  background: #fff;
+  border: 0.5px solid hsl(var(--brand-border));
+  border-radius: 0 0 7px 7px;
+}
+html:not(.dark) .admin-shell .kanban-column-header { border-radius: 7px 7px 0 0; }
+html:not(.dark) .admin-shell .kanban-card {
+  background: #fff;
+  border: 0.5px solid hsl(var(--brand-border));
+  border-radius: 6px;
+}
+html:not(.dark) .admin-shell .kanban-card:hover { background: hsl(var(--brand-surface)); }
+
+/* ---------- Stat cards ---------- */
+html:not(.dark) .admin-shell .stat-card {
+  position: relative;
+  background: #fff;
+  border: 0.5px solid hsl(var(--brand-border));
+  border-radius: 10px;
+  padding: 14px;
+  overflow: hidden;
+}
+html:not(.dark) .admin-shell .stat-card::before {
+  content: "";
+  position: absolute; top: 0; left: 0; right: 0; height: 3px;
+  background: currentColor;
+}
+
+/* ---------- Filter chips ---------- */
+html:not(.dark) .admin-shell .filter-chip {
+  background: #fff;
+  border: 0.5px solid hsl(var(--brand-border));
+  border-radius: 6px;
+  color: hsl(var(--muted-foreground));
+}
+html:not(.dark) .admin-shell .filter-chip:hover { background: hsl(var(--brand-surface)); }
+html:not(.dark) .admin-shell .filter-chip[data-active="true"] {
+  background: hsl(var(--brand-light));
+  border-color: hsl(var(--brand));
+  color: hsl(var(--brand-text));
+}
