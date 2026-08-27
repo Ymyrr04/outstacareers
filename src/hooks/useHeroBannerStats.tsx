@@ -58,6 +58,8 @@ export interface HeroBannerStats {
   superAdminCount: number;
   adminCount: number;
   viewerCount: number;
+  // Open jobs (active roles) with new applicant counts
+  openJobStats: { jobId: string; title: string; admin: string; newApplicants: number; totalApplicants: number }[];
 }
 
 const emptyStats: HeroBannerStats = {
@@ -103,6 +105,7 @@ const emptyStats: HeroBannerStats = {
   superAdminCount: 0,
   adminCount: 0,
   viewerCount: 0,
+  openJobStats: [],
 };
 
 const ET = 'America/New_York';
@@ -177,7 +180,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         rolesRes,
       ] = await Promise.all([
         fetchApplicants(),
-        supabase.from('jobs').select('id, region, is_active, assigned_admin_id'),
+        supabase.from('jobs').select('id, title, region, is_active, assigned_admin_id'),
         supabase.from('contract_envelopes').select('status, sent_at, countersigned_at, countersign_sent_at'),
         supabase.from('calendar_events').select('assigned_to, claimed_by, event_date').eq('event_date', today),
         supabase.from('calendar_events').select('event_date, is_done, assigned_to, claimed_by').gte('event_date', weekAgo.slice(0, 10)),
@@ -232,6 +235,21 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         else regionCounts.global++;
       }
 
+
+      // --- Open jobs (active roles) with applicant counts ---
+      const openJobs = myJobs.filter((j) => j.is_active);
+      const openJobStats = openJobs
+        .map((j) => {
+          const rows = applicants.filter((a) => a.job_id === j.id);
+          return {
+            jobId: j.id as string,
+            title: (j.title as string) || 'Untitled role',
+            admin: getAdminDisplayName(String(j.assigned_admin_id || ''), 'Unassigned'),
+            newApplicants: rows.filter((a) => a.created_at && a.created_at >= weekAgo).length,
+            totalApplicants: rows.length,
+          };
+        })
+        .sort((a, b) => b.newApplicants - a.newApplicants || a.title.localeCompare(b.title));
 
       // --- Contracts ---
       const envelopes = (envelopesRes.data || []) as any[];
@@ -401,6 +419,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         superAdminCount,
         adminCount,
         viewerCount,
+        openJobStats,
       });
     };
 
