@@ -408,6 +408,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         leadStageCounts,
         activeClients: clientIds.size,
         activeContractors: active.length,
+        scheduledContractors: scheduled.length,
         contractorClients: clientIds.size,
         contractorRegions,
         plWeekEnding,
