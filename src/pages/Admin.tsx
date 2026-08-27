@@ -1728,7 +1728,7 @@ const Admin = () => {
 
       <main className="px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
         <Tabs defaultValue="jobs" className="space-y-6" value={activeMainTab} onValueChange={handleMainTabChange}>
-          <TabsList className="flex-wrap">
+          <TabsList className="flex-wrap admin-main-nav">
             {canViewTab('jobs') && (
               <TabsTrigger value="jobs" className="flex items-center gap-2">
                 <Briefcase className="w-4 h-4" />
