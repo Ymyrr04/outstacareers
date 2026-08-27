@@ -1843,7 +1843,7 @@ interface CandidateCardProps {
   onReprofiled: () => void;
 }
 
-const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle, hasAdditionalProfile, hasPrimaryProfile, knownTags, onTagsUpdated, knownSuitableRoles, onSuitableRolesUpdated, onReprofiled }: CandidateCardProps) => {
+const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle, hasAdditionalProfile, hasPrimaryProfile, knownTags, onTagsUpdated, knownSuitableRoles, onSuitableRolesUpdated, onReprofiled }: CandidateCardProps) => {
   const { getDisplayName: getStageDisplayName } = useStageSettings();
   const [showDetails, setShowDetails] = useState(false);
   const [showDetailsTab, setShowDetailsTab] = useState<string | undefined>(undefined); // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -2010,15 +2010,16 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
             }}
             onDragEnd={() => onDragEnd?.()}
             className={cn(
-              "bg-card rounded-md p-2.5 shadow-sm border border-border/50 hover:shadow-md transition-all space-y-1.5 cursor-grab active:cursor-grabbing",
+              "bg-white rounded-md border-[0.5px] border-[#C8F0F8] px-2 py-[7px] transition-all space-y-1.5 cursor-pointer hover:bg-[#EDF9FC]",
               isDragging && "opacity-40 scale-95 shadow-lg",
               isSelected && "ring-2 ring-primary border-primary bg-primary/5"
             )}
+            style={{ borderLeft: `3px solid ${accentColor}` }}
           >
             <div className="space-y-1">
               <div className="flex items-start gap-1.5">
                 <div className={cn('w-2 h-2 rounded-full mt-1 shrink-0', dotColor)} />
-                <p className="text-xs font-semibold leading-tight flex-1 min-w-0" title={candidate.full_name}>
+                <p className="text-[11px] font-medium leading-tight flex-1 min-w-0 mb-[3px]" title={candidate.full_name}>
                   {candidate.full_name}
                 </p>
                 {(hasAdditionalProfile || hasPrimaryProfile) && (
