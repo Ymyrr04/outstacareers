@@ -340,8 +340,45 @@ html:not(.dark) .admin-shell input,
 html:not(.dark) .admin-shell textarea,
 html:not(.dark) .admin-shell select {
   background: #fff;
-  border-color: hsl(var(--brand-border));
+  border: 0.5px solid hsl(var(--brand-border));
   border-radius: 6px;
+}
+html:not(.dark) .admin-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html:not(.dark) .admin-shell select {
+  height: 32px;
+  font-size: 12px;
+  padding: 0 10px;
+}
+html:not(.dark) .admin-shell textarea { font-size: 12px; padding: 8px 10px; }
+html:not(.dark) .admin-shell input::placeholder,
+html:not(.dark) .admin-shell textarea::placeholder { color: hsl(var(--muted-foreground)); }
+html:not(.dark) .admin-shell input:focus-visible,
+html:not(.dark) .admin-shell textarea:focus-visible,
+html:not(.dark) .admin-shell select:focus-visible {
+  outline: none;
+  border-color: hsl(var(--brand));
+  box-shadow: 0 0 0 2px hsl(var(--brand-light));
+}
+/* Radix select / combobox triggers */
+html:not(.dark) .admin-shell [role="combobox"] {
+  background: #fff;
+  border: 0.5px solid hsl(var(--brand-border));
+  border-radius: 6px;
+  height: 32px;
+  font-size: 12px;
+  box-shadow: none;
+}
+html:not(.dark) .admin-shell [role="combobox"]:focus,
+html:not(.dark) .admin-shell [role="combobox"]:focus-visible {
+  outline: none;
+  border-color: hsl(var(--brand));
+  box-shadow: 0 0 0 2px hsl(var(--brand-light));
+}
+/* Search input icons (icon inside a relative wrapper with a padded input) */
+html:not(.dark) .admin-shell .relative > svg.absolute {
+  width: 13px;
+  height: 13px;
+  color: hsl(var(--muted-foreground));
 }
 
 /* ---------- Badges & pills ---------- */
@@ -354,6 +391,44 @@ html:not(.dark) .admin-shell [class*="rounded-full"][class*="px-2.5"][class*="te
 }
 /* Status badges inside tables */
 html:not(.dark) .admin-shell table tbody td .inline-flex[class*="rounded"] {
+  border-radius: 8px;
+  font-size: 9px;
+  padding: 2px 7px;
+  font-weight: 500;
+}
+/* Status badge color schemes (pipeline stage badges on kanban cards untouched) */
+html:not(.dark) .admin-shell .inline-flex[class*="rounded-full"][class*="bg-green-100"],
+html:not(.dark) .admin-shell .inline-flex[class*="rounded-full"][class*="bg-emerald-100"] {
+  background: hsl(var(--brand-light));
+  color: hsl(var(--brand-text));
+  border-color: transparent;
+}
+html:not(.dark) .admin-shell .inline-flex[class*="rounded-full"][class*="bg-amber-100"],
+html:not(.dark) .admin-shell .inline-flex[class*="rounded-full"][class*="bg-yellow-100"] {
+  background: #FAEEDA;
+  color: #633806;
+  border-color: transparent;
+}
+html:not(.dark) .admin-shell .inline-flex[class*="rounded-full"][class*="bg-red-100"] {
+  background: #FCEBEB;
+  color: #A32D2D;
+  border-color: transparent;
+}
+html:not(.dark) .admin-shell .inline-flex[class*="rounded-full"][class*="bg-gray-100"],
+html:not(.dark) .admin-shell .inline-flex[class*="rounded-full"][class*="bg-slate-100"] {
+  background: #F1EFE8;
+  color: #5F5E5A;
+  border-color: transparent;
+}
+/* New / Unread badges */
+html:not(.dark) .admin-shell .inline-flex[class*="rounded-full"][class*="bg-red-500"],
+html:not(.dark) .admin-shell .inline-flex[class*="rounded-full"][class*="bg-destructive"] {
+  background: hsl(var(--brand-danger));
+  color: #fff;
+  border-color: transparent;
+}
+/* Badge geometry everywhere (except kanban stage/count badges which keep their look) */
+html:not(.dark) .admin-shell .inline-flex[class*="rounded-full"] {
   border-radius: 8px;
   font-size: 9px;
   padding: 2px 7px;
@@ -396,13 +471,25 @@ html:not(.dark) .admin-shell .filter-chip {
   border: 0.5px solid hsl(var(--brand-border));
   border-radius: 6px;
   color: hsl(var(--muted-foreground));
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
 }
 html:not(.dark) .admin-shell .filter-chip:hover { background: hsl(var(--brand-surface)); }
-html:not(.dark) .admin-shell .filter-chip[data-active="true"] {
+html:not(.dark) .admin-shell .filter-chip[data-active="true"],
+html:not(.dark) .admin-shell .filter-chip.active {
   background: hsl(var(--brand-light));
   border-color: hsl(var(--brand));
   color: hsl(var(--brand-text));
 }
+
+/* ---------- Sub-tabs (PL, Contracts, Analytics inner tabs) ---------- */
+html:not(.dark) .admin-shell [role="tablist"] {
+  width: 100%;
+  margin-bottom: 12px;
+}
+html:not(.dark) .admin-shell [role="tab"] { padding: 7px 12px; }
+html:not(.dark) .admin-shell [role="tab"]:hover { color: hsl(var(--muted-foreground)); }
 
 /* ---------- Admin list row cards ---------- */
 html:not(.dark) .admin-shell .list-row-card {
