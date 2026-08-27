@@ -802,6 +802,17 @@ export const ClientAnalyticsDashboard = () => {
       .sort((a, b) => b.hired - a.hired);
   }, [contractors]);
 
+  // Total hires year-to-date (current calendar year)
+  const totalHiresYTD = useMemo(() => {
+    const year = new Date().getFullYear();
+    return contractors.filter(
+      (c) => c.start_date && new Date(c.start_date).getFullYear() === year
+    ).length;
+  }, [contractors]);
+
+  // Top recruiter = the admin with the most hires
+  const topRecruiter = hiresByAdmin[0] || null;
+
   // Drill-down: selected admin's hires grouped by role
   const [selectedAdmin, setSelectedAdmin] = useState<string | null>(null);
 
