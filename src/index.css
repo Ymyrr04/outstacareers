@@ -60,8 +60,16 @@ All colors MUST be HSL.
     --sidebar-accent-foreground: 240 5.9% 10%;
 
     --sidebar-border: 220 13% 91%;
-
+ 
     --sidebar-ring: 217.2 91.2% 59.8%;
+
+    /* Brand color tokens (hex base values) */
+    --brand: #0ABEDF;
+    --brand-dark: #0899B5;
+    --brand-light: #E0F7FC;
+    --brand-border: #C8F0F8;
+    --brand-text: #066F85;
+    --page-bg: #F0FFFE;
   }
 
   .dark {
@@ -144,12 +152,13 @@ html:not(.dark) .admin-shell {
   --brand-mid: 189 83% 84%;        /* #B2EEF8 */
   --brand-text: 190 91% 27%;       /* #066F85 */
   --brand-surface: 192 71% 96%;    /* #EDF9FC */
+  --brand-page-bg: 176 100% 97%;   /* #F0FFFE */
   --brand-border: 190 78% 88%;     /* #C8F0F8 */
   --brand-thead: 195 67% 98%;      /* #F5FBFD */
   --brand-danger: 0 72% 59%;       /* #E24B4A */
 
   /* Remap shadcn tokens so every component inherits the new look */
-  --background: var(--brand-surface);
+  --background: var(--brand-page-bg);
   --card: 0 0% 100%;
   --popover: 0 0% 100%;
   --primary: var(--brand);
@@ -164,7 +173,7 @@ html:not(.dark) .admin-shell {
   --ring: var(--brand);
   --radius: 0.625rem;
 
-  background-color: hsl(var(--brand-surface));
+  background-color: hsl(var(--brand-page-bg));
 }
 
 /* ---------- Header ---------- */

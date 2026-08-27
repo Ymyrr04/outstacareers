@@ -59,9 +59,14 @@ export default {
 					'primary-foreground': 'hsl(var(--sidebar-primary-foreground))',
 					accent: 'hsl(var(--sidebar-accent))',
 					'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
-					border: 'hsl(var(--sidebar-border))',
+				border: 'hsl(var(--sidebar-border))',
 					ring: 'hsl(var(--sidebar-ring))'
-				}
+				},
+				brand: '#0ABEDF',
+				'brand-dark': '#0899B5',
+				'brand-light': '#E0F7FC',
+				'brand-text': '#066F85',
+				'page-bg': '#F0FFFE'
 			},
 			backgroundImage: {
 				'gradient-hero': 'var(--gradient-hero)',
