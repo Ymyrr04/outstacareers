@@ -252,8 +252,74 @@ html:not(.dark) .admin-shell table tbody tr:last-child { border-bottom: 0; }
 html:not(.dark) .admin-shell table tbody tr:hover { background: hsl(var(--brand-surface)); }
 html:not(.dark) .admin-shell table tbody td { font-size: 11px; padding: 8px 10px; }
 
-/* ---------- Buttons ---------- */
-html:not(.dark) .admin-shell button { border-radius: 6px; }
+/* ---------- Buttons (scoped to admin; portals untouched) ---------- */
+html:not(.dark) .admin-shell button,
+html:not(.dark) .admin-shell [data-variant] {
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1.2;
+  box-shadow: none;
+}
+/* Compact padding for regular text buttons (skip icon & lg) */
+html:not(.dark) .admin-shell [data-variant]:not([data-size="icon"]):not([data-size="lg"]),
+html:not(.dark) .admin-shell button:not([data-size="icon"]):not([data-size="lg"]) {
+  height: auto;
+  padding: 6px 12px;
+}
+/* Primary / default */
+html:not(.dark) .admin-shell [data-variant="default"] {
+  background: hsl(var(--brand));
+  color: #fff;
+  border: none;
+}
+html:not(.dark) .admin-shell [data-variant="default"]:hover {
+  background: hsl(var(--brand-dark));
+}
+html:not(.dark) .admin-shell [data-variant="default"]:active {
+  background: hsl(190 91% 30%);
+}
+/* Secondary / outline */
+html:not(.dark) .admin-shell [data-variant="secondary"],
+html:not(.dark) .admin-shell [data-variant="outline"] {
+  background: #fff;
+  color: hsl(var(--muted-foreground));
+  border: 0.5px solid hsl(var(--brand-border));
+}
+html:not(.dark) .admin-shell [data-variant="secondary"]:hover,
+html:not(.dark) .admin-shell [data-variant="outline"]:hover {
+  background: hsl(var(--brand-surface));
+  border-color: hsl(var(--brand));
+}
+/* Ghost */
+html:not(.dark) .admin-shell [data-variant="ghost"] {
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  border: none;
+}
+html:not(.dark) .admin-shell [data-variant="ghost"]:hover {
+  background: hsl(var(--brand-surface));
+  color: hsl(var(--brand-text));
+}
+/* Destructive */
+html:not(.dark) .admin-shell [data-variant="destructive"] {
+  background: hsl(var(--brand-danger));
+  color: #fff;
+  border: none;
+}
+html:not(.dark) .admin-shell [data-variant="destructive"]:hover {
+  background: hsl(0 72% 49%);
+}
+/* Link */
+html:not(.dark) .admin-shell [data-variant="link"] {
+  color: hsl(var(--brand));
+  background: transparent;
+}
+/* Keep disabled buttons muted */
+html:not(.dark) .admin-shell [data-variant]:disabled,
+html:not(.dark) .admin-shell button:disabled {
+  opacity: 0.5;
+}
 
 /* ---------- Inputs ---------- */
 html:not(.dark) .admin-shell input,
