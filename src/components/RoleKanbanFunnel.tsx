@@ -2045,22 +2045,16 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
                 )}
               </div>
               <div className="pl-3.5 flex items-center gap-1.5 flex-wrap">
-                <span 
+                <span
                   className={cn(
-                    "inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded",
-                    candidate.total_score != null && candidate.total_score >= 70
-                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
-                      : candidate.total_score != null && candidate.total_score >= 40
-                      ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
-                      : candidate.total_score != null
-                      ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400"
-                      : "bg-muted text-muted-foreground"
+                    "inline-flex text-[9px] font-medium px-1 py-px rounded-[3px]",
+                    scoreBadgeClass(candidate.total_score)
                   )}
                 >
                   CV: {candidate.total_score ?? '–'}
                 </span>
                 {candidate.interview_overall_score != null && (
-                  <span className="inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400">
+                  <span className={cn("inline-flex text-[9px] font-medium px-1 py-px rounded-[3px]", scoreBadgeClass(candidate.interview_overall_score))}>
                     IV: {candidate.interview_overall_score}
                   </span>
                 )}
@@ -2078,12 +2072,8 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
                   if (!showCombined) return null;
                   return (
                     <span className={cn(
-                      "inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded",
-                      combined >= 70
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400"
-                        : combined >= 40
-                        ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
-                        : "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400"
+                      "inline-flex text-[9px] font-medium px-1 py-px rounded-[3px]",
+                      scoreBadgeClass(combined)
                     )}>
                       OA: {combined}
                     </span>
@@ -2127,13 +2117,13 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
               </div>
             )}
 
-            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-              <MapPin className="w-2.5 h-2.5 shrink-0" />
+            <div className="flex items-center gap-[3px] text-[9px] text-muted-foreground">
+              <MapPin className="w-[9px] h-[9px] shrink-0" />
               <span className="truncate">{candidate.location || 'N/A'}</span>
             </div>
 
-            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-              <Mail className="w-2.5 h-2.5 shrink-0" />
+            <div className="flex items-center gap-[3px] text-[9px] text-muted-foreground">
+              <Mail className="w-[9px] h-[9px] shrink-0" />
               <span className="truncate">{candidate.email}</span>
             </div>
 
