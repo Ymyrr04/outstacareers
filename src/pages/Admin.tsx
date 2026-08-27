@@ -3970,16 +3970,10 @@ const Admin = () => {
               title={`${heroNum(heroStats.totalHires)} total hires YTD · ${heroStats.retentionRate}% average retention`}
               chips={
                 heroStats.adminLeaderboard.length > 0
-                  ? [
-                      ...heroStats.adminLeaderboard.map((a, i) =>
-                        `${['🥇', '🥈', '🥉', '4.'][i]} ${a.name} · ${a.ytdHires} hire${a.ytdHires === 1 ? '' : 's'} YTD · ${a.retentionRate}% retained`
-                      ),
-                      `${heroNum(heroStats.activeContractors)} active`,
-                    ]
-                  : [
-                      `Top admin: ${heroStats.bestAdmin}`,
-                      `${heroNum(heroStats.activeContractors)} active`,
-                    ]
+                  ? heroStats.adminLeaderboard.map((a, i) =>
+                      `${['🥇', '🥈', '🥉', '4.'][i]} ${a.name} · ${a.ytdHires} hire${a.ytdHires === 1 ? '' : 's'} YTD · ${a.retentionRate}% retained`
+                    )
+                  : [`Top admin: ${heroStats.bestAdmin}`]
               }
             />
             <ClientAnalyticsDashboard />
