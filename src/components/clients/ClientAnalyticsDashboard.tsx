@@ -802,6 +802,32 @@ export const ClientAnalyticsDashboard = () => {
       .sort((a, b) => b.hired - a.hired);
   }, [contractors]);
 
+  // YTD leaderboard: hires this calendar year, ranked by hires with retention factored into scoring
+  const ytdAdminLeaderboard = useMemo(() => {
+    const yearStart = new Date(new Date().getFullYear(), 0, 1).getTime();
+    const map: Record<string, { name: string; hiredYtd: number; activeYtd: number }> = {};
+    contractors.forEach((c) => {
+      const raw = (c as any).hired_by as string | null;
+      if (!raw || !c.start_date) return;
+      if (new Date(c.start_date).getTime() < yearStart) return;
+      const name = getAdminDisplayName(raw) || 'Unassigned';
+      if (!map[name]) map[name] = { name, hiredYtd: 0, activeYtd: 0 };
+      const entry = map[name];
+      entry.hiredYtd += 1;
+      const isActive = c.status === 'active' || c.status === 'rendering' || c.status === 'scheduled';
+      if (isActive) entry.activeYtd += 1;
+    });
+    return Object.values(map)
+      .map((e) => ({
+        ...e,
+        retention: e.hiredYtd > 0 ? Math.round((e.activeYtd / e.hiredYtd) * 100) : 0,
+        // Score: each hire worth 1pt, plus retention rate as a 0–1 quality multiplier bonus
+        score: Math.round((e.hiredYtd * (1 + (e.hiredYtd > 0 ? e.activeYtd / e.hiredYtd : 0))) * 10) / 10,
+      }))
+      .sort((a, b) => b.score - a.score || b.hiredYtd - a.hiredYtd || a.name.localeCompare(b.name))
+      .slice(0, 4);
+  }, [contractors]);
+
   // Drill-down: selected admin's hires grouped by role
   const [selectedAdmin, setSelectedAdmin] = useState<string | null>(null);
 
