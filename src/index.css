@@ -183,8 +183,8 @@ html:not(.dark) .admin-shell .admin-header {
 }
 html:not(.dark) .admin-shell .admin-header-inner { min-height: 46px; }
 html:not(.dark) .admin-shell .admin-logo-ring {
-  width: 20px; height: 20px; border-radius: 9999px;
-  border: 4px solid hsl(var(--brand)); background: transparent;
+  width: 24px; height: 24px; border-radius: 9999px;
+  border: 3.5px solid hsl(var(--brand)); background: transparent;
 }
 html:not(.dark) .admin-shell .admin-header button {
   font-size: 11px;
@@ -210,16 +210,18 @@ html:not(.dark) .admin-shell [role="tablist"] {
   padding: 0;
   height: auto;
   gap: 2px;
+  box-shadow: none;
 }
 html:not(.dark) .admin-shell [role="tab"] {
-  height: 38px;
+  height: 48px;
+  padding: 0 12px;
   border: 0;
   border-bottom: 2px solid transparent;
   border-radius: 0;
   background: transparent;
   color: hsl(var(--muted-foreground));
   box-shadow: none;
-  font-size: 11px;
+  font-size: 12px;
 }
 html:not(.dark) .admin-shell [role="tab"]:hover {
   color: hsl(var(--foreground));
@@ -233,6 +235,23 @@ html:not(.dark) .admin-shell [role="tab"][data-state="active"] {
   box-shadow: none;
 }
 html:not(.dark) .admin-shell [role="tab"] svg { width: 12px; height: 12px; }
+
+/* ---------- Count badges inside nav tabs ---------- */
+html:not(.dark) .admin-shell [role="tablist"] [role="tab"] > [class*="badge"],
+html:not(.dark) .admin-shell [role="tablist"] [role="tab"] .badge {
+  border-radius: 8px;
+  font-size: 9px;
+  padding: 1px 5px;
+  font-weight: 500;
+  border: 0;
+  background: hsl(var(--brand));
+  color: #fff;
+}
+html:not(.dark) .admin-shell [role="tablist"] [role="tab"] [style*="E24B4A"],
+html:not(.dark) .admin-shell [role="tablist"] [role="tab"] [style*="e24b4a"] {
+  background: #E24B4A !important;
+  color: #fff !important;
+}
 
 /* ---------- Cards ---------- */
 html:not(.dark) .admin-shell .bg-card,
