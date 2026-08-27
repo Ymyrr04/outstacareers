@@ -60,6 +60,10 @@ export interface HeroBannerStats {
   viewerCount: number;
   // Open jobs (active roles) with new applicant counts
   openJobStats: { jobId: string; title: string; admin: string; newApplicants: number; totalApplicants: number }[];
+  // Client hiring request pipeline stage counts
+  hiringSourcing: number;
+  hiringPitch: number;
+  hiringScheduledInterview: number;
 }
 
 const emptyStats: HeroBannerStats = {
