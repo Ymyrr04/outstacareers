@@ -327,10 +327,11 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         (a) => a.start_date && new Date(a.start_date).getFullYear() === analyticsYear
       );
       const totalHires = ytdAssignments.length;
+      // Retention/separations counted only within the current-year cohort
+      // (contractors hired/started in 2026), not all-time assignments.
+      const ytdActive = ytdAssignments.filter((a) => a.status === 'active').length;
       const retentionRate =
-        allAssignments.length > 0
-          ? Math.round((allAssignments.filter((a) => a.status === 'active').length / allAssignments.length) * 100)
-          : 0;
+        ytdAssignments.length > 0 ? Math.round((ytdActive / ytdAssignments.length) * 100) : 0;
       const stays = assignments
         .filter((a) => a.start_date)
         .map((a) => {
@@ -346,12 +347,12 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         if (!a.hired_by) continue;
         const name = getAdminDisplayName(String(a.hired_by), '');
         if (!name) continue;
+        // Only count contractors hired/started in the current year
+        if (!a.start_date || new Date(a.start_date).getFullYear() !== currentYear) continue;
         if (!perAdmin[name]) perAdmin[name] = { ytd: 0, total: 0, active: 0 };
         perAdmin[name].total++;
+        perAdmin[name].ytd++;
         if (a.status === 'active') perAdmin[name].active++;
-        if (a.start_date && new Date(a.start_date).getFullYear() === currentYear) {
-          perAdmin[name].ytd++;
-        }
       }
       const adminLeaderboard = Object.entries(perAdmin)
         .map(([name, s]) => ({
