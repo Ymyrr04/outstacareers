@@ -234,23 +234,37 @@ html:not(.dark) .admin-shell [class*="rounded-lg"][class*="border"][class*="bg-c
 }
 
 /* ---------- Tables ---------- */
+html:not(.dark) .admin-shell [data-table-root] {
+  background: #fff;
+  border: 0.5px solid hsl(var(--brand-border));
+  border-radius: 10px;
+  overflow: hidden;
+  overflow-x: auto;
+  box-shadow: none;
+}
 html:not(.dark) .admin-shell table thead tr {
   background: hsl(var(--brand-thead));
   border-bottom: 0.5px solid hsl(var(--brand-border));
 }
+html:not(.dark) .admin-shell table thead tr:hover { background: hsl(var(--brand-thead)); }
 html:not(.dark) .admin-shell table thead th {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   font-weight: 500;
+  padding: 7px 10px;
+  height: auto;
   color: hsl(var(--muted-foreground));
 }
 html:not(.dark) .admin-shell table tbody tr {
   border-bottom: 0.5px solid hsl(var(--brand-border));
+  font-size: 11px;
 }
 html:not(.dark) .admin-shell table tbody tr:last-child { border-bottom: 0; }
 html:not(.dark) .admin-shell table tbody tr:hover { background: hsl(var(--brand-surface)); }
 html:not(.dark) .admin-shell table tbody td { font-size: 11px; padding: 8px 10px; }
+html:not(.dark) .admin-shell table tbody td .text-muted-foreground { font-size: 10px; }
+
 
 /* ---------- Buttons (scoped to admin; portals untouched) ---------- */
 html:not(.dark) .admin-shell button,
