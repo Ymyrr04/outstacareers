@@ -330,7 +330,8 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       // Retention/separations counted only within the current-year cohort
       // (contractors hired/started in 2026), not all-time assignments.
       const ytdActive = ytdAssignments.filter((a) => a.status === 'active').length;
-      const retentionRate =
+      // Placeholder; recomputed below as the average of per-admin retention rates.
+      let retentionRate =
         ytdAssignments.length > 0 ? Math.round((ytdActive / ytdAssignments.length) * 100) : 0;
       const stays = assignments
         .filter((a) => a.start_date)
