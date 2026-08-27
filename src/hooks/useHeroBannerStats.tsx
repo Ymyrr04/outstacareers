@@ -23,6 +23,7 @@ export interface HeroBannerStats {
   // Clients / contractors
   activeClients: number;
   activeContractors: number;
+  scheduledContractors: number;
   contractorClients: number;
   contractorRegions: { name: string; count: number }[];
   // PL
@@ -80,6 +81,7 @@ const emptyStats: HeroBannerStats = {
   leadStageCounts: {},
   activeClients: 0,
   activeContractors: 0,
+  scheduledContractors: 0,
   contractorClients: 0,
   contractorRegions: [],
   plWeekEnding: null,
@@ -306,6 +308,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       const allAssignments = (assignmentsRes.data || []) as any[];
       const assignments = scoped ? allAssignments.filter((a) => isMine(a.hired_by)) : allAssignments;
       const active = assignments.filter((a) => a.status === 'active');
+      const scheduled = assignments.filter((a) => a.status === 'scheduled');
       const clientIds = new Set(active.map((a) => a.client_id).filter(Boolean));
       const regionMap: Record<string, number> = {};
       for (const a of active) {
@@ -405,6 +408,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         leadStageCounts,
         activeClients: clientIds.size,
         activeContractors: active.length,
+        scheduledContractors: scheduled.length,
         contractorClients: clientIds.size,
         contractorRegions,
         plWeekEnding,
