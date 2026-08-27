@@ -539,6 +539,32 @@ html:not(.dark) .admin-shell .kanban-card {
 }
 html:not(.dark) .admin-shell .kanban-card:hover { background: hsl(var(--brand-surface)); }
 
+/* ---------- Kanban / tile surfaces in dark mode ---------- */
+html.dark .admin-shell .kanban-column-body {
+  background: hsl(222 47% 10%);
+  border-color: hsl(217 33% 20%);
+}
+html.dark .admin-shell .kanban-card {
+  background: hsl(222 47% 13%);
+  border-color: hsl(217 33% 24%);
+}
+html.dark .admin-shell .kanban-card:hover { background: hsl(222 47% 17%); }
+/* Stat cards & list-row cards fall back to default Card (dark) in dark mode,
+   but ensure their markers match for consistency. */
+html.dark .admin-shell .stat-card {
+  background: hsl(222 47% 11%);
+  border-color: hsl(217 33% 22%);
+}
+html.dark .admin-shell .list-row-card {
+  background: hsl(222 47% 11%);
+  border-color: hsl(217 33% 22%);
+}
+html.dark .admin-shell .list-row-card:hover {
+  border-color: hsl(var(--brand));
+  background: hsl(222 47% 14%);
+}
+html.dark .admin-shell .list-row-icon { background: hsl(189 91% 46% / 0.18); color: hsl(189 91% 60%); }
+
 /* ---------- Stat cards ---------- */
 html:not(.dark) .admin-shell .stat-card {
   background: #fff;
