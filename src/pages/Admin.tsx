@@ -1637,8 +1637,8 @@ const Admin = () => {
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center gap-2">
               <span className="admin-logo-ring" aria-hidden="true" />
-              <span className="text-sm font-semibold tracking-tight">
-                Out<span style={{ color: 'hsl(var(--brand))' }}>Sta</span>
+              <span style={{ fontSize: '15px', fontWeight: 500, letterSpacing: '-0.5px' }}>
+                Out<span style={{ color: '#0ABEDF' }}>Sta</span>
               </span>
               <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Hub</span>
             </Link>
