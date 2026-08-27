@@ -340,8 +340,45 @@ html:not(.dark) .admin-shell input,
 html:not(.dark) .admin-shell textarea,
 html:not(.dark) .admin-shell select {
   background: #fff;
-  border-color: hsl(var(--brand-border));
+  border: 0.5px solid hsl(var(--brand-border));
   border-radius: 6px;
+}
+html:not(.dark) .admin-shell input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+html:not(.dark) .admin-shell select {
+  height: 32px;
+  font-size: 12px;
+  padding: 0 10px;
+}
+html:not(.dark) .admin-shell textarea { font-size: 12px; padding: 8px 10px; }
+html:not(.dark) .admin-shell input::placeholder,
+html:not(.dark) .admin-shell textarea::placeholder { color: hsl(var(--muted-foreground)); }
+html:not(.dark) .admin-shell input:focus-visible,
+html:not(.dark) .admin-shell textarea:focus-visible,
+html:not(.dark) .admin-shell select:focus-visible {
+  outline: none;
+  border-color: hsl(var(--brand));
+  box-shadow: 0 0 0 2px hsl(var(--brand-light));
+}
+/* Radix select / combobox triggers */
+html:not(.dark) .admin-shell [role="combobox"] {
+  background: #fff;
+  border: 0.5px solid hsl(var(--brand-border));
+  border-radius: 6px;
+  height: 32px;
+  font-size: 12px;
+  box-shadow: none;
+}
+html:not(.dark) .admin-shell [role="combobox"]:focus,
+html:not(.dark) .admin-shell [role="combobox"]:focus-visible {
+  outline: none;
+  border-color: hsl(var(--brand));
+  box-shadow: 0 0 0 2px hsl(var(--brand-light));
+}
+/* Search input icons (icon inside a relative wrapper with a padded input) */
+html:not(.dark) .admin-shell .relative > svg.absolute {
+  width: 13px;
+  height: 13px;
+  color: hsl(var(--muted-foreground));
 }
 
 /* ---------- Badges & pills ---------- */
