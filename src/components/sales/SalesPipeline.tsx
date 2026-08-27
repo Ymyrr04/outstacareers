@@ -469,13 +469,13 @@ export const SalesPipeline = () => {
                                   <button
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); openClientInPipeline(lead.converted_client_id!); }}
-                                    className="font-semibold text-sm truncate flex-1 text-left text-primary hover:underline"
+                                    className="font-medium text-[11px] truncate flex-1 text-left text-primary hover:underline"
                                     title="Open in client pipeline"
                                   >
                                     {lead.company_name}
                                   </button>
                                 ) : (
-                                  <div className="font-semibold text-sm truncate flex-1">{lead.company_name}</div>
+                                  <div className="font-medium text-[11px] truncate flex-1">{lead.company_name}</div>
                                 )}
                                 <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
                                   <div className="flex items-center gap-1.5">
@@ -491,10 +491,10 @@ export const SalesPipeline = () => {
                                   )}
                                 </div>
                               </div>
-                              <div className="text-xs text-muted-foreground mb-2">{lead.contact_name || 'N/A'}</div>
-                              <div className="flex flex-wrap gap-1 mb-2">
-                                <Badge variant="outline" className={`text-[10px] capitalize ${tempBadge(lead.temperature)}`}>{lead.temperature}</Badge>
-                                <Badge variant="outline" className="text-[10px]">{lead.source}</Badge>
+                               <div className="text-[9px] text-muted-foreground mb-2">{lead.contact_name || 'N/A'}</div>
+                               <div className="flex flex-wrap gap-1 mb-2">
+                                 <Badge variant="outline" className={`text-[9px] font-medium px-[7px] py-[2px] rounded-lg capitalize ${tempBadge(lead.temperature)}`}>{lead.temperature}</Badge>
+                                 <Badge variant="outline" className="text-[9px]">{lead.source}</Badge>
                               </div>
                               {lead.role_title && <div className="text-xs truncate">{lead.role_title}</div>}
                               {lead.industry && <div className="text-xs text-muted-foreground truncate">{lead.industry}</div>}
