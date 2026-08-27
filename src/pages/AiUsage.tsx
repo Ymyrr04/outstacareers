@@ -183,7 +183,7 @@ export default function AiUsage() {
         </Alert>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3.5">
         <StatCard
           accent="amber"
           icon={Activity}

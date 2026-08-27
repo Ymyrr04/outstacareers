@@ -1074,11 +1074,11 @@ export const PLDashboard = () => {
   };
 
   const statTiles = [
-    { accent: 'amber' as const, icon: Users, label: 'Portal Accounts', value: stats.portalUsers, sublabel: `/ ${stats.totalEligibleContractors} eligible` },
+    { accent: 'blue' as const, icon: Users, label: 'Portal Accounts', value: stats.portalUsers, badge: `of ${stats.totalEligibleContractors}` },
     { accent: 'amber' as const, icon: FileText, label: 'Submissions', value: filtered.length },
     { accent: 'amber' as const, icon: Clock, label: 'Total Hours', value: totalHoursAll.toFixed(2) },
     { accent: 'amber' as const, icon: Clock, label: 'Overtime Hours', value: totalOTAll.toFixed(2) },
-    { accent: 'red' as const, icon: Wallet, label: 'Deposit Hours', value: totalDepositAll.toFixed(2) },
+    { accent: 'amber' as const, icon: Wallet, label: 'Deposit Hours', value: totalDepositAll.toFixed(2) },
     { accent: 'amber' as const, icon: DollarSign, label: 'Bonus', value: `$${totalIncentivesAll.toFixed(2)}` },
   ];
 
@@ -1089,9 +1089,9 @@ export const PLDashboard = () => {
         title="Overview"
         collapsedSummary={`${stats.portalUsers}/${stats.totalEligibleContractors} portal · ${filtered.length} submissions · ${totalHoursAll.toFixed(0)}h`}
       >
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 p-3">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 p-3">
           {statTiles.map((t, i) => (
-            <StatCard key={i} accent={t.accent} icon={t.icon} label={t.label} value={t.value} sublabel={t.sublabel} />
+            <StatCard key={i} accent={t.accent} icon={t.icon} label={t.label} value={t.value} badge={(t as any).badge} sublabel={(t as any).sublabel} />
           ))}
         </div>
       </CollapsibleSection>
