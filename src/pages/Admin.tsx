@@ -1630,43 +1630,46 @@ const Admin = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="admin-shell min-h-screen bg-background">
       <MyCalendarDialog open={myCalendarOpen} onOpenChange={setMyCalendarOpen} currentUserId={user?.id} />
-      <header className="border-b bg-card">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <Link to="/">
-              <Button variant="ghost" size="sm">
-                <ArrowLeft className="w-4 h-4 mr-2" />
-                Back to Site
-              </Button>
+      <header className="admin-header">
+        <div className="admin-header-inner max-w-full mx-auto px-4 py-1.5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link to="/" className="flex items-center gap-2">
+              <span className="admin-logo-ring" aria-hidden="true" />
+              <span className="text-sm font-semibold tracking-tight">
+                Out<span style={{ color: 'hsl(var(--brand))' }}>Sta</span>
+              </span>
+              <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Hub</span>
             </Link>
-            <h1 className="text-xl font-bold">Admin Dashboard</h1>
+            <span className="admin-divider" />
+            <h1 className="text-[11px] text-muted-foreground">Admin Dashboard</h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-1.5">
             <ThemeToggle />
-            <Button variant="outline" size="sm" onClick={() => setMyCalendarOpen(true)}>
-              <CalendarIcon className="w-4 h-4 mr-2" />
+            <Button variant="ghost" size="sm" className="h-7 text-[11px]" onClick={() => setMyCalendarOpen(true)}>
+              <CalendarIcon className="w-3 h-3 mr-1.5" />
               My Calendar
             </Button>
             {openTaskCount > 0 && (
-
               <Button
-                variant="outline"
+                variant="ghost"
                 size="sm"
+                className="h-7 text-[11px]"
                 onClick={() => handleMainTabChange('calendar')}
                 title={`${openTaskCount} up-for-grabs task${openTaskCount === 1 ? '' : 's'}`}
               >
-                <ClipboardList className="w-4 h-4 mr-2" />
+                <ClipboardList className="w-3 h-3 mr-1.5" />
                 Task
-                <Badge variant="destructive" className="ml-2 h-5 min-w-[20px] px-1 text-[10px] justify-center">
+                <Badge variant="destructive" className="ml-1.5 h-4 min-w-[16px] px-1 text-[9px] justify-center">
                   {openTaskCount}
                 </Badge>
               </Button>
             )}
             <Button 
-              variant="outline" 
+              variant="ghost" 
               size="sm" 
+              className="h-7 text-[11px]"
               onClick={async () => {
                 toast({ title: 'Exporting...', description: 'Preparing your data...' });
                 const result = await exportAllData();
@@ -1677,17 +1680,21 @@ const Admin = () => {
                 }
               }}
             >
-              <Archive className="w-4 h-4 mr-2" />
+              <Archive className="w-3 h-3 mr-1.5" />
               Export All
             </Button>
-            <span className="text-sm text-muted-foreground">{user?.email}</span>
-            <Button variant="outline" size="sm" onClick={signOut}>
-              <LogOut className="w-4 h-4 mr-2" />
+            <span className="admin-divider mx-1" />
+            <span className="admin-avatar" title={user?.email}>
+              {(user?.email || '?').slice(0, 2).toUpperCase()}
+            </span>
+            <Button variant="ghost" size="sm" className="h-7 text-[11px]" onClick={signOut}>
+              <LogOut className="w-3 h-3 mr-1.5" />
               Sign Out
             </Button>
           </div>
         </div>
       </header>
+
 
       <main className="px-4 md:px-6 lg:px-8 xl:px-12 2xl:px-16 py-8">
         <Tabs defaultValue="jobs" className="space-y-6" value={activeMainTab} onValueChange={handleMainTabChange}>
