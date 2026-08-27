@@ -1710,7 +1710,7 @@ const Admin = () => {
                 <Users className="w-4 h-4" />
                 Applicants
                 {applicants.length > 0 && (
-                  <Badge variant="secondary" className="ml-1">{applicants.length}</Badge>
+                  <Badge className="ml-1 text-[9px] px-1.5 py-0 rounded-lg bg-primary text-primary-foreground hover:bg-primary">{applicants.length}</Badge>
                 )}
                 {(() => {
                   const newCount = applicants.filter(a => a.status === 'For Review' && !a.details_viewed_at).length;
