@@ -181,20 +181,23 @@ export const PrePitchPanel = () => {
       ) : (
         <div className="grid gap-2">
           {filtered.map(e => (
-            <Card key={e.id} className="list-row-card p-4 flex items-center justify-between gap-3">
-              <div className="min-w-0 flex-1">
+            <Card key={e.id} className="list-row-card is-row">
+              <div className="list-row-icon tint-green">
+                <FileSignature />
+              </div>
+              <div className="list-row-main">
                 <div className="flex items-center gap-2 flex-wrap">
-                  <p className="font-medium truncate">Pre-Pitch Agreement — {e.recipient_name}</p>
+                  <p className="list-row-title">Pre-Pitch Agreement — {e.recipient_name}</p>
                   <Badge className={STATUS_COLORS[e.status] || ""} variant="outline">{e.status}</Badge>
                 </div>
-                <p className="text-xs text-muted-foreground">{e.recipient_email}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="list-row-meta">{e.recipient_email}</p>
+                <p className="list-row-dates">
                   Sent {e.sent_at ? new Date(e.sent_at).toLocaleString() : "—"}
                   {e.viewed_at && ` • Last viewed ${new Date(e.viewed_at).toLocaleString()}`}
                   {e.signed_at && ` • Signed ${new Date(e.signed_at).toLocaleString()}`}
                 </p>
               </div>
-              <div className="flex gap-1 flex-shrink-0">
+              <div className="list-row-right gap-1">
                 <Button size="sm" variant="outline" onClick={() => copyLink(e.signing_token)} className="gap-1"><Copy className="w-3 h-3" /> Link</Button>
                 <Button size="sm" variant="outline" onClick={() => resendEnvelope(e)} disabled={resendingId === e.id} className="gap-1">
                   {resendingId === e.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />} Resend

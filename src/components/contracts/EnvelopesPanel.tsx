@@ -209,20 +209,20 @@ export const EnvelopesPanel = () => {
                     <Badge className="bg-amber-500/15 text-amber-700 dark:text-amber-300" variant="outline">signature sent</Badge>
                   )}
                 </div>
-                <p className="text-xs text-muted-foreground">{e.recipient_email} • {e.contract_templates?.name || "—"}</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="list-row-meta">{e.recipient_email} • {e.contract_templates?.name || "—"}</p>
+                <p className="list-row-dates">
                   Sent {e.sent_at ? new Date(e.sent_at).toLocaleString() : "—"}
                   {e.viewed_at && ` • Last viewed ${new Date(e.viewed_at).toLocaleString()}`}
                   {e.signed_at && ` • Signed ${new Date(e.signed_at).toLocaleString()}`}
                 </p>
                 {e.countersign_sent_at && !e.countersigned_at && (
-                  <p className="text-xs text-muted-foreground">Signature request sent to {e.countersign_recipient_email} on {new Date(e.countersign_sent_at).toLocaleString()}</p>
+                  <p className="list-row-dates">Signature request sent to {e.countersign_recipient_email} on {new Date(e.countersign_sent_at).toLocaleString()}</p>
                 )}
                 {e.countersigned_at && (
-                  <p className="text-xs text-muted-foreground">Signed {new Date(e.countersigned_at).toLocaleString()}</p>
+                  <p className="list-row-dates">Signed {new Date(e.countersigned_at).toLocaleString()}</p>
                 )}
               </div>
-              <div className="flex gap-1 flex-shrink-0">
+              <div className="list-row-right gap-1">
                 <Button size="sm" variant="outline" onClick={() => copyLink(e.signing_token)} className="gap-1" title="Copy signing link"><Copy className="w-3 h-3" /> Link</Button>
                 <Button size="sm" variant="outline" onClick={() => resendEnvelope(e)} disabled={resendingId === e.id} className="gap-1" title="Resend with a new unique link">
                   {resendingId === e.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />} Resend
