@@ -5,6 +5,7 @@ import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import { HiredByEditor } from './HiredByEditor';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { StatCard } from '@/components/StatCard';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -706,73 +707,12 @@ export const ContractorsDashboard = () => {
         </div>
       )}
 
-      {/* Summary Cards */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-500/10 rounded-lg">
-                <CheckCircle className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{activeCount}</p>
-                <p className="text-sm text-muted-foreground">Active</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-500/10 rounded-lg">
-                <Calendar className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{scheduledCount}</p>
-                <p className="text-sm text-muted-foreground">Scheduled</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-cyan-500/10 rounded-lg">
-                <Clock className="w-5 h-5 text-cyan-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{renderingCount}</p>
-                <p className="text-sm text-muted-foreground">Rendering</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-500/10 rounded-lg">
-                <XCircle className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{resignedCount}</p>
-                <p className="text-sm text-muted-foreground">Resigned</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-500/10 rounded-lg">
-                <XCircle className="w-5 h-5 text-red-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{terminatedCount}</p>
-                <p className="text-sm text-muted-foreground">Terminated</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+        <StatCard accent="purple" icon={CheckCircle} label="Active" value={activeCount} />
+        <StatCard accent="blue" icon={Calendar} label="Scheduled" value={scheduledCount} />
+        <StatCard accent="blue" icon={Clock} label="Rendering" value={renderingCount} />
+        <StatCard accent="red" icon={XCircle} label="Resigned" value={resignedCount} />
+        <StatCard accent="red" icon={XCircle} label="Terminated" value={terminatedCount} />
       </div>
 
       {/* Header with Search and Filters */}
