@@ -145,16 +145,16 @@ All colors MUST be HSL.
    Styling only — no behavioural changes.
    ============================================================ */
 html:not(.dark) .admin-shell {
-  /* Brand tokens */
-  --brand: 189 91% 46%;            /* #0ABEDF */
-  --brand-dark: 190 91% 37%;       /* #0899B5 */
-  --brand-light: 191 82% 93%;      /* #E0F7FC */
-  --brand-mid: 189 83% 84%;        /* #B2EEF8 */
-  --brand-text: 190 91% 27%;       /* #066F85 */
-  --brand-surface: 192 71% 96%;    /* #EDF9FC */
-  --brand-page-bg: 176 80% 93%;     /* #D9F6FA — darker mint page bg */
-  --brand-border: 190 78% 88%;     /* #C8F0F8 */
-  --brand-thead: 195 67% 98%;      /* #F5FBFD */
+  /* Brand tokens — toned down: less saturated cyan, neutral page bg */
+  --brand: 189 68% 42%;            /* muted teal */
+  --brand-dark: 190 60% 34%;       /* deeper muted teal */
+  --brand-light: 196 38% 94%;      /* soft neutral tint */
+  --brand-mid: 189 55% 82%;        /* desaturated mid */
+  --brand-text: 190 55% 28%;       /* muted teal text */
+  --brand-surface: 200 22% 96%;    /* near-neutral surface */
+  --brand-page-bg: 205 18% 95%;    /* calm light gray, minimal blue */
+  --brand-border: 205 22% 89%;     /* neutral cool border */
+  --brand-thead: 205 16% 97%;      /* near-white header */
   --brand-danger: 0 72% 59%;       /* #E24B4A */
 
   /* Remap shadcn tokens so every component inherits the new look */
@@ -293,7 +293,7 @@ html:not(.dark) .admin-shell table tbody tr {
   font-size: 11px;
 }
 html:not(.dark) .admin-shell table tbody tr:last-child { border-bottom: 0; }
-html:not(.dark) .admin-shell table tbody tr:hover { background: #F0FFFE; }
+html:not(.dark) .admin-shell table tbody tr:hover { background: hsl(var(--brand-surface)); }
 html:not(.dark) .admin-shell table tbody td {
   font-size: 11px;
   padding: 9px 12px;
@@ -321,7 +321,7 @@ html:not(.dark) .admin-shell table tbody td .h-10.w-10.rounded-full {
 }
 
 /* Score columns */
-html:not(.dark) .admin-shell table tbody td .score-high { color: #0ABEDF; font-weight: 500; }
+html:not(.dark) .admin-shell table tbody td .score-high { color: hsl(var(--brand)); font-weight: 500; }
 html:not(.dark) .admin-shell table tbody td .score-mid { color: #B45309; font-weight: 500; }
 html:not(.dark) .admin-shell table tbody td .score-low { color: #E24B4A; font-weight: 500; }
 
@@ -645,8 +645,8 @@ html:not(.dark) .admin-shell .list-row-icon {
   flex-shrink: 0;
 }
 html:not(.dark) .admin-shell .list-row-icon svg { width: 17px; height: 17px; }
-html:not(.dark) .admin-shell .list-row-icon { background: #E0F7FC; color: #0ABEDF; }
-html:not(.dark) .admin-shell .list-row-icon.tint-cyan { background: #E0F7FC; color: #0ABEDF; }
+html:not(.dark) .admin-shell .list-row-icon { background: hsl(var(--brand-light)); color: hsl(var(--brand)); }
+html:not(.dark) .admin-shell .list-row-icon.tint-cyan { background: hsl(var(--brand-light)); color: hsl(var(--brand)); }
 html:not(.dark) .admin-shell .list-row-icon.tint-legal { background: #FAECE7; color: #993C1D; }
 html:not(.dark) .admin-shell .list-row-icon.tint-coral { background: #FAECE7; color: #D85A30; }
 html:not(.dark) .admin-shell .list-row-icon.tint-accounting { background: #EEEDFE; color: #534AB7; }
@@ -681,7 +681,7 @@ html:not(.dark) .admin-shell .list-row-chevron {
 
 /* ===== Context-aware hero banner (admin tabs) ===== */
 .admin-shell .admin-hero-banner {
-  background: #0ABEDF;
+  background: hsl(189 50% 38%);
   border-radius: 12px;
   padding: 18px 20px;
   margin-bottom: 14px;
