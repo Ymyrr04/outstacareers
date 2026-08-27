@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { ChevronLeft, ChevronRight, Plus, X, Flag, Link2, CheckCircle2 } from 'lucide-react';
@@ -283,7 +283,44 @@ export const TeamCalendar = () => {
 
   const rangeStart = view === 'month' ? monthStart : selectedDate;
   const rangeEnd = view === 'month' ? monthEnd : selectedDate;
-  const { events, eventsForDate, refetch } = useCalendarEvents(rangeStart, rangeEnd);
+  const { events: rawEvents, refetch } = useCalendarEvents(rangeStart, rangeEnd);
+
+  // Scope calendar to the signed-in admin: only their own activities plus
+  // open/claimable tasks are shown. Liezl keeps the global team view.
+  const isGlobalViewer = (user?.email || '').toLowerCase() === 'liezl@outsta.io';
+  const events = useMemo(() => {
+    if (isGlobalViewer || !user?.id) return rawEvents;
+    return rawEvents.filter(
+      (e) =>
+        e.is_open_task ||
+        e.time_tbd ||
+        e.created_by === user.id ||
+        e.claimed_by === user.id ||
+        (Array.isArray(e.assigned_to) && e.assigned_to.includes(user.id))
+    );
+  }, [rawEvents, isGlobalViewer, user?.id]);
+  const eventsForDate = useCallback(
+    (dateStr: string) => {
+      const dow = parseDateString(dateStr).getDay();
+      return events
+        .filter((e) => {
+          if (e.event_date === dateStr) return true;
+          if (e.is_recurring && e.event_date < dateStr) {
+            const rule = e.recurrence_rule || 'weekly';
+            const edow = parseDateString(e.event_date).getDay();
+            if (rule === 'weekly') return edow === dow;
+            if (rule === 'biweekly') {
+              const diff = Math.round((parseDateString(dateStr).getTime() - parseDateString(e.event_date).getTime()) / 86400000);
+              return edow === dow && diff % 14 === 0;
+            }
+            if (rule === 'monthly') return parseDateString(e.event_date).getDate() === parseDateString(dateStr).getDate();
+          }
+          return false;
+        })
+        .sort((a, b) => a.start_time - b.start_time);
+    },
+    [events]
+  );
 
   const monthLabel = new Intl.DateTimeFormat('en-US', { month: 'long', year: 'numeric' }).format(monthCursor);
 
