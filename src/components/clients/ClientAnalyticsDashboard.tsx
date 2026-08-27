@@ -802,6 +802,32 @@ export const ClientAnalyticsDashboard = () => {
       .sort((a, b) => b.hired - a.hired);
   }, [contractors]);
 
+  // YTD leaderboard: hires this calendar year, ranked by hires with retention factored into scoring
+  const ytdAdminLeaderboard = useMemo(() => {
+    const yearStart = new Date(new Date().getFullYear(), 0, 1).getTime();
+    const map: Record<string, { name: string; hiredYtd: number; activeYtd: number }> = {};
+    contractors.forEach((c) => {
+      const raw = (c as any).hired_by as string | null;
+      if (!raw || !c.start_date) return;
+      if (new Date(c.start_date).getTime() < yearStart) return;
+      const name = getAdminDisplayName(raw) || 'Unassigned';
+      if (!map[name]) map[name] = { name, hiredYtd: 0, activeYtd: 0 };
+      const entry = map[name];
+      entry.hiredYtd += 1;
+      const isActive = c.status === 'active' || c.status === 'rendering' || c.status === 'scheduled';
+      if (isActive) entry.activeYtd += 1;
+    });
+    return Object.values(map)
+      .map((e) => ({
+        ...e,
+        retention: e.hiredYtd > 0 ? Math.round((e.activeYtd / e.hiredYtd) * 100) : 0,
+        // Score: each hire worth 1pt, plus retention rate as a 0–1 quality multiplier bonus
+        score: Math.round((e.hiredYtd * (1 + (e.hiredYtd > 0 ? e.activeYtd / e.hiredYtd : 0))) * 10) / 10,
+      }))
+      .sort((a, b) => b.score - a.score || b.hiredYtd - a.hiredYtd || a.name.localeCompare(b.name))
+      .slice(0, 4);
+  }, [contractors]);
+
   // Drill-down: selected admin's hires grouped by role
   const [selectedAdmin, setSelectedAdmin] = useState<string | null>(null);
 
@@ -1725,6 +1751,38 @@ export const ClientAnalyticsDashboard = () => {
           </CardTitle>
         </CardHeader>
         <CardContent>
+          {ytdAdminLeaderboard.length > 0 && (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4">
+              {ytdAdminLeaderboard.map((a, idx) => (
+                <button
+                  key={a.name}
+                  type="button"
+                  onClick={() => setSelectedAdmin(a.name)}
+                  className={`text-left rounded-lg border p-2.5 transition-colors cursor-pointer ${
+                    idx === 0
+                      ? 'border-amber-400 bg-amber-50 dark:bg-amber-950/30 ring-1 ring-amber-400'
+                      : 'border-border bg-card hover:bg-accent/40'
+                  }`}
+                >
+                  <div className="flex items-center justify-between gap-1">
+                    <span className="text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                      {idx === 0 ? '🏆 Top YTD' : `#${idx + 1}`}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">{a.score} pts</span>
+                  </div>
+                  <p className={`font-semibold truncate mt-0.5 ${idx === 0 ? 'text-amber-700 dark:text-amber-400' : ''}`}>
+                    {a.name}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-0.5">
+                    {a.hiredYtd} hire{a.hiredYtd !== 1 ? 's' : ''} YTD ·{' '}
+                    <span className={a.retention >= 80 ? 'text-green-600' : a.retention >= 50 ? 'text-amber-600' : 'text-red-600'}>
+                      {a.retention}% retained
+                    </span>
+                  </p>
+                </button>
+              ))}
+            </div>
+          )}
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
