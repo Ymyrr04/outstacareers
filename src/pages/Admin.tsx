@@ -1997,7 +1997,7 @@ const Admin = () => {
                               </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="list-row-meta">
                             {job.department} • {job.region === 'all' ? 'All Regions' : job.region}
                             {job.rate && ` • ${job.rate}`}
                           </p>
