@@ -70,7 +70,7 @@ import { RecruitmentFunnel } from '@/components/RecruitmentFunnel';
 import { WorkflowBoard } from '@/components/WorkflowBoard';
 import { PLDashboard } from '@/components/PLDashboard';
 import { AdminHeroBanner } from '@/components/AdminHeroBanner';
-import { JobsTabSidebar } from '@/components/JobsTabSidebar';
+
 import { useHeroBannerStats } from '@/hooks/useHeroBannerStats';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
