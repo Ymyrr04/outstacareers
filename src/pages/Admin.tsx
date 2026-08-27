@@ -3988,7 +3988,7 @@ const Admin = () => {
             <AdminHeroBanner
               eyebrow="Recruitment pipeline"
               title={`${heroNum(heroFunnelTotal)} candidates across ${heroStageEntries.length} active stages`}
-              chips={heroStageEntries.slice(0, 3).map(([stage, count]) => `${getStageDisplayName(stage)} ${heroNum(count)}`)}
+              chips={['For Review', 'Qualified', 'For Interview', 'SIV', 'Pitch', 'Client Interview'].map((stage) => `${getStageDisplayName(stage)} ${heroNum(heroStats.statusCounts[stage] || 0)}`)}
             />
             <RecruitmentFunnel />
           </TabsContent>
