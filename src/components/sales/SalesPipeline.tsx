@@ -459,10 +459,11 @@ export const SalesPipeline = () => {
                             <div
                               ref={p.innerRef}
                               {...p.draggableProps}
-                              {...p.dragHandleProps}
-                              onClick={() => setSelectedLead(lead)}
-                              className={`bg-card border rounded-md p-3 shadow-sm cursor-pointer hover:border-primary/50 transition ${s.isDragging ? 'rotate-1 shadow-lg' : ''}`}
-                            >
+                               {...p.dragHandleProps}
+                               onClick={() => setSelectedLead(lead)}
+                               className={`bg-white border-[0.5px] border-[#C8F0F8] rounded-md px-2 py-[7px] cursor-pointer hover:bg-[#EDF9FC] transition ${s.isDragging ? 'rotate-1 shadow-lg' : ''}`}
+                               style={{ ...p.draggableProps.style, borderLeft: `3px solid ${salesStageAccent(stage).accent}` }}
+                             >
                               <div className="flex items-start justify-between gap-2 mb-1">
                                 {lead.converted_client_id && existingClientIds.has(lead.converted_client_id) ? (
                                   <button
@@ -555,6 +556,8 @@ export const SalesPipeline = () => {
                       ))}
                       {provided.placeholder}
                     </div>
+                    </>
+                    ); })()}
                   </div>
                 )}
               </Droppable>
