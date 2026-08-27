@@ -1715,7 +1715,7 @@ const Admin = () => {
                 {(() => {
                   const newCount = applicants.filter(a => a.status === 'For Review' && !a.details_viewed_at).length;
                   return newCount > 0 ? (
-                    <Badge className="bg-amber-500 hover:bg-amber-500 text-white text-xs ml-1">
+                    <Badge className="text-[9px] px-1.5 py-0 rounded-lg text-white ml-1" style={{ background: '#E24B4A' }}>
                       {newCount} new
                     </Badge>
                   ) : null;
