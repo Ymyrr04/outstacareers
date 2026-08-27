@@ -110,6 +110,9 @@ const emptyStats: HeroBannerStats = {
   adminCount: 0,
   viewerCount: 0,
   openJobStats: [],
+  hiringSourcing: 0,
+  hiringPitch: 0,
+  hiringScheduledInterview: 0,
 };
 
 const ET = 'America/New_York';
