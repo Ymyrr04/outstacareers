@@ -95,6 +95,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
   const [stats, setStats] = useState<HeroBannerStats>(emptyStats);
 
   useEffect(() => {
+    console.log('[hero] effect enabled=', enabled);
     if (!enabled) return;
     let cancelled = false;
 
@@ -141,6 +142,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         supabase.from('contractor_timesheets').select('contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount').order('week_ending_date', { ascending: false }).limit(2000),
       ]);
 
+      console.log('[hero] fetched', applicants.length, (assignmentsRes as any).error, (envelopesRes as any).error);
       if (cancelled) return;
 
       // --- Applicants ---
@@ -266,7 +268,8 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       });
     };
 
-    run().catch(() => {
+    run().catch((e) => {
+      console.error('[hero] failed', e);
       if (!cancelled) setStats((s) => ({ ...s, loading: false }));
     });
 
