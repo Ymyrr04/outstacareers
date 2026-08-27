@@ -1947,7 +1947,7 @@ const Admin = () => {
                     return matchesSearch && matchesRegion && matchesAdmin && matchesStatus;
                   })
                   .map((job) => (
-                  <Card key={job.id} className={!job.is_active ? 'opacity-60' : ''}>
+                  <Card key={job.id} className={`list-row-card ${!job.is_active ? 'opacity-60' : ''}`}>
                     <CardContent className="py-4">
                       <div className="flex items-start justify-between gap-4">
                         <div className="flex-1">
