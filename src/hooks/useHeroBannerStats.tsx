@@ -23,6 +23,7 @@ export interface HeroBannerStats {
   // Clients / contractors
   activeClients: number;
   activeContractors: number;
+  scheduledContractors: number;
   contractorClients: number;
   contractorRegions: { name: string; count: number }[];
   // PL
