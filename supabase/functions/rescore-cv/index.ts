@@ -426,11 +426,20 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
       });
     }
 
+    // Coerce AI values to integers (DB columns are integer)
+    const toInt = (v: unknown, max?: number) => {
+      const n = Number(v);
+      if (!isFinite(n)) return 0;
+      const r = Math.round(n);
+      return max !== undefined ? Math.min(max, Math.max(0, r)) : Math.max(0, r);
+    };
+
+    const roleScore = toInt(scores.role_experience_score, 50);
+    const skillsScore = toInt(scores.skills_tools_score, 45);
+    const availabilityScore = toInt(scores.availability_setup_score, 5);
+
     // Calculate total score (max 100)
-    const totalScore = 
-      Math.min(50, scores.role_experience_score || 0) + 
-      Math.min(45, scores.skills_tools_score || 0) + 
-      Math.min(5, scores.availability_setup_score || 0);
+    const totalScore = roleScore + skillsScore + availabilityScore;
 
     // Determine ranking status
     let rankingStatus = 'Low Match';
@@ -440,20 +449,25 @@ Return ONLY the JSON scoring object with detailed assessment_details and extract
       rankingStatus = 'Partial Match';
     }
 
+    const yearsExp =
+      scores.years_of_experience === null || scores.years_of_experience === undefined
+        ? null
+        : toInt(scores.years_of_experience);
+
     // Update the applicant record
     const { error: updateError } = await supabase
       .from('applicants_prescreen')
       .update({
-        role_experience_score: scores.role_experience_score,
-        skills_tools_score: scores.skills_tools_score,
-        availability_setup_score: scores.availability_setup_score,
+        role_experience_score: roleScore,
+        skills_tools_score: skillsScore,
+        availability_setup_score: availabilityScore,
         total_score: totalScore,
         ranking_status: rankingStatus,
         ai_summary: scores.summary,
         ai_assessment_details: scores.assessment_details,
         extracted_skills: scores.extracted_skills || [],
         extracted_tools: scores.extracted_tools || [],
-        years_of_experience: scores.years_of_experience,
+        years_of_experience: yearsExp,
       })
       .eq('id', applicant_id);
 
