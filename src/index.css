@@ -403,3 +403,43 @@ html:not(.dark) .admin-shell .filter-chip[data-active="true"] {
   border-color: hsl(var(--brand));
   color: hsl(var(--brand-text));
 }
+
+/* ---------- Admin list row cards ---------- */
+html:not(.dark) .admin-shell .list-row-card {
+  background: #fff;
+  border: 0.5px solid hsl(var(--brand-border));
+  border-radius: 10px;
+  margin-bottom: 7px;
+  box-shadow: none;
+  transition: border-color 0.1s ease, background-color 0.1s ease;
+}
+html:not(.dark) .admin-shell .list-row-card:hover {
+  border-color: hsl(var(--brand));
+  background: hsl(var(--brand-surface));
+}
+html:not(.dark) .admin-shell .list-row-card.is-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+}
+html:not(.dark) .admin-shell .list-row-card .list-row-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: hsl(var(--foreground));
+}
+html:not(.dark) .admin-shell .list-row-card .list-row-meta {
+  font-size: 11px;
+  color: hsl(var(--muted-foreground));
+  margin-top: 1px;
+}
+html:not(.dark) .admin-shell .list-row-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+html:not(.dark) .admin-shell .list-row-icon svg { width: 17px; height: 17px; }
