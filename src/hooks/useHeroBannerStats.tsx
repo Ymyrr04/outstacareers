@@ -321,9 +321,16 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         .map(([name, count]) => ({ name, count }))
         .sort((a, b) => b.count - a.count);
 
-      // --- Analytics ---
-      const totalHires = assignments.length;
-      const retentionRate = totalHires > 0 ? Math.round((active.length / totalHires) * 100) : 0;
+      // --- Analytics (global, year-to-date) ---
+      const analyticsYear = new Date().getFullYear();
+      const ytdAssignments = allAssignments.filter(
+        (a) => a.start_date && new Date(a.start_date).getFullYear() === analyticsYear
+      );
+      const totalHires = ytdAssignments.length;
+      const retentionRate =
+        allAssignments.length > 0
+          ? Math.round((allAssignments.filter((a) => a.status === 'active').length / allAssignments.length) * 100)
+          : 0;
       const stays = assignments
         .filter((a) => a.start_date)
         .map((a) => {
