@@ -132,3 +132,131 @@ All colors MUST be HSL.
     animation-play-state: paused;
   }
 }
+/* ============================================================
+   Admin Dashboard visual theme (scoped to .admin-shell)
+   Styling only — no behavioural changes.
+   ============================================================ */
+html:not(.dark) .admin-shell {
+  /* Brand tokens */
+  --brand: 189 91% 46%;            /* #0ABEDF */
+  --brand-dark: 190 91% 37%;       /* #0899B5 */
+  --brand-light: 191 82% 93%;      /* #E0F7FC */
+  --brand-mid: 189 83% 84%;        /* #B2EEF8 */
+  --brand-text: 190 91% 27%;       /* #066F85 */
+  --brand-surface: 192 71% 96%;    /* #EDF9FC */
+  --brand-border: 190 78% 88%;     /* #C8F0F8 */
+  --brand-thead: 195 67% 98%;      /* #F5FBFD */
+  --brand-danger: 0 72% 59%;       /* #E24B4A */
+
+  /* Remap shadcn tokens so every component inherits the new look */
+  --background: var(--brand-surface);
+  --card: 0 0% 100%;
+  --popover: 0 0% 100%;
+  --primary: var(--brand);
+  --primary-foreground: 0 0% 100%;
+  --secondary: var(--brand-light);
+  --secondary-foreground: var(--brand-text);
+  --accent: var(--brand-light);
+  --accent-foreground: var(--brand-text);
+  --muted: var(--brand-thead);
+  --border: var(--brand-border);
+  --input: var(--brand-border);
+  --ring: var(--brand);
+  --radius: 0.625rem;
+
+  background-color: hsl(var(--brand-surface));
+}
+
+/* ---------- Header ---------- */
+html:not(.dark) .admin-shell .admin-header {
+  background: #fff;
+  border-bottom: 0.5px solid hsl(var(--brand-border));
+}
+html:not(.dark) .admin-shell .admin-header-inner { min-height: 46px; }
+html:not(.dark) .admin-shell .admin-logo-ring {
+  width: 20px; height: 20px; border-radius: 9999px;
+  border: 4px solid hsl(var(--brand)); background: transparent;
+}
+html:not(.dark) .admin-shell .admin-header button {
+  font-size: 11px;
+}
+html:not(.dark) .admin-shell .admin-header button:hover {
+  background: hsl(var(--brand-surface));
+}
+html:not(.dark) .admin-shell .admin-divider {
+  width: 1px; align-self: stretch; background: hsl(var(--brand-border));
+}
+html:not(.dark) .admin-shell .admin-avatar {
+  width: 26px; height: 26px; border-radius: 50%;
+  background: hsl(var(--brand)); color: #fff;
+  font-size: 10px; font-weight: 600;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+
+/* ---------- Tabs (main nav + sub-tabs) ---------- */
+html:not(.dark) .admin-shell [role="tablist"] {
+  background: #fff;
+  border-bottom: 0.5px solid hsl(var(--brand-border));
+  border-radius: 0;
+  padding: 0;
+  height: auto;
+  gap: 2px;
+}
+html:not(.dark) .admin-shell [role="tab"] {
+  height: 38px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: hsl(var(--muted-foreground));
+  box-shadow: none;
+  font-size: 12px;
+}
+html:not(.dark) .admin-shell [role="tab"]:hover { color: hsl(var(--foreground)); }
+html:not(.dark) .admin-shell [role="tab"][data-state="active"] {
+  background: transparent;
+  color: hsl(var(--brand));
+  border-bottom-color: hsl(var(--brand));
+  font-weight: 500;
+  box-shadow: none;
+}
+html:not(.dark) .admin-shell [role="tab"] svg { width: 12px; height: 12px; }
+
+/* ---------- Cards ---------- */
+html:not(.dark) .admin-shell .bg-card,
+html:not(.dark) .admin-shell [class*="rounded-lg"][class*="border"][class*="bg-card"] {
+  border-width: 0.5px;
+  border-color: hsl(var(--brand-border));
+  border-radius: 10px;
+}
+
+/* ---------- Tables ---------- */
+html:not(.dark) .admin-shell table thead tr {
+  background: hsl(var(--brand-thead));
+  border-bottom: 0.5px solid hsl(var(--brand-border));
+}
+html:not(.dark) .admin-shell table thead th {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 500;
+  color: hsl(var(--muted-foreground));
+}
+html:not(.dark) .admin-shell table tbody tr {
+  border-bottom: 0.5px solid hsl(var(--brand-border));
+}
+html:not(.dark) .admin-shell table tbody tr:last-child { border-bottom: 0; }
+html:not(.dark) .admin-shell table tbody tr:hover { background: hsl(var(--brand-surface)); }
+html:not(.dark) .admin-shell table tbody td { font-size: 11px; padding: 8px 10px; }
+
+/* ---------- Buttons ---------- */
+html:not(.dark) .admin-shell button { border-radius: 6px; }
+
+/* ---------- Inputs ---------- */
+html:not(.dark) .admin-shell input,
+html:not(.dark) .admin-shell textarea,
+html:not(.dark) .admin-shell select {
+  background: #fff;
+  border-color: hsl(var(--brand-border));
+  border-radius: 6px;
+}
