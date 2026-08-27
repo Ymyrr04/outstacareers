@@ -105,8 +105,25 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       monthStart.setDate(1);
       monthStart.setHours(0, 0, 0, 0);
 
+      // Applicants can exceed the 1000-row limit - page through them
+      const fetchApplicants = async () => {
+        const rows: any[] = [];
+        for (let from = 0; from < 30000; from += 1000) {
+          const { data, error } = await supabase
+            .from('applicants_prescreen')
+            .select('status, created_at, job_id')
+            .order('created_at', { ascending: false })
+            .range(from, from + 999);
+          if (error || !data || data.length === 0) break;
+          rows.push(...data);
+          if (data.length < 1000) break;
+        }
+        return rows;
+      };
+
       const [
-        applicantsRes,
+        applicants,
+        jobsRes,
         envelopesRes,
         eventsRes,
         leadsRes,
@@ -114,7 +131,8 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         assignmentsRes,
         timesheetsRes,
       ] = await Promise.all([
-        supabase.from('applicants_prescreen').select('status, created_at, job_id, jobs(region)').limit(20000),
+        fetchApplicants(),
+        supabase.from('jobs').select('id, region'),
         supabase.from('contract_envelopes').select('status, sent_at, countersigned_at, countersign_sent_at'),
         supabase.from('calendar_events').select('assigned_to, claimed_by, event_date').eq('event_date', today),
         supabase.from('sales_leads').select('stage, estimated_hires, likelihood_to_close'),
@@ -126,7 +144,8 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       if (cancelled) return;
 
       // --- Applicants ---
-      const applicants = (applicantsRes.data || []) as any[];
+      const jobRegion = new Map<string, string>();
+      for (const j of (jobsRes.data || []) as any[]) jobRegion.set(j.id, j.region || '');
       const statusCounts: Record<string, number> = {};
       const regionCounts = { philippines: 0, latam: 0, global: 0 };
       let newApplicantsThisWeek = 0;
@@ -134,11 +153,12 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         const s = a.status || 'For Review';
         statusCounts[s] = (statusCounts[s] || 0) + 1;
         if (a.created_at && a.created_at >= weekAgo) newApplicantsThisWeek++;
-        const region = a.jobs?.region || '';
+        const region = jobRegion.get(a.job_id) || '';
         if (region === 'philippines') regionCounts.philippines++;
         else if (region === 'latin-america') regionCounts.latam++;
         else regionCounts.global++;
       }
+
 
       // --- Contracts ---
       const envelopes = (envelopesRes.data || []) as any[];
