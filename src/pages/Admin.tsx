@@ -3967,7 +3967,7 @@ const Admin = () => {
           <TabsContent value="analytics" className="space-y-6">
             <AdminHeroBanner
               eyebrow="Analytics"
-              title={`${heroNum(heroStats.totalHires)} total hires · ${heroStats.retentionRate}% average retention · ${heroNum(heroStats.avgStayDays)}d avg stay`}
+              title={`${heroNum(heroStats.totalHires)} total hires · ${heroStats.retentionRate}% average retention`}
               chips={
                 heroStats.adminLeaderboard.length > 0
                   ? [
