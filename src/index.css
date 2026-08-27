@@ -210,9 +210,12 @@ html:not(.dark) .admin-shell [role="tab"] {
   background: transparent;
   color: hsl(var(--muted-foreground));
   box-shadow: none;
-  font-size: 12px;
+  font-size: 11px;
 }
-html:not(.dark) .admin-shell [role="tab"]:hover { color: hsl(var(--foreground)); }
+html:not(.dark) .admin-shell [role="tab"]:hover {
+  color: hsl(var(--foreground));
+  background: transparent;
+}
 html:not(.dark) .admin-shell [role="tab"][data-state="active"] {
   background: transparent;
   color: hsl(var(--brand));
