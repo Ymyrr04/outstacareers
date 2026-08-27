@@ -2111,8 +2111,6 @@ const Admin = () => {
               </div>
             )}
             </div>
-            <JobsTabSidebar />
-            </div>
           </TabsContent>
 
           <TabsContent value="applicants" className="space-y-6">
