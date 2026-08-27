@@ -70,6 +70,7 @@ import { RecruitmentFunnel } from '@/components/RecruitmentFunnel';
 import { WorkflowBoard } from '@/components/WorkflowBoard';
 import { PLDashboard } from '@/components/PLDashboard';
 import { AdminHeroBanner } from '@/components/AdminHeroBanner';
+import { JobsTabSidebar } from '@/components/JobsTabSidebar';
 import { useHeroBannerStats } from '@/hooks/useHeroBannerStats';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
@@ -1862,6 +1863,8 @@ const Admin = () => {
                 `${heroNum(heroStats.activitiesToday)} activities today`,
               ]}
             />
+            <div className="flex gap-[10px] items-start">
+            <div className="flex-1 min-w-0 space-y-6">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold">All Jobs</h2>
@@ -2107,6 +2110,9 @@ const Admin = () => {
                 )}
               </div>
             )}
+            </div>
+            <JobsTabSidebar />
+            </div>
           </TabsContent>
 
           <TabsContent value="applicants" className="space-y-6">
