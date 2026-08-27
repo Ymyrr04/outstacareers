@@ -232,6 +232,15 @@ interface Applicant {
 
 type SortOption = 'newest' | 'oldest' | 'score-desc' | 'score-asc' | 'starred' | 'completed-assessment';
 
+// Category tint for job list-row icon badges (styling only)
+const getJobIconTint = (title: string, department?: string | null): string => {
+  const t = `${title || ''} ${department || ''}`.toLowerCase();
+  if (/legal|paralegal|attorney|lawyer|compliance/.test(t)) return 'tint-legal';
+  if (/account|bookkeep|finance|cpa|audit|tax|payroll/.test(t)) return 'tint-accounting';
+  if (/support|customer|service|csr|help\s?desk|call\s?center/.test(t)) return 'tint-support';
+  return 'tint-cyan';
+};
+
 const Admin = () => {
   const { user, isAdmin, loading, signOut } = useAuth();
   const navigate = useNavigate();
