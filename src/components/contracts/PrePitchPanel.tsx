@@ -181,7 +181,7 @@ export const PrePitchPanel = () => {
       ) : (
         <div className="grid gap-2">
           {filtered.map(e => (
-            <Card key={e.id} className="p-4 flex items-center justify-between gap-3">
+            <Card key={e.id} className="list-row-card p-4 flex items-center justify-between gap-3">
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 flex-wrap">
                   <p className="font-medium truncate">Pre-Pitch Agreement — {e.recipient_name}</p>
