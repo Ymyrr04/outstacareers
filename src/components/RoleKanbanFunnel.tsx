@@ -1575,7 +1575,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
 
                   <div
                     className={cn(
-                      'flex-1 max-h-[720px] overflow-y-auto relative bg-white border-[0.5px] border-t-0 rounded-b-[7px] min-h-[300px]',
+                      'kanban-column-body flex-1 max-h-[720px] overflow-y-auto relative bg-white border-[0.5px] border-t-0 rounded-b-[7px] min-h-[300px]',
                       dropTargetStage === stage && draggedCandidate ? 'border-primary' : 'border-[#C8F0F8]'
                     )}
                     onMouseDown={(e) => {
@@ -2010,7 +2010,7 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
             }}
             onDragEnd={() => onDragEnd?.()}
             className={cn(
-              "bg-white rounded-md border-[0.5px] border-[#C8F0F8] px-2 py-[7px] transition-all space-y-1.5 cursor-pointer hover:bg-[#F0FFFE]",
+              "kanban-card bg-white rounded-md border-[0.5px] border-[#C8F0F8] px-2 py-[7px] transition-all space-y-1.5 cursor-pointer hover:bg-[#F0FFFE]",
               isDragging && "opacity-40 scale-95 shadow-lg",
               isSelected && "ring-2 ring-primary border-primary bg-primary/5"
             )}
