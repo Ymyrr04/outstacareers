@@ -352,8 +352,9 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       const pendingTimesheets = timesheets.filter((t) => (t.outsta_status || 'pending') === 'pending').length;
       const flaggedTimesheets = timesheets.filter((t) => t.client_approval_status === 'flagged').length;
 
-      // --- Client hiring request pipeline stages ---
-      const hiringRequests = (hiringRequestsRes.data || []) as any[];
+      // --- Client hiring request pipeline stages (admin-scoped) ---
+      const allHiringRequests = (hiringRequestsRes.data || []) as any[];
+      const hiringRequests = scoped ? allHiringRequests.filter((r) => isMine(r.assigned_admin_id)) : allHiringRequests;
       const hiringSourcing = hiringRequests.filter((r) => r.pipeline_stage === 'sourcing').length;
       const hiringPitch = hiringRequests.filter((r) => r.pipeline_stage === 'pitch').length;
       const hiringScheduledInterview = hiringRequests.filter((r) => r.pipeline_stage === 'scheduled_interview').length;
