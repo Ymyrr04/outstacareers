@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo, useCallback, useRef, useTransition } from 'react';
 import { format } from 'date-fns';
 import { useNavigate, Link, useParams, useSearchParams } from 'react-router-dom';
+import outstaLogo from '@/assets/outsta-logo.png';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -1667,7 +1668,7 @@ const Admin = () => {
         <div className="admin-header-inner max-w-full mx-auto px-4 py-1.5 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Link to="/" className="flex items-center gap-2">
-              <span className="admin-logo-ring" aria-hidden="true" />
+              <img src={outstaLogo} alt="OutSta Hub logo" className="admin-logo-img" />
               <span style={{ fontSize: '15px', fontWeight: 500, letterSpacing: '-0.5px' }}>
                 Out<span style={{ color: '#0ABEDF' }}>Sta</span>
               </span>
