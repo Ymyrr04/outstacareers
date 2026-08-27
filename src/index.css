@@ -69,7 +69,7 @@ All colors MUST be HSL.
     --brand-light: #E0F7FC;
     --brand-border: #C8F0F8;
     --brand-text: #066F85;
-    --page-bg: #F0FFFE;
+    --page-bg: #DFFBFC;
   }
 
   .dark {
@@ -152,7 +152,7 @@ html:not(.dark) .admin-shell {
   --brand-mid: 189 83% 84%;        /* #B2EEF8 */
   --brand-text: 190 91% 27%;       /* #066F85 */
   --brand-surface: 192 71% 96%;    /* #EDF9FC */
-  --brand-page-bg: 176 100% 97%;   /* #F0FFFE */
+  --brand-page-bg: 176 80% 93%;     /* #D9F6FA — darker mint page bg */
   --brand-border: 190 78% 88%;     /* #C8F0F8 */
   --brand-thead: 195 67% 98%;      /* #F5FBFD */
   --brand-danger: 0 72% 59%;       /* #E24B4A */
