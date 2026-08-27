@@ -3881,11 +3881,11 @@ const Admin = () => {
           <TabsContent value="pipeline" className="space-y-1">
             <AdminHeroBanner
               eyebrow="Client pipeline"
-              title={`${heroNum(heroStats.activeContractors)} active contractor assignments across ${heroNum(heroStats.contractorClients)} clients`}
+              title={`${heroNum(heroStats.activeRoles)} active roles to fill in`}
               chips={[
-                `${heroNum(heroStats.activeContractors)} active`,
-                `${heroNum(heroStats.pendingTimesheets)} pending timesheets`,
-                `${heroNum(heroStats.flaggedTimesheets)} flagged timesheets`,
+                `${heroNum(heroStats.hiringSourcing)} Sourcing & Screening`,
+                `${heroNum(heroStats.hiringPitch)} Pitch`,
+                `${heroNum(heroStats.hiringScheduledInterview)} Scheduled Interview`,
               ]}
             />
             <div className="px-4 pt-1">

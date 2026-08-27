@@ -60,6 +60,10 @@ export interface HeroBannerStats {
   viewerCount: number;
   // Open jobs (active roles) with new applicant counts
   openJobStats: { jobId: string; title: string; admin: string; newApplicants: number; totalApplicants: number }[];
+  // Client hiring request pipeline stage counts
+  hiringSourcing: number;
+  hiringPitch: number;
+  hiringScheduledInterview: number;
 }
 
 const emptyStats: HeroBannerStats = {
@@ -106,6 +110,9 @@ const emptyStats: HeroBannerStats = {
   adminCount: 0,
   viewerCount: 0,
   openJobStats: [],
+  hiringSourcing: 0,
+  hiringPitch: 0,
+  hiringScheduledInterview: 0,
 };
 
 const ET = 'America/New_York';
@@ -178,6 +185,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         pipelineTrackingRes,
         pipelineStagesRes,
         rolesRes,
+        hiringRequestsRes,
       ] = await Promise.all([
         fetchApplicants(),
         supabase.from('jobs').select('id, title, region, is_active, assigned_admin_id'),
@@ -191,6 +199,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         supabase.from('contractor_pipeline_tracking').select('id, current_stage_id'),
         supabase.from('contractor_pipeline_stages').select('id, name, stage_order'),
         supabase.from('user_roles').select('role'),
+        supabase.from('client_hiring_requests').select('pipeline_stage'),
       ]);
 
       if (cancelled) return;
@@ -343,6 +352,13 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       const pendingTimesheets = timesheets.filter((t) => (t.outsta_status || 'pending') === 'pending').length;
       const flaggedTimesheets = timesheets.filter((t) => t.client_approval_status === 'flagged').length;
 
+      // --- Client hiring request pipeline stages ---
+      const hiringRequests = (hiringRequestsRes.data || []) as any[];
+      const hiringSourcing = hiringRequests.filter((r) => r.pipeline_stage === 'sourcing').length;
+      const hiringPitch = hiringRequests.filter((r) => r.pipeline_stage === 'pitch').length;
+      const hiringScheduledInterview = hiringRequests.filter((r) => r.pipeline_stage === 'scheduled_interview').length;
+
+
       // --- Post-hire pipeline ---
       const stageNameById = new Map<string, string>();
       for (const s of (pipelineStagesRes.data || []) as any[]) stageNameById.set(s.id, (s.name || '').toLowerCase());
@@ -420,6 +436,9 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         adminCount,
         viewerCount,
         openJobStats,
+        hiringSourcing,
+        hiringPitch,
+        hiringScheduledInterview,
       });
     };
 
