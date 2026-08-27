@@ -648,7 +648,7 @@ export const ClientsDashboard = () => {
         </Card>
       ) : (
         <div className="grid gap-3">
-          {filteredClients.map(client => (
+          {filteredClients.map((client, clientIndex) => (
             <Card 
               key={client.id} 
               className={`list-row-card cursor-pointer transition-colors ${selectedIds.has(client.id) ? 'ring-2 ring-primary' : ''}`}
@@ -664,8 +664,8 @@ export const ClientsDashboard = () => {
                         onClick={(e) => e.stopPropagation()}
                       />
                     )}
-                    <div className="w-10 h-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                      <Building2 className="w-5 h-5 text-primary" />
+                    <div className={`list-row-icon ${['tint-cyan', 'tint-purple', 'tint-coral', 'tint-blue'][clientIndex % 4]}`}>
+                      <Building2 />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
