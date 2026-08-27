@@ -471,13 +471,25 @@ html:not(.dark) .admin-shell .filter-chip {
   border: 0.5px solid hsl(var(--brand-border));
   border-radius: 6px;
   color: hsl(var(--muted-foreground));
+  padding: 4px 10px;
+  font-size: 11px;
+  cursor: pointer;
 }
 html:not(.dark) .admin-shell .filter-chip:hover { background: hsl(var(--brand-surface)); }
-html:not(.dark) .admin-shell .filter-chip[data-active="true"] {
+html:not(.dark) .admin-shell .filter-chip[data-active="true"],
+html:not(.dark) .admin-shell .filter-chip.active {
   background: hsl(var(--brand-light));
   border-color: hsl(var(--brand));
   color: hsl(var(--brand-text));
 }
+
+/* ---------- Sub-tabs (PL, Contracts, Analytics inner tabs) ---------- */
+html:not(.dark) .admin-shell [role="tablist"] {
+  width: 100%;
+  margin-bottom: 12px;
+}
+html:not(.dark) .admin-shell [role="tab"] { padding: 7px 12px; }
+html:not(.dark) .admin-shell [role="tab"]:hover { color: hsl(var(--muted-foreground)); }
 
 /* ---------- Admin list row cards ---------- */
 html:not(.dark) .admin-shell .list-row-card {
