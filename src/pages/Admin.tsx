@@ -69,6 +69,8 @@ import { ExternalScoutDashboard } from '@/components/ExternalScoutDashboard';
 import { RecruitmentFunnel } from '@/components/RecruitmentFunnel';
 import { WorkflowBoard } from '@/components/WorkflowBoard';
 import { PLDashboard } from '@/components/PLDashboard';
+import { AdminHeroBanner } from '@/components/AdminHeroBanner';
+import { useHeroBannerStats } from '@/hooks/useHeroBannerStats';
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 // Status options for applicant tracking - new pipeline order
@@ -237,6 +239,7 @@ const Admin = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const { toast } = useToast();
   const { canViewTab, loading: tabPermissionsLoading } = useTabPermissions();
+  const heroStats = useHeroBannerStats(Boolean(user && isAdmin));
   const [jobs, setJobs] = useState<Job[]>([]);
   const [jobsLoading, setJobsLoading] = useState(true);
   const [adminUsersMap, setAdminUsersMap] = useState<Record<string, string>>({});
@@ -1604,6 +1607,24 @@ const Admin = () => {
     );
   }
 
+
+  // ===== Hero banner helpers (presentation only) =====
+  const heroNow = new Date();
+  const heroEtHour = Number(new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', hour: 'numeric', hour12: false }).format(heroNow));
+  const heroGreeting = heroEtHour < 12 ? 'Good morning' : heroEtHour < 18 ? 'Good afternoon' : 'Good evening';
+  const heroAdminName = getAdminDisplayName(user?.email, 'there');
+  const heroDayDate = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', weekday: 'long', month: 'short', day: 'numeric' }).format(heroNow);
+  const heroMonthYear = new Intl.DateTimeFormat('en-US', { timeZone: 'America/New_York', month: 'long', year: 'numeric' }).format(heroNow);
+  const heroNum = (n: number) => n.toLocaleString();
+  const heroStageEntries = Object.entries(heroStats.statusCounts)
+    .filter(([, c]) => c > 0)
+    .sort((a, b) => b[1] - a[1]);
+  const heroSivCount = heroStats.statusCounts['SIV'] || 0;
+  const heroReady = heroSivCount + (heroStats.statusCounts['Pitch'] || 0) + (heroStats.statusCounts['Client Interview'] || 0);
+  const heroFunnelTotal = heroStageEntries.reduce((sum, [, c]) => sum + c, 0);
+  const heroLeadStages = Object.entries(heroStats.leadStageCounts).sort((a, b) => b[1] - a[1]);
+  const heroMoney = (n: number) => `$${Math.round(n).toLocaleString()}`;
+
   if (!user || !isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background px-4">
@@ -1822,6 +1843,16 @@ const Admin = () => {
 
 
           <TabsContent value="jobs" className="space-y-6">
+            <AdminHeroBanner
+              eyebrow={`${heroGreeting}, ${heroAdminName} — ${heroDayDate}`}
+              title={`You have ${heroNum(heroReady)} candidates ready to move forward today`}
+              chips={[
+                `${heroNum(heroSivCount)} in SIV`,
+                `${heroNum(heroStats.awaitingCountersign)} contracts pending`,
+                `${heroNum(heroStats.newApplicantsThisWeek)} new applicants this week`,
+                `${heroNum(heroStats.activitiesToday)} activities today`,
+              ]}
+            />
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold">All Jobs</h2>
@@ -2066,6 +2097,15 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="applicants" className="space-y-6">
+            <AdminHeroBanner
+              eyebrow="Applicants"
+              title={`${heroNum(heroStats.totalApplicants)} total applicants — ${heroNum(heroStats.newApplicantsThisWeek)} new this week`}
+              chips={[
+                `Philippines ${heroNum(heroStats.regionCounts.philippines)}`,
+                `Latin America ${heroNum(heroStats.regionCounts.latam)}`,
+                `Global ${heroNum(heroStats.regionCounts.global)}`,
+              ]}
+            />
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold">Pre-Screening Submissions</h2>
@@ -3828,6 +3868,11 @@ const Admin = () => {
 
           {/* Sales Pipeline Tab */}
           <TabsContent value="sales-pipeline" className="space-y-1">
+            <AdminHeroBanner
+              eyebrow="Sales pipeline"
+              title={`${heroNum(heroStats.totalLeads)} leads · ${heroMoney(heroStats.weightedPipelineValue)} weighted pipeline value`}
+              chips={heroLeadStages.map(([stage, count]) => `${stage} ${heroNum(count)}`)}
+            />
             <SalesPipeline />
           </TabsContent>
 
@@ -3842,32 +3887,72 @@ const Admin = () => {
 
           {/* Clients Tab */}
           <TabsContent value="clients" className="space-y-6">
+            <AdminHeroBanner
+              eyebrow="Clients"
+              title={`Managing ${heroNum(heroStats.activeClients)} active client relationships`}
+              chips={[
+                `${heroNum(heroStats.activeContractors)} contractors`,
+                ...heroStats.contractorRegions.map((r) => `${r.name} ${r.count}`),
+              ]}
+            />
             <ClientsDashboard />
           </TabsContent>
 
           {/* Contractors Tab */}
           <TabsContent value="contractors" className="space-y-6">
+            <AdminHeroBanner
+              eyebrow="Contractors"
+              title={`${heroNum(heroStats.activeContractors)} active contractors across ${heroNum(heroStats.contractorClients)} clients`}
+              chips={heroStats.contractorRegions.map((r) => `${r.name} ${r.count}`)}
+            />
             <ContractorsDashboard />
           </TabsContent>
 
           {/* PL Tab */}
           <TabsContent value="pl" className="space-y-6">
+            <AdminHeroBanner
+              eyebrow={`PL — Week ending ${heroStats.plWeekEnding ? format(new Date(heroStats.plWeekEnding + 'T12:00:00'), 'MMM d, yyyy') : '—'}`}
+              title={`${heroNum(heroStats.plSubmitted)} of ${heroNum(heroStats.activeContractors)} contractors submitted this week`}
+              chips={[
+                `${heroStats.plTotalHours.toFixed(1)} total hours`,
+                `${heroStats.plOtHours.toFixed(1)} OT hours`,
+                `${heroMoney(heroStats.plBonus)} bonus`,
+              ]}
+            />
             <PLDashboard />
           </TabsContent>
 
           {/* Analytics Tab */}
           <TabsContent value="analytics" className="space-y-6">
+            <AdminHeroBanner
+              eyebrow="Analytics"
+              title={`${heroNum(heroStats.totalHires)} total hires · ${heroStats.retentionRate}% average retention · ${heroNum(heroStats.avgStayDays)}d avg stay`}
+              chips={[
+                `Top admin: ${heroStats.bestAdmin}`,
+                `${heroNum(heroStats.activeContractors)} active`,
+              ]}
+            />
             <ClientAnalyticsDashboard />
           </TabsContent>
 
           {/* Team Activity Calendar Tab */}
           <TabsContent value="calendar" className="space-y-6">
+            <AdminHeroBanner
+              eyebrow={`Team calendar — ${heroMonthYear}`}
+              title={`${heroNum(heroStats.activitiesToday)} activities scheduled today across your team`}
+              chips={heroStats.activitiesTodayByAdmin.map((a) => `${a.name} ${a.count}`)}
+            />
             <TeamCalendar />
           </TabsContent>
 
 
           {/* Funnel Tab */}
           <TabsContent value="funnel" className="space-y-6" keepMounted>
+            <AdminHeroBanner
+              eyebrow="Recruitment pipeline"
+              title={`${heroNum(heroFunnelTotal)} candidates across ${heroStageEntries.length} active stages`}
+              chips={heroStageEntries.slice(0, 3).map(([stage, count]) => `${getStageDisplayName(stage)} ${heroNum(count)}`)}
+            />
             <RecruitmentFunnel />
           </TabsContent>
 
@@ -3886,6 +3971,14 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="contracts" className="space-y-6">
+            <AdminHeroBanner
+              eyebrow="Contracts"
+              title={`${heroNum(heroStats.awaitingCountersign)} contracts awaiting countersign`}
+              chips={[
+                `${heroNum(heroStats.sentThisMonth)} sent this month`,
+                `${heroNum(heroStats.fullySigned)} fully signed`,
+              ]}
+            />
             <ContractsManager />
           </TabsContent>
 
