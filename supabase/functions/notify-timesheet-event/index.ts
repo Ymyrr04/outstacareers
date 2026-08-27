@@ -393,14 +393,24 @@ async function handleLegalDocSubmitted(requestId: string) {
     <p><strong>Reason:</strong><br/>${String(req.reason || "").replace(/\n/g, "<br/>")}</p>
   `;
 
+  // Notify mark@outsta.io only; CC the contractor who requested it
   const subject = `Legal doc request: ${contractorName} — ${docTypes}`;
   const html = wrap("New legal document request", `<p>A contractor has requested legal document(s).</p>${summary}`);
 
-  // Notify admins only (internal fulfillment); CC contractor as confirmation
-  const recipients = ["mark@outsta.io", "liezl@outsta.io"];
+  const recipients = ["mark@outsta.io"];
   const cc = contractorEmail ? [contractorEmail] : [];
 
   await send(recipients, cc, subject, html);
+
+  // Send a confirmation response to the contractor
+  if (contractorEmail) {
+    const confirmSubject = `We received your legal document request — ${docTypes}`;
+    const confirmHtml = wrap(
+      "Legal document request received",
+      `<p>Hi ${contractorName},</p><p>We've received your legal document request for <strong>${docTypes}</strong>.</p><p>Your request is now in our queue and will be sent out within 24 hours. We'll follow up here once it's ready.</p>${summary}<p>Thanks for your patience!</p>`
+    );
+    await send(contractorEmail, undefined, confirmSubject, confirmHtml);
+  }
 }
 
 Deno.serve(async (req) => {
