@@ -352,6 +352,14 @@ html:not(.dark) .admin-shell [class*="rounded-full"][class*="px-2.5"][class*="te
   padding: 2px 7px;
   font-weight: 500;
 }
+/* Status badges inside tables */
+html:not(.dark) .admin-shell table tbody td .inline-flex[class*="rounded"] {
+  border-radius: 8px;
+  font-size: 9px;
+  padding: 2px 7px;
+  font-weight: 500;
+}
+
 
 /* ---------- Kanban columns & cards ---------- */
 html:not(.dark) .admin-shell .kanban-column-body {
