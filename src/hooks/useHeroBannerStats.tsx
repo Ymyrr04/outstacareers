@@ -37,6 +37,7 @@ export interface HeroBannerStats {
   retentionRate: number;
   avgStayDays: number;
   bestAdmin: string;
+  adminLeaderboard: { name: string; ytdHires: number; retentionRate: number }[];
   // Client pipeline
   pendingTimesheets: number;
   flaggedTimesheets: number;
