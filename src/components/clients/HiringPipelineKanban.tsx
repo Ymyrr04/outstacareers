@@ -254,7 +254,7 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
                 }
               }}
               className={`
-                w-3.5 h-3.5 rounded-[3px] border flex-shrink-0 mt-0.5 flex items-center justify-center
+                w-3.5 h-3.5 rounded-[2px] border flex-shrink-0 mt-0.5 flex items-center justify-center
                 transition-all duration-150
                 ${isClosed 
                   ? 'bg-green-500 border-green-500 text-white' 
