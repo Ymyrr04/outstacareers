@@ -350,14 +350,23 @@ html:not(.dark) .admin-shell select {
   padding-left: 10px;
   padding-right: 10px;
 }
-/* Keep room for icons/buttons when Tailwind sets explicit horizontal padding */
+/* Reserve space for leading/trailing controls in every admin tab. The
+   structural selectors keep shared Input padding from covering icons. */
+html:not(.dark) .admin-shell .relative:has(> svg.absolute[class*="left-"]) > input,
+html:not(.dark) .admin-shell .relative:has(> [class*="absolute"][class*="left-"]) > input,
 html:not(.dark) .admin-shell input[class*="pl-8"],
 html:not(.dark) .admin-shell input[class*="pl-9"],
-html:not(.dark) .admin-shell input[class*="pl-10"] { padding-left: 30px; }
+html:not(.dark) .admin-shell input[class*="pl-10"] {
+  padding-left: 32px !important;
+}
+html:not(.dark) .admin-shell .relative:has(> svg.absolute[class*="right-"]) > input,
+html:not(.dark) .admin-shell .relative:has(> button.absolute[class*="right-"]) > input,
 html:not(.dark) .admin-shell input[class*="pr-8"],
 html:not(.dark) .admin-shell input[class*="pr-9"],
-html:not(.dark) .admin-shell input[class*="pr-10"] { padding-right: 30px; }
-html:not(.dark) .admin-shell input[class*="pr-16"] { padding-right: 60px; }
+html:not(.dark) .admin-shell input[class*="pr-10"] {
+  padding-right: 32px !important;
+}
+html:not(.dark) .admin-shell input[class*="pr-16"] { padding-right: 64px !important; }
 
 html:not(.dark) .admin-shell textarea { font-size: 12px; padding: 8px 10px; }
 html:not(.dark) .admin-shell input::placeholder,
@@ -389,6 +398,8 @@ html:not(.dark) .admin-shell .relative > svg.absolute {
   width: 13px;
   height: 13px;
   color: hsl(var(--muted-foreground));
+  z-index: 1;
+  pointer-events: none;
 }
 
 /* ---------- Badges & pills ---------- */
