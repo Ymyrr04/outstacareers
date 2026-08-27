@@ -32,10 +32,10 @@ export function ApplicationHistoryBadge({ email, currentId, phone }: Application
     <>
       <Badge
         variant="outline"
-        className="border-orange-400 text-orange-600 dark:text-orange-400 text-xs gap-1 cursor-pointer hover:bg-orange-50 dark:hover:bg-orange-950/30 transition-colors"
+        className="border-transparent bg-[#FAEEDA] text-[#633806] text-[9px] font-medium px-1.5 py-px rounded-lg gap-1 cursor-pointer hover:bg-[#F3DFB8] transition-colors"
         onClick={(e) => { e.stopPropagation(); setOpen(true); }}
       >
-        <RotateCcw className="w-3 h-3" />
+        <RotateCcw className="w-2.5 h-2.5" />
         {totalApplications}x applied
       </Badge>
 

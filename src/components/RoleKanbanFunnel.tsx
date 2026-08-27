@@ -60,20 +60,30 @@ const FUNNEL_STAGES = [
   'Reject',
 ] as const;
 
-const STAGE_COLORS: Record<string, { bg: string; header: string; dot: string }> = {
-  'For Review': { bg: 'bg-blue-50 dark:bg-blue-950/20', header: 'bg-blue-500', dot: 'bg-blue-400' },
-  'Qualified': { bg: 'bg-cyan-50 dark:bg-cyan-950/20', header: 'bg-cyan-600', dot: 'bg-cyan-500' },
-  'For Interview': { bg: 'bg-indigo-50 dark:bg-indigo-950/20', header: 'bg-indigo-500', dot: 'bg-indigo-400' },
+const STAGE_COLORS: Record<string, { headerBg: string; title: string; badgeBg: string; accent: string; dot: string }> = {
+  'For Review': { headerBg: '#F1EFE8', title: '#5F5E5A', badgeBg: '#DEDBD2', accent: '#8B887E', dot: 'bg-stone-400' },
+  'Qualified': { headerBg: '#E0F7FC', title: '#066F85', badgeBg: '#B2EEF8', accent: '#0ABEDF', dot: 'bg-cyan-500' },
+  'For Interview': { headerBg: '#E6F1FB', title: '#185FA5', badgeBg: '#C5DDF5', accent: '#185FA5', dot: 'bg-blue-500' },
 
-  'SIV': { bg: 'bg-violet-50 dark:bg-violet-950/20', header: 'bg-violet-500', dot: 'bg-violet-400' },
-  'Pitch': { bg: 'bg-fuchsia-50 dark:bg-fuchsia-950/20', header: 'bg-fuchsia-500', dot: 'bg-fuchsia-400' },
-  'Client Interview': { bg: 'bg-purple-50 dark:bg-purple-950/20', header: 'bg-purple-500', dot: 'bg-purple-400' },
-  'Hired': { bg: 'bg-emerald-50 dark:bg-emerald-950/20', header: 'bg-emerald-500', dot: 'bg-emerald-400' },
-  'Bench': { bg: 'bg-teal-50 dark:bg-teal-950/20', header: 'bg-teal-500', dot: 'bg-teal-400' },
-  'Reject': { bg: 'bg-red-50 dark:bg-red-950/20', header: 'bg-red-400', dot: 'bg-red-400' },
-  'Talent Pool': { bg: 'bg-amber-50 dark:bg-amber-950/20', header: 'bg-amber-500', dot: 'bg-amber-400' },
-  'Cold Talent Pool': { bg: 'bg-sky-50 dark:bg-sky-950/20', header: 'bg-sky-500', dot: 'bg-sky-400' },
+  'SIV': { headerBg: '#EEEDFE', title: '#534AB7', badgeBg: '#D9D6F8', accent: '#534AB7', dot: 'bg-violet-400' },
+  'Pitch': { headerBg: '#FAEEDA', title: '#633806', badgeBg: '#F3DFB8', accent: '#B45309', dot: 'bg-amber-500' },
+  'Client Interview': { headerBg: '#FAECE7', title: '#993C1D', badgeBg: '#F3D4C6', accent: '#993C1D', dot: 'bg-orange-500' },
+  'Hired': { headerBg: '#EAF3DE', title: '#3B6D11', badgeBg: '#D6E8BE', accent: '#639922', dot: 'bg-green-500' },
+  'Bench': { headerBg: '#E0F7FC', title: '#066F85', badgeBg: '#B2EEF8', accent: '#0ABEDF', dot: 'bg-cyan-500' },
+  'Reject': { headerBg: '#FCEBEB', title: '#A32D2D', badgeBg: '#F5CFCC', accent: '#E24B4A', dot: 'bg-red-400' },
+  'Talent Pool': { headerBg: '#FAEEDA', title: '#633806', badgeBg: '#F3DFB8', accent: '#B45309', dot: 'bg-amber-500' },
+  'Cold Talent Pool': { headerBg: '#F1EFE8', title: '#5F5E5A', badgeBg: '#DEDBD2', accent: '#8B887E', dot: 'bg-stone-400' },
 };
+
+// Score badge tiers shared by CV / IV / OA chips on Kanban cards.
+const scoreBadgeClass = (score: number | null) =>
+  score == null
+    ? 'bg-muted text-muted-foreground'
+    : score >= 80
+    ? 'bg-[#E0F7FC] text-[#066F85]'
+    : score >= 60
+    ? 'bg-[#FAEEDA] text-[#633806]'
+    : 'bg-[#FCEBEB] text-[#A32D2D]';
 
 const defaultStageDisplayName = (stage: string): string => {
   if (stage === 'Talent Pool') return 'Bench';
@@ -1490,13 +1500,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                   key={stage}
                   data-pipeline-stage={stage}
                   className={cn(
-                    'flex flex-col w-[248px] shrink-0 rounded-lg border-2 overflow-hidden transition-all duration-150',
-                    dropTargetStage === stage && draggedCandidate
-                      ? 'border-primary ring-2 ring-primary/30 scale-[1.02]'
-                      : 'border-border/60',
-                    !colorOverride && colors.bg
+                    'flex flex-col w-[248px] min-w-[130px] shrink-0 transition-all duration-150',
+                    dropTargetStage === stage && draggedCandidate && 'scale-[1.02]'
                   )}
-                  style={colorOverride ? { backgroundColor: colorOverride + '14' } : undefined}
                   onDragOver={(e) => {
                     e.preventDefault();
                     e.dataTransfer.dropEffect = 'move';
@@ -1517,16 +1523,19 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                   }}
                 >
                   <div
-                    className={cn('px-3 py-2.5 flex items-center justify-between', !colorOverride && colors.header)}
-                    style={colorOverride ? { backgroundColor: colorOverride } : undefined}
+                    className="px-[9px] py-[7px] flex items-center justify-between rounded-t-[7px]"
+                    style={{ backgroundColor: colorOverride || colors.headerBg }}
                   >
 
-                    <span className="text-sm font-semibold text-white">{getStageDisplayName(stage)}</span>
+                    <span className="text-[10px] font-medium" style={{ color: colorOverride ? '#FFFFFF' : colors.title }}>{getStageDisplayName(stage)}</span>
                     <div className="flex items-center gap-1.5">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <button className="text-white/80 hover:text-white transition-colors p-0.5 rounded">
-                            <ArrowUpDown className="w-3.5 h-3.5" />
+                          <button
+                            className="hover:opacity-70 transition-opacity p-0.5 rounded"
+                            style={{ color: colorOverride ? 'rgba(255,255,255,0.85)' : colors.title }}
+                          >
+                            <ArrowUpDown className="w-3 h-3" />
                           </button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
@@ -1553,14 +1562,22 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                           </DropdownMenuItem>
                         </DropdownMenuContent>
                       </DropdownMenu>
-                      <span className="text-xs font-bold text-white/90 bg-white/20 rounded-full px-2 py-0.5">
+                      <span
+                        className="text-[10px] font-medium rounded-lg px-1.5 py-px"
+                        style={colorOverride
+                          ? { backgroundColor: 'rgba(255,255,255,0.25)', color: '#FFFFFF' }
+                          : { backgroundColor: colors.badgeBg, color: colors.title }}
+                      >
                         {stageCandidates.length}
                       </span>
                     </div>
                   </div>
 
                   <div
-                    className="flex-1 max-h-[720px] overflow-y-auto relative"
+                    className={cn(
+                      'flex-1 max-h-[720px] overflow-y-auto relative bg-white border-[0.5px] border-t-0 rounded-b-[7px] min-h-[300px]',
+                      dropTargetStage === stage && draggedCandidate ? 'border-primary' : 'border-[#C8F0F8]'
+                    )}
                     onMouseDown={(e) => {
                       // Lasso starts only on empty space (not on a card or interactive child).
                       // Bail out for right-click, Ctrl-click (treated as right-click on macOS),
@@ -1642,10 +1659,10 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                         }}
                       />
                     )}
-                    <div className="p-2 space-y-2">
+                    <div className="p-1.5 flex flex-col gap-[5px]">
                       {stageCandidates.length === 0 ? (
                         <p className={cn(
-                          "text-[11px] text-muted-foreground text-center py-6",
+                          "text-[10px] text-muted-foreground text-center py-5",
                           dropTargetStage === stage && draggedCandidate && "text-primary font-medium"
                         )}>
                           {dropTargetStage === stage && draggedCandidate ? 'Drop here' : 'No candidates'}
@@ -1656,6 +1673,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                             key={candidate.id}
                             candidate={candidate}
                             dotColor={colors.dot}
+                            accentColor={colorOverride || colors.accent}
                             currentStage={stage}
                             onMoveToStage={handleMoveToStage}
                             onToggleStar={handleToggleStar}
@@ -1803,6 +1821,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
 interface CandidateCardProps {
   candidate: Candidate;
   dotColor: string;
+  accentColor: string;
   currentStage: string;
   onMoveToStage: (candidate: Candidate, stage: string) => void;
   onToggleStar: (candidate: Candidate) => void;
@@ -1824,7 +1843,7 @@ interface CandidateCardProps {
   onReprofiled: () => void;
 }
 
-const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle, hasAdditionalProfile, hasPrimaryProfile, knownTags, onTagsUpdated, knownSuitableRoles, onSuitableRolesUpdated, onReprofiled }: CandidateCardProps) => {
+const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveToStage, onToggleStar, onCopyEmail, onDelete, isDragging, onDragStart, onDragEnd, showRoleLabel, isInactiveRole, isSelected, onSelectToggle, hasAdditionalProfile, hasPrimaryProfile, knownTags, onTagsUpdated, knownSuitableRoles, onSuitableRolesUpdated, onReprofiled }: CandidateCardProps) => {
   const { getDisplayName: getStageDisplayName } = useStageSettings();
   const [showDetails, setShowDetails] = useState(false);
   const [showDetailsTab, setShowDetailsTab] = useState<string | undefined>(undefined); // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -1991,15 +2010,16 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
             }}
             onDragEnd={() => onDragEnd?.()}
             className={cn(
-              "bg-card rounded-md p-2.5 shadow-sm border border-border/50 hover:shadow-md transition-all space-y-1.5 cursor-grab active:cursor-grabbing",
+              "bg-white rounded-md border-[0.5px] border-[#C8F0F8] px-2 py-[7px] transition-all space-y-1.5 cursor-pointer hover:bg-[#EDF9FC]",
               isDragging && "opacity-40 scale-95 shadow-lg",
               isSelected && "ring-2 ring-primary border-primary bg-primary/5"
             )}
+            style={{ borderLeft: `3px solid ${accentColor}` }}
           >
             <div className="space-y-1">
               <div className="flex items-start gap-1.5">
                 <div className={cn('w-2 h-2 rounded-full mt-1 shrink-0', dotColor)} />
-                <p className="text-xs font-semibold leading-tight flex-1 min-w-0" title={candidate.full_name}>
+                <p className="text-[11px] font-medium leading-tight flex-1 min-w-0 mb-[3px]" title={candidate.full_name}>
                   {candidate.full_name}
                 </p>
                 {(hasAdditionalProfile || hasPrimaryProfile) && (
@@ -2025,22 +2045,16 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
                 )}
               </div>
               <div className="pl-3.5 flex items-center gap-1.5 flex-wrap">
-                <span 
+                <span
                   className={cn(
-                    "inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded",
-                    candidate.total_score != null && candidate.total_score >= 70
-                      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400"
-                      : candidate.total_score != null && candidate.total_score >= 40
-                      ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
-                      : candidate.total_score != null
-                      ? "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400"
-                      : "bg-muted text-muted-foreground"
+                    "inline-flex text-[9px] font-medium px-1 py-px rounded-[3px]",
+                    scoreBadgeClass(candidate.total_score)
                   )}
                 >
                   CV: {candidate.total_score ?? '–'}
                 </span>
                 {candidate.interview_overall_score != null && (
-                  <span className="inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded bg-purple-100 text-purple-700 dark:bg-purple-950/40 dark:text-purple-400">
+                  <span className={cn("inline-flex text-[9px] font-medium px-1 py-px rounded-[3px]", scoreBadgeClass(candidate.interview_overall_score))}>
                     IV: {candidate.interview_overall_score}
                   </span>
                 )}
@@ -2058,12 +2072,8 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
                   if (!showCombined) return null;
                   return (
                     <span className={cn(
-                      "inline-flex text-[10px] font-bold px-1.5 py-0.5 rounded",
-                      combined >= 70
-                        ? "bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-400"
-                        : combined >= 40
-                        ? "bg-amber-100 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400"
-                        : "bg-red-100 text-red-700 dark:bg-red-950/40 dark:text-red-400"
+                      "inline-flex text-[9px] font-medium px-1 py-px rounded-[3px]",
+                      scoreBadgeClass(combined)
                     )}>
                       OA: {combined}
                     </span>
@@ -2107,13 +2117,13 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
               </div>
             )}
 
-            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-              <MapPin className="w-2.5 h-2.5 shrink-0" />
+            <div className="flex items-center gap-[3px] text-[9px] text-muted-foreground">
+              <MapPin className="w-[9px] h-[9px] shrink-0" />
               <span className="truncate">{candidate.location || 'N/A'}</span>
             </div>
 
-            <div className="flex items-center gap-1 text-[10px] text-muted-foreground">
-              <Mail className="w-2.5 h-2.5 shrink-0" />
+            <div className="flex items-center gap-[3px] text-[9px] text-muted-foreground">
+              <Mail className="w-[9px] h-[9px] shrink-0" />
               <span className="truncate">{candidate.email}</span>
             </div>
 
@@ -2127,7 +2137,7 @@ const CandidateCard = ({ candidate, dotColor, currentStage, onMoveToStage, onTog
               const label = diffDays >= 1 ? `${diffDays}d` : `${diffHours}h`;
               return (
                 <div className={cn(
-                  "flex items-center gap-1 text-[10px] font-medium",
+                  "flex items-center gap-[3px] text-[9px] font-medium",
                   isOverdue ? "text-red-600 dark:text-red-400" : "text-muted-foreground"
                 )}>
                   <Clock className="w-2.5 h-2.5 shrink-0" />

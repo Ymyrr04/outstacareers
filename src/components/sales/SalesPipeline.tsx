@@ -96,9 +96,24 @@ const contactTypeIcon = (t: ContactType | null) =>
   t === 'Email' ? '📧' : t === 'Text' ? '💬' : t === 'Call' ? '📞' : t === 'Other' ? '✏️' : '';
 
 const tempBadge = (t: Temperature) => {
-  if (t === 'hot') return 'bg-red-100 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-300';
-  if (t === 'cold') return 'bg-blue-100 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300';
-  return 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-950/40 dark:text-orange-300';
+  if (t === 'hot') return 'bg-[#FCEBEB] text-[#A32D2D] border-transparent';
+  if (t === 'cold') return 'bg-[#F1EFE8] text-[#5F5E5A] border-transparent';
+  return 'bg-[#FAEEDA] text-[#633806] border-transparent';
+};
+
+// Visual accents for the sales Kanban columns (styling only — stage names/order unchanged).
+const SALES_STAGE_ACCENTS = [
+  { bg: '#F1EFE8', text: '#5F5E5A', badgeBg: '#DEDBD2', accent: '#8B887E' },
+  { bg: '#E0F7FC', text: '#066F85', badgeBg: '#B2EEF8', accent: '#0ABEDF' },
+  { bg: '#E6F1FB', text: '#185FA5', badgeBg: '#C5DDF5', accent: '#185FA5' },
+  { bg: '#EEEDFE', text: '#534AB7', badgeBg: '#D9D6F8', accent: '#534AB7' },
+  { bg: '#FAEEDA', text: '#633806', badgeBg: '#F3DFB8', accent: '#B45309' },
+  { bg: '#FAECE7', text: '#993C1D', badgeBg: '#F3D4C6', accent: '#993C1D' },
+  { bg: '#EAF3DE', text: '#3B6D11', badgeBg: '#D6E8BE', accent: '#639922' },
+];
+const salesStageAccent = (stage: string) => {
+  const idx = SALES_STAGES.indexOf(stage as SalesStage);
+  return SALES_STAGE_ACCENTS[(idx >= 0 ? idx : 0) % SALES_STAGE_ACCENTS.length];
 };
 
 const emptyLead: Partial<SalesLead> = {
@@ -418,15 +433,25 @@ export const SalesPipeline = () => {
                   <div
                     ref={provided.innerRef}
                     {...provided.droppableProps}
-                    className={`min-w-[280px] w-[280px] flex-shrink-0 rounded-lg border bg-muted/30 p-2 transition-colors ${snapshot.isDraggingOver ? 'bg-primary/10 border-primary/40' : ''}`}
+                    className="min-w-[280px] w-[280px] flex-shrink-0 flex flex-col transition-colors"
                   >
-                    <div className="flex items-center justify-between px-1 py-2 mb-1">
-                      <h3 className="text-sm font-semibold">{stage}</h3>
-                      <Badge variant="secondary" className="text-xs">{grouped[stage].length}</Badge>
+                    {(() => { const accent = salesStageAccent(stage); return (
+                    <>
+                    <div
+                      className="flex items-center justify-between px-[9px] py-[7px] rounded-t-[7px]"
+                      style={{ backgroundColor: accent.bg }}
+                    >
+                      <h3 className="text-[10px] font-medium" style={{ color: accent.text }}>{stage}</h3>
+                      <span
+                        className="text-[10px] font-medium rounded-lg px-1.5 py-px"
+                        style={{ backgroundColor: accent.badgeBg, color: accent.text }}
+                      >
+                        {grouped[stage].length}
+                      </span>
                     </div>
-                    <div className="space-y-2 min-h-[60px]">
+                    <div className={`flex-1 flex flex-col gap-[5px] min-h-[300px] bg-white border-[0.5px] border-t-0 rounded-b-[7px] p-1.5 ${snapshot.isDraggingOver ? 'border-primary' : 'border-[#C8F0F8]'}`}>
                       {grouped[stage].length === 0 && (
-                        <div className="text-xs text-muted-foreground text-center py-6 italic">Empty</div>
+                        <div className="text-[10px] text-muted-foreground text-center py-5">Empty</div>
                       )}
                       {grouped[stage].map((lead, idx) => (
                         <Draggable draggableId={lead.id} index={idx} key={lead.id}>
@@ -434,22 +459,23 @@ export const SalesPipeline = () => {
                             <div
                               ref={p.innerRef}
                               {...p.draggableProps}
-                              {...p.dragHandleProps}
-                              onClick={() => setSelectedLead(lead)}
-                              className={`bg-card border rounded-md p-3 shadow-sm cursor-pointer hover:border-primary/50 transition ${s.isDragging ? 'rotate-1 shadow-lg' : ''}`}
-                            >
+                               {...p.dragHandleProps}
+                               onClick={() => setSelectedLead(lead)}
+                               className={`bg-white border-[0.5px] border-[#C8F0F8] rounded-md px-2 py-[7px] cursor-pointer hover:bg-[#EDF9FC] transition ${s.isDragging ? 'rotate-1 shadow-lg' : ''}`}
+                               style={{ ...p.draggableProps.style, borderLeft: `3px solid ${salesStageAccent(stage).accent}` }}
+                             >
                               <div className="flex items-start justify-between gap-2 mb-1">
                                 {lead.converted_client_id && existingClientIds.has(lead.converted_client_id) ? (
                                   <button
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); openClientInPipeline(lead.converted_client_id!); }}
-                                    className="font-semibold text-sm truncate flex-1 text-left text-primary hover:underline"
+                                    className="font-medium text-[11px] truncate flex-1 text-left text-primary hover:underline"
                                     title="Open in client pipeline"
                                   >
                                     {lead.company_name}
                                   </button>
                                 ) : (
-                                  <div className="font-semibold text-sm truncate flex-1">{lead.company_name}</div>
+                                  <div className="font-medium text-[11px] truncate flex-1">{lead.company_name}</div>
                                 )}
                                 <div className="flex flex-col items-end gap-0.5 flex-shrink-0">
                                   <div className="flex items-center gap-1.5">
@@ -465,10 +491,10 @@ export const SalesPipeline = () => {
                                   )}
                                 </div>
                               </div>
-                              <div className="text-xs text-muted-foreground mb-2">{lead.contact_name || 'N/A'}</div>
-                              <div className="flex flex-wrap gap-1 mb-2">
-                                <Badge variant="outline" className={`text-[10px] capitalize ${tempBadge(lead.temperature)}`}>{lead.temperature}</Badge>
-                                <Badge variant="outline" className="text-[10px]">{lead.source}</Badge>
+                               <div className="text-[9px] text-muted-foreground mb-2">{lead.contact_name || 'N/A'}</div>
+                               <div className="flex flex-wrap gap-1 mb-2">
+                                 <Badge variant="outline" className={`text-[9px] font-medium px-[7px] py-[2px] rounded-lg capitalize ${tempBadge(lead.temperature)}`}>{lead.temperature}</Badge>
+                                 <Badge variant="outline" className="text-[9px]">{lead.source}</Badge>
                               </div>
                               {lead.role_title && <div className="text-xs truncate">{lead.role_title}</div>}
                               {lead.industry && <div className="text-xs text-muted-foreground truncate">{lead.industry}</div>}
@@ -530,6 +556,8 @@ export const SalesPipeline = () => {
                       ))}
                       {provided.placeholder}
                     </div>
+                    </>
+                    ); })()}
                   </div>
                 )}
               </Droppable>
