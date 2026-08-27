@@ -13,12 +13,14 @@ type EventType =
   | "timesheet_resubmitted"
   | "timesheet_approved"
   | "timesheet_flagged"
-  | "leave_submitted";
+  | "leave_submitted"
+  | "legal_doc_submitted";
 
 interface Payload {
   event: EventType;
   timesheetId?: string;
   leaveId?: string;
+  legalDocRequestId?: string;
   reason?: string;
   reviewerName?: string;
   source?: "client" | "admin";
