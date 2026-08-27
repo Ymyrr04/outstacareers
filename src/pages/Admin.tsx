@@ -3859,6 +3859,15 @@ const Admin = () => {
 
           {/* Pipeline Kanban Tab */}
           <TabsContent value="pipeline" className="space-y-1">
+            <AdminHeroBanner
+              eyebrow="Client pipeline"
+              title={`${heroNum(heroStats.activeContractors)} active contractor assignments across ${heroNum(heroStats.contractorClients)} clients`}
+              chips={[
+                `${heroNum(heroStats.activeContractors)} active`,
+                `${heroNum(heroStats.pendingTimesheets)} pending timesheets`,
+                `${heroNum(heroStats.flaggedTimesheets)} flagged timesheets`,
+              ]}
+            />
             <div className="px-4 pt-1">
               <h2 className="text-sm font-semibold">Client Hiring Pipeline</h2>
               <p className="text-[11px] text-muted-foreground">Track client hiring requests through the recruitment pipeline</p>
@@ -3878,6 +3887,15 @@ const Admin = () => {
 
           {/* Post-Hire Pipeline Tab */}
           <TabsContent value="post-hire" className="space-y-1">
+            <AdminHeroBanner
+              eyebrow="Post-hire"
+              title={`${heroNum(heroStats.postHireTotal)} contractors in post-hire stages`}
+              chips={[
+                `${heroNum(heroStats.postHireOnboarding)} onboarding`,
+                `${heroNum(heroStats.postHireActive)} active`,
+                `${heroNum(heroStats.postHireReview)} review`,
+              ]}
+            />
             <div className="px-4 pt-1">
               <h2 className="text-sm font-semibold">Post-Hire Pipeline</h2>
               <p className="text-[11px] text-muted-foreground">Track contractor milestones and send client check-in emails</p>
@@ -3957,16 +3975,40 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="talent-scout" className="space-y-6">
+            <AdminHeroBanner
+              eyebrow="Talent scout"
+              title={`Scouting talent across ${heroNum(heroStats.activeRoles)} active roles`}
+              chips={[
+                `${heroNum(heroStats.talentPoolCount)} in talent pipeline`,
+                `${heroNum(heroStats.benchCount)} on bench`,
+              ]}
+            />
             <TalentScoutDashboard />
           </TabsContent>
 
           {/* External Scout Tab */}
           <TabsContent value="external-scout" className="space-y-6">
+            <AdminHeroBanner
+              eyebrow="External scout"
+              title="External candidate sourcing"
+              chips={[
+                `${heroNum(heroStats.externalSourcedThisMonth)} sourced this month`,
+                `${heroNum(heroStats.activeRoles)} active roles`,
+              ]}
+            />
             <ExternalScoutDashboard />
           </TabsContent>
 
           {/* Workflow Tab */}
           <TabsContent value="workflow" className="space-y-6">
+            <AdminHeroBanner
+              eyebrow="Workflow"
+              title="Team workflow and task management"
+              chips={[
+                `${heroNum(heroStats.activeTasks)} active tasks`,
+                `${heroNum(heroStats.completedThisWeek)} completed this week`,
+              ]}
+            />
             <WorkflowBoard />
           </TabsContent>
 
@@ -3983,6 +4025,15 @@ const Admin = () => {
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
+            <AdminHeroBanner
+              eyebrow="Permissions"
+              title={`Managing access for ${heroNum(heroStats.adminUsersTotal)} admin users`}
+              chips={[
+                `${heroNum(heroStats.superAdminCount)} super admin`,
+                `${heroNum(heroStats.adminCount)} admin`,
+                `${heroNum(heroStats.viewerCount)} viewer`,
+              ]}
+            />
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold">Admin Permissions</h2>

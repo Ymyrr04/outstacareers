@@ -36,6 +36,28 @@ export interface HeroBannerStats {
   retentionRate: number;
   avgStayDays: number;
   bestAdmin: string;
+  // Client pipeline
+  pendingTimesheets: number;
+  flaggedTimesheets: number;
+  // Post-hire
+  postHireTotal: number;
+  postHireOnboarding: number;
+  postHireActive: number;
+  postHireReview: number;
+  // Talent scout
+  activeRoles: number;
+  talentPoolCount: number;
+  benchCount: number;
+  // External scout
+  externalSourcedThisMonth: number;
+  // Workflow
+  activeTasks: number;
+  completedThisWeek: number;
+  // Permissions
+  adminUsersTotal: number;
+  superAdminCount: number;
+  adminCount: number;
+  viewerCount: number;
 }
 
 const emptyStats: HeroBannerStats = {
@@ -65,6 +87,22 @@ const emptyStats: HeroBannerStats = {
   retentionRate: 0,
   avgStayDays: 0,
   bestAdmin: '—',
+  pendingTimesheets: 0,
+  flaggedTimesheets: 0,
+  postHireTotal: 0,
+  postHireOnboarding: 0,
+  postHireActive: 0,
+  postHireReview: 0,
+  activeRoles: 0,
+  talentPoolCount: 0,
+  benchCount: 0,
+  externalSourcedThisMonth: 0,
+  activeTasks: 0,
+  completedThisWeek: 0,
+  adminUsersTotal: 0,
+  superAdminCount: 0,
+  adminCount: 0,
+  viewerCount: 0,
 };
 
 const ET = 'America/New_York';
@@ -111,7 +149,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         for (let from = 0; from < 30000; from += 1000) {
           const { data, error } = await supabase
             .from('applicants_prescreen')
-            .select('status, created_at, job_id')
+            .select('status, created_at, job_id, job_source')
             .order('created_at', { ascending: false })
             .range(from, from + 999);
           if (error || !data || data.length === 0) break;
@@ -126,19 +164,27 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         jobsRes,
         envelopesRes,
         eventsRes,
+        workflowEventsRes,
         leadsRes,
         clientsRes,
         assignmentsRes,
         timesheetsRes,
+        pipelineTrackingRes,
+        pipelineStagesRes,
+        rolesRes,
       ] = await Promise.all([
         fetchApplicants(),
-        supabase.from('jobs').select('id, region'),
+        supabase.from('jobs').select('id, region, is_active'),
         supabase.from('contract_envelopes').select('status, sent_at, countersigned_at, countersign_sent_at'),
         supabase.from('calendar_events').select('assigned_to, claimed_by, event_date').eq('event_date', today),
+        supabase.from('calendar_events').select('event_date, is_done').gte('event_date', weekAgo.slice(0, 10)),
         supabase.from('sales_leads').select('stage, estimated_hires, likelihood_to_close'),
         supabase.from('clients').select('id'),
         supabase.from('contractor_assignments').select('id, client_id, status, country, start_date, end_date, hired_by'),
-        supabase.from('contractor_timesheets').select('contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount').order('week_ending_date', { ascending: false }).limit(2000),
+        supabase.from('contractor_timesheets').select('contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount, outsta_status, client_approval_status').order('week_ending_date', { ascending: false }).limit(2000),
+        supabase.from('contractor_pipeline_tracking').select('id, current_stage_id'),
+        supabase.from('contractor_pipeline_stages').select('id, name, stage_order'),
+        supabase.from('user_roles').select('role'),
       ]);
 
       if (cancelled) return;
@@ -246,6 +292,40 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       const plTotalHours = weekRows.reduce((s, t) => s + Number(t.total_hours || 0), 0);
       const plOtHours = weekRows.reduce((s, t) => s + Number(t.overtime_hours || 0), 0);
       const plBonus = weekRows.reduce((s, t) => s + Number(t.incentive_amount || 0), 0);
+      const pendingTimesheets = timesheets.filter((t) => (t.outsta_status || 'pending') === 'pending').length;
+      const flaggedTimesheets = timesheets.filter((t) => t.client_approval_status === 'flagged').length;
+
+      // --- Post-hire pipeline ---
+      const stageNameById = new Map<string, string>();
+      for (const s of (pipelineStagesRes.data || []) as any[]) stageNameById.set(s.id, (s.name || '').toLowerCase());
+      const tracking = (pipelineTrackingRes.data || []) as any[];
+      let postHireOnboarding = 0, postHireActive = 0, postHireReview = 0;
+      for (const t of tracking) {
+        const name = stageNameById.get(t.current_stage_id) || '';
+        if (/onboard|week/.test(name)) postHireOnboarding++;
+        else if (/review|settled|exit|offboard/.test(name)) postHireReview++;
+        else postHireActive++;
+      }
+
+      // --- Talent / external scout ---
+      const activeRoles = ((jobsRes.data || []) as any[]).filter((j) => j.is_active).length;
+      const talentPoolCount = statusCounts['Talent Pool'] || 0;
+      const benchCount = statusCounts['Bench'] || 0;
+      const monthStartIso = monthStart.toISOString();
+      const externalSourcedThisMonth = applicants.filter(
+        (a) => a.job_source === 'Apollo' && a.created_at && a.created_at >= monthStartIso
+      ).length;
+
+      // --- Workflow (calendar tasks) ---
+      const workflowEvents = (workflowEventsRes.data || []) as any[];
+      const activeTasks = workflowEvents.filter((e) => !e.is_done && e.event_date >= today).length;
+      const completedThisWeek = workflowEvents.filter((e) => e.is_done).length;
+
+      // --- Permissions ---
+      const roles = (rolesRes.data || []) as any[];
+      const superAdminCount = roles.filter((r) => r.role === 'super_admin').length;
+      const adminCount = roles.filter((r) => r.role === 'admin').length;
+      const viewerCount = roles.filter((r) => r.role === 'user').length;
 
       setStats({
         loading: false,
@@ -274,6 +354,22 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         retentionRate,
         avgStayDays,
         bestAdmin,
+        pendingTimesheets,
+        flaggedTimesheets,
+        postHireTotal: tracking.length,
+        postHireOnboarding,
+        postHireActive,
+        postHireReview,
+        activeRoles,
+        talentPoolCount,
+        benchCount,
+        externalSourcedThisMonth,
+        activeTasks,
+        completedThisWeek,
+        adminUsersTotal: roles.length,
+        superAdminCount,
+        adminCount,
+        viewerCount,
       });
     };
 
