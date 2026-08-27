@@ -91,7 +91,9 @@ const App = () => (
                 <Route path="*" element={guard(<NotFound />)} />
               </Routes>
             </BrowserRouter>
+            <DesignPreviewToggle />
           </TooltipProvider>
+
         </AuthProvider>
       </QueryClientProvider>
     </ThemeProvider>
