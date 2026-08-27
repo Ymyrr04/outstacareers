@@ -174,11 +174,11 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         rolesRes,
       ] = await Promise.all([
         fetchApplicants(),
-        supabase.from('jobs').select('id, region, is_active'),
+        supabase.from('jobs').select('id, region, is_active, assigned_admin_id'),
         supabase.from('contract_envelopes').select('status, sent_at, countersigned_at, countersign_sent_at'),
         supabase.from('calendar_events').select('assigned_to, claimed_by, event_date').eq('event_date', today),
-        supabase.from('calendar_events').select('event_date, is_done').gte('event_date', weekAgo.slice(0, 10)),
-        supabase.from('sales_leads').select('stage, estimated_hires, likelihood_to_close'),
+        supabase.from('calendar_events').select('event_date, is_done, assigned_to, claimed_by').gte('event_date', weekAgo.slice(0, 10)),
+        supabase.from('sales_leads').select('stage, estimated_hires, likelihood_to_close, created_by'),
         supabase.from('clients').select('id'),
         supabase.from('contractor_assignments').select('id, client_id, status, country, start_date, end_date, hired_by'),
         supabase.from('contractor_timesheets').select('contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount, outsta_status, client_approval_status').order('week_ending_date', { ascending: false }).limit(2000),
@@ -189,9 +189,33 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
 
       if (cancelled) return;
 
+      // --- Per-admin scoping (Liezl and unmapped users keep the global view) ---
+      const { data: authData } = await supabase.auth.getUser();
+      if (cancelled) return;
+      const myId = authData?.user?.id || '';
+      const myEmail = (authData?.user?.email || '').toLowerCase();
+      const scoped = !!myEmail && !GLOBAL_VIEW_EMAILS.includes(myEmail);
+      const myName = myEmail ? getAdminDisplayName(myEmail, '') : '';
+      const isMine = (value: unknown): boolean => {
+        if (!value) return false;
+        const vals = Array.isArray(value) ? value : [value];
+        return vals.some((v) => {
+          const s = String(v ?? '').trim();
+          if (!s) return false;
+          if (s.toLowerCase() === myEmail || s === myId) return true;
+          return !!myName && getAdminDisplayName(s, '').toLowerCase() === myName.toLowerCase();
+        });
+      };
+
+      const allJobs = (jobsRes.data || []) as any[];
+      const myJobs = scoped ? allJobs.filter((j) => isMine(j.assigned_admin_id)) : allJobs;
+      const myJobIds = new Set(myJobs.map((j) => j.id));
+      const applicantRows = scoped ? applicants.filter((a) => myJobIds.has(a.job_id)) : applicants;
+
       // --- Applicants ---
       const jobRegion = new Map<string, string>();
-      for (const j of (jobsRes.data || []) as any[]) jobRegion.set(j.id, j.region || '');
+      for (const j of allJobs) jobRegion.set(j.id, j.region || '');
+
       const statusCounts: Record<string, number> = {};
       const regionCounts = { philippines: 0, latam: 0, global: 0 };
       let newApplicantsThisWeek = 0;
