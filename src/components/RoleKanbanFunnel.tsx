@@ -599,7 +599,14 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       }
     };
 
-    const mapToCandidate = (rows: any[]) => rows.map(a => ({
+    // Guard against the same applicant appearing twice (range pagination can
+    // repeat rows when scores tie, and phases could overlap).
+    const dedupeById = (rows: any[]) => {
+      const seen = new Set<string>();
+      return rows.filter(r => (r?.id && !seen.has(r.id)) ? (seen.add(r.id), true) : false);
+    };
+
+    const mapToCandidate = (rows: any[]) => dedupeById(rows).map(a => ({
       ...a,
       is_starred: a.is_starred ?? false,
       interview_invite_sent_at: a.interview_invite_sent_at ?? null,
