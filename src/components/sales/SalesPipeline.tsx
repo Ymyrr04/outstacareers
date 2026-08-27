@@ -461,11 +461,11 @@ export const SalesPipeline = () => {
                               {...p.draggableProps}
                                {...p.dragHandleProps}
                                onClick={() => setSelectedLead(lead)}
-                               className={`bg-white border-[0.5px] border-[#C8F0F8] rounded-md px-2 py-[7px] cursor-pointer hover:bg-[#EDF9FC] transition ${s.isDragging ? 'rotate-1 shadow-lg' : ''}`}
+                               className={`bg-white border-[0.5px] border-[#C8F0F8] rounded-md px-2 py-[7px] cursor-pointer hover:bg-[#F0FFFE] transition ${s.isDragging ? 'rotate-1 shadow-lg' : ''}`}
                                style={{ ...p.draggableProps.style, borderLeft: `3px solid ${salesStageAccent(stage).accent}` }}
                              >
-                              <div className="flex items-start justify-between gap-2 mb-1">
-                                {lead.converted_client_id && existingClientIds.has(lead.converted_client_id) ? (
+                              <div className="flex items-start justify-between gap-2 mb-[3px]">
+                                 {lead.converted_client_id && existingClientIds.has(lead.converted_client_id) ? (
                                   <button
                                     type="button"
                                     onClick={(e) => { e.stopPropagation(); openClientInPipeline(lead.converted_client_id!); }}
@@ -496,8 +496,8 @@ export const SalesPipeline = () => {
                                  <Badge variant="outline" className={`text-[9px] font-medium px-[7px] py-[2px] rounded-lg capitalize ${tempBadge(lead.temperature)}`}>{lead.temperature}</Badge>
                                  <Badge variant="outline" className="text-[9px]">{lead.source}</Badge>
                               </div>
-                              {lead.role_title && <div className="text-xs truncate">{lead.role_title}</div>}
-                              {lead.industry && <div className="text-xs text-muted-foreground truncate">{lead.industry}</div>}
+                              {lead.role_title && <div className="text-[9px] text-muted-foreground truncate">{lead.role_title}</div>}
+                               {lead.industry && <div className="text-[9px] text-muted-foreground truncate">{lead.industry}</div>}
                               {lead.email && <div className="text-xs text-muted-foreground truncate">{lead.email}</div>}
                               {(() => {
                                 const ci = stageToContactIdx(stage);

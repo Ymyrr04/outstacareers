@@ -2010,7 +2010,7 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
             }}
             onDragEnd={() => onDragEnd?.()}
             className={cn(
-              "bg-white rounded-md border-[0.5px] border-[#C8F0F8] px-2 py-[7px] transition-all space-y-1.5 cursor-pointer hover:bg-[#EDF9FC]",
+              "bg-white rounded-md border-[0.5px] border-[#C8F0F8] px-2 py-[7px] transition-all space-y-1.5 cursor-pointer hover:bg-[#F0FFFE]",
               isDragging && "opacity-40 scale-95 shadow-lg",
               isSelected && "ring-2 ring-primary border-primary bg-primary/5"
             )}
