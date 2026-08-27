@@ -15,7 +15,7 @@ interface TodayEvent {
   claimed_by: string | null;
 }
 
-/** Right-hand sidebar for the Jobs tab: today's activities + pipeline snapshot. */
+/** Right-hand sidebar for the Jobs tab: today's activities. */
 export const JobsTabSidebar = () => {
   const { getAdmin } = useCalendarAdmins();
   const [events, setEvents] = useState<TodayEvent[]>([]);
