@@ -94,6 +94,7 @@ const emptyStats: HeroBannerStats = {
   retentionRate: 0,
   avgStayDays: 0,
   bestAdmin: '—',
+  adminLeaderboard: [],
   pendingTimesheets: 0,
   flaggedTimesheets: 0,
   postHireTotal: 0,
