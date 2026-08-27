@@ -3879,7 +3879,7 @@ const Admin = () => {
           <TabsContent value="pipeline" className="space-y-1">
             <AdminHeroBanner
               eyebrow="Client pipeline"
-              title={`${heroNum(heroStats.activeRoles)} active roles to fill in`}
+              title={`${heroNum(heroStats.hiringSourcing + heroStats.hiringPitch + heroStats.hiringScheduledInterview)} active roles to fill in`}
               chips={[
                 `${heroNum(heroStats.hiringSourcing)} Sourcing & Screening`,
                 `${heroNum(heroStats.hiringPitch)} Pitch`,
