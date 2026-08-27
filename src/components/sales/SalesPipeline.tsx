@@ -449,7 +449,7 @@ export const SalesPipeline = () => {
                         {grouped[stage].length}
                       </span>
                     </div>
-                    <div className={`flex-1 flex flex-col gap-[5px] min-h-[300px] bg-white border-[0.5px] border-t-0 rounded-b-[7px] p-1.5 ${snapshot.isDraggingOver ? 'border-primary' : 'border-[#C8F0F8]'}`}>
+                    <div className={`kanban-column-body flex-1 flex flex-col gap-[5px] min-h-[300px] bg-white border-[0.5px] border-t-0 rounded-b-[7px] p-1.5 ${snapshot.isDraggingOver ? 'border-primary' : 'border-[#C8F0F8]'}`}>
                       {grouped[stage].length === 0 && (
                         <div className="text-[10px] text-muted-foreground text-center py-5">Empty</div>
                       )}
@@ -461,7 +461,7 @@ export const SalesPipeline = () => {
                               {...p.draggableProps}
                                {...p.dragHandleProps}
                                onClick={() => setSelectedLead(lead)}
-                               className={`bg-white border-[0.5px] border-[#C8F0F8] rounded-md px-2 py-[7px] cursor-pointer hover:bg-[#F0FFFE] transition ${s.isDragging ? 'rotate-1 shadow-lg' : ''}`}
+                               className={`kanban-card bg-white border-[0.5px] border-[#C8F0F8] rounded-md px-2 py-[7px] cursor-pointer hover:bg-[#F0FFFE] transition ${s.isDragging ? 'rotate-1 shadow-lg' : ''}`}
                                style={{ ...p.draggableProps.style, borderLeft: `3px solid ${salesStageAccent(stage).accent}` }}
                              >
                               <div className="flex items-start justify-between gap-2 mb-[3px]">
