@@ -1080,12 +1080,16 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     };
     const hasAnyProfile = (c: Candidate) =>
       additionalProfileIds.has(c.id) || primaryProfileIds.has(c.id);
+    // Pin candidates with profiles only for score-based sorts; name/date sorts must be pure
+    const pinProfiles = sortOption === 'score-desc' || sortOption === 'score-asc' || sortOption === 'assessed';
     for (const stage of orderedFunnelStages) {
       groups[stage].sort((a, b) => {
-        // Pin candidates with any profile (primary or additional) to the top of each stage
-        const aHasP = hasAnyProfile(a) ? 1 : 0;
-        const bHasP = hasAnyProfile(b) ? 1 : 0;
-        if (bHasP !== aHasP) return bHasP - aHasP;
+        if (pinProfiles) {
+          // Pin candidates with any profile (primary or additional) to the top of each stage
+          const aHasP = hasAnyProfile(a) ? 1 : 0;
+          const bHasP = hasAnyProfile(b) ? 1 : 0;
+          if (bHasP !== aHasP) return bHasP - aHasP;
+        }
         return sortFn(a, b);
       });
     }
