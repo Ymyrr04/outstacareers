@@ -1855,13 +1855,14 @@ const Admin = () => {
           <TabsContent value="jobs" className="space-y-6">
             <AdminHeroBanner
               eyebrow={`${heroGreeting}, ${heroAdminName} — ${heroDayDate}`}
-              title={`You have ${heroNum(heroReady)} candidates ready to move forward today`}
-              chips={[
-                `${heroNum(heroSivCount)} in SIV`,
-                `${heroNum(heroStats.awaitingCountersign)} contracts pending`,
-                `${heroNum(heroStats.newApplicantsThisWeek)} new applicants this week`,
-                `${heroNum(heroStats.activitiesToday)} activities today`,
-              ]}
+              title={`${heroNum(heroStats.openJobStats.length)} open roles — ${heroNum(heroStats.openJobStats.reduce((s, j) => s + j.newApplicants, 0))} new applicants this week`}
+              chips={
+                heroStats.openJobStats.length
+                  ? heroStats.openJobStats.map(
+                      (j) => `${j.title} · ${j.admin} · ${heroNum(j.newApplicants)} new`
+                    )
+                  : ['No active roles']
+              }
             />
             <div className="flex gap-[10px] items-start">
             <div className="flex-1 min-w-0 space-y-6">
