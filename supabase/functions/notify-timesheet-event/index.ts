@@ -353,6 +353,56 @@ async function handleLeaveSubmitted(leaveId: string) {
   await send(recipients, cc, subject, html);
 }
 
+async function handleLegalDocSubmitted(requestId: string) {
+  const { data: req, error } = await supabase
+    .from("contractor_legal_doc_requests")
+    .select("*")
+    .eq("id", requestId)
+    .maybeSingle();
+  if (error || !req) throw new Error("Legal doc request not found");
+
+  const { data: assign } = await supabase
+    .from("contractor_assignments")
+    .select("applicant_id, client_id, job_title")
+    .eq("id", req.contractor_assignment_id)
+    .maybeSingle();
+
+  let contractorName = "Contractor";
+  let contractorEmail: string | null = null;
+  let companyName = "—";
+  if (assign?.applicant_id) {
+    const { data: a } = await supabase
+      .from("applicants_prescreen")
+      .select("full_name, email")
+      .eq("id", assign.applicant_id)
+      .maybeSingle();
+    if (a?.full_name) contractorName = a.full_name;
+    if (a?.email) contractorEmail = a.email;
+  }
+  if (assign?.client_id) {
+    const { data: c } = await supabase.from("clients").select("company_name").eq("id", assign.client_id).maybeSingle();
+    if (c?.company_name) companyName = c.company_name;
+  }
+
+  const docTypes = Array.isArray(req.doc_types) ? req.doc_types.join(", ") : String(req.doc_types || "—");
+  const summary = `
+    <p><strong>Contractor:</strong> ${contractorName}<br/>
+    <strong>Client:</strong> ${companyName}<br/>
+    <strong>Role:</strong> ${assign?.job_title || "—"}<br/>
+    <strong>Documents requested:</strong> ${docTypes}</p>
+    <p><strong>Reason:</strong><br/>${String(req.reason || "").replace(/\n/g, "<br/>")}</p>
+  `;
+
+  const subject = `Legal doc request: ${contractorName} — ${docTypes}`;
+  const html = wrap("New legal document request", `<p>A contractor has requested legal document(s).</p>${summary}`);
+
+  // Notify admins only (internal fulfillment); CC contractor as confirmation
+  const recipients = ["mark@outsta.io", "liezl@outsta.io"];
+  const cc = contractorEmail ? [contractorEmail] : [];
+
+  await send(recipients, cc, subject, html);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
   try {
@@ -362,6 +412,9 @@ Deno.serve(async (req) => {
     if (body.event === "leave_submitted") {
       if (!body.leaveId) throw new Error("leaveId is required");
       await handleLeaveSubmitted(body.leaveId);
+    } else if (body.event === "legal_doc_submitted") {
+      if (!body.legalDocRequestId) throw new Error("legalDocRequestId is required");
+      await handleLegalDocSubmitted(body.legalDocRequestId);
     } else {
       if (!body.timesheetId) throw new Error("timesheetId is required");
       await handleTimesheetEvent(body.event, body.timesheetId, body.reason, body.reviewerName);
