@@ -2067,6 +2067,7 @@ const Admin = () => {
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
+                          <ChevronRight className="list-row-chevron" />
                         </div>
                       </div>
                     </CardContent>
