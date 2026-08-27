@@ -436,6 +436,9 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         adminCount,
         viewerCount,
         openJobStats,
+        hiringSourcing,
+        hiringPitch,
+        hiringScheduledInterview,
       });
     };
 
