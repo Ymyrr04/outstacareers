@@ -185,6 +185,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         pipelineTrackingRes,
         pipelineStagesRes,
         rolesRes,
+        hiringRequestsRes,
       ] = await Promise.all([
         fetchApplicants(),
         supabase.from('jobs').select('id, title, region, is_active, assigned_admin_id'),
