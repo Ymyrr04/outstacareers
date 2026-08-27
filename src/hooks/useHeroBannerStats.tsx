@@ -95,7 +95,6 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
   const [stats, setStats] = useState<HeroBannerStats>(emptyStats);
 
   useEffect(() => {
-    console.log('[hero] effect enabled=', enabled);
     if (!enabled) return;
     let cancelled = false;
 
@@ -142,7 +141,6 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         supabase.from('contractor_timesheets').select('contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount').order('week_ending_date', { ascending: false }).limit(2000),
       ]);
 
-      console.log('[hero] fetched', applicants.length, (assignmentsRes as any).error, (envelopesRes as any).error);
       if (cancelled) return;
 
       // --- Applicants ---
@@ -174,10 +172,21 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       // --- Calendar ---
       const events = (eventsRes.data || []) as any[];
       const byAdmin: Record<string, number> = {};
+      const toOwnerList = (value: unknown): string[] => {
+        if (Array.isArray(value)) return value.map((v) => String(v)).filter(Boolean);
+        if (typeof value === 'string' && value.trim()) return [value];
+        return [];
+      };
       for (const ev of events) {
-        const owner = ev.assigned_to || ev.claimed_by;
-        const name = owner ? getAdminDisplayName(owner, 'Unassigned') : 'Up for grabs';
-        byAdmin[name] = (byAdmin[name] || 0) + 1;
+        const owners = [...toOwnerList(ev.assigned_to), ...toOwnerList(ev.claimed_by)];
+        if (owners.length === 0) {
+          byAdmin['Up for grabs'] = (byAdmin['Up for grabs'] || 0) + 1;
+          continue;
+        }
+        for (const owner of owners) {
+          const name = getAdminDisplayName(owner, 'Unassigned');
+          byAdmin[name] = (byAdmin[name] || 0) + 1;
+        }
       }
       const activitiesTodayByAdmin = Object.entries(byAdmin)
         .map(([name, count]) => ({ name, count }))
@@ -222,7 +231,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       const hiredByCounts: Record<string, number> = {};
       for (const a of assignments) {
         if (!a.hired_by) continue;
-        const name = getAdminDisplayName(a.hired_by, '');
+        const name = getAdminDisplayName(String(a.hired_by), '');
         if (!name) continue;
         hiredByCounts[name] = (hiredByCounts[name] || 0) + 1;
       }
@@ -268,8 +277,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       });
     };
 
-    run().catch((e) => {
-      console.error('[hero] failed', e);
+    run().catch(() => {
       if (!cancelled) setStats((s) => ({ ...s, loading: false }));
     });
 
