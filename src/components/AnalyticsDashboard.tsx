@@ -231,7 +231,7 @@ const AnalyticsDashboard = () => {
       <h2 className="text-2xl font-bold">Analytics Dashboard</h2>
       
       {/* Summary Cards */}
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3.5">
         <StatCard accent="cyan" icon={Eye} label="Page Views" value={summary?.totalPageViews || 0} />
         <StatCard accent="cyan" icon={FileText} label="Job Views" value={summary?.totalJobViews || 0} />
         <StatCard accent="cyan" icon={MousePointerClick} label="Apply Clicks" value={summary?.totalApplyClicks || 0} />

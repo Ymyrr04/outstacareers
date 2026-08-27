@@ -15,27 +15,27 @@ export const FunnelKPICards = ({
   avgDaysInPipeline,
 }: FunnelKPICardsProps) => {
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3.5">
       <StatCard
-        accent="cyan"
+        accent="purple"
         icon={Users}
         label="Total in Pipeline"
         value={totalActive.toLocaleString()}
       />
       <StatCard
-        accent="blue"
+        accent="purple"
         icon={TrendingUp}
         label="Overall Hire Rate"
         value={`${overallConversionRate.toFixed(1)}%`}
       />
       <StatCard
-        accent="amber"
+        accent="red"
         icon={AlertTriangle}
         label="Top Bottleneck"
         value={bottleneckStage || '—'}
       />
       <StatCard
-        accent="blue"
+        accent="purple"
         icon={Clock}
         label="Avg Days in Pipeline"
         value={avgDaysInPipeline > 0 ? `${avgDaysInPipeline}d` : '—'}

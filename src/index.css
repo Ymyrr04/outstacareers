@@ -501,17 +501,11 @@ html:not(.dark) .admin-shell .kanban-card:hover { background: hsl(var(--brand-su
 
 /* ---------- Stat cards ---------- */
 html:not(.dark) .admin-shell .stat-card {
-  position: relative;
   background: #fff;
-  border: 0.5px solid hsl(var(--brand-border));
+  border: 0.5px solid hsl(var(--border));
   border-radius: 10px;
-  padding: 14px;
-  overflow: hidden;
-}
-html:not(.dark) .admin-shell .stat-card::before {
-  content: "";
-  position: absolute; top: 0; left: 0; right: 0; height: 3px;
-  background: currentColor;
+  padding: 12px;
+  box-shadow: none;
 }
 
 /* ---------- Filter chips ---------- */

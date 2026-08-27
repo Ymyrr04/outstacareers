@@ -707,10 +707,10 @@ export const ContractorsDashboard = () => {
         </div>
       )}
 
-      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-        <StatCard accent="purple" icon={CheckCircle} label="Active" value={activeCount} />
-        <StatCard accent="blue" icon={Calendar} label="Scheduled" value={scheduledCount} />
-        <StatCard accent="blue" icon={Clock} label="Rendering" value={renderingCount} />
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3.5">
+        <StatCard accent="teal" icon={CheckCircle} label="Active" value={activeCount} />
+        <StatCard accent="purple" icon={Calendar} label="Scheduled" value={scheduledCount} />
+        <StatCard accent="purple" icon={Clock} label="Rendering" value={renderingCount} />
         <StatCard accent="red" icon={XCircle} label="Resigned" value={resignedCount} />
         <StatCard accent="red" icon={XCircle} label="Terminated" value={terminatedCount} />
       </div>

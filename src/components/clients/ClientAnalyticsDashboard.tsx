@@ -1908,9 +1908,9 @@ export const ClientAnalyticsDashboard = () => {
   return (
     <div className="space-y-6">
       {/* Summary Cards - Row 1 */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3.5">
         <StatCard
-          accent="purple"
+          accent="blue"
           icon={Building2}
           label="Active Clients"
           value={totalActiveClients || 0}
@@ -1925,8 +1925,8 @@ export const ClientAnalyticsDashboard = () => {
             </div>
           }
         />
-        <StatCard accent="purple" icon={Users} label="Active Contractors" value={activeContractors || 0} />
-        <StatCard accent="blue" icon={TrendingUp} label="Scheduled" value={scheduledContractors || 0} />
+        <StatCard accent="blue" icon={Users} label="Active Contractors" value={activeContractors || 0} />
+        <StatCard accent="purple" icon={TrendingUp} label="Scheduled" value={scheduledContractors || 0} />
         <StatCard accent="cyan" icon={UserPlus} label="New Client (Hiring)" value={newClientsHiring || 0} />
         <StatCard accent="cyan" icon={Building2} label="Existing Client (Hiring)" value={existingClientsHiring || 0} />
         <StatCard
