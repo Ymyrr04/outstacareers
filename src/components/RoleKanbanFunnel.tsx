@@ -2137,7 +2137,7 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
               const label = diffDays >= 1 ? `${diffDays}d` : `${diffHours}h`;
               return (
                 <div className={cn(
-                  "flex items-center gap-1 text-[10px] font-medium",
+                  "flex items-center gap-[3px] text-[9px] font-medium",
                   isOverdue ? "text-red-600 dark:text-red-400" : "text-muted-foreground"
                 )}>
                   <Clock className="w-2.5 h-2.5 shrink-0" />
