@@ -651,7 +651,7 @@ export const ClientsDashboard = () => {
           {filteredClients.map(client => (
             <Card 
               key={client.id} 
-              className={`cursor-pointer hover:bg-accent/50 transition-colors ${selectedIds.has(client.id) ? 'ring-2 ring-primary' : ''}`}
+              className={`list-row-card cursor-pointer transition-colors ${selectedIds.has(client.id) ? 'ring-2 ring-primary' : ''}`}
               onClick={() => selectionMode ? toggleSelectClient(client.id) : setSelectedClient(client)}
             >
               <CardContent className="py-4">
