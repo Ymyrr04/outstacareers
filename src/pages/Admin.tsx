@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck, UserCircle, Target, Globe, TrendingDown, FileSignature, FlaskConical, Flag, Calendar as CalendarIcon } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck, UserCircle, Target, Globe, TrendingDown, FileSignature, FlaskConical, Flag, Calendar as CalendarIcon, ChevronRight } from 'lucide-react';
 import { PreScreeningResponsesCard } from '@/components/PreScreeningResponsesCard';
 
 import { ContractsManager } from '@/components/contracts/ContractsManager';
@@ -231,6 +231,15 @@ interface Applicant {
 
 
 type SortOption = 'newest' | 'oldest' | 'score-desc' | 'score-asc' | 'starred' | 'completed-assessment';
+
+// Category tint for job list-row icon badges (styling only)
+const getJobIconTint = (title: string, department?: string | null): string => {
+  const t = `${title || ''} ${department || ''}`.toLowerCase();
+  if (/legal|paralegal|attorney|lawyer|compliance/.test(t)) return 'tint-legal';
+  if (/account|bookkeep|finance|cpa|audit|tax|payroll/.test(t)) return 'tint-accounting';
+  if (/support|customer|service|csr|help\s?desk|call\s?center/.test(t)) return 'tint-support';
+  return 'tint-cyan';
+};
 
 const Admin = () => {
   const { user, isAdmin, loading, signOut } = useAuth();
@@ -1978,12 +1987,15 @@ const Admin = () => {
                     return matchesSearch && matchesRegion && matchesAdmin && matchesStatus;
                   })
                   .map((job) => (
-                  <Card key={job.id} className={`list-row-card ${!job.is_active ? 'opacity-60' : ''}`}>
-                    <CardContent className="py-4">
+                  <Card key={job.id} className={`list-row-card is-row ${!job.is_active ? 'opacity-60' : ''}`}>
+                    <div className={`list-row-icon ${getJobIconTint(job.title, job.department)}`}>
+                      <Briefcase />
+                    </div>
+                    <CardContent className="p-0 flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
+                        <div className="list-row-main">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold">{job.title}</h3>
+                            <h3 className="list-row-title">{job.title}</h3>
                             {!job.is_active && (
                               <Badge variant="secondary">Inactive</Badge>
                             )}
@@ -1994,7 +2006,7 @@ const Admin = () => {
                               </Badge>
                             )}
                           </div>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="list-row-meta">
                             {job.department} • {job.region === 'all' ? 'All Regions' : job.region}
                             {job.rate && ` • ${job.rate}`}
                           </p>
@@ -2064,6 +2076,7 @@ const Admin = () => {
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
+                          <ChevronRight className="list-row-chevron" />
                         </div>
                       </div>
                     </CardContent>
