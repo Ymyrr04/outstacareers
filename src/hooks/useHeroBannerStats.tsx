@@ -36,6 +36,28 @@ export interface HeroBannerStats {
   retentionRate: number;
   avgStayDays: number;
   bestAdmin: string;
+  // Client pipeline
+  pendingTimesheets: number;
+  flaggedTimesheets: number;
+  // Post-hire
+  postHireTotal: number;
+  postHireOnboarding: number;
+  postHireActive: number;
+  postHireReview: number;
+  // Talent scout
+  activeRoles: number;
+  talentPoolCount: number;
+  benchCount: number;
+  // External scout
+  externalSourcedThisMonth: number;
+  // Workflow
+  activeTasks: number;
+  completedThisWeek: number;
+  // Permissions
+  adminUsersTotal: number;
+  superAdminCount: number;
+  adminCount: number;
+  viewerCount: number;
 }
 
 const emptyStats: HeroBannerStats = {
@@ -65,6 +87,22 @@ const emptyStats: HeroBannerStats = {
   retentionRate: 0,
   avgStayDays: 0,
   bestAdmin: '—',
+  pendingTimesheets: 0,
+  flaggedTimesheets: 0,
+  postHireTotal: 0,
+  postHireOnboarding: 0,
+  postHireActive: 0,
+  postHireReview: 0,
+  activeRoles: 0,
+  talentPoolCount: 0,
+  benchCount: 0,
+  externalSourcedThisMonth: 0,
+  activeTasks: 0,
+  completedThisWeek: 0,
+  adminUsersTotal: 0,
+  superAdminCount: 0,
+  adminCount: 0,
+  viewerCount: 0,
 };
 
 const ET = 'America/New_York';
