@@ -41,9 +41,7 @@ export interface HeroBannerStats {
   flaggedTimesheets: number;
   // Post-hire
   postHireTotal: number;
-  postHireOnboarding: number;
-  postHireActive: number;
-  postHireReview: number;
+  postHireStageCounts: Record<string, number>;
   // Talent scout
   activeRoles: number;
   talentPoolCount: number;
@@ -96,9 +94,7 @@ const emptyStats: HeroBannerStats = {
   pendingTimesheets: 0,
   flaggedTimesheets: 0,
   postHireTotal: 0,
-  postHireOnboarding: 0,
-  postHireActive: 0,
-  postHireReview: 0,
+  postHireStageCounts: {},
   activeRoles: 0,
   talentPoolCount: 0,
   benchCount: 0,
@@ -197,7 +193,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         supabase.from('contractor_assignments').select('id, client_id, status, country, start_date, end_date, hired_by'),
         supabase.from('contractor_timesheets').select('contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount, outsta_status, client_approval_status').order('week_ending_date', { ascending: false }).limit(2000),
         supabase.from('contractor_pipeline_tracking').select('id, current_stage_id'),
-        supabase.from('contractor_pipeline_stages').select('id, name, stage_order'),
+        supabase.from('contractor_pipeline_stages').select('id, name, slug, stage_order'),
         supabase.from('user_roles').select('role'),
         supabase.from('client_hiring_requests').select('pipeline_stage'),
       ]);
@@ -360,15 +356,16 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
 
 
       // --- Post-hire pipeline ---
-      const stageNameById = new Map<string, string>();
-      for (const s of (pipelineStagesRes.data || []) as any[]) stageNameById.set(s.id, (s.name || '').toLowerCase());
+      const stageSlugById = new Map<string, string>();
+      for (const s of (pipelineStagesRes.data || []) as any[]) stageSlugById.set(s.id, (s.slug || '').toLowerCase());
       const tracking = (pipelineTrackingRes.data || []) as any[];
-      let postHireOnboarding = 0, postHireActive = 0, postHireReview = 0;
+      const postHireStageCounts: Record<string, number> = {};
+      let postHireTotal = 0;
       for (const t of tracking) {
-        const name = stageNameById.get(t.current_stage_id) || '';
-        if (/onboard|week/.test(name)) postHireOnboarding++;
-        else if (/review|settled|exit|offboard/.test(name)) postHireReview++;
-        else postHireActive++;
+        const slug = stageSlugById.get(t.current_stage_id) || '';
+        if (!slug || slug === 'settled') continue; // settled contractors are not counted
+        postHireStageCounts[slug] = (postHireStageCounts[slug] || 0) + 1;
+        postHireTotal++;
       }
 
       // --- Talent / external scout ---
@@ -421,10 +418,8 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         bestAdmin,
         pendingTimesheets,
         flaggedTimesheets,
-        postHireTotal: tracking.length,
-        postHireOnboarding,
-        postHireActive,
-        postHireReview,
+        postHireTotal,
+        postHireStageCounts,
         activeRoles,
         talentPoolCount,
         benchCount,
