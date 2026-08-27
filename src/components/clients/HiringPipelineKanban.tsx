@@ -254,7 +254,7 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
                 }
               }}
               className={`
-                w-4 h-4 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center
+                w-3.5 h-3.5 rounded-[3px] border flex-shrink-0 mt-0.5 flex items-center justify-center
                 transition-all duration-150
                 ${isClosed 
                   ? 'bg-green-500 border-green-500 text-white' 
@@ -263,7 +263,7 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
               `}
               title={isClosed ? 'Completed' : 'Mark as complete'}
             >
-              {isClosed && <Check className="w-3 h-3" strokeWidth={3} />}
+              {isClosed && <Check className="w-2.5 h-2.5" strokeWidth={3} />}
             </button>
             <p className="text-sm font-medium leading-tight">
               {request.client_name} {'{' + request.job_title + '}'}
