@@ -4,7 +4,7 @@ import { todayET, formatMinutes } from '@/lib/calendarTime';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import { useCalendarAdmins } from '@/hooks/useCalendarAdmins';
 
-const PIPELINE_STAGES = ['For Review', 'Qualified', 'For Interview', 'SIV', 'Pitch', 'Client Interview'] as const;
+
 
 interface TodayEvent {
   id: string;
@@ -15,32 +15,20 @@ interface TodayEvent {
   claimed_by: string | null;
 }
 
-/** Right-hand sidebar for the Jobs tab: today's activities + pipeline snapshot. */
+/** Right-hand sidebar for the Jobs tab: today's activities. */
 export const JobsTabSidebar = () => {
   const { getAdmin } = useCalendarAdmins();
   const [events, setEvents] = useState<TodayEvent[]>([]);
-  const [stageCounts, setStageCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const load = async () => {
       const today = todayET();
-      const eventsPromise = supabase
+      const { data } = await supabase
         .from('calendar_events')
         .select('id, title, start_time, time_tbd, assigned_to, claimed_by, event_date')
         .eq('event_date', today)
         .order('start_time', { ascending: true });
-
-      const stagePromises = [...PIPELINE_STAGES, 'Hired'].map((status) =>
-        supabase
-          .from('applicants_prescreen')
-          .select('id', { count: 'exact', head: true })
-          .eq('status', status)
-          .then((res) => [status, res.count ?? 0] as const)
-      );
-
-      const [eventsRes, ...counts] = await Promise.all([eventsPromise, ...stagePromises]);
-      setEvents((eventsRes.data || []) as unknown as TodayEvent[]);
-      setStageCounts(Object.fromEntries(counts));
+      setEvents((data || []) as unknown as TodayEvent[]);
     };
     load().catch((e) => console.error('Jobs sidebar load failed:', e));
   }, []);
@@ -89,23 +77,6 @@ export const JobsTabSidebar = () => {
         )}
       </div>
 
-      {/* Pipeline snapshot */}
-      <div className="bg-white border-[0.5px] border-[#C8F0F8] rounded-[10px] p-3 mt-2">
-        <h3 className="text-[11px] font-medium mb-2">Pipeline snapshot</h3>
-        <div className="flex flex-col gap-1">
-          {PIPELINE_STAGES.map((stage) => (
-            <div key={stage} className="flex items-center justify-between">
-              <span className="text-[10px] text-muted-foreground">{stage}</span>
-              <span className="text-[11px] font-medium">{stageCounts[stage] ?? 0}</span>
-            </div>
-          ))}
-          <div className="border-t border-[#C8F0F8] my-1" />
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-medium text-[#0D9488]">Hired</span>
-            <span className="text-[11px] font-medium text-[#0D9488]">{stageCounts['Hired'] ?? 0}</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
