@@ -438,6 +438,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         retentionRate,
         avgStayDays,
         bestAdmin,
+        adminLeaderboard,
         pendingTimesheets,
         flaggedTimesheets,
         postHireTotal,
