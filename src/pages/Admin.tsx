@@ -3943,7 +3943,11 @@ const Admin = () => {
             <AdminHeroBanner
               eyebrow="Contractors"
               title={`${heroNum(heroStats.activeContractors)} active contractors across ${heroNum(heroStats.contractorClients)} clients`}
-              chips={heroStats.contractorRegions.map((r) => `${r.name} ${r.count}`)}
+              chips={[
+                `${heroNum(heroStats.activeContractors)} active`,
+                `${heroNum(heroStats.scheduledContractors)} scheduled`,
+                ...heroStats.contractorRegions.map((r) => `${r.name} ${r.count}`),
+              ]}
             />
             <ContractorsDashboard />
           </TabsContent>
