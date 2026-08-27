@@ -347,12 +347,12 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         if (!a.hired_by) continue;
         const name = getAdminDisplayName(String(a.hired_by), '');
         if (!name) continue;
+        // Only count contractors hired/started in the current year
+        if (!a.start_date || new Date(a.start_date).getFullYear() !== currentYear) continue;
         if (!perAdmin[name]) perAdmin[name] = { ytd: 0, total: 0, active: 0 };
         perAdmin[name].total++;
+        perAdmin[name].ytd++;
         if (a.status === 'active') perAdmin[name].active++;
-        if (a.start_date && new Date(a.start_date).getFullYear() === currentYear) {
-          perAdmin[name].ytd++;
-        }
       }
       const adminLeaderboard = Object.entries(perAdmin)
         .map(([name, s]) => ({
