@@ -308,6 +308,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       const allAssignments = (assignmentsRes.data || []) as any[];
       const assignments = scoped ? allAssignments.filter((a) => isMine(a.hired_by)) : allAssignments;
       const active = assignments.filter((a) => a.status === 'active');
+      const scheduled = assignments.filter((a) => a.status === 'scheduled');
       const clientIds = new Set(active.map((a) => a.client_id).filter(Boolean));
       const regionMap: Record<string, number> = {};
       for (const a of active) {
