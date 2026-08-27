@@ -1,0 +1,17 @@
+/**
+ * Experimental / in-progress design work.
+ *
+ * Everything in this file MUST be nested under `html.design-preview` so it is
+ * inert unless the design-preview toggle is switched on. Nothing here ships to
+ * users of the production build by default.
+ *
+ * Add new experiments below following the existing pattern.
+ */
+
+/* ---------------------------------------------------------------------------
+ * Example scaffold (safe, visually neutral marker so the gate is verifiable).
+ * Replace / extend with real experiments.
+ * ------------------------------------------------------------------------- */
+html.design-preview .admin-shell {
+  --design-preview-active: 1;
+}
