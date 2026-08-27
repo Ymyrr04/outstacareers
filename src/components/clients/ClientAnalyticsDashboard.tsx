@@ -802,17 +802,6 @@ export const ClientAnalyticsDashboard = () => {
       .sort((a, b) => b.hired - a.hired);
   }, [contractors]);
 
-  // Total hires year-to-date (current calendar year)
-  const totalHiresYTD = useMemo(() => {
-    const year = new Date().getFullYear();
-    return contractors.filter(
-      (c) => c.start_date && new Date(c.start_date).getFullYear() === year
-    ).length;
-  }, [contractors]);
-
-  // Top recruiter = the admin with the most hires
-  const topRecruiter = hiresByAdmin[0] || null;
-
   // Drill-down: selected admin's hires grouped by role
   const [selectedAdmin, setSelectedAdmin] = useState<string | null>(null);
 
@@ -1920,24 +1909,6 @@ export const ClientAnalyticsDashboard = () => {
     <div className="space-y-6">
       {/* Summary Cards - Row 1 */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mb-3.5">
-        {/* Highlighted: Total Hires YTD */}
-        <StatCard
-          accent="teal"
-          icon={UserPlus}
-          label={`Total Hires (YTD ${new Date().getFullYear()})`}
-          value={totalHiresYTD}
-          badge="YTD"
-          className="ring-2 ring-teal-500/40 bg-teal-50/40"
-        />
-        {/* Highlighted: Top Recruiter */}
-        <StatCard
-          accent="cyan"
-          icon={Users}
-          label="Top Recruiter (Most Hires)"
-          value={topRecruiter ? topRecruiter.name : '—'}
-          badge={topRecruiter ? `${topRecruiter.hired} hires` : '0'}
-          className="ring-2 ring-cyan-400/40 bg-cyan-50/40"
-        />
         <StatCard
           accent="blue"
           icon={Building2}
