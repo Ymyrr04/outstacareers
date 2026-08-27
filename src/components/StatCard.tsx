@@ -31,6 +31,7 @@ interface StatCardProps {
   value: React.ReactNode;
   sublabel?: React.ReactNode;
   sublabelIcon?: LucideIcon;
+  footer?: React.ReactNode;
   className?: string;
   style?: React.CSSProperties;
 }
@@ -42,6 +43,7 @@ export function StatCard({
   value,
   sublabel,
   sublabelIcon: SubIcon,
+  footer,
   className,
   style,
 }: StatCardProps) {
@@ -80,6 +82,7 @@ export function StatCard({
           <span>{sublabel}</span>
         </div>
       )}
+      {footer && <div className="mt-2">{footer}</div>}
     </div>
   );
 }
