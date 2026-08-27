@@ -347,8 +347,18 @@ html:not(.dark) .admin-shell input:not([type="checkbox"]):not([type="radio"]):no
 html:not(.dark) .admin-shell select {
   height: 32px;
   font-size: 12px;
-  padding: 0 10px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
+/* Keep room for icons/buttons when Tailwind sets explicit horizontal padding */
+html:not(.dark) .admin-shell input[class*="pl-8"],
+html:not(.dark) .admin-shell input[class*="pl-9"],
+html:not(.dark) .admin-shell input[class*="pl-10"] { padding-left: 30px; }
+html:not(.dark) .admin-shell input[class*="pr-8"],
+html:not(.dark) .admin-shell input[class*="pr-9"],
+html:not(.dark) .admin-shell input[class*="pr-10"] { padding-right: 30px; }
+html:not(.dark) .admin-shell input[class*="pr-16"] { padding-right: 60px; }
+
 html:not(.dark) .admin-shell textarea { font-size: 12px; padding: 8px 10px; }
 html:not(.dark) .admin-shell input::placeholder,
 html:not(.dark) .admin-shell textarea::placeholder { color: hsl(var(--muted-foreground)); }
