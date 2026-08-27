@@ -354,6 +354,22 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         retentionRate,
         avgStayDays,
         bestAdmin,
+        pendingTimesheets,
+        flaggedTimesheets,
+        postHireTotal: tracking.length,
+        postHireOnboarding,
+        postHireActive,
+        postHireReview,
+        activeRoles,
+        talentPoolCount,
+        benchCount,
+        externalSourcedThisMonth,
+        activeTasks,
+        completedThisWeek,
+        adminUsersTotal: roles.length,
+        superAdminCount,
+        adminCount,
+        viewerCount,
       });
     };
 
