@@ -8,7 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { ArrowLeft, RefreshCw, AlertTriangle, DollarSign } from "lucide-react";
+import { ArrowLeft, RefreshCw, AlertTriangle, DollarSign, Activity, Coins } from "lucide-react";
+import { StatCard } from "@/components/StatCard";
 import { getAdminDisplayName } from "@/lib/adminDisplayNames";
 
 interface AiUsageRow {

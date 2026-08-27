@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
 import { Eye, MousePointerClick, FileText, TrendingUp, Globe, Users } from 'lucide-react';
+import { StatCard } from '@/components/StatCard';
 
 interface AnalyticsSummary {
   totalPageViews: number;
@@ -231,45 +232,10 @@ const AnalyticsDashboard = () => {
       
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Page Views</CardTitle>
-            <Eye className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary?.totalPageViews || 0}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Job Views</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary?.totalJobViews || 0}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Apply Clicks</CardTitle>
-            <MousePointerClick className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary?.totalApplyClicks || 0}</div>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{summary?.conversionRate || 0}%</div>
-          </CardContent>
-        </Card>
+        <StatCard accent="cyan" icon={Eye} label="Page Views" value={summary?.totalPageViews || 0} />
+        <StatCard accent="cyan" icon={FileText} label="Job Views" value={summary?.totalJobViews || 0} />
+        <StatCard accent="cyan" icon={MousePointerClick} label="Apply Clicks" value={summary?.totalApplyClicks || 0} />
+        <StatCard accent="cyan" icon={TrendingUp} label="Conversion Rate" value={`${summary?.conversionRate || 0}%`} />
       </div>
 
       {/* Charts */}
