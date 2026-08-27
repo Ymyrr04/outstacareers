@@ -669,7 +669,7 @@ export const ClientsDashboard = () => {
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
-                        <h3 className="font-semibold">{client.company_name}</h3>
+                        <h3 className="list-row-title">{client.company_name}</h3>
                         {client.yearly_increase && (
                           <Badge variant="outline" className="text-xs text-amber-600 border-amber-300">
                             <TrendingUp className="w-3 h-3 mr-1" />
@@ -677,7 +677,7 @@ export const ClientsDashboard = () => {
                           </Badge>
                         )}
                       </div>
-                      <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                      <div className="list-row-meta flex items-center gap-4 mt-1">
                         {client.industry && <span>{client.industry}</span>}
                         {client.leads_from && <span>From: {client.leads_from}</span>}
                         {client.website && (
