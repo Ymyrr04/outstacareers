@@ -303,11 +303,18 @@ html:not(.dark) .admin-shell [data-variant] {
   line-height: 1.2;
   box-shadow: none;
 }
-/* Compact padding for regular text buttons (skip icon & lg) */
-html:not(.dark) .admin-shell [data-variant]:not([data-size="icon"]):not([data-size="lg"]),
-html:not(.dark) .admin-shell button:not([data-size="icon"]):not([data-size="lg"]) {
-  height: auto;
+/* Regular text buttons: 32px height, 6px 12px padding (skip icon & lg) */
+html:not(.dark) .admin-shell [data-variant]:not([data-size="icon"]):not([data-size="lg"]):not([data-size="sm"]),
+html:not(.dark) .admin-shell button:not([data-size="icon"]):not([data-size="lg"]):not([data-size="sm"]) {
+  height: 32px;
   padding: 6px 12px;
+}
+/* Small variant: 26px height, 10px font, 3px 8px padding */
+html:not(.dark) .admin-shell [data-variant][data-size="sm"],
+html:not(.dark) .admin-shell button[data-size="sm"] {
+  height: 26px;
+  padding: 3px 8px;
+  font-size: 10px;
 }
 /* Primary / default */
 html:not(.dark) .admin-shell [data-variant="default"] {
