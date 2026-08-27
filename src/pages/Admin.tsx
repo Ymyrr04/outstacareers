@@ -13,7 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import AddJobDialog from '@/components/AddJobDialog';
 import EditJobDialog from '@/components/EditJobDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck, UserCircle, Target, Globe, TrendingDown, FileSignature, FlaskConical, Flag, Calendar as CalendarIcon } from 'lucide-react';
+import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock, CheckCircle, XCircle, FileText, Mic, Star, Check, X, Zap, AlertTriangle, Download, Loader2, FolderOpen, Upload, Pencil, Save, Phone, Mail, User, StickyNote, Search as SearchIcon, CalendarPlus, Settings, History, Send, ClipboardList, Link2, UserCog, MessageCircle, Smartphone, Monitor, GripVertical, Building2, MailOpen, RefreshCw, Kanban, Shield, Archive, CheckCheck, UserCircle, Target, Globe, TrendingDown, FileSignature, FlaskConical, Flag, Calendar as CalendarIcon, ChevronRight } from 'lucide-react';
 import { PreScreeningResponsesCard } from '@/components/PreScreeningResponsesCard';
 
 import { ContractsManager } from '@/components/contracts/ContractsManager';
@@ -1978,12 +1978,15 @@ const Admin = () => {
                     return matchesSearch && matchesRegion && matchesAdmin && matchesStatus;
                   })
                   .map((job) => (
-                  <Card key={job.id} className={`list-row-card ${!job.is_active ? 'opacity-60' : ''}`}>
-                    <CardContent className="py-4">
+                  <Card key={job.id} className={`list-row-card is-row ${!job.is_active ? 'opacity-60' : ''}`}>
+                    <div className={`list-row-icon ${getJobIconTint(job.title, job.department)}`}>
+                      <Briefcase />
+                    </div>
+                    <CardContent className="p-0 flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4">
-                        <div className="flex-1">
+                        <div className="list-row-main">
                           <div className="flex items-center gap-2 mb-1">
-                            <h3 className="font-semibold">{job.title}</h3>
+                            <h3 className="list-row-title">{job.title}</h3>
                             {!job.is_active && (
                               <Badge variant="secondary">Inactive</Badge>
                             )}
