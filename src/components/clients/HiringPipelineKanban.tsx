@@ -247,14 +247,16 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
           {/* Title with job role */}
           <div className="flex items-start gap-2 mb-2">
             <button
+              data-size="icon"
               onClick={(e) => {
                 e.stopPropagation();
                 if (!isClosed) {
                   onComplete(request.id);
                 }
               }}
+              style={{ width: 22, height: 22, padding: 0 }}
               className={`
-                w-2 h-2 rounded-[2px] border flex-shrink-0 mt-0.5 flex items-center justify-center
+                rounded-[2px] border flex-shrink-0 mt-0.5 flex items-center justify-center
                 transition-all duration-150
                 ${isClosed 
                   ? 'bg-green-500 border-green-500 text-white' 
@@ -263,7 +265,7 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
               `}
               title={isClosed ? 'Completed' : 'Mark as complete'}
             >
-              {isClosed && <Check className="w-1.5 h-1.5" strokeWidth={3} />}
+              {isClosed && <Check className="w-3 h-3" strokeWidth={3} />}
             </button>
             <p className="text-sm font-medium leading-tight">
               {request.client_name} {'{' + request.job_title + '}'}
