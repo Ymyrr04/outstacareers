@@ -396,6 +396,44 @@ html:not(.dark) .admin-shell table tbody td .inline-flex[class*="rounded"] {
   padding: 2px 7px;
   font-weight: 500;
 }
+/* Status badge color schemes (pipeline stage badges on kanban cards untouched) */
+html:not(.dark) .admin-shell .inline-flex[class*="rounded-full"][class*="bg-green-100"],
+html:not(.dark) .admin-shell .inline-flex[class*="rounded-full"][class*="bg-emerald-100"] {
+  background: hsl(var(--brand-light));
+  color: hsl(var(--brand-text));
+  border-color: transparent;
+}
+html:not(.dark) .admin-shell .inline-flex[class*="rounded-full"][class*="bg-amber-100"],
+html:not(.dark) .admin-shell .inline-flex[class*="rounded-full"][class*="bg-yellow-100"] {
+  background: #FAEEDA;
+  color: #633806;
+  border-color: transparent;
+}
+html:not(.dark) .admin-shell .inline-flex[class*="rounded-full"][class*="bg-red-100"] {
+  background: #FCEBEB;
+  color: #A32D2D;
+  border-color: transparent;
+}
+html:not(.dark) .admin-shell .inline-flex[class*="rounded-full"][class*="bg-gray-100"],
+html:not(.dark) .admin-shell .inline-flex[class*="rounded-full"][class*="bg-slate-100"] {
+  background: #F1EFE8;
+  color: #5F5E5A;
+  border-color: transparent;
+}
+/* New / Unread badges */
+html:not(.dark) .admin-shell .inline-flex[class*="rounded-full"][class*="bg-red-500"],
+html:not(.dark) .admin-shell .inline-flex[class*="rounded-full"][class*="bg-destructive"] {
+  background: hsl(var(--brand-danger));
+  color: #fff;
+  border-color: transparent;
+}
+/* Badge geometry everywhere (except kanban stage/count badges which keep their look) */
+html:not(.dark) .admin-shell .inline-flex[class*="rounded-full"] {
+  border-radius: 8px;
+  font-size: 9px;
+  padding: 2px 7px;
+  font-weight: 500;
+}
 
 
 /* ---------- Kanban columns & cards ---------- */
