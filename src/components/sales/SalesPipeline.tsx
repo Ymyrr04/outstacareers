@@ -461,7 +461,7 @@ export const SalesPipeline = () => {
                               {...p.draggableProps}
                                {...p.dragHandleProps}
                                onClick={() => setSelectedLead(lead)}
-                               className={`bg-white border-[0.5px] border-[#C8F0F8] rounded-md px-2 py-[7px] cursor-pointer hover:bg-[#EDF9FC] transition ${s.isDragging ? 'rotate-1 shadow-lg' : ''}`}
+                               className={`bg-white border-[0.5px] border-[#C8F0F8] rounded-md px-2 py-[7px] cursor-pointer hover:bg-[#F0FFFE] transition ${s.isDragging ? 'rotate-1 shadow-lg' : ''}`}
                                style={{ ...p.draggableProps.style, borderLeft: `3px solid ${salesStageAccent(stage).accent}` }}
                              >
                               <div className="flex items-start justify-between gap-2 mb-1">
