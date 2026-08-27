@@ -271,16 +271,16 @@ html:not(.dark) .admin-shell [data-table-root] {
   box-shadow: none;
 }
 html:not(.dark) .admin-shell table thead tr {
-  background: hsl(var(--brand-thead));
+  background: #F8FFFD;
   border-bottom: 0.5px solid hsl(var(--brand-border));
 }
-html:not(.dark) .admin-shell table thead tr:hover { background: hsl(var(--brand-thead)); }
+html:not(.dark) .admin-shell table thead tr:hover { background: #F8FFFD; }
 html:not(.dark) .admin-shell table thead th {
   font-size: 10px;
   text-transform: uppercase;
   letter-spacing: 0.04em;
   font-weight: 500;
-  padding: 7px 10px;
+  padding: 8px 12px;
   height: auto;
   color: hsl(var(--muted-foreground));
 }
@@ -289,9 +289,38 @@ html:not(.dark) .admin-shell table tbody tr {
   font-size: 11px;
 }
 html:not(.dark) .admin-shell table tbody tr:last-child { border-bottom: 0; }
-html:not(.dark) .admin-shell table tbody tr:hover { background: hsl(var(--brand-surface)); }
-html:not(.dark) .admin-shell table tbody td { font-size: 11px; padding: 8px 10px; }
+html:not(.dark) .admin-shell table tbody tr:hover { background: #F0FFFE; }
+html:not(.dark) .admin-shell table tbody td {
+  font-size: 11px;
+  padding: 9px 12px;
+  color: hsl(var(--foreground));
+}
 html:not(.dark) .admin-shell table tbody td .text-muted-foreground { font-size: 10px; }
+
+/* Name cell with avatar */
+html:not(.dark) .admin-shell table tbody td .table-name-cell {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+html:not(.dark) .admin-shell table tbody td .table-name-cell > span[class*="rounded-full"],
+html:not(.dark) .admin-shell table tbody td [class*="avatar"],
+html:not(.dark) .admin-shell table tbody td .h-8.w-8.rounded-full,
+html:not(.dark) .admin-shell table tbody td .h-9.w-9.rounded-full,
+html:not(.dark) .admin-shell table tbody td .h-10.w-10.rounded-full {
+  width: 26px;
+  height: 26px;
+  min-width: 26px;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 500;
+}
+
+/* Score columns */
+html:not(.dark) .admin-shell table tbody td .score-high { color: #0ABEDF; font-weight: 500; }
+html:not(.dark) .admin-shell table tbody td .score-mid { color: #B45309; font-weight: 500; }
+html:not(.dark) .admin-shell table tbody td .score-low { color: #E24B4A; font-weight: 500; }
+
 
 
 /* ---------- Buttons (scoped to admin; portals untouched) ---------- */
