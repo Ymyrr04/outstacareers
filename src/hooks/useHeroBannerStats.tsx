@@ -107,6 +107,9 @@ const emptyStats: HeroBannerStats = {
 
 const ET = 'America/New_York';
 
+/** Admins who always see platform-wide numbers instead of only their own work */
+const GLOBAL_VIEW_EMAILS = ['liezl@outsta.io'];
+
 /** Today's date in ET as YYYY-MM-DD */
 export const etToday = (): string => {
   const parts = new Intl.DateTimeFormat('en-CA', {
@@ -219,7 +222,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       const statusCounts: Record<string, number> = {};
       const regionCounts = { philippines: 0, latam: 0, global: 0 };
       let newApplicantsThisWeek = 0;
-      for (const a of applicants) {
+      for (const a of applicantRows) {
         const s = a.status || 'For Review';
         statusCounts[s] = (statusCounts[s] || 0) + 1;
         if (a.created_at && a.created_at >= weekAgo) newApplicantsThisWeek++;
@@ -240,7 +243,8 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       }
 
       // --- Calendar ---
-      const events = (eventsRes.data || []) as any[];
+      const allEvents = (eventsRes.data || []) as any[];
+      const events = scoped ? allEvents.filter((e) => isMine(e.assigned_to) || isMine(e.claimed_by)) : allEvents;
       const byAdmin: Record<string, number> = {};
       const toOwnerList = (value: unknown): string[] => {
         if (Array.isArray(value)) return value.map((v) => String(v)).filter(Boolean);
@@ -263,7 +267,8 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         .sort((a, b) => b.count - a.count);
 
       // --- Sales ---
-      const leads = (leadsRes.data || []) as any[];
+      const allLeads = (leadsRes.data || []) as any[];
+      const leads = scoped ? allLeads.filter((l) => isMine(l.created_by)) : allLeads;
       const leadStageCounts: Record<string, number> = {};
       let weightedPipelineValue = 0;
       for (const l of leads) {
@@ -275,7 +280,8 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       }
 
       // --- Contractors / clients ---
-      const assignments = (assignmentsRes.data || []) as any[];
+      const allAssignments = (assignmentsRes.data || []) as any[];
+      const assignments = scoped ? allAssignments.filter((a) => isMine(a.hired_by)) : allAssignments;
       const active = assignments.filter((a) => a.status === 'active');
       const clientIds = new Set(active.map((a) => a.client_id).filter(Boolean));
       const regionMap: Record<string, number> = {};
@@ -332,16 +338,17 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       }
 
       // --- Talent / external scout ---
-      const activeRoles = ((jobsRes.data || []) as any[]).filter((j) => j.is_active).length;
+      const activeRoles = myJobs.filter((j) => j.is_active).length;
       const talentPoolCount = statusCounts['Talent Pool'] || 0;
       const benchCount = statusCounts['Bench'] || 0;
       const monthStartIso = monthStart.toISOString();
-      const externalSourcedThisMonth = applicants.filter(
+      const externalSourcedThisMonth = applicantRows.filter(
         (a) => a.job_source === 'Apollo' && a.created_at && a.created_at >= monthStartIso
       ).length;
 
       // --- Workflow (calendar tasks) ---
-      const workflowEvents = (workflowEventsRes.data || []) as any[];
+      const allWorkflowEvents = (workflowEventsRes.data || []) as any[];
+      const workflowEvents = scoped ? allWorkflowEvents.filter((e) => isMine(e.assigned_to) || isMine(e.claimed_by)) : allWorkflowEvents;
       const activeTasks = workflowEvents.filter((e) => !e.is_done && e.event_date >= today).length;
       const completedThisWeek = workflowEvents.filter((e) => e.is_done).length;
 
@@ -353,7 +360,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
 
       setStats({
         loading: false,
-        totalApplicants: applicants.length,
+        totalApplicants: applicantRows.length,
         newApplicantsThisWeek,
         statusCounts,
         regionCounts,
