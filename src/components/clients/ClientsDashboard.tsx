@@ -449,152 +449,109 @@ export const ClientsDashboard = () => {
     <div className="space-y-6">
       {/* Summary Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card 
-          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'active' ? 'ring-2 ring-primary' : ''}`}
+        <div
+          className={`stat-card cursor-pointer transition-all ${statusFilter === 'active' ? 'ring-2 ring-primary' : ''}`}
+          style={{ color: '#534AB7' }}
           onClick={() => setStatusFilter(statusFilter === 'active' ? 'all' : 'active')}
         >
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Building2 className="w-5 h-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{totalActiveClients}</p>
-                <p className="text-sm text-muted-foreground">Total Active Clients</p>
-                <div className="flex items-center gap-1.5 mt-1">
-                  <span className="text-xs text-muted-foreground">Added:</span>
-                  <span className="text-xs font-semibold">{clientsAddedForYear}</span>
-                  <Select
-                    value={addedYearFilter.toString()}
-                    onValueChange={(v) => setAddedYearFilter(parseInt(v))}
-                  >
-                    <SelectTrigger 
-                      className="h-5 w-[60px] text-[10px] px-1.5"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent onClick={(e) => e.stopPropagation()}>
-                      <SelectItem value="2024">2024</SelectItem>
-                      <SelectItem value="2025">2025</SelectItem>
-                      <SelectItem value="2026">2026</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center gap-2 mt-1 text-[10px]">
-                  <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground" title="Active clients whose earliest active contractor started before 2026">
-                    Old <span className="font-semibold text-foreground">{oldActiveClientsCount}</span>
-                  </span>
-                  <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary" title="Active clients whose active contractors all started in 2026 or later">
-                    New <span className="font-semibold">{newActiveClientsCount}</span>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-500/10 rounded-lg">
-                <Users className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{totalActiveContractors}</p>
-                <p className="text-sm text-muted-foreground">Active Contractors</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card 
-          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'lost' ? 'ring-2 ring-red-500' : ''}`}
+          <div className="flex items-center justify-center mb-2.5" style={{ width: 32, height: 32, borderRadius: 8, background: '#EEEDFE' }} aria-hidden="true">
+            <Building2 style={{ width: 16, height: 16, color: '#534AB7' }} strokeWidth={2} />
+          </div>
+          <p className="text-[10px] uppercase tracking-[0.04em] font-medium text-muted-foreground mb-1">Total Active Clients</p>
+          <p className="text-[22px] font-medium leading-none text-foreground">{totalActiveClients}</p>
+          <div className="mt-2 flex items-center gap-1.5 text-[10px]">
+            <span className="text-muted-foreground">Added:</span>
+            <span className="font-semibold">{clientsAddedForYear}</span>
+            <Select value={addedYearFilter.toString()} onValueChange={(v) => setAddedYearFilter(parseInt(v))}>
+              <SelectTrigger className="h-5 w-[60px] text-[10px] px-1.5" onClick={(e) => e.stopPropagation()}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent onClick={(e) => e.stopPropagation()}>
+                <SelectItem value="2024">2024</SelectItem>
+                <SelectItem value="2025">2025</SelectItem>
+                <SelectItem value="2026">2026</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex items-center gap-2 mt-1 text-[10px]">
+            <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground" title="Active clients whose earliest active contractor started before 2026">
+              Old <span className="font-semibold text-foreground">{oldActiveClientsCount}</span>
+            </span>
+            <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary" title="Active clients whose active contractors all started in 2026 or later">
+              New <span className="font-semibold">{newActiveClientsCount}</span>
+            </span>
+          </div>
+        </div>
+        <div className="stat-card" style={{ color: '#534AB7' }}>
+          <div className="flex items-center justify-center mb-2.5" style={{ width: 32, height: 32, borderRadius: 8, background: '#EEEDFE' }} aria-hidden="true">
+            <Users style={{ width: 16, height: 16, color: '#534AB7' }} strokeWidth={2} />
+          </div>
+          <p className="text-[10px] uppercase tracking-[0.04em] font-medium text-muted-foreground mb-1">Active Contractors</p>
+          <p className="text-[22px] font-medium leading-none text-foreground">{totalActiveContractors}</p>
+        </div>
+        <div
+          className={`stat-card cursor-pointer transition-all ${statusFilter === 'lost' ? 'ring-2 ring-red-500' : ''}`}
+          style={{ color: '#E24B4A' }}
           onClick={() => setStatusFilter(statusFilter === 'lost' ? 'all' : 'lost')}
         >
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-red-500/10 rounded-lg">
-                <Building2 className="w-5 h-5 text-red-600" />
-              </div>
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <p className="text-2xl font-bold">{clientsInLostStages.size}</p>
-                  <Select
-                    value={lostYearFilter.toString()}
-                    onValueChange={(v) => setLostYearFilter(parseInt(v))}
-                  >
-                    <SelectTrigger 
-                      className="h-7 w-[80px] text-xs"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent onClick={(e) => e.stopPropagation()}>
-                      <SelectItem value="2024">2024</SelectItem>
-                      <SelectItem value="2025">2025</SelectItem>
-                      <SelectItem value="2026">2026</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <p className="text-sm text-muted-foreground">Clients Lost</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card 
-          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'newHiring' ? 'ring-2 ring-amber-500' : ''}`}
+          <div className="flex items-center justify-center mb-2.5" style={{ width: 32, height: 32, borderRadius: 8, background: '#FCEBEB' }} aria-hidden="true">
+            <Building2 style={{ width: 16, height: 16, color: '#E24B4A' }} strokeWidth={2} />
+          </div>
+          <p className="text-[10px] uppercase tracking-[0.04em] font-medium text-muted-foreground mb-1">Clients Lost</p>
+          <p className="text-[22px] font-medium leading-none text-foreground">{clientsInLostStages.size}</p>
+          <div className="mt-2">
+            <Select value={lostYearFilter.toString()} onValueChange={(v) => setLostYearFilter(parseInt(v))}>
+              <SelectTrigger className="h-7 w-[80px] text-xs" onClick={(e) => e.stopPropagation()}>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent onClick={(e) => e.stopPropagation()}>
+                <SelectItem value="2024">2024</SelectItem>
+                <SelectItem value="2025">2025</SelectItem>
+                <SelectItem value="2026">2026</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div
+          className={`stat-card cursor-pointer transition-all ${statusFilter === 'newHiring' ? 'ring-2 ring-amber-500' : ''}`}
+          style={{ color: '#0ABEDF' }}
           onClick={() => setStatusFilter(statusFilter === 'newHiring' ? 'all' : 'newHiring')}
         >
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-500/10 rounded-lg">
-                <UserPlus className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{newClientsHiring}</p>
-                <p className="text-sm text-muted-foreground">New Client (Hiring)</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card 
-          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'existingHiring' ? 'ring-2 ring-purple-500' : ''}`}
+          <div className="flex items-center justify-center mb-2.5" style={{ width: 32, height: 32, borderRadius: 8, background: '#E0F7FC' }} aria-hidden="true">
+            <UserPlus style={{ width: 16, height: 16, color: '#0ABEDF' }} strokeWidth={2} />
+          </div>
+          <p className="text-[10px] uppercase tracking-[0.04em] font-medium text-muted-foreground mb-1">New Client (Hiring)</p>
+          <p className="text-[22px] font-medium leading-none text-foreground">{newClientsHiring}</p>
+        </div>
+        <div
+          className={`stat-card cursor-pointer transition-all ${statusFilter === 'existingHiring' ? 'ring-2 ring-purple-500' : ''}`}
+          style={{ color: '#0ABEDF' }}
           onClick={() => setStatusFilter(statusFilter === 'existingHiring' ? 'all' : 'existingHiring')}
         >
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-500/10 rounded-lg">
-                <Building2 className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <p className="text-2xl font-bold">{existingClientsHiring}</p>
-                  {existingClientsOpenRoles > 0 && (
-                    <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
-                      {existingClientsOpenRoles} {existingClientsOpenRoles === 1 ? 'role' : 'roles'}
-                    </Badge>
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground">Existing Client (Hiring)</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card 
-          className={`cursor-pointer transition-all hover:shadow-md ${statusFilter === 'inactive' ? 'ring-2 ring-gray-500' : ''}`}
+          <div className="flex items-center justify-center mb-2.5" style={{ width: 32, height: 32, borderRadius: 8, background: '#E0F7FC' }} aria-hidden="true">
+            <Building2 style={{ width: 16, height: 16, color: '#0ABEDF' }} strokeWidth={2} />
+          </div>
+          <p className="text-[10px] uppercase tracking-[0.04em] font-medium text-muted-foreground mb-1">Existing Client (Hiring)</p>
+          <div className="flex items-center gap-2">
+            <p className="text-[22px] font-medium leading-none text-foreground">{existingClientsHiring}</p>
+            {existingClientsOpenRoles > 0 && (
+              <Badge variant="secondary" className="text-xs bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-300">
+                {existingClientsOpenRoles} {existingClientsOpenRoles === 1 ? 'role' : 'roles'}
+              </Badge>
+            )}
+          </div>
+        </div>
+        <div
+          className={`stat-card cursor-pointer transition-all ${statusFilter === 'inactive' ? 'ring-2 ring-gray-500' : ''}`}
+          style={{ color: '#534AB7' }}
           onClick={() => setStatusFilter(statusFilter === 'inactive' ? 'all' : 'inactive')}
         >
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-muted rounded-lg">
-                <Building2 className="w-5 h-5 text-muted-foreground" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{inactiveClients}</p>
-                <p className="text-sm text-muted-foreground">Inactive Clients</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          <div className="flex items-center justify-center mb-2.5" style={{ width: 32, height: 32, borderRadius: 8, background: '#EEEDFE' }} aria-hidden="true">
+            <Building2 style={{ width: 16, height: 16, color: '#534AB7' }} strokeWidth={2} />
+          </div>
+          <p className="text-[10px] uppercase tracking-[0.04em] font-medium text-muted-foreground mb-1">Inactive Clients</p>
+          <p className="text-[22px] font-medium leading-none text-foreground">{inactiveClients}</p>
+        </div>
       </div>
 
       {/* Client Insights */}

@@ -6,6 +6,7 @@ import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import { ClientAssignmentsPerAdmin } from '@/components/clients/ClientAssignmentsPerAdmin';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { StatCard } from '@/components/StatCard';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -1908,102 +1909,42 @@ export const ClientAnalyticsDashboard = () => {
     <div className="space-y-6">
       {/* Summary Cards - Row 1 */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-500/10 rounded-lg">
-                <Building2 className="w-5 h-5 text-blue-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{totalActiveClients || 0}</p>
-                <p className="text-sm text-muted-foreground">Active Clients</p>
-                <div className="flex items-center gap-2 mt-1 text-[10px]">
-                  <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground" title="Active clients whose earliest active contractor started before 2026">
-                    Old <span className="font-semibold text-foreground">{oldActiveClientsCount}</span>
-                  </span>
-                  <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary" title="Active clients whose active contractors all started in 2026 or later">
-                    New <span className="font-semibold">{newActiveClientsCount}</span>
-                  </span>
-                </div>
-              </div>
+        <StatCard
+          accent="purple"
+          icon={Building2}
+          label="Active Clients"
+          value={totalActiveClients || 0}
+          footer={
+            <div className="flex items-center gap-2 text-[10px]">
+              <span className="px-1.5 py-0.5 rounded bg-muted text-muted-foreground" title="Active clients whose earliest active contractor started before 2026">
+                Old <span className="font-semibold text-foreground">{oldActiveClientsCount}</span>
+              </span>
+              <span className="px-1.5 py-0.5 rounded bg-primary/10 text-primary" title="Active clients whose active contractors all started in 2026 or later">
+                New <span className="font-semibold">{newActiveClientsCount}</span>
+              </span>
             </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-500/10 rounded-lg">
-                <Users className="w-5 h-5 text-green-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{activeContractors || 0}</p>
-                <p className="text-sm text-muted-foreground">Active Contractors</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-500/10 rounded-lg">
-                <TrendingUp className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{scheduledContractors || 0}</p>
-                <p className="text-sm text-muted-foreground">Scheduled</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-amber-500/10 rounded-lg">
-                <UserPlus className="w-5 h-5 text-amber-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{newClientsHiring || 0}</p>
-                <p className="text-sm text-muted-foreground">New Client (Hiring)</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-500/10 rounded-lg">
-                <Building2 className="w-5 h-5 text-purple-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{existingClientsHiring || 0}</p>
-                <p className="text-sm text-muted-foreground">Existing Client (Hiring)</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-gray-500/10 rounded-lg">
-                <TrendingDown className="w-5 h-5 text-gray-600" />
-              </div>
-              <div>
-                <p className="text-2xl font-bold">{clientsLost || 0}</p>
-                <div className="flex items-center gap-2">
-                  <select
-                    value={lostYearFilter}
-                    onChange={(e) => setLostYearFilter(Number(e.target.value))}
-                    className="text-xs border rounded px-1 py-0.5 bg-background"
-                  >
-                    <option value={2025}>2025</option>
-                    <option value={2026}>2026</option>
-                  </select>
-                  <p className="text-sm text-muted-foreground">Clients Lost</p>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+          }
+        />
+        <StatCard accent="purple" icon={Users} label="Active Contractors" value={activeContractors || 0} />
+        <StatCard accent="blue" icon={TrendingUp} label="Scheduled" value={scheduledContractors || 0} />
+        <StatCard accent="cyan" icon={UserPlus} label="New Client (Hiring)" value={newClientsHiring || 0} />
+        <StatCard accent="cyan" icon={Building2} label="Existing Client (Hiring)" value={existingClientsHiring || 0} />
+        <StatCard
+          accent="red"
+          icon={TrendingDown}
+          label="Clients Lost"
+          value={clientsLost || 0}
+          footer={
+            <select
+              value={lostYearFilter}
+              onChange={(e) => setLostYearFilter(Number(e.target.value))}
+              className="text-xs border rounded px-1 py-0.5 bg-background"
+            >
+              <option value={2025}>2025</option>
+              <option value={2026}>2026</option>
+            </select>
+          }
+        />
       </div>
 
       {/* Hires vs. Separations trend (full width, above bar charts) */}

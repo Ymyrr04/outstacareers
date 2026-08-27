@@ -6,7 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye, Mail, Settings2, ChevronLeft, ChevronRight, KeyRound, Download } from 'lucide-react';
+import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye, Mail, Settings2, ChevronLeft, ChevronRight, KeyRound, Download, Users, FileText, Clock, Wallet, DollarSign } from 'lucide-react';
+import { StatCard } from '@/components/StatCard';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -1072,29 +1073,14 @@ export const PLDashboard = () => {
     toast({ title: 'Extracted', description: `${filtered.length} submission(s) exported to CSV.` });
   };
 
-  const StatTile = ({
-    label,
-    value,
-    sub,
-    accent,
-  }: {
-    label: string;
-    value: string | number;
-    sub?: string;
-    accent?: string;
-  }) => (
-    <div className="rounded-md border bg-card px-3 py-2 flex flex-col justify-center min-h-[60px]">
-      <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-medium">
-        {label}
-      </div>
-      <div className={`text-lg font-bold leading-tight ${accent || ''}`}>
-        {value}
-        {sub && (
-          <span className="ml-1 text-[11px] font-normal text-muted-foreground">{sub}</span>
-        )}
-      </div>
-    </div>
-  );
+  const statTiles = [
+    { accent: 'amber' as const, icon: Users, label: 'Portal Accounts', value: stats.portalUsers, sublabel: `/ ${stats.totalEligibleContractors} eligible` },
+    { accent: 'amber' as const, icon: FileText, label: 'Submissions', value: filtered.length },
+    { accent: 'amber' as const, icon: Clock, label: 'Total Hours', value: totalHoursAll.toFixed(2) },
+    { accent: 'amber' as const, icon: Clock, label: 'Overtime Hours', value: totalOTAll.toFixed(2) },
+    { accent: 'red' as const, icon: Wallet, label: 'Deposit Hours', value: totalDepositAll.toFixed(2) },
+    { accent: 'amber' as const, icon: DollarSign, label: 'Bonus', value: `$${totalIncentivesAll.toFixed(2)}` },
+  ];
 
   return (
     <div className="space-y-3">
@@ -1104,12 +1090,9 @@ export const PLDashboard = () => {
         collapsedSummary={`${stats.portalUsers}/${stats.totalEligibleContractors} portal · ${filtered.length} submissions · ${totalHoursAll.toFixed(0)}h`}
       >
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2 p-3">
-          <StatTile label="Portal Accounts" value={stats.portalUsers} sub={`/ ${stats.totalEligibleContractors} eligible`} />
-          <StatTile label="Submissions" value={filtered.length} />
-          <StatTile label="Total Hours" value={totalHoursAll.toFixed(2)} />
-          <StatTile label="Overtime Hours" value={totalOTAll.toFixed(2)} />
-          <StatTile label="Deposit Hours" value={totalDepositAll.toFixed(2)} accent={totalDepositAll > 0 ? 'text-amber-600' : ''} />
-          <StatTile label="Bonus" value={`$${totalIncentivesAll.toFixed(2)}`} />
+          {statTiles.map((t, i) => (
+            <StatCard key={i} accent={t.accent} icon={t.icon} label={t.label} value={t.value} sublabel={t.sublabel} />
+          ))}
         </div>
       </CollapsibleSection>
 

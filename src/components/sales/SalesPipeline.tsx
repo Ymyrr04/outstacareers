@@ -2,7 +2,8 @@ import { useMemo, useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { formatDistanceToNow } from 'date-fns';
-import { Plus, Upload, LayoutGrid, List as ListIcon, Trash2, X, ArrowRight, UserPlus, Download, Search, Filter, Check, Building2, Globe } from 'lucide-react';
+import { Plus, Upload, LayoutGrid, List as ListIcon, Trash2, X, ArrowRight, UserPlus, Download, Search, Filter, Check, Building2, Globe, Users, CheckCircle, DollarSign, TrendingUp } from 'lucide-react';
+import { StatCard } from '@/components/StatCard';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Separator } from '@/components/ui/separator';
@@ -277,11 +278,11 @@ export const SalesPipeline = () => {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-        <StatCard label="Total Leads" value={stats.total} />
+        <StatCard accent="cyan" icon={Users} label="Total Leads" value={stats.total} />
         <TemperatureBreakdownCard cold={stats.cold} warm={stats.warm} hot={stats.hot} />
-        <StatCard label="Converted to Clients" value={stats.converted} accent />
-        <StatCard label="Total Est. Deal Value" value={formatCurrency(stats.totalEst)} />
-        <StatCard label="Total Pipeline Value" value={formatCurrency(stats.totalPipeline)} accent />
+        <StatCard accent="cyan" icon={CheckCircle} label="Converted to Clients" value={stats.converted} />
+        <StatCard accent="amber" icon={DollarSign} label="Total Est. Deal Value" value={formatCurrency(stats.totalEst)} />
+        <StatCard accent="amber" icon={TrendingUp} label="Total Pipeline Value" value={formatCurrency(stats.totalPipeline)} />
       </div>
 
       <div className="flex items-center gap-2 flex-wrap">
@@ -670,14 +671,6 @@ const OtherReasonInput = ({ value, onSave }: { value: string; onSave: (v: string
   );
 };
 
-const StatCard = ({ label, value, accent }: { label: string; value: number | string; accent?: boolean }) => (
-  <Card>
-    <CardContent className="p-4">
-      <div className="text-xs uppercase tracking-wide text-muted-foreground">{label}</div>
-      <div className={`text-2xl font-bold mt-1 ${accent ? 'text-teal-600 dark:text-teal-400' : ''}`}>{value}</div>
-    </CardContent>
-  </Card>
-);
 
 const TemperatureBreakdownCard = ({ cold, warm, hot }: { cold: number; warm: number; hot: number }) => (
   <Card>
