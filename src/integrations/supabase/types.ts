@@ -1825,6 +1825,47 @@ export type Database = {
           },
         ]
       }
+      contractor_legal_doc_requests: {
+        Row: {
+          admin_notes: string | null
+          contractor_assignment_id: string
+          created_at: string
+          doc_types: string[]
+          id: string
+          reason: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          contractor_assignment_id: string
+          created_at?: string
+          doc_types?: string[]
+          id?: string
+          reason: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          contractor_assignment_id?: string
+          created_at?: string
+          doc_types?: string[]
+          id?: string
+          reason?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contractor_legal_doc_requests_contractor_assignment_id_fkey"
+            columns: ["contractor_assignment_id"]
+            isOneToOne: false
+            referencedRelation: "contractor_assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       contractor_pipeline_stages: {
         Row: {
           checkin_email_body: string | null
