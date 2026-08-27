@@ -356,15 +356,16 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
 
 
       // --- Post-hire pipeline ---
-      const stageNameById = new Map<string, string>();
-      for (const s of (pipelineStagesRes.data || []) as any[]) stageNameById.set(s.id, (s.name || '').toLowerCase());
+      const stageSlugById = new Map<string, string>();
+      for (const s of (pipelineStagesRes.data || []) as any[]) stageSlugById.set(s.id, (s.slug || '').toLowerCase());
       const tracking = (pipelineTrackingRes.data || []) as any[];
-      let postHireOnboarding = 0, postHireActive = 0, postHireReview = 0;
+      const postHireStageCounts: Record<string, number> = {};
+      let postHireTotal = 0;
       for (const t of tracking) {
-        const name = stageNameById.get(t.current_stage_id) || '';
-        if (/onboard|week/.test(name)) postHireOnboarding++;
-        else if (/review|settled|exit|offboard/.test(name)) postHireReview++;
-        else postHireActive++;
+        const slug = stageSlugById.get(t.current_stage_id) || '';
+        if (!slug || slug === 'settled') continue; // settled contractors are not counted
+        postHireStageCounts[slug] = (postHireStageCounts[slug] || 0) + 1;
+        postHireTotal++;
       }
 
       // --- Talent / external scout ---
