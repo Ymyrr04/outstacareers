@@ -81,6 +81,7 @@ const emptyStats: HeroBannerStats = {
   leadStageCounts: {},
   activeClients: 0,
   activeContractors: 0,
+  scheduledContractors: 0,
   contractorClients: 0,
   contractorRegions: [],
   plWeekEnding: null,
