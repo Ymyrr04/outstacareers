@@ -3911,9 +3911,11 @@ const Admin = () => {
               eyebrow="Post-hire"
               title={`${heroNum(heroStats.postHireTotal)} contractors in post-hire stages`}
               chips={[
-                `${heroNum(heroStats.postHireOnboarding)} onboarding`,
-                `${heroNum(heroStats.postHireActive)} active`,
-                `${heroNum(heroStats.postHireReview)} review`,
+                `${heroNum(heroStats.postHireStageCounts.onboarding)} onboarding`,
+                `${heroNum(heroStats.postHireStageCounts.week_1_checkin)} week 1`,
+                `${heroNum(heroStats.postHireStageCounts.month_1_review)} month 1`,
+                `${heroNum(heroStats.postHireStageCounts.month_2_review)} month 2`,
+                `${heroNum(heroStats.postHireStageCounts.month_3_review)} month 3`,
               ]}
             />
             <div className="px-4 pt-1">
