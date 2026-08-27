@@ -89,23 +89,6 @@ export const JobsTabSidebar = () => {
         )}
       </div>
 
-      {/* Pipeline snapshot */}
-      <div className="bg-white border-[0.5px] border-[#C8F0F8] rounded-[10px] p-3 mt-2">
-        <h3 className="text-[11px] font-medium mb-2">Pipeline snapshot</h3>
-        <div className="flex flex-col gap-1">
-          {PIPELINE_STAGES.map((stage) => (
-            <div key={stage} className="flex items-center justify-between">
-              <span className="text-[10px] text-muted-foreground">{stage}</span>
-              <span className="text-[11px] font-medium">{stageCounts[stage] ?? 0}</span>
-            </div>
-          ))}
-          <div className="border-t border-[#C8F0F8] my-1" />
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] font-medium text-[#0D9488]">Hired</span>
-            <span className="text-[11px] font-medium text-[#0D9488]">{stageCounts['Hired'] ?? 0}</span>
-          </div>
-        </div>
-      </div>
     </div>
   );
 };
