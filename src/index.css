@@ -182,12 +182,12 @@ html:not(.dark) .admin-shell .admin-header {
   border-bottom: 0.5px solid hsl(var(--brand-border));
 }
 html:not(.dark) .admin-shell .admin-header-inner { min-height: 46px; }
-html:not(.dark) .admin-shell .admin-logo-img {
-  width: 26px; height: 26px; object-fit: contain; display: block;
+.admin-shell .admin-logo-img {
+  width: 26px; height: 26px; object-fit: contain; display: block; flex-shrink: 0;
   filter: drop-shadow(0 0 1px hsl(var(--brand) / 0.25));
 }
-html:not(.dark) .admin-shell .admin-logo-ring {
-  width: 24px; height: 24px; border-radius: 9999px;
+.admin-shell .admin-logo-ring {
+  width: 24px; height: 24px; border-radius: 9999px; flex-shrink: 0;
   border: 3.5px solid hsl(var(--brand)); background: transparent;
 }
 html:not(.dark) .admin-shell .admin-header button {
