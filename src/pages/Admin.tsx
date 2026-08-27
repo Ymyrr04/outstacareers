@@ -3967,20 +3967,7 @@ const Admin = () => {
           <TabsContent value="analytics" className="space-y-6">
             <AdminHeroBanner
               eyebrow="Analytics"
-              title={`${heroNum(heroStats.totalHires)} total hires · ${heroStats.retentionRate}% average retention · ${heroNum(heroStats.avgStayDays)}d avg stay`}
-              chips={
-                heroStats.adminLeaderboard.length > 0
-                  ? [
-                      ...heroStats.adminLeaderboard.map((a, i) =>
-                        `${['🥇', '🥈', '🥉', '4.'][i]} ${a.name} · ${a.ytdHires} hire${a.ytdHires === 1 ? '' : 's'} YTD · ${a.retentionRate}% retained`
-                      ),
-                      `${heroNum(heroStats.activeContractors)} active`,
-                    ]
-                  : [
-                      `Top admin: ${heroStats.bestAdmin}`,
-                      `${heroNum(heroStats.activeContractors)} active`,
-                    ]
-              }
+              title={`${heroNum(heroStats.totalHires)} total hires YTD · ${heroStats.retentionRate}% retention rate · ${heroNum(heroStats.activeContractors)} active contractors`}
             />
             <ClientAnalyticsDashboard />
           </TabsContent>
