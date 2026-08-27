@@ -283,7 +283,7 @@ export const TeamCalendar = () => {
 
   const rangeStart = view === 'month' ? monthStart : selectedDate;
   const rangeEnd = view === 'month' ? monthEnd : selectedDate;
-  const { events: rawEvents, eventsForDate: rawEventsForDate, refetch } = useCalendarEvents(rangeStart, rangeEnd);
+  const { events: rawEvents, refetch } = useCalendarEvents(rangeStart, rangeEnd);
 
   // Scope calendar to the signed-in admin: only their own activities plus
   // open/claimable tasks are shown. Liezl keeps the global team view.
