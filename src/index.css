@@ -609,6 +609,39 @@ html:not(.dark) .admin-shell .list-row-icon {
   flex-shrink: 0;
 }
 html:not(.dark) .admin-shell .list-row-icon svg { width: 17px; height: 17px; }
+html:not(.dark) .admin-shell .list-row-icon { background: #E0F7FC; color: #0ABEDF; }
+html:not(.dark) .admin-shell .list-row-icon.tint-cyan { background: #E0F7FC; color: #0ABEDF; }
+html:not(.dark) .admin-shell .list-row-icon.tint-legal { background: #FAECE7; color: #993C1D; }
+html:not(.dark) .admin-shell .list-row-icon.tint-coral { background: #FAECE7; color: #D85A30; }
+html:not(.dark) .admin-shell .list-row-icon.tint-accounting { background: #EEEDFE; color: #534AB7; }
+html:not(.dark) .admin-shell .list-row-icon.tint-purple { background: #EEEDFE; color: #534AB7; }
+html:not(.dark) .admin-shell .list-row-icon.tint-support { background: #E6F1FB; color: #185FA5; }
+html:not(.dark) .admin-shell .list-row-icon.tint-blue { background: #E6F1FB; color: #185FA5; }
+html:not(.dark) .admin-shell .list-row-icon.tint-green { background: #EAF3DE; color: #3B6D11; }
+html:not(.dark) .admin-shell .list-row-card .list-row-title,
+html:not(.dark) .admin-shell .list-row-card .list-row-meta {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+html:not(.dark) .admin-shell .list-row-main { flex: 1; min-width: 0; }
+html:not(.dark) .admin-shell .list-row-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+html:not(.dark) .admin-shell .list-row-dates {
+  font-size: 10px;
+  color: hsl(var(--muted-foreground));
+  margin-top: 1px;
+}
+html:not(.dark) .admin-shell .list-row-chevron {
+  width: 14px;
+  height: 14px;
+  color: hsl(var(--muted-foreground));
+  flex-shrink: 0;
+}
 
 /* ===== Context-aware hero banner (admin tabs) ===== */
 .admin-shell .admin-hero-banner {
