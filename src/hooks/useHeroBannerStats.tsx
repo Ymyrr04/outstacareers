@@ -149,7 +149,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         for (let from = 0; from < 30000; from += 1000) {
           const { data, error } = await supabase
             .from('applicants_prescreen')
-            .select('status, created_at, job_id')
+            .select('status, created_at, job_id, job_source')
             .order('created_at', { ascending: false })
             .range(from, from + 999);
           if (error || !data || data.length === 0) break;
@@ -164,19 +164,27 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         jobsRes,
         envelopesRes,
         eventsRes,
+        workflowEventsRes,
         leadsRes,
         clientsRes,
         assignmentsRes,
         timesheetsRes,
+        pipelineTrackingRes,
+        pipelineStagesRes,
+        rolesRes,
       ] = await Promise.all([
         fetchApplicants(),
-        supabase.from('jobs').select('id, region'),
+        supabase.from('jobs').select('id, region, is_active'),
         supabase.from('contract_envelopes').select('status, sent_at, countersigned_at, countersign_sent_at'),
         supabase.from('calendar_events').select('assigned_to, claimed_by, event_date').eq('event_date', today),
+        supabase.from('calendar_events').select('event_date, is_done').gte('event_date', weekAgo.slice(0, 10)),
         supabase.from('sales_leads').select('stage, estimated_hires, likelihood_to_close'),
         supabase.from('clients').select('id'),
         supabase.from('contractor_assignments').select('id, client_id, status, country, start_date, end_date, hired_by'),
-        supabase.from('contractor_timesheets').select('contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount').order('week_ending_date', { ascending: false }).limit(2000),
+        supabase.from('contractor_timesheets').select('contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount, outsta_status, client_approval_status').order('week_ending_date', { ascending: false }).limit(2000),
+        supabase.from('contractor_pipeline_tracking').select('id, current_stage_id'),
+        supabase.from('contractor_pipeline_stages').select('id, name, sort_order'),
+        supabase.from('user_roles').select('role'),
       ]);
 
       if (cancelled) return;
