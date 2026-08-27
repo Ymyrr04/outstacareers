@@ -199,7 +199,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         supabase.from('contractor_pipeline_tracking').select('id, current_stage_id'),
         supabase.from('contractor_pipeline_stages').select('id, name, stage_order'),
         supabase.from('user_roles').select('role'),
-        supabase.from('client_hiring_requests').select('pipeline_stage, assigned_admin_id'),
+        supabase.from('client_hiring_requests').select('pipeline_stage'),
       ]);
 
       if (cancelled) return;
@@ -352,9 +352,8 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       const pendingTimesheets = timesheets.filter((t) => (t.outsta_status || 'pending') === 'pending').length;
       const flaggedTimesheets = timesheets.filter((t) => t.client_approval_status === 'flagged').length;
 
-      // --- Client hiring request pipeline stages (admin-scoped) ---
-      const allHiringRequests = (hiringRequestsRes.data || []) as any[];
-      const hiringRequests = scoped ? allHiringRequests.filter((r) => isMine(r.assigned_admin_id)) : allHiringRequests;
+      // --- Client hiring request pipeline stages ---
+      const hiringRequests = (hiringRequestsRes.data || []) as any[];
       const hiringSourcing = hiringRequests.filter((r) => r.pipeline_stage === 'sourcing').length;
       const hiringPitch = hiringRequests.filter((r) => r.pipeline_stage === 'pitch').length;
       const hiringScheduledInterview = hiringRequests.filter((r) => r.pipeline_stage === 'scheduled_interview').length;
