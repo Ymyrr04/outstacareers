@@ -184,37 +184,33 @@ export default function AiUsage() {
       )}
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Total AI Calls</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-bold">{fmt(summary.totalCalls)}</p></CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Total Tokens</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{fmt(summary.totalTokens)}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              {fmt(summary.totalPrompt)} in · {fmt(summary.totalCompletion)} out
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm text-muted-foreground flex items-center gap-1">
-              <DollarSign className="w-3 h-3" />Est. Total Cost
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold">{fmtUSD(summary.totalCost)}</p>
-            <p className="text-xs text-muted-foreground mt-1">
-              ${PRICE_INPUT_PER_M}/1M in · ${PRICE_OUTPUT_PER_M}/1M out
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2"><CardTitle className="text-sm text-muted-foreground">Errors</CardTitle></CardHeader>
-          <CardContent>
-            <p className="text-3xl font-bold text-destructive">{fmt(summary.totalErrors)}</p>
-            {summary.totalErrors > 0 && (
+        <StatCard
+          accent="amber"
+          icon={Activity}
+          label="Total AI Calls"
+          value={fmt(summary.totalCalls)}
+        />
+        <StatCard
+          accent="amber"
+          icon={Coins}
+          label="Total Tokens"
+          value={fmt(summary.totalTokens)}
+          sublabel={`${fmt(summary.totalPrompt)} in · ${fmt(summary.totalCompletion)} out`}
+        />
+        <StatCard
+          accent="amber"
+          icon={DollarSign}
+          label="Est. Total Cost"
+          value={fmtUSD(summary.totalCost)}
+          sublabel={`$${PRICE_INPUT_PER_M}/1M in · $${PRICE_OUTPUT_PER_M}/1M out`}
+        />
+        <StatCard
+          accent="red"
+          icon={AlertTriangle}
+          label="Errors"
+          value={fmt(summary.totalErrors)}
+          sublabel={
+            summary.totalErrors > 0 ? (
               <Button
                 variant="link"
                 size="sm"
@@ -223,9 +219,9 @@ export default function AiUsage() {
               >
                 {showErrorsOnly ? "Show all" : "Show errors only"}
               </Button>
-            )}
-          </CardContent>
-        </Card>
+            ) : undefined
+          }
+        />
       </div>
 
       <Card>
