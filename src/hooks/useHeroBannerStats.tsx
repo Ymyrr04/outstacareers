@@ -183,7 +183,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         supabase.from('contractor_assignments').select('id, client_id, status, country, start_date, end_date, hired_by'),
         supabase.from('contractor_timesheets').select('contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount, outsta_status, client_approval_status').order('week_ending_date', { ascending: false }).limit(2000),
         supabase.from('contractor_pipeline_tracking').select('id, current_stage_id'),
-        supabase.from('contractor_pipeline_stages').select('id, name, sort_order'),
+        supabase.from('contractor_pipeline_stages').select('id, name, stage_order'),
         supabase.from('user_roles').select('role'),
       ]);
 
@@ -292,6 +292,40 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       const plTotalHours = weekRows.reduce((s, t) => s + Number(t.total_hours || 0), 0);
       const plOtHours = weekRows.reduce((s, t) => s + Number(t.overtime_hours || 0), 0);
       const plBonus = weekRows.reduce((s, t) => s + Number(t.incentive_amount || 0), 0);
+      const pendingTimesheets = timesheets.filter((t) => (t.outsta_status || 'pending') === 'pending').length;
+      const flaggedTimesheets = timesheets.filter((t) => t.client_approval_status === 'flagged').length;
+
+      // --- Post-hire pipeline ---
+      const stageNameById = new Map<string, string>();
+      for (const s of (pipelineStagesRes.data || []) as any[]) stageNameById.set(s.id, (s.name || '').toLowerCase());
+      const tracking = (pipelineTrackingRes.data || []) as any[];
+      let postHireOnboarding = 0, postHireActive = 0, postHireReview = 0;
+      for (const t of tracking) {
+        const name = stageNameById.get(t.current_stage_id) || '';
+        if (/onboard|week/.test(name)) postHireOnboarding++;
+        else if (/review|settled|exit|offboard/.test(name)) postHireReview++;
+        else postHireActive++;
+      }
+
+      // --- Talent / external scout ---
+      const activeRoles = ((jobsRes.data || []) as any[]).filter((j) => j.is_active).length;
+      const talentPoolCount = statusCounts['Talent Pool'] || 0;
+      const benchCount = statusCounts['Bench'] || 0;
+      const monthStartIso = monthStart.toISOString();
+      const externalSourcedThisMonth = applicants.filter(
+        (a) => a.job_source === 'Apollo' && a.created_at && a.created_at >= monthStartIso
+      ).length;
+
+      // --- Workflow (calendar tasks) ---
+      const workflowEvents = (workflowEventsRes.data || []) as any[];
+      const activeTasks = workflowEvents.filter((e) => !e.is_done && e.event_date >= today).length;
+      const completedThisWeek = workflowEvents.filter((e) => e.is_done).length;
+
+      // --- Permissions ---
+      const roles = (rolesRes.data || []) as any[];
+      const superAdminCount = roles.filter((r) => r.role === 'super_admin').length;
+      const adminCount = roles.filter((r) => r.role === 'admin').length;
+      const viewerCount = roles.filter((r) => r.role === 'user').length;
 
       setStats({
         loading: false,
