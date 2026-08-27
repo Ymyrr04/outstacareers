@@ -199,7 +199,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         supabase.from('contractor_pipeline_tracking').select('id, current_stage_id'),
         supabase.from('contractor_pipeline_stages').select('id, name, stage_order'),
         supabase.from('user_roles').select('role'),
-        supabase.from('client_hiring_requests').select('pipeline_stage'),
+        supabase.from('client_hiring_requests').select('pipeline_stage, assigned_admin_id'),
       ]);
 
       if (cancelled) return;
