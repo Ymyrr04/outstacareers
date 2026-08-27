@@ -37,6 +37,7 @@ export interface HeroBannerStats {
   retentionRate: number;
   avgStayDays: number;
   bestAdmin: string;
+  adminLeaderboard: { name: string; ytdHires: number; retentionRate: number }[];
   // Client pipeline
   pendingTimesheets: number;
   flaggedTimesheets: number;
@@ -93,6 +94,7 @@ const emptyStats: HeroBannerStats = {
   retentionRate: 0,
   avgStayDays: 0,
   bestAdmin: '—',
+  adminLeaderboard: [],
   pendingTimesheets: 0,
   flaggedTimesheets: 0,
   postHireTotal: 0,
@@ -330,15 +332,31 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
           return Math.max(0, Math.round((end - start) / 86400000));
         });
       const avgStayDays = stays.length ? Math.round(stays.reduce((s, v) => s + v, 0) / stays.length) : 0;
-      const hiredByCounts: Record<string, number> = {};
-      for (const a of assignments) {
+      // Per-admin leaderboard: hires year-to-date + retention rate (global, not scoped)
+      const currentYear = new Date().getFullYear();
+      const perAdmin: Record<string, { ytd: number; total: number; active: number }> = {};
+      for (const a of allAssignments) {
         if (!a.hired_by) continue;
         const name = getAdminDisplayName(String(a.hired_by), '');
         if (!name) continue;
-        hiredByCounts[name] = (hiredByCounts[name] || 0) + 1;
+        if (!perAdmin[name]) perAdmin[name] = { ytd: 0, total: 0, active: 0 };
+        perAdmin[name].total++;
+        if (a.status === 'active') perAdmin[name].active++;
+        if (a.start_date && new Date(a.start_date).getFullYear() === currentYear) {
+          perAdmin[name].ytd++;
+        }
       }
-      const bestEntry = Object.entries(hiredByCounts).sort((a, b) => b[1] - a[1])[0];
-      const bestAdmin = bestEntry ? `${bestEntry[0]} · ${bestEntry[1]} hires` : '—';
+      const adminLeaderboard = Object.entries(perAdmin)
+        .map(([name, s]) => ({
+          name,
+          ytdHires: s.ytd,
+          retentionRate: s.total > 0 ? Math.round((s.active / s.total) * 100) : 0,
+        }))
+        .filter((a) => a.ytdHires > 0)
+        .sort((a, b) => b.ytdHires - a.ytdHires)
+        .slice(0, 4);
+      const bestEntry = adminLeaderboard[0];
+      const bestAdmin = bestEntry ? `${bestEntry.name} · ${bestEntry.ytdHires} hires` : '—';
 
       // --- PL ---
       const timesheets = (timesheetsRes.data || []) as any[];
@@ -420,6 +438,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         retentionRate,
         avgStayDays,
         bestAdmin,
+        adminLeaderboard,
         pendingTimesheets,
         flaggedTimesheets,
         postHireTotal,
