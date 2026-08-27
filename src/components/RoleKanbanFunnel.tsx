@@ -580,6 +580,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
             .in('job_title', rolesToFetch)
             .in('status', statuses)
             .order('total_score', { ascending: false, nullsFirst: false })
+            .order('id', { ascending: true })
             .range(from, from + batchSize - 1);
           if (!data || data.length === 0) break;
           collected = collected.concat(data);
