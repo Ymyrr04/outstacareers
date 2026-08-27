@@ -4,7 +4,7 @@ import { todayET, formatMinutes } from '@/lib/calendarTime';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import { useCalendarAdmins } from '@/hooks/useCalendarAdmins';
 
-const PIPELINE_STAGES = ['For Review', 'Qualified', 'For Interview', 'SIV', 'Pitch', 'Client Interview'] as const;
+
 
 interface TodayEvent {
   id: string;
@@ -19,28 +19,16 @@ interface TodayEvent {
 export const JobsTabSidebar = () => {
   const { getAdmin } = useCalendarAdmins();
   const [events, setEvents] = useState<TodayEvent[]>([]);
-  const [stageCounts, setStageCounts] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const load = async () => {
       const today = todayET();
-      const eventsPromise = supabase
+      const { data } = await supabase
         .from('calendar_events')
         .select('id, title, start_time, time_tbd, assigned_to, claimed_by, event_date')
         .eq('event_date', today)
         .order('start_time', { ascending: true });
-
-      const stagePromises = [...PIPELINE_STAGES, 'Hired'].map((status) =>
-        supabase
-          .from('applicants_prescreen')
-          .select('id', { count: 'exact', head: true })
-          .eq('status', status)
-          .then((res) => [status, res.count ?? 0] as const)
-      );
-
-      const [eventsRes, ...counts] = await Promise.all([eventsPromise, ...stagePromises]);
-      setEvents((eventsRes.data || []) as unknown as TodayEvent[]);
-      setStageCounts(Object.fromEntries(counts));
+      setEvents((data || []) as unknown as TodayEvent[]);
     };
     load().catch((e) => console.error('Jobs sidebar load failed:', e));
   }, []);
