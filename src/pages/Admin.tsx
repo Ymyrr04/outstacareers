@@ -1864,8 +1864,7 @@ const Admin = () => {
                   : ['No active roles']
               }
             />
-            <div className="flex gap-[10px] items-start">
-            <div className="flex-1 min-w-0 space-y-6">
+            <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-2xl font-bold">All Jobs</h2>
