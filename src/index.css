@@ -567,8 +567,14 @@ html:not(.dark) .admin-shell [role="tablist"] {
   width: 100%;
   margin-bottom: 12px;
 }
-html:not(.dark) .admin-shell [role="tab"] { padding: 7px 12px; }
+/* Sub-tabs: 11px / compact padding; main nav keeps 12px / 48px strip */
+html:not(.dark) .admin-shell [role="tablist"]:not(.admin-main-nav) [role="tab"] {
+  font-size: 11px;
+  padding: 7px 12px;
+  height: auto;
+}
 html:not(.dark) .admin-shell [role="tab"]:hover { color: hsl(var(--muted-foreground)); }
+html:not(.dark) .admin-shell .admin-main-nav [role="tab"] { height: 48px; padding: 0 12px; font-size: 12px; }
 
 /* ---------- Admin list row cards ---------- */
 html:not(.dark) .admin-shell .list-row-card {
