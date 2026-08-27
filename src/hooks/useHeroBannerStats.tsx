@@ -323,15 +323,18 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
 
       // --- Analytics (global, year-to-date) ---
       const analyticsYear = new Date().getFullYear();
-      const ytdAssignments = allAssignments.filter(
-        (a) => a.start_date && new Date(a.start_date).getFullYear() === analyticsYear
-      );
+      // Only YTD assignments attributable to a real admin (excludes blank hired_by
+      // and non-admin values such as "Zoomployee").
+      const ytdAssignments = allAssignments.filter((a) => {
+        if (!a.start_date || new Date(a.start_date).getFullYear() !== analyticsYear) return false;
+        if (!a.hired_by) return false;
+        return !!getAdminDisplayName(String(a.hired_by), '');
+      });
       const totalHires = ytdAssignments.length;
-      // Retention/separations counted only within the current-year cohort
-      // (contractors hired/started in 2026), not all-time assignments.
+      // Retention = share of this year's attributed hires that are still active
+      // (pooled, so every contractor counts once).
       const ytdActive = ytdAssignments.filter((a) => a.status === 'active').length;
-      // Placeholder; recomputed below as the average of per-admin retention rates.
-      let retentionRate =
+      const retentionRate =
         ytdAssignments.length > 0 ? Math.round((ytdActive / ytdAssignments.length) * 100) : 0;
       const stays = assignments
         .filter((a) => a.start_date)
@@ -342,14 +345,10 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         });
       const avgStayDays = stays.length ? Math.round(stays.reduce((s, v) => s + v, 0) / stays.length) : 0;
       // Per-admin leaderboard: hires year-to-date + retention rate (global, not scoped)
-      const currentYear = new Date().getFullYear();
       const perAdmin: Record<string, { ytd: number; total: number; active: number }> = {};
-      for (const a of allAssignments) {
-        if (!a.hired_by) continue;
+      for (const a of ytdAssignments) {
         const name = getAdminDisplayName(String(a.hired_by), '');
         if (!name) continue;
-        // Only count contractors hired/started in the current year
-        if (!a.start_date || new Date(a.start_date).getFullYear() !== currentYear) continue;
         if (!perAdmin[name]) perAdmin[name] = { ytd: 0, total: 0, active: 0 };
         perAdmin[name].total++;
         perAdmin[name].ytd++;
@@ -366,14 +365,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         .slice(0, 4);
       const bestEntry = adminLeaderboard[0];
       const bestAdmin = bestEntry ? `${bestEntry.name} · ${bestEntry.ytdHires} hires` : '—';
-      // Average retention = mean of the leaderboard admins' individual retention rates
-      // (unweighted), matching how retention is reported per admin.
-      if (adminLeaderboard.length > 0) {
-        const exact = Object.entries(perAdmin)
-          .filter(([name]) => adminLeaderboard.some((a) => a.name === name))
-          .map(([, s]) => (s.total > 0 ? (s.active / s.total) * 100 : 0));
-        retentionRate = Math.round(exact.reduce((s, v) => s + v, 0) / exact.length);
-      }
+
 
 
       // --- PL ---
