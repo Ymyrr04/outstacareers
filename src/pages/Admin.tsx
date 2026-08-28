@@ -18,6 +18,7 @@ import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock
 import { PreScreeningResponsesCard } from '@/components/PreScreeningResponsesCard';
 
 import { ContractsManager } from '@/components/contracts/ContractsManager';
+import GmailPanel from '@/components/GmailPanel';
 import { exportJobs, exportApplicants, exportAllData } from '@/lib/exportUtils';
 import { parseBooleanSearch } from '@/lib/booleanSearchParser';
 import { useBackgroundExport } from '@/hooks/useBackgroundExport';
@@ -1834,6 +1835,10 @@ const Admin = () => {
                 Contracts
               </TabsTrigger>
             )}
+            <TabsTrigger value="inbox" className="flex items-center gap-2">
+              <Mail className="w-4 h-4" />
+              Inbox
+            </TabsTrigger>
             {/* Settings tab - only for super admins (mark@outsta.io) */}
             {user?.email?.toLowerCase() === 'mark@outsta.io' && (
               <TabsTrigger value="settings" className="flex items-center gap-2">
@@ -4049,6 +4054,18 @@ const Admin = () => {
               ]}
             />
             <ContractsManager />
+          </TabsContent>
+
+          <TabsContent value="inbox" className="space-y-6">
+            <AdminHeroBanner
+              eyebrow="Inbox"
+              title="Your Gmail inbox"
+              chips={[
+                "Each admin connects their own Google account",
+                "Read, search, and send email",
+              ]}
+            />
+            <GmailPanel />
           </TabsContent>
 
           <TabsContent value="settings" className="space-y-6">
