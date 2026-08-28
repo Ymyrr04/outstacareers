@@ -1180,7 +1180,11 @@ const Admin = () => {
         if (updated) {
           // Update just this one applicant in state — no full refetch
           setApplicants(prev => prev.map(a =>
-            a.id === applicant.id ? { ...a, ...updated } : a
+            a.id === applicant.id ? {
+              ...a,
+              ...updated,
+              ai_assessment_details: updated.ai_assessment_details as unknown as AssessmentDetails | null,
+            } : a
           ));
         }
       });
