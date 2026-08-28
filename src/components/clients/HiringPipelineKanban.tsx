@@ -576,7 +576,7 @@ export const HiringPipelineKanban = () => {
   }, [requests, adminUsers]);
 
   const openExportDialog = () => {
-    setExportStageSlugs(stages.map(s => s.slug));
+    setExportStageSlugs([]);
     setExportDialogOpen(true);
   };
 
