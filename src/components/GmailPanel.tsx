@@ -586,16 +586,22 @@ export default function GmailPanel() {
   const openReply = (mode: "reply" | "forward", source?: FullMessage) => {
     const src = source || selectedMessage;
     if (!src) return;
-    const quoted = [
-      "",
-      "---------- Original message ----------",
-      `From: ${src.from}`,
-      `Date: ${src.date}`,
-      `Subject: ${src.subject}`,
-      `To: ${src.to}`,
-      "",
-      htmlToPlainText(src.body),
-    ].join("\n");
+    const quoted = src.isHtml
+      ? `<br><br>---------- Original message ----------<br>` +
+        `<b>From:</b> ${src.from}<br>` +
+        `<b>Date:</b> ${src.date}<br>` +
+        `<b>Subject:</b> ${src.subject}<br>` +
+        `<b>To:</b> ${src.to}<br><br>${src.body}`
+      : [
+          "",
+          "---------- Original message ----------",
+          `From: ${src.from}`,
+          `Date: ${src.date}`,
+          `Subject: ${src.subject}`,
+          `To: ${src.to}`,
+          "",
+          htmlToPlainText(src.body),
+        ].join("\n");
     setReplyState({
       mode,
       to: mode === "reply" ? parseFrom(src.from).email : "",
