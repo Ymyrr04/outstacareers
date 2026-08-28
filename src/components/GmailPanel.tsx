@@ -646,8 +646,12 @@ export default function GmailPanel() {
         </button>
         <div className="relative">
           <button
-            onClick={() => setEmojiPickerOpen((v) => (emojiPickerTarget.current === m.id ? !v : true), )}
-            onMouseDown={() => { emojiPickerTarget.current = m.id; }}
+            onClick={() => {
+              const same = emojiPickerTarget.current === m.id;
+              emojiPickerTarget.current = m.id;
+              setEmojiPickerOpen(same ? !emojiPickerOpen : true);
+            }}
+
             data-variant="ghost"
             title="Add reaction"
             className="inline-flex items-center rounded-full border-[0.5px] border-border bg-transparent hover:bg-muted"
