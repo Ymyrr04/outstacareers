@@ -451,6 +451,63 @@ export type Database = {
         }
         Relationships: []
       }
+      cached_emails: {
+        Row: {
+          admin_email: string
+          body_html: string | null
+          body_text: string | null
+          fetched_at: string
+          id: string
+          internal_date: string | null
+          is_archived: boolean
+          is_read: boolean
+          is_starred: boolean
+          label_ids: string[] | null
+          recipient_email: string | null
+          sender_email: string | null
+          sender_name: string | null
+          snippet: string | null
+          subject: string | null
+          thread_id: string | null
+        }
+        Insert: {
+          admin_email: string
+          body_html?: string | null
+          body_text?: string | null
+          fetched_at?: string
+          id: string
+          internal_date?: string | null
+          is_archived?: boolean
+          is_read?: boolean
+          is_starred?: boolean
+          label_ids?: string[] | null
+          recipient_email?: string | null
+          sender_email?: string | null
+          sender_name?: string | null
+          snippet?: string | null
+          subject?: string | null
+          thread_id?: string | null
+        }
+        Update: {
+          admin_email?: string
+          body_html?: string | null
+          body_text?: string | null
+          fetched_at?: string
+          id?: string
+          internal_date?: string | null
+          is_archived?: boolean
+          is_read?: boolean
+          is_starred?: boolean
+          label_ids?: string[] | null
+          recipient_email?: string | null
+          sender_email?: string | null
+          sender_name?: string | null
+          snippet?: string | null
+          subject?: string | null
+          thread_id?: string | null
+        }
+        Relationships: []
+      }
       calendar_admin_colors: {
         Row: {
           color_index: number
