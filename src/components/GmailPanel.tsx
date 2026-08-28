@@ -1330,6 +1330,7 @@ function InlineCompose({
   onClose: () => void;
   onSend: (to: string, cc: string, subject: string, body: string, extra?: { attachments?: any[] }) => void;
 }) {
+  const { toast } = useToast();
   const [to, setTo] = useState(initialTo);
   const [cc, setCc] = useState("");
   const [subject, setSubject] = useState(initialSubject);
