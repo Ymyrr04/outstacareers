@@ -668,7 +668,7 @@ export default function GmailPanel() {
     const actionBar = (m: ThreadMessage) => (
       <div
         className="flex items-center gap-2 bg-card mt-4"
-        style={{ borderTop: "0.5px solid #C8F0F8", padding: "10px 14px", marginLeft: -14, marginRight: -14 }}
+        style={{ borderTop: "0.5px solid hsl(var(--border))", padding: "10px 14px", marginLeft: -14, marginRight: -14 }}
       >
         <button
           onClick={() => openReply("reply", m)}
@@ -1308,7 +1308,7 @@ function AttachmentPill({ messageId, attachment, toast }: { messageId: string; a
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs"
-      style={{ background: hover ? "#E0F7FC" : undefined }}
+      style={{ background: hover ? "hsl(var(--accent))" : undefined }}
     >
       <Paperclip className="w-3.5 h-3.5" />
       <span className="font-medium">{attachment.filename}</span>
