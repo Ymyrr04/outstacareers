@@ -27,6 +27,7 @@ import { useEmailReplies } from '@/hooks/useEmailTemplates';
 import { ClientsDashboard, ContractorsDashboard, ClientAnalyticsDashboard, HiringPipelineKanban } from '@/components/clients';
 import TeamCalendar from '@/components/calendar/TeamCalendar';
 import MyCalendarDialog from '@/components/calendar/MyCalendarDialog';
+import { useActivityReminders } from '@/hooks/useActivityReminders';
 import { SalesPipeline } from '@/components/sales/SalesPipeline';
 import { PostHirePipelineKanban } from '@/components/clients/PostHirePipelineKanban';
 import { generateJobUrl } from '@/lib/slugify';
