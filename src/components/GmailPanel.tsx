@@ -490,7 +490,11 @@ export default function GmailPanel() {
       await supabase.functions.invoke("gmail-action", { body: { action, messageId } });
       if (action === "archive" || action === "trash") {
         setMessages((prev) => prev.filter((m) => m.id !== messageId));
-        if (selectedMessage?.id === messageId) { setSelectedMessage(null); setReplyState(null); }
+        setThread((prev) => {
+          const next = (prev || []).filter((m) => m.id !== messageId);
+          return prev ? (next.length ? next : null) : prev;
+        });
+        if (selectedMessage?.id === messageId) { setSelectedMessage(null); setThread(null); setReplyState(null); }
         if (action === "archive") updateCache(messageId, { is_archived: true });
         else if (adminEmail) {
           supabase.from("cached_emails" as any).delete().eq("admin_email", adminEmail).eq("id", messageId).then(() => {});
@@ -500,6 +504,7 @@ export default function GmailPanel() {
       } else if (action === "mark-unread") {
         setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, unread: true } : m)));
         if (selectedMessage?.id === messageId) setSelectedMessage({ ...selectedMessage, unread: true });
+        setThread((prev) => prev?.map((m) => (m.id === messageId ? { ...m, unread: true } : m)) || prev);
         updateCache(messageId, { is_read: false });
         toast({ title: "Marked as unread" });
         return;
@@ -507,6 +512,7 @@ export default function GmailPanel() {
         const starred = action === "star";
         setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, starred } : m)));
         if (selectedMessage?.id === messageId) setSelectedMessage({ ...selectedMessage, starred });
+        setThread((prev) => prev?.map((m) => (m.id === messageId ? { ...m, starred } : m)) || prev);
         updateCache(messageId, { is_starred: starred });
       }
 
@@ -516,10 +522,16 @@ export default function GmailPanel() {
     }
   };
 
-  const handleSend = async (to: string, cc: string, subject: string, body: string) => {
+  const handleSend = async (
+    to: string,
+    cc: string,
+    subject: string,
+    body: string,
+    opts?: { threadId?: string; inReplyTo?: string; references?: string },
+  ) => {
     setSending(true);
     try {
-      const { error } = await supabase.functions.invoke("gmail-send", { body: { to, cc, subject, body } });
+      const { error } = await supabase.functions.invoke("gmail-send", { body: { to, cc, subject, body, ...(opts || {}) } });
       if (error) throw error;
       toast({ title: "Email sent" });
       setComposeOpen(false);
@@ -535,29 +547,31 @@ export default function GmailPanel() {
     setSearch(searchInput);
   };
 
-  const openReply = (mode: "reply" | "forward") => {
-    if (!selectedMessage) return;
+  const openReply = (mode: "reply" | "forward", source?: FullMessage) => {
+    const src = source || selectedMessage;
+    if (!src) return;
     const quoted = [
       "",
       "---------- Original message ----------",
-      `From: ${selectedMessage.from}`,
-      `Date: ${selectedMessage.date}`,
-      `Subject: ${selectedMessage.subject}`,
-      `To: ${selectedMessage.to}`,
+      `From: ${src.from}`,
+      `Date: ${src.date}`,
+      `Subject: ${src.subject}`,
+      `To: ${src.to}`,
       "",
-      htmlToPlainText(selectedMessage.body),
+      htmlToPlainText(src.body),
     ].join("\n");
     setReplyState({
       mode,
-      to: mode === "reply" ? parseFrom(selectedMessage.from).email : "",
+      to: mode === "reply" ? parseFrom(src.from).email : "",
       subject:
         mode === "reply"
-          ? selectedMessage.subject?.startsWith("Re:") ? selectedMessage.subject : `Re: ${selectedMessage.subject || ""}`
-          : `Fwd: ${selectedMessage.subject || ""}`,
+          ? src.subject?.startsWith("Re:") ? src.subject : `Re: ${src.subject || ""}`
+          : `Fwd: ${src.subject || ""}`,
       body: mode === "forward" ? quoted : "",
     });
     setEmojiPickerOpen(false);
   };
+
 
   // --- Not connected state ---
   if (connected === null) {
