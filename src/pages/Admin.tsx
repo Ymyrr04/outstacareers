@@ -304,6 +304,10 @@ const Admin = () => {
   const [openTaskCount, setOpenTaskCount] = useState(0);
   const [myCalendarOpen, setMyCalendarOpen] = useState(false);
 
+  // Reminder toast 10 minutes before each of my scheduled activities
+  useActivityReminders(user?.id);
+
+
   const fetchOpenTaskCount = useCallback(async () => {
     const { count } = await supabase
       .from('calendar_events')
