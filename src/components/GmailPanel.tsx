@@ -84,6 +84,12 @@ export default function GmailPanel() {
   const [replyState, setReplyState] = useState<null | { mode: "reply" | "forward"; to: string; subject: string; body: string }>(null);
   const [reactions, setReactions] = useState<Record<string, string>>({});
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const [polling, setPolling] = useState(false);
+  const [tokenExpired, setTokenExpired] = useState(false);
+  const lastFetchedAtRef = useRef<Date>(new Date());
+  const knownIdsRef = useRef<Set<string>>(new Set());
+  const listRef = useRef<HTMLDivElement | null>(null);
+
 
   const checkStatus = useCallback(async () => {
     try {
