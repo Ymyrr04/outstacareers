@@ -379,11 +379,33 @@ export default function GmailPanel() {
     } catch { /* best-effort */ }
   }, [adminEmail]);
 
+  const loadThread = useCallback(async (threadId?: string, anchorId?: string) => {
+    if (!threadId) return;
+    setThreadLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("gmail-thread", { body: { threadId } });
+      if (error) throw error;
+      const msgs: ThreadMessage[] = data?.messages || [];
+      if (!msgs.length) return;
+      setThread(msgs);
+      const latest = msgs[msgs.length - 1];
+      setExpandedIds(new Set([anchorId && msgs.some((m) => m.id === anchorId) ? anchorId : latest.id]));
+    } catch {
+      /* fall back to single-message view */
+    } finally {
+      setThreadLoading(false);
+    }
+  }, []);
+
   const openMessage = async (msg: MessageMeta) => {
     setMessageLoading(true);
     setSelectedMessage(null);
+    setThread(null);
+    setExpandedIds(new Set());
     setReplyState(null);
     setEmojiPickerOpen(false);
+    loadThread(msg.threadId, msg.id);
+
 
     // Optimistic read state (don't wait for Gmail)
     if (msg.unread) {
