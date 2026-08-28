@@ -107,10 +107,15 @@ export default function GmailPanel() {
         body: { origin: window.location.origin },
       });
       if (error) throw error;
-      const completion = waitForOAuthCompletion(popup);
+      const completion = waitForOAuthCode(popup);
       popup.location.href = data.authorizationUrl;
-      await completion;
+      const code = await completion;
+      const { error: completeError } = await supabase.functions.invoke("gmail-oauth-complete", {
+        body: { code },
+      });
+      if (completeError) throw completeError;
       await checkStatus();
+
       toast({ title: "Gmail connected", description: "Your inbox is now available." });
     } catch (err: any) {
       toast({ title: "Connection failed", description: err?.message ?? "Could not connect Gmail.", variant: "destructive" });
@@ -437,8 +442,8 @@ export default function GmailPanel() {
   );
 }
 
-function waitForOAuthCompletion(popup: Window) {
-  return new Promise<void>((resolve, reject) => {
+function waitForOAuthCode(popup: Window) {
+  return new Promise<string>((resolve, reject) => {
     let poll: number | undefined;
     const cleanup = () => {
       window.removeEventListener("message", onMessage);
@@ -448,13 +453,12 @@ function waitForOAuthCompletion(popup: Window) {
       const type = event.data?.type;
       if (
         event.origin !== window.location.origin ||
-        event.source !== popup ||
         event.data?.connectorId !== "google_mail" ||
-        (type !== "appUserConnectorOAuthComplete" && type !== "appUserConnectorOAuthFailed")
+        (type !== "appUserConnectorOAuthCode" && type !== "appUserConnectorOAuthFailed")
       ) return;
       cleanup();
-      if (type === "appUserConnectorOAuthComplete") {
-        resolve();
+      if (type === "appUserConnectorOAuthCode" && event.data?.code) {
+        resolve(event.data.code as string);
         return;
       }
       popup.close();
@@ -468,6 +472,7 @@ function waitForOAuthCompletion(popup: Window) {
     }, 500);
   });
 }
+
 
 function ComposeDialog({ onClose, onSend, sending }: { onClose: () => void; onSend: (to: string, cc: string, subject: string, body: string) => void; sending: boolean }) {
   const [to, setTo] = useState("");
