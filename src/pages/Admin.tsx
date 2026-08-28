@@ -4056,6 +4056,18 @@ const Admin = () => {
             <ContractsManager />
           </TabsContent>
 
+          <TabsContent value="inbox" className="space-y-6">
+            <AdminHeroBanner
+              eyebrow="Inbox"
+              title="Your Gmail inbox"
+              chips={[
+                "Each admin connects their own Google account",
+                "Read, search, and send email",
+              ]}
+            />
+            <GmailPanel />
+          </TabsContent>
+
           <TabsContent value="settings" className="space-y-6">
             <AdminHeroBanner
               eyebrow="Permissions"
