@@ -223,12 +223,18 @@ export const exportApplicants = async (options?: {
 };
 
 // Export Pipeline/Hiring Requests
-export const exportPipeline = async (): Promise<{ success: boolean; count: number; error?: string }> => {
+export const exportPipeline = async (stageSlugs?: string[]): Promise<{ success: boolean; count: number; error?: string }> => {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('client_hiring_requests')
       .select(`*, clients(company_name)`)
       .order('created_at', { ascending: false });
+
+    if (stageSlugs && stageSlugs.length > 0) {
+      query = query.in('pipeline_stage', stageSlugs);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
 

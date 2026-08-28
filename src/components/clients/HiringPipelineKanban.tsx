@@ -27,6 +27,8 @@ const ADMIN_AVATARS: Record<string, string> = {
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 import { Plus, MessageCircle, Check, Download, Upload, ArrowUpDown, Search, X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { exportPipeline } from '@/lib/exportUtils';
 import { AddHiringRequestDialog } from './AddHiringRequestDialog';
 import { HiringRequestDetailDialog } from './HiringRequestDetailDialog';
@@ -365,6 +367,9 @@ export const HiringPipelineKanban = () => {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [addStageDialogOpen, setAddStageDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportStageSlugs, setExportStageSlugs] = useState<string[]>([]);
+  const [isExporting, setIsExporting] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<HiringRequest | null>(null);
   const [addToStage, setAddToStage] = useState<string>('backlog');
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
@@ -570,12 +575,33 @@ export const HiringPipelineKanban = () => {
     return Object.values(stats);
   }, [requests, adminUsers]);
 
+  const openExportDialog = () => {
+    setExportStageSlugs(stages.map(s => s.slug));
+    setExportDialogOpen(true);
+  };
+
+  const toggleExportStage = (slug: string, checked: boolean) => {
+    setExportStageSlugs(prev =>
+      checked ? [...prev, slug] : prev.filter(s => s !== slug)
+    );
+  };
+
   const handleExport = async () => {
-    const result = await exportPipeline();
-    if (result.success) {
-      toast({ title: 'Success', description: `Exported ${result.count} pipeline requests` });
-    } else {
-      toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
+    if (exportStageSlugs.length === 0) {
+      toast({ title: 'No stages selected', description: 'Select at least one stage to export.', variant: 'destructive' });
+      return;
+    }
+    setIsExporting(true);
+    try {
+      const result = await exportPipeline(exportStageSlugs);
+      if (result.success) {
+        toast({ title: 'Success', description: `Exported ${result.count} pipeline requests` });
+        setExportDialogOpen(false);
+      } else {
+        toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
+      }
+    } finally {
+      setIsExporting(false);
     }
   };
 
@@ -671,12 +697,69 @@ export const HiringPipelineKanban = () => {
             <Upload className="w-3 h-3 mr-1.5" />
             Import
           </Button>
-          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={handleExport}>
+          <Button variant="outline" size="sm" className="h-7 text-xs" onClick={openExportDialog}>
             <Download className="w-3 h-3 mr-1.5" />
             Export
           </Button>
         </div>
       </div>
+
+      {/* Export Stage Selection Dialog */}
+      <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Export Pipeline</DialogTitle>
+            <DialogDescription>
+              Select which stages to include in the export. Only requests in the selected stages will be exported.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 py-2 max-h-64 overflow-y-auto">
+            <div className="flex items-center justify-between pb-2 border-b">
+              <span className="text-xs font-medium text-muted-foreground">
+                {exportStageSlugs.length} of {stages.length} stages selected
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 text-xs px-2"
+                onClick={() =>
+                  setExportStageSlugs(
+                    exportStageSlugs.length === stages.length ? [] : stages.map(s => s.slug)
+                  )
+                }
+              >
+                {exportStageSlugs.length === stages.length ? 'Clear all' : 'Select all'}
+              </Button>
+            </div>
+            {stages.map(stage => (
+              <label
+                key={stage.id}
+                className="flex items-center gap-2.5 rounded-md px-2 py-1.5 hover:bg-muted/50 cursor-pointer"
+              >
+                <Checkbox
+                  checked={exportStageSlugs.includes(stage.slug)}
+                  onCheckedChange={(checked) => toggleExportStage(stage.slug, checked === true)}
+                />
+                <span className="text-sm">
+                  {stage.name}{stage.emoji && ` ${stage.emoji}`}
+                </span>
+                <Badge variant="secondary" className="ml-auto text-xs">
+                  {(requestsByStage[stage.slug] || []).length}
+                </Badge>
+              </label>
+            ))}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" size="sm" onClick={() => setExportDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button size="sm" onClick={handleExport} disabled={isExporting || exportStageSlugs.length === 0}>
+              <Download className="w-3 h-3 mr-1.5" />
+              {isExporting ? 'Exporting...' : 'Export Selected'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       <DragDropContext onDragEnd={handleDragEnd}>
         <div className="flex gap-4 px-4 pt-2 pb-4 overflow-x-auto h-[calc(100vh-160px)]">
           {stages.map(stage => {
