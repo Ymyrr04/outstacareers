@@ -1248,6 +1248,61 @@ function DraftStatus({ state, savedAt }: { state: "idle" | "saving" | "saved" | 
 }
 
 
+function AttachmentPill({ messageId, attachment }: { messageId: string; attachment: { filename: string; size: number; mimeType: string; attachmentId: string } }) {
+  const [state, setState] = useState<"idle" | "loading" | "done">("idle");
+  const [hover, setHover] = useState(false);
+
+  const download = async () => {
+    if (state === "loading") return;
+    setState("loading");
+    try {
+      const { data, error } = await supabase.functions.invoke("gmail-attachment", {
+        body: { messageId, attachmentId: attachment.attachmentId },
+      });
+      if (error) throw error;
+      const b64 = String(data?.data || "").replace(/-/g, "+").replace(/_/g, "/");
+      const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+      const bin = atob(padded);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], { type: data?.mimeType || attachment.mimeType || "application/octet-stream" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = data?.filename || attachment.filename || "attachment";
+      a.click();
+      URL.revokeObjectURL(url);
+      setState("done");
+      setTimeout(() => setState("idle"), 2000);
+    } catch {
+      setState("idle");
+      toast.error("Could not download attachment");
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={download}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs"
+      style={{ background: hover ? "#E0F7FC" : undefined }}
+    >
+      <Paperclip className="w-3.5 h-3.5" />
+      <span className="font-medium">{attachment.filename}</span>
+      <span className="text-muted-foreground">{(attachment.size / 1024).toFixed(0)}KB</span>
+      {state === "loading" ? (
+        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+      ) : state === "done" ? (
+        <Check className="w-3.5 h-3.5 text-emerald-500" />
+      ) : (
+        <Download className="w-3.5 h-3.5" style={{ color: hover ? "#0ABEDF" : "hsl(var(--muted-foreground))" }} />
+      )}
+    </button>
+  );
+}
+
 function htmlToPlainText(html: string): string {
   const el = document.createElement("div");
   el.innerHTML = html;
