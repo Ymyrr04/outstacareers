@@ -982,20 +982,20 @@ export default function GmailPanel() {
                   {msg.starred ? <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" /> : <Star className="w-3.5 h-3.5 text-gray-300" />}
                 </button>
                 <div className="flex-shrink-0 w-32">
-                  <div className={`text-xs truncate ${msg.unread ? "font-semibold text-foreground" : "text-muted-foreground"}`}>
+                  <div className={`text-xs truncate ${msg.unread ? "font-semibold text-foreground" : "font-medium text-foreground/80"}`}>
                     {folder === "SENT" ? msg.to?.split(",")[0] : displayName}
                   </div>
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs truncate">
                     {folder === "DRAFT" && <span className="text-red-500 font-medium mr-1.5">Draft</span>}
-                    <span className={msg.unread ? "text-foreground" : "text-muted-foreground"}>
+                    <span className={msg.unread ? "font-medium text-foreground" : "text-foreground/70"}>
                       {msg.subject || "(no subject)"}
                     </span>
-                    <span className="text-muted-foreground/60 ml-1.5">— {msg.snippet}</span>
+                    <span className="text-foreground/50 ml-1.5">— {msg.snippet}</span>
                   </div>
                 </div>
-                <div className="flex-shrink-0 text-[10px] text-muted-foreground">
+                <div className="flex-shrink-0 text-[10px] text-foreground/60 font-medium">
                   {formatDate(msg.date || "")}
                 </div>
               </div>
