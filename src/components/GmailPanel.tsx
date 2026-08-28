@@ -786,9 +786,9 @@ export default function GmailPanel() {
                       >
                         {initialsOf(name, email)}
                       </span>
-                      <span className="text-xs font-medium flex-shrink-0 max-w-[140px] truncate">{name || email}</span>
-                      <span className="text-xs text-muted-foreground truncate flex-1">{m.snippet}</span>
-                      <span className="text-[10px] text-muted-foreground flex-shrink-0">{formatDate(m.date || "")}</span>
+                       <span className="text-xs font-semibold text-foreground flex-shrink-0 max-w-[140px] truncate">{name || email}</span>
+                       <span className="text-xs text-foreground/60 truncate flex-1">{m.snippet}</span>
+                       <span className="text-[10px] text-foreground/60 font-medium flex-shrink-0">{formatDate(m.date || "")}</span>
                     </button>
                   ) : (
                     <div className="py-4 animate-in fade-in duration-200">
