@@ -413,7 +413,7 @@ export default function GmailPanel() {
         supabase.functions.invoke("gmail-message", { body: { messageId: msg.id } }),
         supabase.functions.invoke("gmail-draft", { body: { action: "list-drafts" } }),
       ]);
-      const match = (list?.drafts || []).find((d: any) => d.messageId === msg.id);
+      const match = (list?.drafts || []).find((d: any) => d.subject === msg.subject || d.messageId === msg.id);
       setDraftInitial({
         to: full?.to || msg.to || "",
         cc: full?.cc || "",
