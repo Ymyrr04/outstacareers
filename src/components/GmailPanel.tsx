@@ -844,21 +844,14 @@ export default function GmailPanel() {
           </div>
         </div>
 
-        {/* Reply / Forward compose box — always at the bottom of the thread */}
+        {/* Reply / Forward compose box — only when the user clicks Reply or Forward */}
+        {replyState && (
         <InlineCompose
-          key={`${replyState?.mode || "reply"}-${latest.id}`}
-          mode={replyState?.mode || "reply"}
-          initialTo={replyState ? replyState.to : parseFrom(latest.from).email}
-          initialSubject={
-            replyState
-              ? replyState.subject
-              : (subject.startsWith("Re:") ? subject : `Re: ${subject}`)
-          }
-          initialBody={
-            replyState
-              ? replyState.body
-              : ["", "---------- Original message ----------", `From: ${latest.from}`, `Date: ${latest.date}`, "", htmlToPlainText(latest.body)].join("\n")
-          }
+          key={`${replyState.mode}-${latest.id}`}
+          mode={replyState.mode}
+          initialTo={replyState.to}
+          initialSubject={replyState.subject}
+          initialBody={replyState.body}
           sending={sending}
           onClose={() => setReplyState(null)}
           onSend={async (to, cc, subj, body, extra) => {
@@ -872,6 +865,8 @@ export default function GmailPanel() {
             setReplyState(null);
           }}
         />
+        )}
+
 
         {composeOpen && (
           <ComposeDialog onClose={() => { setComposeOpen(false); setDraftInitial(null); }} onSend={handleSend} sending={sending} initial={draftInitial || undefined} />
