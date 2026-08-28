@@ -1280,8 +1280,7 @@ function AttachmentPill({ messageId, attachment, toast }: { messageId: string; a
       setTimeout(() => setState("idle"), 2000);
     } catch {
       setState("idle");
-      // eslint-disable-next-line no-alert
-      console.error("Attachment download failed");
+      toast({ title: "Download failed", description: "Could not download attachment.", variant: "destructive" });
     }
   };
 
