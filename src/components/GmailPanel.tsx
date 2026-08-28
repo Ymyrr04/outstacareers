@@ -40,6 +40,24 @@ interface FullMessage {
   labelIds: string[];
 }
 
+interface ThreadMessage extends FullMessage {
+  messageIdHeader?: string;
+  references?: string;
+  internalDate?: number | null;
+}
+
+const AVATAR_COLORS = ["#0ABEDF", "#7C5CFF", "#F2994A", "#27AE60", "#EB5757", "#2D9CDB", "#BB6BD9"];
+function avatarStyle(seed: string) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return { backgroundColor: AVATAR_COLORS[h % AVATAR_COLORS.length] };
+}
+function initialsOf(name: string, email: string) {
+  const src = (name || email || "?").trim();
+  const parts = src.split(/[\s.@]+/).filter(Boolean);
+  return ((parts[0]?.[0] || "?") + (parts[1]?.[0] || "")).toUpperCase();
+}
+
 type Folder = "INBOX" | "SENT" | "DRAFT" | "STARRED" | "TRASH";
 
 const FOLDERS: { value: Folder; label: string; icon: typeof Inbox }[] = [
