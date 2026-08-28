@@ -107,10 +107,15 @@ export default function GmailPanel() {
         body: { origin: window.location.origin },
       });
       if (error) throw error;
-      const completion = waitForOAuthCompletion(popup);
+      const completion = waitForOAuthCode(popup);
       popup.location.href = data.authorizationUrl;
-      await completion;
+      const code = await completion;
+      const { error: completeError } = await supabase.functions.invoke("gmail-oauth-complete", {
+        body: { code },
+      });
+      if (completeError) throw completeError;
       await checkStatus();
+
       toast({ title: "Gmail connected", description: "Your inbox is now available." });
     } catch (err: any) {
       toast({ title: "Connection failed", description: err?.message ?? "Could not connect Gmail.", variant: "destructive" });
