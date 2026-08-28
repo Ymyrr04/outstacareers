@@ -409,6 +409,13 @@ const Admin = () => {
     if (urlTab && validTabs.includes(urlTab)) return urlTab;
     return 'jobs';
   });
+  const [gmailUnreadCount, setGmailUnreadCount] = useState(0);
+  useEffect(() => {
+    const handler = (e: Event) => setGmailUnreadCount((e as CustomEvent).detail || 0);
+    window.addEventListener('gmail-unread-count', handler);
+    return () => window.removeEventListener('gmail-unread-count', handler);
+  }, []);
+
   const [isTabSwitching, startTabTransition] = useTransition();
   const [showDelayedLoader, setShowDelayedLoader] = useState(false);
   const [manualTabLoading, setManualTabLoading] = useState(false);
@@ -1838,7 +1845,16 @@ const Admin = () => {
             <TabsTrigger value="inbox" className="flex items-center gap-2">
               <Mail className="w-4 h-4" />
               Inbox
+              {gmailUnreadCount > 0 && (
+                <span
+                  className="ml-1 inline-flex items-center justify-center min-w-[16px] px-1.5 py-0.5 text-white"
+                  style={{ background: '#0ABEDF', fontSize: '9px', borderRadius: '8px' }}
+                >
+                  {gmailUnreadCount}
+                </span>
+              )}
             </TabsTrigger>
+
             {/* Settings tab - only for super admins (mark@outsta.io) */}
             {user?.email?.toLowerCase() === 'mark@outsta.io' && (
               <TabsTrigger value="settings" className="flex items-center gap-2">
