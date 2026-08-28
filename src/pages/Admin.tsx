@@ -1834,6 +1834,10 @@ const Admin = () => {
                 Contracts
               </TabsTrigger>
             )}
+            <TabsTrigger value="inbox" className="flex items-center gap-2">
+              <Mail className="w-4 h-4" />
+              Inbox
+            </TabsTrigger>
             {/* Settings tab - only for super admins (mark@outsta.io) */}
             {user?.email?.toLowerCase() === 'mark@outsta.io' && (
               <TabsTrigger value="settings" className="flex items-center gap-2">
