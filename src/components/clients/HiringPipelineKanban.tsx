@@ -367,6 +367,9 @@ export const HiringPipelineKanban = () => {
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [addStageDialogOpen, setAddStageDialogOpen] = useState(false);
   const [importDialogOpen, setImportDialogOpen] = useState(false);
+  const [exportDialogOpen, setExportDialogOpen] = useState(false);
+  const [exportStageSlugs, setExportStageSlugs] = useState<string[]>([]);
+  const [isExporting, setIsExporting] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<HiringRequest | null>(null);
   const [addToStage, setAddToStage] = useState<string>('backlog');
   const [adminUsers, setAdminUsers] = useState<AdminUser[]>([]);
