@@ -19,12 +19,14 @@ function header(v: string): string {
   return /^[\x00-\x7F]*$/.test(v) ? v : `=?UTF-8?B?${b64(v)}?=`;
 }
 
-function createRawEmail(to: string, cc: string, bcc: string, subject: string, body: string): string {
+function createRawEmail(to: string, cc: string, bcc: string, subject: string, body: string, inReplyTo = "", references = ""): string {
   const email = [
     to ? `To: ${to}` : "",
     cc ? `Cc: ${cc}` : "",
     bcc ? `Bcc: ${bcc}` : "",
     `Subject: ${header(subject)}`,
+    inReplyTo ? `In-Reply-To: ${inReplyTo}` : "",
+    references ? `References: ${references}` : "",
     "MIME-Version: 1.0",
     "Content-Type: text/html; charset=\"UTF-8\"",
     "",
@@ -32,6 +34,7 @@ function createRawEmail(to: string, cc: string, bcc: string, subject: string, bo
   ].filter(Boolean).join("\r\n");
   return b64(email).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
+
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
