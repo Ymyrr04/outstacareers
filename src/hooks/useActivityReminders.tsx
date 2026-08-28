@@ -5,6 +5,21 @@ import { todayET, nowMinutesET, formatMinutes } from '@/lib/calendarTime';
 
 const REMINDER_LEAD_MINUTES = 10;
 const POLL_MS = 30_000;
+const DISMISS_KEY = 'activity-reminders-dismissed';
+
+const loadDismissed = (): Set<string> => {
+  try {
+    return new Set(JSON.parse(localStorage.getItem(DISMISS_KEY) || '[]'));
+  } catch {
+    return new Set();
+  }
+};
+
+const dismissReminder = (key: string) => {
+  const dismissed = loadDismissed();
+  dismissed.add(key);
+  localStorage.setItem(DISMISS_KEY, JSON.stringify([...dismissed]));
+};
 
 interface ReminderEvent {
   id: string;
@@ -37,16 +52,21 @@ export const useActivityReminders = (currentUserId?: string) => {
       if (error || cancelled || !data) return;
 
       const now = nowMinutesET();
+      const dismissed = loadDismissed();
       (data as unknown as ReminderEvent[]).forEach((ev) => {
         if (ev.is_done || ev.time_tbd || ev.start_time == null) return;
         const key = `${day}:${ev.id}`;
-        if (notified.current.has(key)) return;
+        if (notified.current.has(key) || dismissed.has(key)) return;
         const diff = ev.start_time - now;
         if (diff > REMINDER_LEAD_MINUTES || diff < 0) return;
         notified.current.add(key);
         toast(`Starting in ${diff <= 0 ? 'a moment' : `${diff} min`}: ${ev.title}`, {
           description: `Scheduled at ${formatMinutes(ev.start_time)} ET`,
           duration: 15000,
+          action: {
+            label: "Don't show again",
+            onClick: () => dismissReminder(key),
+          },
         });
       });
     };
