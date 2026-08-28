@@ -49,10 +49,18 @@ Deno.serve(async (req) => {
 
     const connectionAPIKey = await getConnectionKeyForUser(userId, CONNECTOR_ID);
 
+    // Older attempts used the raw auth user ID. If OAuth completed upstream but
+    // the one-time code was never saved, the gateway remembers that identity as
+    // a reconnect while we no longer have the lovack_* key required to resume it.
+    // Use a stable connector-scoped identity for fresh connections so that
+    // orphaned legacy attempts do not permanently block this admin. Existing
+    // working connections continue to reconnect with their stored key.
+    const appUserId = connectionAPIKey ? userId : `${userId}:google_mail:v2`;
+
     const { authorizationUrl } = await authorizeAppUserOAuth({
       gatewayBaseUrl: GATEWAY_BASE_URL,
       connectorId: CONNECTOR_ID,
-      appUserId: userId,
+      appUserId,
       clientAPIKey,
       returnUrl,
       connectionAPIKey: connectionAPIKey ?? undefined,
