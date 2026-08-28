@@ -32,6 +32,7 @@ import ClientPortalChangePassword from "./pages/ClientPortalChangePassword";
 import ClientPortalDashboard from "./pages/ClientPortalDashboard";
 import ClientPortalSetup from "./pages/ClientPortalSetup";
 import ClientPortalResetPassword from "./pages/ClientPortalResetPassword";
+import GmailOAuthReturn from "./pages/GmailOAuthReturn";
 import DomainGuard from "./components/DomainGuard";
 import DesignPreviewToggle from "./components/DesignPreviewToggle";
 
