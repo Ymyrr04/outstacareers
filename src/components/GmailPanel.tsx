@@ -1114,7 +1114,7 @@ function InlineCompose({
   const [to, setTo] = useState(initialTo);
   const [cc, setCc] = useState("");
   const [subject, setSubject] = useState(initialSubject);
-  const [body, setBody] = useState(initialBody);
+  const [body, setBody] = useState(() => plainTextToHtml(initialBody));
 
   return (
     <div className="rounded-lg border border-cyan-100 bg-white overflow-hidden">
