@@ -136,7 +136,7 @@ export function RecipientInput({
           className="absolute left-0 right-0 top-full mt-1 overflow-auto"
           style={{
             background: "#ffffff",
-            border: "0.5px solid #C8F0F8",
+            border: "0.5px solid hsl(var(--border))",
             borderRadius: 8,
             boxShadow: "0 4px 12px rgba(0,0,0,0.08)",
             zIndex: 50,
@@ -151,7 +151,7 @@ export function RecipientInput({
               onClick={() => select(c)}
               onMouseEnter={() => setHighlight(i)}
               className="w-full flex items-center gap-2 px-2 py-1.5 text-left"
-              style={{ background: i === highlight ? "#E0F7FC" : "transparent" }}
+              style={{ background: i === highlight ? "hsl(var(--accent))" : "transparent" }}
             >
               <span
                 className="flex items-center justify-center rounded-full text-white shrink-0"

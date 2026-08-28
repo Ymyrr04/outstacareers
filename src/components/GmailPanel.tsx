@@ -627,7 +627,7 @@ export default function GmailPanel() {
   if (!connected) {
     return (
       <div className="flex flex-col items-center justify-center py-24 gap-4">
-        <div className="w-16 h-16 rounded-full bg-cyan-50 flex items-center justify-center">
+        <div className="w-16 h-16 rounded-full bg-muted flex items-center justify-center">
           <Mail className="w-8 h-8 text-cyan-600" />
         </div>
         <div className="text-center">
@@ -667,8 +667,8 @@ export default function GmailPanel() {
 
     const actionBar = (m: ThreadMessage) => (
       <div
-        className="flex items-center gap-2 bg-white mt-4"
-        style={{ borderTop: "0.5px solid #C8F0F8", padding: "10px 14px", marginLeft: -14, marginRight: -14 }}
+        className="flex items-center gap-2 bg-card mt-4"
+        style={{ borderTop: "0.5px solid hsl(var(--border))", padding: "10px 14px", marginLeft: -14, marginRight: -14 }}
       >
         <button
           onClick={() => openReply("reply", m)}
@@ -702,7 +702,7 @@ export default function GmailPanel() {
             <Smile className="w-3.5 h-3.5" />
           </button>
           {emojiPickerOpen && emojiPickerTarget.current === m.id && (
-            <div className="absolute left-0 top-full mt-1 z-10 flex gap-1 rounded-full border border-cyan-100 bg-white px-2 py-1.5 shadow-md">
+            <div className="absolute left-0 top-full mt-1 z-10 flex gap-1 rounded-full border border-border bg-card px-2 py-1.5 shadow-md">
               {["👍", "❤️", "😂", "😮", "😢", "🙏"].map((e) => (
                 <button
                   key={e}
@@ -771,7 +771,7 @@ export default function GmailPanel() {
           </button>
         </div>
 
-        <div className="rounded-lg border border-cyan-100 bg-white">
+        <div className="rounded-lg border border-border bg-card">
           {/* Thread header */}
           <div className="px-5 pt-5 pb-3">
             <h2 style={{ fontSize: "18px", fontWeight: 600 }} className="leading-snug">{subject}</h2>
@@ -787,7 +787,7 @@ export default function GmailPanel() {
           )}
 
           {/* Messages */}
-          <div className="divide-y divide-gray-100 border-t border-gray-100">
+          <div className="divide-y divide-border border-t border-border">
             {threadMessages.map((m) => {
               const { name, email } = parseFrom(m.from || "");
               const expanded = isExpanded(m.id);
@@ -796,7 +796,7 @@ export default function GmailPanel() {
                   {!expanded ? (
                     <button
                       onClick={() => toggleExpanded(m.id)}
-                      className="w-full flex items-center gap-3 text-left hover:bg-cyan-50/30 transition-colors rounded-md px-1"
+                      className="w-full flex items-center gap-3 text-left hover:bg-muted/40 transition-colors rounded-md px-1"
                       style={{ height: 44 }}
                     >
                       <span
@@ -847,7 +847,7 @@ export default function GmailPanel() {
 
                           {reactions[m.id] && (
                             <div className="mt-3">
-                              <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full border border-cyan-100 bg-cyan-50/40 text-base leading-none">
+                              <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full border border-border bg-muted/40 text-base leading-none">
                                 {reactions[m.id]}
                               </span>
                             </div>
@@ -925,7 +925,7 @@ export default function GmailPanel() {
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
             placeholder="Search mail…"
-            className="pl-8 pr-3 h-8 text-xs rounded-md border border-cyan-100 bg-white w-48 focus:outline-none focus:ring-2 focus:ring-cyan-50"
+            className="pl-8 pr-3 h-8 text-xs rounded-md border border-border bg-card w-48 focus:outline-none focus:ring-2 focus:ring-cyan-50"
           />
         </form>
         <button
@@ -949,7 +949,7 @@ export default function GmailPanel() {
 
       {/* Token expired banner */}
       {tokenExpired && (
-        <div className="flex items-center justify-between gap-3 rounded-lg border border-cyan-100 bg-cyan-50/50 px-3 py-2">
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/50 px-3 py-2">
           <span className="text-xs text-foreground">Your Gmail connection needs to be renewed.</span>
           <button
             onClick={handleConnect}
@@ -974,7 +974,7 @@ export default function GmailPanel() {
       </div>
 
       {/* Message list */}
-      <div ref={listRef} className="rounded-lg border border-cyan-100 bg-white divide-y divide-gray-50 max-h-[70vh] overflow-y-auto">
+      <div ref={listRef} className="rounded-lg border border-border bg-card divide-y divide-border max-h-[70vh] overflow-y-auto">
 
         {loading && messages.length === 0 ? (
           <div className="flex items-center justify-center py-16">
@@ -993,13 +993,13 @@ export default function GmailPanel() {
               <div
                 key={msg.id}
                 onClick={() => (folder === "DRAFT" ? openDraft(msg) : openMessage(msg))}
-                className={`flex items-start gap-3 px-4 py-2.5 cursor-pointer hover:bg-cyan-50/30 transition-colors ${msg.unread ? "font-medium" : ""}`}
+                className={`flex items-start gap-3 px-4 py-2.5 cursor-pointer hover:bg-muted/40 transition-colors ${msg.unread ? "font-medium" : ""}`}
               >
                 <button
                   onClick={(e) => { e.stopPropagation(); handleAction(msg.starred ? "unstar" : "star", msg.id); }}
                   className="mt-0.5 flex-shrink-0"
                 >
-                  {msg.starred ? <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" /> : <Star className="w-3.5 h-3.5 text-gray-300" />}
+                  {msg.starred ? <Star className="w-3.5 h-3.5 text-amber-400 fill-amber-400" /> : <Star className="w-3.5 h-3.5 text-muted-foreground" />}
                 </button>
                 <div className="flex-shrink-0 w-32">
                   <div className={`text-xs truncate ${msg.unread ? "font-bold text-foreground" : "font-semibold text-foreground"}`}>
@@ -1190,14 +1190,14 @@ function ComposeDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={closeWithSave}>
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
+      <div className="bg-card rounded-lg shadow-xl w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 py-3 border-b">
           <h3 className="text-sm font-semibold">{initial?.draftId ? "Draft" : "New message"}</h3>
           <button onClick={closeWithSave} className="p-1 rounded-md hover:bg-muted"><X className="w-4 h-4" /></button>
         </div>
 
         {recovery && (
-          <div className="flex items-center justify-between gap-3 px-4 py-2 bg-cyan-50/60 border-b border-cyan-100">
+          <div className="flex items-center justify-between gap-3 px-4 py-2 bg-muted/50 border-b border-border">
             <span className="text-xs">You have an unsaved draft</span>
             <span className="flex items-center gap-2">
               <button
@@ -1220,10 +1220,10 @@ function ComposeDialog({
         )}
 
         <div className="p-4 space-y-2">
-          <RecipientInput value={to} onChange={setTo} placeholder="To" className="w-full px-3 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
-          <RecipientInput value={cc} onChange={setCc} placeholder="Cc" className="w-full px-3 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
+          <RecipientInput value={to} onChange={setTo} placeholder="To" className="w-full px-3 py-1.5 text-sm border-b border-border focus:outline-none focus:border-cyan-400" />
+          <RecipientInput value={cc} onChange={setCc} placeholder="Cc" className="w-full px-3 py-1.5 text-sm border-b border-border focus:outline-none focus:border-cyan-400" />
 
-          <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className="w-full px-3 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
+          <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className="w-full px-3 py-1.5 text-sm border-b border-border focus:outline-none focus:border-cyan-400" />
           <RichTextEditor
             key={recovery ? "pristine" : "editing"}
             value={body}
@@ -1308,7 +1308,7 @@ function AttachmentPill({ messageId, attachment, toast }: { messageId: string; a
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}
       className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs"
-      style={{ background: hover ? "#E0F7FC" : undefined }}
+      style={{ background: hover ? "hsl(var(--accent))" : undefined }}
     >
       <Paperclip className="w-3.5 h-3.5" />
       <span className="font-medium">{attachment.filename}</span>
@@ -1358,16 +1358,16 @@ function InlineCompose({
   const totalSize = files.reduce((s, f) => s + f.file.size, 0);
 
   return (
-    <div className="rounded-lg border border-cyan-100 bg-white overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-2 border-b border-gray-100 bg-cyan-50/40">
+    <div className="rounded-lg border border-border bg-card overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-2 border-b border-border bg-muted/40">
         <span className="text-xs font-medium text-muted-foreground">{mode === "reply" ? "Reply" : "Forward"}</span>
         <button onClick={onClose} className="p-1 rounded-md hover:bg-muted"><X className="w-3.5 h-3.5" /></button>
       </div>
       <div className="px-4 py-2 space-y-0">
-        <RecipientInput value={to} onChange={setTo} placeholder="To" className="w-full px-0 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
-        <RecipientInput value={cc} onChange={setCc} placeholder="Cc" className="w-full px-0 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
+        <RecipientInput value={to} onChange={setTo} placeholder="To" className="w-full px-0 py-1.5 text-sm border-b border-border focus:outline-none focus:border-cyan-400" />
+        <RecipientInput value={cc} onChange={setCc} placeholder="Cc" className="w-full px-0 py-1.5 text-sm border-b border-border focus:outline-none focus:border-cyan-400" />
 
-        <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className="w-full px-0 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
+        <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className="w-full px-0 py-1.5 text-sm border-b border-border focus:outline-none focus:border-cyan-400" />
         <div className="pt-2">
           <RichTextEditor
             value={body}
@@ -1383,7 +1383,7 @@ function InlineCompose({
         </div>
 
       </div>
-      <div className="flex items-center justify-end gap-2 px-4 py-2.5 border-t border-gray-100">
+      <div className="flex items-center justify-end gap-2 px-4 py-2.5 border-t border-border">
         <button onClick={onClose} data-variant="ghost" className="px-3 py-1.5 text-xs rounded-md hover:bg-muted">Discard</button>
         <button
           onClick={async () => {
@@ -1414,7 +1414,7 @@ function MessageBody({ body, isHtml }: { body: string; isHtml: boolean }) {
     const clean = DOMPurify.sanitize(body, { USE_PROFILES: { html: true }, ADD_ATTR: ["target"] });
     return (
       <div
-        className="gmail-body text-sm leading-relaxed break-words [&_a]:text-cyan-600 [&_a]:underline [&_img]:max-w-full [&_img]:h-auto [&_blockquote]:border-l-2 [&_blockquote]:border-gray-200 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_table]:max-w-full [&_p]:my-2"
+        className="gmail-body text-sm leading-relaxed break-words [&_a]:text-[hsl(var(--brand))] [&_a]:underline [&_img]:max-w-full [&_img]:h-auto [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_table]:max-w-full [&_p]:my-2"
         dangerouslySetInnerHTML={{ __html: clean }}
       />
     );
@@ -1445,13 +1445,13 @@ function MessageBody({ body, isHtml }: { body: string; isHtml: boolean }) {
         <div className="mt-2">
           <button
             onClick={() => setShowQuoted((v) => !v)}
-            className="px-2 py-0.5 rounded bg-muted text-muted-foreground hover:bg-gray-200 text-xs leading-none"
+            className="px-2 py-0.5 rounded bg-muted text-muted-foreground hover:bg-muted text-xs leading-none"
             title={showQuoted ? "Hide quoted text" : "Show quoted text"}
           >
             •••
           </button>
           {showQuoted && (
-            <pre className="mt-2 whitespace-pre-wrap break-words font-sans border-l-2 border-gray-200 pl-3 text-muted-foreground">
+            <pre className="mt-2 whitespace-pre-wrap break-words font-sans border-l-2 border-border pl-3 text-muted-foreground">
               {quoted.replace(/^> ?/gm, "")}
             </pre>
           )}

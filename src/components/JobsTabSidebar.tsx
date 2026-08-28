@@ -50,7 +50,7 @@ export const JobsTabSidebar = () => {
   return (
     <div className="w-[200px] flex-shrink-0">
       {/* Today's activities */}
-      <div className="bg-white border-[0.5px] border-[#C8F0F8] rounded-[10px] p-3">
+      <div className="bg-card border-[0.5px] border-border rounded-[10px] p-3">
         <h3 className="text-[11px] font-medium mb-2">Today's activities</h3>
         {events.length === 0 ? (
           <p className="text-[10px] text-muted-foreground">No activities today</p>

@@ -734,3 +734,20 @@ html:not(.dark) .admin-shell .list-row-chevron {
   pointer-events: none;
   color: #9CA3AF;
 }
+
+/* ---------- Dark mode readability ---------- */
+/* Incoming email HTML assumes a light background, so keep the rendered body
+   on a light surface with dark text even when the app is in dark mode. */
+.dark .gmail-body {
+  background: #ffffff;
+  color: #111827;
+  border-radius: 8px;
+  padding: 10px 12px;
+}
+.dark .gmail-body * { color: inherit; }
+.dark .gmail-body a { color: #0369a1; }
+
+/* TipTap compose editor placeholder + links in dark mode */
+.dark .gmail-compose-editor p.is-editor-empty:first-child::before {
+  color: hsl(var(--muted-foreground));
+}
