@@ -180,6 +180,73 @@ export default function GmailPanel() {
     if (connected) fetchMessages(true);
   }, [connected, folder, search]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // --- Background polling for new mail (does not touch existing fetch logic) ---
+  const pollMessages = useCallback(async () => {
+    if (!connected || folder !== "INBOX" || search) return;
+    setPolling(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("gmail-inbox", {
+        body: { maxResults: 25, labelIds: "INBOX" },
+      });
+      if (error) throw error;
+      const incoming: MessageMeta[] = data.messages || [];
+      if (!incoming.length) return;
+      setTokenExpired(false);
+
+      const known = knownIdsRef.current;
+      const fresh = incoming.filter((m) => !known.has(m.id));
+      const lastAt = lastFetchedAtRef.current;
+      const newerThanLastFetch = fresh.filter((m) => {
+        if (!m.date) return true;
+        const t = new Date(m.date).getTime();
+        return isNaN(t) ? true : t >= lastAt.getTime() - 60000;
+      });
+
+      if (fresh.length) {
+        setMessages((prev) => {
+          const map = new Map(prev.map((m) => [m.id, m]));
+          incoming.forEach((m) => map.set(m.id, { ...(map.get(m.id) || {}), ...m }));
+          const merged = Array.from(map.values());
+          const order = new Map(incoming.map((m, i) => [m.id, i]));
+          merged.sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999));
+          return merged;
+        });
+        const count = newerThanLastFetch.length || fresh.length;
+        toast({
+          title: `${count} new email${count > 1 ? "s" : ""}`,
+          className: "bg-[#0ABEDF] text-white border-0",
+        });
+        listRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+      }
+      incoming.forEach((m) => known.add(m.id));
+      lastFetchedAtRef.current = new Date();
+    } catch (err: any) {
+      // Silent failure — retry on next interval
+      if (err?.context?.status === 401) setTokenExpired(true);
+    } finally {
+      setPolling(false);
+    }
+  }, [connected, folder, search, toast]);
+
+  useEffect(() => {
+    if (!connected) return;
+    const interval = setInterval(() => { pollMessages(); }, 60000);
+    return () => clearInterval(interval);
+  }, [connected, pollMessages]);
+
+  // Track known ids from any fetch so polling only flags genuinely new mail
+  useEffect(() => {
+    messages.forEach((m) => knownIdsRef.current.add(m.id));
+  }, [messages]);
+
+  // Publish unread count for the Inbox nav badge
+  useEffect(() => {
+    if (folder !== "INBOX") return;
+    const count = messages.filter((m) => m.unread).length;
+    window.dispatchEvent(new CustomEvent("gmail-unread-count", { detail: count }));
+  }, [messages, folder]);
+
+
   const openMessage = async (msg: MessageMeta) => {
     setMessageLoading(true);
     setSelectedMessage(null);
