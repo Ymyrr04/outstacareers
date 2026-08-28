@@ -1,20 +1,21 @@
 import { useEffect, useState } from "react";
-import { supabase } from "@/integrations/supabase/client";
 
 // OAuth return route for the Gmail App User Connector popup.
-// The gateway 302s here with ?success=true&code=...  We forward only the
-// one-time code to the completion edge function, then signal the opener.
+// The gateway 302s here with ?success=true&code=...  The popup does NOT call
+// the edge function itself (it may not carry the admin session, e.g. inside the
+// Lovable preview). It forwards the one-time code to the opener, which
+// exchanges it with an authenticated request.
 export default function GmailOAuthReturn() {
   const [message, setMessage] = useState("Finishing Gmail connection…");
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const notifyOpener = (
-      type: "appUserConnectorOAuthComplete" | "appUserConnectorOAuthFailed",
-      reason?: string,
+      type: "appUserConnectorOAuthCode" | "appUserConnectorOAuthFailed",
+      payload?: { code?: string; reason?: string },
     ) => {
       window.opener?.postMessage(
-        { type, connectorId: "google_mail", reason },
+        { type, connectorId: "google_mail", ...payload },
         window.location.origin,
       );
       setTimeout(() => window.close(), 300);
@@ -23,37 +24,25 @@ export default function GmailOAuthReturn() {
     if (params.get("success") !== "true") {
       const err = params.get("error") ?? "OAuth did not complete.";
       setMessage(err);
-      notifyOpener("appUserConnectorOAuthFailed", err);
+      notifyOpener("appUserConnectorOAuthFailed", { reason: err });
       return;
     }
 
     const code = params.get("code");
     if (!code) {
-      if (params.get("offline_access_allowed") === "false") {
-        const reason =
-          "A workspace admin must enable offline access on the Gmail App User Connector client.";
-        setMessage(reason);
-        notifyOpener("appUserConnectorOAuthFailed", reason);
-        return;
-      }
-      setMessage("OAuth completed without an exchange code.");
-      notifyOpener("appUserConnectorOAuthFailed");
+      const reason =
+        params.get("offline_access_allowed") === "false"
+          ? "A workspace admin must enable offline access on the Gmail App User Connector client."
+          : "OAuth completed without an exchange code.";
+      setMessage(reason);
+      notifyOpener("appUserConnectorOAuthFailed", { reason });
       return;
     }
 
-    void supabase.functions
-      .invoke("gmail-oauth-complete", { body: { code } })
-      .then(({ error }) => {
-        if (error) throw error;
-        setMessage("Gmail connected!");
-        notifyOpener("appUserConnectorOAuthComplete");
-      })
-      .catch((err) => {
-        const reason = err?.message ?? "Could not finish the connection.";
-        setMessage(reason);
-        notifyOpener("appUserConnectorOAuthFailed", reason);
-      });
+    setMessage("Gmail authorized! Finishing up…");
+    notifyOpener("appUserConnectorOAuthCode", { code });
   }, []);
+
 
   return (
     <div className="flex flex-col items-center justify-center min-h-screen gap-3 p-8 text-center">
