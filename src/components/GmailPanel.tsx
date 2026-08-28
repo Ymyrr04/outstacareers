@@ -1126,8 +1126,9 @@ function InlineCompose({
         <button onClick={onClose} className="p-1 rounded-md hover:bg-muted"><X className="w-3.5 h-3.5" /></button>
       </div>
       <div className="px-4 py-2 space-y-0">
-        <input value={to} onChange={(e) => setTo(e.target.value)} placeholder="To" className="w-full px-0 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
-        <input value={cc} onChange={(e) => setCc(e.target.value)} placeholder="Cc" className="w-full px-0 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
+        <RecipientInput value={to} onChange={setTo} placeholder="To" className="w-full px-0 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
+        <RecipientInput value={cc} onChange={setCc} placeholder="Cc" className="w-full px-0 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
+
         <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className="w-full px-0 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
         <div className="pt-2">
           <RichTextEditor value={body} onChange={setBody} minHeight={120} />
