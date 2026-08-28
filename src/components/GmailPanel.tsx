@@ -273,7 +273,7 @@ export default function GmailPanel() {
       cacheMessages(data.messages || []);
     } catch (err: any) {
       if (err?.context?.status === 401) {
-        setConnected(false);
+        setTokenExpired(true);
       }
       toast({ title: "Failed to load messages", description: err?.message, variant: "destructive" });
     } finally {
