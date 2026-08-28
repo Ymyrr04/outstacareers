@@ -583,16 +583,35 @@ export default function GmailPanel() {
         </button>
       </div>
 
+      {/* Token expired banner */}
+      {tokenExpired && (
+        <div className="flex items-center justify-between gap-3 rounded-lg border border-cyan-100 bg-cyan-50/50 px-3 py-2">
+          <span className="text-xs text-foreground">Your Gmail connection needs to be renewed.</span>
+          <button
+            onClick={handleConnect}
+            data-variant="primary"
+            data-size="small"
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md bg-[#0ABEDF] text-white text-xs font-medium hover:opacity-90"
+          >
+            {connecting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Link2 className="w-3 h-3" />} Reconnect Gmail
+          </button>
+        </div>
+      )}
+
       {/* Connection badge */}
       <div className="flex items-center justify-between text-xs text-muted-foreground">
         <span>{profile?.emailAddress ? `Connected as ${profile.emailAddress}` : "Connected"}</span>
-        <button onClick={handleDisconnect} data-variant="ghost" data-size="small" className="inline-flex items-center gap-1 px-2 py-1 rounded-md hover:bg-muted">
-          <Unlink className="w-3 h-3" /> Disconnect
-        </button>
+        <div className="flex items-center gap-2">
+          {polling && <Loader2 className="w-3 h-3 animate-spin text-[#0ABEDF]" />}
+          <button onClick={handleDisconnect} data-variant="ghost" data-size="small" className="inline-flex items-center gap-1 px-2 py-1 rounded-md hover:bg-muted">
+            <Unlink className="w-3 h-3" /> Disconnect
+          </button>
+        </div>
       </div>
 
       {/* Message list */}
-      <div className="rounded-lg border border-cyan-100 bg-white divide-y divide-gray-50">
+      <div ref={listRef} className="rounded-lg border border-cyan-100 bg-white divide-y divide-gray-50 max-h-[70vh] overflow-y-auto">
+
         {loading && messages.length === 0 ? (
           <div className="flex items-center justify-center py-16">
             <Loader2 className="w-6 h-6 animate-spin text-muted-foreground" />
