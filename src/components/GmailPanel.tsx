@@ -1250,12 +1250,14 @@ function InlineCompose({
   initialBody: string;
   sending: boolean;
   onClose: () => void;
-  onSend: (to: string, cc: string, subject: string, body: string) => void;
+  onSend: (to: string, cc: string, subject: string, body: string, extra?: { attachments?: any[] }) => void;
 }) {
   const [to, setTo] = useState(initialTo);
   const [cc, setCc] = useState("");
   const [subject, setSubject] = useState(initialSubject);
   const [body, setBody] = useState(() => plainTextToHtml(initialBody));
+  const [files, setFiles] = useState<PendingAttachment[]>([]);
+  const totalSize = files.reduce((s, f) => s + f.file.size, 0);
 
   return (
     <div className="rounded-lg border border-cyan-100 bg-white overflow-hidden">
@@ -1269,18 +1271,29 @@ function InlineCompose({
 
         <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className="w-full px-0 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
         <div className="pt-2">
-          <RichTextEditor value={body} onChange={setBody} minHeight={120} />
+          <RichTextEditor
+            value={body}
+            onChange={setBody}
+            minHeight={120}
+            toolbarRight={<AttachButton onFiles={(f) => setFiles((prev) => [...prev, ...f.map((file) => ({ id: `${file.name}-${Math.random()}`, file }))])} />}
+            footer={
+              <div className="px-3 pb-2">
+                <AttachmentList items={files} onRemove={(id) => setFiles((prev) => prev.filter((f) => f.id !== id))} />
+              </div>
+            }
+          />
         </div>
 
       </div>
       <div className="flex items-center justify-end gap-2 px-4 py-2.5 border-t border-gray-100">
         <button onClick={onClose} data-variant="ghost" className="px-3 py-1.5 text-xs rounded-md hover:bg-muted">Discard</button>
         <button
-          onClick={() => onSend(to, cc, subject, body)}
-          disabled={sending || !to || !subject}
+          onClick={async () => onSend(to, cc, subject, body, { attachments: await serializeAttachments(files) })}
+          disabled={sending || !to || !subject || totalSize > MAX_TOTAL_BYTES}
           data-variant="primary"
           className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-cyan-600 text-white text-xs font-medium hover:bg-cyan-700 disabled:opacity-50"
         >
+
           {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
           {sending ? "Sending…" : "Send"}
         </button>
