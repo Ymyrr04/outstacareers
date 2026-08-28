@@ -444,6 +444,7 @@ export default function GmailPanel() {
           });
           setMessageLoading(false);
           servedFromCache = true;
+          if (!msg.threadId && row.thread_id) loadThread(row.thread_id, row.id);
         }
       } catch { /* fall through to Gmail */ }
     }
@@ -454,6 +455,8 @@ export default function GmailPanel() {
       const { data, error } = await supabase.functions.invoke("gmail-message", { body: { messageId: msg.id } });
       if (error) throw error;
       setSelectedMessage(data);
+      if (!msg.threadId && data?.threadId) loadThread(data.threadId, data.id);
+
       if (adminEmail && data) {
         const { name, email } = parseFrom(data.from || "");
         supabase.from("cached_emails" as any).upsert({
