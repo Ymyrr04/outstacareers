@@ -187,6 +187,8 @@ export default function GmailPanel() {
       const { data, error } = await supabase.functions.invoke("gmail-message", { body: { messageId: msg.id } });
       if (error) throw error;
       setSelectedMessage(data);
+      setReplyState(null);
+      setEmojiPickerOpen(false);
       // Mark as read if it was unread
       if (msg.unread) {
         await supabase.functions.invoke("gmail-action", { body: { action: "mark-read", messageId: msg.id } });
