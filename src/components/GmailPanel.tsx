@@ -737,7 +737,7 @@ export default function GmailPanel() {
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <button
-            onClick={() => { setSelectedMessage(null); setThread(null); }}
+            onClick={() => { setSelectedMessage(null); setThread(null); setReplyState(null); }}
             data-variant="ghost"
             className="inline-flex items-center gap-1 px-2 py-1.5 rounded-md text-xs hover:bg-muted"
           >
