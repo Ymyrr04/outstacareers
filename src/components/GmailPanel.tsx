@@ -89,10 +89,14 @@ export default function GmailPanel() {
       if (error) throw error;
       setConnected(data.connected);
       setProfile(data.profile || null);
+      if (data.connected && data.error) {
+        toast({ title: "Gmail unavailable", description: data.error, variant: "destructive" });
+      }
     } catch (err: any) {
       setConnected(false);
     }
-  }, []);
+  }, [toast]);
+
 
   useEffect(() => {
     checkStatus();

@@ -63,15 +63,24 @@ Deno.serve(async (req) => {
     if (!res.ok) {
       const errBody = await res.text();
       console.error("profile fetch failed:", res.status, errBody);
-      // If the connection is invalid, clean it up
-      if (res.status === 401 || res.status === 403) {
+      let friendly = errBody;
+      try {
+        const parsed = JSON.parse(errBody);
+        friendly = parsed?.error?.message ?? errBody;
+      } catch { /* keep raw */ }
+      // Only a hard auth failure invalidates the stored connection.
+      if (res.status === 401) {
         await deleteConnectionKeyForUser(userId, CONNECTOR_ID);
         return new Response(JSON.stringify({ connected: false, error: "Connection expired — please reconnect" }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
-      return new Response(JSON.stringify({ connected: true, error: errBody }), { status: res.status, headers: corsHeaders });
+      // 403 etc. keep the connection but report why Gmail can't be read.
+      return new Response(JSON.stringify({ connected: true, error: friendly }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
+
     const profile = await res.json();
     return new Response(JSON.stringify({
       connected: true,
