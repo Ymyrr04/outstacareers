@@ -1095,6 +1095,8 @@ function ComposeDialog({
   const [subject, setSubject] = useState(initial?.subject || "");
   const [body, setBody] = useState(initial?.body || "");
   const [files, setFiles] = useState<PendingAttachment[]>([]);
+  const filesRef = useRef<PendingAttachment[]>([]);
+  useEffect(() => { filesRef.current = files; }, [files]);
   const [draftId, setDraftId] = useState<string | undefined>(initial?.draftId);
   const [draftState, setDraftState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [savedAt, setSavedAt] = useState<Date | null>(null);
