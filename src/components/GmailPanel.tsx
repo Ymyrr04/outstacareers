@@ -40,6 +40,24 @@ interface FullMessage {
   labelIds: string[];
 }
 
+interface ThreadMessage extends FullMessage {
+  messageIdHeader?: string;
+  references?: string;
+  internalDate?: number | null;
+}
+
+const AVATAR_COLORS = ["#0ABEDF", "#7C5CFF", "#F2994A", "#27AE60", "#EB5757", "#2D9CDB", "#BB6BD9"];
+function avatarStyle(seed: string) {
+  let h = 0;
+  for (let i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) >>> 0;
+  return { backgroundColor: AVATAR_COLORS[h % AVATAR_COLORS.length] };
+}
+function initialsOf(name: string, email: string) {
+  const src = (name || email || "?").trim();
+  const parts = src.split(/[\s.@]+/).filter(Boolean);
+  return ((parts[0]?.[0] || "?") + (parts[1]?.[0] || "")).toUpperCase();
+}
+
 type Folder = "INBOX" | "SENT" | "DRAFT" | "STARRED" | "TRASH";
 
 const FOLDERS: { value: Folder; label: string; icon: typeof Inbox }[] = [
@@ -84,8 +102,14 @@ export default function GmailPanel() {
   const [replyState, setReplyState] = useState<null | { mode: "reply" | "forward"; to: string; subject: string; body: string }>(null);
   const [reactions, setReactions] = useState<Record<string, string>>({});
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
+  const emojiPickerTarget = useRef<string | null>(null);
+
   const [polling, setPolling] = useState(false);
   const [tokenExpired, setTokenExpired] = useState(false);
+  const [thread, setThread] = useState<ThreadMessage[] | null>(null);
+  const [threadLoading, setThreadLoading] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
   const lastFetchedAtRef = useRef<Date>(new Date());
   const knownIdsRef = useRef<Set<string>>(new Set());
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -357,11 +381,33 @@ export default function GmailPanel() {
     } catch { /* best-effort */ }
   }, [adminEmail]);
 
+  const loadThread = useCallback(async (threadId?: string, anchorId?: string) => {
+    if (!threadId) return;
+    setThreadLoading(true);
+    try {
+      const { data, error } = await supabase.functions.invoke("gmail-thread", { body: { threadId } });
+      if (error) throw error;
+      const msgs: ThreadMessage[] = data?.messages || [];
+      if (!msgs.length) return;
+      setThread(msgs);
+      const latest = msgs[msgs.length - 1];
+      setExpandedIds(new Set([anchorId && msgs.some((m) => m.id === anchorId) ? anchorId : latest.id]));
+    } catch {
+      /* fall back to single-message view */
+    } finally {
+      setThreadLoading(false);
+    }
+  }, []);
+
   const openMessage = async (msg: MessageMeta) => {
     setMessageLoading(true);
     setSelectedMessage(null);
+    setThread(null);
+    setExpandedIds(new Set());
     setReplyState(null);
     setEmojiPickerOpen(false);
+    loadThread(msg.threadId, msg.id);
+
 
     // Optimistic read state (don't wait for Gmail)
     if (msg.unread) {
@@ -400,6 +446,7 @@ export default function GmailPanel() {
           });
           setMessageLoading(false);
           servedFromCache = true;
+          if (!msg.threadId && row.thread_id) loadThread(row.thread_id, row.id);
         }
       } catch { /* fall through to Gmail */ }
     }
@@ -410,6 +457,8 @@ export default function GmailPanel() {
       const { data, error } = await supabase.functions.invoke("gmail-message", { body: { messageId: msg.id } });
       if (error) throw error;
       setSelectedMessage(data);
+      if (!msg.threadId && data?.threadId) loadThread(data.threadId, data.id);
+
       if (adminEmail && data) {
         const { name, email } = parseFrom(data.from || "");
         supabase.from("cached_emails" as any).upsert({
@@ -443,7 +492,11 @@ export default function GmailPanel() {
       await supabase.functions.invoke("gmail-action", { body: { action, messageId } });
       if (action === "archive" || action === "trash") {
         setMessages((prev) => prev.filter((m) => m.id !== messageId));
-        if (selectedMessage?.id === messageId) { setSelectedMessage(null); setReplyState(null); }
+        setThread((prev) => {
+          const next = (prev || []).filter((m) => m.id !== messageId);
+          return prev ? (next.length ? next : null) : prev;
+        });
+        if (selectedMessage?.id === messageId) { setSelectedMessage(null); setThread(null); setReplyState(null); }
         if (action === "archive") updateCache(messageId, { is_archived: true });
         else if (adminEmail) {
           supabase.from("cached_emails" as any).delete().eq("admin_email", adminEmail).eq("id", messageId).then(() => {});
@@ -453,6 +506,7 @@ export default function GmailPanel() {
       } else if (action === "mark-unread") {
         setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, unread: true } : m)));
         if (selectedMessage?.id === messageId) setSelectedMessage({ ...selectedMessage, unread: true });
+        setThread((prev) => prev?.map((m) => (m.id === messageId ? { ...m, unread: true } : m)) || prev);
         updateCache(messageId, { is_read: false });
         toast({ title: "Marked as unread" });
         return;
@@ -460,6 +514,7 @@ export default function GmailPanel() {
         const starred = action === "star";
         setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, starred } : m)));
         if (selectedMessage?.id === messageId) setSelectedMessage({ ...selectedMessage, starred });
+        setThread((prev) => prev?.map((m) => (m.id === messageId ? { ...m, starred } : m)) || prev);
         updateCache(messageId, { is_starred: starred });
       }
 
@@ -469,10 +524,16 @@ export default function GmailPanel() {
     }
   };
 
-  const handleSend = async (to: string, cc: string, subject: string, body: string) => {
+  const handleSend = async (
+    to: string,
+    cc: string,
+    subject: string,
+    body: string,
+    opts?: { threadId?: string; inReplyTo?: string; references?: string },
+  ) => {
     setSending(true);
     try {
-      const { error } = await supabase.functions.invoke("gmail-send", { body: { to, cc, subject, body } });
+      const { error } = await supabase.functions.invoke("gmail-send", { body: { to, cc, subject, body, ...(opts || {}) } });
       if (error) throw error;
       toast({ title: "Email sent" });
       setComposeOpen(false);
@@ -488,29 +549,31 @@ export default function GmailPanel() {
     setSearch(searchInput);
   };
 
-  const openReply = (mode: "reply" | "forward") => {
-    if (!selectedMessage) return;
+  const openReply = (mode: "reply" | "forward", source?: FullMessage) => {
+    const src = source || selectedMessage;
+    if (!src) return;
     const quoted = [
       "",
       "---------- Original message ----------",
-      `From: ${selectedMessage.from}`,
-      `Date: ${selectedMessage.date}`,
-      `Subject: ${selectedMessage.subject}`,
-      `To: ${selectedMessage.to}`,
+      `From: ${src.from}`,
+      `Date: ${src.date}`,
+      `Subject: ${src.subject}`,
+      `To: ${src.to}`,
       "",
-      htmlToPlainText(selectedMessage.body),
+      htmlToPlainText(src.body),
     ].join("\n");
     setReplyState({
       mode,
-      to: mode === "reply" ? parseFrom(selectedMessage.from).email : "",
+      to: mode === "reply" ? parseFrom(src.from).email : "",
       subject:
         mode === "reply"
-          ? selectedMessage.subject?.startsWith("Re:") ? selectedMessage.subject : `Re: ${selectedMessage.subject || ""}`
-          : `Fwd: ${selectedMessage.subject || ""}`,
+          ? src.subject?.startsWith("Re:") ? src.subject : `Re: ${src.subject || ""}`
+          : `Fwd: ${src.subject || ""}`,
       body: mode === "forward" ? quoted : "",
     });
     setEmojiPickerOpen(false);
   };
+
 
   // --- Not connected state ---
   if (connected === null) {
@@ -546,155 +609,245 @@ export default function GmailPanel() {
     );
   }
 
-  // --- Message detail view ---
+  // --- Thread / conversation view ---
   if (selectedMessage) {
+    const threadMessages: ThreadMessage[] = thread && thread.length ? thread : [selectedMessage as ThreadMessage];
+    const latest = threadMessages[threadMessages.length - 1];
+    const subject = threadMessages[0]?.subject || selectedMessage.subject || "(no subject)";
+
+    const toggleExpanded = (id: string) => {
+      setExpandedIds((prev) => {
+        const next = new Set(prev);
+        if (next.has(id)) next.delete(id); else next.add(id);
+        return next;
+      });
+    };
+
+    const isExpanded = (id: string) => (expandedIds.size ? expandedIds.has(id) : id === latest.id);
+
+    const actionBar = (m: ThreadMessage) => (
+      <div
+        className="flex items-center gap-2 bg-white mt-4"
+        style={{ borderTop: "0.5px solid #C8F0F8", padding: "10px 14px", marginLeft: -14, marginRight: -14 }}
+      >
+        <button
+          onClick={() => openReply("reply", m)}
+          data-variant="ghost"
+          className="inline-flex items-center gap-1.5 rounded-full border-[0.5px] border-border bg-transparent hover:bg-muted"
+          style={{ padding: "6px 14px", fontSize: "12px" }}
+        >
+          <Reply className="w-3.5 h-3.5" /> Reply
+        </button>
+        <button
+          onClick={() => openReply("forward", m)}
+          data-variant="ghost"
+          className="inline-flex items-center gap-1.5 rounded-full border-[0.5px] border-border bg-transparent hover:bg-muted"
+          style={{ padding: "6px 14px", fontSize: "12px" }}
+        >
+          <Forward className="w-3.5 h-3.5" /> Forward
+        </button>
+        <div className="relative">
+          <button
+            onClick={() => {
+              const same = emojiPickerTarget.current === m.id;
+              emojiPickerTarget.current = m.id;
+              setEmojiPickerOpen(same ? !emojiPickerOpen : true);
+            }}
+
+            data-variant="ghost"
+            title="Add reaction"
+            className="inline-flex items-center rounded-full border-[0.5px] border-border bg-transparent hover:bg-muted"
+            style={{ padding: "6px 10px" }}
+          >
+            <Smile className="w-3.5 h-3.5" />
+          </button>
+          {emojiPickerOpen && emojiPickerTarget.current === m.id && (
+            <div className="absolute left-0 top-full mt-1 z-10 flex gap-1 rounded-full border border-cyan-100 bg-white px-2 py-1.5 shadow-md">
+              {["👍", "❤️", "😂", "😮", "😢", "🙏"].map((e) => (
+                <button
+                  key={e}
+                  onClick={() => {
+                    setReactions((prev) => ({ ...prev, [m.id]: e }));
+                    setEmojiPickerOpen(false);
+                  }}
+                  className="text-base hover:scale-125 transition-transform"
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+        <button
+          onClick={() => handleAction("mark-unread", m.id)}
+          data-variant="ghost"
+          title="Mark as unread"
+          className="inline-flex items-center rounded-full border-[0.5px] border-border bg-transparent hover:bg-muted"
+          style={{ padding: "6px 10px" }}
+        >
+          <MailOpen className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={() => handleAction("archive", m.id)}
+          data-variant="ghost"
+          title="Archive"
+          className="inline-flex items-center rounded-full border-[0.5px] border-border bg-transparent hover:bg-muted"
+          style={{ padding: "6px 10px" }}
+        >
+          <Archive className="w-3.5 h-3.5" />
+        </button>
+        <button
+          onClick={() => handleAction("trash", m.id)}
+          data-variant="ghost"
+          title="Delete"
+          className="inline-flex items-center rounded-full border-[0.5px] border-border bg-transparent hover:bg-muted group"
+          style={{ padding: "6px 10px" }}
+        >
+          <Trash2 className="w-3.5 h-3.5 group-hover:text-[#E24B4A]" />
+        </button>
+      </div>
+    );
+
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-2">
           <button
-            onClick={() => setSelectedMessage(null)}
+            onClick={() => { setSelectedMessage(null); setThread(null); }}
             data-variant="ghost"
             className="inline-flex items-center gap-1 px-2 py-1.5 rounded-md text-xs hover:bg-muted"
           >
             <ArrowLeft className="w-4 h-4" /> Back
           </button>
           <div className="flex-1" />
-          <button onClick={() => handleAction(selectedMessage.starred ? "unstar" : "star", selectedMessage.id)} data-variant="ghost" className="p-1.5 rounded-md hover:bg-muted">
-            {selectedMessage.starred ? <Star className="w-4 h-4 text-amber-400 fill-amber-400" /> : <StarOff className="w-4 h-4 text-muted-foreground" />}
+          {threadLoading && <Loader2 className="w-3.5 h-3.5 animate-spin text-[#0ABEDF]" />}
+          <button onClick={() => handleAction(latest.starred ? "unstar" : "star", latest.id)} data-variant="ghost" className="p-1.5 rounded-md hover:bg-muted">
+            {latest.starred ? <Star className="w-4 h-4 text-amber-400 fill-amber-400" /> : <StarOff className="w-4 h-4 text-muted-foreground" />}
           </button>
-          <button onClick={() => handleAction("archive", selectedMessage.id)} data-variant="ghost" className="p-1.5 rounded-md hover:bg-muted" title="Archive">
+          <button onClick={() => handleAction("archive", latest.id)} data-variant="ghost" className="p-1.5 rounded-md hover:bg-muted" title="Archive">
             <Archive className="w-4 h-4 text-muted-foreground" />
           </button>
-          <button onClick={() => handleAction("trash", selectedMessage.id)} data-variant="ghost" className="p-1.5 rounded-md hover:bg-muted" title="Delete">
+          <button onClick={() => handleAction("trash", latest.id)} data-variant="ghost" className="p-1.5 rounded-md hover:bg-muted" title="Delete">
             <Trash2 className="w-4 h-4 text-muted-foreground" />
           </button>
         </div>
-        <div className="rounded-lg border border-cyan-100 bg-white p-5">
-          <h2 className="text-base font-semibold mb-2">{selectedMessage.subject || "(no subject)"}</h2>
-          <div className="text-xs text-muted-foreground space-y-0.5 mb-4">
-            <div><span className="font-medium text-foreground">{parseFrom(selectedMessage.from).name || selectedMessage.from}</span> {parseFrom(selectedMessage.from).email && ` <${parseFrom(selectedMessage.from).email}>`}</div>
-            <div>to: {selectedMessage.to}</div>
-            {selectedMessage.cc && <div>cc: {selectedMessage.cc}</div>}
-            <div>{selectedMessage.date && new Date(selectedMessage.date).toLocaleString()}</div>
-          </div>
-          <div className="border-t pt-4 text-sm">
-            <MessageBody body={selectedMessage.body} isHtml={selectedMessage.isHtml} />
+
+        <div className="rounded-lg border border-cyan-100 bg-white">
+          {/* Thread header */}
+          <div className="px-5 pt-5 pb-3">
+            <h2 style={{ fontSize: "18px", fontWeight: 600 }} className="leading-snug">{subject}</h2>
+            <div className="text-xs text-muted-foreground mt-1">
+              {threadMessages.length} message{threadMessages.length > 1 ? "s" : ""}
+            </div>
           </div>
 
-          {selectedMessage.attachments.length > 0 && (
-            <div className="border-t mt-4 pt-4 flex flex-wrap gap-2">
-              {selectedMessage.attachments.map((a) => (
-                <div key={a.attachmentId} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-muted text-xs">
-                  <Paperclip className="w-3.5 h-3.5" />
-                  <span className="font-medium">{a.filename}</span>
-                  <span className="text-muted-foreground">{(a.size / 1024).toFixed(0)}KB</span>
-                </div>
-              ))}
-            </div>
-          )}
-
-          {reactions[selectedMessage.id] && (
-            <div className="mt-4">
-              <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full border border-cyan-100 bg-cyan-50/40 text-base leading-none">
-                {reactions[selectedMessage.id]}
-              </span>
-            </div>
-          )}
-
-          {/* Action bar */}
-          <div
-            className="flex items-center gap-2 bg-white mt-5 -mx-5 -mb-5 rounded-b-lg"
-            style={{ borderTop: "0.5px solid #C8F0F8", padding: "10px 14px" }}
-          >
-            <button
-              onClick={() => openReply("reply")}
-              data-variant="ghost"
-              className="inline-flex items-center gap-1.5 rounded-full border-[0.5px] border-border bg-transparent hover:bg-muted"
-              style={{ padding: "6px 14px", fontSize: "12px" }}
-            >
-              <Reply className="w-3.5 h-3.5" /> Reply
-            </button>
-            <button
-              onClick={() => openReply("forward")}
-              data-variant="ghost"
-              className="inline-flex items-center gap-1.5 rounded-full border-[0.5px] border-border bg-transparent hover:bg-muted"
-              style={{ padding: "6px 14px", fontSize: "12px" }}
-            >
-              <Forward className="w-3.5 h-3.5" /> Forward
-            </button>
-            <div className="relative">
-              <button
-                onClick={() => setEmojiPickerOpen((v) => !v)}
-                data-variant="ghost"
-                title="Add reaction"
-                className="inline-flex items-center rounded-full border-[0.5px] border-border bg-transparent hover:bg-muted"
-                style={{ padding: "6px 10px" }}
-              >
-                <Smile className="w-3.5 h-3.5" />
-              </button>
-              {emojiPickerOpen && (
-                <div className="absolute left-0 top-full mt-1 z-10 flex gap-1 rounded-full border border-cyan-100 bg-white px-2 py-1.5 shadow-md">
-                  {["👍", "❤️", "😂", "😮", "😢", "🙏"].map((e) => (
+          {/* Messages */}
+          <div className="divide-y divide-gray-100 border-t border-gray-100">
+            {threadMessages.map((m) => {
+              const { name, email } = parseFrom(m.from || "");
+              const expanded = isExpanded(m.id);
+              return (
+                <div key={m.id} className="px-3.5">
+                  {!expanded ? (
                     <button
-                      key={e}
-                      onClick={() => {
-                        setReactions((prev) => ({ ...prev, [selectedMessage.id]: e }));
-                        setEmojiPickerOpen(false);
-                      }}
-                      className="text-base hover:scale-125 transition-transform"
+                      onClick={() => toggleExpanded(m.id)}
+                      className="w-full flex items-center gap-3 text-left hover:bg-cyan-50/30 transition-colors rounded-md px-1"
+                      style={{ height: 44 }}
                     >
-                      {e}
+                      <span
+                        className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-[10px] font-semibold text-white"
+                        style={avatarStyle(email || name)}
+                      >
+                        {initialsOf(name, email)}
+                      </span>
+                      <span className="text-xs font-medium flex-shrink-0 max-w-[140px] truncate">{name || email}</span>
+                      <span className="text-xs text-muted-foreground truncate flex-1">{m.snippet}</span>
+                      <span className="text-[10px] text-muted-foreground flex-shrink-0">{formatDate(m.date || "")}</span>
                     </button>
-                  ))}
+                  ) : (
+                    <div className="py-4 animate-in fade-in duration-200">
+                      <div className="flex items-start gap-3">
+                        <span
+                          className="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-[11px] font-semibold text-white"
+                          style={avatarStyle(email || name)}
+                        >
+                          {initialsOf(name, email)}
+                        </span>
+                        <div className="flex-1 min-w-0">
+                          <button onClick={() => toggleExpanded(m.id)} className="text-left w-full">
+                            <div className="text-sm font-medium">
+                              {name || email}
+                              {email && <span className="text-xs text-muted-foreground font-normal"> &lt;{email}&gt;</span>}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground">
+                              to: {m.to}
+                              {m.cc ? ` · cc: ${m.cc}` : ""}
+                            </div>
+                            <div className="text-[11px] text-muted-foreground">
+                              {m.date && new Date(m.date).toLocaleString()}
+                            </div>
+                          </button>
+
+                          <div className="mt-3 text-sm">
+                            <MessageBody body={m.body} isHtml={m.isHtml} />
+                          </div>
+
+                          {m.attachments?.length > 0 && (
+                            <div className="border-t mt-4 pt-3 flex flex-wrap gap-2">
+                              {m.attachments.map((a) => (
+                                <div key={a.attachmentId} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-muted text-xs">
+                                  <Paperclip className="w-3.5 h-3.5" />
+                                  <span className="font-medium">{a.filename}</span>
+                                  <span className="text-muted-foreground">{(a.size / 1024).toFixed(0)}KB</span>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+
+                          {reactions[m.id] && (
+                            <div className="mt-3">
+                              <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full border border-cyan-100 bg-cyan-50/40 text-base leading-none">
+                                {reactions[m.id]}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                      {actionBar(m)}
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-            <button
-              onClick={() => handleAction("mark-unread", selectedMessage.id)}
-              data-variant="ghost"
-              title="Mark as unread"
-              className="inline-flex items-center rounded-full border-[0.5px] border-border bg-transparent hover:bg-muted"
-              style={{ padding: "6px 10px" }}
-            >
-              <MailOpen className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => handleAction("archive", selectedMessage.id)}
-              data-variant="ghost"
-              title="Archive"
-              className="inline-flex items-center rounded-full border-[0.5px] border-border bg-transparent hover:bg-muted"
-              style={{ padding: "6px 10px" }}
-            >
-              <Archive className="w-3.5 h-3.5" />
-            </button>
-            <button
-              onClick={() => handleAction("trash", selectedMessage.id)}
-              data-variant="ghost"
-              title="Delete"
-              className="inline-flex items-center rounded-full border-[0.5px] border-border bg-transparent hover:bg-muted group"
-              style={{ padding: "6px 10px" }}
-            >
-              <Trash2 className="w-3.5 h-3.5 group-hover:text-[#E24B4A]" />
-            </button>
+              );
+            })}
           </div>
         </div>
 
-        {/* Reply / Forward compose box */}
-        {replyState && (
-          <InlineCompose
-            key={replyState.mode}
-            mode={replyState.mode}
-            initialTo={replyState.to}
-            initialSubject={replyState.subject}
-            initialBody={replyState.body}
-            sending={sending}
-            onClose={() => setReplyState(null)}
-            onSend={async (to, cc, subject, body) => {
-              await handleSend(to, cc, subject, body);
-              setReplyState(null);
-            }}
-          />
-        )}
+        {/* Reply / Forward compose box — always at the bottom of the thread */}
+        <InlineCompose
+          key={`${replyState?.mode || "reply"}-${latest.id}`}
+          mode={replyState?.mode || "reply"}
+          initialTo={replyState ? replyState.to : parseFrom(latest.from).email}
+          initialSubject={
+            replyState
+              ? replyState.subject
+              : (subject.startsWith("Re:") ? subject : `Re: ${subject}`)
+          }
+          initialBody={
+            replyState
+              ? replyState.body
+              : ["", "---------- Original message ----------", `From: ${latest.from}`, `Date: ${latest.date}`, "", htmlToPlainText(latest.body)].join("\n")
+          }
+          sending={sending}
+          onClose={() => setReplyState(null)}
+          onSend={async (to, cc, subj, body) => {
+            const isForward = replyState?.mode === "forward";
+            await handleSend(to, cc, subj, body, isForward ? undefined : {
+              threadId: latest.threadId || selectedMessage.threadId,
+              inReplyTo: latest.messageIdHeader,
+              references: [latest.references, latest.messageIdHeader].filter(Boolean).join(" "),
+            });
+            setReplyState(null);
+          }}
+        />
 
         {composeOpen && (
           <ComposeDialog onClose={() => setComposeOpen(false)} onSend={handleSend} sending={sending} />
@@ -702,6 +855,7 @@ export default function GmailPanel() {
       </div>
     );
   }
+
 
   // --- Inbox list view ---
   return (
