@@ -1,4 +1,4 @@
-// Sends an email through Gmail on behalf of the signed-in admin.
+// Returns a Gmail attachment's base64 data for the signed-in admin.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { callAsAppUser } from "../_shared/appUserConnector.ts";
 import { getConnectionKeyForUser } from "../_shared/appUserConnections.ts";
@@ -10,9 +10,6 @@ const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
-
-import { createRawEmail } from "../_shared/gmailMime.ts";
-
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
@@ -36,57 +33,34 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ connected: false }), { status: 401, headers: corsHeaders });
     }
 
-    const { to, cc, bcc, subject, body, threadId, inReplyTo, references, attachments, draftId } = await req.json();
-    if (!to || !subject) {
-      return new Response(JSON.stringify({ error: "to and subject required" }), { status: 400, headers: corsHeaders });
+    const { messageId, attachmentId, filename, mimeType } = await req.json();
+    if (!messageId || !attachmentId) {
+      return new Response(JSON.stringify({ error: "messageId and attachmentId required" }), { status: 400, headers: corsHeaders });
     }
 
-    const raw = createRawEmail({
-      to,
-      cc: cc || "",
-      bcc: bcc || "",
-      subject,
-      body: body || "",
-      inReplyTo: inReplyTo || "",
-      references: references || "",
-      attachments: attachments || [],
-    });
     const res = await callAsAppUser({
       gatewayBaseUrl: GATEWAY_BASE_URL,
       connectionAPIKey,
       connectorId: CONNECTOR_ID,
-      path: "/gmail/v1/users/me/messages/send",
-      init: {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(threadId ? { raw, threadId } : { raw }),
-      },
+      path: `/gmail/v1/users/me/messages/${messageId}/attachments/${attachmentId}`,
+      init: { method: "GET" },
     });
-
     if (!res.ok) {
       const errBody = await res.text();
       return new Response(JSON.stringify({ error: errBody }), { status: res.status, headers: corsHeaders });
     }
     const data = await res.json();
-
-    // If this message came from a saved draft, remove the draft now that it was sent.
-    if (draftId) {
-      try {
-        await callAsAppUser({
-          gatewayBaseUrl: GATEWAY_BASE_URL,
-          connectionAPIKey,
-          connectorId: CONNECTOR_ID,
-          path: `/gmail/v1/users/me/drafts/${draftId}`,
-          init: { method: "DELETE" },
-        });
-      } catch (_e) { /* best-effort */ }
-    }
-
-    return new Response(JSON.stringify({ success: true, messageId: data.id, threadId: data.threadId }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({
+        data: data.data, // base64url
+        size: data.size,
+        filename: filename || "attachment",
+        mimeType: mimeType || "application/octet-stream",
+      }),
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+    );
   } catch (e) {
-    console.error("gmail-send error:", e);
+    console.error("gmail-attachment error:", e);
     return new Response(JSON.stringify({ error: (e as Error).message }), { status: 500, headers: corsHeaders });
   }
 });

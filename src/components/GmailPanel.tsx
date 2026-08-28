@@ -2,9 +2,10 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import DOMPurify from "dompurify";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, MailOpen, Star, Archive, Trash2, RefreshCw, Send, Inbox, Search, Loader2, StarOff, Link2, Unlink, Paperclip, ArrowLeft, X, Reply, Forward, Smile } from "lucide-react";
+import { Mail, MailOpen, Star, Archive, Trash2, RefreshCw, Send, Inbox, Search, Loader2, StarOff, Link2, Unlink, Paperclip, ArrowLeft, X, Reply, Forward, Smile, Download, Check } from "lucide-react";
 import { RichTextEditor, plainTextToHtml } from "@/components/gmail/RichTextEditor";
 import { RecipientInput } from "@/components/gmail/RecipientInput";
+import { AttachButton, AttachmentList, serializeAttachments, MAX_TOTAL_BYTES, type PendingAttachment } from "@/components/gmail/ComposeAttachments";
 
 
 
@@ -104,6 +105,7 @@ export default function GmailPanel() {
   const [composeOpen, setComposeOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [replyState, setReplyState] = useState<null | { mode: "reply" | "forward"; to: string; subject: string; body: string }>(null);
+  const [draftInitial, setDraftInitial] = useState<null | { to: string; cc: string; subject: string; body: string; draftId?: string }>(null);
   const [reactions, setReactions] = useState<Record<string, string>>({});
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const emojiPickerTarget = useRef<string | null>(null);
@@ -403,6 +405,25 @@ export default function GmailPanel() {
     }
   }, []);
 
+  const openDraft = async (msg: MessageMeta) => {
+    setDraftInitial({ to: msg.to || "", cc: "", subject: msg.subject || "", body: "" });
+    setComposeOpen(true);
+    try {
+      const [{ data: full }, { data: list }] = await Promise.all([
+        supabase.functions.invoke("gmail-message", { body: { messageId: msg.id } }),
+        supabase.functions.invoke("gmail-draft", { body: { action: "list-drafts" } }),
+      ]);
+      const match = (list?.drafts || []).find((d: any) => d.messageId === msg.id);
+      setDraftInitial({
+        to: full?.to || msg.to || "",
+        cc: full?.cc || "",
+        subject: full?.subject || msg.subject || "",
+        body: full?.isHtml ? (full?.body || "") : plainTextToHtml(full?.body || ""),
+        draftId: match?.draftId,
+      });
+    } catch { /* keep the metadata-only draft */ }
+  };
+
   const openMessage = async (msg: MessageMeta) => {
     setMessageLoading(true);
     setSelectedMessage(null);
@@ -533,7 +554,7 @@ export default function GmailPanel() {
     cc: string,
     subject: string,
     body: string,
-    opts?: { threadId?: string; inReplyTo?: string; references?: string },
+    opts?: { threadId?: string; inReplyTo?: string; references?: string; attachments?: any[]; draftId?: string },
   ) => {
     setSending(true);
     try {
@@ -798,11 +819,7 @@ export default function GmailPanel() {
                           {m.attachments?.length > 0 && (
                             <div className="border-t mt-4 pt-3 flex flex-wrap gap-2">
                               {m.attachments.map((a) => (
-                                <div key={a.attachmentId} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-muted text-xs">
-                                  <Paperclip className="w-3.5 h-3.5" />
-                                  <span className="font-medium">{a.filename}</span>
-                                  <span className="text-muted-foreground">{(a.size / 1024).toFixed(0)}KB</span>
-                                </div>
+                                <AttachmentPill key={a.attachmentId} messageId={m.id} attachment={a} />
                               ))}
                             </div>
                           )}
@@ -842,9 +859,10 @@ export default function GmailPanel() {
           }
           sending={sending}
           onClose={() => setReplyState(null)}
-          onSend={async (to, cc, subj, body) => {
+          onSend={async (to, cc, subj, body, extra) => {
             const isForward = replyState?.mode === "forward";
-            await handleSend(to, cc, subj, body, isForward ? undefined : {
+            await handleSend(to, cc, subj, body, isForward ? { attachments: extra?.attachments } : {
+              attachments: extra?.attachments,
               threadId: latest.threadId || selectedMessage.threadId,
               inReplyTo: latest.messageIdHeader,
               references: [latest.references, latest.messageIdHeader].filter(Boolean).join(" "),
@@ -854,7 +872,7 @@ export default function GmailPanel() {
         />
 
         {composeOpen && (
-          <ComposeDialog onClose={() => setComposeOpen(false)} onSend={handleSend} sending={sending} />
+          <ComposeDialog onClose={() => { setComposeOpen(false); setDraftInitial(null); }} onSend={handleSend} sending={sending} initial={draftInitial || undefined} />
         )}
       </div>
     );
@@ -957,7 +975,7 @@ export default function GmailPanel() {
             return (
               <div
                 key={msg.id}
-                onClick={() => openMessage(msg)}
+                onClick={() => (folder === "DRAFT" ? openDraft(msg) : openMessage(msg))}
                 className={`flex items-start gap-3 px-4 py-2.5 cursor-pointer hover:bg-cyan-50/30 transition-colors ${msg.unread ? "font-medium" : ""}`}
               >
                 <button
@@ -973,6 +991,7 @@ export default function GmailPanel() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs truncate">
+                    {folder === "DRAFT" && <span className="text-red-500 font-medium mr-1.5">Draft</span>}
                     <span className={msg.unread ? "text-foreground" : "text-muted-foreground"}>
                       {msg.subject || "(no subject)"}
                     </span>
@@ -1001,7 +1020,7 @@ export default function GmailPanel() {
 
       {/* Compose dialog */}
       {composeOpen && (
-        <ComposeDialog onClose={() => setComposeOpen(false)} onSend={handleSend} sending={sending} />
+        <ComposeDialog onClose={() => { setComposeOpen(false); setDraftInitial(null); }} onSend={handleSend} sending={sending} initial={draftInitial || undefined} />
       )}
     </div>
   );
@@ -1056,31 +1075,153 @@ function waitForOAuthCode(popup: Window) {
 }
 
 
-function ComposeDialog({ onClose, onSend, sending }: { onClose: () => void; onSend: (to: string, cc: string, subject: string, body: string) => void; sending: boolean }) {
-  const [to, setTo] = useState("");
-  const [cc, setCc] = useState("");
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
+const LOCAL_DRAFT_KEY = "gmail-compose-draft";
+
+function ComposeDialog({
+  onClose,
+  onSend,
+  sending,
+  initial,
+}: {
+  onClose: () => void;
+  onSend: (to: string, cc: string, subject: string, body: string, extra?: { attachments?: any[]; draftId?: string }) => void;
+  sending: boolean;
+  initial?: { to?: string; cc?: string; subject?: string; body?: string; draftId?: string };
+}) {
+  const [to, setTo] = useState(initial?.to || "");
+  const [cc, setCc] = useState(initial?.cc || "");
+  const [subject, setSubject] = useState(initial?.subject || "");
+  const [body, setBody] = useState(initial?.body || "");
+  const [files, setFiles] = useState<PendingAttachment[]>([]);
+  const [draftId, setDraftId] = useState<string | undefined>(initial?.draftId);
+  const [draftState, setDraftState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [recovery, setRecovery] = useState<{ to: string; cc: string; subject: string; body: string } | null>(null);
+
+  const latest = useRef({ to, cc, subject, body, draftId });
+  latest.current = { to, cc, subject, body, draftId };
+
+  // Draft recovery from the last unsaved local session
+  useEffect(() => {
+    if (initial) return;
+    try {
+      const raw = localStorage.getItem(LOCAL_DRAFT_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed && (parsed.to || parsed.subject || parsed.body)) setRecovery(parsed);
+    } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const hasContent = () => {
+    const c = latest.current;
+    return !!(c.to.trim() || c.subject.trim() || htmlToPlainText(c.body));
+  };
+
+  const saveDraft = useCallback(async () => {
+    if (!hasContent()) return;
+    const c = latest.current;
+    setDraftState("saving");
+    try {
+      const attachments = await serializeAttachments(files);
+      const { data, error } = await supabase.functions.invoke("gmail-draft", {
+        body: { action: "save-draft", to: c.to, cc: c.cc, subject: c.subject, body: c.body, attachments, draftId: c.draftId },
+      });
+      if (error) throw error;
+      if (data?.draftId) setDraftId(data.draftId);
+      setSavedAt(new Date());
+      setDraftState("saved");
+      localStorage.removeItem(LOCAL_DRAFT_KEY);
+    } catch {
+      setDraftState("error");
+      try { localStorage.setItem(LOCAL_DRAFT_KEY, JSON.stringify({ to: c.to, cc: c.cc, subject: c.subject, body: c.body })); } catch { /* ignore */ }
+    }
+  }, [files]);
+
+  // Auto-save every 30s + on unmount / navigating away
+  useEffect(() => {
+    const interval = setInterval(() => { saveDraft(); }, 30000);
+    const onUnload = () => {
+      const c = latest.current;
+      if (hasContent()) {
+        try { localStorage.setItem(LOCAL_DRAFT_KEY, JSON.stringify({ to: c.to, cc: c.cc, subject: c.subject, body: c.body })); } catch { /* ignore */ }
+      }
+    };
+    window.addEventListener("beforeunload", onUnload);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("beforeunload", onUnload);
+    };
+  }, [saveDraft]);
+
+  const closeWithSave = async () => {
+    if (hasContent()) await saveDraft();
+    onClose();
+  };
+
+  const handleSendClick = async () => {
+    const attachments = await serializeAttachments(files);
+    onSend(to, cc, subject, body, { attachments, draftId });
+    localStorage.removeItem(LOCAL_DRAFT_KEY);
+  };
+
+  const totalSize = files.reduce((s, f) => s + f.file.size, 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={closeWithSave}>
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 py-3 border-b">
-          <h3 className="text-sm font-semibold">New message</h3>
-          <button onClick={onClose} className="p-1 rounded-md hover:bg-muted"><X className="w-4 h-4" /></button>
+          <h3 className="text-sm font-semibold">{initial?.draftId ? "Draft" : "New message"}</h3>
+          <button onClick={closeWithSave} className="p-1 rounded-md hover:bg-muted"><X className="w-4 h-4" /></button>
         </div>
+
+        {recovery && (
+          <div className="flex items-center justify-between gap-3 px-4 py-2 bg-cyan-50/60 border-b border-cyan-100">
+            <span className="text-xs">You have an unsaved draft</span>
+            <span className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setTo(recovery.to || ""); setCc(recovery.cc || ""); setSubject(recovery.subject || ""); setBody(recovery.body || "");
+                  setRecovery(null);
+                }}
+                className="px-2.5 py-1 rounded-md bg-[#0ABEDF] text-white text-[11px] font-medium"
+              >
+                Restore
+              </button>
+              <button
+                onClick={() => { localStorage.removeItem(LOCAL_DRAFT_KEY); setRecovery(null); }}
+                className="px-2.5 py-1 rounded-md text-[11px] hover:bg-muted"
+              >
+                Discard
+              </button>
+            </span>
+          </div>
+        )}
+
         <div className="p-4 space-y-2">
           <RecipientInput value={to} onChange={setTo} placeholder="To" className="w-full px-3 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
           <RecipientInput value={cc} onChange={setCc} placeholder="Cc" className="w-full px-3 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
 
           <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className="w-full px-3 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
-          <RichTextEditor value={body} onChange={setBody} minHeight={240} />
+          <RichTextEditor
+            key={recovery ? "pristine" : "editing"}
+            value={body}
+            onChange={setBody}
+            minHeight={240}
+            toolbarRight={<AttachButton onFiles={(f) => setFiles((prev) => [...prev, ...f.map((file) => ({ id: `${file.name}-${Math.random()}`, file }))])} />}
+            footer={
+              <div className="px-3 pb-2">
+                <AttachmentList items={files} onRemove={(id) => setFiles((prev) => prev.filter((f) => f.id !== id))} />
+              </div>
+            }
+          />
+          <DraftStatus state={draftState} savedAt={savedAt} />
         </div>
         <div className="flex items-center justify-end gap-2 px-4 py-3 border-t">
-          <button onClick={onClose} data-variant="ghost" className="px-3 py-1.5 text-xs rounded-md hover:bg-muted">Cancel</button>
+          <button onClick={closeWithSave} data-variant="ghost" className="px-3 py-1.5 text-xs rounded-md hover:bg-muted">Cancel</button>
           <button
-            onClick={() => onSend(to, cc, subject, body)}
-            disabled={sending || !to || !subject}
+            onClick={handleSendClick}
+            disabled={sending || !to || !subject || totalSize > MAX_TOTAL_BYTES}
             data-variant="primary"
             className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-cyan-600 text-white text-xs font-medium hover:bg-cyan-700 disabled:opacity-50"
           >
@@ -1090,6 +1231,76 @@ function ComposeDialog({ onClose, onSend, sending }: { onClose: () => void; onSe
         </div>
       </div>
     </div>
+  );
+}
+
+function DraftStatus({ state, savedAt }: { state: "idle" | "saving" | "saved" | "error"; savedAt: Date | null }) {
+  if (state === "idle") return null;
+  const text =
+    state === "saving" ? "Saving..." :
+    state === "error" ? "Draft not saved" :
+    `Draft saved ${savedAt ? savedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : ""}`;
+  return (
+    <p className="italic" style={{ fontSize: 10, color: state === "error" ? "#D97706" : undefined }}>
+      <span className={state === "error" ? "" : "text-muted-foreground"}>{text}</span>
+    </p>
+  );
+}
+
+
+function AttachmentPill({ messageId, attachment }: { messageId: string; attachment: { filename: string; size: number; mimeType: string; attachmentId: string } }) {
+  const [state, setState] = useState<"idle" | "loading" | "done">("idle");
+  const [hover, setHover] = useState(false);
+
+  const download = async () => {
+    if (state === "loading") return;
+    setState("loading");
+    try {
+      const { data, error } = await supabase.functions.invoke("gmail-attachment", {
+        body: { messageId, attachmentId: attachment.attachmentId },
+      });
+      if (error) throw error;
+      const b64 = String(data?.data || "").replace(/-/g, "+").replace(/_/g, "/");
+      const padded = b64 + "=".repeat((4 - (b64.length % 4)) % 4);
+      const bin = atob(padded);
+      const bytes = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+      const blob = new Blob([bytes], { type: data?.mimeType || attachment.mimeType || "application/octet-stream" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = data?.filename || attachment.filename || "attachment";
+      a.click();
+      URL.revokeObjectURL(url);
+      setState("done");
+      setTimeout(() => setState("idle"), 2000);
+    } catch {
+      setState("idle");
+      // eslint-disable-next-line no-alert
+      console.error("Attachment download failed");
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={download}
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+      className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-xs"
+      style={{ background: hover ? "#E0F7FC" : undefined }}
+    >
+      <Paperclip className="w-3.5 h-3.5" />
+      <span className="font-medium">{attachment.filename}</span>
+      <span className="text-muted-foreground">{(attachment.size / 1024).toFixed(0)}KB</span>
+      {state === "loading" ? (
+        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+      ) : state === "done" ? (
+        <Check className="w-3.5 h-3.5 text-emerald-500" />
+      ) : (
+        <Download className="w-3.5 h-3.5" style={{ color: hover ? "#0ABEDF" : "hsl(var(--muted-foreground))" }} />
+      )}
+    </button>
   );
 }
 
@@ -1114,12 +1325,14 @@ function InlineCompose({
   initialBody: string;
   sending: boolean;
   onClose: () => void;
-  onSend: (to: string, cc: string, subject: string, body: string) => void;
+  onSend: (to: string, cc: string, subject: string, body: string, extra?: { attachments?: any[] }) => void;
 }) {
   const [to, setTo] = useState(initialTo);
   const [cc, setCc] = useState("");
   const [subject, setSubject] = useState(initialSubject);
   const [body, setBody] = useState(() => plainTextToHtml(initialBody));
+  const [files, setFiles] = useState<PendingAttachment[]>([]);
+  const totalSize = files.reduce((s, f) => s + f.file.size, 0);
 
   return (
     <div className="rounded-lg border border-cyan-100 bg-white overflow-hidden">
@@ -1133,18 +1346,29 @@ function InlineCompose({
 
         <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className="w-full px-0 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
         <div className="pt-2">
-          <RichTextEditor value={body} onChange={setBody} minHeight={120} />
+          <RichTextEditor
+            value={body}
+            onChange={setBody}
+            minHeight={120}
+            toolbarRight={<AttachButton onFiles={(f) => setFiles((prev) => [...prev, ...f.map((file) => ({ id: `${file.name}-${Math.random()}`, file }))])} />}
+            footer={
+              <div className="px-3 pb-2">
+                <AttachmentList items={files} onRemove={(id) => setFiles((prev) => prev.filter((f) => f.id !== id))} />
+              </div>
+            }
+          />
         </div>
 
       </div>
       <div className="flex items-center justify-end gap-2 px-4 py-2.5 border-t border-gray-100">
         <button onClick={onClose} data-variant="ghost" className="px-3 py-1.5 text-xs rounded-md hover:bg-muted">Discard</button>
         <button
-          onClick={() => onSend(to, cc, subject, body)}
-          disabled={sending || !to || !subject}
+          onClick={async () => onSend(to, cc, subject, body, { attachments: await serializeAttachments(files) })}
+          disabled={sending || !to || !subject || totalSize > MAX_TOTAL_BYTES}
           data-variant="primary"
           className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-cyan-600 text-white text-xs font-medium hover:bg-cyan-700 disabled:opacity-50"
         >
+
           {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
           {sending ? "Sending…" : "Send"}
         </button>
