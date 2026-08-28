@@ -348,19 +348,86 @@ export default function GmailPanel() {
   }, [messages, folder]);
 
 
+  const updateCache = useCallback(async (messageId: string, patch: Record<string, any>) => {
+    if (!adminEmail) return;
+    try {
+      await supabase.from("cached_emails" as any).update(patch).eq("admin_email", adminEmail).eq("id", messageId);
+    } catch { /* best-effort */ }
+  }, [adminEmail]);
+
   const openMessage = async (msg: MessageMeta) => {
     setMessageLoading(true);
     setSelectedMessage(null);
+    setReplyState(null);
+    setEmojiPickerOpen(false);
+
+    // Optimistic read state (don't wait for Gmail)
+    if (msg.unread) {
+      setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, unread: false } : m)));
+      updateCache(msg.id, { is_read: true });
+      supabase.functions.invoke("gmail-action", { body: { action: "mark-read", messageId: msg.id } });
+    }
+
+    // Serve the body from cache instantly when available
+    let servedFromCache = false;
+    if (adminEmail) {
+      try {
+        const { data: cached } = await supabase
+          .from("cached_emails" as any)
+          .select("*")
+          .eq("admin_email", adminEmail)
+          .eq("id", msg.id)
+          .maybeSingle();
+        const row: any = cached;
+        if (row && (row.body_html || row.body_text)) {
+          setSelectedMessage({
+            id: row.id,
+            threadId: row.thread_id || "",
+            snippet: row.snippet || "",
+            from: row.sender_name ? `${row.sender_name} <${row.sender_email || ""}>` : row.sender_email || "",
+            to: row.recipient_email || "",
+            cc: "",
+            subject: row.subject || "",
+            date: row.internal_date || "",
+            body: row.body_html || row.body_text || "",
+            isHtml: !!row.body_html,
+            attachments: [],
+            unread: false,
+            starred: !!row.is_starred,
+            labelIds: row.label_ids || [],
+          });
+          setMessageLoading(false);
+          servedFromCache = true;
+        }
+      } catch { /* fall through to Gmail */ }
+    }
+
+    if (servedFromCache) return;
+
     try {
       const { data, error } = await supabase.functions.invoke("gmail-message", { body: { messageId: msg.id } });
       if (error) throw error;
       setSelectedMessage(data);
-      setReplyState(null);
-      setEmojiPickerOpen(false);
-      // Mark as read if it was unread
-      if (msg.unread) {
-        await supabase.functions.invoke("gmail-action", { body: { action: "mark-read", messageId: msg.id } });
-        setMessages((prev) => prev.map((m) => (m.id === msg.id ? { ...m, unread: false } : m)));
+      if (adminEmail && data) {
+        const { name, email } = parseFrom(data.from || "");
+        supabase.from("cached_emails" as any).upsert({
+          id: data.id,
+          admin_email: adminEmail,
+          thread_id: data.threadId || null,
+          subject: data.subject || null,
+          sender_name: name || null,
+          sender_email: email || null,
+          recipient_email: data.to || null,
+          snippet: data.snippet || null,
+          body_html: data.isHtml ? data.body : null,
+          body_text: data.isHtml ? null : data.body,
+          is_read: true,
+          is_starred: !!data.starred,
+          is_archived: false,
+          label_ids: data.labelIds || null,
+          internal_date: data.date ? new Date(data.date).toISOString() : null,
+          fetched_at: new Date().toISOString(),
+        }, { onConflict: "admin_email,id" }).then(() => {});
       }
     } catch (err: any) {
       toast({ title: "Failed to load message", description: err?.message, variant: "destructive" });
@@ -375,18 +442,25 @@ export default function GmailPanel() {
       if (action === "archive" || action === "trash") {
         setMessages((prev) => prev.filter((m) => m.id !== messageId));
         if (selectedMessage?.id === messageId) { setSelectedMessage(null); setReplyState(null); }
+        if (action === "archive") updateCache(messageId, { is_archived: true });
+        else if (adminEmail) {
+          supabase.from("cached_emails" as any).delete().eq("admin_email", adminEmail).eq("id", messageId).then(() => {});
+        }
         toast({ title: action === "archive" ? "Email archived" : "Moved to trash" });
         return;
       } else if (action === "mark-unread") {
         setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, unread: true } : m)));
         if (selectedMessage?.id === messageId) setSelectedMessage({ ...selectedMessage, unread: true });
+        updateCache(messageId, { is_read: false });
         toast({ title: "Marked as unread" });
         return;
       } else if (action === "star" || action === "unstar") {
         const starred = action === "star";
         setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, starred } : m)));
         if (selectedMessage?.id === messageId) setSelectedMessage({ ...selectedMessage, starred });
+        updateCache(messageId, { is_starred: starred });
       }
+
       toast({ title: "Done" });
     } catch (err: any) {
       toast({ title: "Action failed", description: err?.message, variant: "destructive" });
