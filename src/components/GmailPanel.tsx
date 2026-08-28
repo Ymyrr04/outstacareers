@@ -86,6 +86,10 @@ export default function GmailPanel() {
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const [polling, setPolling] = useState(false);
   const [tokenExpired, setTokenExpired] = useState(false);
+  const [thread, setThread] = useState<ThreadMessage[] | null>(null);
+  const [threadLoading, setThreadLoading] = useState(false);
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+
   const lastFetchedAtRef = useRef<Date>(new Date());
   const knownIdsRef = useRef<Set<string>>(new Set());
   const listRef = useRef<HTMLDivElement | null>(null);
