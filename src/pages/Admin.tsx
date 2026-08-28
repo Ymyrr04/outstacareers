@@ -409,6 +409,13 @@ const Admin = () => {
     if (urlTab && validTabs.includes(urlTab)) return urlTab;
     return 'jobs';
   });
+  const [gmailUnreadCount, setGmailUnreadCount] = useState(0);
+  useEffect(() => {
+    const handler = (e: Event) => setGmailUnreadCount((e as CustomEvent).detail || 0);
+    window.addEventListener('gmail-unread-count', handler);
+    return () => window.removeEventListener('gmail-unread-count', handler);
+  }, []);
+
   const [isTabSwitching, startTabTransition] = useTransition();
   const [showDelayedLoader, setShowDelayedLoader] = useState(false);
   const [manualTabLoading, setManualTabLoading] = useState(false);
