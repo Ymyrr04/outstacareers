@@ -11,29 +11,7 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-function b64(s: string): string {
-  return btoa(Array.from(new TextEncoder().encode(s), (b) => String.fromCharCode(b)).join(""));
-}
-
-function header(v: string): string {
-  return /^[\x00-\x7F]*$/.test(v) ? v : `=?UTF-8?B?${b64(v)}?=`;
-}
-
-function createRawEmail(to: string, cc: string, bcc: string, subject: string, body: string, inReplyTo = "", references = ""): string {
-  const email = [
-    to ? `To: ${to}` : "",
-    cc ? `Cc: ${cc}` : "",
-    bcc ? `Bcc: ${bcc}` : "",
-    `Subject: ${header(subject)}`,
-    inReplyTo ? `In-Reply-To: ${inReplyTo}` : "",
-    references ? `References: ${references}` : "",
-    "MIME-Version: 1.0",
-    "Content-Type: text/html; charset=\"UTF-8\"",
-    "",
-    body,
-  ].filter(Boolean).join("\r\n");
-  return b64(email).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-}
+import { createRawEmail } from "../_shared/gmailMime.ts";
 
 
 Deno.serve(async (req) => {
@@ -58,12 +36,21 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ connected: false }), { status: 401, headers: corsHeaders });
     }
 
-    const { to, cc, bcc, subject, body, threadId, inReplyTo, references } = await req.json();
+    const { to, cc, bcc, subject, body, threadId, inReplyTo, references, attachments, draftId } = await req.json();
     if (!to || !subject) {
       return new Response(JSON.stringify({ error: "to and subject required" }), { status: 400, headers: corsHeaders });
     }
 
-    const raw = createRawEmail(to, cc || "", bcc || "", subject, body || "", inReplyTo || "", references || "");
+    const raw = createRawEmail({
+      to,
+      cc: cc || "",
+      bcc: bcc || "",
+      subject,
+      body: body || "",
+      inReplyTo: inReplyTo || "",
+      references: references || "",
+      attachments: attachments || [],
+    });
     const res = await callAsAppUser({
       gatewayBaseUrl: GATEWAY_BASE_URL,
       connectionAPIKey,
@@ -81,6 +68,20 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: errBody }), { status: res.status, headers: corsHeaders });
     }
     const data = await res.json();
+
+    // If this message came from a saved draft, remove the draft now that it was sent.
+    if (draftId) {
+      try {
+        await callAsAppUser({
+          gatewayBaseUrl: GATEWAY_BASE_URL,
+          connectionAPIKey,
+          connectorId: CONNECTOR_ID,
+          path: `/gmail/v1/users/me/drafts/${draftId}`,
+          init: { method: "DELETE" },
+        });
+      } catch (_e) { /* best-effort */ }
+    }
+
     return new Response(JSON.stringify({ success: true, messageId: data.id, threadId: data.threadId }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
