@@ -82,9 +82,34 @@ Deno.serve(async (req) => {
     }
 
     const profile = await res.json();
+
+    // Gmail signature for the primary send-as address (best effort).
+    let signature = "";
+    try {
+      const sendAsRes = await callAsAppUser({
+        gatewayBaseUrl: GATEWAY_BASE_URL,
+        connectionAPIKey,
+        connectorId: CONNECTOR_ID,
+        path: "/gmail/v1/users/me/settings/sendAs",
+      });
+      if (sendAsRes.ok) {
+        const sendAs = await sendAsRes.json();
+        const list: any[] = sendAs?.sendAs || [];
+        const primary =
+          list.find((s: any) => s.isPrimary) ||
+          list.find((s: any) => (s.sendAsEmail || "").toLowerCase() === (profile.emailAddress || "").toLowerCase()) ||
+          list.find((s: any) => s.signature);
+        signature = primary?.signature || "";
+      } else {
+        console.error("sendAs fetch failed:", sendAsRes.status, await sendAsRes.text());
+      }
+    } catch (e) {
+      console.error("sendAs error:", e);
+    }
+
     return new Response(JSON.stringify({
       connected: true,
-      profile: { emailAddress: profile.emailAddress, messagesTotal: profile.messagesTotal, threadsTotal: profile.threadsTotal },
+      profile: { emailAddress: profile.emailAddress, messagesTotal: profile.messagesTotal, threadsTotal: profile.threadsTotal, signature },
     }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
