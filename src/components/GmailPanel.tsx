@@ -13,6 +13,13 @@ interface GmailProfile {
   emailAddress: string;
   messagesTotal: number;
   threadsTotal: number;
+  signature?: string;
+}
+
+// Gmail-style signature block appended to new messages / replies.
+function signatureHtml(sig?: string): string {
+  if (!sig || !sig.trim()) return "";
+  return `<br/><br/><div class="gmail-signature">${sig}</div>`;
 }
 
 interface MessageMeta {
@@ -852,6 +859,7 @@ export default function GmailPanel() {
           initialTo={replyState.to}
           initialSubject={replyState.subject}
           initialBody={replyState.body}
+          signature={profile?.signature}
           sending={sending}
           onClose={() => setReplyState(null)}
           onSend={async (to, cc, subj, body, extra) => {
@@ -869,7 +877,7 @@ export default function GmailPanel() {
 
 
         {composeOpen && (
-          <ComposeDialog onClose={() => { setComposeOpen(false); setDraftInitial(null); }} onSend={handleSend} sending={sending} initial={draftInitial || undefined} />
+          <ComposeDialog onClose={() => { setComposeOpen(false); setDraftInitial(null); }} onSend={handleSend} sending={sending} initial={draftInitial || undefined} signature={profile?.signature} />
         )}
       </div>
     );
@@ -1017,7 +1025,7 @@ export default function GmailPanel() {
 
       {/* Compose dialog */}
       {composeOpen && (
-        <ComposeDialog onClose={() => { setComposeOpen(false); setDraftInitial(null); }} onSend={handleSend} sending={sending} initial={draftInitial || undefined} />
+        <ComposeDialog onClose={() => { setComposeOpen(false); setDraftInitial(null); }} onSend={handleSend} sending={sending} initial={draftInitial || undefined} signature={profile?.signature} />
       )}
     </div>
   );
@@ -1079,16 +1087,18 @@ function ComposeDialog({
   onSend,
   sending,
   initial,
+  signature,
 }: {
   onClose: () => void;
   onSend: (to: string, cc: string, subject: string, body: string, extra?: { attachments?: any[]; draftId?: string }) => void;
   sending: boolean;
   initial?: { to?: string; cc?: string; subject?: string; body?: string; draftId?: string };
+  signature?: string;
 }) {
   const [to, setTo] = useState(initial?.to || "");
   const [cc, setCc] = useState(initial?.cc || "");
   const [subject, setSubject] = useState(initial?.subject || "");
-  const [body, setBody] = useState(initial?.body || "");
+  const [body, setBody] = useState(initial?.body || signatureHtml(signature));
   const [files, setFiles] = useState<PendingAttachment[]>([]);
   const filesRef = useRef<PendingAttachment[]>([]);
   useEffect(() => { filesRef.current = files; }, [files]);
@@ -1313,6 +1323,7 @@ function InlineCompose({
   initialTo,
   initialSubject,
   initialBody,
+  signature,
   sending,
   onClose,
   onSend,
@@ -1321,6 +1332,7 @@ function InlineCompose({
   initialTo: string;
   initialSubject: string;
   initialBody: string;
+  signature?: string;
   sending: boolean;
   onClose: () => void;
   onSend: (to: string, cc: string, subject: string, body: string, extra?: { attachments?: any[] }) => void;
@@ -1329,7 +1341,7 @@ function InlineCompose({
   const [to, setTo] = useState(initialTo);
   const [cc, setCc] = useState("");
   const [subject, setSubject] = useState(initialSubject);
-  const [body, setBody] = useState(() => plainTextToHtml(initialBody));
+  const [body, setBody] = useState(() => signatureHtml(signature) + plainTextToHtml(initialBody));
   const [files, setFiles] = useState<PendingAttachment[]>([]);
   const totalSize = files.reduce((s, f) => s + f.file.size, 0);
 
