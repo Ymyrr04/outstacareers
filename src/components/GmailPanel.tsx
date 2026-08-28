@@ -204,7 +204,14 @@ export default function GmailPanel() {
       await supabase.functions.invoke("gmail-action", { body: { action, messageId } });
       if (action === "archive" || action === "trash") {
         setMessages((prev) => prev.filter((m) => m.id !== messageId));
-        if (selectedMessage?.id === messageId) setSelectedMessage(null);
+        if (selectedMessage?.id === messageId) { setSelectedMessage(null); setReplyState(null); }
+        toast({ title: action === "archive" ? "Email archived" : "Moved to trash" });
+        return;
+      } else if (action === "mark-unread") {
+        setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, unread: true } : m)));
+        if (selectedMessage?.id === messageId) setSelectedMessage({ ...selectedMessage, unread: true });
+        toast({ title: "Marked as unread" });
+        return;
       } else if (action === "star" || action === "unstar") {
         const starred = action === "star";
         setMessages((prev) => prev.map((m) => (m.id === messageId ? { ...m, starred } : m)));
