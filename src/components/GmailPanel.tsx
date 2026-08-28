@@ -348,7 +348,113 @@ export default function GmailPanel() {
               ))}
             </div>
           )}
+
+          {reactions[selectedMessage.id] && (
+            <div className="mt-4">
+              <span className="inline-flex items-center justify-center px-2.5 py-1 rounded-full border border-cyan-100 bg-cyan-50/40 text-base leading-none">
+                {reactions[selectedMessage.id]}
+              </span>
+            </div>
+          )}
+
+          {/* Action bar */}
+          <div
+            className="flex items-center gap-2 bg-white mt-5 -mx-5 -mb-5 rounded-b-lg"
+            style={{ borderTop: "0.5px solid #C8F0F8", padding: "10px 14px" }}
+          >
+            <button
+              onClick={() => openReply("reply")}
+              data-variant="ghost"
+              className="inline-flex items-center gap-1.5 rounded-full border-[0.5px] border-border bg-transparent hover:bg-muted"
+              style={{ padding: "6px 14px", fontSize: "12px" }}
+            >
+              <Reply className="w-3.5 h-3.5" /> Reply
+            </button>
+            <button
+              onClick={() => openReply("forward")}
+              data-variant="ghost"
+              className="inline-flex items-center gap-1.5 rounded-full border-[0.5px] border-border bg-transparent hover:bg-muted"
+              style={{ padding: "6px 14px", fontSize: "12px" }}
+            >
+              <Forward className="w-3.5 h-3.5" /> Forward
+            </button>
+            <div className="relative">
+              <button
+                onClick={() => setEmojiPickerOpen((v) => !v)}
+                data-variant="ghost"
+                title="Add reaction"
+                className="inline-flex items-center rounded-full border-[0.5px] border-border bg-transparent hover:bg-muted"
+                style={{ padding: "6px 10px" }}
+              >
+                <Smile className="w-3.5 h-3.5" />
+              </button>
+              {emojiPickerOpen && (
+                <div className="absolute left-0 top-full mt-1 z-10 flex gap-1 rounded-full border border-cyan-100 bg-white px-2 py-1.5 shadow-md">
+                  {["👍", "❤️", "😂", "😮", "😢", "🙏"].map((e) => (
+                    <button
+                      key={e}
+                      onClick={() => {
+                        setReactions((prev) => ({ ...prev, [selectedMessage.id]: e }));
+                        setEmojiPickerOpen(false);
+                      }}
+                      className="text-base hover:scale-125 transition-transform"
+                    >
+                      {e}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            <button
+              onClick={() => handleAction("mark-unread", selectedMessage.id)}
+              data-variant="ghost"
+              title="Mark as unread"
+              className="inline-flex items-center rounded-full border-[0.5px] border-border bg-transparent hover:bg-muted"
+              style={{ padding: "6px 10px" }}
+            >
+              <MailOpen className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => handleAction("archive", selectedMessage.id)}
+              data-variant="ghost"
+              title="Archive"
+              className="inline-flex items-center rounded-full border-[0.5px] border-border bg-transparent hover:bg-muted"
+              style={{ padding: "6px 10px" }}
+            >
+              <Archive className="w-3.5 h-3.5" />
+            </button>
+            <button
+              onClick={() => handleAction("trash", selectedMessage.id)}
+              data-variant="ghost"
+              title="Delete"
+              className="inline-flex items-center rounded-full border-[0.5px] border-border bg-transparent hover:bg-muted group"
+              style={{ padding: "6px 10px" }}
+            >
+              <Trash2 className="w-3.5 h-3.5 group-hover:text-[#E24B4A]" />
+            </button>
+          </div>
         </div>
+
+        {/* Reply / Forward compose box */}
+        {replyState && (
+          <InlineCompose
+            key={replyState.mode}
+            mode={replyState.mode}
+            initialTo={replyState.to}
+            initialSubject={replyState.subject}
+            initialBody={replyState.body}
+            sending={sending}
+            onClose={() => setReplyState(null)}
+            onSend={async (to, cc, subject, body) => {
+              await handleSend(to, cc, subject, body);
+              setReplyState(null);
+            }}
+          />
+        )}
+
+        {composeOpen && (
+          <ComposeDialog onClose={() => setComposeOpen(false)} onSend={handleSend} sending={sending} />
+        )}
       </div>
     );
   }
