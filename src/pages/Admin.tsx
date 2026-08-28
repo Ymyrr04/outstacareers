@@ -303,6 +303,7 @@ const Admin = () => {
   // "Up for grabs" open tasks — shown as a Task notification in the header
   const [openTaskCount, setOpenTaskCount] = useState(0);
   const [myCalendarOpen, setMyCalendarOpen] = useState(false);
+
   const fetchOpenTaskCount = useCallback(async () => {
     const { count } = await supabase
       .from('calendar_events')
