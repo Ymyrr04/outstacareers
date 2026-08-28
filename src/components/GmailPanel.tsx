@@ -297,12 +297,9 @@ export default function GmailPanel() {
             <div>{selectedMessage.date && new Date(selectedMessage.date).toLocaleString()}</div>
           </div>
           <div className="border-t pt-4 text-sm">
-            {selectedMessage.isHtml ? (
-              <div className="prose prose-sm max-w-none [&_*]:m-0 [&_a]:text-cyan-600" dangerouslySetInnerHTML={{ __html: selectedMessage.body }} />
-            ) : (
-              <pre className="whitespace-pre-wrap font-sans text-sm">{selectedMessage.body}</pre>
-            )}
+            <MessageBody body={selectedMessage.body} isHtml={selectedMessage.isHtml} />
           </div>
+
           {selectedMessage.attachments.length > 0 && (
             <div className="border-t mt-4 pt-4 flex flex-wrap gap-2">
               {selectedMessage.attachments.map((a) => (
