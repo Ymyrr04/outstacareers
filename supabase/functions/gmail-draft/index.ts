@@ -51,6 +51,15 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ success: true }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
+    if (action === "list-drafts") {
+      const res = await call("/gmail/v1/users/me/drafts?maxResults=100", { method: "GET" });
+      const text = await res.text();
+      if (!res.ok) return new Response(JSON.stringify({ error: text }), { status: res.status, headers: corsHeaders });
+      const parsed = JSON.parse(text || "{}");
+      const drafts = (parsed.drafts || []).map((d: any) => ({ draftId: d.id, messageId: d.message?.id, threadId: d.message?.threadId }));
+      return new Response(JSON.stringify({ drafts }), { headers: { ...corsHeaders, "Content-Type": "application/json" } });
+    }
+
     if (action === "get-draft") {
       const draftId = payload.draftId;
       if (!draftId) return new Response(JSON.stringify({ error: "draftId required" }), { status: 400, headers: corsHeaders });
