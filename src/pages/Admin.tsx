@@ -1127,10 +1127,33 @@ const Admin = () => {
       .channel('admin-applicants-sync')
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'applicants_prescreen' },
-        (payload) => {
-          console.log('Admin: Applicant change detected:', payload.eventType);
+        { event: 'INSERT', schema: 'public', table: 'applicants_prescreen' },
+        (_payload) => {
+          // New applicant — needs full data including interview session
+          // Only refetch if admin is currently on the applicants tab
           fetchApplicants();
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'applicants_prescreen' },
+        (payload) => {
+          // Update just the changed applicant in state — no full refetch
+          const updated = payload.new as any;
+          if (!updated?.id) return;
+          setApplicants(prev => prev.map(a =>
+            a.id === updated.id ? { ...a, ...updated } : a
+          ));
+        }
+      )
+      .on(
+        'postgres_changes',
+        { event: 'DELETE', schema: 'public', table: 'applicants_prescreen' },
+        (payload) => {
+          // Remove deleted applicant from state
+          const deleted = payload.old as any;
+          if (!deleted?.id) return;
+          setApplicants(prev => prev.filter(a => a.id !== deleted.id));
         }
       )
       .subscribe();
