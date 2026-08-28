@@ -110,14 +110,14 @@ export default function GmailPanel() {
       const { data, error } = await supabase.functions.invoke("gmail-oauth-start", {
         body: { origin: window.location.origin },
       });
-      if (error) throw error;
+      if (error) throw await getFunctionError(error, "Could not start Gmail connection.");
       const completion = waitForOAuthCode(popup);
       popup.location.href = data.authorizationUrl;
       const code = await completion;
       const { error: completeError } = await supabase.functions.invoke("gmail-oauth-complete", {
         body: { code },
       });
-      if (completeError) throw completeError;
+      if (completeError) throw await getFunctionError(completeError, "Could not finish Gmail connection.");
       await checkStatus();
 
       toast({ title: "Gmail connected", description: "Your inbox is now available." });
@@ -444,6 +444,23 @@ export default function GmailPanel() {
       )}
     </div>
   );
+}
+
+async function getFunctionError(error: any, fallback: string) {
+  try {
+    const response = error?.context;
+    if (response && typeof response.clone === "function") {
+      const body = await response.clone().json();
+      const rawMessage = body?.error ?? body?.message;
+      if (typeof rawMessage === "string" && rawMessage.trim()) {
+        const gatewayMessage = rawMessage.match(/"message":"([^"]+)"/)?.[1];
+        return new Error(gatewayMessage ?? rawMessage);
+      }
+    }
+  } catch {
+    // Fall through to the SDK message when the response is not JSON.
+  }
+  return new Error(error?.message ?? fallback);
 }
 
 function waitForOAuthCode(popup: Window) {
