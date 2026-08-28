@@ -821,7 +821,7 @@ export default function GmailPanel() {
                           {m.attachments?.length > 0 && (
                             <div className="border-t mt-4 pt-3 flex flex-wrap gap-2">
                               {m.attachments.map((a) => (
-                                <AttachmentPill key={a.attachmentId} messageId={m.id} attachment={a} />
+                                <AttachmentPill key={a.attachmentId} messageId={m.id} attachment={a} toast={toast} />
                               ))}
                             </div>
                           )}
@@ -1252,7 +1252,7 @@ function DraftStatus({ state, savedAt }: { state: "idle" | "saving" | "saved" | 
 }
 
 
-function AttachmentPill({ messageId, attachment }: { messageId: string; attachment: { filename: string; size: number; mimeType: string; attachmentId: string } }) {
+function AttachmentPill({ messageId, attachment, toast }: { messageId: string; attachment: { filename: string; size: number; mimeType: string; attachmentId: string }; toast: ReturnType<typeof useToast>["toast"] }) {
   const [state, setState] = useState<"idle" | "loading" | "done">("idle");
   const [hover, setHover] = useState(false);
 
@@ -1280,8 +1280,7 @@ function AttachmentPill({ messageId, attachment }: { messageId: string; attachme
       setTimeout(() => setState("idle"), 2000);
     } catch {
       setState("idle");
-      // eslint-disable-next-line no-alert
-      console.error("Attachment download failed");
+      toast({ title: "Download failed", description: "Could not download attachment.", variant: "destructive" });
     }
   };
 
