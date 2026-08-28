@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect } from "react";
+import DOMPurify from "dompurify";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, MailOpen, Star, Archive, Trash2, RefreshCw, Send, Inbox, Search, Loader2, StarOff, Link2, Unlink, Paperclip, ArrowLeft, X } from "lucide-react";
@@ -297,12 +298,9 @@ export default function GmailPanel() {
             <div>{selectedMessage.date && new Date(selectedMessage.date).toLocaleString()}</div>
           </div>
           <div className="border-t pt-4 text-sm">
-            {selectedMessage.isHtml ? (
-              <div className="prose prose-sm max-w-none [&_*]:m-0 [&_a]:text-cyan-600" dangerouslySetInnerHTML={{ __html: selectedMessage.body }} />
-            ) : (
-              <pre className="whitespace-pre-wrap font-sans text-sm">{selectedMessage.body}</pre>
-            )}
+            <MessageBody body={selectedMessage.body} isHtml={selectedMessage.isHtml} />
           </div>
+
           {selectedMessage.attachments.length > 0 && (
             <div className="border-t mt-4 pt-4 flex flex-wrap gap-2">
               {selectedMessage.attachments.map((a) => (
@@ -527,6 +525,60 @@ function ComposeDialog({ onClose, onSend, sending }: { onClose: () => void; onSe
           </button>
         </div>
       </div>
+    </div>
+  );
+}
+
+function MessageBody({ body, isHtml }: { body: string; isHtml: boolean }) {
+  const [showQuoted, setShowQuoted] = useState(false);
+
+  if (isHtml) {
+    const clean = DOMPurify.sanitize(body, { USE_PROFILES: { html: true }, ADD_ATTR: ["target"] });
+    return (
+      <div
+        className="gmail-body text-sm leading-relaxed break-words [&_a]:text-cyan-600 [&_a]:underline [&_img]:max-w-full [&_img]:h-auto [&_blockquote]:border-l-2 [&_blockquote]:border-gray-200 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_table]:max-w-full [&_p]:my-2"
+        dangerouslySetInnerHTML={{ __html: clean }}
+      />
+    );
+  }
+
+  // Plain text: split off the quoted reply chain like Gmail does.
+  const lines = body.replace(/\r\n/g, "\n").split("\n");
+  let splitAt = lines.length;
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i].trim();
+    if (
+      /^>/.test(l) ||
+      /^On .+wrote:$/.test(l) ||
+      /^-{2,}\s*Forwarded message/i.test(l) ||
+      /^_{5,}$/.test(l)
+    ) {
+      splitAt = i;
+      break;
+    }
+  }
+  const main = lines.slice(0, splitAt).join("\n").trimEnd();
+  const quoted = lines.slice(splitAt).join("\n").trim();
+
+  return (
+    <div className="text-sm leading-relaxed">
+      <pre className="whitespace-pre-wrap break-words font-sans">{main || body}</pre>
+      {quoted && (
+        <div className="mt-2">
+          <button
+            onClick={() => setShowQuoted((v) => !v)}
+            className="px-2 py-0.5 rounded bg-muted text-muted-foreground hover:bg-gray-200 text-xs leading-none"
+            title={showQuoted ? "Hide quoted text" : "Show quoted text"}
+          >
+            •••
+          </button>
+          {showQuoted && (
+            <pre className="mt-2 whitespace-pre-wrap break-words font-sans border-l-2 border-gray-200 pl-3 text-muted-foreground">
+              {quoted.replace(/^> ?/gm, "")}
+            </pre>
+          )}
+        </div>
+      )}
     </div>
   );
 }

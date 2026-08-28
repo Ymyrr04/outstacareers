@@ -16,37 +16,46 @@ function getHeader(headers: any[], name: string): string {
   return h?.value || "";
 }
 
-function decodeBase64(data: string): string {
+function decodeBase64(data: string, charset = "utf-8"): string {
   try {
-    const normalized = data.replace(/-/g, "+").replace(/_/g, "/");
-    return atob(normalized);
+    let normalized = data.replace(/-/g, "+").replace(/_/g, "/");
+    while (normalized.length % 4 !== 0) normalized += "=";
+    const binary = atob(normalized);
+    const bytes = Uint8Array.from(binary, (c) => c.charCodeAt(0));
+    try {
+      return new TextDecoder(charset).decode(bytes);
+    } catch {
+      return new TextDecoder("utf-8").decode(bytes);
+    }
   } catch {
     return "";
   }
 }
 
-function extractBody(payload: any): string {
-  if (!payload) return "";
-  if (payload.body?.data) {
-    const decoded = decodeBase64(payload.body.data);
-    if (payload.mimeType === "text/html") return decoded;
-    if (payload.mimeType === "text/plain") return decoded;
-    return decoded;
-  }
-  if (payload.parts) {
-    // Prefer text/plain, fall back to text/html
-    const plain = payload.parts.find((p: any) => p.mimeType === "text/plain" && p.body?.data);
-    if (plain) return decodeBase64(plain.body.data);
-    const html = payload.parts.find((p: any) => p.mimeType === "text/html" && p.body?.data);
-    if (html) return decodeBase64(html.body.data);
-    // Recurse into nested parts
-    for (const part of payload.parts) {
-      const nested = extractBody(part);
-      if (nested) return nested;
+function charsetOf(part: any): string {
+  const ct = (part?.headers || []).find((h: any) => h.name?.toLowerCase() === "content-type")?.value || "";
+  const m = /charset=["']?([\w-]+)/i.exec(ct);
+  return (m?.[1] || "utf-8").toLowerCase();
+}
+
+// Collect the best html and plain text bodies anywhere in the MIME tree,
+// skipping attachment parts.
+function collectBodies(payload: any, acc: { html: string; text: string }) {
+  if (!payload) return;
+  const isAttachment = !!payload.filename && payload.filename.length > 0;
+  const data = payload.body?.data;
+  if (data && !isAttachment) {
+    if (payload.mimeType === "text/html" && !acc.html) {
+      acc.html = decodeBase64(data, charsetOf(payload));
+    } else if (payload.mimeType === "text/plain" && !acc.text) {
+      acc.text = decodeBase64(data, charsetOf(payload));
+    } else if (!acc.html && !acc.text && !payload.mimeType?.startsWith("multipart/")) {
+      acc.text = decodeBase64(data, charsetOf(payload));
     }
   }
-  return "";
+  if (Array.isArray(payload.parts)) payload.parts.forEach((p: any) => collectBodies(p, acc));
 }
+
 
 function extractAttachments(payload: any): { filename: string; mimeType: string; size: number; attachmentId: string }[] {
   const attachments: { filename: string; mimeType: string; size: number; attachmentId: string }[] = [];
@@ -98,8 +107,11 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: errBody }), { status: res.status, headers: corsHeaders });
     }
     const msg = await res.json();
-    const body = extractBody(msg.payload);
-    const isHtml = msg.payload?.mimeType === "text/html" || (msg.payload?.parts?.some((p: any) => p.mimeType === "text/html"));
+    const bodies = { html: "", text: "" };
+    collectBodies(msg.payload, bodies);
+    const body = bodies.html || bodies.text;
+    const isHtml = !!bodies.html;
+
     const attachments = extractAttachments(msg.payload);
 
     return new Response(JSON.stringify({
