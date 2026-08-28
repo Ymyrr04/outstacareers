@@ -575,12 +575,33 @@ export const HiringPipelineKanban = () => {
     return Object.values(stats);
   }, [requests, adminUsers]);
 
+  const openExportDialog = () => {
+    setExportStageSlugs(stages.map(s => s.slug));
+    setExportDialogOpen(true);
+  };
+
+  const toggleExportStage = (slug: string, checked: boolean) => {
+    setExportStageSlugs(prev =>
+      checked ? [...prev, slug] : prev.filter(s => s !== slug)
+    );
+  };
+
   const handleExport = async () => {
-    const result = await exportPipeline();
-    if (result.success) {
-      toast({ title: 'Success', description: `Exported ${result.count} pipeline requests` });
-    } else {
-      toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
+    if (exportStageSlugs.length === 0) {
+      toast({ title: 'No stages selected', description: 'Select at least one stage to export.', variant: 'destructive' });
+      return;
+    }
+    setIsExporting(true);
+    try {
+      const result = await exportPipeline(exportStageSlugs);
+      if (result.success) {
+        toast({ title: 'Success', description: `Exported ${result.count} pipeline requests` });
+        setExportDialogOpen(false);
+      } else {
+        toast({ title: 'Error', description: result.error || 'Export failed', variant: 'destructive' });
+      }
+    } finally {
+      setIsExporting(false);
     }
   };
 
