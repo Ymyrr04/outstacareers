@@ -1155,8 +1155,6 @@ const Admin = () => {
 
     if (unscoredWithCv.length === 0) return;
 
-    console.log(`Auto-scoring ${unscoredWithCv.length} unscored applicants with CV text...`);
-    
     // Score up to 5 at a time to avoid overloading
     const batch = unscoredWithCv.slice(0, 5);
     batch.forEach(applicant => {
@@ -1164,12 +1162,26 @@ const Admin = () => {
       
       supabase.functions.invoke('rescore-cv', {
         body: { applicant_id: applicant.id }
-      }).then(({ error }) => {
-        if (error) {
-          console.error(`Auto-score failed for ${applicant.id}:`, error);
-        } else {
-          console.log(`Auto-scored applicant ${applicant.full_name}`);
-          fetchApplicants();
+      }).then(async ({ error }) => {
+        if (error) return;
+        
+        // Fetch only the scored applicant's updated fields
+        const { data: updated } = await supabase
+          .from('applicants_prescreen')
+          .select(`
+            id, total_score, role_experience_score, skills_tools_score,
+            availability_setup_score, bonus_red_flag_score, ai_summary,
+            ai_assessment_details, extracted_skills, extracted_tools,
+            ranking_status
+          `)
+          .eq('id', applicant.id)
+          .single();
+
+        if (updated) {
+          // Update just this one applicant in state — no full refetch
+          setApplicants(prev => prev.map(a =>
+            a.id === applicant.id ? { ...a, ...updated } : a
+          ));
         }
       });
     });
