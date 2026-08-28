@@ -1330,6 +1330,7 @@ function InlineCompose({
   onClose: () => void;
   onSend: (to: string, cc: string, subject: string, body: string, extra?: { attachments?: any[] }) => void;
 }) {
+  const { toast } = useToast();
   const [to, setTo] = useState(initialTo);
   const [cc, setCc] = useState("");
   const [subject, setSubject] = useState(initialSubject);
@@ -1366,7 +1367,14 @@ function InlineCompose({
       <div className="flex items-center justify-end gap-2 px-4 py-2.5 border-t border-gray-100">
         <button onClick={onClose} data-variant="ghost" className="px-3 py-1.5 text-xs rounded-md hover:bg-muted">Discard</button>
         <button
-          onClick={async () => onSend(to, cc, subject, body, { attachments: await serializeAttachments(files) })}
+          onClick={async () => {
+            try {
+              const attachments = await serializeAttachments(files);
+              onSend(to, cc, subject, body, { attachments });
+            } catch {
+              toast({ title: "Failed to attach files", description: "One or more files could not be attached.", variant: "destructive" });
+            }
+          }}
           disabled={sending || !to || !subject || totalSize > MAX_TOTAL_BYTES}
           data-variant="primary"
           className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-cyan-600 text-white text-xs font-medium hover:bg-cyan-700 disabled:opacity-50"
