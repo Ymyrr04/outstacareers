@@ -321,6 +321,8 @@ export default function GmailPanel() {
       }
       incoming.forEach((m) => known.add(m.id));
       lastFetchedAtRef.current = new Date();
+      cacheMessages(incoming);
+
     } catch (err: any) {
       // Silent failure — retry on next interval
       if (err?.context?.status === 401) setTokenExpired(true);
