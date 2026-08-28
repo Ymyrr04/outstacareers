@@ -244,6 +244,30 @@ export default function GmailPanel() {
     setSearch(searchInput);
   };
 
+  const openReply = (mode: "reply" | "forward") => {
+    if (!selectedMessage) return;
+    const quoted = [
+      "",
+      "---------- Original message ----------",
+      `From: ${selectedMessage.from}`,
+      `Date: ${selectedMessage.date}`,
+      `Subject: ${selectedMessage.subject}`,
+      `To: ${selectedMessage.to}`,
+      "",
+      htmlToPlainText(selectedMessage.body),
+    ].join("\n");
+    setReplyState({
+      mode,
+      to: mode === "reply" ? parseFrom(selectedMessage.from).email : "",
+      subject:
+        mode === "reply"
+          ? selectedMessage.subject?.startsWith("Re:") ? selectedMessage.subject : `Re: ${selectedMessage.subject || ""}`
+          : `Fwd: ${selectedMessage.subject || ""}`,
+      body: mode === "forward" ? quoted : "",
+    });
+    setEmojiPickerOpen(false);
+  };
+
   // --- Not connected state ---
   if (connected === null) {
     return (
