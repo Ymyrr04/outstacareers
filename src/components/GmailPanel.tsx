@@ -780,6 +780,12 @@ export default function GmailPanel() {
             </div>
           </div>
 
+          {messageLoading && !thread && (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-6 h-6 animate-spin text-[#0ABEDF]" />
+            </div>
+          )}
+
           {/* Messages */}
           <div className="divide-y divide-gray-100 border-t border-gray-100">
             {threadMessages.map((m) => {
