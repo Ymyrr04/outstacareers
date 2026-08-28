@@ -437,8 +437,8 @@ export default function GmailPanel() {
   );
 }
 
-function waitForOAuthCompletion(popup: Window) {
-  return new Promise<void>((resolve, reject) => {
+function waitForOAuthCode(popup: Window) {
+  return new Promise<string>((resolve, reject) => {
     let poll: number | undefined;
     const cleanup = () => {
       window.removeEventListener("message", onMessage);
@@ -448,13 +448,12 @@ function waitForOAuthCompletion(popup: Window) {
       const type = event.data?.type;
       if (
         event.origin !== window.location.origin ||
-        event.source !== popup ||
         event.data?.connectorId !== "google_mail" ||
-        (type !== "appUserConnectorOAuthComplete" && type !== "appUserConnectorOAuthFailed")
+        (type !== "appUserConnectorOAuthCode" && type !== "appUserConnectorOAuthFailed")
       ) return;
       cleanup();
-      if (type === "appUserConnectorOAuthComplete") {
-        resolve();
+      if (type === "appUserConnectorOAuthCode" && event.data?.code) {
+        resolve(event.data.code as string);
         return;
       }
       popup.close();
@@ -468,6 +467,7 @@ function waitForOAuthCompletion(popup: Window) {
     }, 500);
   });
 }
+
 
 function ComposeDialog({ onClose, onSend, sending }: { onClose: () => void; onSend: (to: string, cc: string, subject: string, body: string) => void; sending: boolean }) {
   const [to, setTo] = useState("");
