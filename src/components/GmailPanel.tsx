@@ -4,6 +4,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, MailOpen, Star, Archive, Trash2, RefreshCw, Send, Inbox, Search, Loader2, StarOff, Link2, Unlink, Paperclip, ArrowLeft, X, Reply, Forward, Smile } from "lucide-react";
 import { RichTextEditor, plainTextToHtml } from "@/components/gmail/RichTextEditor";
+import { RecipientInput } from "@/components/gmail/RecipientInput";
+
 
 
 interface GmailProfile {
