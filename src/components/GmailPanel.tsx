@@ -1056,31 +1056,153 @@ function waitForOAuthCode(popup: Window) {
 }
 
 
-function ComposeDialog({ onClose, onSend, sending }: { onClose: () => void; onSend: (to: string, cc: string, subject: string, body: string) => void; sending: boolean }) {
-  const [to, setTo] = useState("");
-  const [cc, setCc] = useState("");
-  const [subject, setSubject] = useState("");
-  const [body, setBody] = useState("");
+const LOCAL_DRAFT_KEY = "gmail-compose-draft";
+
+function ComposeDialog({
+  onClose,
+  onSend,
+  sending,
+  initial,
+}: {
+  onClose: () => void;
+  onSend: (to: string, cc: string, subject: string, body: string, extra?: { attachments?: any[]; draftId?: string }) => void;
+  sending: boolean;
+  initial?: { to?: string; cc?: string; subject?: string; body?: string; draftId?: string };
+}) {
+  const [to, setTo] = useState(initial?.to || "");
+  const [cc, setCc] = useState(initial?.cc || "");
+  const [subject, setSubject] = useState(initial?.subject || "");
+  const [body, setBody] = useState(initial?.body || "");
+  const [files, setFiles] = useState<PendingAttachment[]>([]);
+  const [draftId, setDraftId] = useState<string | undefined>(initial?.draftId);
+  const [draftState, setDraftState] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [savedAt, setSavedAt] = useState<Date | null>(null);
+  const [recovery, setRecovery] = useState<{ to: string; cc: string; subject: string; body: string } | null>(null);
+
+  const latest = useRef({ to, cc, subject, body, draftId });
+  latest.current = { to, cc, subject, body, draftId };
+
+  // Draft recovery from the last unsaved local session
+  useEffect(() => {
+    if (initial) return;
+    try {
+      const raw = localStorage.getItem(LOCAL_DRAFT_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw);
+      if (parsed && (parsed.to || parsed.subject || parsed.body)) setRecovery(parsed);
+    } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const hasContent = () => {
+    const c = latest.current;
+    return !!(c.to.trim() || c.subject.trim() || htmlToPlainText(c.body));
+  };
+
+  const saveDraft = useCallback(async () => {
+    if (!hasContent()) return;
+    const c = latest.current;
+    setDraftState("saving");
+    try {
+      const attachments = await serializeAttachments(files);
+      const { data, error } = await supabase.functions.invoke("gmail-draft", {
+        body: { action: "save-draft", to: c.to, cc: c.cc, subject: c.subject, body: c.body, attachments, draftId: c.draftId },
+      });
+      if (error) throw error;
+      if (data?.draftId) setDraftId(data.draftId);
+      setSavedAt(new Date());
+      setDraftState("saved");
+      localStorage.removeItem(LOCAL_DRAFT_KEY);
+    } catch {
+      setDraftState("error");
+      try { localStorage.setItem(LOCAL_DRAFT_KEY, JSON.stringify({ to: c.to, cc: c.cc, subject: c.subject, body: c.body })); } catch { /* ignore */ }
+    }
+  }, [files]);
+
+  // Auto-save every 30s + on unmount / navigating away
+  useEffect(() => {
+    const interval = setInterval(() => { saveDraft(); }, 30000);
+    const onUnload = () => {
+      const c = latest.current;
+      if (hasContent()) {
+        try { localStorage.setItem(LOCAL_DRAFT_KEY, JSON.stringify({ to: c.to, cc: c.cc, subject: c.subject, body: c.body })); } catch { /* ignore */ }
+      }
+    };
+    window.addEventListener("beforeunload", onUnload);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener("beforeunload", onUnload);
+    };
+  }, [saveDraft]);
+
+  const closeWithSave = async () => {
+    if (hasContent()) await saveDraft();
+    onClose();
+  };
+
+  const handleSendClick = async () => {
+    const attachments = await serializeAttachments(files);
+    onSend(to, cc, subject, body, { attachments, draftId });
+    localStorage.removeItem(LOCAL_DRAFT_KEY);
+  };
+
+  const totalSize = files.reduce((s, f) => s + f.file.size, 0);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4" onClick={closeWithSave}>
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl" onClick={(e) => e.stopPropagation()}>
         <div className="flex items-center justify-between px-4 py-3 border-b">
-          <h3 className="text-sm font-semibold">New message</h3>
-          <button onClick={onClose} className="p-1 rounded-md hover:bg-muted"><X className="w-4 h-4" /></button>
+          <h3 className="text-sm font-semibold">{initial?.draftId ? "Draft" : "New message"}</h3>
+          <button onClick={closeWithSave} className="p-1 rounded-md hover:bg-muted"><X className="w-4 h-4" /></button>
         </div>
+
+        {recovery && (
+          <div className="flex items-center justify-between gap-3 px-4 py-2 bg-cyan-50/60 border-b border-cyan-100">
+            <span className="text-xs">You have an unsaved draft</span>
+            <span className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setTo(recovery.to || ""); setCc(recovery.cc || ""); setSubject(recovery.subject || ""); setBody(recovery.body || "");
+                  setRecovery(null);
+                }}
+                className="px-2.5 py-1 rounded-md bg-[#0ABEDF] text-white text-[11px] font-medium"
+              >
+                Restore
+              </button>
+              <button
+                onClick={() => { localStorage.removeItem(LOCAL_DRAFT_KEY); setRecovery(null); }}
+                className="px-2.5 py-1 rounded-md text-[11px] hover:bg-muted"
+              >
+                Discard
+              </button>
+            </span>
+          </div>
+        )}
+
         <div className="p-4 space-y-2">
           <RecipientInput value={to} onChange={setTo} placeholder="To" className="w-full px-3 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
           <RecipientInput value={cc} onChange={setCc} placeholder="Cc" className="w-full px-3 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
 
           <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className="w-full px-3 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
-          <RichTextEditor value={body} onChange={setBody} minHeight={240} />
+          <RichTextEditor
+            key={recovery ? "pristine" : "editing"}
+            value={body}
+            onChange={setBody}
+            minHeight={240}
+            toolbarRight={<AttachButton onFiles={(f) => setFiles((prev) => [...prev, ...f.map((file) => ({ id: `${file.name}-${Math.random()}`, file }))])} />}
+            footer={
+              <div className="px-3 pb-2">
+                <AttachmentList items={files} onRemove={(id) => setFiles((prev) => prev.filter((f) => f.id !== id))} />
+              </div>
+            }
+          />
+          <DraftStatus state={draftState} savedAt={savedAt} />
         </div>
         <div className="flex items-center justify-end gap-2 px-4 py-3 border-t">
-          <button onClick={onClose} data-variant="ghost" className="px-3 py-1.5 text-xs rounded-md hover:bg-muted">Cancel</button>
+          <button onClick={closeWithSave} data-variant="ghost" className="px-3 py-1.5 text-xs rounded-md hover:bg-muted">Cancel</button>
           <button
-            onClick={() => onSend(to, cc, subject, body)}
-            disabled={sending || !to || !subject}
+            onClick={handleSendClick}
+            disabled={sending || !to || !subject || totalSize > MAX_TOTAL_BYTES}
             data-variant="primary"
             className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-cyan-600 text-white text-xs font-medium hover:bg-cyan-700 disabled:opacity-50"
           >
@@ -1092,6 +1214,20 @@ function ComposeDialog({ onClose, onSend, sending }: { onClose: () => void; onSe
     </div>
   );
 }
+
+function DraftStatus({ state, savedAt }: { state: "idle" | "saving" | "saved" | "error"; savedAt: Date | null }) {
+  if (state === "idle") return null;
+  const text =
+    state === "saving" ? "Saving..." :
+    state === "error" ? "Draft not saved" :
+    `Draft saved ${savedAt ? savedAt.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) : ""}`;
+  return (
+    <p className="italic" style={{ fontSize: 10, color: state === "error" ? "#D97706" : undefined }}>
+      <span className={state === "error" ? "" : "text-muted-foreground"}>{text}</span>
+    </p>
+  );
+}
+
 
 function htmlToPlainText(html: string): string {
   const el = document.createElement("div");
