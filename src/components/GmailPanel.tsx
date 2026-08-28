@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from "react";
 import DOMPurify from "dompurify";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, MailOpen, Star, Archive, Trash2, RefreshCw, Send, Inbox, Search, Loader2, StarOff, Link2, Unlink, Paperclip, ArrowLeft, X } from "lucide-react";
+import { Mail, MailOpen, Star, Archive, Trash2, RefreshCw, Send, Inbox, Search, Loader2, StarOff, Link2, Unlink, Paperclip, ArrowLeft, X, Reply, Forward, Smile } from "lucide-react";
 
 interface GmailProfile {
   emailAddress: string;
@@ -81,6 +81,9 @@ export default function GmailPanel() {
   const [messageLoading, setMessageLoading] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
   const [sending, setSending] = useState(false);
+  const [replyState, setReplyState] = useState<null | { mode: "reply" | "forward"; to: string; subject: string; body: string }>(null);
+  const [reactions, setReactions] = useState<Record<string, string>>({});
+  const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
 
   const checkStatus = useCallback(async () => {
     try {
