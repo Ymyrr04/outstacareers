@@ -38,7 +38,7 @@ function Divider() {
   return <span style={{ width: 1, height: 18, background: "#C8F0F8", margin: "0 2px" }} />;
 }
 
-function Toolbar({ editor }: { editor: Editor }) {
+function Toolbar({ editor, rightSlot }: { editor: Editor; rightSlot?: React.ReactNode }) {
   const [colorOpen, setColorOpen] = useState(false);
   return (
     <div
@@ -90,6 +90,7 @@ function Toolbar({ editor }: { editor: Editor }) {
       >
         <Eraser className="w-3.5 h-3.5" />
       </ToolBtn>
+      {rightSlot && <span className="ml-auto flex items-center gap-1">{rightSlot}</span>}
     </div>
   );
 }
@@ -98,10 +99,14 @@ export function RichTextEditor({
   value,
   onChange,
   minHeight = 120,
+  toolbarRight,
+  footer,
 }: {
   value: string;
   onChange: (html: string) => void;
   minHeight?: number;
+  toolbarRight?: React.ReactNode;
+  footer?: React.ReactNode;
 }) {
   const initial = useRef(value);
   const editor = useEditor({
@@ -133,10 +138,11 @@ export function RichTextEditor({
 
   return (
     <div className="rounded-md border border-gray-100 overflow-visible bg-white">
-      <Toolbar editor={editor} />
+      <Toolbar editor={editor} rightSlot={toolbarRight} />
       <div className="overflow-auto">
         <EditorContent editor={editor} />
       </div>
+      {footer}
     </div>
   );
 }
