@@ -1185,7 +1185,7 @@ const Admin = () => {
         }
       });
     });
-  }, [applicants, applicantsLoading, jobs, fetchApplicants]);
+  }, [applicants, applicantsLoading, jobs]);
 
   const handleToggleActive = async (job: Job) => {
     const { error } = await supabase
