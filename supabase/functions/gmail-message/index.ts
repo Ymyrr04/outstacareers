@@ -107,8 +107,11 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ error: errBody }), { status: res.status, headers: corsHeaders });
     }
     const msg = await res.json();
-    const body = extractBody(msg.payload);
-    const isHtml = msg.payload?.mimeType === "text/html" || (msg.payload?.parts?.some((p: any) => p.mimeType === "text/html"));
+    const bodies = { html: "", text: "" };
+    collectBodies(msg.payload, bodies);
+    const body = bodies.html || bodies.text;
+    const isHtml = !!bodies.html;
+
     const attachments = extractAttachments(msg.payload);
 
     return new Response(JSON.stringify({
