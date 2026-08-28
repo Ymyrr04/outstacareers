@@ -1069,7 +1069,7 @@ function ComposeDialog({ onClose, onSend, sending }: { onClose: () => void; onSe
           <input value={to} onChange={(e) => setTo(e.target.value)} placeholder="To" className="w-full px-3 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
           <input value={cc} onChange={(e) => setCc(e.target.value)} placeholder="Cc" className="w-full px-3 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
           <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className="w-full px-3 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
-          <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Message…" rows={10} className="w-full px-3 py-1.5 text-sm border border-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-50 resize-none" />
+          <RichTextEditor value={body} onChange={setBody} minHeight={240} />
         </div>
         <div className="flex items-center justify-end gap-2 px-4 py-3 border-t">
           <button onClick={onClose} data-variant="ghost" className="px-3 py-1.5 text-xs rounded-md hover:bg-muted">Cancel</button>
