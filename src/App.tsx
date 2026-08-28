@@ -82,6 +82,10 @@ const App = () => (
                 <Route path="/sign/:token" element={guard(<SignContract />)} />
                 <Route path="/countersign/:token" element={guard(<CountersignContract />)} />
 
+                {/* Gmail App User Connector OAuth return (popup) */}
+                <Route path="/oauth/google_mail/return" element={<GmailOAuthReturn />} />
+
+
                 {/* Client portal routes are accessible from BOTH domains */}
                 <Route path="/client-portal/login" element={<ClientPortalLogin />} />
                 <Route path="/client-portal/change-password" element={<ClientPortalChangePassword />} />
