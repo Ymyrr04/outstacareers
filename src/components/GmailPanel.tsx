@@ -1095,6 +1095,8 @@ function ComposeDialog({
   const [subject, setSubject] = useState(initial?.subject || "");
   const [body, setBody] = useState(initial?.body || "");
   const [files, setFiles] = useState<PendingAttachment[]>([]);
+  const filesRef = useRef<PendingAttachment[]>([]);
+  useEffect(() => { filesRef.current = files; }, [files]);
   const [draftId, setDraftId] = useState<string | undefined>(initial?.draftId);
   const [draftState, setDraftState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [savedAt, setSavedAt] = useState<Date | null>(null);
@@ -1125,7 +1127,7 @@ function ComposeDialog({
     const c = latest.current;
     setDraftState("saving");
     try {
-      const attachments = await serializeAttachments(files);
+      const attachments = await serializeAttachments(filesRef.current);
       const { data, error } = await supabase.functions.invoke("gmail-draft", {
         body: { action: "save-draft", to: c.to, cc: c.cc, subject: c.subject, body: c.body, attachments, draftId: c.draftId },
       });
@@ -1138,7 +1140,7 @@ function ComposeDialog({
       setDraftState("error");
       try { localStorage.setItem(LOCAL_DRAFT_KEY, JSON.stringify({ to: c.to, cc: c.cc, subject: c.subject, body: c.body })); } catch { /* ignore */ }
     }
-  }, [files]);
+  }, []);
 
   // Auto-save every 30s + on unmount / navigating away
   useEffect(() => {
