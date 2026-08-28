@@ -27,18 +27,21 @@ interface MessageMeta {
 }
 
 function parseMultipartBatch(body: string, boundary: string): { status: number; json: any }[] {
-  const parts = body.split(`--${boundary}`).filter((p) => p.trim() && !p.trim().startsWith("--"));
+  const parts = body.split(`--${boundary}`).filter((part) => {
+    const trimmed = part.trim();
+    return trimmed && trimmed !== "--";
+  });
   const results: { status: number; json: any }[] = [];
   for (const part of parts) {
-    const lines = part.trim().split("\r\n");
-    const httpLineIdx = lines.findIndex((l) => l.startsWith("Content-Type: application/http"));
-    if (httpLineIdx === -1) continue;
-    const statusLineIdx = httpLineIdx + 2;
-    const statusLine = lines[statusLineIdx] || "";
-    const statusMatch = statusLine.match(/^HTTP\/1\.\d\s+(\d+)/);
-    const status = statusMatch ? parseInt(statusMatch[1]) : 0;
-    const bodyStartIdx = lines.findIndex((l, i) => i > statusLineIdx && l.trim() === "");
-    const jsonText = lines.slice(bodyStartIdx + 1).join("\r\n").trim();
+    // A batch part can contain extra MIME headers (for example Content-ID), so
+    // locate the embedded HTTP response instead of assuming a fixed line offset.
+    const normalized = part.replace(/\r\n/g, "\n");
+    const statusMatch = normalized.match(/HTTP\/\d(?:\.\d)?\s+(\d{3})[^\n]*\n/);
+    if (!statusMatch || statusMatch.index === undefined) continue;
+    const status = Number(statusMatch[1]);
+    const embeddedResponse = normalized.slice(statusMatch.index + statusMatch[0].length);
+    const headerEnd = embeddedResponse.indexOf("\n\n");
+    const jsonText = (headerEnd >= 0 ? embeddedResponse.slice(headerEnd + 2) : embeddedResponse).trim();
     let json: any = null;
     try { json = jsonText ? JSON.parse(jsonText) : null; } catch { json = null; }
     results.push({ status, json });
@@ -88,11 +91,11 @@ Deno.serve(async (req) => {
       path: `/gmail/v1/users/me/messages?${listParams.toString()}`,
     });
     if (!listRes.ok) {
-      if (listRes.status === 401 || listRes.status === 403) {
+      const errBody = await listRes.text();
+      if (listRes.status === 401) {
         await deleteConnectionKeyForUser(userId, CONNECTOR_ID);
         return new Response(JSON.stringify({ connected: false, error: "Connection expired" }), { status: 401, headers: corsHeaders });
       }
-      const errBody = await listRes.text();
       return new Response(JSON.stringify({ error: errBody }), { status: listRes.status, headers: corsHeaders });
     }
     const listData = await listRes.json();
@@ -145,8 +148,12 @@ Deno.serve(async (req) => {
           }
         }
       }
-    } else {
-      // Fallback: fetch metadata individually (less efficient but resilient)
+    }
+
+    // Fall back when the gateway rejects batching or returns a multipart shape
+    // we cannot parse. Previously, a successful batch with zero parsed parts was
+    // incorrectly shown as an empty inbox even though Gmail returned message IDs.
+    if (!batchRes.ok || result.length === 0) {
       for (const m of messages) {
         const metaRes = await callAsAppUser({
           gatewayBaseUrl: GATEWAY_BASE_URL,
