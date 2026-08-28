@@ -1845,7 +1845,16 @@ const Admin = () => {
             <TabsTrigger value="inbox" className="flex items-center gap-2">
               <Mail className="w-4 h-4" />
               Inbox
+              {gmailUnreadCount > 0 && (
+                <span
+                  className="ml-1 inline-flex items-center justify-center min-w-[16px] px-1.5 py-0.5 text-white"
+                  style={{ background: '#0ABEDF', fontSize: '9px', borderRadius: '8px' }}
+                >
+                  {gmailUnreadCount}
+                </span>
+              )}
             </TabsTrigger>
+
             {/* Settings tab - only for super admins (mark@outsta.io) */}
             {user?.email?.toLowerCase() === 'mark@outsta.io' && (
               <TabsTrigger value="settings" className="flex items-center gap-2">
