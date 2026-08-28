@@ -201,7 +201,7 @@ export default function GmailPanel() {
     const { name, email } = parseFrom(m.from || "");
     return {
       id: m.id,
-      admin_email: adminEmail,
+      admin_email: profile?.emailAddress ?? null,
       thread_id: m.threadId || null,
       subject: m.subject || null,
       sender_name: name || null,
@@ -218,11 +218,12 @@ export default function GmailPanel() {
   };
 
   const cacheMessages = useCallback(async (list: MessageMeta[]) => {
-    if (!adminEmail || !list.length) return;
+    if (!profile?.emailAddress) return;
+    if (!list.length) return;
     try {
       await supabase.from("cached_emails" as any).upsert(list.map(metaToRow), { onConflict: "admin_email,id" });
     } catch { /* cache is best-effort */ }
-  }, [adminEmail]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [profile]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const loadCachedList = useCallback(async (): Promise<MessageMeta[]> => {
     if (!adminEmail) return [];
