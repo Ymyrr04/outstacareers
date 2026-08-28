@@ -561,6 +561,7 @@ export default function GmailPanel() {
       const { error } = await supabase.functions.invoke("gmail-send", { body: { to, cc, subject, body, ...(opts || {}) } });
       if (error) throw error;
       toast({ title: "Email sent" });
+      setReplyState(null);
       setComposeOpen(false);
     } catch (err: any) {
       toast({ title: "Send failed", description: err?.message, variant: "destructive" });
