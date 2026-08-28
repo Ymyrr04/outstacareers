@@ -821,7 +821,7 @@ export default function GmailPanel() {
                           {m.attachments?.length > 0 && (
                             <div className="border-t mt-4 pt-3 flex flex-wrap gap-2">
                               {m.attachments.map((a) => (
-                                <AttachmentPill key={a.attachmentId} messageId={m.id} attachment={a} />
+                                <AttachmentPill key={a.attachmentId} messageId={m.id} attachment={a} toast={toast} />
                               ))}
                             </div>
                           )}
