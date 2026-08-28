@@ -285,20 +285,10 @@ export const TeamCalendar = () => {
   const rangeEnd = view === 'month' ? monthEnd : selectedDate;
   const { events: rawEvents, refetch } = useCalendarEvents(rangeStart, rangeEnd);
 
-  // Scope calendar to the signed-in admin: only their own activities plus
-  // open/claimable tasks are shown. Liezl keeps the global team view.
-  const isGlobalViewer = (user?.email || '').toLowerCase() === 'liezl@outsta.io';
-  const events = useMemo(() => {
-    if (isGlobalViewer || !user?.id) return rawEvents;
-    return rawEvents.filter(
-      (e) =>
-        e.is_open_task ||
-        e.time_tbd ||
-        e.created_by === user.id ||
-        e.claimed_by === user.id ||
-        (Array.isArray(e.assigned_to) && e.assigned_to.includes(user.id))
-    );
-  }, [rawEvents, isGlobalViewer, user?.id]);
+  // The team calendar is shared: every admin sees all activities.
+  // (Per-admin scoping lives in the hero banner stats, not here.)
+  const events = rawEvents;
+
   const eventsForDate = useCallback(
     (dateStr: string) => {
       const dow = parseDateString(dateStr).getDay();
