@@ -60,7 +60,7 @@ export function AttachButton({ onFiles }: { onFiles: (files: File[]) => void }) 
         onClick={() => inputRef.current?.click()}
         className="inline-flex items-center justify-center rounded"
         style={{ width: 28, height: 28, borderRadius: 4 }}
-        onMouseEnter={(e) => { e.currentTarget.style.background = "#E0F7FC"; }}
+        onMouseEnter={(e) => { e.currentTarget.style.background = "hsl(var(--accent))"; }}
         onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
       >
         <Paperclip className="w-3.5 h-3.5" />
@@ -87,7 +87,7 @@ export function AttachmentList({
             <span
               key={a.id}
               className="inline-flex items-center gap-1.5"
-              style={{ background: "#F8FFFD", border: "0.5px solid #C8F0F8", borderRadius: 6, padding: "4px 8px" }}
+              style={{ background: "hsl(var(--muted))", border: "0.5px solid hsl(var(--border))", borderRadius: 6, padding: "4px 8px" }}
             >
               <Icon className="w-3 h-3 text-muted-foreground" />
               <span style={{ fontSize: 11, fontWeight: 500 }} className="max-w-[160px] truncate">{a.file.name}</span>

@@ -23,10 +23,10 @@ function ToolBtn({ active, onClick, title, children }: { active?: boolean; onCli
         width: 28,
         height: 28,
         borderRadius: 4,
-        background: active ? "#E0F7FC" : "transparent",
+        background: active ? "hsl(var(--accent))" : "transparent",
         color: active ? "#0ABEDF" : "inherit",
       }}
-      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "#E0F7FC"; }}
+      onMouseEnter={(e) => { if (!active) e.currentTarget.style.background = "hsl(var(--accent))"; }}
       onMouseLeave={(e) => { if (!active) e.currentTarget.style.background = "transparent"; }}
     >
       {children}
@@ -35,7 +35,7 @@ function ToolBtn({ active, onClick, title, children }: { active?: boolean; onCli
 }
 
 function Divider() {
-  return <span style={{ width: 1, height: 18, background: "#C8F0F8", margin: "0 2px" }} />;
+  return <span style={{ width: 1, height: 18, background: "hsl(var(--border))", margin: "0 2px" }} />;
 }
 
 function Toolbar({ editor, rightSlot }: { editor: Editor; rightSlot?: React.ReactNode }) {
@@ -43,7 +43,7 @@ function Toolbar({ editor, rightSlot }: { editor: Editor; rightSlot?: React.Reac
   return (
     <div
       className="flex items-center relative"
-      style={{ background: "#F8FFFD", borderBottom: "0.5px solid #C8F0F8", padding: "6px 10px", gap: 4 }}
+      style={{ background: "hsl(var(--muted))", borderBottom: "0.5px solid hsl(var(--border))", padding: "6px 10px", gap: 4 }}
     >
       <ToolBtn title="Bold" active={editor.isActive("bold")} onClick={() => editor.chain().focus().toggleBold().run()}><Bold className="w-3.5 h-3.5" /></ToolBtn>
       <ToolBtn title="Italic" active={editor.isActive("italic")} onClick={() => editor.chain().focus().toggleItalic().run()}><Italic className="w-3.5 h-3.5" /></ToolBtn>
@@ -70,7 +70,7 @@ function Toolbar({ editor, rightSlot }: { editor: Editor; rightSlot?: React.Reac
       <Divider />
       <ToolBtn title="Text color" active={colorOpen} onClick={() => setColorOpen((o) => !o)}><Palette className="w-3.5 h-3.5" /></ToolBtn>
       {colorOpen && (
-        <div className="absolute z-50 top-9 left-0 flex gap-1 p-2 rounded-md border bg-white shadow-md">
+        <div className="absolute z-50 top-9 left-0 flex gap-1 p-2 rounded-md border bg-popover shadow-md">
           {COLORS.map((c) => (
             <button
               key={c}
@@ -137,7 +137,7 @@ export function RichTextEditor({
   if (!editor) return null;
 
   return (
-    <div className="rounded-md border border-gray-100 overflow-visible bg-white">
+    <div className="rounded-md border border-border overflow-visible bg-popover">
       <Toolbar editor={editor} rightSlot={toolbarRight} />
       <div className="overflow-auto">
         <EditorContent editor={editor} />

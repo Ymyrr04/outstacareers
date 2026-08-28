@@ -787,7 +787,7 @@ export default function GmailPanel() {
           )}
 
           {/* Messages */}
-          <div className="divide-y divide-gray-100 border-t border-border">
+          <div className="divide-y divide-border border-t border-border">
             {threadMessages.map((m) => {
               const { name, email } = parseFrom(m.from || "");
               const expanded = isExpanded(m.id);
@@ -1414,7 +1414,7 @@ function MessageBody({ body, isHtml }: { body: string; isHtml: boolean }) {
     const clean = DOMPurify.sanitize(body, { USE_PROFILES: { html: true }, ADD_ATTR: ["target"] });
     return (
       <div
-        className="gmail-body text-sm leading-relaxed break-words [&_a]:text-cyan-600 [&_a]:underline [&_img]:max-w-full [&_img]:h-auto [&_blockquote]:border-l-2 [&_blockquote]:border-gray-200 [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_table]:max-w-full [&_p]:my-2"
+        className="gmail-body text-sm leading-relaxed break-words [&_a]:text-[hsl(var(--brand))] [&_a]:underline [&_img]:max-w-full [&_img]:h-auto [&_blockquote]:border-l-2 [&_blockquote]:border-border [&_blockquote]:pl-3 [&_blockquote]:text-muted-foreground [&_table]:max-w-full [&_p]:my-2"
         dangerouslySetInnerHTML={{ __html: clean }}
       />
     );
@@ -1451,7 +1451,7 @@ function MessageBody({ body, isHtml }: { body: string; isHtml: boolean }) {
             •••
           </button>
           {showQuoted && (
-            <pre className="mt-2 whitespace-pre-wrap break-words font-sans border-l-2 border-gray-200 pl-3 text-muted-foreground">
+            <pre className="mt-2 whitespace-pre-wrap break-words font-sans border-l-2 border-border pl-3 text-muted-foreground">
               {quoted.replace(/^> ?/gm, "")}
             </pre>
           )}
