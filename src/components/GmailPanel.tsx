@@ -329,7 +329,7 @@ export default function GmailPanel() {
     } finally {
       setPolling(false);
     }
-  }, [connected, folder, search, toast]);
+  }, [connected, folder, search, toast, cacheMessages]);
 
   useEffect(() => {
     if (!connected) return;
