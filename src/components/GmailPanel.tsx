@@ -105,6 +105,7 @@ export default function GmailPanel() {
   const [composeOpen, setComposeOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [replyState, setReplyState] = useState<null | { mode: "reply" | "forward"; to: string; subject: string; body: string }>(null);
+  const [draftInitial, setDraftInitial] = useState<null | { to: string; cc: string; subject: string; body: string; draftId?: string }>(null);
   const [reactions, setReactions] = useState<Record<string, string>>({});
   const [emojiPickerOpen, setEmojiPickerOpen] = useState(false);
   const emojiPickerTarget = useRef<string | null>(null);
@@ -403,6 +404,25 @@ export default function GmailPanel() {
       setThreadLoading(false);
     }
   }, []);
+
+  const openDraft = async (msg: MessageMeta) => {
+    setDraftInitial({ to: msg.to || "", cc: "", subject: msg.subject || "", body: "" });
+    setComposeOpen(true);
+    try {
+      const [{ data: full }, { data: list }] = await Promise.all([
+        supabase.functions.invoke("gmail-message", { body: { messageId: msg.id } }),
+        supabase.functions.invoke("gmail-draft", { body: { action: "list-drafts" } }),
+      ]);
+      const match = (list?.drafts || []).find((d: any) => d.messageId === msg.id);
+      setDraftInitial({
+        to: full?.to || msg.to || "",
+        cc: full?.cc || "",
+        subject: full?.subject || msg.subject || "",
+        body: full?.isHtml ? (full?.body || "") : plainTextToHtml(full?.body || ""),
+        draftId: match?.draftId,
+      });
+    } catch { /* keep the metadata-only draft */ }
+  };
 
   const openMessage = async (msg: MessageMeta) => {
     setMessageLoading(true);
@@ -799,11 +819,7 @@ export default function GmailPanel() {
                           {m.attachments?.length > 0 && (
                             <div className="border-t mt-4 pt-3 flex flex-wrap gap-2">
                               {m.attachments.map((a) => (
-                                <div key={a.attachmentId} className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-md bg-muted text-xs">
-                                  <Paperclip className="w-3.5 h-3.5" />
-                                  <span className="font-medium">{a.filename}</span>
-                                  <span className="text-muted-foreground">{(a.size / 1024).toFixed(0)}KB</span>
-                                </div>
+                                <AttachmentPill key={a.attachmentId} messageId={m.id} attachment={a} />
                               ))}
                             </div>
                           )}
@@ -959,7 +975,7 @@ export default function GmailPanel() {
             return (
               <div
                 key={msg.id}
-                onClick={() => openMessage(msg)}
+                onClick={() => (folder === "DRAFT" ? openDraft(msg) : openMessage(msg))}
                 className={`flex items-start gap-3 px-4 py-2.5 cursor-pointer hover:bg-cyan-50/30 transition-colors ${msg.unread ? "font-medium" : ""}`}
               >
                 <button
@@ -975,6 +991,7 @@ export default function GmailPanel() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="text-xs truncate">
+                    {folder === "DRAFT" && <span className="text-red-500 font-medium mr-1.5">Draft</span>}
                     <span className={msg.unread ? "text-foreground" : "text-muted-foreground"}>
                       {msg.subject || "(no subject)"}
                     </span>
