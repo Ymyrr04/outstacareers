@@ -3,6 +3,8 @@ import DOMPurify from "dompurify";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Mail, MailOpen, Star, Archive, Trash2, RefreshCw, Send, Inbox, Search, Loader2, StarOff, Link2, Unlink, Paperclip, ArrowLeft, X, Reply, Forward, Smile } from "lucide-react";
+import { RichTextEditor, plainTextToHtml } from "@/components/gmail/RichTextEditor";
+
 
 interface GmailProfile {
   emailAddress: string;
@@ -1069,7 +1071,7 @@ function ComposeDialog({ onClose, onSend, sending }: { onClose: () => void; onSe
           <input value={to} onChange={(e) => setTo(e.target.value)} placeholder="To" className="w-full px-3 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
           <input value={cc} onChange={(e) => setCc(e.target.value)} placeholder="Cc" className="w-full px-3 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
           <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className="w-full px-3 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
-          <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Message…" rows={10} className="w-full px-3 py-1.5 text-sm border border-gray-100 rounded-md focus:outline-none focus:ring-2 focus:ring-cyan-50 resize-none" />
+          <RichTextEditor value={body} onChange={setBody} minHeight={240} />
         </div>
         <div className="flex items-center justify-end gap-2 px-4 py-3 border-t">
           <button onClick={onClose} data-variant="ghost" className="px-3 py-1.5 text-xs rounded-md hover:bg-muted">Cancel</button>
@@ -1114,7 +1116,7 @@ function InlineCompose({
   const [to, setTo] = useState(initialTo);
   const [cc, setCc] = useState("");
   const [subject, setSubject] = useState(initialSubject);
-  const [body, setBody] = useState(initialBody);
+  const [body, setBody] = useState(() => plainTextToHtml(initialBody));
 
   return (
     <div className="rounded-lg border border-cyan-100 bg-white overflow-hidden">
@@ -1126,7 +1128,10 @@ function InlineCompose({
         <input value={to} onChange={(e) => setTo(e.target.value)} placeholder="To" className="w-full px-0 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
         <input value={cc} onChange={(e) => setCc(e.target.value)} placeholder="Cc" className="w-full px-0 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
         <input value={subject} onChange={(e) => setSubject(e.target.value)} placeholder="Subject" className="w-full px-0 py-1.5 text-sm border-b border-gray-100 focus:outline-none focus:border-cyan-400" />
-        <textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Message…" rows={mode === "forward" ? 12 : 6} className="w-full px-0 py-2 text-sm focus:outline-none resize-y" />
+        <div className="pt-2">
+          <RichTextEditor value={body} onChange={setBody} minHeight={120} />
+        </div>
+
       </div>
       <div className="flex items-center justify-end gap-2 px-4 py-2.5 border-t border-gray-100">
         <button onClick={onClose} data-variant="ghost" className="px-3 py-1.5 text-xs rounded-md hover:bg-muted">Discard</button>

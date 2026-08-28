@@ -721,3 +721,16 @@ html:not(.dark) .admin-shell .list-row-chevron {
   white-space: nowrap;
 }
 .admin-shell .admin-hero-banner__right { flex-shrink: 0; }
+
+/* Gmail rich text compose editor */
+.gmail-compose-editor p { margin: 0 0 6px; }
+.gmail-compose-editor ul { list-style: disc; padding-left: 20px; margin: 6px 0; }
+.gmail-compose-editor ol { list-style: decimal; padding-left: 20px; margin: 6px 0; }
+.gmail-compose-editor a { color: #0ABEDF; text-decoration: underline; }
+.gmail-compose-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  float: left;
+  height: 0;
+  pointer-events: none;
+  color: #9CA3AF;
+}
