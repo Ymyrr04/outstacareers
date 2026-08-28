@@ -41,16 +41,12 @@ async function searchContacts(term: string): Promise<Contact[]> {
 
   try {
     const { data } = await supabase
-      .from("contractor_assignments")
-      .select("applicant_id, applicants_prescreen(full_name, email)")
-      .eq("status", "Active")
-      .or(`applicants_prescreen.full_name.ilike."${like}",applicants_prescreen.email.ilike."${like}"`)
+      .from("applicants_prescreen")
+      .select("full_name, email, contractor_assignments!inner(status)")
+      .eq("contractor_assignments.status", "Active")
+      .or(`full_name.ilike."${like}",email.ilike."${like}"`)
       .limit(6);
-    (data || []).forEach((row: any) => {
-      const a = row.applicants_prescreen;
-      if (!a) return;
-      push(a.full_name, a.email, "contractor");
-    });
+    (data || []).forEach((r: any) => push(r.full_name, r.email, "contractor"));
   } catch { /* ignore */ }
 
   try {
