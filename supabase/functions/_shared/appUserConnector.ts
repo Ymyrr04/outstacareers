@@ -129,7 +129,7 @@ export async function exchangeAppUserOAuthCode(
   gatewayBaseUrl: string,
   code: string,
 ): Promise<ExchangeAppUserOAuthCodeResult> {
-  const res = await fetch(`${params.gatewayBaseUrl}/api/v1/app-users/oauth2/exchange`, {
+  const res = await fetch(`${gatewayBaseUrl}/api/v1/app-users/oauth2/exchange`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${requireApiKey()}`,
