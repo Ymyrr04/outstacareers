@@ -18,6 +18,7 @@ import { LogOut, Trash2, Eye, EyeOff, ArrowLeft, Users, Briefcase, MapPin, Clock
 import { PreScreeningResponsesCard } from '@/components/PreScreeningResponsesCard';
 
 import { ContractsManager } from '@/components/contracts/ContractsManager';
+import GmailPanel from '@/components/GmailPanel';
 import { exportJobs, exportApplicants, exportAllData } from '@/lib/exportUtils';
 import { parseBooleanSearch } from '@/lib/booleanSearchParser';
 import { useBackgroundExport } from '@/hooks/useBackgroundExport';
