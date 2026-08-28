@@ -5,6 +5,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Mail, MailOpen, Star, Archive, Trash2, RefreshCw, Send, Inbox, Search, Loader2, StarOff, Link2, Unlink, Paperclip, ArrowLeft, X, Reply, Forward, Smile } from "lucide-react";
 import { RichTextEditor, plainTextToHtml } from "@/components/gmail/RichTextEditor";
 import { RecipientInput } from "@/components/gmail/RecipientInput";
+import { AttachButton, AttachmentList, serializeAttachments, MAX_TOTAL_BYTES, type PendingAttachment } from "@/components/gmail/ComposeAttachments";
 
 
 
@@ -533,7 +534,7 @@ export default function GmailPanel() {
     cc: string,
     subject: string,
     body: string,
-    opts?: { threadId?: string; inReplyTo?: string; references?: string },
+    opts?: { threadId?: string; inReplyTo?: string; references?: string; attachments?: any[]; draftId?: string },
   ) => {
     setSending(true);
     try {
@@ -842,9 +843,10 @@ export default function GmailPanel() {
           }
           sending={sending}
           onClose={() => setReplyState(null)}
-          onSend={async (to, cc, subj, body) => {
+          onSend={async (to, cc, subj, body, extra) => {
             const isForward = replyState?.mode === "forward";
-            await handleSend(to, cc, subj, body, isForward ? undefined : {
+            await handleSend(to, cc, subj, body, isForward ? { attachments: extra?.attachments } : {
+              attachments: extra?.attachments,
               threadId: latest.threadId || selectedMessage.threadId,
               inReplyTo: latest.messageIdHeader,
               references: [latest.references, latest.messageIdHeader].filter(Boolean).join(" "),
@@ -854,7 +856,7 @@ export default function GmailPanel() {
         />
 
         {composeOpen && (
-          <ComposeDialog onClose={() => setComposeOpen(false)} onSend={handleSend} sending={sending} />
+          <ComposeDialog onClose={() => { setComposeOpen(false); setDraftInitial(null); }} onSend={handleSend} sending={sending} initial={draftInitial || undefined} />
         )}
       </div>
     );
@@ -1001,7 +1003,7 @@ export default function GmailPanel() {
 
       {/* Compose dialog */}
       {composeOpen && (
-        <ComposeDialog onClose={() => setComposeOpen(false)} onSend={handleSend} sending={sending} />
+        <ComposeDialog onClose={() => { setComposeOpen(false); setDraftInitial(null); }} onSend={handleSend} sending={sending} initial={draftInitial || undefined} />
       )}
     </div>
   );
