@@ -58,12 +58,12 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ connected: false }), { status: 401, headers: corsHeaders });
     }
 
-    const { to, cc, bcc, subject, body } = await req.json();
+    const { to, cc, bcc, subject, body, threadId, inReplyTo, references } = await req.json();
     if (!to || !subject) {
       return new Response(JSON.stringify({ error: "to and subject required" }), { status: 400, headers: corsHeaders });
     }
 
-    const raw = createRawEmail(to, cc || "", bcc || "", subject, body || "");
+    const raw = createRawEmail(to, cc || "", bcc || "", subject, body || "", inReplyTo || "", references || "");
     const res = await callAsAppUser({
       gatewayBaseUrl: GATEWAY_BASE_URL,
       connectionAPIKey,
@@ -72,9 +72,10 @@ Deno.serve(async (req) => {
       init: {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ raw }),
+        body: JSON.stringify(threadId ? { raw, threadId } : { raw }),
       },
     });
+
     if (!res.ok) {
       const errBody = await res.text();
       return new Response(JSON.stringify({ error: errBody }), { status: res.status, headers: corsHeaders });
