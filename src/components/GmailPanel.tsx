@@ -1252,7 +1252,7 @@ function DraftStatus({ state, savedAt }: { state: "idle" | "saving" | "saved" | 
 }
 
 
-function AttachmentPill({ messageId, attachment }: { messageId: string; attachment: { filename: string; size: number; mimeType: string; attachmentId: string } }) {
+function AttachmentPill({ messageId, attachment, toast }: { messageId: string; attachment: { filename: string; size: number; mimeType: string; attachmentId: string }; toast: ReturnType<typeof useToast>["toast"] }) {
   const [state, setState] = useState<"idle" | "loading" | "done">("idle");
   const [hover, setHover] = useState(false);
 
