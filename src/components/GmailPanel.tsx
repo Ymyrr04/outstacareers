@@ -151,6 +151,66 @@ export default function GmailPanel() {
     }
   };
 
+  // ---------- Supabase email cache ----------
+  const adminEmail = profile?.emailAddress?.toLowerCase() || "";
+
+  const rowToMeta = (r: any): MessageMeta => ({
+    id: r.id,
+    threadId: r.thread_id || undefined,
+    snippet: r.snippet || undefined,
+    from: r.sender_name ? `${r.sender_name} <${r.sender_email || ""}>` : r.sender_email || undefined,
+    to: r.recipient_email || undefined,
+    subject: r.subject || undefined,
+    date: r.internal_date || undefined,
+    unread: !r.is_read,
+    starred: (r.label_ids || []).includes("STARRED"),
+    labelIds: r.label_ids || [],
+  });
+
+  const metaToRow = (m: MessageMeta) => {
+    const { name, email } = parseFrom(m.from || "");
+    return {
+      id: m.id,
+      admin_email: adminEmail,
+      thread_id: m.threadId || null,
+      subject: m.subject || null,
+      sender_name: name || null,
+      sender_email: email || null,
+      recipient_email: m.to || null,
+      snippet: m.snippet || null,
+      is_read: !m.unread,
+      is_starred: !!m.starred,
+      is_archived: false,
+      label_ids: m.labelIds || null,
+      internal_date: m.date ? new Date(m.date).toISOString() : null,
+      fetched_at: new Date().toISOString(),
+    };
+  };
+
+  const cacheMessages = useCallback(async (list: MessageMeta[]) => {
+    if (!adminEmail || !list.length) return;
+    try {
+      await supabase.from("cached_emails" as any).upsert(list.map(metaToRow), { onConflict: "admin_email,id" });
+    } catch { /* cache is best-effort */ }
+  }, [adminEmail]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const loadCachedList = useCallback(async (): Promise<MessageMeta[]> => {
+    if (!adminEmail) return [];
+    try {
+      const { data } = await supabase
+        .from("cached_emails" as any)
+        .select("*")
+        .eq("admin_email", adminEmail)
+        .eq("is_archived", false)
+        .contains("label_ids", [folder])
+        .order("internal_date", { ascending: false })
+        .limit(25);
+      return ((data as any[]) || []).map(rowToMeta);
+    } catch {
+      return [];
+    }
+  }, [adminEmail, folder]);
+
   const fetchMessages = useCallback(async (reset = true) => {
     if (!connected) return;
     setLoading(true);
@@ -172,6 +232,7 @@ export default function GmailPanel() {
         setMessages((prev) => [...prev, ...(data.messages || [])]);
       }
       setPageToken(data.nextPageToken || null);
+      cacheMessages(data.messages || []);
     } catch (err: any) {
       if (err?.context?.status === 401) {
         setConnected(false);
@@ -180,11 +241,45 @@ export default function GmailPanel() {
     } finally {
       setLoading(false);
     }
-  }, [connected, search, folder, pageToken]);
+  }, [connected, search, folder, pageToken, cacheMessages]);
 
   useEffect(() => {
-    if (connected) fetchMessages(true);
+    if (!connected) return;
+    let cancelled = false;
+    (async () => {
+      // Instant load from cache, then refresh from Gmail in the background
+      if (!search) {
+        const cached = await loadCachedList();
+        if (!cancelled && cached.length) setMessages(cached);
+      }
+      if (!cancelled) fetchMessages(true);
+    })();
+    return () => { cancelled = true; };
   }, [connected, folder, search]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Daily cache refresh for the most recent 50 emails
+  useEffect(() => {
+    if (!connected || !adminEmail) return;
+    const refresh = async () => {
+      try {
+        const { data, error } = await supabase.functions.invoke("gmail-inbox", {
+          body: { maxResults: 50, labelIds: "INBOX" },
+        });
+        if (error) throw error;
+        await cacheMessages(data.messages || []);
+      } catch { /* silent */ }
+    };
+    const key = `gmail-cache-refresh:${adminEmail}`;
+    const last = Number(localStorage.getItem(key) || 0);
+    if (Date.now() - last > 24 * 60 * 60 * 1000) {
+      refresh().then(() => localStorage.setItem(key, String(Date.now())));
+    }
+    const interval = setInterval(() => {
+      refresh().then(() => localStorage.setItem(key, String(Date.now())));
+    }, 24 * 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [connected, adminEmail, cacheMessages]);
+
 
   // --- Background polling for new mail (does not touch existing fetch logic) ---
   const pollMessages = useCallback(async () => {
