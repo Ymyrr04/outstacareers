@@ -44,12 +44,12 @@ async function searchContacts(term: string): Promise<Contact[]> {
       .from("contractor_assignments")
       .select("applicant_id, applicants_prescreen(full_name, email)")
       .eq("status", "Active")
-      .limit(30);
+      .or(`applicants_prescreen.full_name.ilike."${like}",applicants_prescreen.email.ilike."${like}"`)
+      .limit(6);
     (data || []).forEach((row: any) => {
       const a = row.applicants_prescreen;
       if (!a) return;
-      const hay = `${a.full_name || ""} ${a.email || ""}`.toLowerCase();
-      if (hay.includes(term.toLowerCase())) push(a.full_name, a.email, "contractor");
+      push(a.full_name, a.email, "contractor");
     });
   } catch { /* ignore */ }
 
