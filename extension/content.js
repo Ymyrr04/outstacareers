@@ -246,8 +246,10 @@
     if (location.href !== lastUrl) {
       lastUrl = location.href;
       document.getElementById(ROW_ID)?.remove();
+      document.getElementById(MORE_BTN_ID)?.remove();
     }
     inject();
+    injectBesideMore();
   });
   observer.observe(document.body, { childList: true, subtree: true });
 
@@ -255,5 +257,6 @@
   // initial load or navigate to a profile without a full page refresh.
   const timer = setInterval(() => {
     inject();
+    injectBesideMore();
   }, 1000);
 })();
