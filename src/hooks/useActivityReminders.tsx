@@ -47,9 +47,13 @@ export const useActivityReminders = (currentUserId?: string) => {
         .from('calendar_events')
         .select('id, title, start_time, time_tbd, is_done, event_type, assigned_to, claimed_by')
         .eq('event_date', day)
-        .or(`assigned_to.cs.{${currentUserId}},claimed_by.eq.${currentUserId}`);
+        .or(`assigned_to.cs."{${currentUserId}}",claimed_by.eq."${currentUserId}"`);
 
-      if (error || cancelled || !data) return;
+      if (error) {
+        console.error('Activity reminder query failed:', error);
+        return;
+      }
+      if (cancelled || !data) return;
 
       const now = nowMinutesET();
       const dismissed = loadDismissed();
