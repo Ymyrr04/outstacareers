@@ -40,8 +40,15 @@ Deno.serve(async (req) => {
       }
     }
 
-    if (!authorized && IMPORT_KEY && importKey && importKey === IMPORT_KEY) {
-      authorized = true;
+    if (!authorized && importKey) {
+      const { data: setting } = await admin
+        .from('outreach_settings')
+        .select('value')
+        .eq('key', 'import_key')
+        .maybeSingle();
+      if (setting?.value && importKey === setting.value) {
+        authorized = true;
+      }
     }
 
     if (!authorized) {
