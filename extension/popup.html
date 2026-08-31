@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    * { box-sizing: border-box; }
+    body { width: 340px; margin: 0; font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #e2e8f0; }
+    .header { display: flex; align-items: center; gap: 10px; padding: 14px 16px 10px; }
+    .header img { width: 28px; height: 28px; border-radius: 6px; }
+    .header h1 { font-size: 15px; margin: 0; font-weight: 700; }
+    .header p { font-size: 11px; margin: 2px 0 0; color: #94a3b8; }
+    .body { padding: 4px 16px 16px; }
+    .card { background: #1e293b; border: 1px solid #334155; border-radius: 10px; padding: 12px; margin-bottom: 10px; }
+    .row { display: flex; gap: 10px; align-items: center; }
+    .avatar { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; background: #334155; flex-shrink: 0; }
+    .name { font-size: 14px; font-weight: 700; margin: 0; }
+    .headline { font-size: 11px; color: #94a3b8; margin: 2px 0 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .meta { font-size: 11px; color: #7dd3fc; margin-top: 4px; }
+    .field { margin-bottom: 6px; }
+    .field label { display: block; font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: #64748b; margin-bottom: 2px; }
+    .field input { width: 100%; background: #0f172a; border: 1px solid #334155; border-radius: 6px; color: #e2e8f0; font-size: 12px; padding: 6px 8px; }
+    .btn { width: 100%; border: none; border-radius: 8px; padding: 10px; font-size: 13px; font-weight: 700; cursor: pointer; background: #0ABEDF; color: #062630; }
+    .btn:disabled { opacity: .5; cursor: default; }
+    .btn.secondary { background: transparent; border: 1px solid #334155; color: #94a3b8; margin-top: 8px; padding: 7px; font-weight: 500; }
+    .status { font-size: 12px; text-align: center; padding: 8px 0 0; min-height: 18px; }
+    .status.ok { color: #34d399; }
+    .status.err { color: #f87171; }
+    .status.info { color: #94a3b8; }
+    .chips { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 4px; }
+    .chip { font-size: 10px; background: #0f172a; border: 1px solid #334155; border-radius: 999px; padding: 2px 8px; color: #94a3b8; }
+    a { color: #7dd3fc; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <img src="icon.png" alt="OutSta" />
+    <div>
+      <h1>OutSta Outreach</h1>
+      <p>Import this LinkedIn profile</p>
+    </div>
+  </div>
+  <div class="body">
+    <div id="not-profile" class="card" style="display:none">
+      <p style="font-size:12px;color:#94a3b8;margin:0">
+        Open a LinkedIn profile page (<span style="color:#7dd3fc">linkedin.com/in/…</span>) and reopen this popup.
+      </p>
+    </div>
+
+    <div id="preview" class="card" style="display:none">
+      <div class="row">
+        <img id="p-photo" class="avatar" style="display:none" alt="" />
+        <div style="min-width:0">
+          <p class="name" id="p-name"></p>
+          <p class="headline" id="p-headline"></p>
+          <p class="meta" id="p-meta"></p>
+        </div>
+      </div>
+      <div class="chips" id="p-chips"></div>
+    </div>
+
+    <div id="edit" class="card" style="display:none">
+      <div class="field">
+        <label>Current title</label>
+        <input id="f-title" />
+      </div>
+      <div class="field" style="margin-bottom:0">
+        <label>Current company</label>
+        <input id="f-company" />
+      </div>
+    </div>
+
+    <button id="import-btn" class="btn" style="display:none">Import to Outreach</button>
+    <div class="status info" id="status"></div>
+    <button id="options-link" class="btn secondary">Settings (API key)</button>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>
