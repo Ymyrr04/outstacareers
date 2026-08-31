@@ -166,25 +166,49 @@
     bar.insertAdjacentElement("afterend", row);
   }
 
-  // ---- "⋯ More" dropdown menu injection -------------------------------
+  // ---- "Import" button beside the ⋯ More button -------------------------
   // The More button exists on every profile (no Recruiter/Sales Nav
-  // needed). LinkedIn renders the dropdown lazily on click, so we watch
-  // for clicks on More buttons, then insert our item once the menu opens.
-  function buildMenuItem() {
-    const item = document.createElement("div");
-    item.id = MENU_ITEM_ID;
-    item.setAttribute("role", "button");
-    item.tabIndex = 0;
-    item.style.cssText = [
-      "display:flex",
+  // needed). Instead of hiding our action inside its dropdown, we place a
+  // compact OutSta import button right next to it in the action bar.
+  function findMoreControl() {
+    const heading =
+      document.querySelector("h1.text-heading-xlarge") ||
+      document.querySelector("main h1");
+    const profileCard = heading?.closest("section") || heading?.parentElement?.parentElement;
+    if (!profileCard) return null;
+    const controls = [...profileCard.querySelectorAll('button, a, [role="button"]')];
+    return (
+      controls.find((el) => {
+        const label = (el.getAttribute("aria-label") || el.textContent || "")
+          .trim()
+          .replace(/\s+/g, " ");
+        return /^more\b/i.test(label) && el.offsetParent !== null;
+      }) || null
+    );
+  }
+
+  function buildBesideMoreButton() {
+    const btn = document.createElement("button");
+    btn.id = MORE_BTN_ID;
+    btn.type = "button";
+    btn.title = "Import this profile to OutSta Outreach";
+    btn.style.cssText = [
+      "display:inline-flex",
       "align-items:center",
-      "gap:8px",
-      "padding:8px 16px",
-      "cursor:pointer",
+      "justify-content:center",
+      "gap:5px",
+      "margin-left:8px",
+      "border:none",
+      "border-radius:9999px",
+      "padding:0 14px",
+      "font-family:inherit",
       "font-size:14px",
       "font-weight:600",
-      "color:#0ABEDF",
-      "background:transparent",
+      "cursor:pointer",
+      "background:#0ABEDF",
+      "color:#062630",
+      "height:32px",
+      "vertical-align:middle",
     ].join(";");
 
     const img = document.createElement("img");
@@ -192,63 +216,28 @@
     img.width = 18;
     img.height = 18;
     img.style.borderRadius = "4px";
-    item.appendChild(img);
+    btn.appendChild(img);
 
     const label = document.createElement("span");
     label.className = "outsta-label";
     label.textContent = "Import to OutSta";
-    item.appendChild(label);
+    btn.appendChild(label);
 
-    const run = () => doImport(item);
-    item.addEventListener("click", (e) => {
+    btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      run();
+      e.preventDefault();
+      doImport(btn);
     });
-    item.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        run();
-      }
-    });
-    return item;
+    return btn;
   }
 
-  function tryInjectMenuItem() {
+  function injectBesideMore() {
     if (!/^\/in\//.test(window.location.pathname)) return;
-    if (document.getElementById(MENU_ITEM_ID)) return;
-    // LinkedIn dropdowns render into a global overlay; find an open menu.
-    const menus = document.querySelectorAll(
-      '.artdeco-dropdown__content-inner, [role="menu"], [class*="dropdown__content"]'
-    );
-    for (const menu of menus) {
-      if (menu.offsetParent === null) continue; // hidden
-      if (menu.querySelector("#" + MENU_ITEM_ID)) continue;
-      const item = buildMenuItem();
-      item.id = MENU_ITEM_ID;
-      menu.appendChild(item);
-      return;
-    }
+    if (document.getElementById(MORE_BTN_ID)) return;
+    const more = findMoreControl();
+    if (!more) return;
+    more.insertAdjacentElement("afterend", buildBesideMoreButton());
   }
-
-  // Detect clicks on any "More" / "More actions" control, then wait a tick
-  // for the dropdown to render before injecting.
-  document.addEventListener(
-    "click",
-    (e) => {
-      const control = e.target.closest?.('button, a, [role="button"]');
-      if (!control) return;
-      const label = (control.getAttribute("aria-label") || control.textContent || "")
-        .trim()
-        .replace(/\s+/g, " ");
-      if (!/^more\b/i.test(label)) return;
-      let tries = 0;
-      const poll = setInterval(() => {
-        tryInjectMenuItem();
-        if (++tries >= 10) clearInterval(poll);
-      }, 150);
-    },
-    true
-  );
 
   // ---- SPA navigation handling -----------------------------------------
   // LinkedIn is a SPA — re-inject on navigation and wait for lazy DOM.
