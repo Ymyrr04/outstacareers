@@ -1875,6 +1875,12 @@ const Admin = () => {
                 External Scout
               </TabsTrigger>
             )}
+            {canViewTab('outreach') && (
+              <TabsTrigger value="outreach" className="flex items-center gap-2">
+                <Send className="w-4 h-4" />
+                Outreach
+              </TabsTrigger>
+            )}
             {canViewTab('workflow') && (
               <TabsTrigger value="workflow" className="flex items-center gap-2">
                 <ClipboardList className="w-4 h-4" />
@@ -4090,6 +4096,16 @@ const Admin = () => {
               ]}
             />
             <ExternalScoutDashboard />
+          </TabsContent>
+
+          {/* Outreach Tab */}
+          <TabsContent value="outreach" className="space-y-6">
+            <AdminHeroBanner
+              eyebrow="Outreach"
+              title="LinkedIn outreach prospects"
+              chips={['Imported via the OutSta Chrome extension', 'Track contact to conversion']}
+            />
+            <OutreachDashboard />
           </TabsContent>
 
           {/* Workflow Tab */}
