@@ -12,11 +12,18 @@ function setStatus(text, kind = "info") {
   el.className = "status " + kind;
 }
 
-// Runs inside the LinkedIn page. Heuristic scraper with graceful fallbacks.
+// Runs inside the LinkedIn page. Mirrors extension/scraper.js — keep in sync.
 function scrapeLinkedInProfile() {
   const text = (sel, root = document) => {
     const el = root.querySelector(sel);
     return el ? el.textContent.trim().replace(/\s+/g, " ") : null;
+  };
+
+  const meta = (name) => {
+    const el =
+      document.querySelector(`meta[property="${name}"]`) ||
+      document.querySelector(`meta[name="${name}"]`);
+    return el ? el.getAttribute("content") : null;
   };
 
   const pickFirst = (selectors) => {
@@ -45,26 +52,40 @@ function scrapeLinkedInProfile() {
     return items;
   };
 
-  const topCard =
-    document.querySelector("section:has(.pv-top-card)") ||
-    document.querySelector(".pv-top-card")?.closest("section") ||
-    document;
-
-  const fullName = pickFirst([
+  let fullName = pickFirst([
     "h1.text-heading-xlarge",
     ".pv-text-details__left-panel h1",
+    "main h1",
     "h1",
   ]);
+  if (!fullName) {
+    const ogTitle = meta("og:title") || document.title || "";
+    fullName = ogTitle.replace(/\s*[|\-–]\s*LinkedIn.*$/i, "").trim() || null;
+  }
 
-  const headline = pickFirst([
+  let headline = pickFirst([
     ".text-body-medium.break-words",
     ".pv-text-details__left-panel .text-body-medium",
+    "div.text-body-medium",
   ]);
 
-  const location = pickFirst([
+  let location = pickFirst([
     ".text-body-small.inline.t-black--light.break-words",
     ".pv-text-details__left-panel .text-body-small.inline",
+    "span.text-body-small.inline",
   ]);
+
+  const desc = meta("og:description") || meta("description");
+  if (desc) {
+    if (!headline) {
+      const m = desc.match(/^\s*([^·]+)/);
+      if (m) headline = m[1].trim();
+    }
+    if (!location) {
+      const m = desc.match(/Location:\s*([^·]+)/i);
+      if (m) location = m[1].trim();
+    }
+  }
 
   const aboutSection = sectionByAnchor("about");
   const about = aboutSection
@@ -97,9 +118,16 @@ function scrapeLinkedInProfile() {
     document.querySelector("img.pv-top-card-profile-picture__image--show") ||
     document.querySelector(".pv-top-card-profile-picture__image") ||
     document.querySelector('button[aria-label*="profile photo" i] img') ||
-    topCard.querySelector("img");
+    document.querySelector(".pv-top-card--photo img") ||
+    document.querySelector('img[class*="profile-photo"]') ||
+    document.querySelector('img[class*="pv-top-card"]');
 
-  // Current role/company from the first experience entry, else headline.
+  let photoUrl = photo ? photo.src : null;
+  if (!photoUrl || photoUrl.includes("data:image")) {
+    photoUrl = meta("og:image") || null;
+    if (photoUrl && !/profile|media\/|licdn/i.test(photoUrl)) photoUrl = null;
+  }
+
   let currentTitle = null;
   let currentCompany = null;
   if (experience.length) {
@@ -109,8 +137,8 @@ function scrapeLinkedInProfile() {
       currentCompany = first[1];
     }
   }
-  if (!currentCompany && headline && headline.includes(" at ")) {
-    const parts = headline.split(" at ");
+  if (!currentCompany && headline && /\s(at|@)\s/i.test(headline)) {
+    const parts = headline.split(/\s+at\s+|\s+@\s+/i);
     currentTitle = currentTitle || parts[0].trim();
     currentCompany = parts[parts.length - 1].trim();
   }
@@ -121,18 +149,36 @@ function scrapeLinkedInProfile() {
     current_title: currentTitle,
     current_company: currentCompany,
     location,
-    linkedin_url: location ? null : null, // filled below from page URL
     profile_url: window.location.href.split("?")[0],
     about,
     experience,
     education,
     skills: skills.slice(0, 20),
-    photo_url: photo ? photo.src : null,
+    photo_url: photoUrl,
     source: "linkedin-extension",
   };
 }
 
 let scraped = null;
+
+async function tryScrape(tabId, attempts = 4) {
+  for (let i = 0; i < attempts; i++) {
+    let results;
+    try {
+      results = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: scrapeLinkedInProfile,
+      });
+    } catch (e) {
+      return { error: "Could not read this page: " + e.message };
+    }
+    const data = results?.[0]?.result;
+    if (data && data.full_name) return { data };
+    // Profile may still be lazy-loading — wait and retry.
+    await new Promise((r) => setTimeout(r, 1200));
+  }
+  return { error: null };
+}
 
 async function init() {
   $("options-link").addEventListener("click", () => {
@@ -149,22 +195,17 @@ async function init() {
 
   setStatus("Reading profile…");
 
-  let results;
-  try {
-    results = await chrome.scripting.executeScript({
-      target: { tabId: tab.id },
-      func: scrapeLinkedInProfile,
-    });
-  } catch (e) {
-    setStatus("Could not read this page: " + e.message, "err");
+  const { data, error } = await tryScrape(tab.id);
+  if (error) {
+    setStatus(error, "err");
+    return;
+  }
+  if (!data) {
+    setStatus("Could not find a profile on this page. Scroll to the top and try again.", "err");
     return;
   }
 
-  scraped = results?.[0]?.result;
-  if (!scraped || !scraped.full_name) {
-    setStatus("Could not find a profile on this page.", "err");
-    return;
-  }
+  scraped = data;
   scraped.linkedin_url = scraped.profile_url;
   delete scraped.profile_url;
 
