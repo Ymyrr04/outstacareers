@@ -168,28 +168,33 @@
 
   // ---- "Import" button beside the ⋯ More button -------------------------
   // The More button exists on every profile (no Recruiter/Sales Nav
-  // needed). Instead of hiding our action inside its dropdown, we place a
-  // compact OutSta import button right next to it in the action bar.
+  // needed). Search the whole document (LinkedIn's top card markup varies a
+  // lot) for a control labelled "More".
   function findMoreControl() {
-    const heading =
-      document.querySelector("h1.text-heading-xlarge") ||
-      document.querySelector("main h1");
-    const profileCard = heading?.closest("section") || heading?.parentElement?.parentElement;
-    if (!profileCard) return null;
-    const controls = [...profileCard.querySelectorAll('button, a, [role="button"]')];
+    const controls = [...document.querySelectorAll('button, a, [role="button"]')];
+    const isMore = (el) => {
+      const label = (
+        el.getAttribute("aria-label") ||
+        el.getAttribute("title") ||
+        el.textContent ||
+        ""
+      )
+        .trim()
+        .replace(/\s+/g, " ");
+      return /^more( actions| options)?$/i.test(label) || /^more\b/i.test(label);
+    };
+    // Prefer one inside <main> (the profile top card) and visible.
+    const main = document.querySelector("main") || document.body;
     return (
-      controls.find((el) => {
-        const label = (el.getAttribute("aria-label") || el.textContent || "")
-          .trim()
-          .replace(/\s+/g, " ");
-        return /^more\b/i.test(label) && el.offsetParent !== null;
-      }) || null
+      controls.find(
+        (el) => main.contains(el) && el.offsetParent !== null && isMore(el)
+      ) ||
+      controls.find((el) => el.offsetParent !== null && isMore(el)) ||
+      null
     );
   }
 
-  function buildBesideMoreButton() {
-    const btn = document.createElement("button");
-    btn.id = MORE_BTN_ID;
+  function styleImportButton(btn, floating) {
     btn.type = "button";
     btn.title = "Import this profile to OutSta Outreach";
     btn.style.cssText = [
@@ -197,7 +202,7 @@
       "align-items:center",
       "justify-content:center",
       "gap:5px",
-      "margin-left:8px",
+      floating ? "margin:0" : "margin-left:8px",
       "border:none",
       "border-radius:9999px",
       "padding:0 14px",
@@ -207,9 +212,14 @@
       "cursor:pointer",
       "background:#0ABEDF",
       "color:#062630",
-      "height:32px",
+      "height:36px",
       "vertical-align:middle",
-    ].join(";");
+      floating
+        ? "position:fixed;right:20px;bottom:20px;z-index:99999;box-shadow:0 4px 14px rgba(0,0,0,.35)"
+        : "",
+    ]
+      .filter(Boolean)
+      .join(";");
 
     const img = document.createElement("img");
     img.src = chrome.runtime.getURL("icon.png");
@@ -236,7 +246,26 @@
     if (document.getElementById(MORE_BTN_ID)) return;
     const more = findMoreControl();
     if (!more) return;
-    more.insertAdjacentElement("afterend", buildBesideMoreButton());
+    // The More button usually lives inside an artdeco-dropdown wrapper —
+    // insert after the wrapper so we sit in the action row, not the menu.
+    const anchor = more.closest(".artdeco-dropdown") || more;
+    const btn = document.createElement("button");
+    btn.id = MORE_BTN_ID;
+    styleImportButton(btn, false);
+    anchor.insertAdjacentElement("afterend", btn);
+  }
+
+  // ---- Always-available floating fallback --------------------------------
+  function injectFloating() {
+    if (!/^\/in\//.test(window.location.pathname)) {
+      document.getElementById(FLOAT_BTN_ID)?.remove();
+      return;
+    }
+    if (document.getElementById(FLOAT_BTN_ID)) return;
+    const btn = document.createElement("button");
+    btn.id = FLOAT_BTN_ID;
+    styleImportButton(btn, true);
+    document.body.appendChild(btn);
   }
 
   // ---- SPA navigation handling -----------------------------------------
@@ -247,9 +276,11 @@
       lastUrl = location.href;
       document.getElementById(ROW_ID)?.remove();
       document.getElementById(MORE_BTN_ID)?.remove();
+      document.getElementById(FLOAT_BTN_ID)?.remove();
     }
     inject();
     injectBesideMore();
+    injectFloating();
   });
   observer.observe(document.body, { childList: true, subtree: true });
 
@@ -258,5 +289,7 @@
   const timer = setInterval(() => {
     inject();
     injectBesideMore();
+    injectFloating();
   }, 1000);
 })();
+
