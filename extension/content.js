@@ -25,7 +25,15 @@
               (b.getAttribute("aria-label") || b.textContent || "").trim()
             )
         );
-        return msgBtn ? msgBtn.parentElement : null;
+        if (!msgBtn) return null;
+        // The Connect button often sits inside a wrapper li/div — climb to
+        // the container that holds all the action buttons.
+        let el = msgBtn;
+        for (let i = 0; i < 4 && el.parentElement; i++) {
+          el = el.parentElement;
+          if (el.querySelectorAll("button").length >= 2) break;
+        }
+        return el;
       })()
     );
   }
