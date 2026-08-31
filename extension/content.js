@@ -107,11 +107,12 @@
     btn.style.cssText = [
       "display:inline-flex",
       "align-items:center",
+      "justify-content:center",
       "gap:6px",
-      "margin-left:8px",
+      "margin:8px 0 4px",
       "border:none",
       "border-radius:16px",
-      "padding:6px 14px",
+      "padding:6px 16px",
       "font-family:inherit",
       "font-size:14px",
       "font-weight:600",
@@ -134,7 +135,9 @@
     btn.appendChild(label);
 
     btn.addEventListener("click", () => doImport(btn));
-    bar.appendChild(btn);
+
+    // Place the button in its own row directly below the Connect / Message bar.
+    bar.insertAdjacentElement("afterend", btn);
   }
 
   // LinkedIn is a SPA — re-inject on navigation and wait for lazy DOM.
