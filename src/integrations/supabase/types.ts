@@ -2954,6 +2954,69 @@ export type Database = {
           },
         ]
       }
+      outreach_prospects: {
+        Row: {
+          about: string | null
+          created_at: string
+          current_company: string | null
+          current_title: string | null
+          education: Json
+          experience: Json
+          full_name: string
+          headline: string | null
+          id: string
+          imported_by: string | null
+          linkedin_url: string | null
+          location: string | null
+          notes: string | null
+          photo_url: string | null
+          skills: Json
+          source: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          about?: string | null
+          created_at?: string
+          current_company?: string | null
+          current_title?: string | null
+          education?: Json
+          experience?: Json
+          full_name: string
+          headline?: string | null
+          id?: string
+          imported_by?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          notes?: string | null
+          photo_url?: string | null
+          skills?: Json
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          about?: string | null
+          created_at?: string
+          current_company?: string | null
+          current_title?: string | null
+          education?: Json
+          experience?: Json
+          full_name?: string
+          headline?: string | null
+          id?: string
+          imported_by?: string | null
+          linkedin_url?: string | null
+          location?: string | null
+          notes?: string | null
+          photo_url?: string | null
+          skills?: Json
+          source?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       payoneer_verifications: {
         Row: {
           amount: number | null
