@@ -8,6 +8,7 @@
   const BTN_ID = "outsta-import-btn";
   const ROW_ID = "outsta-import-row";
   const MORE_BTN_ID = "outsta-import-beside-more";
+  const FLOAT_BTN_ID = "outsta-import-floating";
 
   function scrape() {
     // scraper.js registers window.__outstaScrape
