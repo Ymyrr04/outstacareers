@@ -299,12 +299,12 @@ export const AddActivityModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[640px] max-h-[88vh] overflow-y-auto overflow-x-hidden">
-        <DialogHeader>
+      <DialogContent className="sm:max-w-[640px] max-h-[90vh] flex flex-col overflow-hidden">
+        <DialogHeader className="shrink-0">
           <DialogTitle>{editEvent ? 'Edit activity' : 'Add activity'}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="space-y-4 flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-1">
           <div className="space-y-1.5">
             <Label htmlFor="ce-title">Title</Label>
             <Input
@@ -375,7 +375,7 @@ export const AddActivityModal = ({
                 </SelectContent>
               </Select>
               {!isUnassigned && conflicts.has(adminId) && (
-                <p className="text-xs text-destructive">{conflictLabel(adminId)}</p>
+                <p className="text-xs text-destructive truncate" title={conflictLabel(adminId) ?? undefined}>{conflictLabel(adminId)}</p>
               )}
             </div>
 
@@ -407,12 +407,13 @@ export const AddActivityModal = ({
                 return (
                   <label
                     key={a.user_id}
-                    className={`flex items-center gap-2 text-sm cursor-pointer ${
+                    className={`flex items-center gap-2 text-sm cursor-pointer min-w-0 ${
                       busy ? 'opacity-70' : ''
                     }`}
                     title={conflictLabel(a.user_id) ?? undefined}
                   >
                     <Checkbox
+                      className="shrink-0"
                       checked={extraAssignees.includes(a.user_id)}
                       onCheckedChange={(v) =>
                         setExtraAssignees((prev) =>
@@ -422,7 +423,7 @@ export const AddActivityModal = ({
                     />
                     <span className="font-normal shrink-0">{a.name}</span>
                     {busy && (
-                      <span className="ml-auto text-[11px] text-muted-foreground truncate">
+                      <span className="ml-auto min-w-0 max-w-[55%] text-[11px] text-muted-foreground truncate text-right">
                         {conflictLabel(a.user_id)}
                       </span>
                     )}
@@ -500,7 +501,7 @@ export const AddActivityModal = ({
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
 
-        <DialogFooter className="sm:justify-between">
+        <DialogFooter className="sm:justify-between shrink-0 pt-3 border-t">
           <span className="text-xs text-muted-foreground self-center">{formatDateLong(date)}</span>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
