@@ -375,7 +375,7 @@ export const AddActivityModal = ({
                 </SelectContent>
               </Select>
               {!isUnassigned && conflicts.has(adminId) && (
-                <p className="text-xs text-destructive">{conflictLabel(adminId)}</p>
+                <p className="text-xs text-destructive truncate" title={conflictLabel(adminId) ?? undefined}>{conflictLabel(adminId)}</p>
               )}
             </div>
 
