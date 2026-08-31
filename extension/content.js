@@ -25,7 +25,15 @@
               (b.getAttribute("aria-label") || b.textContent || "").trim()
             )
         );
-        return msgBtn ? msgBtn.parentElement : null;
+        if (!msgBtn) return null;
+        // The Connect button often sits inside a wrapper li/div — climb to
+        // the container that holds all the action buttons.
+        let el = msgBtn;
+        for (let i = 0; i < 4 && el.parentElement; i++) {
+          el = el.parentElement;
+          if (el.querySelectorAll("button").length >= 2) break;
+        }
+        return el;
       })()
     );
   }
@@ -99,11 +107,12 @@
     btn.style.cssText = [
       "display:inline-flex",
       "align-items:center",
+      "justify-content:center",
       "gap:6px",
-      "margin-left:8px",
+      "margin:8px 0 4px",
       "border:none",
       "border-radius:16px",
-      "padding:6px 14px",
+      "padding:6px 16px",
       "font-family:inherit",
       "font-size:14px",
       "font-weight:600",
@@ -126,7 +135,9 @@
     btn.appendChild(label);
 
     btn.addEventListener("click", () => doImport(btn));
-    bar.appendChild(btn);
+
+    // Place the button in its own row directly below the Connect / Message bar.
+    bar.insertAdjacentElement("afterend", btn);
   }
 
   // LinkedIn is a SPA — re-inject on navigation and wait for lazy DOM.
