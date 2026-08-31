@@ -16,7 +16,6 @@ Deno.serve(async (req) => {
     const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
     const ANON = Deno.env.get('SUPABASE_ANON_KEY')!;
     const SERVICE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
-    const IMPORT_KEY = Deno.env.get('OUTREACH_IMPORT_KEY');
 
     const admin = createClient(SUPABASE_URL, SERVICE);
 
