@@ -1,11 +1,13 @@
-// OutSta Outreach — injects an "Import" button into the LinkedIn profile
-// action bar (next to Message / Connect). Clicking it scrapes the profile
-// and imports it straight into the Outreach tab.
+// OutSta Outreach — adds an "Import to OutSta" item to the profile's
+// "⋯ More" dropdown menu (works on every profile, no Recruiter/Sales Nav
+// needed), plus a fallback button row below the action bar. Clicking it
+// scrapes the profile and imports it straight into the Outreach tab.
 (function () {
   const FUNCTION_URL =
     "https://ohxtavjababtrcrkgndq.supabase.co/functions/v1/import-outreach-profile";
   const BTN_ID = "outsta-import-btn";
   const ROW_ID = "outsta-import-row";
+  const MENU_ITEM_ID = "outsta-import-menu-item";
 
   function scrape() {
     // scraper.js registers window.__outstaScrape
