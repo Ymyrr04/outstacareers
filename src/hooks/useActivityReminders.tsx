@@ -28,6 +28,8 @@ interface ReminderEvent {
   time_tbd: boolean | null;
   is_done: boolean | null;
   event_type: string;
+  assigned_to: string[] | null;
+  claimed_by: string | null;
 }
 
 /**
@@ -43,11 +45,12 @@ export const useActivityReminders = (currentUserId?: string) => {
 
     const check = async () => {
       const day = todayET();
+      // Fetch the day's events and filter in JS — PostgREST `.or()` with array
+      // `cs` filters is fragile with quoting and silently returns nothing.
       const { data, error } = await supabase
         .from('calendar_events')
         .select('id, title, start_time, time_tbd, is_done, event_type, assigned_to, claimed_by')
-        .eq('event_date', day)
-        .or(`assigned_to.cs."{${currentUserId}}",claimed_by.eq."${currentUserId}"`);
+        .eq('event_date', day);
 
       if (error) {
         console.error('Activity reminder query failed:', error);
@@ -58,11 +61,15 @@ export const useActivityReminders = (currentUserId?: string) => {
       const now = nowMinutesET();
       const dismissed = loadDismissed();
       (data as unknown as ReminderEvent[]).forEach((ev) => {
+        const mine =
+          (ev.assigned_to || []).includes(currentUserId) || ev.claimed_by === currentUserId;
+        if (!mine) return;
         if (ev.is_done || ev.time_tbd || ev.start_time == null) return;
         const key = `${day}:${ev.id}`;
         if (notified.current.has(key) || dismissed.has(key)) return;
         const diff = ev.start_time - now;
         if (diff > REMINDER_LEAD_MINUTES || diff < 0) return;
+
         notified.current.add(key);
         toast(`Starting in ${diff <= 0 ? 'a moment' : `${diff} min`}: ${ev.title}`, {
           description: `Scheduled at ${formatMinutes(ev.start_time)} ET`,
