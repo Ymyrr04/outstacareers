@@ -501,7 +501,7 @@ export const AddActivityModal = ({
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
 
-        <DialogFooter className="sm:justify-between">
+        <DialogFooter className="sm:justify-between shrink-0 pt-3 border-t">
           <span className="text-xs text-muted-foreground self-center">{formatDateLong(date)}</span>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
