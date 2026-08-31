@@ -7,7 +7,7 @@
     "https://ohxtavjababtrcrkgndq.supabase.co/functions/v1/import-outreach-profile";
   const BTN_ID = "outsta-import-btn";
   const ROW_ID = "outsta-import-row";
-  const MENU_ITEM_ID = "outsta-import-menu-item";
+  const MORE_BTN_ID = "outsta-import-beside-more";
 
   function scrape() {
     // scraper.js registers window.__outstaScrape
