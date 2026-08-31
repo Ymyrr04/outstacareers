@@ -166,6 +166,91 @@
     bar.insertAdjacentElement("afterend", row);
   }
 
+  // ---- "⋯ More" dropdown menu injection -------------------------------
+  // The More button exists on every profile (no Recruiter/Sales Nav
+  // needed). LinkedIn renders the dropdown lazily on click, so we watch
+  // for clicks on More buttons, then insert our item once the menu opens.
+  function buildMenuItem() {
+    const item = document.createElement("div");
+    item.id = MENU_ITEM_ID;
+    item.setAttribute("role", "button");
+    item.tabIndex = 0;
+    item.style.cssText = [
+      "display:flex",
+      "align-items:center",
+      "gap:8px",
+      "padding:8px 16px",
+      "cursor:pointer",
+      "font-size:14px",
+      "font-weight:600",
+      "color:#0ABEDF",
+      "background:transparent",
+    ].join(";");
+
+    const img = document.createElement("img");
+    img.src = chrome.runtime.getURL("icon.png");
+    img.width = 18;
+    img.height = 18;
+    img.style.borderRadius = "4px";
+    item.appendChild(img);
+
+    const label = document.createElement("span");
+    label.className = "outsta-label";
+    label.textContent = "Import to OutSta";
+    item.appendChild(label);
+
+    const run = () => doImport(item);
+    item.addEventListener("click", (e) => {
+      e.stopPropagation();
+      run();
+    });
+    item.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        run();
+      }
+    });
+    return item;
+  }
+
+  function tryInjectMenuItem() {
+    if (!/^\/in\//.test(window.location.pathname)) return;
+    if (document.getElementById(MENU_ITEM_ID)) return;
+    // LinkedIn dropdowns render into a global overlay; find an open menu.
+    const menus = document.querySelectorAll(
+      '.artdeco-dropdown__content-inner, [role="menu"], [class*="dropdown__content"]'
+    );
+    for (const menu of menus) {
+      if (menu.offsetParent === null) continue; // hidden
+      if (menu.querySelector("#" + MENU_ITEM_ID)) continue;
+      const item = buildMenuItem();
+      item.id = MENU_ITEM_ID;
+      menu.appendChild(item);
+      return;
+    }
+  }
+
+  // Detect clicks on any "More" / "More actions" control, then wait a tick
+  // for the dropdown to render before injecting.
+  document.addEventListener(
+    "click",
+    (e) => {
+      const control = e.target.closest?.('button, a, [role="button"]');
+      if (!control) return;
+      const label = (control.getAttribute("aria-label") || control.textContent || "")
+        .trim()
+        .replace(/\s+/g, " ");
+      if (!/^more\b/i.test(label)) return;
+      let tries = 0;
+      const poll = setInterval(() => {
+        tryInjectMenuItem();
+        if (++tries >= 10) clearInterval(poll);
+      }, 150);
+    },
+    true
+  );
+
+  // ---- SPA navigation handling -----------------------------------------
   // LinkedIn is a SPA — re-inject on navigation and wait for lazy DOM.
   let lastUrl = location.href;
   const observer = new MutationObserver(() => {
