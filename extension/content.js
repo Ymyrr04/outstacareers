@@ -5,6 +5,7 @@
   const FUNCTION_URL =
     "https://ohxtavjababtrcrkgndq.supabase.co/functions/v1/import-outreach-profile";
   const BTN_ID = "outsta-import-btn";
+  const ROW_ID = "outsta-import-row";
 
   function scrape() {
     // scraper.js registers window.__outstaScrape
@@ -14,28 +15,39 @@
   }
 
   function findActionBar() {
-    // The row that holds Message / Connect / More buttons in the top card.
-    return (
+    const knownBar =
       document.querySelector(".pv-top-card-v2-ctas") ||
-      document.querySelector('[class*="pv-top-card"] [class*="ctas"]') ||
-      (() => {
-        const msgBtn = [...document.querySelectorAll("button")].find(
-          (b) =>
-            /^(message|connect|follow)/i.test(
-              (b.getAttribute("aria-label") || b.textContent || "").trim()
-            )
-        );
-        if (!msgBtn) return null;
-        // The Connect button often sits inside a wrapper li/div — climb to
-        // the container that holds all the action buttons.
-        let el = msgBtn;
-        for (let i = 0; i < 4 && el.parentElement; i++) {
-          el = el.parentElement;
-          if (el.querySelectorAll("button").length >= 2) break;
-        }
-        return el;
-      })()
+      document.querySelector('[class*="pv-top-card"] [class*="ctas"]');
+    if (knownBar) return knownBar;
+
+    // LinkedIn serves several profile headers. Some use buttons, others use
+    // anchors or nested role=button controls (including "View in Recruiter").
+    const heading =
+      document.querySelector("h1.text-heading-xlarge") ||
+      document.querySelector("main h1");
+    const profileCard = heading?.closest("section") || heading?.parentElement?.parentElement;
+    if (!profileCard) return null;
+
+    const actionPattern = /^(message|connect|follow|pending|more|view in recruiter)\b/i;
+    const controls = [...profileCard.querySelectorAll('button, a, [role="button"]')].filter(
+      (el) => {
+        const label = (el.getAttribute("aria-label") || el.textContent || "")
+          .trim()
+          .replace(/\s+/g, " ");
+        return actionPattern.test(label) && el.offsetParent !== null;
+      }
     );
+    if (!controls.length) return null;
+
+    // Find the smallest shared row containing at least two visible actions.
+    let candidate = controls[0];
+    for (let depth = 0; depth < 7 && candidate.parentElement; depth++) {
+      candidate = candidate.parentElement;
+      const contained = controls.filter((control) => candidate.contains(control));
+      if (contained.length >= 2) return candidate;
+    }
+
+    return controls[0].parentElement;
   }
 
   function setBtnState(btn, state, label) {
@@ -100,6 +112,17 @@
     const bar = findActionBar();
     if (!bar) return;
 
+    const row = document.createElement("div");
+    row.id = ROW_ID;
+    row.style.cssText = [
+      "display:flex",
+      "align-items:center",
+      "width:100%",
+      "margin:8px 0 4px",
+      "position:relative",
+      "z-index:20",
+    ].join(";");
+
     const btn = document.createElement("button");
     btn.id = BTN_ID;
     btn.type = "button";
@@ -109,7 +132,7 @@
       "align-items:center",
       "justify-content:center",
       "gap:6px",
-      "margin:8px 0 4px",
+      "margin:0",
       "border:none",
       "border-radius:16px",
       "padding:6px 16px",
@@ -136,22 +159,25 @@
 
     btn.addEventListener("click", () => doImport(btn));
 
-    // Place the button in its own row directly below the Connect / Message bar.
-    bar.insertAdjacentElement("afterend", btn);
+    // Place the button in a dedicated row below either profile-header variant.
+    row.appendChild(btn);
+    bar.insertAdjacentElement("afterend", row);
   }
 
   // LinkedIn is a SPA — re-inject on navigation and wait for lazy DOM.
   let lastUrl = location.href;
   const observer = new MutationObserver(() => {
-    if (location.href !== lastUrl) lastUrl = location.href;
+    if (location.href !== lastUrl) {
+      lastUrl = location.href;
+      document.getElementById(ROW_ID)?.remove();
+    }
     inject();
   });
   observer.observe(document.body, { childList: true, subtree: true });
 
-  // Retry a few times while the profile top card lazy-loads.
-  let tries = 0;
+  // Keep a lightweight retry because LinkedIn can replace the top card after
+  // initial load or navigate to a profile without a full page refresh.
   const timer = setInterval(() => {
     inject();
-    if (document.getElementById(BTN_ID) || ++tries > 20) clearInterval(timer);
   }, 1000);
 })();
