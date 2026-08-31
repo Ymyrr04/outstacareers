@@ -18,6 +18,7 @@ export const TAB_IDS = [
   'calendar',
   'talent-scout',
   'external-scout',
+  'outreach',
   'workflow',
 ] as const;
 
@@ -39,6 +40,7 @@ export const TAB_LABELS: Record<TabId, string> = {
   'funnel': 'Funnel',
   'talent-scout': 'Talent Scout',
   'external-scout': 'External Scout',
+  'outreach': 'Outreach',
   'workflow': 'Workflow',
 };
 

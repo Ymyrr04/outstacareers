@@ -69,6 +69,7 @@ import { BooleanSearchBuilder } from '@/components/BooleanSearchBuilder';
 import { SearchApplicantExpandedView } from '@/components/SearchApplicantExpandedView';
 import { TalentScoutDashboard } from '@/components/TalentScoutDashboard';
 import { ExternalScoutDashboard } from '@/components/ExternalScoutDashboard';
+import { OutreachDashboard } from '@/components/OutreachDashboard';
 import { RecruitmentFunnel } from '@/components/RecruitmentFunnel';
 import { WorkflowBoard } from '@/components/WorkflowBoard';
 import { PLDashboard } from '@/components/PLDashboard';
@@ -1873,6 +1874,12 @@ const Admin = () => {
               <TabsTrigger value="external-scout" className="flex items-center gap-2">
                 <Globe className="w-4 h-4" />
                 External Scout
+              </TabsTrigger>
+            )}
+            {canViewTab('outreach') && (
+              <TabsTrigger value="outreach" className="flex items-center gap-2">
+                <Send className="w-4 h-4" />
+                Outreach
               </TabsTrigger>
             )}
             {canViewTab('workflow') && (
@@ -4090,6 +4097,16 @@ const Admin = () => {
               ]}
             />
             <ExternalScoutDashboard />
+          </TabsContent>
+
+          {/* Outreach Tab */}
+          <TabsContent value="outreach" className="space-y-6">
+            <AdminHeroBanner
+              eyebrow="Outreach"
+              title="LinkedIn outreach prospects"
+              chips={['Imported via the OutSta Chrome extension', 'Track contact to conversion']}
+            />
+            <OutreachDashboard />
           </TabsContent>
 
           {/* Workflow Tab */}

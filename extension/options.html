@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <style>
+    body { font-family: -apple-system, "Segoe UI", Roboto, sans-serif; background: #0f172a; color: #e2e8f0; max-width: 520px; margin: 40px auto; padding: 0 20px; }
+    h1 { font-size: 18px; }
+    p { font-size: 13px; color: #94a3b8; }
+    label { display: block; font-size: 12px; font-weight: 600; margin: 16px 0 4px; }
+    input { width: 100%; box-sizing: border-box; background: #1e293b; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; font-size: 13px; padding: 9px 10px; }
+    button { margin-top: 20px; background: #0ABEDF; color: #062630; border: none; border-radius: 8px; padding: 10px 18px; font-weight: 700; cursor: pointer; }
+    #saved { color: #34d399; font-size: 12px; margin-left: 10px; }
+    code { background: #1e293b; padding: 1px 5px; border-radius: 4px; font-size: 12px; }
+  </style>
+</head>
+<body>
+  <h1>OutSta Outreach Importer — Settings</h1>
+  <p>Paste the import key shared by your admin. It authorizes this extension to add profiles to the Outreach tab. Keep it private.</p>
+  <label for="key">Import key</label>
+  <input id="key" type="password" placeholder="Paste import key" />
+  <label for="url">Import endpoint (leave default unless told otherwise)</label>
+  <input id="url" type="text" />
+  <button id="save">Save</button><span id="saved"></span>
+  <script src="options.js"></script>
+</body>
+</html>
