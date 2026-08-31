@@ -2957,6 +2957,7 @@ export type Database = {
       outreach_prospects: {
         Row: {
           about: string | null
+          converted_lead_id: string | null
           created_at: string
           current_company: string | null
           current_title: string | null
@@ -2966,6 +2967,7 @@ export type Database = {
           headline: string | null
           id: string
           imported_by: string | null
+          industry: string | null
           linkedin_url: string | null
           location: string | null
           notes: string | null
@@ -2974,9 +2976,11 @@ export type Database = {
           source: string
           status: string
           updated_at: string
+          website: string | null
         }
         Insert: {
           about?: string | null
+          converted_lead_id?: string | null
           created_at?: string
           current_company?: string | null
           current_title?: string | null
@@ -2986,6 +2990,7 @@ export type Database = {
           headline?: string | null
           id?: string
           imported_by?: string | null
+          industry?: string | null
           linkedin_url?: string | null
           location?: string | null
           notes?: string | null
@@ -2994,9 +2999,11 @@ export type Database = {
           source?: string
           status?: string
           updated_at?: string
+          website?: string | null
         }
         Update: {
           about?: string | null
+          converted_lead_id?: string | null
           created_at?: string
           current_company?: string | null
           current_title?: string | null
@@ -3006,6 +3013,7 @@ export type Database = {
           headline?: string | null
           id?: string
           imported_by?: string | null
+          industry?: string | null
           linkedin_url?: string | null
           location?: string | null
           notes?: string | null
@@ -3014,8 +3022,17 @@ export type Database = {
           source?: string
           status?: string
           updated_at?: string
+          website?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "outreach_prospects_converted_lead_id_fkey"
+            columns: ["converted_lead_id"]
+            isOneToOne: false
+            referencedRelation: "sales_leads"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       outreach_settings: {
         Row: {
