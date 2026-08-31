@@ -407,12 +407,13 @@ export const AddActivityModal = ({
                 return (
                   <label
                     key={a.user_id}
-                    className={`flex items-center gap-2 text-sm cursor-pointer ${
+                    className={`flex items-center gap-2 text-sm cursor-pointer min-w-0 ${
                       busy ? 'opacity-70' : ''
                     }`}
                     title={conflictLabel(a.user_id) ?? undefined}
                   >
                     <Checkbox
+                      className="shrink-0"
                       checked={extraAssignees.includes(a.user_id)}
                       onCheckedChange={(v) =>
                         setExtraAssignees((prev) =>
@@ -422,7 +423,7 @@ export const AddActivityModal = ({
                     />
                     <span className="font-normal shrink-0">{a.name}</span>
                     {busy && (
-                      <span className="ml-auto text-[11px] text-muted-foreground truncate">
+                      <span className="ml-auto min-w-0 max-w-[55%] text-[11px] text-muted-foreground truncate text-right">
                         {conflictLabel(a.user_id)}
                       </span>
                     )}
