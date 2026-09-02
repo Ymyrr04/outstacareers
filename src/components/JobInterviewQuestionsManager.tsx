@@ -17,6 +17,7 @@ interface CustomQuestion {
   question_context: string;
   question_type: 'voice' | 'text';
   question_order: number;
+  allow_paste?: boolean;
 }
 
 interface JobInterviewQuestionsManagerProps {
@@ -75,7 +76,8 @@ const JobInterviewQuestionsManager = ({
         question_text: q.question_text,
         question_context: q.question_context || '',
         question_type: q.question_type as 'voice' | 'text',
-        question_order: q.question_order
+        question_order: q.question_order,
+        allow_paste: (q as any).allow_paste || false
       })));
     }
   };
@@ -199,7 +201,8 @@ const JobInterviewQuestionsManager = ({
             question_text: q.question_text,
             question_context: q.question_context || null,
             question_type: q.question_type,
-            question_order: index
+            question_order: index,
+            allow_paste: q.question_type === 'text' ? (q.allow_paste || false) : false
           }));
 
         if (questionsToInsert.length > 0) {
