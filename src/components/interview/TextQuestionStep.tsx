@@ -93,6 +93,11 @@ export function TextQuestionStep({
             ⚠️ Pasting is not allowed. Please type your answer. ({pasteAttempts} attempt{pasteAttempts > 1 ? 's' : ''} detected)
           </p>
         )}
+        {allowPaste && (
+          <p className="text-sm text-muted-foreground">
+            Pasting is allowed for this question.
+          </p>
+        )}
       </div>
 
       {/* Submit Button */}
