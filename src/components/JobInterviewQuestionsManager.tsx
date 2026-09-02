@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -364,6 +365,16 @@ const JobInterviewQuestionsManager = ({
                                   placeholder="Context: What skill/trait does this assess? (optional)"
                                   className="text-sm"
                                 />
+                                <div className="flex items-center gap-2 pt-1">
+                                  <Switch
+                                    id={`allow-paste-${index}`}
+                                    checked={q.allow_paste || false}
+                                    onCheckedChange={(checked) => updateQuestion(index, { allow_paste: checked })}
+                                  />
+                                  <Label htmlFor={`allow-paste-${index}`} className="text-xs text-muted-foreground font-normal cursor-pointer">
+                                    Allow pasting answers (applicant may paste instead of typing)
+                                  </Label>
+                                </div>
                               </div>
                               <Button
                                 type="button"
