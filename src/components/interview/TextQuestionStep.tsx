@@ -14,13 +14,15 @@ interface TextQuestionStepProps {
   questionNumber: number;
   totalQuestions: number;
   onAnswer: (textAnswer: string, pasteDetected: boolean, pastedContent: string | null) => void;
+  allowPaste?: boolean;
 }
 
 export function TextQuestionStep({
   question,
   questionNumber,
   totalQuestions,
-  onAnswer
+  onAnswer,
+  allowPaste = false
 }: TextQuestionStepProps) {
   const [answer, setAnswer] = useState("");
   const [pasteDetected, setPasteDetected] = useState(false);
@@ -37,6 +39,7 @@ export function TextQuestionStep({
   };
 
   const handlePaste = (e: React.ClipboardEvent) => {
+    if (allowPaste) return; // pasting allowed — let it through unflagged
     e.preventDefault();
     const text = e.clipboardData.getData('text');
     if (text) {
