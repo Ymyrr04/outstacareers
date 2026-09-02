@@ -1,0 +1,2 @@
+ALTER TABLE public.job_interview_questions ADD COLUMN IF NOT EXISTS allow_paste boolean NOT NULL DEFAULT false;
+ALTER TABLE public.interview_questions ADD COLUMN IF NOT EXISTS allow_paste boolean NOT NULL DEFAULT false;

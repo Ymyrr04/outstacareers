@@ -2710,6 +2710,7 @@ export type Database = {
       }
       interview_questions: {
         Row: {
+          allow_paste: boolean
           created_at: string
           id: string
           options: Json | null
@@ -2720,6 +2721,7 @@ export type Database = {
           session_id: string
         }
         Insert: {
+          allow_paste?: boolean
           created_at?: string
           id?: string
           options?: Json | null
@@ -2730,6 +2732,7 @@ export type Database = {
           session_id: string
         }
         Update: {
+          allow_paste?: boolean
           created_at?: string
           id?: string
           options?: Json | null
@@ -2841,6 +2844,7 @@ export type Database = {
       }
       job_interview_questions: {
         Row: {
+          allow_paste: boolean
           created_at: string
           id: string
           job_id: string
@@ -2851,6 +2855,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allow_paste?: boolean
           created_at?: string
           id?: string
           job_id: string
@@ -2861,6 +2866,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allow_paste?: boolean
           created_at?: string
           id?: string
           job_id?: string
