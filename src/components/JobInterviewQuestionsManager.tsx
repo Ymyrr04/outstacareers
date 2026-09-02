@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -17,6 +18,7 @@ interface CustomQuestion {
   question_context: string;
   question_type: 'voice' | 'text';
   question_order: number;
+  allow_paste?: boolean;
 }
 
 interface JobInterviewQuestionsManagerProps {
@@ -75,7 +77,8 @@ const JobInterviewQuestionsManager = ({
         question_text: q.question_text,
         question_context: q.question_context || '',
         question_type: q.question_type as 'voice' | 'text',
-        question_order: q.question_order
+        question_order: q.question_order,
+        allow_paste: (q as any).allow_paste || false
       })));
     }
   };
@@ -199,7 +202,8 @@ const JobInterviewQuestionsManager = ({
             question_text: q.question_text,
             question_context: q.question_context || null,
             question_type: q.question_type,
-            question_order: index
+            question_order: index,
+            allow_paste: q.question_type === 'text' ? (q.allow_paste || false) : false
           }));
 
         if (questionsToInsert.length > 0) {
@@ -361,6 +365,16 @@ const JobInterviewQuestionsManager = ({
                                   placeholder="Context: What skill/trait does this assess? (optional)"
                                   className="text-sm"
                                 />
+                                <div className="flex items-center gap-2 pt-1">
+                                  <Switch
+                                    id={`allow-paste-${index}`}
+                                    checked={q.allow_paste || false}
+                                    onCheckedChange={(checked) => updateQuestion(index, { allow_paste: checked })}
+                                  />
+                                  <Label htmlFor={`allow-paste-${index}`} className="text-xs text-muted-foreground font-normal cursor-pointer">
+                                    Allow pasting answers (applicant may paste instead of typing)
+                                  </Label>
+                                </div>
                               </div>
                               <Button
                                 type="button"

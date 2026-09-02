@@ -25,6 +25,7 @@ interface VoiceQuestion {
 interface TextQuestion {
   question_text: string;
   question_context: string;
+  allow_paste?: boolean;
 }
 
 interface QuestionsResponse {
@@ -90,7 +91,8 @@ serve(async (req) => {
           .filter(q => q.question_type === 'text')
           .map(q => ({
             question_text: q.question_text,
-            question_context: q.question_context || ''
+            question_context: q.question_context || '',
+            allow_paste: q.allow_paste === true
           }));
       }
     }

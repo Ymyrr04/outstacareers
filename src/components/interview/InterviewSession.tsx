@@ -33,6 +33,7 @@ interface TextQuestion {
   id: string;
   question_text: string;
   question_context: string;
+  allow_paste?: boolean;
 }
 
 interface Answer {
@@ -126,7 +127,8 @@ export function InterviewSession({
           .map(q => ({
             id: q.id,
             question_text: q.question_text,
-            question_context: q.question_context || ''
+            question_context: q.question_context || '',
+            allow_paste: (q as any).allow_paste === true
           }));
 
         setVoiceQuestions(voiceQs);
@@ -255,7 +257,8 @@ export function InterviewSession({
           section: 'text',
           question_order: i + 1,
           question_text: q.question_text,
-          question_context: q.question_context
+          question_context: q.question_context,
+          allow_paste: q.allow_paste === true
         }))
       ];
 
@@ -279,7 +282,8 @@ export function InterviewSession({
           setTextQuestions(textDbQuestions.map(q => ({
             id: q.id,
             question_text: q.question_text,
-            question_context: q.question_context || ''
+            question_context: q.question_context || '',
+            allow_paste: (q as any).allow_paste === true
           })));
         }
       }
@@ -473,7 +477,12 @@ export function InterviewSession({
 
   const getSectionDescription = () => {
     if (currentStep === 'voice') return 'Answer verbally about your experience. Aim for 60-90 seconds per question.';
-    if (currentStep === 'text') return 'Describe how you would handle this workplace scenario. Type your answer — pasting is not allowed.';
+    if (currentStep === 'text') {
+      const q = textQuestions[currentQuestionIndex] as TextQuestion | undefined;
+      return q?.allow_paste
+        ? 'Describe how you would handle this workplace scenario. You may type or paste your answer.'
+        : 'Describe how you would handle this workplace scenario. Type your answer — pasting is not allowed.';
+    }
     return '';
   };
 
@@ -634,6 +643,7 @@ export function InterviewSession({
             questionNumber={currentQuestionIndex + 1}
             totalQuestions={textQuestions.length}
             onAnswer={handleTextAnswer}
+            allowPaste={(currentQuestion as TextQuestion).allow_paste === true}
           />
         )}
       </div>
