@@ -477,7 +477,12 @@ export function InterviewSession({
 
   const getSectionDescription = () => {
     if (currentStep === 'voice') return 'Answer verbally about your experience. Aim for 60-90 seconds per question.';
-    if (currentStep === 'text') return 'Describe how you would handle this workplace scenario. Type your answer — pasting is not allowed.';
+    if (currentStep === 'text') {
+      const q = textQuestions[currentQuestionIndex] as TextQuestion | undefined;
+      return q?.allow_paste
+        ? 'Describe how you would handle this workplace scenario. You may type or paste your answer.'
+        : 'Describe how you would handle this workplace scenario. Type your answer — pasting is not allowed.';
+    }
     return '';
   };
 
