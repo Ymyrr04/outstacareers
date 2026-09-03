@@ -4205,7 +4205,7 @@ const Admin = () => {
                   variant="outline"
                   size="sm"
                   onClick={() => replaceCvInputRef.current?.click()}
-                  disabled={replacingCv || !previewCv?.applicantId}
+                  disabled={!!replacingCv || !previewCv?.applicantId}
                   className="flex items-center gap-2"
                 >
                   {replacingCv ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
