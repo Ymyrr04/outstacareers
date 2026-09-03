@@ -645,7 +645,7 @@ export function InterviewSession({
             questionNumber={currentQuestionIndex + 1}
             totalQuestions={textQuestions.length}
             onAnswer={handleTextAnswer}
-            allowPaste={(currentQuestion as TextQuestion).allow_paste === true}
+            allowPaste={(currentQuestion as TextQuestion | undefined)?.allow_paste === true}
           />
         )}
       </div>
