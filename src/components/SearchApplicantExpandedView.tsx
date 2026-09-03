@@ -394,6 +394,15 @@ export const SearchApplicantExpandedView = ({
       <div className="flex flex-wrap gap-3 mb-4">
         {applicant.cv_file_url && (
           <>
+            {onReplaceCv && (
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx"
+                className="hidden"
+                ref={replaceCvInputRef}
+                onChange={(e) => onReplaceCv(e, applicant.id)}
+              />
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -413,6 +422,18 @@ export const SearchApplicantExpandedView = ({
               {downloadingCv === applicant.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
               Download CV
             </Button>
+            {onReplaceCv && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => replaceCvInputRef.current?.click()}
+                disabled={replacingCv === applicant.id}
+                className="inline-flex items-center gap-2"
+              >
+                {replacingCv === applicant.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                Replace CV
+              </Button>
+            )}
           </>
         )}
         {(applicant.vocaroo_link || applicant.voice_recording_url) && (
