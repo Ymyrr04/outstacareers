@@ -2648,13 +2648,15 @@ const Admin = () => {
                       unreadCounts={unreadCounts}
                       enabled={activeApplicantTab === 'search'}
                       renderExpandedContent={(applicant) => (
-                        <SearchApplicantExpandedView
-                          applicant={applicant}
-                          onRescoreCv={handleRescoreCv}
-                          onDownloadCv={handleDownloadCv}
-                          rescoring={rescoring}
-                          downloadingCv={downloadingCv}
-                        />
+                    <SearchApplicantExpandedView
+                      applicant={applicant}
+                      onRescoreCv={handleRescoreCv}
+                      onDownloadCv={handleDownloadCv}
+                      onReplaceCv={handleReplaceCv}
+                      rescoring={rescoring}
+                      downloadingCv={downloadingCv}
+                      replacingCv={replacingCv}
+                    />
                       )}
                     />
                   </TabsContent>
