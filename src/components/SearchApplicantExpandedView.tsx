@@ -39,8 +39,10 @@ export const SearchApplicantExpandedView = ({
   applicant,
   onRescoreCv,
   onDownloadCv,
+  onReplaceCv,
   rescoring,
   downloadingCv,
+  replacingCv,
   onApplicantUpdated,
 }: SearchApplicantExpandedViewProps) => {
   const [activeTab, setActiveTab] = useState<'cv' | 'interview'>('cv');
