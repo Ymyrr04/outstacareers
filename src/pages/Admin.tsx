@@ -758,7 +758,7 @@ const Admin = () => {
     if (!file) return;
     e.target.value = '';
 
-    setReplacingCv(true);
+    setReplacingCv(applicantId);
     toast({ title: 'Uploading...', description: 'Replacing CV file...' });
 
     try {
