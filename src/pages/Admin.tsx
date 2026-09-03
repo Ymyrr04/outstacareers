@@ -750,49 +750,67 @@ const Admin = () => {
     });
   };
 
-  const handleReplaceCv = async (file: File) => {
-    if (!previewCv?.applicantId) return;
-    if (!file.name.toLowerCase().endsWith('.pdf')) {
-      toast({ title: 'Invalid file', description: 'CV must be a PDF file.', variant: 'destructive' });
-      return;
-    }
+  const handleReplaceCv = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    applicantId: string
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
     setReplacingCv(true);
+    toast({ title: 'Uploading...', description: 'Replacing CV file...' });
+
     try {
-      const filePath = `applications/${Date.now()}-${Math.random().toString(36).substring(7)}.pdf`;
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'pdf';
+      const filePath = `applications/${applicantId}-${Date.now()}.${ext}`;
+
       const { error: uploadError } = await supabase.storage
         .from('cv-uploads')
-        .upload(filePath, file, { contentType: 'application/pdf' });
+        .upload(filePath, file, { upsert: true, contentType: file.type });
+
       if (uploadError) throw uploadError;
 
+      // Update only the CV file URL — keep all scores and assessment as is
       const { error: updateError } = await supabase
         .from('applicants_prescreen')
-        .update({ cv_file_url: filePath, cv_text: null })
-        .eq('id', previewCv.applicantId);
+        .update({ cv_file_url: filePath })
+        .eq('id', applicantId);
+
       if (updateError) throw updateError;
 
-      if (previewCv.path) {
-        await supabase.storage.from('cv-uploads').remove([previewCv.path]).catch(() => {});
-      }
-
+      // Update local state
       setApplicants(prev => prev.map(a =>
-        a.id === previewCv.applicantId ? { ...a, cv_file_url: filePath, cv_text: null } : a
+        a.id === applicantId ? { ...a, cv_file_url: filePath } : a
       ));
 
-      toast({ title: 'CV updated', description: 'New CV uploaded successfully.' });
-
-      if (previewCv.url) URL.revokeObjectURL(previewCv.url);
-      const { data: blobData } = await supabase.storage.from('cv-uploads').download(filePath);
-      if (blobData) {
-        const newUrl = URL.createObjectURL(new Blob([blobData], { type: 'application/pdf' }));
-        setPreviewCv({ ...previewCv, url: newUrl, path: filePath, cvText: null });
-      } else {
-        handleClosePreview();
+      // If the CV preview modal is open for this applicant, refresh it in place
+      if (previewCv?.applicantId === applicantId) {
+        if (previewCv.path) {
+          await supabase.storage.from('cv-uploads').remove([previewCv.path]).catch(() => {});
+        }
+        if (previewCv.url) URL.revokeObjectURL(previewCv.url);
+        const { data: blobData } = await supabase.storage.from('cv-uploads').download(filePath);
+        if (blobData) {
+          const newUrl = URL.createObjectURL(new Blob([blobData], { type: file.type }));
+          setPreviewCv({ ...previewCv, url: newUrl, path: filePath });
+        } else {
+          handleClosePreview();
+        }
       }
+
+      toast({
+        title: 'CV Replaced',
+        description: 'New CV uploaded successfully. Scores unchanged.',
+      });
     } catch (err: any) {
-      toast({ title: 'Upload failed', description: err.message || 'Failed to upload new CV', variant: 'destructive' });
+      toast({
+        title: 'Upload Failed',
+        description: err.message || 'Could not replace CV',
+        variant: 'destructive',
+      });
     } finally {
       setReplacingCv(false);
-      if (replaceCvInputRef.current) replaceCvInputRef.current.value = '';
     }
   };
 
