@@ -8,9 +8,9 @@ import { ListFilter, Search } from 'lucide-react';
 interface ColumnFilterProps {
   /** Distinct values available for this column */
   options: string[];
-  /** Currently selected values (empty = no filter) */
-  selected: string[];
-  onChange: (values: string[]) => void;
+  /** undefined = no filter (show all); otherwise only these values show */
+  selected: string[] | undefined;
+  onChange: (values: string[] | undefined) => void;
 }
 
 export const ContractorColumnFilter = ({ options, selected, onChange }: ColumnFilterProps) => {
@@ -23,20 +23,17 @@ export const ContractorColumnFilter = ({ options, selected, onChange }: ColumnFi
     return options.filter(o => o.toLowerCase().includes(q));
   }, [options, query]);
 
-  const isActive = selected.length > 0;
-  const allSelected = selected.length === 0 || selected.length === options.length;
+  const isActive = selected !== undefined && selected.length !== options.length;
+  const effective = selected === undefined ? options : selected;
 
   const toggleValue = (value: string) => {
-    // Start from an implicit "all selected" state when nothing is chosen yet
-    const base = selected.length === 0 ? options : selected;
-    const next = base.includes(value)
-      ? base.filter(v => v !== value)
-      : [...base, value];
-    // If everything is selected again, clear the filter
-    onChange(next.length === options.length ? [] : next);
+    const next = effective.includes(value)
+      ? effective.filter(v => v !== value)
+      : [...effective, value];
+    onChange(next.length === options.length ? undefined : next);
   };
 
-  const isChecked = (value: string) => selected.length === 0 || selected.includes(value);
+  const isChecked = (value: string) => effective.includes(value);
 
   return (
     <Popover open={open} onOpenChange={setOpen}>
@@ -83,8 +80,7 @@ export const ContractorColumnFilter = ({ options, selected, onChange }: ColumnFi
             variant="ghost"
             size="sm"
             className="h-7 text-xs flex-1"
-            onClick={() => onChange([])}
-            disabled={allSelected && !isActive}
+            onClick={() => onChange(undefined)}
           >
             Select all
           </Button>
@@ -92,9 +88,9 @@ export const ContractorColumnFilter = ({ options, selected, onChange }: ColumnFi
             variant="ghost"
             size="sm"
             className="h-7 text-xs flex-1"
-            onClick={() => onChange(['__none__'])}
+            onClick={() => onChange([])}
           >
-            Clear
+            Select none
           </Button>
         </div>
       </PopoverContent>
