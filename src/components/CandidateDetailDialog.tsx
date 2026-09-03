@@ -35,6 +35,7 @@ export function CandidateDetailDialog({ open, onOpenChange, applicantId, initial
   );
   const [loading, setLoading] = useState(false);
   const [downloadingCv, setDownloadingCv] = useState<string | null>(null);
+  const [replacingCv, setReplacingCv] = useState<string | null>(null);
 
   // Sync initial data when dialog opens with a (possibly different) candidate
   useEffect(() => {
@@ -126,6 +127,45 @@ export function CandidateDetailDialog({ open, onOpenChange, applicantId, initial
     }
   }, []);
 
+  const handleReplaceCv = useCallback(async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    applicantId: string
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    setReplacingCv(applicantId);
+    toast.loading('Replacing CV file...', { id: `replace-cv-${applicantId}` });
+
+    try {
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'pdf';
+      const filePath = `applications/${applicantId}-${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('cv-uploads')
+        .upload(filePath, file, { upsert: true, contentType: file.type });
+
+      if (uploadError) throw uploadError;
+
+      // Update only the CV file URL — keep all scores and assessment as is
+      const { error: updateError } = await supabase
+        .from('applicants_prescreen')
+        .update({ cv_file_url: filePath })
+        .eq('id', applicantId);
+
+      if (updateError) throw updateError;
+
+      setApplicant(prev => prev && prev.id === applicantId ? { ...prev, cv_file_url: filePath } : prev);
+
+      toast.success('CV replaced — scores unchanged.', { id: `replace-cv-${applicantId}` });
+    } catch (err) {
+      toast.error(getErrorMessageSync(err, 'Could not replace CV'), { id: `replace-cv-${applicantId}` });
+    } finally {
+      setReplacingCv(null);
+    }
+  }, []);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-5xl max-h-[95vh] overflow-y-auto">
@@ -142,8 +182,10 @@ export function CandidateDetailDialog({ open, onOpenChange, applicantId, initial
             applicant={applicant}
             onRescoreCv={() => {}}
             onDownloadCv={handleDownloadCv}
+            onReplaceCv={handleReplaceCv}
             rescoring={null}
             downloadingCv={downloadingCv}
+            replacingCv={replacingCv}
           />
         ) : (
           <p className="text-center text-muted-foreground py-8">Could not load candidate details.</p>
