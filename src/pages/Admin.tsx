@@ -267,7 +267,7 @@ const Admin = () => {
   const [isFolderSwitching, setIsFolderSwitching] = useState(false);
   const [previewCv, setPreviewCv] = useState<{ url: string; path: string; name: string; cvText: string | null; applicantId?: string } | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
-  const [replacingCv, setReplacingCv] = useState(false);
+  const [replacingCv, setReplacingCv] = useState<string | null>(null);
   const replaceCvInputRef = useRef<HTMLInputElement>(null);
   
   // Edit mode state
