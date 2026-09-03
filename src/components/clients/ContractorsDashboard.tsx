@@ -129,6 +129,7 @@ export const ContractorsDashboard = () => {
   const [contractors, setContractors] = useState<ContractorWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [columnFilters, setColumnFilters] = useState<Record<string, string[] | undefined>>({});
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('company_asc');
   const [importDialogOpen, setImportDialogOpen] = useState(false);
