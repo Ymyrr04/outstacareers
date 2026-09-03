@@ -250,14 +250,15 @@ export function InterviewSession({
           section: 'voice',
           question_order: i + 1,
           question_text: q.question_text,
-          question_context: q.question_context
+          question_context: q.question_context ?? null,
+          allow_paste: false
         })),
         ...textQs.map((q: TextQuestion, i: number) => ({
           session_id: sessionId,
           section: 'text',
           question_order: i + 1,
           question_text: q.question_text,
-          question_context: q.question_context,
+          question_context: q.question_context ?? null,
           allow_paste: q.allow_paste === true
         }))
       ];
@@ -270,6 +271,7 @@ export function InterviewSession({
 
         if (insertError) {
           console.error('Failed to save questions:', insertError);
+
         } else if (insertedQuestions) {
           const voiceDbQuestions = insertedQuestions.filter(q => q.section === 'voice').sort((a, b) => a.question_order - b.question_order);
           const textDbQuestions = insertedQuestions.filter(q => q.section === 'text').sort((a, b) => a.question_order - b.question_order);
@@ -643,7 +645,7 @@ export function InterviewSession({
             questionNumber={currentQuestionIndex + 1}
             totalQuestions={textQuestions.length}
             onAnswer={handleTextAnswer}
-            allowPaste={(currentQuestion as TextQuestion).allow_paste === true}
+            allowPaste={(currentQuestion as TextQuestion | undefined)?.allow_paste === true}
           />
         )}
       </div>
