@@ -810,7 +810,7 @@ const Admin = () => {
         variant: 'destructive',
       });
     } finally {
-      setReplacingCv(false);
+      setReplacingCv(null);
     }
   };
 
