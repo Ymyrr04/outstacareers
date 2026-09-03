@@ -471,8 +471,35 @@ export const ContractorsDashboard = () => {
   const externalContractors = contractors.filter(c => c.client_id !== INTERNAL_CLIENT_ID);
   const internalTeamContractors = contractors.filter(c => c.client_id === INTERNAL_CLIENT_ID);
 
+  // Per-column value filters: key -> selected values (undefined = no filter)
+  const getColumnValue = (c: ContractorWithDetails, key: string): string => {
+    switch (key) {
+      case 'status': return c.status || '';
+      case 'company': return c.client?.company_name || '';
+      case 'industry': return c.client?.industry || '';
+      case 'position': return c.job_title || '';
+      case 'country': return c.country || c.applicant?.location || '';
+      case 'source': return c.source || '';
+      case 'type': return c.is_replacement ? 'Replacement' : 'New';
+      case 'hiredBy': return getAdminDisplayName(c.hired_by, '');
+      default: return '';
+    }
+  };
+
+  const getColumnOptions = (key: string): string[] =>
+    Array.from(new Set(externalContractors.map(c => getColumnValue(c, key)).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+
+  const setColumnFilter = (key: string, values: string[] | undefined) =>
+    setColumnFilters(prev => ({ ...prev, [key]: values }));
+
   const filteredContractors = externalContractors
     .filter(contractor => {
+      // Per-column filters
+      for (const [key, values] of Object.entries(columnFilters)) {
+        if (values === undefined) continue;
+        if (!values.includes(getColumnValue(contractor, key))) return false;
+      }
+
       const matchesSearch = !searchTerm || 
         contractor.applicant?.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         contractor.applicant?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
