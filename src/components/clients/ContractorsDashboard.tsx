@@ -70,6 +70,7 @@ import { SendContractorEmailDialog } from './SendContractorEmailDialog';
 import { BulkContractorEmailDialog } from './BulkContractorEmailDialog';
 import { ContractorEmailTemplateManager } from './ContractorEmailTemplateManager';
 import { RecurringSchedulesManager } from './RecurringSchedulesManager';
+import { ContractorColumnFilter } from './ContractorColumnFilter';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 
 interface ContractorWithDetails {
