@@ -21,8 +21,10 @@ interface SearchApplicantExpandedViewProps {
   applicant: PaginatedApplicant;
   onRescoreCv: (id: string) => void;
   onDownloadCv: (id: string, path: string, name: string) => void;
+  onReplaceCv?: (e: React.ChangeEvent<HTMLInputElement>, applicantId: string) => void;
   rescoring: string | null;
   downloadingCv: string | null;
+  replacingCv?: string | null;
   onApplicantUpdated?: () => void;
 }
 
