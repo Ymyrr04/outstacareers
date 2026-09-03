@@ -297,6 +297,11 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+    // Safety net: make sure the raw answers are persisted even if the client-side
+    // inserts failed (historically this lost voice/text answers permanently).
+    await ensureAnswersPersisted(supabase, session_id, answers);
+
+
     if (skip_ai_assessment) {
       console.log('Skipping AI assessment - marking for manual review');
       
