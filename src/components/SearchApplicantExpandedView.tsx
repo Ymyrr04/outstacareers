@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { getErrorMessageSync } from "@/lib/errors";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
