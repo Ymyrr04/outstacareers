@@ -209,6 +209,98 @@ interface AssessmentResponse {
   ai_assessment_details: object;
 }
 
+// Persist raw answers server-side when the client failed to save them.
+// Only fills gaps — never duplicates answers that already exist.
+async function ensureAnswersPersisted(
+  supabase: any,
+  sessionId: string,
+  answers: InterviewAnswer[]
+): Promise<void> {
+  try {
+    const { data: existingAnswers, error: fetchErr } = await supabase
+      .from('interview_answers')
+      .select('id')
+      .eq('session_id', sessionId);
+
+    if (fetchErr) {
+      console.error('[Persist] Could not read existing answers:', fetchErr);
+      return;
+    }
+    if ((existingAnswers?.length ?? 0) > 0) return; // already saved by the client
+
+    const voice = answers.filter(a => a.section === 'voice');
+    const text = answers.filter(a => a.section !== 'voice');
+
+    // Uniform key sets per insert batch (PostgREST requires matching object keys)
+    const questionRows = [
+      ...voice.map((a, i) => ({
+        session_id: sessionId,
+        section: 'voice',
+        question_order: i + 1,
+        question_text: a.question_text || `Voice question ${i + 1}`,
+        question_context: a.question_context ?? null,
+        allow_paste: false,
+      })),
+      ...text.map((a, i) => ({
+        session_id: sessionId,
+        section: 'text',
+        question_order: i + 1,
+        question_text: a.question_text || `Text question ${i + 1}`,
+        question_context: a.question_context ?? null,
+        allow_paste: false,
+      })),
+    ];
+
+    if (questionRows.length === 0) return;
+
+    const { data: insertedQuestions, error: qErr } = await supabase
+      .from('interview_questions')
+      .insert(questionRows)
+      .select('id, section, question_order');
+
+    if (qErr || !insertedQuestions) {
+      console.error('[Persist] Failed to insert questions:', qErr);
+      return;
+    }
+
+    const idFor = (section: string, order: number) =>
+      insertedQuestions.find(
+        (q: any) => q.section === section && q.question_order === order
+      )?.id ?? null;
+
+    const answerRows = [
+      ...voice.map((a, i) => ({
+        session_id: sessionId,
+        question_id: idFor('voice', i + 1),
+        voice_recording_url: a.voice_recording_url ?? null,
+        voice_duration_seconds: a.voice_duration_seconds ?? null,
+        text_answer: null,
+        selected_option_id: null,
+      })),
+      ...text.map((a, i) => ({
+        session_id: sessionId,
+        question_id: idFor('text', i + 1),
+        voice_recording_url: null,
+        voice_duration_seconds: null,
+        text_answer: a.text_answer ?? null,
+        selected_option_id: a.selected_option_id ?? null,
+      })),
+    ].filter(r => r.question_id);
+
+    if (answerRows.length === 0) return;
+
+    const { error: aErr } = await supabase.from('interview_answers').insert(answerRows);
+    if (aErr) {
+      console.error('[Persist] Failed to insert answers:', aErr);
+    } else {
+      console.log(`[Persist] Recovered ${answerRows.length} answers for session ${sessionId}`);
+    }
+  } catch (e) {
+    console.error('[Persist] Unexpected error:', e);
+  }
+}
+
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -296,6 +388,11 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Safety net: make sure the raw answers are persisted even if the client-side
+    // inserts failed (historically this lost voice/text answers permanently).
+    await ensureAnswersPersisted(supabase, session_id, answers);
+
 
     if (skip_ai_assessment) {
       console.log('Skipping AI assessment - marking for manual review');
