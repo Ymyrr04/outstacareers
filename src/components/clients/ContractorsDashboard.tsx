@@ -70,6 +70,7 @@ import { SendContractorEmailDialog } from './SendContractorEmailDialog';
 import { BulkContractorEmailDialog } from './BulkContractorEmailDialog';
 import { ContractorEmailTemplateManager } from './ContractorEmailTemplateManager';
 import { RecurringSchedulesManager } from './RecurringSchedulesManager';
+import { ContractorColumnFilter } from './ContractorColumnFilter';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 
 interface ContractorWithDetails {
@@ -128,6 +129,7 @@ export const ContractorsDashboard = () => {
   const [contractors, setContractors] = useState<ContractorWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [columnFilters, setColumnFilters] = useState<Record<string, string[] | undefined>>({});
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [sortBy, setSortBy] = useState<string>('company_asc');
   const [importDialogOpen, setImportDialogOpen] = useState(false);
@@ -470,8 +472,35 @@ export const ContractorsDashboard = () => {
   const externalContractors = contractors.filter(c => c.client_id !== INTERNAL_CLIENT_ID);
   const internalTeamContractors = contractors.filter(c => c.client_id === INTERNAL_CLIENT_ID);
 
+  // Per-column value filters: key -> selected values (undefined = no filter)
+  const getColumnValue = (c: ContractorWithDetails, key: string): string => {
+    switch (key) {
+      case 'status': return c.status || '';
+      case 'company': return c.client?.company_name || '';
+      case 'industry': return c.client?.industry || '';
+      case 'position': return c.job_title || '';
+      case 'country': return c.country || c.applicant?.location || '';
+      case 'source': return c.source || '';
+      case 'type': return c.is_replacement ? 'Replacement' : 'New';
+      case 'hiredBy': return getAdminDisplayName(c.hired_by, '');
+      default: return '';
+    }
+  };
+
+  const getColumnOptions = (key: string): string[] =>
+    Array.from(new Set(externalContractors.map(c => getColumnValue(c, key)).filter(Boolean))).sort((a, b) => a.localeCompare(b));
+
+  const setColumnFilter = (key: string, values: string[] | undefined) =>
+    setColumnFilters(prev => ({ ...prev, [key]: values }));
+
   const filteredContractors = externalContractors
     .filter(contractor => {
+      // Per-column filters
+      for (const [key, values] of Object.entries(columnFilters)) {
+        if (values === undefined) continue;
+        if (!values.includes(getColumnValue(contractor, key))) return false;
+      }
+
       const matchesSearch = !searchTerm || 
         contractor.applicant?.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
         contractor.applicant?.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -824,25 +853,25 @@ export const ContractorsDashboard = () => {
                 <Table className="w-full table-auto">
                   <TableHeader>
                     <TableRow>
-                      {visibleColumns.status && <TableHead className="w-[140px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('status')}>Status {getSortIcon('status')}</TableHead>}
+                      {visibleColumns.status && <TableHead className="w-[140px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('status')}><span className="inline-flex items-center gap-1">Status {getSortIcon('status')}<ContractorColumnFilter options={getColumnOptions('status')} selected={columnFilters['status']} onChange={(v) => setColumnFilter('status', v)} /></span></TableHead>}
                       {visibleColumns.statusChanged && <TableHead className="w-[130px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('statusChanged')}>Status Changed {getSortIcon('statusChanged')}</TableHead>}
                       {visibleColumns.name && <TableHead className="min-w-[180px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('name')}>Name {getSortIcon('name')}</TableHead>}
                       {visibleColumns.email && <TableHead className="min-w-[200px]">Email</TableHead>}
-                      {visibleColumns.company && <TableHead className="min-w-[180px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('company')}>Company {getSortIcon('company')}</TableHead>}
-                      {visibleColumns.industry && <TableHead className="min-w-[120px]">Industry</TableHead>}
+                      {visibleColumns.company && <TableHead className="min-w-[180px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('company')}><span className="inline-flex items-center gap-1">Company {getSortIcon('company')}<ContractorColumnFilter options={getColumnOptions('company')} selected={columnFilters['company']} onChange={(v) => setColumnFilter('company', v)} /></span></TableHead>}
+                      {visibleColumns.industry && <TableHead className="min-w-[120px]"><span className="inline-flex items-center gap-1">Industry<ContractorColumnFilter options={getColumnOptions('industry')} selected={columnFilters['industry']} onChange={(v) => setColumnFilter('industry', v)} /></span></TableHead>}
                       {visibleColumns.startDate && <TableHead className="w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('startDate')}>Start Date {getSortIcon('startDate')}</TableHead>}
-                      {visibleColumns.position && <TableHead className="min-w-[150px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('position')}>Position {getSortIcon('position')}</TableHead>}
+                      {visibleColumns.position && <TableHead className="min-w-[150px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('position')}><span className="inline-flex items-center gap-1">Position {getSortIcon('position')}<ContractorColumnFilter options={getColumnOptions('position')} selected={columnFilters['position']} onChange={(v) => setColumnFilter('position', v)} /></span></TableHead>}
                       {visibleColumns.rate && <TableHead className="w-[80px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('rate')}>Rate {getSortIcon('rate')}</TableHead>}
                       {visibleColumns.hours && <TableHead className="w-[80px]">Hours</TableHead>}
                       {visibleColumns.contact && <TableHead className="min-w-[140px]">Contact</TableHead>}
                       {visibleColumns.emergency && <TableHead className="min-w-[140px]">Emergency</TableHead>}
                       {visibleColumns.timesheet && <TableHead className="min-w-[100px]">Timesheet</TableHead>}
-                      {visibleColumns.type && <TableHead className="w-[100px]">Type</TableHead>}
-                      {visibleColumns.country && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('country')}>Country {getSortIcon('country')}</TableHead>}
-                      {visibleColumns.source && <TableHead className="min-w-[100px]">Source</TableHead>}
+                      {visibleColumns.type && <TableHead className="w-[100px]"><span className="inline-flex items-center gap-1">Type<ContractorColumnFilter options={getColumnOptions('type')} selected={columnFilters['type']} onChange={(v) => setColumnFilter('type', v)} /></span></TableHead>}
+                      {visibleColumns.country && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('country')}><span className="inline-flex items-center gap-1">Country {getSortIcon('country')}<ContractorColumnFilter options={getColumnOptions('country')} selected={columnFilters['country']} onChange={(v) => setColumnFilter('country', v)} /></span></TableHead>}
+                      {visibleColumns.source && <TableHead className="min-w-[100px]"><span className="inline-flex items-center gap-1">Source<ContractorColumnFilter options={getColumnOptions('source')} selected={columnFilters['source']} onChange={(v) => setColumnFilter('source', v)} /></span></TableHead>}
                       {visibleColumns.notes && <TableHead className="min-w-[200px]">Notes</TableHead>}
                       {visibleColumns.separationNote && <TableHead className="min-w-[200px]">Separation Note</TableHead>}
-                      {visibleColumns.hiredBy && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('hiredBy')}>Hired By {getSortIcon('hiredBy')}</TableHead>}
+                      {visibleColumns.hiredBy && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('hiredBy')}><span className="inline-flex items-center gap-1">Hired By {getSortIcon('hiredBy')}<ContractorColumnFilter options={getColumnOptions('hiredBy')} selected={columnFilters['hiredBy']} onChange={(v) => setColumnFilter('hiredBy', v)} /></span></TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1162,26 +1191,26 @@ export const ContractorsDashboard = () => {
                   <Table className="w-full table-auto">
                     <TableHeader>
                       <TableRow>
-                        {visibleColumns.status && <TableHead className="w-[140px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('status')}>Status {getSortIcon('status')}</TableHead>}
+                        {visibleColumns.status && <TableHead className="w-[140px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('status')}><span className="inline-flex items-center gap-1">Status {getSortIcon('status')}<ContractorColumnFilter options={getColumnOptions('status')} selected={columnFilters['status']} onChange={(v) => setColumnFilter('status', v)} /></span></TableHead>}
                         {visibleColumns.statusChanged && <TableHead className="w-[130px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('statusChanged')}>Status Changed {getSortIcon('statusChanged')}</TableHead>}
                         {visibleColumns.name && <TableHead className="min-w-[180px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('name')}>Name {getSortIcon('name')}</TableHead>}
                         {visibleColumns.email && <TableHead className="min-w-[200px]">Email</TableHead>}
-                        {visibleColumns.company && <TableHead className="min-w-[180px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('company')}>Company {getSortIcon('company')}</TableHead>}
-                        {visibleColumns.industry && <TableHead className="min-w-[120px]">Industry</TableHead>}
+                        {visibleColumns.company && <TableHead className="min-w-[180px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('company')}><span className="inline-flex items-center gap-1">Company {getSortIcon('company')}<ContractorColumnFilter options={getColumnOptions('company')} selected={columnFilters['company']} onChange={(v) => setColumnFilter('company', v)} /></span></TableHead>}
+                        {visibleColumns.industry && <TableHead className="min-w-[120px]"><span className="inline-flex items-center gap-1">Industry<ContractorColumnFilter options={getColumnOptions('industry')} selected={columnFilters['industry']} onChange={(v) => setColumnFilter('industry', v)} /></span></TableHead>}
                         {visibleColumns.startDate && <TableHead className="w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('startDate')}>Start Date {getSortIcon('startDate')}</TableHead>}
                         <TableHead className="w-[120px]">End Date</TableHead>
-                        {visibleColumns.position && <TableHead className="min-w-[150px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('position')}>Position {getSortIcon('position')}</TableHead>}
+                        {visibleColumns.position && <TableHead className="min-w-[150px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('position')}><span className="inline-flex items-center gap-1">Position {getSortIcon('position')}<ContractorColumnFilter options={getColumnOptions('position')} selected={columnFilters['position']} onChange={(v) => setColumnFilter('position', v)} /></span></TableHead>}
                         {visibleColumns.rate && <TableHead className="w-[80px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('rate')}>Rate {getSortIcon('rate')}</TableHead>}
                         {visibleColumns.hours && <TableHead className="w-[80px]">Hours</TableHead>}
                         {visibleColumns.contact && <TableHead className="min-w-[140px]">Contact</TableHead>}
                         {visibleColumns.emergency && <TableHead className="min-w-[140px]">Emergency</TableHead>}
                         {visibleColumns.timesheet && <TableHead className="min-w-[100px]">Timesheet</TableHead>}
-                        {visibleColumns.type && <TableHead className="w-[100px]">Type</TableHead>}
-                        {visibleColumns.country && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('country')}>Country {getSortIcon('country')}</TableHead>}
-                        {visibleColumns.source && <TableHead className="min-w-[100px]">Source</TableHead>}
+                        {visibleColumns.type && <TableHead className="w-[100px]"><span className="inline-flex items-center gap-1">Type<ContractorColumnFilter options={getColumnOptions('type')} selected={columnFilters['type']} onChange={(v) => setColumnFilter('type', v)} /></span></TableHead>}
+                        {visibleColumns.country && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('country')}><span className="inline-flex items-center gap-1">Country {getSortIcon('country')}<ContractorColumnFilter options={getColumnOptions('country')} selected={columnFilters['country']} onChange={(v) => setColumnFilter('country', v)} /></span></TableHead>}
+                        {visibleColumns.source && <TableHead className="min-w-[100px]"><span className="inline-flex items-center gap-1">Source<ContractorColumnFilter options={getColumnOptions('source')} selected={columnFilters['source']} onChange={(v) => setColumnFilter('source', v)} /></span></TableHead>}
                         {visibleColumns.separationNote && <TableHead className="min-w-[200px]">Separation Note</TableHead>}
                         {visibleColumns.notes && <TableHead className="min-w-[200px]">Notes</TableHead>}
-                        {visibleColumns.hiredBy && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('hiredBy')}>Hired By {getSortIcon('hiredBy')}</TableHead>}
+                        {visibleColumns.hiredBy && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('hiredBy')}><span className="inline-flex items-center gap-1">Hired By {getSortIcon('hiredBy')}<ContractorColumnFilter options={getColumnOptions('hiredBy')} selected={columnFilters['hiredBy']} onChange={(v) => setColumnFilter('hiredBy', v)} /></span></TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
