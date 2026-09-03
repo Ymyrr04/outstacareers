@@ -267,7 +267,7 @@ const Admin = () => {
   const [isFolderSwitching, setIsFolderSwitching] = useState(false);
   const [previewCv, setPreviewCv] = useState<{ url: string; path: string; name: string; cvText: string | null; applicantId?: string } | null>(null);
   const [loadingPreview, setLoadingPreview] = useState(false);
-  const [replacingCv, setReplacingCv] = useState(false);
+  const [replacingCv, setReplacingCv] = useState<string | null>(null);
   const replaceCvInputRef = useRef<HTMLInputElement>(null);
   
   // Edit mode state
@@ -750,49 +750,67 @@ const Admin = () => {
     });
   };
 
-  const handleReplaceCv = async (file: File) => {
-    if (!previewCv?.applicantId) return;
-    if (!file.name.toLowerCase().endsWith('.pdf')) {
-      toast({ title: 'Invalid file', description: 'CV must be a PDF file.', variant: 'destructive' });
-      return;
-    }
-    setReplacingCv(true);
+  const handleReplaceCv = async (
+    e: React.ChangeEvent<HTMLInputElement>,
+    applicantId: string
+  ) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = '';
+
+    setReplacingCv(applicantId);
+    toast({ title: 'Uploading...', description: 'Replacing CV file...' });
+
     try {
-      const filePath = `applications/${Date.now()}-${Math.random().toString(36).substring(7)}.pdf`;
+      const ext = file.name.split('.').pop()?.toLowerCase() || 'pdf';
+      const filePath = `applications/${applicantId}-${Date.now()}.${ext}`;
+
       const { error: uploadError } = await supabase.storage
         .from('cv-uploads')
-        .upload(filePath, file, { contentType: 'application/pdf' });
+        .upload(filePath, file, { upsert: true, contentType: file.type });
+
       if (uploadError) throw uploadError;
 
+      // Update only the CV file URL — keep all scores and assessment as is
       const { error: updateError } = await supabase
         .from('applicants_prescreen')
-        .update({ cv_file_url: filePath, cv_text: null })
-        .eq('id', previewCv.applicantId);
+        .update({ cv_file_url: filePath })
+        .eq('id', applicantId);
+
       if (updateError) throw updateError;
 
-      if (previewCv.path) {
-        await supabase.storage.from('cv-uploads').remove([previewCv.path]).catch(() => {});
-      }
-
+      // Update local state
       setApplicants(prev => prev.map(a =>
-        a.id === previewCv.applicantId ? { ...a, cv_file_url: filePath, cv_text: null } : a
+        a.id === applicantId ? { ...a, cv_file_url: filePath } : a
       ));
 
-      toast({ title: 'CV updated', description: 'New CV uploaded successfully.' });
-
-      if (previewCv.url) URL.revokeObjectURL(previewCv.url);
-      const { data: blobData } = await supabase.storage.from('cv-uploads').download(filePath);
-      if (blobData) {
-        const newUrl = URL.createObjectURL(new Blob([blobData], { type: 'application/pdf' }));
-        setPreviewCv({ ...previewCv, url: newUrl, path: filePath, cvText: null });
-      } else {
-        handleClosePreview();
+      // If the CV preview modal is open for this applicant, refresh it in place
+      if (previewCv?.applicantId === applicantId) {
+        if (previewCv.path) {
+          await supabase.storage.from('cv-uploads').remove([previewCv.path]).catch(() => {});
+        }
+        if (previewCv.url) URL.revokeObjectURL(previewCv.url);
+        const { data: blobData } = await supabase.storage.from('cv-uploads').download(filePath);
+        if (blobData) {
+          const newUrl = URL.createObjectURL(new Blob([blobData], { type: file.type }));
+          setPreviewCv({ ...previewCv, url: newUrl, path: filePath });
+        } else {
+          handleClosePreview();
+        }
       }
+
+      toast({
+        title: 'CV Replaced',
+        description: 'New CV uploaded successfully. Scores unchanged.',
+      });
     } catch (err: any) {
-      toast({ title: 'Upload failed', description: err.message || 'Failed to upload new CV', variant: 'destructive' });
+      toast({
+        title: 'Upload Failed',
+        description: err.message || 'Could not replace CV',
+        variant: 'destructive',
+      });
     } finally {
-      setReplacingCv(false);
-      if (replaceCvInputRef.current) replaceCvInputRef.current.value = '';
+      setReplacingCv(null);
     }
   };
 
@@ -2630,13 +2648,15 @@ const Admin = () => {
                       unreadCounts={unreadCounts}
                       enabled={activeApplicantTab === 'search'}
                       renderExpandedContent={(applicant) => (
-                        <SearchApplicantExpandedView
-                          applicant={applicant}
-                          onRescoreCv={handleRescoreCv}
-                          onDownloadCv={handleDownloadCv}
-                          rescoring={rescoring}
-                          downloadingCv={downloadingCv}
-                        />
+                    <SearchApplicantExpandedView
+                      applicant={applicant}
+                      onRescoreCv={handleRescoreCv}
+                      onDownloadCv={handleDownloadCv}
+                      onReplaceCv={handleReplaceCv}
+                      rescoring={rescoring}
+                      downloadingCv={downloadingCv}
+                      replacingCv={replacingCv}
+                    />
                       )}
                     />
                   </TabsContent>
@@ -4177,18 +4197,15 @@ const Admin = () => {
                 <input
                   ref={replaceCvInputRef}
                   type="file"
-                  accept="application/pdf,.pdf"
+                  accept=".pdf,.doc,.docx"
                   className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleReplaceCv(file);
-                  }}
+                  onChange={(e) => previewCv?.applicantId && handleReplaceCv(e, previewCv.applicantId)}
                 />
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => replaceCvInputRef.current?.click()}
-                  disabled={replacingCv || !previewCv?.applicantId}
+                  disabled={!!replacingCv || !previewCv?.applicantId}
                   className="flex items-center gap-2"
                 >
                   {replacingCv ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}

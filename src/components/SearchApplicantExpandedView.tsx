@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { getErrorMessageSync } from "@/lib/errors";
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -21,8 +21,10 @@ interface SearchApplicantExpandedViewProps {
   applicant: PaginatedApplicant;
   onRescoreCv: (id: string) => void;
   onDownloadCv: (id: string, path: string, name: string) => void;
+  onReplaceCv?: (e: React.ChangeEvent<HTMLInputElement>, applicantId: string) => void;
   rescoring: string | null;
   downloadingCv: string | null;
+  replacingCv?: string | null;
   onApplicantUpdated?: () => void;
 }
 
@@ -37,12 +39,15 @@ export const SearchApplicantExpandedView = ({
   applicant,
   onRescoreCv,
   onDownloadCv,
+  onReplaceCv,
   rescoring,
   downloadingCv,
+  replacingCv,
   onApplicantUpdated,
 }: SearchApplicantExpandedViewProps) => {
   const [activeTab, setActiveTab] = useState<'cv' | 'interview'>('cv');
   const [showCvPreview, setShowCvPreview] = useState(false);
+  const replaceCvInputRef = useRef<HTMLInputElement>(null);
   const [editingContact, setEditingContact] = useState(false);
   const [savingContact, setSavingContact] = useState(false);
   const [contactForm, setContactForm] = useState({
@@ -389,6 +394,15 @@ export const SearchApplicantExpandedView = ({
       <div className="flex flex-wrap gap-3 mb-4">
         {applicant.cv_file_url && (
           <>
+            {onReplaceCv && (
+              <input
+                type="file"
+                accept=".pdf,.doc,.docx"
+                className="hidden"
+                ref={replaceCvInputRef}
+                onChange={(e) => onReplaceCv(e, applicant.id)}
+              />
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -408,6 +422,18 @@ export const SearchApplicantExpandedView = ({
               {downloadingCv === applicant.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
               Download CV
             </Button>
+            {onReplaceCv && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => replaceCvInputRef.current?.click()}
+                disabled={replacingCv === applicant.id}
+                className="inline-flex items-center gap-2"
+              >
+                {replacingCv === applicant.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                Replace CV
+              </Button>
+            )}
           </>
         )}
         {(applicant.vocaroo_link || applicant.voice_recording_url) && (
