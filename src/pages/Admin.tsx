@@ -4195,12 +4195,9 @@ const Admin = () => {
                 <input
                   ref={replaceCvInputRef}
                   type="file"
-                  accept="application/pdf,.pdf"
+                  accept=".pdf,.doc,.docx"
                   className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) handleReplaceCv(file);
-                  }}
+                  onChange={(e) => previewCv?.applicantId && handleReplaceCv(e, previewCv.applicantId)}
                 />
                 <Button
                   variant="outline"
