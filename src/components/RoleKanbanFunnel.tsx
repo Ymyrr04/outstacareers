@@ -1964,12 +1964,13 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
       });
       if (error) throw error;
       toast.success(`Availability check sent to ${candidate.email}`);
+      onReprofiled(); // refetch so the availability badge shows immediately
     } catch (e) {
       toast.error((e as Error).message);
     } finally {
       setSendingAvailability(false);
     }
-  }, [candidate.id, candidate.email, candidate.full_name]);
+  }, [candidate.id, candidate.email, candidate.full_name, onReprofiled]);
 
   const fetchActivity = useCallback(async () => {
     setActivityLoading(true);
