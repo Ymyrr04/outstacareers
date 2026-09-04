@@ -113,6 +113,8 @@ interface Candidate {
   stage_entered_at: string | null;
   tags: string[];
   suitable_roles: string[];
+  is_available: boolean | null;
+  availability_checked_at: string | null;
 }
 
 interface RoleKanbanFunnelProps {
