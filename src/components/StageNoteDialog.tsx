@@ -136,17 +136,6 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
     onOpenChange(false);
   };
 
-  const handleSkip = async () => {
-    if (addToCalendar) {
-      setSaving(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      const ok = await createCalendarEvent(user?.id);
-      setSaving(false);
-      if (!ok) return;
-      toast.success('Stage updated and calendar activity created');
-    }
-    onOpenChange(false);
-  };
 
   return (
     <Dialog open={!!pending} onOpenChange={(o) => { if (!o) onOpenChange(false); }}>
