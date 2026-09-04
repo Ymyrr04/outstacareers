@@ -16,7 +16,7 @@ import {
   ContextMenuSubContent,
 } from '@/components/ui/context-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity, FileSignature, Loader2, Tag as TagIcon, X as XIcon, Briefcase, UserCog, Calendar } from 'lucide-react';
+import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity, FileSignature, Loader2, Tag as TagIcon, X as XIcon, Briefcase, UserCog, Calendar, CalendarCheck } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
@@ -113,6 +113,8 @@ interface Candidate {
   stage_entered_at: string | null;
   tags: string[];
   suitable_roles: string[];
+  is_available: boolean | null;
+  availability_checked_at: string | null;
 }
 
 interface RoleKanbanFunnelProps {
@@ -586,7 +588,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
         while (true) {
           const { data } = await supabase
             .from('applicants_prescreen')
-            .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, interview_invite_sent_at, tags, suitable_roles')
+            .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, interview_invite_sent_at, tags, suitable_roles, is_available, availability_checked_at')
             .in('job_title', rolesToFetch)
             .in('status', statuses)
             .order('total_score', { ascending: false, nullsFirst: false })
@@ -601,7 +603,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       } else {
         const { data } = await supabase
           .from('applicants_prescreen')
-          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, interview_invite_sent_at, tags, suitable_roles')
+          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, interview_invite_sent_at, tags, suitable_roles, is_available, availability_checked_at')
           .eq('job_title', role)
           .in('status', statuses)
           .order('total_score', { ascending: false, nullsFirst: false });
@@ -622,6 +624,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       interview_invite_sent_at: a.interview_invite_sent_at ?? null,
       tags: Array.isArray(a.tags) ? a.tags : [],
       suitable_roles: Array.isArray((a as any).suitable_roles) ? (a as any).suitable_roles : [],
+      is_available: a.is_available ?? null,
+      availability_checked_at: a.availability_checked_at ?? null,
       interview_overall_score: null,
       interview_status: null,
       interview_started_at: null,
@@ -1948,6 +1952,25 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
     }
   }, [candidate.id, candidate.email, candidate.full_name]);
 
+  const [sendingAvailability, setSendingAvailability] = useState(false);
+  const sendAvailabilityCheck = useCallback(async () => {
+    if (!candidate.email) return toast.error('Applicant has no email address.');
+    const firstName = (candidate.full_name || '').trim().split(/\s+/)[0] || candidate.full_name || '';
+    if (!confirm(`Send availability check to ${firstName} (${candidate.email})?`)) return;
+    setSendingAvailability(true);
+    try {
+      const { error } = await supabase.functions.invoke('send-availability-check', {
+        body: { applicantId: candidate.id },
+      });
+      if (error) throw error;
+      toast.success(`Availability check sent to ${candidate.email}`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSendingAvailability(false);
+    }
+  }, [candidate.id, candidate.email, candidate.full_name]);
+
   const fetchActivity = useCallback(async () => {
     setActivityLoading(true);
     const { data, error } = await supabase
@@ -2191,6 +2214,11 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
           <ContextMenuItem onClick={sendPrepitch} disabled={sendingPrepitch}>
             {sendingPrepitch ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileSignature className="w-4 h-4 mr-2" />}
             Send Pre-pitch
+          </ContextMenuItem>
+
+          <ContextMenuItem onClick={sendAvailabilityCheck} disabled={sendingAvailability}>
+            {sendingAvailability ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CalendarCheck className="w-4 h-4 mr-2" />}
+            Check Availability
           </ContextMenuItem>
 
           <ContextMenuItem onClick={openInterviewResults}>
