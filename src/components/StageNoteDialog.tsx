@@ -226,9 +226,6 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
         </div>
 
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={handleSkip} disabled={saving}>
-            Skip
-          </Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
             Save note
