@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
 
     const { data: rules, error: rulesErr } = await supabase
       .from("auto_reply_rules")
-      .select("id, name, match_type, subject_keyword, body_html, created_by")
+      .select("id, name, match_type, subject_keyword, body_html, delay_minutes, created_by")
       .eq("is_enabled", true);
     if (rulesErr) throw rulesErr;
     if (!rules || rules.length === 0) return json({ processed: 0, sent: 0 });
