@@ -624,6 +624,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       interview_invite_sent_at: a.interview_invite_sent_at ?? null,
       tags: Array.isArray(a.tags) ? a.tags : [],
       suitable_roles: Array.isArray((a as any).suitable_roles) ? (a as any).suitable_roles : [],
+      is_available: a.is_available ?? null,
+      availability_checked_at: a.availability_checked_at ?? null,
       interview_overall_score: null,
       interview_status: null,
       interview_started_at: null,
