@@ -2,10 +2,11 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import DOMPurify from "dompurify";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, MailOpen, Star, Archive, Trash2, RefreshCw, Send, Inbox, Search, Loader2, StarOff, Link2, Unlink, Paperclip, ArrowLeft, X, Reply, Forward, Smile, Download, Check } from "lucide-react";
+import { Mail, MailOpen, Star, Archive, Trash2, RefreshCw, Send, Inbox, Search, Loader2, StarOff, Link2, Unlink, Paperclip, ArrowLeft, X, Reply, Forward, Smile, Download, Check, Zap } from "lucide-react";
 import { RichTextEditor, plainTextToHtml } from "@/components/gmail/RichTextEditor";
 import { RecipientInput } from "@/components/gmail/RecipientInput";
 import { AttachButton, AttachmentList, serializeAttachments, MAX_TOTAL_BYTES, type PendingAttachment } from "@/components/gmail/ComposeAttachments";
+import AutoReplyRulesManager from "@/components/gmail/AutoReplyRulesManager";
 
 
 
@@ -110,6 +111,7 @@ export default function GmailPanel() {
   const [selectedMessage, setSelectedMessage] = useState<FullMessage | null>(null);
   const [messageLoading, setMessageLoading] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
+  const [autoReplyOpen, setAutoReplyOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [replyState, setReplyState] = useState<null | { mode: "reply" | "forward"; to: string; subject: string; body: string }>(null);
   const [draftInitial, setDraftInitial] = useState<null | { to: string; cc: string; subject: string; body: string; draftId?: string }>(null);
@@ -929,6 +931,15 @@ export default function GmailPanel() {
           />
         </form>
         <button
+          onClick={() => setAutoReplyOpen(true)}
+          data-variant="ghost"
+          data-size="small"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-muted text-xs text-muted-foreground"
+          title="Auto-reply rules"
+        >
+          <Zap className="w-3.5 h-3.5" /> Auto-replies
+        </button>
+        <button
           onClick={() => setComposeOpen(true)}
           data-variant="primary"
           data-size="small"
@@ -1039,6 +1050,9 @@ export default function GmailPanel() {
       {composeOpen && (
         <ComposeDialog onClose={() => { setComposeOpen(false); setDraftInitial(null); }} onSend={handleSend} sending={sending} initial={draftInitial || undefined} signature={profile?.signature} />
       )}
+
+      {/* Auto-reply rules manager */}
+      <AutoReplyRulesManager open={autoReplyOpen} onOpenChange={setAutoReplyOpen} />
     </div>
   );
 }

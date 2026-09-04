@@ -424,6 +424,77 @@ export type Database = {
           },
         ]
       }
+      auto_reply_logs: {
+        Row: {
+          id: string
+          message_id: string | null
+          rule_id: string
+          sender_email: string
+          sent_at: string
+          thread_id: string | null
+        }
+        Insert: {
+          id?: string
+          message_id?: string | null
+          rule_id: string
+          sender_email: string
+          sent_at?: string
+          thread_id?: string | null
+        }
+        Update: {
+          id?: string
+          message_id?: string | null
+          rule_id?: string
+          sender_email?: string
+          sent_at?: string
+          thread_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auto_reply_logs_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "auto_reply_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      auto_reply_rules: {
+        Row: {
+          body_html: string
+          created_at: string
+          created_by: string
+          id: string
+          is_enabled: boolean
+          match_type: string
+          name: string
+          subject_keyword: string
+          updated_at: string
+        }
+        Insert: {
+          body_html: string
+          created_at?: string
+          created_by: string
+          id?: string
+          is_enabled?: boolean
+          match_type?: string
+          name: string
+          subject_keyword: string
+          updated_at?: string
+        }
+        Update: {
+          body_html?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          is_enabled?: boolean
+          match_type?: string
+          name?: string
+          subject_keyword?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       availability_responses: {
         Row: {
           applicant_id: string
