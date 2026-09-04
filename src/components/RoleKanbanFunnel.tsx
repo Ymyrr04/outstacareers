@@ -16,7 +16,7 @@ import {
   ContextMenuSubContent,
 } from '@/components/ui/context-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity, FileSignature, Loader2, Tag as TagIcon, X as XIcon, Briefcase, UserCog, Calendar, CalendarCheck } from 'lucide-react';
+import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity, FileSignature, Loader2, Tag as TagIcon, X as XIcon, Briefcase, UserCog, Calendar, CalendarCheck, CheckCircle2, XCircle } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
@@ -40,7 +40,7 @@ import { CandidateProfileDialog } from '@/components/CandidateProfileDialog';
 import { HiredAssignmentDialog } from '@/components/HiredAssignmentDialog';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import { useEmailTemplates, statusToTrigger } from '@/hooks/useEmailTemplates';
-import { addMinutes } from 'date-fns';
+import { addMinutes, format } from 'date-fns';
 import { StageEmailConfirmDialog, type PendingStageEmail } from '@/components/StageEmailConfirmDialog';
 import { StageNoteDialog, type PendingStageNote } from '@/components/StageNoteDialog';
 import { AddCandidateCalendarDialog } from '@/components/AddCandidateCalendarDialog';
