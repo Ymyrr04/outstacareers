@@ -2216,6 +2216,11 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
             Send Pre-pitch
           </ContextMenuItem>
 
+          <ContextMenuItem onClick={sendAvailabilityCheck} disabled={sendingAvailability}>
+            {sendingAvailability ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CalendarCheck className="w-4 h-4 mr-2" />}
+            Check Availability
+          </ContextMenuItem>
+
           <ContextMenuItem onClick={openInterviewResults}>
             <ClipboardList className="w-4 h-4 mr-2" />
             Notes
