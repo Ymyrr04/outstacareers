@@ -144,7 +144,7 @@ export default function AutoReplyRulesManager({ open, onOpenChange }: Props) {
         </DialogHeader>
 
         <p className="text-xs text-muted-foreground">
-          When an incoming email's subject matches a rule, a reply is sent automatically about 5 minutes later,
+          When an incoming email's subject matches a rule, a reply is sent automatically after the delay you set,
           from your connected Gmail. Each sender only receives one auto-reply per rule, and replies stay in the
           same email thread.
         </p>
