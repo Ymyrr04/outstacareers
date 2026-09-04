@@ -464,6 +464,7 @@ export type Database = {
           body_html: string
           created_at: string
           created_by: string
+          delay_minutes: number
           id: string
           is_enabled: boolean
           match_type: string
@@ -475,6 +476,7 @@ export type Database = {
           body_html: string
           created_at?: string
           created_by: string
+          delay_minutes?: number
           id?: string
           is_enabled?: boolean
           match_type?: string
@@ -486,6 +488,7 @@ export type Database = {
           body_html?: string
           created_at?: string
           created_by?: string
+          delay_minutes?: number
           id?: string
           is_enabled?: boolean
           match_type?: string
