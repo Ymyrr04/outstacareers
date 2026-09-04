@@ -136,26 +136,15 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
     onOpenChange(false);
   };
 
-  const handleSkip = async () => {
-    if (addToCalendar) {
-      setSaving(true);
-      const { data: { user } } = await supabase.auth.getUser();
-      const ok = await createCalendarEvent(user?.id);
-      setSaving(false);
-      if (!ok) return;
-      toast.success('Stage updated and calendar activity created');
-    }
-    onOpenChange(false);
-  };
 
   return (
-    <Dialog open={!!pending} onOpenChange={(o) => { if (!o) onOpenChange(false); }}>
-      <DialogContent className="max-w-lg max-h-[88vh] overflow-y-auto">
+    <Dialog open={!!pending} onOpenChange={(o) => { if (!o && !saving) onOpenChange(false); }}>
+      <DialogContent className="max-w-lg max-h-[88vh] overflow-y-auto [&>button.absolute]:hidden" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Add a note</DialogTitle>
           <DialogDescription>
             {pending.candidateName} moved to <span className="font-medium">{pending.newStatus}</span>.
-            Add a note — it will be saved to this candidate's notes.
+            A note is required — it will be saved to this candidate's notes.
           </DialogDescription>
         </DialogHeader>
 
@@ -237,9 +226,6 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
         </div>
 
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={handleSkip} disabled={saving}>
-            Skip
-          </Button>
           <Button onClick={handleSave} disabled={saving}>
             {saving ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Save className="w-4 h-4 mr-2" />}
             Save note
