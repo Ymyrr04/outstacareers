@@ -33,6 +33,7 @@ import ClientPortalDashboard from "./pages/ClientPortalDashboard";
 import ClientPortalSetup from "./pages/ClientPortalSetup";
 import ClientPortalResetPassword from "./pages/ClientPortalResetPassword";
 import GmailOAuthReturn from "./pages/GmailOAuthReturn";
+import AvailabilityResponse from "./pages/AvailabilityResponse";
 import DomainGuard from "./components/DomainGuard";
 import DesignPreviewToggle from "./components/DesignPreviewToggle";
 
@@ -81,6 +82,7 @@ const App = () => (
                 <Route path="/portal" element={guard(<PortalDashboard />)} />
                 <Route path="/sign/:token" element={guard(<SignContract />)} />
                 <Route path="/countersign/:token" element={guard(<CountersignContract />)} />
+                <Route path="/availability-response" element={guard(<AvailabilityResponse />)} />
 
                 {/* Gmail App User Connector OAuth return (popup) */}
                 <Route path="/oauth/google_mail/return" element={<GmailOAuthReturn />} />
