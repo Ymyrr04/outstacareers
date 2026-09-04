@@ -111,6 +111,7 @@ export default function GmailPanel() {
   const [selectedMessage, setSelectedMessage] = useState<FullMessage | null>(null);
   const [messageLoading, setMessageLoading] = useState(false);
   const [composeOpen, setComposeOpen] = useState(false);
+  const [autoReplyOpen, setAutoReplyOpen] = useState(false);
   const [sending, setSending] = useState(false);
   const [replyState, setReplyState] = useState<null | { mode: "reply" | "forward"; to: string; subject: string; body: string }>(null);
   const [draftInitial, setDraftInitial] = useState<null | { to: string; cc: string; subject: string; body: string; draftId?: string }>(null);
@@ -1049,6 +1050,9 @@ export default function GmailPanel() {
       {composeOpen && (
         <ComposeDialog onClose={() => { setComposeOpen(false); setDraftInitial(null); }} onSend={handleSend} sending={sending} initial={draftInitial || undefined} signature={profile?.signature} />
       )}
+
+      {/* Auto-reply rules manager */}
+      <AutoReplyRulesManager open={autoReplyOpen} onOpenChange={setAutoReplyOpen} />
     </div>
   );
 }
