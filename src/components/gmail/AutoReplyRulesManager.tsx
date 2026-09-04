@@ -185,6 +185,20 @@ export default function AutoReplyRulesManager({ open, onOpenChange }: Props) {
               </div>
             </div>
             <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Reply delay (minutes)</label>
+              <input
+                type="number"
+                min={1}
+                max={1440}
+                value={form.delay_minutes}
+                onChange={(e) => setForm({ ...form, delay_minutes: Number(e.target.value) })}
+                className="w-32 h-8 px-3 text-xs rounded-md border border-border bg-card focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                How long to wait after the email arrives before sending the auto-reply (min 1, max 1440 = 24 hours).
+              </p>
+            </div>
+            <div className="space-y-1">
               <label className="text-xs text-muted-foreground">Reply body (HTML allowed)</label>
               <div className="flex flex-wrap items-center gap-1">
                 <span className="text-[10px] text-muted-foreground mr-1">Insert:</span>
@@ -267,7 +281,7 @@ export default function AutoReplyRulesManager({ open, onOpenChange }: Props) {
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {MATCH_TYPES.find((m) => m.value === rule.match_type)?.label} "{rule.subject_keyword}"
+                        {MATCH_TYPES.find((m) => m.value === rule.match_type)?.label} "{rule.subject_keyword}" · replies after {rule.delay_minutes ?? 5} min
                       </p>
                     </div>
                     <button onClick={() => openEdit(rule)} className="p-1.5 rounded-md hover:bg-muted" title="Edit">
