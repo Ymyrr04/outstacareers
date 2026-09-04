@@ -135,6 +135,15 @@ serve(async (req) => {
         applicant_status_at_send: 'Bench'
       });
 
+    // Stamp the applicant as "checked in, awaiting response" so the kanban badge shows
+    await supabase
+      .from('applicants_prescreen')
+      .update({
+        is_available: null,
+        availability_checked_at: new Date().toISOString(),
+      })
+      .eq('id', applicantId);
+
     console.log('Availability check email sent successfully to:', applicant.email);
 
     return new Response(
