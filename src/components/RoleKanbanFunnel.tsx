@@ -2150,6 +2150,32 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
               <span className="truncate">{candidate.email}</span>
             </div>
 
+            {candidate.availability_checked_at && (
+              <div className="flex items-center gap-1 flex-wrap">
+                {candidate.is_available === true && (
+                  <span className="inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 text-green-800 border border-green-300 dark:bg-green-950/40 dark:text-green-300 dark:border-green-900">
+                    <CheckCircle2 className="w-2 h-2" />
+                    Available
+                  </span>
+                )}
+                {candidate.is_available === false && (
+                  <span className="inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-gray-200 text-gray-700 border border-gray-300 dark:bg-gray-800 dark:text-gray-300 dark:border-gray-700">
+                    <XCircle className="w-2 h-2" />
+                    Not Available
+                  </span>
+                )}
+                {candidate.is_available === null && (
+                  <span className="inline-flex items-center gap-0.5 text-[9px] font-medium px-1.5 py-0.5 rounded-full bg-amber-100 text-amber-800 border border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-900">
+                    <CalendarCheck className="w-2 h-2" />
+                    Checked in
+                  </span>
+                )}
+                <span className="text-[9px] text-muted-foreground">
+                  {format(new Date(candidate.availability_checked_at), 'MMM d, yyyy')}
+                </span>
+              </div>
+            )}
+
             {(() => {
               const enteredAt = candidate.stage_entered_at ? new Date(candidate.stage_entered_at) : new Date(candidate.submitted_at);
               const now = new Date();
