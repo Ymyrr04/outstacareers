@@ -930,6 +930,15 @@ export default function GmailPanel() {
           />
         </form>
         <button
+          onClick={() => setAutoReplyOpen(true)}
+          data-variant="ghost"
+          data-size="small"
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-md hover:bg-muted text-xs text-muted-foreground"
+          title="Auto-reply rules"
+        >
+          <Zap className="w-3.5 h-3.5" /> Auto-replies
+        </button>
+        <button
           onClick={() => setComposeOpen(true)}
           data-variant="primary"
           data-size="small"
