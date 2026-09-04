@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
 
     const { data: rules, error: rulesErr } = await supabase
       .from("auto_reply_rules")
-      .select("id, name, match_type, subject_keyword, body_html, created_by")
+      .select("id, name, match_type, subject_keyword, body_html, delay_minutes, created_by")
       .eq("is_enabled", true);
     if (rulesErr) throw rulesErr;
     if (!rules || rules.length === 0) return json({ processed: 0, sent: 0 });
@@ -91,11 +91,13 @@ Deno.serve(async (req) => {
       rulesByUser.set(rule.created_by, list);
     }
 
-    // Window: messages that arrived between 35 and 5 minutes ago. The 5-minute
-    // floor is the intentional reply delay; the overlap guards cron gaps.
+    // Window: messages old enough to have passed the shortest rule delay, but
+    // not older than the longest delay plus a 30-minute overlap for cron gaps.
     const nowSec = Math.floor(Date.now() / 1000);
-    const afterSec = nowSec - 35 * 60;
-    const beforeSec = nowSec - 5 * 60;
+    const globalMaxDelay = Math.max(...rules.map((r) => r.delay_minutes ?? 5));
+    const globalMinDelay = Math.min(...rules.map((r) => r.delay_minutes ?? 5));
+    const afterSec = nowSec - (globalMaxDelay + 30) * 60;
+    const beforeSec = nowSec - globalMinDelay * 60;
 
     let sent = 0;
     const errors: string[] = [];
@@ -155,8 +157,14 @@ Deno.serve(async (req) => {
           if (ownEmail && senderEmail === ownEmail) continue;
           if (SKIP_SENDER_PATTERNS.some((p) => p.test(senderEmail))) continue;
 
+          const msgDate = meta.internalDate ? Math.floor(Number(meta.internalDate) / 1000) : nowSec;
+
           for (const rule of userRules) {
             if (!subjectMatches(rule.match_type, rule.subject_keyword, subject)) continue;
+
+            // Honor the rule's delay: skip until the message is old enough.
+            const delayMin = rule.delay_minutes ?? 5;
+            if (nowSec - msgDate < delayMin * 60) continue;
 
             // Once per sender per rule.
             const { data: existing } = await supabase

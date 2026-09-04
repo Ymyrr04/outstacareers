@@ -10,6 +10,7 @@ interface AutoReplyRule {
   match_type: "contains" | "equals" | "starts_with";
   subject_keyword: string;
   body_html: string;
+  delay_minutes: number;
   is_enabled: boolean;
   created_at: string;
 }
@@ -25,7 +26,7 @@ const MATCH_TYPES = [
   { value: "starts_with", label: "Subject starts with" },
 ] as const;
 
-const emptyForm = { name: "", match_type: "contains" as AutoReplyRule["match_type"], subject_keyword: "", body_html: "" };
+const emptyForm = { name: "", match_type: "contains" as AutoReplyRule["match_type"], subject_keyword: "", body_html: "", delay_minutes: 5 };
 
 const MERGE_TAGS = [
   { tag: "{first_name}", label: "First name" },
@@ -64,7 +65,7 @@ export default function AutoReplyRulesManager({ open, onOpenChange }: Props) {
     setLoading(true);
     const { data, error } = await (supabase as any)
       .from("auto_reply_rules")
-      .select("id, name, match_type, subject_keyword, body_html, is_enabled, created_at")
+      .select("id, name, match_type, subject_keyword, body_html, delay_minutes, is_enabled, created_at")
       .order("created_at", { ascending: false });
     if (error) toast.error("Failed to load rules: " + error.message);
     setRules(data || []);
@@ -83,7 +84,7 @@ export default function AutoReplyRulesManager({ open, onOpenChange }: Props) {
 
   const openEdit = (rule: AutoReplyRule) => {
     setEditing(rule);
-    setForm({ name: rule.name, match_type: rule.match_type, subject_keyword: rule.subject_keyword, body_html: rule.body_html });
+    setForm({ name: rule.name, match_type: rule.match_type, subject_keyword: rule.subject_keyword, body_html: rule.body_html, delay_minutes: rule.delay_minutes ?? 5 });
     setFormOpen(true);
   };
 
@@ -98,6 +99,7 @@ export default function AutoReplyRulesManager({ open, onOpenChange }: Props) {
       match_type: form.match_type,
       subject_keyword: form.subject_keyword.trim(),
       body_html: form.body_html,
+      delay_minutes: Math.min(1440, Math.max(1, Math.round(form.delay_minutes || 5))),
     };
     let error;
     if (editing) {
@@ -142,7 +144,7 @@ export default function AutoReplyRulesManager({ open, onOpenChange }: Props) {
         </DialogHeader>
 
         <p className="text-xs text-muted-foreground">
-          When an incoming email's subject matches a rule, a reply is sent automatically about 5 minutes later,
+          When an incoming email's subject matches a rule, a reply is sent automatically after the delay you set,
           from your connected Gmail. Each sender only receives one auto-reply per rule, and replies stay in the
           same email thread.
         </p>
@@ -181,6 +183,20 @@ export default function AutoReplyRulesManager({ open, onOpenChange }: Props) {
                   className="w-full h-8 px-3 text-xs rounded-md border border-border bg-card focus:outline-none focus:ring-2 focus:ring-cyan-500"
                 />
               </div>
+            </div>
+            <div className="space-y-1">
+              <label className="text-xs text-muted-foreground">Reply delay (minutes)</label>
+              <input
+                type="number"
+                min={1}
+                max={1440}
+                value={form.delay_minutes}
+                onChange={(e) => setForm({ ...form, delay_minutes: Number(e.target.value) })}
+                className="w-32 h-8 px-3 text-xs rounded-md border border-border bg-card focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              />
+              <p className="text-[10px] text-muted-foreground">
+                How long to wait after the email arrives before sending the auto-reply (min 1, max 1440 = 24 hours).
+              </p>
             </div>
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">Reply body (HTML allowed)</label>
@@ -265,7 +281,7 @@ export default function AutoReplyRulesManager({ open, onOpenChange }: Props) {
                         )}
                       </div>
                       <p className="text-xs text-muted-foreground mt-0.5">
-                        {MATCH_TYPES.find((m) => m.value === rule.match_type)?.label} "{rule.subject_keyword}"
+                        {MATCH_TYPES.find((m) => m.value === rule.match_type)?.label} "{rule.subject_keyword}" · replies after {rule.delay_minutes ?? 5} min
                       </p>
                     </div>
                     <button onClick={() => openEdit(rule)} className="p-1.5 rounded-md hover:bg-muted" title="Edit">
