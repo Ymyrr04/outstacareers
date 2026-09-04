@@ -10,6 +10,7 @@ interface AutoReplyRule {
   match_type: "contains" | "equals" | "starts_with";
   subject_keyword: string;
   body_html: string;
+  delay_minutes: number;
   is_enabled: boolean;
   created_at: string;
 }
@@ -25,7 +26,7 @@ const MATCH_TYPES = [
   { value: "starts_with", label: "Subject starts with" },
 ] as const;
 
-const emptyForm = { name: "", match_type: "contains" as AutoReplyRule["match_type"], subject_keyword: "", body_html: "" };
+const emptyForm = { name: "", match_type: "contains" as AutoReplyRule["match_type"], subject_keyword: "", body_html: "", delay_minutes: 5 };
 
 const MERGE_TAGS = [
   { tag: "{first_name}", label: "First name" },
@@ -64,7 +65,7 @@ export default function AutoReplyRulesManager({ open, onOpenChange }: Props) {
     setLoading(true);
     const { data, error } = await (supabase as any)
       .from("auto_reply_rules")
-      .select("id, name, match_type, subject_keyword, body_html, is_enabled, created_at")
+      .select("id, name, match_type, subject_keyword, body_html, delay_minutes, is_enabled, created_at")
       .order("created_at", { ascending: false });
     if (error) toast.error("Failed to load rules: " + error.message);
     setRules(data || []);
@@ -83,7 +84,7 @@ export default function AutoReplyRulesManager({ open, onOpenChange }: Props) {
 
   const openEdit = (rule: AutoReplyRule) => {
     setEditing(rule);
-    setForm({ name: rule.name, match_type: rule.match_type, subject_keyword: rule.subject_keyword, body_html: rule.body_html });
+    setForm({ name: rule.name, match_type: rule.match_type, subject_keyword: rule.subject_keyword, body_html: rule.body_html, delay_minutes: rule.delay_minutes ?? 5 });
     setFormOpen(true);
   };
 
@@ -98,6 +99,7 @@ export default function AutoReplyRulesManager({ open, onOpenChange }: Props) {
       match_type: form.match_type,
       subject_keyword: form.subject_keyword.trim(),
       body_html: form.body_html,
+      delay_minutes: Math.min(1440, Math.max(1, Math.round(form.delay_minutes || 5))),
     };
     let error;
     if (editing) {
