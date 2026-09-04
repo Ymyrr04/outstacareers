@@ -203,7 +203,7 @@ export default function AutoReplyRulesManager({ open, onOpenChange }: Props) {
                 value={form.body_html}
                 onChange={(e) => setForm({ ...form, body_html: e.target.value })}
                 rows={6}
-                placeholder="Hi,<br><br>Thank you for reaching out…"
+                placeholder="Hi {first_name},<br><br>Thank you for reaching out…"
                 className="w-full px-3 py-2 text-xs rounded-md border border-border bg-card focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono"
               />
             </div>
