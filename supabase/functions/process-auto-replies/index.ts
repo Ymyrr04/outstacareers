@@ -33,6 +33,25 @@ function parseSenderEmail(from: string): string {
   return (m ? m[1] : from).trim().toLowerCase();
 }
 
+// Display name from the From header, e.g. "John Doe <john@x.com>" -> "John Doe".
+function parseSenderName(from: string): string {
+  const m = from.match(/^\s*"?([^"<>]+?)"?\s*</);
+  return (m ? m[1] : "").trim();
+}
+
+// Replaces merge tags like {first_name} in the reply body.
+function applyMergeTags(body: string, fromHeader: string, senderEmail: string): string {
+  const displayName = parseSenderName(fromHeader);
+  const parts = displayName.split(/\s+/).filter(Boolean);
+  const firstName = parts[0] || "";
+  const lastName = parts.length > 1 ? parts[parts.length - 1] : "";
+  return body
+    .replace(/\{\{\s*first_name\s*\}\}|\{first_name\}/gi, firstName)
+    .replace(/\{\{\s*last_name\s*\}\}|\{last_name\}/gi, lastName)
+    .replace(/\{\{\s*full_name\s*\}\}|\{full_name\}/gi, displayName)
+    .replace(/\{\{\s*email\s*\}\}|\{email\}/gi, senderEmail);
+}
+
 const SKIP_SENDER_PATTERNS = [/^no-?reply@/, /mailer-daemon@/, /postmaster@/, /notifications?@/];
 
 Deno.serve(async (req) => {
@@ -151,7 +170,7 @@ Deno.serve(async (req) => {
             const raw = createRawEmail({
               to: senderEmail,
               subject: `Re: ${subject || rule.subject_keyword}`,
-              body: rule.body_html,
+              body: applyMergeTags(rule.body_html, fromHeader, senderEmail),
               inReplyTo: getH("Message-ID") || "",
             });
             const sendRes = await callAsAppUser({
