@@ -2,10 +2,11 @@ import { useState, useCallback, useEffect, useRef } from "react";
 import DOMPurify from "dompurify";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Mail, MailOpen, Star, Archive, Trash2, RefreshCw, Send, Inbox, Search, Loader2, StarOff, Link2, Unlink, Paperclip, ArrowLeft, X, Reply, Forward, Smile, Download, Check } from "lucide-react";
+import { Mail, MailOpen, Star, Archive, Trash2, RefreshCw, Send, Inbox, Search, Loader2, StarOff, Link2, Unlink, Paperclip, ArrowLeft, X, Reply, Forward, Smile, Download, Check, Zap } from "lucide-react";
 import { RichTextEditor, plainTextToHtml } from "@/components/gmail/RichTextEditor";
 import { RecipientInput } from "@/components/gmail/RecipientInput";
 import { AttachButton, AttachmentList, serializeAttachments, MAX_TOTAL_BYTES, type PendingAttachment } from "@/components/gmail/ComposeAttachments";
+import AutoReplyRulesManager from "@/components/gmail/AutoReplyRulesManager";
 
 
 
