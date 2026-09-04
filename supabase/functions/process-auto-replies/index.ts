@@ -1,6 +1,6 @@
 // Processes auto-reply rules: finds recent inbox messages matching enabled
 // rules and sends a threaded reply. Each sender only gets one reply per rule.
-// Called by pg_cron every 5 minutes (service-role bearer) or manually by an admin.
+// Called by pg_cron every 5 minutes (project anon bearer) or manually by an admin.
 import { createClient } from "npm:@supabase/supabase-js@2";
 import { callAsAppUser } from "../_shared/appUserConnector.ts";
 import { getConnectionKeyForUser } from "../_shared/appUserConnections.ts";
@@ -61,10 +61,11 @@ Deno.serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-    // Auth: service-role bearer (cron) or an admin user's JWT.
+    // Auth: the project's anon/service-role bearer (trusted cron with no user
+    // input) or an admin user's JWT. The cron cannot read Edge Function secrets.
     const authHeader = req.headers.get("Authorization") || "";
     const token = authHeader.replace("Bearer ", "");
-    if (token !== serviceKey) {
+    if (token !== serviceKey && token !== anonKey) {
       const authedClient = createClient(supabaseUrl, anonKey);
       const { data: claimsData, error: claimsErr } = await authedClient.auth.getClaims(token);
       const userId = claimsData?.claims?.sub;
