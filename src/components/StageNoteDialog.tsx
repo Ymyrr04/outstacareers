@@ -144,7 +144,7 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
           <DialogTitle>Add a note</DialogTitle>
           <DialogDescription>
             {pending.candidateName} moved to <span className="font-medium">{pending.newStatus}</span>.
-            Add a note — it will be saved to this candidate's notes.
+            A note is required — it will be saved to this candidate's notes.
           </DialogDescription>
         </DialogHeader>
 
