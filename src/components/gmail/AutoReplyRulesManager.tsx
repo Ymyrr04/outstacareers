@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, Plus, Pencil, Trash2, Zap } from "lucide-react";
@@ -27,6 +27,13 @@ const MATCH_TYPES = [
 
 const emptyForm = { name: "", match_type: "contains" as AutoReplyRule["match_type"], subject_keyword: "", body_html: "" };
 
+const MERGE_TAGS = [
+  { tag: "{first_name}", label: "First name" },
+  { tag: "{last_name}", label: "Last name" },
+  { tag: "{full_name}", label: "Full name" },
+  { tag: "{email}", label: "Email" },
+] as const;
+
 export default function AutoReplyRulesManager({ open, onOpenChange }: Props) {
   const [rules, setRules] = useState<AutoReplyRule[]>([]);
   const [loading, setLoading] = useState(false);
@@ -34,6 +41,24 @@ export default function AutoReplyRulesManager({ open, onOpenChange }: Props) {
   const [editing, setEditing] = useState<AutoReplyRule | null>(null);
   const [form, setForm] = useState(emptyForm);
   const [formOpen, setFormOpen] = useState(false);
+  const bodyRef = useRef<HTMLTextAreaElement>(null);
+
+  const insertTag = (tag: string) => {
+    const ta = bodyRef.current;
+    if (!ta) {
+      setForm((f) => ({ ...f, body_html: f.body_html + tag }));
+      return;
+    }
+    const start = ta.selectionStart ?? form.body_html.length;
+    const end = ta.selectionEnd ?? form.body_html.length;
+    const next = form.body_html.slice(0, start) + tag + form.body_html.slice(end);
+    setForm({ ...form, body_html: next });
+    requestAnimationFrame(() => {
+      ta.focus();
+      const pos = start + tag.length;
+      ta.setSelectionRange(pos, pos);
+    });
+  };
 
   const fetchRules = async () => {
     setLoading(true);
@@ -159,11 +184,26 @@ export default function AutoReplyRulesManager({ open, onOpenChange }: Props) {
             </div>
             <div className="space-y-1">
               <label className="text-xs text-muted-foreground">Reply body (HTML allowed)</label>
+              <div className="flex flex-wrap items-center gap-1">
+                <span className="text-[10px] text-muted-foreground mr-1">Insert:</span>
+                {MERGE_TAGS.map((t) => (
+                  <button
+                    key={t.tag}
+                    type="button"
+                    onClick={() => insertTag(t.tag)}
+                    title={`Inserts ${t.tag} — replaced with the sender's ${t.label.toLowerCase()} when the reply is sent`}
+                    className="px-2 py-0.5 rounded-full border border-border text-[10px] font-mono hover:bg-muted"
+                  >
+                    {t.tag}
+                  </button>
+                ))}
+              </div>
               <textarea
+                ref={bodyRef}
                 value={form.body_html}
                 onChange={(e) => setForm({ ...form, body_html: e.target.value })}
                 rows={6}
-                placeholder="Hi,<br><br>Thank you for reaching out…"
+                placeholder="Hi {first_name},<br><br>Thank you for reaching out…"
                 className="w-full px-3 py-2 text-xs rounded-md border border-border bg-card focus:outline-none focus:ring-2 focus:ring-cyan-500 font-mono"
               />
             </div>
