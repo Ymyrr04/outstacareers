@@ -560,7 +560,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       while (true) {
         let q = supabase
           .from('applicants_prescreen')
-          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, interview_invite_sent_at, tags, suitable_roles')
+          .select('id, full_name, email, phone, location, status, pre_archive_status, submitted_at, total_score, job_title, job_id, cv_file_url, is_starred, interview_invite_sent_at, tags, suitable_roles, is_available, availability_checked_at')
           .in('status', statuses);
         if (rolesToFetch) {
           q = q.in('job_title', rolesToFetch);
