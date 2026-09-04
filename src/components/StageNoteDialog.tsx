@@ -138,8 +138,8 @@ export function StageNoteDialog({ pending, onOpenChange, onSaved }: Props) {
 
 
   return (
-    <Dialog open={!!pending} onOpenChange={(o) => { if (!o) onOpenChange(false); }}>
-      <DialogContent className="max-w-lg max-h-[88vh] overflow-y-auto">
+    <Dialog open={!!pending} onOpenChange={(o) => { if (!o && !saving) onOpenChange(false); }}>
+      <DialogContent className="max-w-lg max-h-[88vh] overflow-y-auto" onInteractOutside={(e) => e.preventDefault()} onEscapeKeyDown={(e) => e.preventDefault()}>
         <DialogHeader>
           <DialogTitle>Add a note</DialogTitle>
           <DialogDescription>
