@@ -1952,6 +1952,25 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
     }
   }, [candidate.id, candidate.email, candidate.full_name]);
 
+  const [sendingAvailability, setSendingAvailability] = useState(false);
+  const sendAvailabilityCheck = useCallback(async () => {
+    if (!candidate.email) return toast.error('Applicant has no email address.');
+    const firstName = (candidate.full_name || '').trim().split(/\s+/)[0] || candidate.full_name || '';
+    if (!confirm(`Send availability check to ${firstName} (${candidate.email})?`)) return;
+    setSendingAvailability(true);
+    try {
+      const { error } = await supabase.functions.invoke('send-availability-check', {
+        body: { applicantId: candidate.id },
+      });
+      if (error) throw error;
+      toast.success(`Availability check sent to ${candidate.email}`);
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setSendingAvailability(false);
+    }
+  }, [candidate.id, candidate.email, candidate.full_name]);
+
   const fetchActivity = useCallback(async () => {
     setActivityLoading(true);
     const { data, error } = await supabase
