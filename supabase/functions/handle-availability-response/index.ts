@@ -1,12 +1,12 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+// native Deno.serve
+import { createClient } from "npm:@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -26,14 +26,14 @@ serve(async (req) => {
     if (!token || !response) {
       return new Response(
         generateHtmlPage('Missing Parameters', 'Invalid link. Please contact support.', 'error'),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } }
       );
     }
 
     if (response !== 'yes' && response !== 'no') {
       return new Response(
         generateHtmlPage('Invalid Response', 'Invalid response value.', 'error'),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } }
       );
     }
 
@@ -52,7 +52,7 @@ serve(async (req) => {
           'This link has already been used or expired. Please contact the recruitment team if you need assistance.',
           'error'
         ),
-        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
+        { status: 404, headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } }
       );
     }
 
@@ -64,7 +64,7 @@ serve(async (req) => {
           'You have already submitted your response. If you need to update your availability, please contact the recruitment team.',
           'info'
         ),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
+        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } }
       );
     }
 
@@ -81,7 +81,7 @@ serve(async (req) => {
       console.error('Failed to update response:', updateResponseError);
       return new Response(
         generateHtmlPage('Error', 'Failed to record your response. Please try again.', 'error'),
-        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
+        { status: 500, headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } }
       );
     }
 
@@ -108,14 +108,14 @@ serve(async (req) => {
 
     return new Response(
       generateHtmlPage(title, message, 'success'),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
+      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } }
     );
 
   } catch (error) {
     console.error('Error in handle-availability-response:', error);
     return new Response(
       generateHtmlPage('Error', 'An unexpected error occurred. Please try again later.', 'error'),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'text/html' } }
+      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'text/html; charset=utf-8' } }
     );
   }
 });
