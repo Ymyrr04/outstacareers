@@ -720,6 +720,25 @@ html:not(.dark) .admin-shell .list-row-chevron {
   color: #ffffff;
   white-space: nowrap;
 }
+.admin-shell .admin-hero-banner__chip--stacked {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.1;
+  min-width: 56px;
+  padding: 6px 10px;
+}
+.admin-shell .admin-hero-banner__chip-number {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.admin-shell .admin-hero-banner__chip-label {
+  font-size: 10px;
+  opacity: 0.9;
+  text-transform: lowercase;
+}
 .admin-shell .admin-hero-banner__right { flex-shrink: 0; }
 
 /* Gmail rich text compose editor */
