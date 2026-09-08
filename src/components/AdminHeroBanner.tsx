@@ -7,6 +7,22 @@ interface AdminHeroBannerProps {
   right?: ReactNode;
 }
 
+const CHIP_RE = /^(\d+(?:\.\d+)?)\s+(.+)$/;
+
+function Chip({ chip }: { chip: string }) {
+  const match = chip.match(CHIP_RE);
+  if (!match) {
+    return <span className="admin-hero-banner__chip">{chip}</span>;
+  }
+  const [, number, label] = match;
+  return (
+    <span className="admin-hero-banner__chip admin-hero-banner__chip--stacked">
+      <span className="admin-hero-banner__chip-number">{number}</span>
+      <span className="admin-hero-banner__chip-label">{label}</span>
+    </span>
+  );
+}
+
 /**
  * Context-aware hero banner shown at the top of admin tab content areas.
  * Purely presentational - all numbers come from the caller.
@@ -20,7 +36,7 @@ export function AdminHeroBanner({ eyebrow, title, chips = [], right }: AdminHero
         {chips.length > 0 && (
           <div className="admin-hero-banner__chips">
             {chips.map((chip, i) => (
-              <span key={`${chip}-${i}`} className="admin-hero-banner__chip">{chip}</span>
+              <Chip key={`${chip}-${i}`} chip={chip} />
             ))}
           </div>
         )}
