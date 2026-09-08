@@ -4004,6 +4004,7 @@ const Admin = () => {
               chips={[
                 `${heroNum(heroStats.postHireStageCounts.onboarding || 0)} onboarding`,
                 `${heroNum(heroStats.postHireStageCounts.week_1_checkin || 0)} week 1`,
+                `${heroNum(heroStats.postHireStageCounts.week_2_checkin || 0)} week 2`,
                 `${heroNum(heroStats.postHireStageCounts.month_1_review || 0)} month 1`,
                 `${heroNum(heroStats.postHireStageCounts.month_2_review || 0)} month 2`,
                 `${heroNum(heroStats.postHireStageCounts.month_3_review || 0)} month 3`,

@@ -196,7 +196,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
         supabase.from('clients').select('id'),
         supabase.from('contractor_assignments').select('id, client_id, status, country, start_date, end_date, hired_by'),
         supabase.from('contractor_timesheets').select('contractor_assignment_id, week_ending_date, total_hours, overtime_hours, incentive_amount, outsta_status, client_approval_status').order('week_ending_date', { ascending: false }).limit(2000),
-        supabase.from('contractor_pipeline_tracking').select('id, current_stage_id'),
+        supabase.from('contractor_pipeline_tracking').select('id, current_stage_id, contractor_assignment_id'),
         supabase.from('contractor_pipeline_stages').select('id, name, slug, stage_order'),
         supabase.from('user_roles').select('role'),
         supabase.from('client_hiring_requests').select('pipeline_stage'),
@@ -390,11 +390,17 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       const stageSlugById = new Map<string, string>();
       for (const s of (pipelineStagesRes.data || []) as any[]) stageSlugById.set(s.id, (s.slug || '').toLowerCase());
       const tracking = (pipelineTrackingRes.data || []) as any[];
+      const assignmentStatusById = new Map<string, string>();
+      for (const a of ((assignmentsRes.data || []) as any[])) {
+        assignmentStatusById.set(a.id, (a.status || '').toLowerCase());
+      }
       const postHireStageCounts: Record<string, number> = {};
       let postHireTotal = 0;
       for (const t of tracking) {
         const slug = stageSlugById.get(t.current_stage_id) || '';
         if (!slug || slug === 'settled') continue; // settled contractors are not counted
+        const aStatus = assignmentStatusById.get(t.contractor_assignment_id) || '';
+        if (aStatus === 'terminated' || aStatus === 'resigned') continue; // match the board
         postHireStageCounts[slug] = (postHireStageCounts[slug] || 0) + 1;
         postHireTotal++;
       }
