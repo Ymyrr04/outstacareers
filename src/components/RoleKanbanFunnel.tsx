@@ -16,7 +16,7 @@ import {
   ContextMenuSubContent,
 } from '@/components/ui/context-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity, FileSignature, Loader2, Tag as TagIcon, X as XIcon, Briefcase, UserCog, Calendar, CalendarCheck, CheckCircle2, XCircle } from 'lucide-react';
+import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity, FileSignature, Loader2, Tag as TagIcon, X as XIcon, Briefcase, UserCog, Calendar, CalendarCheck, CheckCircle2, XCircle, Columns3 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
@@ -45,6 +45,7 @@ import { StageEmailConfirmDialog, type PendingStageEmail } from '@/components/St
 import { StageNoteDialog, type PendingStageNote } from '@/components/StageNoteDialog';
 import { AddCandidateCalendarDialog } from '@/components/AddCandidateCalendarDialog';
 import { useStageSettings } from '@/hooks/useStageSettings';
+import { useAuth } from '@/hooks/useAuth';
 
 const FUNNEL_STAGES = [
   'For Review',
@@ -161,6 +162,30 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   const [sortOption, setSortOption] = useState<'score-desc' | 'score-asc' | 'name-asc' | 'name-desc' | 'newest' | 'oldest' | 'assessed'>('score-desc');
   const DEFAULT_COLUMN_LIMIT = 20;
   const [visibleCounts, setVisibleCounts] = useState<Record<string, number>>({});
+  const DEFAULT_HIDDEN_STAGES = ['Reject', 'Cold Talent Pool'];
+  const { user } = useAuth();
+  const [hiddenStages, setHiddenStages] = useState<string[]>(DEFAULT_HIDDEN_STAGES);
+  const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
+  const hiddenStagesLoadedRef = useRef(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    try {
+      const saved = localStorage.getItem(`outsta_hidden_stages_${user.id}`);
+      const parsed = saved ? JSON.parse(saved) : null;
+      setHiddenStages(Array.isArray(parsed) ? parsed : DEFAULT_HIDDEN_STAGES);
+    } catch {
+      setHiddenStages(DEFAULT_HIDDEN_STAGES);
+    }
+    hiddenStagesLoadedRef.current = true;
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || !hiddenStagesLoadedRef.current) return;
+    try {
+      localStorage.setItem(`outsta_hidden_stages_${user.id}`, JSON.stringify(hiddenStages));
+    } catch { /* ignore */ }
+  }, [hiddenStages, user?.id]);
   const [hiredCandidate, setHiredCandidate] = useState<Candidate | null>(null);
   const [showHiredDialog, setShowHiredDialog] = useState(false);
   const { templates, getDefaultTemplateByTrigger } = useEmailTemplates();
@@ -1113,6 +1138,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     return groups;
   }, [filteredCandidates, sortOption, additionalProfileIds, primaryProfileIds, orderedFunnelStages]);
 
+  // A hidden stage temporarily reappears (display-only) when a search matches candidates inside it.
+  const searchActive = candidateSearch.trim().length > 0 || appliedProfileSearch.trim().length > 0;
+  const displayedStages = useMemo(() => {
+    return orderedFunnelStages.filter((stage) => {
+      if (!hiddenStages.includes(stage)) return true;
+      return searchActive && (stageGroups[stage]?.length ?? 0) > 0;
+    });
+  }, [orderedFunnelStages, hiddenStages, searchActive, stageGroups]);
+
   const totalInPipeline = useMemo(
     () => Object.values(stageGroups).reduce((sum, arr) => sum + arr.length, 0),
     [stageGroups]
@@ -1480,6 +1514,53 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
               </div>
             </PopoverContent>
           </Popover>
+
+          <Popover open={columnsMenuOpen} onOpenChange={setColumnsMenuOpen}>
+            <PopoverTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-9 gap-1.5 text-sm">
+                <Columns3 className="w-3.5 h-3.5" />
+                Columns
+                {hiddenStages.length > 0 && (
+                  <Badge variant="secondary" className="ml-0.5 h-5 px-1.5 text-[10px]">
+                    {hiddenStages.length} hidden
+                  </Badge>
+                )}
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-64 p-2">
+              <p className="text-xs font-semibold mb-2">Show columns</p>
+              <div className="max-h-72 overflow-y-auto space-y-0.5">
+                {orderedFunnelStages.map((stage) => {
+                  const checked = !hiddenStages.includes(stage);
+                  return (
+                    <label
+                      key={`col-${stage}`}
+                      className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-accent cursor-pointer text-sm"
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={(v) => {
+                          setHiddenStages((prev) =>
+                            v ? prev.filter((s) => s !== stage) : [...prev, stage]
+                          );
+                        }}
+                      />
+                      <span className="flex-1 truncate">{getStageDisplayName(stage)}</span>
+                      <span className="text-[11px] text-muted-foreground">
+                        {stageGroups[stage]?.length ?? 0}
+                      </span>
+                    </label>
+                  );
+                })}
+              </div>
+              <button
+                onClick={() => setHiddenStages(DEFAULT_HIDDEN_STAGES)}
+                className="mt-2 w-full text-left px-2 py-1 text-[11px] text-muted-foreground hover:text-foreground"
+              >
+                Reset to default
+              </button>
+            </PopoverContent>
+          </Popover>
         </div>
       </div>
 
@@ -1520,8 +1601,9 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
       ) : (
         <div ref={pipelineScrollRef} className="w-full overflow-x-auto">
           <div className="flex gap-3 pb-4 min-w-max">
-            {orderedFunnelStages.map((stage) => {
+            {displayedStages.map((stage) => {
               const colors = STAGE_COLORS[stage];
+              const isTempVisible = hiddenStages.includes(stage);
               const colorOverride = getStageColorOverride(stage);
               const stageCandidates = stageGroups[stage];
               const totalCount = stageCandidates.length;
@@ -1554,6 +1636,11 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                     setDraggedCandidate(null);
                   }}
                 >
+                  {isTempVisible && (
+                    <div className="text-[10px] mb-0.5 px-0.5" style={{ color: '#066F85' }}>
+                      Hidden stage — matches your search
+                    </div>
+                  )}
                   <div
                     className="px-[9px] py-[7px] flex items-center justify-between rounded-t-[7px]"
                     style={{ backgroundColor: colorOverride || colors.headerBg }}
