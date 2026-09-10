@@ -166,7 +166,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   const { user } = useAuth();
   const [hiddenStages, setHiddenStages] = useState<string[]>(DEFAULT_HIDDEN_STAGES);
   const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
-  const hiddenStagesLoadedRef = useRef(false);
+  const [hiddenStagesLoaded, setHiddenStagesLoaded] = useState(false);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -177,15 +177,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     } catch {
       setHiddenStages(DEFAULT_HIDDEN_STAGES);
     }
-    hiddenStagesLoadedRef.current = true;
+    setHiddenStagesLoaded(true);
   }, [user?.id]);
 
   useEffect(() => {
-    if (!user?.id || !hiddenStagesLoadedRef.current) return;
+    if (!user?.id || !hiddenStagesLoaded) return;
     try {
       localStorage.setItem(`outsta_hidden_stages_${user.id}`, JSON.stringify(hiddenStages));
     } catch { /* ignore */ }
-  }, [hiddenStages, user?.id]);
+  }, [hiddenStages, user?.id, hiddenStagesLoaded]);
   const [hiredCandidate, setHiredCandidate] = useState<Candidate | null>(null);
   const [showHiredDialog, setShowHiredDialog] = useState(false);
   const { templates, getDefaultTemplateByTrigger } = useEmailTemplates();
