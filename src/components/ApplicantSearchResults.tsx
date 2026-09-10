@@ -218,9 +218,6 @@ export default function ApplicantSearchResults({
     };
   }, [expandedApplicant, onViewDetails]);
 
-  const formatDate = (dateString: string) => {
-    return formatDate(dateString);
-  };
 
   const handleStartEdit = (applicant: Applicant) => {
     setEditingApplicant(applicant.id);
