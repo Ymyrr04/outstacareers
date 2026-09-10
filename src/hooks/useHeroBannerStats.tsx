@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
+import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 
 export interface HeroBannerStats {
   loading: boolean;
@@ -309,17 +310,20 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       // --- Contractors / clients ---
       const allAssignments = (assignmentsRes.data || []) as any[];
       const assignments = scoped ? allAssignments.filter((a) => isMine(a.hired_by)) : allAssignments;
-      const active = assignments.filter((a) => a.status === 'active');
-      const scheduled = assignments.filter((a) => a.status === 'scheduled');
+      // Internal OutSta team is shown separately on the dashboard, so exclude it here
+      const external = assignments.filter((a) => a.client_id !== INTERNAL_CLIENT_ID);
+      const active = external.filter((a) => a.status === 'active');
+      const scheduled = external.filter((a) => a.status === 'scheduled');
       const clientIds = new Set(active.map((a) => a.client_id).filter(Boolean));
-      const regionMap: Record<string, number> = {};
+      // Two buckets only: Philippines, and everything else counts as Latin America
+      let phCount = 0;
       for (const a of active) {
-        const r = classifyCountry(a.country);
-        regionMap[r] = (regionMap[r] || 0) + 1;
+        if (classifyCountry(a.country) === 'Philippines') phCount++;
       }
-      const contractorRegions = Object.entries(regionMap)
-        .map(([name, count]) => ({ name, count }))
-        .sort((a, b) => b.count - a.count);
+      const contractorRegions = [
+        { name: 'Philippines', count: phCount },
+        { name: 'Latin America', count: active.length - phCount },
+      ];
 
       // --- Analytics (global, year-to-date) ---
       const analyticsYear = new Date().getFullYear();
