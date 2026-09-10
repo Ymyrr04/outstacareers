@@ -10,6 +10,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Trash2, KeyRound, User as UserIcon, Copy, Mail, Phone, ChevronDown, ChevronUp, X, UserPlus } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatDate } from "@/lib/dateFormat";
 
 interface PortalUser {
   id: string;
@@ -262,7 +263,7 @@ export function ClientPortalAccountsSection({ clientId }: { clientId: string }) 
                     </div>
                     <p className="text-xs text-muted-foreground mt-0.5">
                       {a.full_name ? <span className="font-medium text-foreground">{a.full_name} · </span> : null}
-                      Created {format(new Date(a.created_at), 'MMM d, yyyy')}
+                      Created {formatDate(a.created_at)}
                       {a.is_first_login === false && <span className="ml-2 text-[10px] uppercase tracking-wide bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded">Profile complete</span>}
                     </p>
 

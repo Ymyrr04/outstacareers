@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
 import { CopyableText } from '@/components/CopyableText';
+import { formatDate } from "@/lib/dateFormat";
 
 interface ApolloResult {
   id: string;
@@ -991,7 +992,7 @@ export const ExternalScoutDashboard = () => {
                             )}
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
-                            Imported {new Date(person.created_at).toLocaleDateString()}
+                            Imported {formatDate(person.created_at)}
                           </p>
                         </div>
                       </div>

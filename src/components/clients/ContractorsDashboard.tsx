@@ -73,6 +73,7 @@ import { RecurringSchedulesManager } from './RecurringSchedulesManager';
 import { ContractorColumnFilter } from './ContractorColumnFilter';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 import { parseDateOnly } from '@/lib/dateOnly';
+import { formatDate, formatDateTime } from "@/lib/dateFormat";
 
 interface ContractorWithDetails {
   id: string;
@@ -692,7 +693,7 @@ export const ContractorsDashboard = () => {
                   Last Import: {lastImportResult.successCount} succeeded, {lastImportResult.errors.length} failed
                 </p>
                 <p className="text-sm text-amber-700 mt-1">
-                  {new Date(lastImportResult.timestamp).toLocaleString()}
+                  {formatDateTime(lastImportResult.timestamp)}
                 </p>
                 {!showImportErrors ? (
                   <Button
@@ -944,7 +945,7 @@ export const ContractorsDashboard = () => {
                             {contractor.status_changed_at ? (
                               <span className="flex items-center gap-1 text-sm text-muted-foreground whitespace-nowrap">
                                 <Clock className="w-3 h-3" />
-                                {format(new Date(contractor.status_changed_at), 'MMM d, yyyy')}
+                                {formatDate(contractor.status_changed_at)}
                               </span>
                             ) : (
                               <span className="text-muted-foreground">—</span>
@@ -1283,7 +1284,7 @@ export const ContractorsDashboard = () => {
                               {contractor.status_changed_at ? (
                                 <span className="flex items-center gap-1 text-sm text-muted-foreground whitespace-nowrap">
                                   <Clock className="w-3 h-3" />
-                                  {format(new Date(contractor.status_changed_at), 'MMM d, yyyy')}
+                                  {formatDate(contractor.status_changed_at)}
                                 </span>
                               ) : (
                                 <span className="text-muted-foreground">—</span>

@@ -22,6 +22,7 @@ import { useSalesLeads, SALES_STAGES, SalesLead, SalesStage, Temperature, Contac
 import { estDealValue, pipelineValue, formatCurrency } from '@/lib/salesPipelineMath';
 import { AddClientDialog, AddClientInitialValues } from '@/components/clients/AddClientDialog';
 import { supabase } from '@/integrations/supabase/client';
+import { formatDateTime } from "@/lib/dateFormat";
 
 const hiringTypeArr = (l: SalesLead | Partial<SalesLead>): HiringType[] => (Array.isArray((l as any).hiring_type) ? (l as any).hiring_type as HiringType[] : []);
 
@@ -1184,7 +1185,7 @@ const LeadDetailPanel = ({ lead, onClose, onUpdate, onDelete, onConvert }: {
                 {notes.length === 0 && <p className="text-sm text-muted-foreground italic">No notes yet</p>}
                 {notes.map(n => (
                   <div key={n.id} className="text-sm border rounded p-3 bg-muted/30">
-                    <div className="text-muted-foreground mb-1 text-xs">{new Date(n.created_at).toLocaleString()} · {n.created_by_email || 'Admin'}</div>
+                    <div className="text-muted-foreground mb-1 text-xs">{formatDateTime(n.created_at)} · {n.created_by_email || 'Admin'}</div>
                     <div className="whitespace-pre-wrap">{n.note}</div>
                   </div>
                 ))}

@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow, format } from 'date-fns';
 import { sanitizeHtml, sanitizeEmailReply } from '@/lib/sanitize';
+import { formatDateTime } from "@/lib/dateFormat";
 import { 
   Mail, Clock, CheckCircle, XCircle, AlertTriangle, 
   Loader2, Send, Ban, ChevronDown, ChevronUp,
@@ -533,10 +534,10 @@ export function CommunicationHistory({
                             To: {email.recipient_email}
                           </p>
                           <p className="text-xs text-muted-foreground">
-                            Scheduled on: {format(new Date(email.created_at), 'MMMM do, yyyy h:mm a')}
+                            Scheduled on: {formatDateTime(email.created_at)}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            Send at: {format(new Date(email.scheduled_for), 'MMMM do, yyyy h:mm a')}
+                            Send at: {formatDateTime(email.scheduled_for)}
                           </p>
                           <p className="text-xs text-amber-600 dark:text-amber-400 mt-1">
                             ({formatDistanceToNow(new Date(email.scheduled_for), { addSuffix: true })})
@@ -646,7 +647,7 @@ export function CommunicationHistory({
                                   </div>
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-2">
-                                  {format(new Date(reply.received_at), 'PPP p')}
+                                  {formatDateTime(reply.received_at)}
                                   <span className="ml-2">
                                     ({formatDistanceToNow(new Date(reply.received_at), { addSuffix: true })})
                                   </span>
@@ -734,8 +735,8 @@ export function CommunicationHistory({
                             </div>
                             <p className="text-xs text-muted-foreground mt-2">
                               {thread.sentEmail.sent_at 
-                                ? format(new Date(thread.sentEmail.sent_at), 'PPP p')
-                                : format(new Date(thread.sentEmail.created_at), 'PPP p')
+                                ? formatDateTime(thread.sentEmail.sent_at)
+                                : formatDateTime(thread.sentEmail.created_at)
                               }
                             </p>
                           </button>
@@ -816,7 +817,7 @@ export function CommunicationHistory({
                                               </Badge>
                                             </div>
                                             <p className="text-xs text-muted-foreground mt-1">
-                                              {format(new Date(reply.received_at), 'PPP p')}
+                                              {formatDateTime(reply.received_at)}
                                               <span className="ml-2">
                                                 ({formatDistanceToNow(new Date(reply.received_at), { addSuffix: true })})
                                               </span>
@@ -895,7 +896,7 @@ export function CommunicationHistory({
                             {getStatusBadge(log.status)}
                           </div>
                           <p className="text-xs text-muted-foreground mt-2">
-                            {format(new Date(log.created_at), 'PPP p')}
+                            {formatDateTime(log.created_at)}
                           </p>
                           {log.error_message && (
                             <div className="mt-2 flex items-start gap-2 text-sm text-red-600">
@@ -935,7 +936,7 @@ export function CommunicationHistory({
                   <span className="font-medium">Original subject:</span> {replyContext.subject}
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  {replyContext.isFollowUp ? 'Sent' : 'Received'} {format(new Date(replyContext.receivedAt), 'PPP p')}
+                  {replyContext.isFollowUp ? 'Sent' : 'Received'} {formatDateTime(replyContext.receivedAt)}
                 </p>
               </div>
             )}
@@ -992,7 +993,7 @@ export function CommunicationHistory({
             <DialogDescription>
               To: {previewEmail?.recipient_email}
               {previewEmail?.scheduled_for && (
-                <> · Sends {format(new Date(previewEmail.scheduled_for), 'MMMM do, yyyy h:mm a')}</>
+                <> · Sends {formatDateTime(previewEmail.scheduled_for)}</>
               )}
             </DialogDescription>
           </DialogHeader>

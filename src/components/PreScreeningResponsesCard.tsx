@@ -1,4 +1,5 @@
 import { Flag } from "lucide-react";
+import { formatDateTime } from "@/lib/dateFormat";
 
 interface Props {
   responses: any;
@@ -51,7 +52,7 @@ export const PreScreeningResponsesCard = ({ responses, flagged }: Props) => {
           </div>
           {responses.answered_at && (
             <p className="text-xs text-muted-foreground">
-              Answered {new Date(responses.answered_at).toLocaleString("en-US", { timeZone: "America/New_York" })} ET
+              Answered {formatDateTime(responses.answered_at)}
             </p>
           )}
         </>

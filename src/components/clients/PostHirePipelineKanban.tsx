@@ -15,6 +15,7 @@ import { StageEmailTemplateDialog } from './StageEmailTemplateDialog';
 import { SendCheckinEmailDialog } from './SendCheckinEmailDialog';
 import { StageCheckinConfigDialog } from './StageCheckinConfigDialog';
 import { CheckinTemplateLibraryDialog } from './CheckinTemplateLibraryDialog';
+import { formatDate } from "@/lib/dateFormat";
 
 export const PostHirePipelineKanban = () => {
   const { stages, tracking, loading, moveToStage, fetchAll } = useContractorPipeline();
@@ -326,7 +327,7 @@ const ContractorCard = ({ item, index, daysElapsed, weeksElapsed, onSendEmail, h
               {startDate && (
                 <div className="flex items-center gap-1 text-[9px] text-muted-foreground">
                   <Calendar className="w-2.5 h-2.5" />
-                  <span>{format(new Date(startDate), 'MMM d, yyyy')}</span>
+                  <span>{formatDate(startDate)}</span>
                 </div>
               )}
               <div className="flex items-center gap-1 text-[9px] text-muted-foreground">

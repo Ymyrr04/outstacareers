@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { ArrowLeft, RefreshCw, AlertTriangle, DollarSign, Activity, Coins } from "lucide-react";
 import { StatCard } from "@/components/StatCard";
 import { getAdminDisplayName } from "@/lib/adminDisplayNames";
+import { formatDateTime } from "@/lib/dateFormat";
 
 interface AiUsageRow {
   id: string;
@@ -314,7 +315,7 @@ export default function AiUsage() {
             <TableBody>
               {filteredRows.slice(0, 200).map((r) => (
                 <TableRow key={r.id}>
-                  <TableCell className="text-xs whitespace-nowrap">{new Date(r.created_at).toLocaleString()}</TableCell>
+                  <TableCell className="text-xs whitespace-nowrap">{formatDateTime(r.created_at)}</TableCell>
                   <TableCell className="font-medium">{r.function_name}</TableCell>
                   <TableCell className="text-xs text-muted-foreground">{r.model || "—"}</TableCell>
                   <TableCell className="text-right">{r.prompt_tokens ?? "—"}</TableCell>

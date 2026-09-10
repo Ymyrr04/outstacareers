@@ -21,6 +21,7 @@ import { Loader2, Save, Pencil, Eye, Plus, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import { format } from 'date-fns';
+import { formatDateTime } from "@/lib/dateFormat";
 
 interface ApplicantNote {
   id: string;
@@ -224,7 +225,7 @@ export function InterviewNotesDialog({ open, onOpenChange, applicantId, applican
                           {getAdminDisplayName(note.created_by, 'Unknown')}
                         </span>
                         <span>•</span>
-                        <span>{format(new Date(note.created_at), 'MMM d, yyyy h:mm a')}</span>
+                        <span>{formatDateTime(note.created_at)}</span>
                         {note.updated_at !== note.created_at && (
                           <>
                             <span>•</span>

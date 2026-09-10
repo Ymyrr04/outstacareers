@@ -10,6 +10,7 @@ import { renderPdfPages, RenderedPage } from "@/lib/pdfRender";
 import { SignaturePad } from "@/components/contracts/SignaturePad";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { PrePitchSignView } from "@/components/contracts/PrePitchSignView";
+import { formatDate } from "@/lib/dateFormat";
 
 const PRE_PITCH_TEMPLATE_NAME = "OutSta Pre-Pitch Agreement";
 
@@ -235,7 +236,7 @@ const SignContract = () => {
         <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
           <div>
             <h1 className="font-semibold text-lg leading-tight">OutSta Agreement - {data.envelope.recipient_name}</h1>
-            <p className="text-xs text-muted-foreground">For {data.envelope.recipient_name} • Expires {new Date(data.envelope.expires_at).toLocaleDateString()}</p>
+            <p className="text-xs text-muted-foreground">For {data.envelope.recipient_name} • Expires {formatDate(data.envelope.expires_at)}</p>
           </div>
           <div className="text-sm">
             <span className="font-medium">{completedCount}</span>

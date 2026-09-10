@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Loader2, Upload, Pencil, Trash2, FileText } from "lucide-react";
 import { toast } from "sonner";
 import { TemplateBuilder } from "./TemplateBuilder";
+import { formatDate } from "@/lib/dateFormat";
 
 interface Template {
   id: string;
@@ -110,7 +111,7 @@ export const TemplatesPanel = () => {
                 <FileText className="w-5 h-5 text-muted-foreground flex-shrink-0" />
                 <div className="min-w-0">
                   <p className="font-medium truncate">{t.name}</p>
-                  <p className="text-xs text-muted-foreground">{t.page_count} page{t.page_count !== 1 ? "s" : ""} • {new Date(t.created_at).toLocaleDateString()}</p>
+                  <p className="text-xs text-muted-foreground">{t.page_count} page{t.page_count !== 1 ? "s" : ""} • {formatDate(t.created_at)}</p>
                 </div>
               </div>
               <div className="flex gap-2 flex-shrink-0">

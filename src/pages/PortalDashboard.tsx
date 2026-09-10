@@ -26,6 +26,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { cn } from '@/lib/utils';
 import type { DateRange } from 'react-day-picker';
+import { formatDate, formatDateShort, formatDateTime } from "@/lib/dateFormat";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -907,7 +908,7 @@ const PortalDashboard = () => {
       if (raw === '' || raw == null) continue;
       const n = parseFloat(raw);
       if (isNaN(n) || n < 0 || n > 24) {
-        toast({ title: `Invalid hours for ${dayLabel(k)} (${format(new Date(k + 'T00:00:00'), 'MMM d')})`, description: 'Daily hours must be between 0 and 24.', variant: 'destructive' });
+        toast({ title: `Invalid hours for ${dayLabel(k)} (${formatDateShort(k)})`, description: 'Daily hours must be between 0 and 24.', variant: 'destructive' });
         return false;
       }
     }
@@ -1910,10 +1911,10 @@ const PortalDashboard = () => {
                         <CalendarIcon className="mr-2 h-4 w-4 text-blue-600" />
                         {weekStart && weekEnd ? (
                           <>
-                            {format(new Date(weekStart + 'T00:00:00'), 'MMM d, yyyy')} – {format(new Date(weekEnd + 'T00:00:00'), 'MMM d, yyyy')}
+                            {formatDate(weekStart)} – {formatDate(weekEnd)}
                           </>
                         ) : weekStart ? (
-                          <>{format(new Date(weekStart + 'T00:00:00'), 'MMM d, yyyy')} – pick end date</>
+                          <>{formatDate(weekStart)} – pick end date</>
                         ) : (
                           <span>Pick a date range</span>
                         )}
@@ -2300,7 +2301,7 @@ const PortalDashboard = () => {
                             <div className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Week summary</div>
                             <div className="text-sm font-semibold mt-0.5">
                               {weekStart && weekEnd
-                                ? `${format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – ${format(new Date(weekEnd + 'T00:00:00'), 'MMM d, yyyy')}`
+                                ? `${formatDateShort(weekStart)} – ${formatDate(weekEnd)}`
                                 : 'No week selected'}
                             </div>
                           </div>
@@ -2541,14 +2542,14 @@ const PortalDashboard = () => {
 
                     return (
                       <TableRow key={t.id} className={editingId === t.id ? 'bg-muted/40' : ''}>
-                        <TableCell>{format(new Date(t.week_ending_date), 'MMM d, yyyy')}</TableCell>
+                        <TableCell>{formatDate(t.week_ending_date)}</TableCell>
                         <TableCell className="text-right font-medium">{Number(t.total_hours).toFixed(2)}</TableCell>
                         <TableCell className="text-right">{Number(t.overtime_hours).toFixed(2)}</TableCell>
                         <TableCell className="text-right">${Number(t.incentive_amount || 0).toFixed(2)}</TableCell>
                         <TableCell>{renderStatus(clientStatus, 'client')}</TableCell>
                         <TableCell>{renderStatus(outstaStatus, 'outsta')}</TableCell>
                         <TableCell className="text-sm max-w-xs truncate">{t.notes || '—'}</TableCell>
-                        <TableCell className="text-xs text-muted-foreground">{format(new Date(t.submitted_at), 'MMM d, h:mm a')}</TableCell>
+                        <TableCell className="text-xs text-muted-foreground">{formatDateTime(t.submitted_at)}</TableCell>
                         <TableCell className="text-right">
                           {canEdit ? (
                             <div className="inline-flex items-center gap-2 justify-end">
@@ -2640,7 +2641,7 @@ const PortalDashboard = () => {
             <DialogTitle>Flag from client</DialogTitle>
             {flagDialogTimesheet?.client_reviewed_at && (
               <DialogDescription>
-                Flagged on {format(new Date(flagDialogTimesheet.client_reviewed_at), "MMMM d, yyyy 'at' h:mm a")}
+                Flagged on {formatDateTime(flagDialogTimesheet.client_reviewed_at)}
               </DialogDescription>
             )}
           </DialogHeader>
@@ -2675,7 +2676,7 @@ const PortalDashboard = () => {
               return (
                 <div key={k} className="space-y-1">
                   <Label className="text-sm">
-                    {dayLabel(k)} <span className="text-xs text-muted-foreground">({format(new Date(k + 'T00:00:00'), 'MMM d')})</span>{' '}
+                    {dayLabel(k)} <span className="text-xs text-muted-foreground">({formatDateShort(k)})</span>{' '}
                     <span className={`text-xs ${isOT ? 'text-amber-600' : 'text-muted-foreground'}`}>
                       ({reasonType})
                     </span>
@@ -2721,7 +2722,7 @@ const PortalDashboard = () => {
             const entry = days[k];
             if (!entry) return null;
             const dLabel = dayLabel(k);
-            const dateStr = format(new Date(k + 'T00:00:00'), 'MMM d, yyyy');
+            const dateStr = formatDate(k);
             const logged = computeDayBillable(entry, info?.break_duration_minutes, info?.break_is_paid);
             const expected = perDayExpected ?? 0;
             const short = Math.max(0, Number((expected - logged).toFixed(2)));
@@ -2825,7 +2826,7 @@ const PortalDashboard = () => {
             <AlertDialogDescription asChild>
               <div className="space-y-4 text-lg">
                 <div className="text-lg">
-                  Week of <strong>{weekStart && format(new Date(weekStart + 'T00:00:00'), 'MMM d')} – {weekEnding && format(new Date(weekEnding + 'T00:00:00'), 'MMM d, yyyy')}</strong> ·{' '}
+                  Week of <strong>{weekStart && formatDateShort(weekStart)} – {weekEnding && formatDate(weekEnding)}</strong> ·{' '}
                   <strong>{totalHours.toFixed(2)}</strong> total hours{excludedHours > 0 && <> (incl. <strong>{excludedHours.toFixed(2)}</strong> Sunday hrs not billed)</>}{otHours > 0 && <> · <strong>{otHours.toFixed(2)}</strong> OT hrs</>} · <strong>${parseFloat(overtimeHours || '0').toFixed(2)}</strong> incentives.
                   {info?.hourly_rate != null && (
                     <> · Invoice total <strong className="text-primary">${(billableHours * Number(info.hourly_rate) + (parseFloat(overtimeHours || '0') || 0)).toFixed(2)}</strong></>

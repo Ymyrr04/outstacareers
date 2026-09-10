@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { parseDateOnly } from '@/lib/dateOnly';
+import { formatDate } from "@/lib/dateFormat";
 
 interface ImportResult {
   successCount: number;
@@ -717,7 +718,7 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
                       </p>
                       {dup.existingAssignment.start_date && (
                         <p className="text-muted-foreground">
-                          Started: {parseDateOnly(dup.existingAssignment.start_date).toLocaleDateString()}
+                          Started: {formatDate(dup.existingAssignment.start_date)}
                         </p>
                       )}
                     </div>

@@ -76,6 +76,7 @@ import { PLDashboard } from '@/components/PLDashboard';
 import { AdminHeroBanner } from '@/components/AdminHeroBanner';
 
 import { useHeroBannerStats } from '@/hooks/useHeroBannerStats';
+import { formatDate } from "@/lib/dateFormat";
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 // Status options for applicant tracking - new pipeline order
@@ -1687,13 +1688,7 @@ const Admin = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatDate(dateString);
   };
 
   const BooleanBadge = ({ value, label }: { value: boolean; label: string }) => (
@@ -3285,7 +3280,7 @@ const Admin = () => {
                                     </Badge>
                                     {applicant.availability_checked_at && (
                                       <span className="text-xs text-muted-foreground ml-1">
-                                        {format(new Date(applicant.availability_checked_at), 'MM/dd/yy')}
+                                        {formatDate(applicant.availability_checked_at)}
                                       </span>
                                     )}
                                   </>
@@ -4072,7 +4067,7 @@ const Admin = () => {
           {/* PL Tab */}
           <TabsContent value="pl" className="space-y-6">
             <AdminHeroBanner
-              eyebrow={`PL — Week ending ${heroStats.plWeekEnding ? format(new Date(heroStats.plWeekEnding + 'T12:00:00'), 'MMM d, yyyy') : '—'}`}
+              eyebrow={`PL — Week ending ${heroStats.plWeekEnding ? formatDate(heroStats.plWeekEnding) : '—'}`}
               title={`${heroNum(heroStats.plSubmitted)} of ${heroNum(heroStats.activeContractors)} contractors submitted this week`}
               chips={[
                 `${heroStats.plTotalHours.toFixed(1)} total hours`,

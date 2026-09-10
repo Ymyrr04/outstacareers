@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Briefcase, ChevronDown, ChevronRight, Users, Percent, Award, X } from 'lucide-react';
+import { formatDate } from "@/lib/dateFormat";
 
 export interface AssignmentRow {
   id: string;
@@ -26,7 +27,7 @@ const ACTIVE_STATUSES = ['active', 'rendering', 'scheduled'];
 const isActiveStatus = (s: string) => ACTIVE_STATUSES.includes(s);
 
 const fmtDate = (d: string | null) =>
-  d ? new Date(d).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : '—';
+  d ? formatDate(d) : '—';
 
 const durationDays = (start: string | null, end: string | null) => {
   if (!start) return null;

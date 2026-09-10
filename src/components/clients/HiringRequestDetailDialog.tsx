@@ -30,6 +30,7 @@ import kristineAvatar from '@/assets/team/kristine.png';
 import eduardoAvatar from '@/assets/team/eduardo.png';
 import markAvatar from '@/assets/team/mark.png';
 import liezlAvatar from '@/assets/team/liezl-new.png';
+import { formatDate, formatDateTime } from "@/lib/dateFormat";
 
 const ADMIN_AVATARS: Record<string, string> = {
   'czarina@outsta.io': czaAvatar,
@@ -648,7 +649,7 @@ export const HiringRequestDetailDialog = ({
                 </Select>
                 {request.pipeline_stage === 'closed' && request.closed_at && (
                   <Badge variant="outline" className="font-normal text-emerald-600 border-emerald-300">
-                    {format(new Date(request.closed_at), 'MMM d, yyyy')}
+                    {formatDate(request.closed_at)}
                   </Badge>
                 )}
               </div>
@@ -1049,7 +1050,7 @@ export const HiringRequestDetailDialog = ({
                       </div>
                       <div className="flex items-center gap-2">
                         <span className="text-xs text-muted-foreground">
-                          {format(new Date(comment.created_at), 'MMM d, h:mm a')}
+                          {formatDateTime(comment.created_at)}
                         </span>
                         {isOwnComment && !isEditing && (
                           <div className="flex items-center gap-1">
@@ -1249,7 +1250,7 @@ export const HiringRequestDetailDialog = ({
           {/* Footer */}
           <div className="flex items-center gap-4 px-4 py-3 bg-muted/20">
             <div className="text-xs text-muted-foreground">
-              Created: {format(new Date(request.created_at), 'MMM d, yyyy h:mm a')}
+              Created: {formatDateTime(request.created_at)}
             </div>
             <div className="flex items-center gap-2">
               {saving && <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />}

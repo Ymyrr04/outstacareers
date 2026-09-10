@@ -7,6 +7,7 @@ import { RichTextEditor, plainTextToHtml } from "@/components/gmail/RichTextEdit
 import { RecipientInput } from "@/components/gmail/RecipientInput";
 import { AttachButton, AttachmentList, serializeAttachments, MAX_TOTAL_BYTES, type PendingAttachment } from "@/components/gmail/ComposeAttachments";
 import AutoReplyRulesManager from "@/components/gmail/AutoReplyRulesManager";
+import { formatDateTime, formatTime, formatDateShort, formatDate as formatDateFull } from "@/lib/dateFormat";
 
 
 
@@ -92,9 +93,9 @@ function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
   const now = new Date();
   const isToday = d.toDateString() === now.toDateString();
-  if (isToday) return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  if (isToday) return formatTime(dateStr, "");
   const isThisYear = d.getFullYear() === now.getFullYear();
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", ...(isThisYear ? {} : { year: "numeric" }) });
+  return isThisYear ? formatDateShort(dateStr, "") : formatDateFull(dateStr, "");
 }
 
 export default function GmailPanel() {
@@ -831,7 +832,7 @@ export default function GmailPanel() {
                               {m.cc ? ` · cc: ${m.cc}` : ""}
                             </div>
                             <div className="text-[11px] text-muted-foreground">
-                              {m.date && new Date(m.date).toLocaleString()}
+                              {m.date && formatDateTime(m.date)}
                             </div>
                           </button>
 

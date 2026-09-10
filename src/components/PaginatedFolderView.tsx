@@ -15,6 +15,7 @@ import { format } from 'date-fns';
 import { ApplicantSourceBadge } from '@/components/ApplicantSourceBadge';
 import { ApplicationHistoryBadge } from '@/components/ApplicationHistoryBadge';
 import { CopyableText } from '@/components/CopyableText';
+import { formatDateShort } from "@/lib/dateFormat";
 
 interface PaginatedFolderViewProps {
   status: string;
@@ -300,7 +301,7 @@ export const PaginatedFolderView = ({
                           
                           <span className="flex items-center gap-1 text-xs">
                             <Clock className="w-3 h-3" />
-                            {format(new Date(applicant.submitted_at), 'MMM d')}
+                            {formatDateShort(applicant.submitted_at)}
                           </span>
                         </div>
 

@@ -21,6 +21,7 @@ import { CollapsibleSection } from '@/components/pl/CollapsibleSection';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { PLReport } from '@/components/pl/PLReport';
 import { parseDateOnly } from '@/lib/dateOnly';
+import { formatDate, formatDateShort, formatDateTime, formatDateWithWeekday } from "@/lib/dateFormat";
 
 interface TimesheetRow {
   id: string;
@@ -116,7 +117,7 @@ const ClientApprovalBadge = ({
             </div>
             {reviewedAt && (
               <div className="text-xs text-muted-foreground pt-1 border-t">
-                Flagged {format(new Date(reviewedAt), 'MMM d, yyyy h:mm a')}
+                Flagged {formatDateTime(reviewedAt)}
               </div>
             )}
           </div>
@@ -778,7 +779,7 @@ export const PLDashboard = () => {
       ? Object.entries(r.daily_hours).filter(([, v]) => Number(v?.hours) > 10).map(([k]) => k)
       : [];
     const summary = overDays.length ? `\n\nDays >10 hrs: ${overDays.join(', ')}` : '';
-    if (!confirm(`${decision === 'approved' ? 'Approve' : 'Reject'} timesheet for ${r.contractor?.applicant?.full_name} (week ending ${format(new Date(r.week_ending_date), 'MMM d, yyyy')})?${summary}`)) return;
+    if (!confirm(`${decision === 'approved' ? 'Approve' : 'Reject'} timesheet for ${r.contractor?.applicant?.full_name} (week ending ${formatDate(r.week_ending_date)})?${summary}`)) return;
     const { error } = await supabase
       .from('contractor_timesheets')
       .update({ status: decision })
@@ -1035,7 +1036,7 @@ export const PLDashboard = () => {
       const pMatch = link
         ? (pv?.amount != null ? (Math.abs(pv.amount - invoice) < 0.01 ? 'Match' : 'Mismatch') : 'pending')
         : 'no link';
-      const submittedEst = new Date(r.submitted_at).toLocaleString('en-US', { timeZone: 'America/New_York' });
+      const submittedEst = formatDateTime(r.submitted_at);
 
       return [
         r.contractor?.applicant?.full_name || '',
@@ -1216,7 +1217,7 @@ export const PLDashboard = () => {
                           ) : (
                             <Badge variant="secondary" className="capitalize w-fit">{c.latestTimesheet.status}</Badge>
                           )}
-                          <span className="text-xs text-muted-foreground">Wk {format(new Date(c.latestTimesheet.week_ending_date), 'MMM d')}</span>
+                          <span className="text-xs text-muted-foreground">Wk {formatDateShort(c.latestTimesheet.week_ending_date)}</span>
                         </div>
                       ) : (
                         <Badge variant="outline" className="text-muted-foreground">Not submitted</Badge>
@@ -1418,7 +1419,7 @@ export const PLDashboard = () => {
                           ) : (
                             <Badge variant="secondary" className="capitalize w-fit">{c.latestTimesheet.status}</Badge>
                           )}
-                          <span className="text-xs text-muted-foreground">Wk {format(new Date(c.latestTimesheet.week_ending_date), 'MMM d')}</span>
+                          <span className="text-xs text-muted-foreground">Wk {formatDateShort(c.latestTimesheet.week_ending_date)}</span>
                         </div>
                       ) : (
                         <Badge variant="outline" className="text-muted-foreground">Not submitted</Badge>
@@ -1706,7 +1707,7 @@ export const PLDashboard = () => {
                       </TableCell>
                       <TableCell>{r.contractor?.client?.company_name || '—'}</TableCell>
                       
-                      <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
+                      <TableCell>{formatDate(r.week_ending_date)}</TableCell>
                       <TableCell className="text-right font-medium">
                         {(() => {
                           const expected = Number(r.contractor?.hours_per_week || 0);
@@ -1794,7 +1795,7 @@ export const PLDashboard = () => {
                           />
                         </div>
                       </TableCell>
-                      <TableCell className="text-xs text-muted-foreground">{format(new Date(r.submitted_at), 'MMM d, h:mm a')}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground">{formatDateTime(r.submitted_at)}</TableCell>
                     </TableRow>
                   );
                 })}
@@ -1930,7 +1931,7 @@ export const PLDashboard = () => {
                       <div className="font-medium">{r.contractor?.applicant?.full_name || '—'}</div>
                       <div className="text-xs text-muted-foreground">{r.contractor?.applicant?.email}</div>
                     </TableCell>
-                    <TableCell>{format(new Date(r.week_ending_date), 'MMM d, yyyy')}</TableCell>
+                    <TableCell>{formatDate(r.week_ending_date)}</TableCell>
                     <TableCell className="text-right font-medium">
                       {(() => {
                         const expected = Number(r.contractor?.hours_per_week || 0);
@@ -1958,7 +1959,7 @@ export const PLDashboard = () => {
                         <Badge variant="secondary" className="capitalize">{r.status}</Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{format(new Date(r.submitted_at), 'MMM d, h:mm a')}</TableCell>
+                    <TableCell className="text-xs text-muted-foreground">{formatDateTime(r.submitted_at)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
                         <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setViewTimesheet(r)}>
@@ -2025,7 +2026,7 @@ export const PLDashboard = () => {
           <DialogHeader>
             <DialogTitle>Timesheet Submission</DialogTitle>
             <DialogDescription>
-              {viewTimesheet?.contractor?.applicant?.full_name} — Week ending {viewTimesheet ? format(new Date(viewTimesheet.week_ending_date), 'MMM d, yyyy') : ''}
+              {viewTimesheet?.contractor?.applicant?.full_name} — Week ending {viewTimesheet ? formatDate(viewTimesheet.week_ending_date) : ''}
             </DialogDescription>
           </DialogHeader>
           {viewTimesheet && (() => {
@@ -2039,7 +2040,7 @@ export const PLDashboard = () => {
             const expectedWeekly = Number(r.contractor?.hours_per_week || 0);
             const weeklyDiff = expectedWeekly > 0 ? Number(r.total_hours) - expectedWeekly : 0;
             const dep = computeDeposit(r);
-            const fmtDayLabel = (k: string) => isDated ? format(new Date(k), 'EEE, MMM d') : k.charAt(0).toUpperCase() + k.slice(1);
+            const fmtDayLabel = (k: string) => isDated ? formatDateWithWeekday(k) : k.charAt(0).toUpperCase() + k.slice(1);
             return (
               <div className="space-y-4 text-sm py-2">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
@@ -2047,8 +2048,8 @@ export const PLDashboard = () => {
                   <ProfileField label="Email" value={r.contractor?.applicant?.email} />
                   <ProfileField label="Company" value={r.contractor?.client?.company_name} />
                   <ProfileField label="Job title" value={r.contractor?.job_title} />
-                  <ProfileField label="Week ending" value={format(new Date(r.week_ending_date), 'MMM d, yyyy')} />
-                  <ProfileField label="Submitted" value={format(new Date(r.submitted_at), 'MMM d, yyyy h:mm a')} />
+                  <ProfileField label="Week ending" value={formatDate(r.week_ending_date)} />
+                  <ProfileField label="Submitted" value={formatDateTime(r.submitted_at)} />
                   <ProfileField label="Total hours" value={Number(r.total_hours).toFixed(2)} />
                   <ProfileField label="Overtime" value={Number(r.overtime_hours).toFixed(2)} />
                   <ProfileField label="Invoice amount" value={r.contractor?.hourly_rate != null ? `$${(Number(r.total_hours) * Number(r.contractor.hourly_rate)).toFixed(2)}` : '—'} />
@@ -2361,7 +2362,7 @@ export const PLDashboard = () => {
                                 </Badge>
                               </TableCell>
                               <TableCell className="text-xs text-muted-foreground">
-                                {inv.submitted_at ? format(new Date(inv.submitted_at), 'MMM d, yyyy') : '—'}
+                                {inv.submitted_at ? formatDate(inv.submitted_at) : '—'}
                               </TableCell>
                             </TableRow>
                           );

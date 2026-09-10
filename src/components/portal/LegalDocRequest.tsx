@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, FileText } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatDate } from "@/lib/dateFormat";
 
 const DOC_TYPES = ['COE', 'Copy of contract', 'Pay Deposit Certificate'] as const;
 
@@ -168,7 +169,7 @@ export const LegalDocRequest: React.FC<Props> = ({ contractorAssignmentId }) => 
               <TableBody>
                 {history.map((row) => (
                   <TableRow key={row.id}>
-                    <TableCell className="whitespace-nowrap">{format(new Date(row.created_at), 'MMM d, yyyy')}</TableCell>
+                    <TableCell className="whitespace-nowrap">{formatDate(row.created_at)}</TableCell>
                     <TableCell>{row.doc_types.join(', ')}</TableCell>
                     <TableCell className="max-w-[280px]">
                       <span className="line-clamp-2 text-sm">{row.reason}</span>

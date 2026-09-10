@@ -10,6 +10,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Plus, Trash2, Check, X, Settings2, MessageSquare, CheckCheck } from 'lucide-react';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { parseCheckinItem } from '@/lib/checkinItem';
+import { formatDateTime, formatDateWithWeekday } from "@/lib/dateFormat";
 
 // Today's calendar date in US Eastern (app-wide standard), not UTC.
 const estToday = () =>
@@ -407,7 +408,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
                   <div>
                     <p className="text-sm font-semibold">{m.subject}</p>
                     <p className="text-[11px] text-muted-foreground">
-                      {new Date(m.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                      {formatDateTime(m.created_at)}
                     </p>
                   </div>
                   {!m.read_at && (
@@ -423,7 +424,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
                       {m.body_html && <FormattedNotes content={m.body_html} className="mb-2" />}
                       <div className="flex items-center justify-between gap-2">
                         <div className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 flex items-center gap-1">
-                          <Check className="w-3 h-3" /> Submitted {new Date(m.submitted_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                          <Check className="w-3 h-3" /> Submitted {formatDateTime(m.submitted_at)}
                         </div>
                         <Button
                           variant="ghost"
@@ -566,7 +567,7 @@ export const DailyCheckin = ({ contractorAssignmentId, contractorName, jobTitle,
               const totalItems = ((r.sections as any[]) || []).reduce((s, sec) => s + (sec.checked?.length || 0), 0);
               return (
                 <div key={r.id} className="flex items-center justify-between text-sm border rounded-md px-3 py-2">
-                  <span className="font-medium">{new Date(r.checkin_date).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}</span>
+                  <span className="font-medium">{formatDateWithWeekday(r.checkin_date)}</span>
                   <span className="text-xs text-muted-foreground">{totalItems} item{totalItems === 1 ? '' : 's'}{r.additional_notes ? ' · with notes' : ''}</span>
                 </div>
               );

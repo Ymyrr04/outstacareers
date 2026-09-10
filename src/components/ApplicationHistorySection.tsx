@@ -2,6 +2,7 @@ import { Badge } from '@/components/ui/badge';
 import { RotateCcw, Briefcase, Calendar, Star } from 'lucide-react';
 import { format } from 'date-fns';
 import { useApplicationHistory } from '@/hooks/useApplicationHistory';
+import { formatDate } from "@/lib/dateFormat";
 
 interface ApplicationHistorySectionProps {
   email: string;
@@ -53,7 +54,7 @@ export function ApplicationHistorySection({ email, currentId, phone }: Applicati
               </Badge>
               <span className="text-xs text-muted-foreground flex items-center gap-1">
                 <Calendar className="w-3 h-3" />
-                {format(new Date(app.submitted_at), 'MMM d, yyyy')}
+                {formatDate(app.submitted_at)}
               </span>
             </div>
           </div>

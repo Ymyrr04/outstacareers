@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Send, Loader2, Clock, CalendarIcon, FileText } from 'lucide-react';
 import { RichTextToolbar } from '@/components/RichTextToolbar';
+import { formatDateTime } from "@/lib/dateFormat";
 
 interface ContractorEmailRecipient {
   assignmentId: string;
@@ -186,7 +187,7 @@ export const SendContractorEmailDialog = ({ open, onOpenChange, contractor, onEm
       toast({
         title: data?.scheduled ? 'Email Scheduled' : 'Email Sent',
         description: data?.scheduled
-          ? `Email scheduled for ${format(new Date(scheduleFor!), 'MMM d, yyyy h:mm a')}`
+          ? `Email scheduled for ${formatDateTime(scheduleFor!)}`
           : `Email sent to ${contractor.name}`,
       });
 

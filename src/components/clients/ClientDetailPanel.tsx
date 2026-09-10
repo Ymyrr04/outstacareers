@@ -23,6 +23,7 @@ import { AddContractorDialog } from './AddContractorDialog';
 import { AddCommunicationDialog } from './AddCommunicationDialog';
 import { ClientPortalAccountsSection } from './ClientPortalAccountsSection';
 import { parseDateOnly } from '@/lib/dateOnly';
+import { formatDateTime } from "@/lib/dateFormat";
 
 // Hiring Toggle Component
 const HiringToggle = ({ clientId, isHiring, onUpdate }: { clientId: string; isHiring: boolean; onUpdate: () => void }) => {
@@ -911,7 +912,7 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                               )}
                             </div>
                             <span className="text-xs text-muted-foreground">
-                              {format(new Date(comm.communication_date), 'MMM d, yyyy h:mm a')}
+                              {formatDateTime(comm.communication_date)}
                             </span>
                           </div>
                           {comm.subject && <p className="font-medium mt-1">{comm.subject}</p>}

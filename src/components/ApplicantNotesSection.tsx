@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import { format } from 'date-fns';
+import { formatDateTime } from "@/lib/dateFormat";
 
 interface ApplicantNote {
   id: string;
@@ -37,7 +38,7 @@ export function ApplicantNotesSection({ applicantId }: { applicantId: string }) 
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <span className="font-medium">{getAdminDisplayName(note.created_by, 'Unknown')}</span>
             <span>•</span>
-            <span>{format(new Date(note.created_at), 'MMM d, yyyy h:mm a')}</span>
+            <span>{formatDateTime(note.created_at)}</span>
           </div>
           <FormattedNotes content={note.content} />
         </div>

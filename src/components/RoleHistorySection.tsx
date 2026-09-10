@@ -1,6 +1,7 @@
 import { Badge } from '@/components/ui/badge';
 import { Briefcase, History } from 'lucide-react';
 import { format } from 'date-fns';
+import { formatDateShort } from "@/lib/dateFormat";
 
 interface RoleHistorySectionProps {
   currentJobTitle: string;
@@ -45,7 +46,7 @@ export function RoleHistorySection({
         
         {reprofiledAt && (
           <p className="text-xs text-muted-foreground pt-1 border-t">
-            Reprofiled on {format(new Date(reprofiledAt), 'PPP')}
+            Reprofiled on {formatDateShort(reprofiledAt)}
           </p>
         )}
       </div>

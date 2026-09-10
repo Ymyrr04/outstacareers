@@ -15,6 +15,7 @@ import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sh
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Building2, TrendingUp, TrendingDown, Users, GripVertical, ArrowUpDown, ArrowUp, ArrowDown, Globe, UserPlus, Languages } from 'lucide-react';
+import { formatDate } from "@/lib/dateFormat";
 import {
   BarChart,
   Bar,
@@ -2102,19 +2103,11 @@ export const ClientAnalyticsDashboard = () => {
                       <TableCell className="font-medium">{row.name}</TableCell>
                       <TableCell>
                         {row.hiredDate
-                          ? new Date(row.hiredDate).toLocaleDateString(undefined, {
-                              year: 'numeric',
-                              month: 'short',
-                              day: 'numeric',
-                            })
+                          ? formatDate(row.hiredDate)
                           : '—'}
                       </TableCell>
                       <TableCell>
-                        {new Date(row.date).toLocaleDateString(undefined, {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                        })}
+                        {formatDate(row.date)}
                       </TableCell>
                       <TableCell className="whitespace-nowrap text-muted-foreground">
                         {row.tenure}
@@ -2196,11 +2189,7 @@ export const ClientAnalyticsDashboard = () => {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {new Date(row.lastHiredDate).toLocaleDateString(undefined, {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric',
-                        })}
+                        {formatDate(row.lastHiredDate)}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {formatAvgGap(row.avgGapDays)}

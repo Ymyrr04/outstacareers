@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { Send, Loader2, MessageSquare, ListChecks, Mail } from 'lucide-react';
 import { WysiwygEditor } from '@/components/WysiwygEditor';
+import { formatDate } from "@/lib/dateFormat";
 
 interface SendCheckinEmailDialogProps {
   open: boolean;
@@ -92,7 +93,7 @@ export const SendCheckinEmailDialog = ({ open, onOpenChange, contractor, stage }
     const firstName = toProperCase(contractor.contractorFirstName || fullName.split(' ')[0] || '');
     const lastName = toProperCase((contractor.contractorName || '').split(' ').slice(1).join(' '));
     const startDate = contractor.startDate
-      ? new Date(contractor.startDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      ? formatDate(contractor.startDate)
       : '';
     return {
       // Contractor-sourced tokens (match Template Library merge tags)

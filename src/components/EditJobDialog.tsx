@@ -21,6 +21,7 @@ import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import JobClientSelect from '@/components/JobClientSelect';
 import JobInterviewQuestionsManager from '@/components/JobInterviewQuestionsManager';
 import { JobDescriptionParser } from '@/components/JobDescriptionParser';
+import { formatDateTime } from "@/lib/dateFormat";
 
 interface AdminUser {
   user_id: string;
@@ -445,7 +446,7 @@ const EditJobDialog = ({ job, onJobUpdated }: EditJobDialogProps) => {
                 <div className="text-xs text-muted-foreground">
                   {job.linkedin_posted_at ? (
                     <>
-                      Posted {new Date(job.linkedin_posted_at).toLocaleString()}
+                      Posted {formatDateTime(job.linkedin_posted_at)}
                       {job.linkedin_post_url && (
                         <> · <a href={job.linkedin_post_url} target="_blank" rel="noreferrer" className="underline">View post</a></>
                       )}

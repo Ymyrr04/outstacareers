@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { supabase } from '@/integrations/supabase/client';
+import { formatDate, formatDateTime } from "@/lib/dateFormat";
 
 // Helper to strip HTML tags and convert to plain text
 const stripHtml = (html: string | null | undefined): string => {
@@ -59,7 +60,7 @@ export const exportJobs = async (): Promise<{ success: boolean; count: number; e
       job.rate,
       job.region,
       job.is_active ? 'Active' : 'Inactive',
-      job.created_at ? new Date(job.created_at).toLocaleDateString() : '',
+      job.created_at ? formatDate(job.created_at) : '',
       job.description,
       (job.qualifications || []).join('; '),
       (job.responsibilities || []).join('; '),
@@ -171,7 +172,7 @@ export const exportApplicants = async (options?: {
         a.currently_working ? 'Yes' : 'No',
         a.has_experience ? 'Yes' : 'No',
         a.job_source,
-        a.submitted_at ? new Date(a.submitted_at).toLocaleString() : '',
+        a.submitted_at ? formatDateTime(a.submitted_at) : '',
         stripHtml(a.notes),
         cvFilenames[a.id] || '',
       ]);
@@ -209,7 +210,7 @@ export const exportApplicants = async (options?: {
       a.currently_working ? 'Yes' : 'No',
       a.has_experience ? 'Yes' : 'No',
       a.job_source,
-      a.submitted_at ? new Date(a.submitted_at).toLocaleString() : '',
+      a.submitted_at ? formatDateTime(a.submitted_at) : '',
       stripHtml(a.notes),
     ]);
 
@@ -253,7 +254,7 @@ export const exportPipeline = async (stageSlugs?: string[]): Promise<{ success: 
       r.start_date,
       r.target_end_date,
       stripHtml(r.notes),
-      r.created_at ? new Date(r.created_at).toLocaleString() : '',
+      r.created_at ? formatDateTime(r.created_at) : '',
     ]);
 
     const csv = generateCSV(headers, rows);
@@ -396,7 +397,7 @@ export const exportAllData = async (
       const headers = ['Title', 'Department', 'Rate', 'Region', 'Status', 'Created At', 'Description'];
       const rows = jobsRes.data.map(job => [
         job.title, job.department, job.rate, job.region, job.is_active ? 'Active' : 'Inactive',
-        job.created_at ? new Date(job.created_at).toLocaleDateString() : '', job.description,
+        job.created_at ? formatDate(job.created_at) : '', job.description,
       ]);
       zip.file(`jobs_${dateStr}.csv`, generateCSV(headers, rows));
     }
@@ -406,7 +407,7 @@ export const exportAllData = async (
       const headers = ['Full Name', 'Email', 'Phone', 'Location', 'Job Title', 'Status', 'Total Score', 'Submitted At'];
       const rows = applicantsRes.data.map(a => [
         a.full_name, a.email, a.phone, a.location, a.job_title, a.status, a.total_score,
-        a.submitted_at ? new Date(a.submitted_at).toLocaleString() : '',
+        a.submitted_at ? formatDateTime(a.submitted_at) : '',
       ]);
       zip.file(`applicants_${dateStr}.csv`, generateCSV(headers, rows));
     }
@@ -416,7 +417,7 @@ export const exportAllData = async (
       const headers = ['Job Title', 'Client', 'Pipeline Stage', 'Priority', 'Client Status', 'Industry', 'Created At'];
       const rows = pipelineRes.data.map((r: any) => [
         r.job_title, r.clients?.company_name || '', r.pipeline_stage, r.priority, r.client_status,
-        r.industry, r.created_at ? new Date(r.created_at).toLocaleString() : '',
+        r.industry, r.created_at ? formatDateTime(r.created_at) : '',
       ]);
       zip.file(`pipeline_${dateStr}.csv`, generateCSV(headers, rows));
     }

@@ -5,6 +5,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, CalendarCheck, CheckCircle2, XCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
+import { formatDateTime } from "@/lib/dateFormat";
 
 interface CheckAvailabilityButtonProps {
   applicantId: string;
@@ -90,7 +91,7 @@ export function CheckAvailabilityButton({
       
       {availabilityCheckedAt && (
         <p className="text-xs text-muted-foreground">
-          Last checked: {format(new Date(availabilityCheckedAt), 'PPP p')}
+          Last checked: {formatDateTime(availabilityCheckedAt)}
         </p>
       )}
     </div>

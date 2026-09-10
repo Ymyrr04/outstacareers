@@ -12,6 +12,7 @@ import { ApplicantSourceBadge } from '@/components/ApplicantSourceBadge';
 import { CopyableText } from '@/components/CopyableText';
 import { ApplicationHistoryBadge } from '@/components/ApplicationHistoryBadge';
 import type { PaginatedApplicant } from '@/hooks/usePaginatedApplicants';
+import { formatDate } from "@/lib/dateFormat";
 
 interface VirtualizedApplicantListProps {
   applicants: PaginatedApplicant[];
@@ -275,7 +276,7 @@ export const VirtualizedApplicantList = ({
                           </span>
                           <span className="flex items-center gap-1">
                             <Clock className="w-3 h-3" />
-                            {format(new Date(applicant.submitted_at), 'MMM d, yyyy')}
+                            {formatDate(applicant.submitted_at)}
                           </span>
                         </div>
 
