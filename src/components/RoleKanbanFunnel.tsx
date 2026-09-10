@@ -1138,6 +1138,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     return groups;
   }, [filteredCandidates, sortOption, additionalProfileIds, primaryProfileIds, orderedFunnelStages]);
 
+  // A hidden stage temporarily reappears (display-only) when a search matches candidates inside it.
+  const searchActive = candidateSearch.trim().length > 0 || appliedProfileSearch.trim().length > 0;
+  const displayedStages = useMemo(() => {
+    return orderedFunnelStages.filter((stage) => {
+      if (!hiddenStages.includes(stage)) return true;
+      return searchActive && (stageGroups[stage]?.length ?? 0) > 0;
+    });
+  }, [orderedFunnelStages, hiddenStages, searchActive, stageGroups]);
+
   const totalInPipeline = useMemo(
     () => Object.values(stageGroups).reduce((sum, arr) => sum + arr.length, 0),
     [stageGroups]
