@@ -2090,6 +2090,7 @@ export const PLDashboard = () => {
                               <TableRow key={k}>
                                 <TableCell className="font-medium">{fmtDayLabel(k)}</TableCell>
                                 <TableCell className={`text-right ${isOver ? 'text-amber-600 font-medium' : ''}`}>{hrs.toFixed(2)}</TableCell>
+                                <TableCell className="text-sm whitespace-nowrap">{renderShiftTimes(v as any)}</TableCell>
                                 <TableCell className="text-sm">{reason || <span className="text-muted-foreground">—</span>}</TableCell>
                               </TableRow>
                             );
