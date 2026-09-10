@@ -2041,6 +2041,31 @@ export const PLDashboard = () => {
             const weeklyDiff = expectedWeekly > 0 ? Number(r.total_hours) - expectedWeekly : 0;
             const dep = computeDeposit(r);
             const fmtDayLabel = (k: string) => isDated ? formatDateWithWeekday(k) : k.charAt(0).toUpperCase() + k.slice(1);
+            const fmt12 = (t?: string) => {
+              if (!t || typeof t !== 'string') return '';
+              const [hStr, mStr] = t.split(':');
+              const h = parseInt(hStr, 10);
+              const m = parseInt(mStr, 10);
+              if (Number.isNaN(h) || Number.isNaN(m)) return t;
+              const ampm = h >= 12 ? 'PM' : 'AM';
+              return `${h % 12 || 12}:${String(m).padStart(2, '0')} ${ampm}`;
+            };
+            const renderShiftTimes = (d: any) => {
+              if (!d) return <span className="text-muted-foreground">—</span>;
+              const parts: JSX.Element[] = [];
+              if (d.time_in && d.time_out) parts.push(<span key="main">{fmt12(d.time_in)} – {fmt12(d.time_out)}</span>);
+              const extras: any[] = Array.isArray(d.shifts) && d.shifts.length
+                ? d.shifts
+                : (d.time_in_2 && d.time_out_2 ? [{ time_in: d.time_in_2, time_out: d.time_out_2, note: d.note_2 }] : []);
+              extras.filter((s) => s?.time_in && s?.time_out).forEach((s, i) => {
+                parts.push(
+                  <span key={`x${i}`} className="block text-muted-foreground">
+                    {fmt12(s.time_in)} – {fmt12(s.time_out)}{s.note ? ` (${s.note})` : ''}
+                  </span>
+                );
+              });
+              return parts.length ? <>{parts}</> : <span className="text-muted-foreground">—</span>;
+            };
             return (
               <div className="space-y-4 text-sm py-2">
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-x-6 gap-y-3">
@@ -2077,6 +2102,7 @@ export const PLDashboard = () => {
                           <TableRow>
                             <TableHead>Day</TableHead>
                             <TableHead className="text-right">Hours</TableHead>
+                            <TableHead>Log In / Log Out</TableHead>
                             <TableHead>Reason / Notes</TableHead>
                           </TableRow>
                         </TableHeader>
@@ -2089,6 +2115,7 @@ export const PLDashboard = () => {
                               <TableRow key={k}>
                                 <TableCell className="font-medium">{fmtDayLabel(k)}</TableCell>
                                 <TableCell className={`text-right ${isOver ? 'text-amber-600 font-medium' : ''}`}>{hrs.toFixed(2)}</TableCell>
+                                <TableCell className="text-sm whitespace-nowrap">{renderShiftTimes(v as any)}</TableCell>
                                 <TableCell className="text-sm">{reason || <span className="text-muted-foreground">—</span>}</TableCell>
                               </TableRow>
                             );
