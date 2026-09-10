@@ -1692,7 +1692,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                       />
                     )}
                     <div className="p-1.5 flex flex-col gap-[5px]">
-                      {stageCandidates.length === 0 ? (
+                      {visibleCandidates.length === 0 ? (
                         <p className={cn(
                           "text-[10px] text-muted-foreground text-center py-5",
                           dropTargetStage === stage && draggedCandidate && "text-primary font-medium"
@@ -1700,7 +1700,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                           {dropTargetStage === stage && draggedCandidate ? 'Drop here' : 'No candidates'}
                         </p>
                       ) : (
-                        stageCandidates.map((candidate) => (
+                        visibleCandidates.map((candidate) => (
                           <CandidateCard
                             key={candidate.id}
                             candidate={candidate}
@@ -1730,6 +1730,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                             onReprofiled={handleReprofiled}
                           />
                         ))
+                      )}
+                      {totalCount > visibleCandidates.length && (
+                        <button
+                          type="button"
+                          onClick={() => handleShowMore(stage, totalCount)}
+                          className="w-full text-[11px] text-muted-foreground hover:text-foreground py-2 border-t border-[#C8F0F8] bg-transparent hover:bg-muted/30 transition-colors"
+                        >
+                          + Show {totalCount - visibleCandidates.length} more
+                        </button>
                       )}
                     </div>
                   </div>
