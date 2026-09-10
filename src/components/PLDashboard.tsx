@@ -1064,7 +1064,7 @@ export const PLDashboard = () => {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     const weekLabel = weekMonday
-      ? `${format(weekMonday, 'yyyy-MM-dd')}_to_${formatDate(weekMonday.getTime() + 6 * 86400000)}`
+      ? `${format(weekMonday, 'yyyy-MM-dd')}_to_${format(new Date(weekMonday.getTime() + 6 * 86400000), 'yyyy-MM-dd')}`
       : 'all-weeks';
     a.href = url;
     a.download = `timesheet-submissions_${weekLabel}.csv`;
@@ -1587,7 +1587,7 @@ export const PLDashboard = () => {
                 <PopoverTrigger asChild>
                   <button type="button" className="px-3 h-full text-xs font-medium whitespace-nowrap hover:bg-primary/10 min-w-[200px]">
                     {weekMonday
-                      ? `${format(weekMonday, 'EEE MMM d')} – ${formatDateWithWeekday(weekMonday.getTime() + 6 * 86400000)}`
+                      ? `${format(weekMonday, 'EEE MMM d')} – ${format(new Date(weekMonday.getTime() + 6 * 86400000), 'EEE MMM d, yyyy')}`
                       : 'All weeks'}
                   </button>
                 </PopoverTrigger>
