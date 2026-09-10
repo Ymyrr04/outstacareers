@@ -16,7 +16,7 @@ import {
   ContextMenuSubContent,
 } from '@/components/ui/context-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity, FileSignature, Loader2, Tag as TagIcon, X as XIcon, Briefcase, UserCog, Calendar, CalendarCheck, CheckCircle2, XCircle } from 'lucide-react';
+import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity, FileSignature, Loader2, Tag as TagIcon, X as XIcon, Briefcase, UserCog, Calendar, CalendarCheck, CheckCircle2, XCircle, Columns3 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
@@ -45,6 +45,7 @@ import { StageEmailConfirmDialog, type PendingStageEmail } from '@/components/St
 import { StageNoteDialog, type PendingStageNote } from '@/components/StageNoteDialog';
 import { AddCandidateCalendarDialog } from '@/components/AddCandidateCalendarDialog';
 import { useStageSettings } from '@/hooks/useStageSettings';
+import { useAuth } from '@/hooks/useAuth';
 
 const FUNNEL_STAGES = [
   'For Review',
