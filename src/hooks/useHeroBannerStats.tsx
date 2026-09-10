@@ -309,7 +309,9 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
 
       // --- Contractors / clients ---
       const allAssignments = (assignmentsRes.data || []) as any[];
-      const assignments = scoped ? allAssignments.filter((a) => isMine(a.hired_by)) : allAssignments;
+      // Contractor / client headline numbers are platform-wide so they match the
+      // Contractors list, which is not filtered per admin.
+      const assignments = allAssignments;
       // Internal OutSta team is shown separately on the dashboard, so exclude it here
       const external = assignments.filter((a) => a.client_id !== INTERNAL_CLIENT_ID);
       const active = external.filter((a) => a.status === 'active');
