@@ -1524,7 +1524,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
               const colors = STAGE_COLORS[stage];
               const colorOverride = getStageColorOverride(stage);
               const stageCandidates = stageGroups[stage];
-
+              const totalCount = stageCandidates.length;
+              const visibleCandidates = getColumnCards(stage, stageCandidates);
 
               return (
                 <div
