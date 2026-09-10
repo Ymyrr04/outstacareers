@@ -46,7 +46,7 @@ import { StageNoteDialog, type PendingStageNote } from '@/components/StageNoteDi
 import { AddCandidateCalendarDialog } from '@/components/AddCandidateCalendarDialog';
 import { useStageSettings } from '@/hooks/useStageSettings';
 import { useAuth } from '@/hooks/useAuth';
-import { formatDateTime } from "@/lib/dateFormat";
+import { formatDateTime, formatDate, formatTime } from "@/lib/dateFormat";
 
 const FUNNEL_STAGES = [
   'For Review',
