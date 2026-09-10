@@ -312,14 +312,15 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       const active = assignments.filter((a) => a.status === 'active');
       const scheduled = assignments.filter((a) => a.status === 'scheduled');
       const clientIds = new Set(active.map((a) => a.client_id).filter(Boolean));
-      const regionMap: Record<string, number> = {};
+      // Two buckets only: Philippines, and everything else counts as Latin America
+      let phCount = 0;
       for (const a of active) {
-        const r = classifyCountry(a.country);
-        regionMap[r] = (regionMap[r] || 0) + 1;
+        if (classifyCountry(a.country) === 'Philippines') phCount++;
       }
-      const contractorRegions = Object.entries(regionMap)
-        .map(([name, count]) => ({ name, count }))
-        .sort((a, b) => b.count - a.count);
+      const contractorRegions = [
+        { name: 'Philippines', count: phCount },
+        { name: 'Latin America', count: active.length - phCount },
+      ];
 
       // --- Analytics (global, year-to-date) ---
       const analyticsYear = new Date().getFullYear();

@@ -4049,7 +4049,7 @@ const Admin = () => {
               title={`Managing ${heroNum(heroStats.activeClients)} active client relationships`}
               chips={[
                 `${heroNum(heroStats.activeContractors)} contractors`,
-                ...heroStats.contractorRegions.map((r) => `${r.name} ${r.count}`),
+                ...heroStats.contractorRegions.map((r) => `${r.count} ${r.name}`),
               ]}
             />
             <ClientsDashboard />
@@ -4063,7 +4063,7 @@ const Admin = () => {
               chips={[
                 `${heroNum(heroStats.activeContractors)} active`,
                 `${heroNum(heroStats.scheduledContractors)} scheduled`,
-                ...heroStats.contractorRegions.map((r) => `${r.name} ${r.count}`),
+                ...heroStats.contractorRegions.map((r) => `${r.count} ${r.name}`),
               ]}
             />
             <ContractorsDashboard />
