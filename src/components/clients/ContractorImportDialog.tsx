@@ -11,6 +11,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { parseDateOnly } from '@/lib/dateOnly';
 
 interface ImportResult {
   successCount: number;
@@ -534,7 +535,7 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
         // Parse date
         let startDate: string | null = null;
         if (row.start_date) {
-          const parsed = new Date(row.start_date);
+          const parsed = parseDateOnly(row.start_date);
           if (!isNaN(parsed.getTime())) {
             startDate = parsed.toISOString().split('T')[0];
           }
@@ -716,7 +717,7 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
                       </p>
                       {dup.existingAssignment.start_date && (
                         <p className="text-muted-foreground">
-                          Started: {new Date(dup.existingAssignment.start_date).toLocaleDateString()}
+                          Started: {parseDateOnly(dup.existingAssignment.start_date).toLocaleDateString()}
                         </p>
                       )}
                     </div>

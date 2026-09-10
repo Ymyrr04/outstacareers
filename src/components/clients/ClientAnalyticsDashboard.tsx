@@ -1,3 +1,4 @@
+import { parseDateOnly } from '@/lib/dateOnly';
 // Client Analytics Dashboard
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -338,7 +339,7 @@ export const ClientAnalyticsDashboard = () => {
     
     contractors.forEach(c => {
       if (c.start_date) {
-        const date = new Date(c.start_date);
+        const date = parseDateOnly(c.start_date);
         if (date.getFullYear() >= 2026) {
           const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
           if (monthMap[key]) {
@@ -396,8 +397,8 @@ export const ClientAnalyticsDashboard = () => {
       beyond: { count: 0, ph: 0, latam: 0 },
     };
     separated.forEach((c) => {
-      const start = new Date(c.start_date as string).getTime();
-      const end = new Date(c.end_date as string).getTime();
+      const start = parseDateOnly(c.start_date as string).getTime();
+      const end = parseDateOnly(c.end_date as string).getTime();
       const days = (end - start) / (1000 * 60 * 60 * 24);
       if (days < 0) return;
       const region: 'ph' | 'latam' =
@@ -443,7 +444,7 @@ export const ClientAnalyticsDashboard = () => {
         // Calculate tenure between hired (start_date) and separation date
         let tenure = '—';
         if (c.start_date && dateStr) {
-          const start = new Date(c.start_date);
+          const start = parseDateOnly(c.start_date);
           const end = new Date(dateStr);
           const diffMs = end.getTime() - start.getTime();
           if (!Number.isNaN(diffMs) && diffMs >= 0) {
@@ -493,7 +494,7 @@ export const ClientAnalyticsDashboard = () => {
     contractors.forEach((c) => {
       if (!c.start_date) return;
       const clientId = c.client?.id || c.client_id || 'unknown';
-      const t = new Date(c.start_date).getTime();
+      const t = parseDateOnly(c.start_date).getTime();
       if (Number.isNaN(t)) return;
       const arr = allDatesByClient.get(clientId) || [];
       arr.push(t);
@@ -529,7 +530,7 @@ export const ClientAnalyticsDashboard = () => {
 
     contractors.forEach((c) => {
       if (!c.start_date) return;
-      const d = new Date(c.start_date);
+      const d = parseDateOnly(c.start_date);
       const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
       if (key !== monthKey) return;
 
@@ -555,7 +556,7 @@ export const ClientAnalyticsDashboard = () => {
       const startMs = d.getTime();
       const status = (c.status || '').toLowerCase();
       const isEnded = ['terminated', 'resigned', 'ended', 'completed', 'inactive'].includes(status);
-      const endMs = isEnded && c.end_date ? new Date(c.end_date).getTime() : nowMs;
+      const endMs = isEnded && c.end_date ? parseDateOnly(c.end_date).getTime() : nowMs;
       if (!isEnded) existing.anyStillWorking = true;
       if (!Number.isNaN(startMs) && !Number.isNaN(endMs) && endMs >= startMs) {
         existing.tenureDaysSum += (endMs - startMs) / (1000 * 60 * 60 * 24);
@@ -776,8 +777,8 @@ export const ClientAnalyticsDashboard = () => {
       if (isActive) entry.active += 1; else entry.separated += 1;
 
       if (c.start_date) {
-        const start = new Date(c.start_date).getTime();
-        const end = c.end_date ? new Date(c.end_date).getTime() : now;
+        const start = parseDateOnly(c.start_date).getTime();
+        const end = c.end_date ? parseDateOnly(c.end_date).getTime() : now;
         const days = Math.max(0, Math.floor((end - start) / 86400000));
         entry.tenureSum += days;
         entry.tenureCount += 1;
@@ -838,8 +839,8 @@ export const ClientAnalyticsDashboard = () => {
       if (isActive) entry.active += 1;
 
       if (c.start_date) {
-        const start = new Date(c.start_date).getTime();
-        const end = c.end_date ? new Date(c.end_date).getTime() : now;
+        const start = parseDateOnly(c.start_date).getTime();
+        const end = c.end_date ? parseDateOnly(c.end_date).getTime() : now;
         const days = Math.max(0, Math.floor((end - start) / 86400000));
         entry.tenureSum += days;
         entry.tenureCount += 1;
@@ -961,7 +962,7 @@ export const ClientAnalyticsDashboard = () => {
   const getClientEarliestActiveStartYear = (clientId: string) => {
     const activeStartDates = contractors
       .filter(c => c.status === 'active' && c.client_id === clientId && c.start_date)
-      .map(c => new Date(c.start_date as string).getFullYear());
+      .map(c => parseDateOnly(c.start_date as string).getFullYear());
     return activeStartDates.length > 0 ? Math.min(...activeStartDates) : null;
   };
   const oldActiveClientsCount = activeClientsWithContractors.filter(c => {
@@ -998,7 +999,7 @@ export const ClientAnalyticsDashboard = () => {
     req.client_id && LOST_STAGES.includes(req.pipeline_stage)
   );
   const lostRequestsForYear = lostRequests.filter(req => {
-    const year = req.start_date ? new Date(req.start_date).getFullYear() : 2025;
+    const year = req.start_date ? parseDateOnly(req.start_date).getFullYear() : 2025;
     return year === lostYearFilter;
   });
   const clientsInLostStages = new Set(lostRequestsForYear.map(req => req.client_id!));

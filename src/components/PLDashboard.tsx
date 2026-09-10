@@ -20,6 +20,7 @@ import { AdminLeaveApplications } from '@/components/AdminLeaveApplications';
 import { CollapsibleSection } from '@/components/pl/CollapsibleSection';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { PLReport } from '@/components/pl/PLReport';
+import { parseDateOnly } from '@/lib/dateOnly';
 
 interface TimesheetRow {
   id: string;
@@ -1820,7 +1821,7 @@ export const PLDashboard = () => {
           .filter((c) => !submittedIds.has(c.id))
           .filter((c) => {
             if (!c.start_date) return true;
-            const sd = new Date(c.start_date + 'T12:00:00').getTime();
+            const sd = parseDateOnly(c.start_date + 'T12:00:00').getTime();
             return sd <= weekEnd.getTime();
           })
           .filter((c) => {
@@ -2147,7 +2148,7 @@ export const PLDashboard = () => {
                 <ProfileField label="Work days" value={Array.isArray(profileContractor.work_days) && profileContractor.work_days.length > 0 ? profileContractor.work_days.join(', ') : null} />
                 <ProfileField label="Hours per week" value={profileContractor.hours_per_week != null ? `${profileContractor.hours_per_week} hrs` : null} />
                 <ProfileField label="Current rate" value={profileContractor.hourly_rate != null ? `$${Number(profileContractor.hourly_rate).toFixed(2)}/hr` : null} />
-                <ProfileField label="Start date" value={profileContractor.start_date ? format(new Date(profileContractor.start_date), 'MMM d, yyyy') : null} />
+                <ProfileField label="Start date" value={profileContractor.start_date ? format(parseDateOnly(profileContractor.start_date), 'MMM d, yyyy') : null} />
                 <ProfileField
                   label="Break / Lunch"
                   value={

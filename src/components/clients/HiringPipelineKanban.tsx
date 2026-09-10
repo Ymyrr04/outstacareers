@@ -168,6 +168,7 @@ const getIndustryClass = (industry: string | null): string => {
   return INDUSTRY_COLORS[industry] || 'bg-muted text-muted-foreground';
 };
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
+import { parseDateOnly } from '@/lib/dateOnly';
 
 interface KanbanCardProps {
   request: HiringRequest;
@@ -222,7 +223,7 @@ const KanbanCard = ({ request, index, onClick, adminUsers, onComplete }: KanbanC
     return null;
   };
   const dateRange = formatDateRange();
-  const isOverdue = !isClosed && request.target_end_date && isPast(startOfDay(new Date(request.target_end_date)));
+  const isOverdue = !isClosed && request.target_end_date && isPast(startOfDay(parseDateOnly(request.target_end_date)));
   // Show closed date if in closed stage - use closed_at, fallback to updated_at for display
   const closedDate = isClosed 
     ? formatDateWithYear(request.closed_at || request.updated_at) 
@@ -434,7 +435,7 @@ export const HiringPipelineKanban = () => {
           if (!a.target_end_date && !b.target_end_date) return 0;
           if (!a.target_end_date) return 1;
           if (!b.target_end_date) return -1;
-          return new Date(a.target_end_date).getTime() - new Date(b.target_end_date).getTime();
+          return parseDateOnly(a.target_end_date).getTime() - parseDateOnly(b.target_end_date).getTime();
         }
         case 'closed_at': {
           if (!a.closed_at && !b.closed_at) return 0;

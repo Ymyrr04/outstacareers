@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
+import { parseDateOnly } from '@/lib/dateOnly';
 
 export interface HeroBannerStats {
   loading: boolean;
@@ -332,7 +333,7 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       // Only YTD assignments attributable to a real admin (excludes blank hired_by
       // and non-admin values such as "Zoomployee").
       const ytdAssignments = allAssignments.filter((a) => {
-        if (!a.start_date || new Date(a.start_date).getFullYear() !== analyticsYear) return false;
+        if (!a.start_date || parseDateOnly(a.start_date).getFullYear() !== analyticsYear) return false;
         if (!a.hired_by) return false;
         return !!getAdminDisplayName(String(a.hired_by), '');
       });
@@ -345,8 +346,8 @@ export function useHeroBannerStats(enabled: boolean = true): HeroBannerStats {
       const stays = assignments
         .filter((a) => a.start_date)
         .map((a) => {
-          const start = new Date(a.start_date).getTime();
-          const end = a.end_date ? new Date(a.end_date).getTime() : Date.now();
+          const start = parseDateOnly(a.start_date).getTime();
+          const end = a.end_date ? parseDateOnly(a.end_date).getTime() : Date.now();
           return Math.max(0, Math.round((end - start) / 86400000));
         });
       const avgStayDays = stays.length ? Math.round(stays.reduce((s, v) => s + v, 0) / stays.length) : 0;

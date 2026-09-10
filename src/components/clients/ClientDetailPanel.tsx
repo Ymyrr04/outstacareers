@@ -22,6 +22,7 @@ import { AddContactDialog } from './AddContactDialog';
 import { AddContractorDialog } from './AddContractorDialog';
 import { AddCommunicationDialog } from './AddCommunicationDialog';
 import { ClientPortalAccountsSection } from './ClientPortalAccountsSection';
+import { parseDateOnly } from '@/lib/dateOnly';
 
 // Hiring Toggle Component
 const HiringToggle = ({ clientId, isHiring, onUpdate }: { clientId: string; isHiring: boolean; onUpdate: () => void }) => {
@@ -785,7 +786,7 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                                 {assignment.start_date && (
                                   <span className="flex items-center gap-1">
                                     <Calendar className="w-3 h-3" />
-                                    Started {format(new Date(assignment.start_date), 'MMM d, yyyy')}
+                                    Started {format(parseDateOnly(assignment.start_date), 'MMM d, yyyy')}
                                   </span>
                                 )}
                                 {assignment.timesheet_link && (
@@ -844,13 +845,13 @@ export const ClientDetailPanel = ({ client, onClose, onUpdate }: ClientDetailPan
                                 {assignment.start_date && (
                                   <span className="flex items-center gap-1">
                                     <Calendar className="w-3 h-3" />
-                                    Started {format(new Date(assignment.start_date), 'MMM d, yyyy')}
+                                    Started {format(parseDateOnly(assignment.start_date), 'MMM d, yyyy')}
                                   </span>
                                 )}
                                 {assignment.end_date && (
                                   <span className="flex items-center gap-1">
                                     <Calendar className="w-3 h-3" />
-                                    Ended {format(new Date(assignment.end_date), 'MMM d, yyyy')}
+                                    Ended {format(parseDateOnly(assignment.end_date), 'MMM d, yyyy')}
                                   </span>
                                 )}
                               </div>

@@ -1,3 +1,4 @@
+import { parseDateOnly } from '@/lib/dateOnly';
 import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
@@ -715,8 +716,8 @@ const PortalDashboard = () => {
       const aActive = ['active', 'rendering'].includes(a.status) ? 0 : 1;
       const bActive = ['active', 'rendering'].includes(b.status) ? 0 : 1;
       if (aActive !== bActive) return aActive - bActive;
-      const aDate = a.start_date ? new Date(a.start_date).getTime() : 0;
-      const bDate = b.start_date ? new Date(b.start_date).getTime() : 0;
+      const aDate = a.start_date ? parseDateOnly(a.start_date).getTime() : 0;
+      const bDate = b.start_date ? parseDateOnly(b.start_date).getTime() : 0;
       return bDate - aDate;
     });
     const assignment: any = sorted[0];

@@ -9,6 +9,7 @@ import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { type Client, type ContractorAssignment } from './ClientsDashboard';
+import { parseDateOnly } from '@/lib/dateOnly';
 
 interface HiringRequestBasic {
   id?: string;
@@ -129,7 +130,7 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
     // Filter contractors whose start_date falls in the selected year
     const filtered = contractors.filter(c => {
       if (!c.start_date) return false;
-      return new Date(c.start_date).getFullYear() === retentionYear;
+      return parseDateOnly(c.start_date).getFullYear() === retentionYear;
     });
 
     filtered.forEach(c => {
@@ -162,7 +163,7 @@ export const ClientInsightsPanel = ({ clients, contractors, hiringRequests }: Cl
   }, [clients, contractors, retentionYear]);
 
   const retentionFiltered = useMemo(() => {
-    return contractors.filter(c => c.start_date && new Date(c.start_date).getFullYear() === retentionYear);
+    return contractors.filter(c => c.start_date && parseDateOnly(c.start_date).getFullYear() === retentionYear);
   }, [contractors, retentionYear]);
 
   const overallRetention = useMemo(() => {
