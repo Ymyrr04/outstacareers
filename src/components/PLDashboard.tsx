@@ -2052,7 +2052,7 @@ export const PLDashboard = () => {
             };
             const renderShiftTimes = (d: any) => {
               if (!d) return <span className="text-muted-foreground">—</span>;
-              const parts: React.ReactNode[] = [];
+              const parts: JSX.Element[] = [];
               if (d.time_in && d.time_out) parts.push(<span key="main">{fmt12(d.time_in)} – {fmt12(d.time_out)}</span>);
               const extras: any[] = Array.isArray(d.shifts) && d.shifts.length
                 ? d.shifts
