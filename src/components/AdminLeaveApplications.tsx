@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Loader2, Search, Check, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
+import { formatDate } from "@/lib/dateFormat";
 
 interface LeaveRow {
   id: string;
@@ -190,7 +191,7 @@ export const AdminLeaveApplications = () => {
                       <div className="text-xs text-muted-foreground">{r.contractor?.applicant?.email || '—'}</div>
                     </TableCell>
                     <TableCell>{r.contractor?.client?.company_name || '—'}</TableCell>
-                    <TableCell className="whitespace-nowrap">{format(new Date(r.leave_date + 'T00:00:00'), 'MMM d, yyyy')}</TableCell>
+                    <TableCell className="whitespace-nowrap">{formatDate(r.leave_date)}</TableCell>
                     <TableCell className="whitespace-nowrap">
                       {r.time_period}
                       {r.specific_time && r.time_period !== 'All day' && (
@@ -215,7 +216,7 @@ export const AdminLeaveApplications = () => {
                         : <Badge variant="outline" className="text-muted-foreground">No</Badge>}
                     </TableCell>
                     <TableCell className="text-xs text-muted-foreground whitespace-nowrap">
-                      {r.created_at ? format(new Date(r.created_at), 'MMM d, yyyy') : '—'}
+                      {r.created_at ? formatDate(r.created_at) : '—'}
                     </TableCell>
                     <TableCell>
                       {statusBadge(r.status)}
@@ -256,7 +257,7 @@ export const AdminLeaveApplications = () => {
             <DialogDescription>
               {reviewing && (
                 <span>
-                  {reviewing.contractor?.applicant?.full_name} · {format(new Date(reviewing.leave_date + 'T00:00:00'), 'MMM d, yyyy')} · {reviewing.time_period}
+                  {reviewing.contractor?.applicant?.full_name} · {formatDate(reviewing.leave_date)} · {reviewing.time_period}
                 </span>
               )}
             </DialogDescription>

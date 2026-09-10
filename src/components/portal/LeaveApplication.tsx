@@ -17,6 +17,7 @@ import { useToast } from '@/hooks/use-toast';
 import { CalendarIcon, Loader2, HelpCircle } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
+import { formatDate } from "@/lib/dateFormat";
 
 const LEAVE_TYPES = [
   'Bereavement leave (Immediate Family)',
@@ -370,7 +371,7 @@ export const LeaveApplication: React.FC<Props> = ({ contractorAssignmentId }) =>
               <TableBody>
                 {history.map((r) => (
                   <TableRow key={r.id}>
-                    <TableCell className="whitespace-nowrap">{format(new Date(r.leave_date + 'T00:00:00'), 'MMM/dd/yyyy')}</TableCell>
+                    <TableCell className="whitespace-nowrap">{formatDate(r.leave_date)}</TableCell>
                     <TableCell className="whitespace-nowrap">
                       {r.time_period}
                       {r.specific_time && r.time_period !== 'All day' && (

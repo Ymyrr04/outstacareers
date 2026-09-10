@@ -46,7 +46,7 @@ import { StageNoteDialog, type PendingStageNote } from '@/components/StageNoteDi
 import { AddCandidateCalendarDialog } from '@/components/AddCandidateCalendarDialog';
 import { useStageSettings } from '@/hooks/useStageSettings';
 import { useAuth } from '@/hooks/useAuth';
-import { formatDateTime, formatDate, formatTime } from "@/lib/dateFormat";
+import { formatDate, formatDateTime, formatTime } from "@/lib/dateFormat";
 
 const FUNNEL_STAGES = [
   'For Review',
@@ -2297,7 +2297,7 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
                   </span>
                 )}
                 <span className="text-[9px] text-muted-foreground">
-                  {format(new Date(candidate.availability_checked_at), 'MMM d, yyyy')}
+                  {formatDate(candidate.availability_checked_at)}
                 </span>
               </div>
             )}

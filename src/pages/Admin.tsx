@@ -3280,7 +3280,7 @@ const Admin = () => {
                                     </Badge>
                                     {applicant.availability_checked_at && (
                                       <span className="text-xs text-muted-foreground ml-1">
-                                        {format(new Date(applicant.availability_checked_at), 'MM/dd/yy')}
+                                        {formatDate(applicant.availability_checked_at)}
                                       </span>
                                     )}
                                   </>
@@ -4067,7 +4067,7 @@ const Admin = () => {
           {/* PL Tab */}
           <TabsContent value="pl" className="space-y-6">
             <AdminHeroBanner
-              eyebrow={`PL — Week ending ${heroStats.plWeekEnding ? format(new Date(heroStats.plWeekEnding + 'T12:00:00'), 'MMM d, yyyy') : '—'}`}
+              eyebrow={`PL — Week ending ${heroStats.plWeekEnding ? formatDate(heroStats.plWeekEnding) : '—'}`}
               title={`${heroNum(heroStats.plSubmitted)} of ${heroNum(heroStats.activeContractors)} contractors submitted this week`}
               chips={[
                 `${heroStats.plTotalHours.toFixed(1)} total hours`,

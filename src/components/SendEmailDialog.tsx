@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { RichTextToolbar } from './RichTextToolbar';
 import { EMAIL_TO_NAME } from '@/lib/adminDisplayNames';
+import { formatDateTime } from "@/lib/dateFormat";
 
 interface EmailAttachment {
   filename: string;
@@ -373,7 +374,7 @@ export function SendEmailDialog({
       toast({
         title: data.scheduled ? 'Email scheduled' : 'Email sent',
         description: data.scheduled 
-          ? `Will be sent on ${format(new Date(data.scheduledFor), 'PPP p')}`
+          ? `Will be sent on ${formatDateTime(data.scheduledFor)}`
           : `Sent to ${applicant.email}`,
       });
 
