@@ -15,6 +15,7 @@ import { AddClientDialog } from './AddClientDialog';
 import { ClientDetailPanel } from './ClientDetailPanel';
 import { ClientImportDialog } from './ClientImportDialog';
 import { ClientInsightsPanel } from './ClientInsightsPanel';
+import { parseDateOnly } from '@/lib/dateOnly';
 
 export interface Client {
   id: string;
@@ -225,7 +226,7 @@ export const ClientsDashboard = () => {
   
   // Filter by year using start_date (default to 2025 if null)
   const lostRequestsForYear = lostRequests.filter(req => {
-    const year = req.start_date ? new Date(req.start_date).getFullYear() : 2025;
+    const year = req.start_date ? parseDateOnly(req.start_date).getFullYear() : 2025;
     return year === lostYearFilter;
   });
   
@@ -262,7 +263,7 @@ export const ClientsDashboard = () => {
   const getClientEarliestActiveStartYear = (clientId: string) => {
     const activeStartDates = contractorData
       .filter(c => c.status?.toLowerCase() === 'active' && c.client_id === clientId && c.start_date)
-      .map(c => new Date(c.start_date as string).getFullYear());
+      .map(c => parseDateOnly(c.start_date as string).getFullYear());
     return activeStartDates.length > 0 ? Math.min(...activeStartDates) : null;
   };
   const oldActiveClientsCount = activeClientsWithContractors.filter(c => {

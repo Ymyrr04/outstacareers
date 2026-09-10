@@ -72,6 +72,7 @@ import { ContractorEmailTemplateManager } from './ContractorEmailTemplateManager
 import { RecurringSchedulesManager } from './RecurringSchedulesManager';
 import { ContractorColumnFilter } from './ContractorColumnFilter';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
+import { parseDateOnly } from '@/lib/dateOnly';
 
 interface ContractorWithDetails {
   id: string;
@@ -573,8 +574,8 @@ export const ContractorsDashboard = () => {
       if (aIsRendering !== bIsRendering) return bIsRendering - aIsRendering;
       
       // Then sort by end_date descending (most recent first)
-      const dateA = a.end_date ? new Date(a.end_date).getTime() : 0;
-      const dateB = b.end_date ? new Date(b.end_date).getTime() : 0;
+      const dateA = a.end_date ? parseDateOnly(a.end_date).getTime() : 0;
+      const dateB = b.end_date ? parseDateOnly(b.end_date).getTime() : 0;
       return dateB - dateA;
     });
 
@@ -1010,7 +1011,7 @@ export const ContractorsDashboard = () => {
                         {visibleColumns.startDate && (
                           <TableCell>
                             {contractor.start_date ? (() => {
-                              const startDate = new Date(contractor.start_date);
+                              const startDate = parseDateOnly(contractor.start_date);
                               const today = new Date();
                               today.setHours(0, 0, 0, 0);
                               const isFuture = startDate > today;
@@ -1349,7 +1350,7 @@ export const ContractorsDashboard = () => {
                           {visibleColumns.startDate && (
                             <TableCell>
                               {contractor.start_date ? (() => {
-                                const startDate = new Date(contractor.start_date);
+                                const startDate = parseDateOnly(contractor.start_date);
                                 const today = new Date();
                                 today.setHours(0, 0, 0, 0);
                                 const isFuture = startDate > today;
@@ -1368,7 +1369,7 @@ export const ContractorsDashboard = () => {
                             {contractor.end_date ? (
                               <span className="flex items-center gap-1 whitespace-nowrap text-red-600">
                                 <Calendar className="w-3 h-3" />
-                                {format(new Date(contractor.end_date), 'MMM d, yyyy')}
+                                {format(parseDateOnly(contractor.end_date), 'MMM d, yyyy')}
                               </span>
                             ) : (
                               <span className="text-muted-foreground">—</span>
@@ -1634,7 +1635,7 @@ export const ContractorsDashboard = () => {
                           </TableCell>
                           <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
                             {contractor.start_date
-                              ? format(new Date(contractor.start_date), 'MMM d, yyyy')
+                              ? format(parseDateOnly(contractor.start_date), 'MMM d, yyyy')
                               : '—'}
                           </TableCell>
                           <TableCell className="text-right whitespace-nowrap">

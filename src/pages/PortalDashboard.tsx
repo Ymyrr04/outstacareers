@@ -26,6 +26,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from '@/lib/utils';
 import type { DateRange } from 'react-day-picker';
 import {
+import { parseDateOnly } from '@/lib/dateOnly';
   AlertDialog,
   AlertDialogAction,
   AlertDialogCancel,
@@ -715,8 +716,8 @@ const PortalDashboard = () => {
       const aActive = ['active', 'rendering'].includes(a.status) ? 0 : 1;
       const bActive = ['active', 'rendering'].includes(b.status) ? 0 : 1;
       if (aActive !== bActive) return aActive - bActive;
-      const aDate = a.start_date ? new Date(a.start_date).getTime() : 0;
-      const bDate = b.start_date ? new Date(b.start_date).getTime() : 0;
+      const aDate = a.start_date ? parseDateOnly(a.start_date).getTime() : 0;
+      const bDate = b.start_date ? parseDateOnly(b.start_date).getTime() : 0;
       return bDate - aDate;
     });
     const assignment: any = sorted[0];

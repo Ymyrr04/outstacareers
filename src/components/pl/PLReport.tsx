@@ -15,6 +15,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 import clientRateFallbackData from '@/data/clientRateFallback.json';
+import { parseDateOnly } from '@/lib/dateOnly';
 
 const clientRateFallback = clientRateFallbackData as Record<string, number>;
 const normalizeName = (s: string) =>
@@ -250,7 +251,7 @@ export const PLReport = () => {
         let weeksSinceStart: number | null = null;
         let isNewStarter = false;
         if (a.start_date) {
-          const start = new Date(a.start_date);
+          const start = parseDateOnly(a.start_date);
           if (!isNaN(start.getTime())) {
             const diff = Math.floor((weekEnding.getTime() - mondayOf(start).getTime()) / (7 * 86400000));
             weeksSinceStart = diff + 1;
