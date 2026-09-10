@@ -1118,6 +1118,30 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     [stageGroups]
   );
 
+  // Limit each Kanban column to DEFAULT_COLUMN_LIMIT cards by default to keep
+  // the DOM light when switching admins/jobs. A "Show more" button loads the
+  // next batch while preserving the active sort order.
+  const getColumnCards = useCallback((stageApplicants: Candidate[]) => {
+    return stageApplicants;
+  }, []);
+
+  const getVisibleCount = useCallback((stageId: string) => {
+    return visibleCounts[stageId] ?? DEFAULT_COLUMN_LIMIT;
+  }, [visibleCounts]);
+
+  const handleShowMore = useCallback((stageId: string, total: number) => {
+    setVisibleCounts(prev => ({
+      ...prev,
+      [stageId]: Math.min((prev[stageId] ?? DEFAULT_COLUMN_LIMIT) + DEFAULT_COLUMN_LIMIT, total)
+    }));
+  }, []);
+
+  // Reset visible limits whenever the admin, role, or job scope changes so a
+  // new filtered view starts collapsed again.
+  useEffect(() => {
+    setVisibleCounts({});
+  }, [selectedAdmin, selectedRole, jobFilter]);
+
   // A selected role can have applicants only in stages beyond the initial
   // viewport (for example Talent Pool or Reject). Reveal the first populated
   // stage once per filter result so the board never appears falsely empty.
