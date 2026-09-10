@@ -416,6 +416,15 @@ const Admin = () => {
     if (urlTab && validTabs.includes(urlTab)) return urlTab;
     return 'jobs';
   });
+
+  // Remember the last tab each admin was on
+  useEffect(() => {
+    if (!user?.id || !activeMainTab) return;
+    try {
+      localStorage.setItem(`outsta_last_tab_${user.id}`, activeMainTab);
+    } catch {}
+  }, [activeMainTab, user?.id]);
+
   const [gmailUnreadCount, setGmailUnreadCount] = useState(0);
   useEffect(() => {
     const handler = (e: Event) => setGmailUnreadCount((e as CustomEvent).detail || 0);
