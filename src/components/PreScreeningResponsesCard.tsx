@@ -52,7 +52,7 @@ export const PreScreeningResponsesCard = ({ responses, flagged }: Props) => {
           </div>
           {responses.answered_at && (
             <p className="text-xs text-muted-foreground">
-              Answered {formatDateTime(responses.answered_at)} ET
+              Answered {formatDateTime(responses.answered_at)}
             </p>
           )}
         </>

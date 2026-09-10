@@ -93,9 +93,9 @@ function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
   const now = new Date();
   const isToday = d.toDateString() === now.toDateString();
-  if (isToday) return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+  if (isToday) return formatTime(dateStr, "");
   const isThisYear = d.getFullYear() === now.getFullYear();
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", ...(isThisYear ? {} : { year: "numeric" }) });
+  return isThisYear ? formatDateShort(dateStr, "") : formatDateFull(dateStr, "");
 }
 
 export default function GmailPanel() {

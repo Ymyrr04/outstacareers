@@ -717,7 +717,7 @@ export const ContractorImportDialog = ({ open, onOpenChange, onContractorsImport
                       </p>
                       {dup.existingAssignment.start_date && (
                         <p className="text-muted-foreground">
-                          Started: {parseDateOnly(dup.existingAssignment.start_date).toLocaleDateString()}
+                          Started: {formatDate(dup.existingAssignment.start_date)}
                         </p>
                       )}
                     </div>

@@ -2185,7 +2185,7 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
                 )}
                 {candidate.interview_invite_sent_at && (
                   <span
-                    title={`Interview invite sent ${formatDateTime(candidate.interview_invite_sent_at)} ET`}
+                    title={`Interview invite sent ${formatDateTime(candidate.interview_invite_sent_at)}`}
                     className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-500 text-white shadow-sm ring-1 ring-indigo-600 shrink-0"
                   >
                     <Send className="w-3 h-3" />
@@ -2550,9 +2550,8 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
             ) : (
               <div className="max-h-[400px] overflow-y-auto space-y-3">
                 {activityHistory.map((entry, idx) => {
-                  const date = new Date(entry.created_at);
-                  const formattedDate = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-                  const formattedTime = date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+                  const formattedDate = formatDate(entry.created_at);
+                  const formattedTime = formatTime(entry.created_at);
                   const adminName = getAdminDisplayName(entry.changed_by, 'System');
                   return (
                     <div key={idx} className="flex gap-3 text-sm">
