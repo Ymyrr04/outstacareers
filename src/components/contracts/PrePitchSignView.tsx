@@ -6,6 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Card } from "@/components/ui/card";
 import { toast } from "sonner";
 import { SignaturePad } from "@/components/contracts/SignaturePad";
+import { formatDate } from "@/lib/dateFormat";
 
 const FUNCTIONS_BASE = `https://${import.meta.env.VITE_SUPABASE_PROJECT_ID}.supabase.co/functions/v1`;
 const ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string;
@@ -103,7 +104,7 @@ export const PrePitchSignView = ({ token, recipientName, expiresAt, savedSignatu
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
           <div>
             <h1 className="font-semibold text-2xl leading-tight">OutSta Pre-Pitch Agreement</h1>
-            <p className="text-base text-muted-foreground">For {recipientName} • Expires {new Date(expiresAt).toLocaleDateString()}</p>
+            <p className="text-base text-muted-foreground">For {recipientName} • Expires {formatDate(expiresAt)}</p>
           </div>
           <div className="text-lg">
             <span className="font-medium">{completed}</span>

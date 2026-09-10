@@ -45,6 +45,7 @@ import { CopyableText } from '@/components/CopyableText';
 import { ApplicantNotesEditor, type ApplicantNotesEditorRef } from '@/components/ApplicantNotesEditor';
 import { ApplicantNotesSection } from '@/components/ApplicantNotesSection';
 import { FormattedNotes } from '@/components/FormattedNotes';
+import { formatDate } from "@/lib/dateFormat";
 
 interface ToolMatch {
   tool: string;
@@ -218,11 +219,7 @@ export default function ApplicantSearchResults({
   }, [expandedApplicant, onViewDetails]);
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    return formatDate(dateString);
   };
 
   const handleStartEdit = (applicant: Applicant) => {

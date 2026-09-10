@@ -7,6 +7,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Send, Copy, Download, Ban, FileSignature, Trash2, RefreshCw, FolderOpen, FolderCheck } from "lucide-react";
 import { toast } from "sonner";
 import { SendEnvelopeDialog } from "./SendEnvelopeDialog";
+import { formatDateTime } from "@/lib/dateFormat";
 
 const PRE_PITCH_TEMPLATE_NAME = "OutSta Pre-Pitch Agreement";
 
@@ -192,9 +193,9 @@ export const PrePitchPanel = () => {
                 </div>
                 <p className="list-row-meta">{e.recipient_email}</p>
                 <p className="list-row-dates">
-                  Sent {e.sent_at ? new Date(e.sent_at).toLocaleString() : "—"}
-                  {e.viewed_at && ` • Last viewed ${new Date(e.viewed_at).toLocaleString()}`}
-                  {e.signed_at && ` • Signed ${new Date(e.signed_at).toLocaleString()}`}
+                  Sent {e.sent_at ? formatDateTime(e.sent_at) : "—"}
+                  {e.viewed_at && ` • Last viewed ${formatDateTime(e.viewed_at)}`}
+                  {e.signed_at && ` • Signed ${formatDateTime(e.signed_at)}`}
                 </p>
               </div>
               <div className="list-row-right gap-1">

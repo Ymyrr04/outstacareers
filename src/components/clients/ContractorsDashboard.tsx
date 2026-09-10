@@ -73,6 +73,7 @@ import { RecurringSchedulesManager } from './RecurringSchedulesManager';
 import { ContractorColumnFilter } from './ContractorColumnFilter';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 import { parseDateOnly } from '@/lib/dateOnly';
+import { formatDateTime } from "@/lib/dateFormat";
 
 interface ContractorWithDetails {
   id: string;
@@ -692,7 +693,7 @@ export const ContractorsDashboard = () => {
                   Last Import: {lastImportResult.successCount} succeeded, {lastImportResult.errors.length} failed
                 </p>
                 <p className="text-sm text-amber-700 mt-1">
-                  {new Date(lastImportResult.timestamp).toLocaleString()}
+                  {formatDateTime(lastImportResult.timestamp)}
                 </p>
                 {!showImportErrors ? (
                   <Button

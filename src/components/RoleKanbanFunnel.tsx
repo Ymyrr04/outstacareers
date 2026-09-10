@@ -46,6 +46,7 @@ import { StageNoteDialog, type PendingStageNote } from '@/components/StageNoteDi
 import { AddCandidateCalendarDialog } from '@/components/AddCandidateCalendarDialog';
 import { useStageSettings } from '@/hooks/useStageSettings';
 import { useAuth } from '@/hooks/useAuth';
+import { formatDateTime } from "@/lib/dateFormat";
 
 const FUNNEL_STAGES = [
   'For Review',
@@ -2184,7 +2185,7 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
                 )}
                 {candidate.interview_invite_sent_at && (
                   <span
-                    title={`Interview invite sent ${new Date(candidate.interview_invite_sent_at).toLocaleString('en-US', { timeZone: 'America/New_York' })} ET`}
+                    title={`Interview invite sent ${formatDateTime(candidate.interview_invite_sent_at)} ET`}
                     className="inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-500 text-white shadow-sm ring-1 ring-indigo-600 shrink-0"
                   >
                     <Send className="w-3 h-3" />

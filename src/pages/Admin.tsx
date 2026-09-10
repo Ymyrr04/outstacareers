@@ -76,6 +76,7 @@ import { PLDashboard } from '@/components/PLDashboard';
 import { AdminHeroBanner } from '@/components/AdminHeroBanner';
 
 import { useHeroBannerStats } from '@/hooks/useHeroBannerStats';
+import { formatDate } from "@/lib/dateFormat";
 
 // Status options for applicant tracking - "For Review" is the default for new applicants
 // Status options for applicant tracking - new pipeline order
@@ -1687,13 +1688,7 @@ const Admin = () => {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-    });
+    return formatDate(dateString);
   };
 
   const BooleanBadge = ({ value, label }: { value: boolean; label: string }) => (

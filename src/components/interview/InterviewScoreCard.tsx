@@ -1,5 +1,6 @@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { formatDate } from "@/lib/dateFormat";
 import { 
   Briefcase, 
   Code, 
@@ -158,7 +159,7 @@ export function InterviewScoreCard({ session }: InterviewScoreCardProps) {
       {/* Completed At */}
       {session.completed_at && (
         <p className="text-xs text-muted-foreground text-right">
-          Completed: {new Date(session.completed_at).toLocaleDateString()}
+          Completed: {formatDate(session.completed_at)}
         </p>
       )}
     </div>

@@ -17,6 +17,7 @@ import { CandidateDetailDialog } from '@/components/CandidateDetailDialog';
 import { CVImagePreview } from '@/components/CVImagePreview';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useStageSettings } from '@/hooks/useStageSettings';
+import { formatDate, formatTime } from "@/lib/dateFormat";
 
 interface ScoreBreakdown {
   experience_relevance: number;
@@ -400,7 +401,7 @@ export const TalentScoutDashboard = () => {
                         <span>•</span>
                         <span>{cached.response.total_scanned} scanned</span>
                         <span>•</span>
-                        <span>{new Date(cached.searched_at).toLocaleDateString()} {new Date(cached.searched_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                        <span>{formatDate(cached.searched_at)} {formatTime(cached.searched_at)}</span>
                       </div>
                     </div>
                     <div className="flex items-center gap-1 shrink-0 ml-2">

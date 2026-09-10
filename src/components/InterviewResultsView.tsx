@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { formatDate } from "@/lib/dateFormat";
 import { 
   Briefcase, 
   Code, 
@@ -400,7 +401,7 @@ export function InterviewResultsView({ sessionId, session }: InterviewResultsVie
           {/* Completed At */}
           {session.completed_at && (
             <p className="text-xs text-muted-foreground text-right">
-              Completed: {new Date(session.completed_at).toLocaleDateString()}
+              Completed: {formatDate(session.completed_at)}
             </p>
           )}
         </TabsContent>

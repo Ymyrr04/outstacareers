@@ -7,6 +7,7 @@ import { RichTextEditor, plainTextToHtml } from "@/components/gmail/RichTextEdit
 import { RecipientInput } from "@/components/gmail/RecipientInput";
 import { AttachButton, AttachmentList, serializeAttachments, MAX_TOTAL_BYTES, type PendingAttachment } from "@/components/gmail/ComposeAttachments";
 import AutoReplyRulesManager from "@/components/gmail/AutoReplyRulesManager";
+import { formatDateTime } from "@/lib/dateFormat";
 
 
 
@@ -831,7 +832,7 @@ export default function GmailPanel() {
                               {m.cc ? ` · cc: ${m.cc}` : ""}
                             </div>
                             <div className="text-[11px] text-muted-foreground">
-                              {m.date && new Date(m.date).toLocaleString()}
+                              {m.date && formatDateTime(m.date)}
                             </div>
                           </button>
 

@@ -60,6 +60,7 @@ import { ApplicantNotesEditor, ApplicantNotesEditorRef } from '@/components/Appl
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { formatDateShort } from "@/lib/dateFormat";
 
 // Status options for applicant tracking
 const APPLICANT_STATUS_FOLDERS = [
@@ -599,10 +600,7 @@ export const MyApplicantsDashboard = () => {
 
   // Format date
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-    });
+    return formatDateShort(dateString);
   };
 
   // Get job title by ID

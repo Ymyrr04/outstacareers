@@ -12,6 +12,7 @@ import speedtestSample from "@/assets/speedtest-sample.png";
 import { InterviewSession } from "./interview/InterviewSession";
 import { CountryCodeSelect } from "./CountryCodeSelect";
 import PreScreeningConfirmDialog, { PreScreeningResponses, isPreScreeningFlagged } from "./PreScreeningConfirmDialog";
+import { formatDate } from "@/lib/dateFormat";
 
 
 interface PreScreeningFormProps {
@@ -650,11 +651,7 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }:
 
   // Calculate formatted date helper
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric'
-    });
+    return formatDate(dateStr);
   };
 
   if (isSuccess) {

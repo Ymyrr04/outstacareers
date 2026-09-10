@@ -21,6 +21,7 @@ import { CollapsibleSection } from '@/components/pl/CollapsibleSection';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { PLReport } from '@/components/pl/PLReport';
 import { parseDateOnly } from '@/lib/dateOnly';
+import { formatDateTime } from "@/lib/dateFormat";
 
 interface TimesheetRow {
   id: string;
@@ -1035,7 +1036,7 @@ export const PLDashboard = () => {
       const pMatch = link
         ? (pv?.amount != null ? (Math.abs(pv.amount - invoice) < 0.01 ? 'Match' : 'Mismatch') : 'pending')
         : 'no link';
-      const submittedEst = new Date(r.submitted_at).toLocaleString('en-US', { timeZone: 'America/New_York' });
+      const submittedEst = formatDateTime(r.submitted_at);
 
       return [
         r.contractor?.applicant?.full_name || '',
