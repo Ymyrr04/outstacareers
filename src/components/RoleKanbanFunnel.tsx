@@ -159,6 +159,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   const [draggedCandidate, setDraggedCandidate] = useState<Candidate | null>(null);
   const [dropTargetStage, setDropTargetStage] = useState<string | null>(null);
   const [sortOption, setSortOption] = useState<'score-desc' | 'score-asc' | 'name-asc' | 'name-desc' | 'newest' | 'oldest' | 'assessed'>('score-desc');
+  const DEFAULT_COLUMN_LIMIT = 20;
+  const [visibleCounts, setVisibleCounts] = useState<Record<string, number>>({});
   const [hiredCandidate, setHiredCandidate] = useState<Candidate | null>(null);
   const [showHiredDialog, setShowHiredDialog] = useState(false);
   const { templates, getDefaultTemplateByTrigger } = useEmailTemplates();
@@ -1116,6 +1118,31 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     [stageGroups]
   );
 
+  // Limit each Kanban column to DEFAULT_COLUMN_LIMIT cards by default to keep
+  // the DOM light when switching admins/jobs. A "Show more" button loads the
+  // next batch while preserving the active sort order.
+  const getVisibleCount = useCallback((stageId: string) => {
+    return visibleCounts[stageId] ?? DEFAULT_COLUMN_LIMIT;
+  }, [visibleCounts]);
+
+  const getColumnCards = useCallback((stageId: string, stageApplicants: Candidate[]) => {
+    const limit = getVisibleCount(stageId);
+    return stageApplicants.slice(0, limit);
+  }, [getVisibleCount]);
+
+  const handleShowMore = useCallback((stageId: string, total: number) => {
+    setVisibleCounts(prev => ({
+      ...prev,
+      [stageId]: Math.min((prev[stageId] ?? DEFAULT_COLUMN_LIMIT) + DEFAULT_COLUMN_LIMIT, total)
+    }));
+  }, []);
+
+  // Reset visible limits whenever the admin, role, or job scope changes so a
+  // new filtered view starts collapsed again.
+  useEffect(() => {
+    setVisibleCounts({});
+  }, [selectedAdmin, selectedRole, jobFilter]);
+
   // A selected role can have applicants only in stages beyond the initial
   // viewport (for example Talent Pool or Reject). Reveal the first populated
   // stage once per filter result so the board never appears falsely empty.
@@ -1497,7 +1524,8 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
               const colors = STAGE_COLORS[stage];
               const colorOverride = getStageColorOverride(stage);
               const stageCandidates = stageGroups[stage];
-
+              const totalCount = stageCandidates.length;
+              const visibleCandidates = getColumnCards(stage, stageCandidates);
 
               return (
                 <div
@@ -1572,7 +1600,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                           ? { backgroundColor: 'rgba(255,255,255,0.25)', color: '#FFFFFF' }
                           : { backgroundColor: colors.badgeBg, color: colors.title }}
                       >
-                        {stageCandidates.length}
+                        {totalCount}
                       </span>
                     </div>
                   </div>
@@ -1664,7 +1692,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                       />
                     )}
                     <div className="p-1.5 flex flex-col gap-[5px]">
-                      {stageCandidates.length === 0 ? (
+                      {visibleCandidates.length === 0 ? (
                         <p className={cn(
                           "text-[10px] text-muted-foreground text-center py-5",
                           dropTargetStage === stage && draggedCandidate && "text-primary font-medium"
@@ -1672,7 +1700,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                           {dropTargetStage === stage && draggedCandidate ? 'Drop here' : 'No candidates'}
                         </p>
                       ) : (
-                        stageCandidates.map((candidate) => (
+                        visibleCandidates.map((candidate) => (
                           <CandidateCard
                             key={candidate.id}
                             candidate={candidate}
@@ -1702,6 +1730,15 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                             onReprofiled={handleReprofiled}
                           />
                         ))
+                      )}
+                      {totalCount > visibleCandidates.length && (
+                        <button
+                          type="button"
+                          onClick={() => handleShowMore(stage, totalCount)}
+                          className="w-full text-[11px] text-muted-foreground hover:text-foreground py-2 border-t border-[#C8F0F8] bg-transparent hover:bg-muted/30 transition-colors"
+                        >
+                          + Show {totalCount - visibleCandidates.length} more
+                        </button>
                       )}
                     </div>
                   </div>
