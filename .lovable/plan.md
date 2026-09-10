@@ -143,6 +143,31 @@ Add an integrated time-tracking tool that contractors use from their existing po
 - The existing large Cloud compute instance is a fixed daily cost and will not increase due to this feature.
 - Recommendation: add a 90-day screenshot retention policy and batch agent uploads aggressively.
 
+## Monthly per-contractor credit estimate
+
+Assumptions: one active contractor, 22 working days/month, 8 hours/day, 4-6 web tracker events/day, desktop agent logging every 60 seconds, screenshots every 15-20 minutes (avg 28/day), 200 KB JPEG per screenshot.
+
+| Cost driver | Events / month | Estimate per contractor / month | Notes |
+|---|---|---|---|
+| Web tracker event writes | ~110 events | 0.2 - 1 credit | Clock in/out, breaks, notes. Tiny if no AI involved. |
+| Desktop activity log flushes | ~110 batches | 0.5 - 2 credits | Batched every 100 records or 5 minutes. |
+| Screenshot uploads | ~616 screenshots | 3 - 8 credits | Storage is the bulk; depends on compression and retention. |
+| Screenshot storage (ongoing) | ~12 GB new/month | 2 - 6 credits | Heavily depends on retention period; 90-day retention keeps this bounded. |
+| Admin egress (viewing reports) | variable | 1 - 5 credits | Thumbnails and CSV exports; scales with admin usage, not contractor count. |
+| **Total per active contractor** | — | **~7 - 22 credits/month** | Lower end = light admin review + efficient compression; higher end = heavy reporting or longer retention. |
+
+### Scaling example
+- 10 active contractors: ~70 - 220 credits/month
+- 50 active contractors: ~350 - 1,100 credits/month
+- 100 active contractors: ~700 - 2,200 credits/month
+
+### How to keep it at the low end
+- Compress screenshots to JPEG quality 70-80 and cap width at 1280px.
+- Enforce 90-day screenshot retention (auto-delete older captures).
+- Batch activity logs into 5-minute or 100-record flushes, not per-minute flushes.
+- Build thumbnail proxies so admins do not repeatedly download full-resolution images.
+- Cache report summaries; avoid recalculating totals on every page view.
+
 ## Rollout order
 1. Build the web tracker and `contractor_time_entries` table; let contractors use it immediately.
 2. Build the Electron agent with screenshots, idle detection, and activity logs; keep it optional.
