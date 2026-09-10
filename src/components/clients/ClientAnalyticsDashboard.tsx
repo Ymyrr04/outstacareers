@@ -1,3 +1,4 @@
+import { parseDateOnly } from '@/lib/dateOnly';
 // Client Analytics Dashboard
 import { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
@@ -15,7 +16,6 @@ import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2, Building2, TrendingUp, TrendingDown, Users, GripVertical, ArrowUpDown, ArrowUp, ArrowDown, Globe, UserPlus, Languages } from 'lucide-react';
 import {
-import { parseDateOnly } from '@/lib/dateOnly';
   BarChart,
   Bar,
   XAxis,
