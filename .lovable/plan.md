@@ -1,46 +1,157 @@
-# Build Health Review: Bugs, Risks, and Optimizations
+# Plan: Contractor Time Tracking with Desktop Agent
 
-The app builds and type-checks cleanly today. Nothing here is breaking the preview — these are correctness risks, performance drags, and cleanup items found in a full sweep of the frontend, the backend functions, and the database.
+## Goal
+Add an integrated time-tracking tool that contractors use from their existing portal, plus a lightweight desktop agent for deeper activity monitoring. Contractors clock in/out, pause/break, and add task notes. The desktop agent captures random screenshots every 15–20 minutes, tracks application/window titles, logs idle time, and records active browser URLs. Admins review aggregated daily/weekly reports inside the ATS rather than downloading timesheets.
 
-## What's actually wrong (bugs / risks)
+## Decisions made
+- **Scope:** Web portal tracker first, plus an Electron desktop agent for screenshots, app/window titles, idle detection, and browser URL logs.
+- **Screenshot cadence:** Randomized 15–20 minute intervals while the agent is running and a session is active.
+- **Admin view:** End-of-day/week reporting, not a live "who's online" dashboard, to keep backend usage low.
+- **Storage:** Screenshots uploaded to backend storage; logs written as batched events.
 
-1. **Everything loads at once.** No route or tab is code-split. The admin dashboard (`Admin.tsx`, 4,367 lines) plus every heavy tab, chart library, PDF renderer, and rich-text editor ships in a single bundle to every visitor — including the public careers page and contractor portal. This is the biggest cause of slow first load.
-2. **Missing effect dependencies.** 71 lint warnings, most of them `react-hooks/exhaustive-deps` (e.g. PL dashboard overtime memo, interview session loader). These are the classic source of "stale data until I refresh" bugs.
-3. **Over-fetching from the database.** 56 places select every column (`select('*')`), including on large tables like applicants and contractor assignments. Combined with the known 1000-row range loops, this is heavy on the database and on browser memory.
-4. **Database security warnings.** 2 tables have RLS on but no policy at all (effectively locked, likely unintentional), 39 `SECURITY DEFINER` functions are executable by anonymous or signed-in users when most should be internal-only, and leaked-password protection is off for auth.
-5. **Debug logging left in production.** ~150 `console.log` calls, heaviest in `assess-interview`, `submit-application`, `rescore-cv`, and `bulk-upload-cv` — some log candidate data and payloads into function logs.
-6. **Social preview image is wrong.** `index.html` still points `og:image` and `twitter:image` at the default Lovable placeholder, so shared links show a generic image instead of OutSta branding.
-7. **Type safety erosion.** 591 lint errors, almost all `any` (Gmail panel, daily check-in, PL dashboard, export utils). Each one is a place the compiler cannot catch a broken field name after a schema change.
-8. **Realtime subscriptions in 12+ components.** Several open their own channel and refetch broadly on any change; on a busy dashboard this multiplies network traffic and re-renders.
+## Phase 1 — Web time tracker in contractor portal
 
-## Proposed plan (phased, safe to stop after any phase)
+### What it does
+- New "Time Tracker" tab inside `/portal` (only for contractors with an active assignment).
+- Simple controls: Clock In, Clock Out, Pause/Resume, Start Break / End Break.
+- Task notes per work block.
+- Detects idle time only while the portal tab is open (mouse/keyboard inactivity), and prompts the contractor to confirm whether idle time should be kept or discarded.
+- Stores time entries in a new `contractor_time_entries` table linked to `contractor_assignment_id`.
+- A weekly summary view shows total hours, idle time, and manual notes.
 
-### Phase 1 — Performance, biggest win first
-- Route-level code splitting: lazy-load every page in `App.tsx` behind `Suspense` with a light loading fallback.
-- Tab-level splitting inside the admin dashboard so Analytics, PL, Gmail Inbox, Contracts, Scout, and Calendar load on demand.
-- Add manual vendor chunks (React, charts, editor, PDF, Supabase) in `vite.config.ts`.
-- Expected: dramatically smaller initial download for the careers page, portal, and first admin paint. No visual or behavioural change.
+### Data model
+- `contractor_time_entries`
+  - `id` uuid primary key
+  - `contractor_assignment_id` uuid -> contractor_assignments(id) on delete cascade
+  - `entry_type` enum: 'clock_in', 'clock_out', 'pause', 'resume', 'break_start', 'break_end', 'note'
+  - `occurred_at` timestamptz default now()
+  - `note` text nullable
+  - `source` text default 'web'
+  - `idle_seconds` int nullable (when a pause is due to idle detection)
+  - created_by, updated_at as usual
 
-### Phase 2 — Data-fetch tightening
-- Replace `select('*')` with explicit column lists on the heaviest paths: applicants list, contractor assignments, timesheets, client analytics.
-- Consolidate duplicate realtime channels and make handlers patch state rather than refetch everything.
-- Keep every existing filter, sort, and pagination behaviour identical.
+### UI changes
+- Add `TimeTracker.tsx` component rendered as a tab in `PortalDashboard.tsx`.
+- Compact widget: current status, elapsed timer, action buttons, recent activity list.
+- Optional: a small floating timer widget contractors can keep open while working.
 
-### Phase 3 — Correctness cleanup
-- Fix the `react-hooks/exhaustive-deps` warnings one file at a time, verifying each screen still refreshes correctly (this is where a careless fix causes loops, so it goes slow and last among code changes).
-- Remove or gate the `console.log` calls in edge functions, keeping genuine error logging.
-- Fix the two `no-useless-escape` errors in `SignContract.tsx`.
+### Backend
+- Migration creates `contractor_time_entries` with GRANTs, RLS enabled.
+- Policies: contractors insert/select/update their own rows; admins select all rows for their managed contractors.
+- Edge function `submit-time-entry` validates the entry sequence (cannot clock in twice without clocking out, etc.).
 
-### Phase 4 — Backend hardening
-- Review the 2 policy-less RLS tables and either add proper policies or confirm they should stay closed.
-- Revoke `EXECUTE` from `anon`/`authenticated` on the `SECURITY DEFINER` functions that are only ever called by triggers or edge functions.
-- Turn on leaked-password protection.
+### PL integration
+- Weekly reported hours from `contractor_time_entries` feed into the existing P&L report as an additional "tracked hours" column, without replacing the current manual timesheet flow until you decide to deprecate it.
 
-### Phase 5 — Polish
-- Set a real OutSta `og:image` (needs an image from you, or I can generate one).
-- Optionally chip away at `any` types in the largest offenders, starting with `GmailPanel.tsx` and `PLDashboard.tsx`.
+## Phase 2 — Desktop agent (Electron)
 
-## Notes
-- No feature behaviour changes anywhere in this plan; it is performance, correctness, and hardening only.
-- Phases 1 and 2 give the visible speed improvement. Phase 4 is the one with real security value.
-- Splitting `Admin.tsx` into smaller files is deliberately *not* in this plan — high risk, low payoff right now. It can be a separate effort later.
+### What it does
+- Contractors install a small desktop app (Windows/Mac/Linux packages as `.zip`/`.tar.gz`).
+- The agent asks for explicit consent on first run and runs as a tray app.
+- When the contractor clicks "Start tracking" (or it auto-starts based on the portal session), it:
+  - Records a timestamped activity log every 60 seconds:
+    - active window title
+    - active application name
+    - current browser URL (via a companion browser extension or OS-level hooks where possible)
+  - Detects idle time from mouse/keyboard inactivity.
+  - Captures a full-screen screenshot at a random interval between 15 and 20 minutes while the session is active.
+  - Batches logs locally and flushes to the backend every 5 minutes or when the batch reaches 100 records.
+
+### Agent architecture
+- Built with Electron, `contextIsolation: true`, `nodeIntegration: false`.
+- Main process handles screenshots, idle detection, window/app title collection, and uploads.
+- Renderer process is a minimal authenticated web view that loads the existing `/portal` tracker UI, so the agent reuses the same session and UI.
+- `preload.cjs` exposes a secure IPC API for:
+  - `startSession(token, assignmentId)`
+  - `stopSession()`
+  - `captureScreenshot()`
+  - `getIdleTime()`
+  - `getActiveWindowInfo()`
+  - `flushLogs(logs)`
+
+### Browser URL logging
+- A companion browser extension (Manifest V3) sends the active tab URL to the agent via native messaging or a local HTTP/WebSocket server.
+- If native messaging is too complex for the first version, the extension can send URLs directly to a dedicated edge function endpoint, authenticated with the same session token.
+
+### Screenshot handling
+- Screenshots saved as JPEG, quality 80, resized to 1920px width.
+- Uploaded to backend storage under `time-tracking-screenshots/{assignment_id}/{date}/{uuid}.jpg`.
+- A `contractor_screenshots` table records metadata: `contractor_assignment_id`, `session_id`, `captured_at`, `storage_path`, `active_window_title`, `idle_at_capture` boolean.
+- Old screenshots auto-deleted after 90 days via a nightly edge function or cron.
+
+### Data model additions
+- `contractor_activity_logs`
+  - `id` uuid primary key
+  - `contractor_assignment_id` uuid -> contractor_assignments(id)
+  - `session_id` uuid
+  - `logged_at` timestamptz
+  - `app_name` text
+  - `window_title` text
+  - `browser_url` text nullable
+  - `idle_seconds` int default 0
+  - `source` text default 'desktop_agent'
+- `contractor_tracking_sessions`
+  - `id` uuid primary key
+  - `contractor_assignment_id` uuid
+  - `started_at` timestamptz
+  - `ended_at` timestamptz nullable
+  - `total_idle_seconds` int default 0
+  - `status` enum: 'active', 'paused', 'ended'
+- `contractor_screenshots`
+  - `id` uuid primary key
+  - `contractor_assignment_id` uuid
+  - `session_id` uuid -> contractor_tracking_sessions(id)
+  - `captured_at` timestamptz
+  - `storage_path` text
+  - `window_title` text
+  - `idle_at_capture` boolean default false
+
+### Auth & security
+- Agent receives a short-lived session token from the portal (e.g., token valid for 24 hours).
+- All agent API calls include this token; backend verifies it with a `verify_time_tracking_token` edge function.
+- Screenshots and activity logs are only accessible to the assigned contractor and authorized admins.
+
+## Phase 3 — Admin reporting dashboard
+
+### What it does
+- New "Time Tracking" sub-tab under the existing PL/contractors section in the admin dashboard.
+- Weekly table per contractor: scheduled hours, tracked hours, idle time, break time, screenshots count, flagged gaps.
+- Daily drill-down: timeline of clock in/out, breaks, app/URL activity list, and thumbnail gallery of screenshots.
+- Filters: client, contractor, date range, flagged-only (e.g., idle > threshold, missing screenshots).
+- No real-time "live now" view; data refreshes when the admin opens the report.
+
+### UI changes
+- New `TimeTrackingReport.tsx` component.
+- Add route `/admin/time-tracking` (or tab inside existing admin layout).
+- Screenshot thumbnails lazy-loaded; click to expand.
+
+### Backend
+- Edge function `get-time-tracking-summary` aggregates entries, logs, and screenshots for a date range.
+- Edge function `flag-tracking-anomalies` identifies contractors with > 30 minutes idle in a session, missing screenshots, or clocked-in time exceeding scheduled hours by a threshold.
+
+## Privacy and consent
+- Contractors must opt in via a clear consent dialog before desktop tracking starts.
+- Consent is recorded in `contractor_tracking_consents` table with timestamp and version.
+- Contractors can pause/stop tracking at any time from the agent or portal.
+- Screenshots are accessible only to the contractor and their authorized admins; never shared with clients unless explicitly configured.
+- No keystroke logging, no credential capture, no audio/video recording.
+
+## Credit and cost notes
+- Web tracker: low credit use — only writes on start/stop/pause/break/note events.
+- Desktop agent: moderate credit use from storage uploads and batched log writes. A contractor working 8 hours/day with screenshots every ~17 minutes produces roughly 28 screenshots/day. At 100 contractors, that is ~2,800 screenshots/day plus activity logs.
+- Storage and egress will be the main variable cost, not function invocations.
+- The existing large Cloud compute instance is a fixed daily cost and will not increase due to this feature.
+- Recommendation: add a 90-day screenshot retention policy and batch agent uploads aggressively.
+
+## Rollout order
+1. Build the web tracker and `contractor_time_entries` table; let contractors use it immediately.
+2. Build the Electron agent with screenshots, idle detection, and activity logs; keep it optional.
+3. Add browser extension for URL tracking; if complexity is too high, defer it.
+4. Build the admin weekly/daily reporting dashboard.
+5. Add anomaly flags and retention cleanup after reporting is stable.
+
+## Out of scope for this plan
+- Live admin "who is online now" view.
+- Client-facing time reports.
+- Payroll automation or automatic invoice generation.
+- Mobile time-tracking app.
