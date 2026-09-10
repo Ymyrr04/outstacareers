@@ -1600,7 +1600,7 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
                           ? { backgroundColor: 'rgba(255,255,255,0.25)', color: '#FFFFFF' }
                           : { backgroundColor: colors.badgeBg, color: colors.title }}
                       >
-                        {stageCandidates.length}
+                        {totalCount}
                       </span>
                     </div>
                   </div>
