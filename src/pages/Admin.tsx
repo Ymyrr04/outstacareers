@@ -432,6 +432,22 @@ const Admin = () => {
     return () => window.removeEventListener('gmail-unread-count', handler);
   }, []);
 
+  // Restore the last viewed admin tab when there is no URL tab parameter
+  useEffect(() => {
+    if (urlTab) return;
+    if (!user?.id || tabPermissionsLoading) return;
+
+    try {
+      const saved = localStorage.getItem(`outsta_last_tab_${user.id}`);
+      if (saved && validTabs.includes(saved) && canViewTab(saved as TabId)) {
+        setActiveMainTab(saved);
+        navigate(`/admin/${saved}`, { replace: true });
+      }
+    } catch {}
+    // validTabs is a constant array; omitting it avoids re-running on every render
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [urlTab, user?.id, tabPermissionsLoading, canViewTab, navigate]);
+
   const [isTabSwitching, startTabTransition] = useTransition();
   const [showDelayedLoader, setShowDelayedLoader] = useState(false);
   const [manualTabLoading, setManualTabLoading] = useState(false);
