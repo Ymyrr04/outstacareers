@@ -649,10 +649,6 @@ const PreScreeningForm = ({ job, onClose, mode = 'modal', previewMode = false }:
     </div>
   );
 
-  // Calculate formatted date helper
-  const formatDate = (dateStr: string) => {
-    return formatDate(dateStr);
-  };
 
   if (isSuccess) {
     if (isPageMode) {

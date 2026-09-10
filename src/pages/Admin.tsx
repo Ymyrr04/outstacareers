@@ -1687,9 +1687,6 @@ const Admin = () => {
     setSavingEdit(false);
   };
 
-  const formatDate = (dateString: string) => {
-    return formatDate(dateString);
-  };
 
   const BooleanBadge = ({ value, label }: { value: boolean; label: string }) => (
     <div className="flex items-center gap-1.5 text-sm">
