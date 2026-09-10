@@ -161,6 +161,30 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
   const [sortOption, setSortOption] = useState<'score-desc' | 'score-asc' | 'name-asc' | 'name-desc' | 'newest' | 'oldest' | 'assessed'>('score-desc');
   const DEFAULT_COLUMN_LIMIT = 20;
   const [visibleCounts, setVisibleCounts] = useState<Record<string, number>>({});
+  const DEFAULT_HIDDEN_STAGES = ['Reject', 'Cold Talent Pool'];
+  const { user } = useAuth();
+  const [hiddenStages, setHiddenStages] = useState<string[]>(DEFAULT_HIDDEN_STAGES);
+  const [columnsMenuOpen, setColumnsMenuOpen] = useState(false);
+  const hiddenStagesLoadedRef = useRef(false);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    try {
+      const saved = localStorage.getItem(`outsta_hidden_stages_${user.id}`);
+      const parsed = saved ? JSON.parse(saved) : null;
+      setHiddenStages(Array.isArray(parsed) ? parsed : DEFAULT_HIDDEN_STAGES);
+    } catch {
+      setHiddenStages(DEFAULT_HIDDEN_STAGES);
+    }
+    hiddenStagesLoadedRef.current = true;
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id || !hiddenStagesLoadedRef.current) return;
+    try {
+      localStorage.setItem(`outsta_hidden_stages_${user.id}`, JSON.stringify(hiddenStages));
+    } catch { /* ignore */ }
+  }, [hiddenStages, user?.id]);
   const [hiredCandidate, setHiredCandidate] = useState<Candidate | null>(null);
   const [showHiredDialog, setShowHiredDialog] = useState(false);
   const { templates, getDefaultTemplateByTrigger } = useEmailTemplates();
