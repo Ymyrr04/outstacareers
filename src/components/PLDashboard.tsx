@@ -2077,6 +2077,7 @@ export const PLDashboard = () => {
                           <TableRow>
                             <TableHead>Day</TableHead>
                             <TableHead className="text-right">Hours</TableHead>
+                            <TableHead>Log In / Log Out</TableHead>
                             <TableHead>Reason / Notes</TableHead>
                           </TableRow>
                         </TableHeader>
