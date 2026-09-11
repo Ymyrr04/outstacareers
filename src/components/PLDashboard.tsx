@@ -2012,9 +2012,19 @@ export const PLDashboard = () => {
                     <TableCell className="text-xs text-muted-foreground">{formatDateTime(r.submitted_at)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setViewTimesheet(r)}>
-                          <Eye className="w-3 h-3 mr-1" />View
-                        </Button>
+                        <div className="relative inline-block">
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => { markEditSeen(r.id); setViewTimesheet(r); }}>
+                            <Eye className="w-3 h-3 mr-1" />View
+                          </Button>
+                          {hasUnseenEdit(r.id) && (
+                            <span
+                              title="Timesheet was edited after submission"
+                              className="absolute -top-1.5 -right-1.5 rounded-full bg-amber-500 text-white text-[9px] leading-none font-semibold px-1.5 py-0.5 shadow"
+                            >
+                              Edited
+                            </span>
+                          )}
+                        </div>
                         {r.status === 'pending_approval' && (
                           <>
                             <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-emerald-500 text-emerald-600 hover:bg-emerald-50" onClick={() => handleDecision(r, 'approved')}>
