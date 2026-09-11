@@ -2126,6 +2126,8 @@ export const PLDashboard = () => {
                   )}
                 </div>
 
+                <TimesheetEditHistory timesheetId={r.id} />
+
                 {r.notes && (
                   <div>
                     <h4 className="font-semibold text-sm mb-1">Submission Notes</h4>
