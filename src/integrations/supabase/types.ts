@@ -2156,6 +2156,60 @@ export type Database = {
         }
         Relationships: []
       }
+      contractor_timesheet_versions: {
+        Row: {
+          changed_by: string | null
+          client_approval_status: string | null
+          contractor_assignment_id: string | null
+          daily_hours: Json | null
+          id: string
+          incentive_amount: number | null
+          notes: string | null
+          outsta_status: string | null
+          overtime_hours: number | null
+          replaced_at: string
+          status: string | null
+          submitted_at: string | null
+          timesheet_id: string
+          total_hours: number | null
+          week_ending_date: string | null
+        }
+        Insert: {
+          changed_by?: string | null
+          client_approval_status?: string | null
+          contractor_assignment_id?: string | null
+          daily_hours?: Json | null
+          id?: string
+          incentive_amount?: number | null
+          notes?: string | null
+          outsta_status?: string | null
+          overtime_hours?: number | null
+          replaced_at?: string
+          status?: string | null
+          submitted_at?: string | null
+          timesheet_id: string
+          total_hours?: number | null
+          week_ending_date?: string | null
+        }
+        Update: {
+          changed_by?: string | null
+          client_approval_status?: string | null
+          contractor_assignment_id?: string | null
+          daily_hours?: Json | null
+          id?: string
+          incentive_amount?: number | null
+          notes?: string | null
+          outsta_status?: string | null
+          overtime_hours?: number | null
+          replaced_at?: string
+          status?: string | null
+          submitted_at?: string | null
+          timesheet_id?: string
+          total_hours?: number | null
+          week_ending_date?: string | null
+        }
+        Relationships: []
+      }
       contractor_timesheets: {
         Row: {
           client_approval_status: string
