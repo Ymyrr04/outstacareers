@@ -24,6 +24,8 @@ import { TimesheetEditHistory } from '@/components/pl/TimesheetEditHistory';
 import { parseDateOnly } from '@/lib/dateOnly';
 import { formatDate, formatDateShort, formatDateTime, formatDateWithWeekday } from "@/lib/dateFormat";
 
+const EDIT_SEEN_KEY = 'outsta_pl_timesheet_edits_seen';
+
 interface TimesheetRow {
   id: string;
   contractor_assignment_id: string;
