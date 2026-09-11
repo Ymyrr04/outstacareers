@@ -1778,9 +1778,19 @@ export const PLDashboard = () => {
                       <TableCell className="text-right font-medium">{r.contractor?.hourly_rate != null ? `$${(Number(r.total_hours) * Number(r.contractor.hourly_rate)).toFixed(2)}` : '—'}</TableCell>
                       <TableCell className="text-right">${Number(r.incentive_amount || 0).toFixed(2)}</TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setViewTimesheet(r)}>
-                          <Eye className="w-3 h-3 mr-1" />View
-                        </Button>
+                        <div className="relative inline-block">
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => { markEditSeen(r.id); setViewTimesheet(r); }}>
+                            <Eye className="w-3 h-3 mr-1" />View
+                          </Button>
+                          {hasUnseenEdit(r.id) && (
+                            <span
+                              title="Timesheet was edited after submission"
+                              className="absolute -top-1.5 -right-1.5 rounded-full bg-amber-500 text-white text-[9px] leading-none font-semibold px-1.5 py-0.5 shadow"
+                            >
+                              Edited
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {(() => {
