@@ -27,6 +27,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from '@/lib/utils';
 import type { DateRange } from 'react-day-picker';
 import { formatDate, formatDateShort, formatDateTime } from "@/lib/dateFormat";
+import { timesheetLockAt } from "@/lib/timesheetLock";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -2510,9 +2511,8 @@ const PortalDashboard = () => {
                       t.outsta_status === 'flagged' || t.status === 'rejected' || t.status === 'flagged' ? 'flagged'
                       : (t.outsta_status === 'approved' || t.status === 'approved') ? 'approved'
                       : 'pending';
-                    const submittedAt = t.submitted_at ? new Date(t.submitted_at).getTime() : 0;
-                    const minsSince = (Date.now() - submittedAt) / 60000;
-                    const withinGrace = minsSince < 3;
+                    const lockAt = timesheetLockAt(t.week_ending_date, t.submitted_at);
+                    const withinGrace = Date.now() < lockAt.getTime();
                     const isFlagged = clientStatus === 'flagged' || outstaStatus === 'flagged';
                     const bothApproved = clientStatus === 'approved' && outstaStatus === 'approved';
                     const canEdit = !bothApproved && (withinGrace || isFlagged);
@@ -2576,7 +2576,7 @@ const PortalDashboard = () => {
                               <TooltipContent>
                                 {bothApproved
                                   ? 'Locked — fully approved'
-                                  : 'Locked — 3-minute edit window has passed. Ask your client or OutSta to flag it if changes are needed.'}
+                                  : `Locked — editing closed on ${formatDateTime(lockAt.toISOString())} (6:00 AM ET Sunday). Ask your client or OutSta to flag it if changes are needed.`}
                               </TooltipContent>
                             </Tooltip>
                           )}
