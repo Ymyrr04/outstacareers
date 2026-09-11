@@ -27,6 +27,7 @@ import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, Command
 import { cn } from '@/lib/utils';
 import type { DateRange } from 'react-day-picker';
 import { formatDate, formatDateShort, formatDateTime } from "@/lib/dateFormat";
+import { timesheetLockAt } from "@/lib/timesheetLock";
 import {
   AlertDialog,
   AlertDialogAction,
