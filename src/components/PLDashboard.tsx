@@ -479,6 +479,39 @@ export const PLDashboard = () => {
 
   useEffect(() => { fetchData(); }, []);
 
+  // Track timesheets that were edited after submission, and which edits the admin has already viewed
+  useEffect(() => {
+    const loadEdits = async () => {
+      const { data } = await supabase
+        .from('contractor_timesheet_versions')
+        .select('timesheet_id, replaced_at')
+        .order('replaced_at', { ascending: false });
+      const map: Record<string, string> = {};
+      ((data as any[]) || []).forEach((v) => {
+        if (!map[v.timesheet_id]) map[v.timesheet_id] = v.replaced_at;
+      });
+      setEditedMap(map);
+    };
+    loadEdits();
+  }, [rows.length]);
+
+  const markEditSeen = (id: string) => {
+    const latest = editedMap[id];
+    if (!latest) return;
+    setSeenEdits((prev) => {
+      const next = { ...prev, [id]: latest };
+      try { localStorage.setItem(EDIT_SEEN_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
+  const hasUnseenEdit = (id: string) => {
+    const latest = editedMap[id];
+    if (!latest) return false;
+    const seen = seenEdits[id];
+    return !seen || new Date(latest).getTime() > new Date(seen).getTime();
+  };
+
   useEffect(() => {
     let cancelled = false;
     const loadLeaveCount = async () => {
