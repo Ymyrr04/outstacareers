@@ -2510,9 +2510,8 @@ const PortalDashboard = () => {
                       t.outsta_status === 'flagged' || t.status === 'rejected' || t.status === 'flagged' ? 'flagged'
                       : (t.outsta_status === 'approved' || t.status === 'approved') ? 'approved'
                       : 'pending';
-                    const submittedAt = t.submitted_at ? new Date(t.submitted_at).getTime() : 0;
-                    const minsSince = (Date.now() - submittedAt) / 60000;
-                    const withinGrace = minsSince < 3;
+                    const lockAt = timesheetLockAt(t.week_ending_date, t.submitted_at);
+                    const withinGrace = Date.now() < lockAt.getTime();
                     const isFlagged = clientStatus === 'flagged' || outstaStatus === 'flagged';
                     const bothApproved = clientStatus === 'approved' && outstaStatus === 'approved';
                     const canEdit = !bothApproved && (withinGrace || isFlagged);
