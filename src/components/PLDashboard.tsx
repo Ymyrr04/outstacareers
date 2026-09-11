@@ -24,6 +24,8 @@ import { TimesheetEditHistory } from '@/components/pl/TimesheetEditHistory';
 import { parseDateOnly } from '@/lib/dateOnly';
 import { formatDate, formatDateShort, formatDateTime, formatDateWithWeekday } from "@/lib/dateFormat";
 
+const EDIT_SEEN_KEY = 'outsta_pl_timesheet_edits_seen';
+
 interface TimesheetRow {
   id: string;
   contractor_assignment_id: string;
@@ -316,6 +318,10 @@ export const PLDashboard = () => {
   const [tsSort, setTsSort] = useState<{ key: 'name' | 'company' | 'week' | 'hours' | 'ot' | 'incentives' | 'status' | 'submitted'; dir: 'asc' | 'desc' }>({ key: 'submitted', dir: 'desc' });
   const [stats, setStats] = useState({ portalUsers: 0, totalEligibleContractors: 0 });
   const [viewTimesheet, setViewTimesheet] = useState<TimesheetRow | null>(null);
+  const [editedMap, setEditedMap] = useState<Record<string, string>>({});
+  const [seenEdits, setSeenEdits] = useState<Record<string, string>>(() => {
+    try { return JSON.parse(localStorage.getItem(EDIT_SEEN_KEY) || '{}'); } catch { return {}; }
+  });
   const [leaveCount, setLeaveCount] = useState(0);
   const PL_SUBTAB_KEY = 'pl_active_subtab';
   const [activeSubtab, setActiveSubtab] = useState<string>(() => {
@@ -478,6 +484,39 @@ export const PLDashboard = () => {
   };
 
   useEffect(() => { fetchData(); }, []);
+
+  // Track timesheets that were edited after submission, and which edits the admin has already viewed
+  useEffect(() => {
+    const loadEdits = async () => {
+      const { data } = await supabase
+        .from('contractor_timesheet_versions')
+        .select('timesheet_id, replaced_at')
+        .order('replaced_at', { ascending: false });
+      const map: Record<string, string> = {};
+      ((data as any[]) || []).forEach((v) => {
+        if (!map[v.timesheet_id]) map[v.timesheet_id] = v.replaced_at;
+      });
+      setEditedMap(map);
+    };
+    loadEdits();
+  }, [rows.length]);
+
+  const markEditSeen = (id: string) => {
+    const latest = editedMap[id];
+    if (!latest) return;
+    setSeenEdits((prev) => {
+      const next = { ...prev, [id]: latest };
+      try { localStorage.setItem(EDIT_SEEN_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+      return next;
+    });
+  };
+
+  const hasUnseenEdit = (id: string) => {
+    const latest = editedMap[id];
+    if (!latest) return false;
+    const seen = seenEdits[id];
+    return !seen || new Date(latest).getTime() > new Date(seen).getTime();
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -1739,9 +1778,19 @@ export const PLDashboard = () => {
                       <TableCell className="text-right font-medium">{r.contractor?.hourly_rate != null ? `$${(Number(r.total_hours) * Number(r.contractor.hourly_rate)).toFixed(2)}` : '—'}</TableCell>
                       <TableCell className="text-right">${Number(r.incentive_amount || 0).toFixed(2)}</TableCell>
                       <TableCell className="text-right">
-                        <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setViewTimesheet(r)}>
-                          <Eye className="w-3 h-3 mr-1" />View
-                        </Button>
+                        <div className="relative inline-block">
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => { markEditSeen(r.id); setViewTimesheet(r); }}>
+                            <Eye className="w-3 h-3 mr-1" />View
+                          </Button>
+                          {hasUnseenEdit(r.id) && (
+                            <span
+                              title="Timesheet was edited after submission"
+                              className="absolute -top-1.5 -right-1.5 rounded-full bg-amber-500 text-white text-[9px] leading-none font-semibold px-1.5 py-0.5 shadow"
+                            >
+                              Edited
+                            </span>
+                          )}
+                        </div>
                       </TableCell>
                       <TableCell>
                         {(() => {
@@ -1963,9 +2012,19 @@ export const PLDashboard = () => {
                     <TableCell className="text-xs text-muted-foreground">{formatDateTime(r.submitted_at)}</TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
-                        <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => setViewTimesheet(r)}>
-                          <Eye className="w-3 h-3 mr-1" />View
-                        </Button>
+                        <div className="relative inline-block">
+                          <Button size="sm" variant="outline" className="h-7 px-2 text-xs" onClick={() => { markEditSeen(r.id); setViewTimesheet(r); }}>
+                            <Eye className="w-3 h-3 mr-1" />View
+                          </Button>
+                          {hasUnseenEdit(r.id) && (
+                            <span
+                              title="Timesheet was edited after submission"
+                              className="absolute -top-1.5 -right-1.5 rounded-full bg-amber-500 text-white text-[9px] leading-none font-semibold px-1.5 py-0.5 shadow"
+                            >
+                              Edited
+                            </span>
+                          )}
+                        </div>
                         {r.status === 'pending_approval' && (
                           <>
                             <Button size="sm" variant="outline" className="h-7 px-2 text-xs border-emerald-500 text-emerald-600 hover:bg-emerald-50" onClick={() => handleDecision(r, 'approved')}>
