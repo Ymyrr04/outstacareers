@@ -1935,9 +1935,7 @@ export const PLDashboard = () => {
               ) : (
                 <>
                   <div className="flex items-center justify-between gap-3 px-4 py-3 border-b bg-muted/30">
-                    <div className="text-xs text-muted-foreground">
-                      Automatic reminders go out every Saturday at 9:00 AM ET to anyone still missing.
-                    </div>
+                    <TimesheetReminderSettingsDialog />
                     <Button
                       size="sm"
                       variant="outline"
