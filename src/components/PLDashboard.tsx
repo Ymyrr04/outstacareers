@@ -313,6 +313,7 @@ export const PLDashboard = () => {
   const [hoursFilter, setHoursFilter] = useState<'all' | 'mismatch' | 'over' | 'under' | 'bonus'>('all');
   const [clientPortalClientIds, setClientPortalClientIds] = useState<Set<string>>(new Set());
   const [updatingOutstaId, setUpdatingOutstaId] = useState<string | null>(null);
+  const [remindingKey, setRemindingKey] = useState<string | null>(null);
   const [contractorSearch, setContractorSearch] = useState('');
   const [contractorSort, setContractorSort] = useState<{ key: 'name' | 'company' | 'status' | 'rate' | 'hpw' | 'latest' | 'workHours' | 'ot' | 'bonus' | 'deposit' | 'approval' | 'portal'; dir: 'asc' | 'desc' }>({ key: 'company', dir: 'asc' });
   const [tsSort, setTsSort] = useState<{ key: 'name' | 'company' | 'week' | 'hours' | 'ot' | 'incentives' | 'status' | 'submitted'; dir: 'asc' | 'desc' }>({ key: 'submitted', dir: 'desc' });
@@ -857,6 +858,29 @@ export const PLDashboard = () => {
           source: 'admin',
         },
       }).catch((e) => console.error('notify invoke failed', e));
+    }
+  };
+
+  const sendTimesheetReminders = async (weekEnding: string, assignmentIds?: string[], label?: string) => {
+    const key = assignmentIds?.length === 1 ? assignmentIds[0] : 'all';
+    setRemindingKey(key);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-timesheet-reminders', {
+        body: { weekEnding, assignmentIds },
+      });
+      if (error) throw error;
+      const sent = (data as any)?.sent ?? 0;
+      toast({
+        title: sent > 0 ? 'Reminder sent' : 'Nothing to send',
+        description:
+          sent > 0
+            ? `${sent} reminder${sent === 1 ? '' : 's'} sent${label ? ` to ${label}` : ''}.`
+            : 'No pending contractors found for this week.',
+      });
+    } catch (e: any) {
+      toast({ title: 'Reminder failed', description: e.message || String(e), variant: 'destructive' });
+    } finally {
+      setRemindingKey(null);
     }
   };
 
@@ -1889,6 +1913,7 @@ export const PLDashboard = () => {
             (a.applicant?.full_name || '').localeCompare(b.applicant?.full_name || '')
           );
         const weekEndLabel = format(weekEnd, 'MMM d, yyyy');
+        const weekEndingIso = format(weekEnd, 'yyyy-MM-dd');
         return (
           <CollapsibleSection
             storageKey="pl_section_non_submitters"
@@ -1908,35 +1933,66 @@ export const PLDashboard = () => {
                   All active contractors submitted timesheets for this week.
                 </div>
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Contractor</TableHead>
-                      <TableHead>Company</TableHead>
-                      <TableHead>Job Title</TableHead>
-                      <TableHead className="text-right">Target Hours/wk</TableHead>
-                      <TableHead>Status</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {nonSubmitters.map((c) => (
-                      <TableRow key={c.id} className="bg-red-50/40 dark:bg-red-950/10">
-                        <TableCell>
-                          <div className="font-medium">{c.applicant?.full_name || '—'}</div>
-                          <div className="text-xs text-muted-foreground">{c.applicant?.email}</div>
-                        </TableCell>
-                        <TableCell>{c.client?.company_name || '—'}</TableCell>
-                        <TableCell className="text-sm">{c.job_title || '—'}</TableCell>
-                        <TableCell className="text-right">{c.hours_per_week ?? '—'}</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="border-red-500 text-red-600 text-[10px]">
-                            Missing
-                          </Badge>
-                        </TableCell>
+                <>
+                  <div className="flex items-center justify-between gap-3 px-4 py-3 border-b bg-muted/30">
+                    <div className="text-xs text-muted-foreground">
+                      Automatic reminders go out every Saturday at 9:00 AM ET to anyone still missing.
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={remindingKey !== null}
+                      onClick={() => {
+                        if (!confirm(`Send an invoice/timesheet reminder to all ${nonSubmitters.length} contractors who haven't submitted for week ending ${weekEndLabel}?`)) return;
+                        sendTimesheetReminders(weekEndingIso, nonSubmitters.map((c) => c.id));
+                      }}
+                    >
+                      {remindingKey === 'all' ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Mail className="h-3.5 w-3.5 mr-1.5" />}
+                      Remind all
+                    </Button>
+                  </div>
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Contractor</TableHead>
+                        <TableHead>Company</TableHead>
+                        <TableHead>Job Title</TableHead>
+                        <TableHead className="text-right">Target Hours/wk</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead className="text-right">Reminder</TableHead>
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {nonSubmitters.map((c) => (
+                        <TableRow key={c.id} className="bg-red-50/40 dark:bg-red-950/10">
+                          <TableCell>
+                            <div className="font-medium">{c.applicant?.full_name || '—'}</div>
+                            <div className="text-xs text-muted-foreground">{c.applicant?.email}</div>
+                          </TableCell>
+                          <TableCell>{c.client?.company_name || '—'}</TableCell>
+                          <TableCell className="text-sm">{c.job_title || '—'}</TableCell>
+                          <TableCell className="text-right">{c.hours_per_week ?? '—'}</TableCell>
+                          <TableCell>
+                            <Badge variant="outline" className="border-red-500 text-red-600 text-[10px]">
+                              Missing
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={remindingKey !== null || !c.applicant?.email}
+                              onClick={() => sendTimesheetReminders(weekEndingIso, [c.id], c.applicant?.full_name || undefined)}
+                            >
+                              {remindingKey === c.id ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Mail className="h-3.5 w-3.5 mr-1.5" />}
+                              Remind
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </>
               )}
             </div>
           </CollapsibleSection>

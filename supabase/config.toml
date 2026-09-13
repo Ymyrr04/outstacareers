@@ -110,3 +110,6 @@ verify_jwt = false
 
 [functions.indeed-feed]
 verify_jwt = false
+
+[functions.send-timesheet-reminders]
+verify_jwt = false
