@@ -95,16 +95,21 @@ function fmtDate(d: string) {
   });
 }
 
-function buildEmail(name: string, weekEnding: string) {
+function buildEmail(name: string, weekEnding: string, isLocked: boolean) {
   const first = (name || "").split(" ")[0] || "there";
-  const subject = `Reminder: submit your timesheet & invoice — week ending ${fmtDate(weekEnding)}`;
+  const subject = isLocked
+    ? `Overdue: submit your timesheet & invoice — week ending ${fmtDate(weekEnding)}`
+    : `Reminder: submit your timesheet & invoice — week ending ${fmtDate(weekEnding)}`;
+  const deadlineLine = isLocked
+    ? `<p>The submission deadline (Sunday 6:00 AM ET) for this week has <strong>passed</strong>, so this is now <strong>overdue</strong>. Please submit your hours along with your Payoneer invoice link as soon as possible.</p>`
+    : `<p>Please log in to the contractor portal and submit your hours along with your Payoneer invoice link. Submissions lock at <strong>6:00 AM ET on Sunday</strong>.</p>`;
   const html = `<!doctype html><html><body style="margin:0;padding:24px;background:#f6f7f9;font-family:Arial,sans-serif;color:#1f2937">
   <div style="max-width:620px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
     <div style="padding:18px 24px;background:#0f172a;color:#fff;font-weight:600;font-size:16px">Timesheet reminder</div>
     <div style="padding:22px 24px;font-size:14px;line-height:1.6">
       <p>Hi ${first},</p>
       <p>We haven't received your timesheet and invoice for the week ending <strong>${fmtDate(weekEnding)}</strong>.</p>
-      <p>Please log in to the contractor portal and submit your hours along with your Payoneer invoice link. Submissions lock at <strong>6:00 AM ET on Sunday</strong>.</p>
+      ${deadlineLine}
       <p><a href="https://outstahub.com/portal" style="display:inline-block;padding:10px 16px;background:#0ABEDF;color:#fff;text-decoration:none;border-radius:6px">Open contractor portal</a></p>
       <p>If you've already submitted, you can ignore this message.</p>
       <p>Thanks,<br/>The OutSta Team</p>
