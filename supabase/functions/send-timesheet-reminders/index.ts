@@ -90,7 +90,9 @@ async function findNonSubmitters(weekEnding: string, onlyIds?: string[]) {
     .in("status", ["active", "rendering"]);
   if (error) throw error;
 
-  let list = (assignments || []).filter((a: any) => !a.start_date || a.start_date <= weekEnding);
+  let list = (assignments || [])
+    .filter((a: any) => a.client_id !== INTERNAL_CLIENT_ID)
+    .filter((a: any) => !a.start_date || a.start_date <= weekEnding);
   if (onlyIds?.length) list = list.filter((a: any) => onlyIds.includes(a.id));
   if (!list.length) return [];
 
