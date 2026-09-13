@@ -1913,6 +1913,7 @@ export const PLDashboard = () => {
             (a.applicant?.full_name || '').localeCompare(b.applicant?.full_name || '')
           );
         const weekEndLabel = format(weekEnd, 'MMM d, yyyy');
+        const weekEndingIso = format(weekEnd, 'yyyy-MM-dd');
         return (
           <CollapsibleSection
             storageKey="pl_section_non_submitters"
