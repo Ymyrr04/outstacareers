@@ -70,7 +70,7 @@ export const timesheetLockAt = (weekEndingDate: string, submittedAt?: string | n
   // End of the week-ending calendar day, in ET.
   const baseDay = new Date(`${weekEndingDate}T12:00:00Z`);
   const p = etParts(baseDay);
-  const endOfWeekDay = new Date(etNoon(p.year, p.month, p.day).getTime() + 12 * 3600000); // ~midnight ET
+  const endOfWeekDay = new Date(etNoon(p.year, p.month, p.day).getTime() - 12 * 3600000); // ~midnight ET on week-ending day
   const submitted = submittedAt ? new Date(submittedAt) : null;
   const base = submitted && submitted.getTime() > endOfWeekDay.getTime() ? submitted : endOfWeekDay;
   return nextSundayNoonEt(base);
