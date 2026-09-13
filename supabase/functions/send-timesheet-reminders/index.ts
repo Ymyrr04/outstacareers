@@ -178,14 +178,25 @@ Deno.serve(async (req) => {
     } catch {
       body = {};
     }
-    const weekEnding: string = body.weekEnding || currentWeekEnding();
+    const explicitWeek: string | undefined = body.weekEnding;
+    const weekEnding: string = explicitWeek || currentWeekEnding();
     const onlyIds: string[] | undefined = Array.isArray(body.assignmentIds) ? body.assignmentIds : undefined;
 
-    const targets = await findNonSubmitters(weekEnding, onlyIds);
-    console.log("reminders", { weekEnding, requested: onlyIds?.length ?? "all", targets: targets.length });
+    // Manual sends target the week the admin selected. Scheduled runs also chase
+    // the previous week so late contractors keep getting reminded past the lock.
+    type Target = { assignmentId: string; name: string; email: string; weekEnding: string };
+    const targetMap = new Map<string, Target>();
+    const weeksToCheck = explicitWeek ? [explicitWeek] : [previousWeekEnding(weekEnding), weekEnding];
+    for (const w of weeksToCheck) {
+      for (const t of await findNonSubmitters(w, onlyIds)) {
+        if (!targetMap.has(t.assignmentId)) targetMap.set(t.assignmentId, { ...t, weekEnding: w });
+      }
+    }
+    const targets = [...targetMap.values()];
+    console.log("reminders", { weeksChecked: weeksToCheck, requested: onlyIds?.length ?? "all", targets: targets.length });
     if (body.dryRun) {
       return new Response(
-        JSON.stringify({ success: true, dryRun: true, weekEnding, total: targets.length, targets }),
+        JSON.stringify({ success: true, dryRun: true, weeksChecked: weeksToCheck, total: targets.length, targets }),
         { headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
@@ -193,7 +204,7 @@ Deno.serve(async (req) => {
     const failures: string[] = [];
 
     for (const t of targets) {
-      const { subject, html } = buildEmail(t.name, weekEnding);
+      const { subject, html } = buildEmail(t.name, t.weekEnding, lockPassed(t.weekEnding));
       try {
         await transporter.sendMail({ from: FROM, to: t.email, subject, html });
         sent++;
