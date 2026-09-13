@@ -55,6 +55,37 @@ function currentWeekEnding(): string {
   return base.toISOString().slice(0, 10);
 }
 
+// Convert a wall-clock time in America/New_York to a UTC instant
+function etToUtc(dateStr: string, h: number, m: number) {
+  const guess = new Date(
+    `${dateStr}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00Z`,
+  );
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(guess);
+  const g = (t: string) => parts.find((p) => p.type === t)?.value || "";
+  const asUtc = Date.UTC(+g("year"), +g("month") - 1, +g("day"), +g("hour") % 24, +g("minute"));
+  return new Date(guess.getTime() - (asUtc - guess.getTime()));
+}
+
+// True once the Sunday 6:00 AM ET lock for that week has passed
+function lockPassed(weekEnding: string) {
+  return new Date() >= etToUtc(weekEnding, 6, 0);
+}
+
+function previousWeekEnding(weekEnding: string) {
+  const d = new Date(weekEnding + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() - 7);
+  return d.toISOString().slice(0, 10);
+}
+
 function fmtDate(d: string) {
   return new Date(d + "T12:00:00Z").toLocaleDateString("en-US", {
     timeZone: "UTC",
