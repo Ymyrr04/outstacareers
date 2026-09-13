@@ -55,6 +55,37 @@ function currentWeekEnding(): string {
   return base.toISOString().slice(0, 10);
 }
 
+// Convert a wall-clock time in America/New_York to a UTC instant
+function etToUtc(dateStr: string, h: number, m: number) {
+  const guess = new Date(
+    `${dateStr}T${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}:00Z`,
+  );
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+  const parts = fmt.formatToParts(guess);
+  const g = (t: string) => parts.find((p) => p.type === t)?.value || "";
+  const asUtc = Date.UTC(+g("year"), +g("month") - 1, +g("day"), +g("hour") % 24, +g("minute"));
+  return new Date(guess.getTime() - (asUtc - guess.getTime()));
+}
+
+// True once the Sunday 6:00 AM ET lock for that week has passed
+function lockPassed(weekEnding: string) {
+  return new Date() >= etToUtc(weekEnding, 6, 0);
+}
+
+function previousWeekEnding(weekEnding: string) {
+  const d = new Date(weekEnding + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() - 7);
+  return d.toISOString().slice(0, 10);
+}
+
 function fmtDate(d: string) {
   return new Date(d + "T12:00:00Z").toLocaleDateString("en-US", {
     timeZone: "UTC",
@@ -64,16 +95,21 @@ function fmtDate(d: string) {
   });
 }
 
-function buildEmail(name: string, weekEnding: string) {
+function buildEmail(name: string, weekEnding: string, isLocked: boolean) {
   const first = (name || "").split(" ")[0] || "there";
-  const subject = `Reminder: submit your timesheet & invoice — week ending ${fmtDate(weekEnding)}`;
+  const subject = isLocked
+    ? `Overdue: submit your timesheet & invoice — week ending ${fmtDate(weekEnding)}`
+    : `Reminder: submit your timesheet & invoice — week ending ${fmtDate(weekEnding)}`;
+  const deadlineLine = isLocked
+    ? `<p>The submission deadline (Sunday 6:00 AM ET) for this week has <strong>passed</strong>, so this is now <strong>overdue</strong>. Please submit your hours along with your Payoneer invoice link as soon as possible.</p>`
+    : `<p>Please log in to the contractor portal and submit your hours along with your Payoneer invoice link. Submissions lock at <strong>6:00 AM ET on Sunday</strong>.</p>`;
   const html = `<!doctype html><html><body style="margin:0;padding:24px;background:#f6f7f9;font-family:Arial,sans-serif;color:#1f2937">
   <div style="max-width:620px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
     <div style="padding:18px 24px;background:#0f172a;color:#fff;font-weight:600;font-size:16px">Timesheet reminder</div>
     <div style="padding:22px 24px;font-size:14px;line-height:1.6">
       <p>Hi ${first},</p>
       <p>We haven't received your timesheet and invoice for the week ending <strong>${fmtDate(weekEnding)}</strong>.</p>
-      <p>Please log in to the contractor portal and submit your hours along with your Payoneer invoice link. Submissions lock at <strong>6:00 AM ET on Sunday</strong>.</p>
+      ${deadlineLine}
       <p><a href="https://outstahub.com/portal" style="display:inline-block;padding:10px 16px;background:#0ABEDF;color:#fff;text-decoration:none;border-radius:6px">Open contractor portal</a></p>
       <p>If you've already submitted, you can ignore this message.</p>
       <p>Thanks,<br/>The OutSta Team</p>
@@ -142,14 +178,25 @@ Deno.serve(async (req) => {
     } catch {
       body = {};
     }
-    const weekEnding: string = body.weekEnding || currentWeekEnding();
+    const explicitWeek: string | undefined = body.weekEnding;
+    const weekEnding: string = explicitWeek || currentWeekEnding();
     const onlyIds: string[] | undefined = Array.isArray(body.assignmentIds) ? body.assignmentIds : undefined;
 
-    const targets = await findNonSubmitters(weekEnding, onlyIds);
-    console.log("reminders", { weekEnding, requested: onlyIds?.length ?? "all", targets: targets.length });
+    // Manual sends target the week the admin selected. Scheduled runs also chase
+    // the previous week so late contractors keep getting reminded past the lock.
+    type Target = { assignmentId: string; name: string; email: string; weekEnding: string };
+    const targetMap = new Map<string, Target>();
+    const weeksToCheck = explicitWeek ? [explicitWeek] : [previousWeekEnding(weekEnding), weekEnding];
+    for (const w of weeksToCheck) {
+      for (const t of await findNonSubmitters(w, onlyIds)) {
+        if (!targetMap.has(t.assignmentId)) targetMap.set(t.assignmentId, { ...t, weekEnding: w });
+      }
+    }
+    const targets = [...targetMap.values()];
+    console.log("reminders", { weeksChecked: weeksToCheck, requested: onlyIds?.length ?? "all", targets: targets.length });
     if (body.dryRun) {
       return new Response(
-        JSON.stringify({ success: true, dryRun: true, weekEnding, total: targets.length, targets }),
+        JSON.stringify({ success: true, dryRun: true, weeksChecked: weeksToCheck, total: targets.length, targets }),
         { headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
@@ -157,7 +204,7 @@ Deno.serve(async (req) => {
     const failures: string[] = [];
 
     for (const t of targets) {
-      const { subject, html } = buildEmail(t.name, weekEnding);
+      const { subject, html } = buildEmail(t.name, t.weekEnding, lockPassed(t.weekEnding));
       try {
         await transporter.sendMail({ from: FROM, to: t.email, subject, html });
         sent++;
