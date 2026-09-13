@@ -3606,6 +3606,30 @@ export type Database = {
         }
         Relationships: []
       }
+      timesheet_reminder_settings: {
+        Row: {
+          day_of_week: number
+          enabled: boolean
+          id: boolean
+          reminder_time: string
+          updated_at: string
+        }
+        Insert: {
+          day_of_week?: number
+          enabled?: boolean
+          id?: boolean
+          reminder_time?: string
+          updated_at?: string
+        }
+        Update: {
+          day_of_week?: number
+          enabled?: boolean
+          id?: boolean
+          reminder_time?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -3633,6 +3657,7 @@ export type Database = {
     }
     Functions: {
       applicant_exists: { Args: { _applicant_id: string }; Returns: boolean }
+      apply_timesheet_reminder_schedule: { Args: never; Returns: undefined }
       get_contractor_checkin_messages: {
         Args: { _contractor_assignment_id: string }
         Returns: {
@@ -3668,6 +3693,10 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      set_timesheet_reminder_schedule: {
+        Args: { p_day_of_week: number; p_enabled: boolean; p_time: string }
+        Returns: undefined
+      }
       update_my_client_profile: {
         Args: {
           _address: string
