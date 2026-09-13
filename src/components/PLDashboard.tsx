@@ -871,12 +871,16 @@ export const PLDashboard = () => {
       });
       if (error) throw error;
       const sent = (data as any)?.sent ?? 0;
+      const failures = ((data as any)?.failures || []) as string[];
       toast({
-        title: sent > 0 ? 'Reminder sent' : 'Nothing to send',
+        title: sent > 0 ? 'Reminder sent' : failures.length ? 'Reminder failed' : 'Nothing to send',
         description:
           sent > 0
-            ? `${sent} reminder${sent === 1 ? '' : 's'} sent${label ? ` to ${label}` : ''}.`
-            : 'No pending contractors found for this week.',
+            ? `${sent} reminder${sent === 1 ? '' : 's'} sent${label ? ` to ${label}` : ''}.${failures.length ? ` ${failures.length} could not be emailed.` : ''}`
+            : failures.length
+              ? `Email could not be delivered to ${failures.join(', ')}.`
+              : `${label || 'They'} already submitted a timesheet for this week, so no reminder was needed.`,
+        variant: sent === 0 && failures.length ? 'destructive' : 'default',
       });
     } catch (e: any) {
       toast({ title: 'Reminder failed', description: e.message || String(e), variant: 'destructive' });
