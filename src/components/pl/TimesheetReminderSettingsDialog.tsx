@@ -175,7 +175,7 @@ export function TimesheetReminderSettingsDialog({ variant = 'inline' }: Props) {
             </div>
 
             <p className="text-xs text-muted-foreground">
-              Timesheets lock for editing on Sundays at 6:00 AM ET, so reminders are usually sent
+              Timesheets lock for editing on Sundays at 12:00 PM ET, so reminders are usually sent
               before that.
             </p>
           </div>

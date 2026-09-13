@@ -2576,7 +2576,7 @@ const PortalDashboard = () => {
                               <TooltipContent>
                                 {bothApproved
                                   ? 'Locked — fully approved'
-                                  : `Locked — editing closed on ${formatDateTime(lockAt.toISOString())} (6:00 AM ET Sunday). Ask your client or OutSta to flag it if changes are needed.`}
+                                  : `Locked — editing closed on ${formatDateTime(lockAt.toISOString())} (12:00 PM ET Sunday). Ask your client or OutSta to flag it if changes are needed.`}
                               </TooltipContent>
                             </Tooltip>
                           )}
