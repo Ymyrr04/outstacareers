@@ -83,6 +83,13 @@ function buildEmail(name: string, weekEnding: string) {
   return { subject, html };
 }
 
+// Start of the Monday-based week that ends on `weekEnding` (a Sunday)
+function weekStartFor(weekEnding: string) {
+  const d = new Date(weekEnding + "T12:00:00Z");
+  d.setUTCDate(d.getUTCDate() - 6);
+  return d.toISOString().slice(0, 10);
+}
+
 async function findNonSubmitters(weekEnding: string, onlyIds?: string[]) {
   const { data: assignments, error } = await supabase
     .from("contractor_assignments")
@@ -93,14 +100,17 @@ async function findNonSubmitters(weekEnding: string, onlyIds?: string[]) {
   let list = (assignments || [])
     .filter((a: any) => a.client_id !== INTERNAL_CLIENT_ID)
     .filter((a: any) => !a.start_date || a.start_date <= weekEnding);
-  if (onlyIds?.length) list = list.filter((a: any) => onlyIds.includes(a.id));
+  if (onlyIds) list = list.filter((a: any) => onlyIds.includes(a.id));
   if (!list.length) return [];
 
   const ids = list.map((a: any) => a.id);
+  // Contractors can log a week-ending date anywhere inside the week (Fri/Sat/Sun),
+  // so treat any submission within the Mon-Sun window as submitted.
   const { data: submitted } = await supabase
     .from("contractor_timesheets")
     .select("contractor_assignment_id")
-    .eq("week_ending_date", weekEnding)
+    .gte("week_ending_date", weekStartFor(weekEnding))
+    .lte("week_ending_date", weekEnding)
     .in("contractor_assignment_id", ids);
   const submittedIds = new Set((submitted || []).map((t: any) => t.contractor_assignment_id));
 
