@@ -860,6 +860,29 @@ export const PLDashboard = () => {
     }
   };
 
+  const sendTimesheetReminders = async (weekEnding: string, assignmentIds?: string[], label?: string) => {
+    const key = assignmentIds?.length === 1 ? assignmentIds[0] : 'all';
+    setRemindingKey(key);
+    try {
+      const { data, error } = await supabase.functions.invoke('send-timesheet-reminders', {
+        body: { weekEnding, assignmentIds },
+      });
+      if (error) throw error;
+      const sent = (data as any)?.sent ?? 0;
+      toast({
+        title: sent > 0 ? 'Reminder sent' : 'Nothing to send',
+        description:
+          sent > 0
+            ? `${sent} reminder${sent === 1 ? '' : 's'} sent${label ? ` to ${label}` : ''}.`
+            : 'No pending contractors found for this week.',
+      });
+    } catch (e: any) {
+      toast({ title: 'Reminder failed', description: e.message || String(e), variant: 'destructive' });
+    } finally {
+      setRemindingKey(null);
+    }
+  };
+
   const STATUS_PILL: Record<string, string> = {
     pending: 'bg-muted text-foreground/80 border-border',
     approved: 'bg-emerald-600 text-white border-emerald-600',
