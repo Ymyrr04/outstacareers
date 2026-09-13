@@ -313,6 +313,7 @@ export const PLDashboard = () => {
   const [hoursFilter, setHoursFilter] = useState<'all' | 'mismatch' | 'over' | 'under' | 'bonus'>('all');
   const [clientPortalClientIds, setClientPortalClientIds] = useState<Set<string>>(new Set());
   const [updatingOutstaId, setUpdatingOutstaId] = useState<string | null>(null);
+  const [remindingKey, setRemindingKey] = useState<string | null>(null);
   const [contractorSearch, setContractorSearch] = useState('');
   const [contractorSort, setContractorSort] = useState<{ key: 'name' | 'company' | 'status' | 'rate' | 'hpw' | 'latest' | 'workHours' | 'ot' | 'bonus' | 'deposit' | 'approval' | 'portal'; dir: 'asc' | 'desc' }>({ key: 'company', dir: 'asc' });
   const [tsSort, setTsSort] = useState<{ key: 'name' | 'company' | 'week' | 'hours' | 'ot' | 'incentives' | 'status' | 'submitted'; dir: 'asc' | 'desc' }>({ key: 'submitted', dir: 'desc' });
