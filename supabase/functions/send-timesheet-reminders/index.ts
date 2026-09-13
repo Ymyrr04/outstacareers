@@ -75,9 +75,9 @@ function etToUtc(dateStr: string, h: number, m: number) {
   return new Date(guess.getTime() - (asUtc - guess.getTime()));
 }
 
-// True once the Sunday 6:00 AM ET lock for that week has passed
+// True once the Sunday 12:00 PM ET lock for that week has passed
 function lockPassed(weekEnding: string) {
-  return new Date() >= etToUtc(weekEnding, 6, 0);
+  return new Date() >= etToUtc(weekEnding, 12, 0);
 }
 
 function previousWeekEnding(weekEnding: string) {
@@ -101,8 +101,8 @@ function buildEmail(name: string, weekEnding: string, isLocked: boolean) {
     ? `Overdue: submit your timesheet & invoice — week ending ${fmtDate(weekEnding)}`
     : `Reminder: submit your timesheet & invoice — week ending ${fmtDate(weekEnding)}`;
   const deadlineLine = isLocked
-    ? `<p>The submission deadline (Sunday 6:00 AM ET) for this week has <strong>passed</strong>, so this is now <strong>overdue</strong>. Please submit your hours along with your Payoneer invoice link as soon as possible.</p>`
-    : `<p>Please log in to the contractor portal and submit your hours along with your Payoneer invoice link. Submissions lock at <strong>6:00 AM ET on Sunday</strong>.</p>`;
+    ? `<p>The submission deadline (Sunday 12:00 PM ET) for this week has <strong>passed</strong>, so this is now <strong>overdue</strong>. Please submit your hours along with your Payoneer invoice link as soon as possible.</p>`
+    : `<p>Please log in to the contractor portal and submit your hours along with your Payoneer invoice link. Submissions lock at <strong>12:00 PM ET on Sunday</strong>.</p>`;
   const html = `<!doctype html><html><body style="margin:0;padding:24px;background:#f6f7f9;font-family:Arial,sans-serif;color:#1f2937">
   <div style="max-width:620px;margin:0 auto;background:#fff;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden">
     <div style="padding:18px 24px;background:#0f172a;color:#fff;font-weight:600;font-size:16px">Timesheet reminder</div>
