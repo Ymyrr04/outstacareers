@@ -8,7 +8,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const INTERNAL_CLIENT_ID = "baadbf53-0000-0000-0000-000000000000"; // replaced below if needed
+// OutSta internal team — excluded from contractor reminders
+const INTERNAL_CLIENT_ID = "baadbf53-0ca9-4abb-9af1-28f41f415bf1";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
