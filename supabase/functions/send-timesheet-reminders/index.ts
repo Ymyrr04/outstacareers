@@ -146,6 +146,13 @@ Deno.serve(async (req) => {
     const onlyIds: string[] | undefined = Array.isArray(body.assignmentIds) ? body.assignmentIds : undefined;
 
     const targets = await findNonSubmitters(weekEnding, onlyIds);
+    console.log("reminders", { weekEnding, requested: onlyIds?.length ?? "all", targets: targets.length });
+    if (body.dryRun) {
+      return new Response(
+        JSON.stringify({ success: true, dryRun: true, weekEnding, total: targets.length, targets }),
+        { headers: { "Content-Type": "application/json", ...corsHeaders } },
+      );
+    }
     let sent = 0;
     const failures: string[] = [];
 
