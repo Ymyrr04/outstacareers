@@ -337,7 +337,7 @@ const handler = async (req: Request): Promise<Response> => {
             status: 'failed',
             applicant_status_at_send: requestBody?.applicantStatusAtSend || null,
             is_automated: requestBody?.isAutomated ?? false,
-            error_message: error.message,
+            error_message: friendlyMessage,
           });
       }
     } catch (logErr) {
@@ -345,7 +345,7 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: friendlyMessage }),
       {
         status: 500,
         headers: { "Content-Type": "application/json", ...corsHeaders },
