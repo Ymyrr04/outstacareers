@@ -23,7 +23,7 @@ Deno.serve(async (req) => {
     const admin = createClient(url, serviceKey);
     const { data: envelope, error: envelopeError } = await admin
       .from("contract_envelopes")
-      .select("signed_pdf_path")
+      .select("signed_pdf_path, contract_templates!inner(pdf_path)")
       .eq("id", envelopeId)
       .single();
     if (envelopeError || !envelope?.signed_pdf_path) throw new Error("Signed contract not found");
@@ -41,6 +41,15 @@ Deno.serve(async (req) => {
     if (valuesError) throw valuesError;
 
     const pdf = await PDFDocument.load(new Uint8Array(await signedFile.arrayBuffer()));
+    const templatePath = (envelope.contract_templates as { pdf_path?: string } | null)?.pdf_path;
+    if (!templatePath) throw new Error("Contract template not found");
+    const { data: templateFile, error: templateError } = await admin.storage
+      .from("contract-templates")
+      .download(templatePath);
+    if (templateError || !templateFile) throw new Error("Could not load contract template");
+    const template = await PDFDocument.load(new Uint8Array(await templateFile.arrayBuffer()));
+    const basePageCount = template.getPageCount();
+    while (pdf.getPageCount() > basePageCount) pdf.removePage(pdf.getPageCount() - 1);
     let appended = 0;
     for (const value of values ?? []) {
       const match = value.signature_data_url?.match(/^data:application\/pdf;base64,(.+)$/);
