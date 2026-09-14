@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye, Mail, Settings2, ChevronLeft, ChevronRight, KeyRound, Download, Users, FileText, Clock, Wallet, DollarSign } from 'lucide-react';
+import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye, Mail, Settings2, ChevronLeft, ChevronRight, KeyRound, Download, Users, FileText, Clock, Wallet, DollarSign, AlarmClock } from 'lucide-react';
 import { StatCard } from '@/components/StatCard';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
@@ -24,6 +24,20 @@ import { TimesheetEditHistory } from '@/components/pl/TimesheetEditHistory';
 import { TimesheetReminderSettingsDialog } from '@/components/pl/TimesheetReminderSettingsDialog';
 import { parseDateOnly } from '@/lib/dateOnly';
 import { formatDate, formatDateShort, formatDateTime, formatDateWithWeekday } from "@/lib/dateFormat";
+import { timesheetLockAt } from "@/lib/timesheetLock";
+
+/** True when the submission came in after the Sunday 12:00 PM ET deadline for that week. */
+const isLateSubmission = (weekEndingDate: string, submittedAt?: string | null): boolean =>
+  !!submittedAt && new Date(submittedAt).getTime() > timesheetLockAt(weekEndingDate).getTime();
+
+const LateBadge = () => (
+  <span
+    className="inline-flex items-center gap-1 rounded-full bg-destructive/10 text-destructive border border-destructive/30 px-2 py-0.5 text-[10px] font-medium w-fit"
+    title="Submitted after the Sunday 12:00 PM ET deadline"
+  >
+    <AlarmClock className="w-3 h-3" /> Late
+  </span>
+);
 
 const EDIT_SEEN_KEY = 'outsta_pl_timesheet_edits_seen';
 
@@ -1843,23 +1857,24 @@ export const PLDashboard = () => {
                                     className="focus:outline-none focus:ring-2 focus:ring-ring rounded-full"
                                     title="Click to change OutSta status"
                                   >
-                                    <StatusPill status={os} prefix="OutSta" />
+                                  <StatusPill status={os} prefix="OutSta" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent align="start" className="w-40 p-1">
+                                {(['pending', 'approved', 'flagged'] as const).map((opt) => (
+                                  <button
+                                    key={opt}
+                                    type="button"
+                                    onClick={() => handleOutstaStatusChange(r, opt)}
+                                    className={`w-full text-left px-2 py-1.5 rounded text-xs hover:bg-accent flex items-center justify-between ${os === opt ? 'bg-accent/60 font-medium' : ''}`}
+                                  >
+                                    <span className="capitalize">{opt}</span>
+                                    {os === opt && <Check className="w-3 h-3" />}
                                   </button>
-                                </PopoverTrigger>
-                                <PopoverContent align="start" className="w-40 p-1">
-                                  {(['pending', 'approved', 'flagged'] as const).map((opt) => (
-                                    <button
-                                      key={opt}
-                                      type="button"
-                                      onClick={() => handleOutstaStatusChange(r, opt)}
-                                      className={`w-full text-left px-2 py-1.5 rounded text-xs hover:bg-accent flex items-center justify-between ${os === opt ? 'bg-accent/60 font-medium' : ''}`}
-                                    >
-                                      <span className="capitalize">{opt}</span>
-                                      {os === opt && <Check className="w-3 h-3" />}
-                                    </button>
-                                  ))}
-                                </PopoverContent>
-                              </Popover>
+                                ))}
+                              </PopoverContent>
+                            </Popover>
+                            {isLateSubmission(r.week_ending_date, r.submitted_at) && <LateBadge />}
                             </div>
                           );
                         })()}
