@@ -312,6 +312,14 @@ const handler = async (req: Request): Promise<Response> => {
   } catch (error: any) {
     console.error("Error sending email:", error);
 
+    // Friendlier message when the sender mailbox credentials are rejected
+    const isAuthError = error?.code === 'EAUTH' || error?.responseCode === 535;
+    const senderLabel = (requestBody?.sendAsEmail || 'the selected sender');
+    const friendlyMessage = isAuthError
+      ? `Gmail rejected the login for ${senderLabel}. The app password for that mailbox is invalid or expired — generate a new Google app password for it and update it in the project settings.`
+      : error.message;
+
+
     // Try to log the failed email
     try {
       const supabaseUrl = Deno.env.get("SUPABASE_URL");
