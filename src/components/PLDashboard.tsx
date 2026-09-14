@@ -1857,23 +1857,24 @@ export const PLDashboard = () => {
                                     className="focus:outline-none focus:ring-2 focus:ring-ring rounded-full"
                                     title="Click to change OutSta status"
                                   >
-                                    <StatusPill status={os} prefix="OutSta" />
+                                  <StatusPill status={os} prefix="OutSta" />
+                                </button>
+                              </PopoverTrigger>
+                              <PopoverContent align="start" className="w-40 p-1">
+                                {(['pending', 'approved', 'flagged'] as const).map((opt) => (
+                                  <button
+                                    key={opt}
+                                    type="button"
+                                    onClick={() => handleOutstaStatusChange(r, opt)}
+                                    className={`w-full text-left px-2 py-1.5 rounded text-xs hover:bg-accent flex items-center justify-between ${os === opt ? 'bg-accent/60 font-medium' : ''}`}
+                                  >
+                                    <span className="capitalize">{opt}</span>
+                                    {os === opt && <Check className="w-3 h-3" />}
                                   </button>
-                                </PopoverTrigger>
-                                <PopoverContent align="start" className="w-40 p-1">
-                                  {(['pending', 'approved', 'flagged'] as const).map((opt) => (
-                                    <button
-                                      key={opt}
-                                      type="button"
-                                      onClick={() => handleOutstaStatusChange(r, opt)}
-                                      className={`w-full text-left px-2 py-1.5 rounded text-xs hover:bg-accent flex items-center justify-between ${os === opt ? 'bg-accent/60 font-medium' : ''}`}
-                                    >
-                                      <span className="capitalize">{opt}</span>
-                                      {os === opt && <Check className="w-3 h-3" />}
-                                    </button>
-                                  ))}
-                                </PopoverContent>
-                              </Popover>
+                                ))}
+                              </PopoverContent>
+                            </Popover>
+                            {isLateSubmission(r.week_ending_date, r.submitted_at) && <LateBadge />}
                             </div>
                           );
                         })()}
