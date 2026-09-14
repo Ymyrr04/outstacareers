@@ -354,11 +354,13 @@ function renderFieldOverlay(
         className={`${baseBox} cursor-pointer justify-center px-2 overflow-hidden ${v.signature_data_url ? "border-emerald-500 bg-emerald-500/10" : ""} ${locked ? "pointer-events-none opacity-70" : ""}`}
       >
         {v.signature_data_url
-          ? <img src={v.signature_data_url} alt="attachment" className="max-h-full max-w-full object-contain" />
-          : <span className="text-primary font-medium">📎 {f.label || "Attach image"}</span>}
+          ? (v.signature_data_url.startsWith("data:application/pdf")
+              ? <span className="text-emerald-600 font-medium text-sm">📄 PDF attached</span>
+              : <img src={v.signature_data_url} alt="attachment" className="max-h-full max-w-full object-contain" />)
+          : <span className="text-primary font-medium">📎 {f.label || "Attach file"}</span>}
         <input
           type="file"
-          accept="image/png,image/jpeg,image/jpg"
+          accept="image/png,image/jpeg,image/jpg,application/pdf"
           className="hidden"
           disabled={locked}
           onChange={async (e) => {
