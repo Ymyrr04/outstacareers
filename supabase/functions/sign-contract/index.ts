@@ -285,8 +285,13 @@ Deno.serve(async (req) => {
 
       const signedBytes = await pdfDoc.save();
       const signedHash = await sha256Hex(signedBytes);
-      const signedPath = `${envelope.id}/signed.pdf`;
-      await admin.storage.from("contract-signed").upload(signedPath, signedBytes, { contentType: "application/pdf", upsert: true });
+      // Use a versioned path so a re-signed/repaired document can never be
+      // replaced by a stale CDN-cached copy from the previous upload.
+      const signedPath = `${envelope.id}/signed-${Date.now()}.pdf`;
+      const { error: signedUploadError } = await admin.storage
+        .from("contract-signed")
+        .upload(signedPath, signedBytes, { contentType: "application/pdf", cacheControl: "0", upsert: false });
+      if (signedUploadError) throw new Error(`Failed to save signed contract: ${signedUploadError.message}`);
 
       // Audit PDF
       const auditDoc = await PDFDocument.create();
