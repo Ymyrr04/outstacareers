@@ -156,7 +156,7 @@ Deno.serve(async (req) => {
       const helv = await pdfDoc.embedFont(StandardFonts.Helvetica);
       const pages = pdfDoc.getPages();
 
-      const attachmentImages: Array<{ bytes: Uint8Array; kind: "png" | "jpg"; label: string }> = [];
+      const attachmentImages: Array<{ bytes: Uint8Array; kind: "png" | "jpg" | "pdf"; label: string }> = [];
 
       for (const f of fields!) {
         const v = valueByFieldId.get(f.id);
@@ -171,10 +171,11 @@ Deno.serve(async (req) => {
 
         if (f.field_type === "attachment" && v.signature_data_url) {
           // Defer attachments to dedicated pages at the end, original size
-          const m = v.signature_data_url.match(/^data:image\/(png|jpeg|jpg);base64,(.+)$/);
+          const m = v.signature_data_url.match(/^data:(image\/(?:png|jpeg|jpg)|application\/pdf);base64,(.+)$/);
           if (m) {
-            const imgBytes = Uint8Array.from(atob(m[2]), c => c.charCodeAt(0));
-            attachmentImages.push({ bytes: imgBytes, kind: m[1] === "png" ? "png" : "jpg", label: f.label || "Attachment" });
+            const attBytes = Uint8Array.from(atob(m[2]), c => c.charCodeAt(0));
+            const kind = m[1] === "application/pdf" ? "pdf" : m[1] === "image/png" ? "png" : "jpg";
+            attachmentImages.push({ bytes: attBytes, kind, label: f.label || "Attachment" });
           }
           continue;
         }
@@ -254,6 +255,16 @@ Deno.serve(async (req) => {
 
       // Append attachments at the end, each on its own page, at original size (scaled down only if larger than page)
       for (const att of attachmentImages) {
+        if (att.kind === "pdf") {
+          try {
+            const attDoc = await PDFDocument.load(att.bytes);
+            const copied = await pdfDoc.copyPages(attDoc, attDoc.getPageIndices());
+            for (const p of copied) pdfDoc.addPage(p);
+          } catch (e) {
+            console.error("Failed to append PDF attachment", e);
+          }
+          continue;
+        }
         const img = att.kind === "png" ? await pdfDoc.embedPng(att.bytes) : await pdfDoc.embedJpg(att.bytes);
         const lastPage = pages[pages.length - 1];
         const { width: pw, height: ph } = lastPage.getSize();
