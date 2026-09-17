@@ -185,6 +185,7 @@ export function ReprofilingDialog({
                     {jobs.map((job) => (
                       <SelectItem key={job.id} value={job.id}>
                         {job.title}
+                        {job.client_name ? ` — ${job.client_name}` : ''}
                         {!job.is_active && ' (Hidden)'}
                         {job.id === applicant.job_id && ' (Current)'}
                       </SelectItem>
