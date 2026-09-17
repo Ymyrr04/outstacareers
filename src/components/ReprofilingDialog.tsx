@@ -60,14 +60,23 @@ export function ReprofilingDialog({
   const fetchJobs = async () => {
     setLoading(true);
     try {
-      // Fetch all jobs (including inactive ones) for reprofiling
-      const { data, error } = await supabase
-        .from('jobs')
-        .select('id, title, is_active')
-        .order('title');
+      // Fetch all jobs (including inactive ones) plus their clients for reprofiling
+      const [{ data: jobsData, error: jobsError }, { data: clientsData, error: clientsError }] =
+        await Promise.all([
+          supabase.from('jobs').select('id, title, is_active, client_id').order('title'),
+          supabase.from('clients').select('id, company_name'),
+        ]);
 
-      if (error) throw error;
-      setJobs(data || []);
+      if (jobsError) throw jobsError;
+      if (clientsError) throw clientsError;
+
+      const clientMap = new Map((clientsData || []).map((c) => [c.id, c.company_name]));
+      setJobs(
+        (jobsData || []).map((job) => ({
+          ...job,
+          client_name: job.client_id ? clientMap.get(job.client_id) || null : null,
+        }))
+      );
     } catch (error: any) {
       toast({
         title: 'Error loading jobs',
