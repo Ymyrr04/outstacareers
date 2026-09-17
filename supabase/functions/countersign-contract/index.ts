@@ -137,6 +137,59 @@ Deno.serve(async (req) => {
         metadata: { path },
       });
 
+      // Email the fully signed copy to both parties (best-effort)
+      try {
+        const gmailUser = Deno.env.get("MARK_GMAIL_USER");
+        const gmailPassword = Deno.env.get("MARK_GMAIL_APP_PASSWORD");
+        const recipients = [env.recipient_email, env.countersign_recipient_email]
+          .filter((e): e is string => !!e && e.includes("@"));
+        if (gmailUser && gmailPassword && recipients.length) {
+          const { data: link } = await admin.storage
+            .from("contract-signed")
+            .createSignedUrl(path, 60 * 60 * 24 * 7);
+
+          const sizeMb = out.byteLength / (1024 * 1024);
+          const attach = sizeMb <= 15;
+
+          const html = `
+            <div style="font-family: Arial, sans-serif; max-width: 640px; margin: 0 auto; padding: 24px; color:#1a1a1a; font-size:14px; line-height:1.6;">
+              <p style="margin:12px 0;">Hi,</p>
+              <p style="margin:12px 0;">The agreement for <strong>${env.recipient_name}</strong> has now been signed by both parties. ${attach ? "A copy of the fully signed document is attached." : "The document is available at the link below."}</p>
+              ${link?.signedUrl ? `<p style="margin: 28px 0;"><a href="${link.signedUrl}" style="background:#1a1a1a; color:#fff; padding:14px 28px; text-decoration:none; border-radius:6px; font-weight:600; display:inline-block;">Download signed copy</a></p><p style="color:#666; font-size:13px;">This download link expires in 7 days.</p>` : ""}
+              <hr style="border:none; border-top:1px solid #eee; margin: 32px 0;"/>
+              <p style="color:#999; font-size:12px;">OutSta — Part of Zoomployee LLC</p>
+            </div>`;
+
+          const client = new SMTPClient({
+            connection: { hostname: "smtp.gmail.com", port: 465, tls: true, auth: { username: gmailUser, password: gmailPassword } },
+          });
+          await client.send({
+            from: `Mark Chua <${gmailUser}>`,
+            to: recipients,
+            subject: `Fully signed - OutSta Agreement - ${env.recipient_name}`,
+            html,
+            attachments: attach
+              ? [{
+                  filename: `OutSta Agreement - ${env.recipient_name} (fully signed).pdf`,
+                  content: out,
+                  contentType: "application/pdf",
+                  encoding: "binary",
+                }]
+              : undefined,
+          });
+          await client.close();
+
+          await admin.from("contract_audit_events").insert({
+            envelope_id: env.id,
+            event_type: "countersigned_copy_sent",
+            actor_email: null,
+            metadata: { recipients, attached: attach },
+          });
+        }
+      } catch (mailErr) {
+        console.error("countersigned copy email failed", mailErr);
+      }
+
       // Save signature for future reuse
       try {
         if (env.countersign_recipient_email) {
