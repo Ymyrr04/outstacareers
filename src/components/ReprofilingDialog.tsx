@@ -44,12 +44,16 @@ export function ReprofilingDialog({
   const [showEmailDialog, setShowEmailDialog] = useState(false);
   const { toast } = useToast();
 
+  const applicantId = applicant?.id;
+  const applicantJobId = applicant?.job_id;
+
   useEffect(() => {
     if (open) {
       fetchJobs();
-      setSelectedJobId(applicant?.job_id || '');
+      setSelectedJobId(applicantJobId || '');
     }
-  }, [open, applicant]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, applicantId, applicantJobId]);
 
   const fetchJobs = async () => {
     setLoading(true);
