@@ -13,6 +13,8 @@ interface Job {
   id: string;
   title: string;
   is_active: boolean;
+  client_id: string | null;
+  client_name?: string | null;
 }
 
 interface ReprofilingDialogProps {
@@ -58,14 +60,23 @@ export function ReprofilingDialog({
   const fetchJobs = async () => {
     setLoading(true);
     try {
-      // Fetch all jobs (including inactive ones) for reprofiling
-      const { data, error } = await supabase
-        .from('jobs')
-        .select('id, title, is_active')
-        .order('title');
+      // Fetch all jobs (including inactive ones) plus their clients for reprofiling
+      const [{ data: jobsData, error: jobsError }, { data: clientsData, error: clientsError }] =
+        await Promise.all([
+          supabase.from('jobs').select('id, title, is_active, client_id').order('title'),
+          supabase.from('clients').select('id, company_name'),
+        ]);
 
-      if (error) throw error;
-      setJobs(data || []);
+      if (jobsError) throw jobsError;
+      if (clientsError) throw clientsError;
+
+      const clientMap = new Map((clientsData || []).map((c) => [c.id, c.company_name]));
+      setJobs(
+        (jobsData || []).map((job) => ({
+          ...job,
+          client_name: job.client_id ? clientMap.get(job.client_id) || null : null,
+        }))
+      );
     } catch (error: any) {
       toast({
         title: 'Error loading jobs',
@@ -174,6 +185,7 @@ export function ReprofilingDialog({
                     {jobs.map((job) => (
                       <SelectItem key={job.id} value={job.id}>
                         {job.title}
+                        {job.client_name ? ` — ${job.client_name}` : ''}
                         {!job.is_active && ' (Hidden)'}
                         {job.id === applicant.job_id && ' (Current)'}
                       </SelectItem>
