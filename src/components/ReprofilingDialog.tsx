@@ -13,6 +13,8 @@ interface Job {
   id: string;
   title: string;
   is_active: boolean;
+  client_id: string | null;
+  client_name?: string | null;
 }
 
 interface ReprofilingDialogProps {
