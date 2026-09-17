@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
 
       const { data: env } = await admin
         .from("contract_envelopes")
-        .select("id, signed_pdf_path, countersign_placement, countersign_expires_at, countersigned_at, countersign_recipient_email")
+        .select("id, signed_pdf_path, countersign_placement, countersign_expires_at, countersigned_at, countersign_recipient_email, countersign_recipient_name, recipient_email, recipient_name")
         .eq("countersign_token", token)
         .maybeSingle();
       if (!env) return new Response(JSON.stringify({ error: "Not found" }), { status: 404, headers: corsHeaders });
