@@ -816,12 +816,16 @@ export const BulkContractorEmailDialog = ({
                   const percentage = total > 0 ? Math.round((processed / total) * 100) : 0;
                   const isPaused = email.status === 'paused';
                   
-                  // Detect stuck: status is 'processing' but no progress in last 5 minutes
-                  const lastActivity = email.updated_at || email.created_at;
-                  const minutesSinceActivity = lastActivity 
-                    ? Math.floor((Date.now() - new Date(lastActivity).getTime()) / 60000) 
+                  // Detect stuck: no real send activity for 3+ minutes while processing
+                  const lastActivity = email.last_activity_at || email.created_at;
+                  const minutesSinceActivity = lastActivity
+                    ? Math.floor((Date.now() - new Date(lastActivity).getTime()) / 60000)
                     : 0;
-                  const isStuck = email.status === 'processing' && minutesSinceActivity >= 5 && processed < total;
+                  const isStuck =
+                    email.status === 'processing' &&
+                    !!email.last_activity_at &&
+                    minutesSinceActivity >= 3 &&
+                    processed < total;
 
                   return (
                     <div key={email.id} className="bg-background rounded-md p-3 border text-sm space-y-2">
