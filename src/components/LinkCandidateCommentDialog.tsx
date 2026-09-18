@@ -92,9 +92,10 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
 
       toast.success(`Linked to ${clientName}`);
       onOpenChange(false);
-    } catch (err: any) {
+    } catch (err) {
       console.error('Error linking candidate:', err);
-      toast.error(err?.message || 'Failed to link candidate');
+      const message = err instanceof Error ? err.message : 'Failed to link candidate';
+      toast.error(message);
     } finally {
       setSubmitting(false);
     }
