@@ -1137,9 +1137,31 @@ export const HiringRequestDetailDialog = ({
                         </div>
                       </div>
                     ) : (
-                      renderCommentContent(comment.content)
+                      <>
+                        {renderCommentContent(comment.content)}
+
+                        {/* Linked applicant chip */}
+                        {comment.linked_applicant_id && (
+                          <div className="mt-2">
+                            {linkedApplicants[comment.linked_applicant_id] ? (
+                              <Link
+                                to={`/admin/applicants?applicant=${comment.linked_applicant_id}`}
+                                className="inline-flex items-center gap-1.5 rounded-[20px] px-2.5 py-[3px] text-[11px] font-medium bg-[#E0F7FC] text-[#066F85] hover:bg-[#B2EEF8] transition-colors"
+                              >
+                                <User className="w-[11px] h-[11px]" />
+                                {linkedApplicants[comment.linked_applicant_id]}
+                              </Link>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 rounded-[20px] px-2.5 py-[3px] text-[11px] font-medium bg-muted text-muted-foreground">
+                                <User className="w-[11px] h-[11px]" />
+                                Candidate removed
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
-                    
+
                     {/* Reactions */}
                     <div className="flex items-center gap-1 mt-2 flex-wrap">
                       {Object.entries(getReactionsForComment(comment.id)).map(([emoji, data]) => (
