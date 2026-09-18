@@ -3471,6 +3471,7 @@ export type Database = {
           created_at: string
           error_message: string | null
           id: string
+          last_activity_at: string | null
           processed_items: number | null
           scheduled_for: string
           sent_at: string | null
@@ -3485,6 +3486,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          last_activity_at?: string | null
           processed_items?: number | null
           scheduled_for: string
           sent_at?: string | null
@@ -3499,6 +3501,7 @@ export type Database = {
           created_at?: string
           error_message?: string | null
           id?: string
+          last_activity_at?: string | null
           processed_items?: number | null
           scheduled_for?: string
           sent_at?: string | null
