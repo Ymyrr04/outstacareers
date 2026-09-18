@@ -231,6 +231,23 @@ export const HiringRequestDetailDialog = ({
           setReactions(reactionsData);
         }
       }
+      // Fetch linked applicant names in one query
+      const linkedApplicantIds = data
+        .map(c => c.linked_applicant_id)
+        .filter((id): id is string => !!id);
+      if (linkedApplicantIds.length > 0) {
+        const { data: applicantsData } = await supabase
+          .from('applicants_prescreen')
+          .select('id, full_name')
+          .in('id', linkedApplicantIds);
+        const nameMap: Record<string, string> = {};
+        (applicantsData || []).forEach((a: any) => {
+          if (a.id) nameMap[a.id] = a.full_name || 'Unknown';
+        });
+        setLinkedApplicants(nameMap);
+      } else {
+        setLinkedApplicants({});
+      }
     }
     setLoadingComments(false);
   };
