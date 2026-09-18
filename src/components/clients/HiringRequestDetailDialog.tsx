@@ -241,7 +241,8 @@ export const HiringRequestDetailDialog = ({
           .select('id, full_name')
           .in('id', linkedApplicantIds);
         const nameMap: Record<string, string> = {};
-        (applicantsData || []).forEach((a: any) => {
+        const applicantNames = (applicantsData || []) as { id: string | null; full_name: string | null }[];
+        applicantNames.forEach((a) => {
           if (a.id) nameMap[a.id] = a.full_name || 'Unknown';
         });
         setLinkedApplicants(nameMap);
