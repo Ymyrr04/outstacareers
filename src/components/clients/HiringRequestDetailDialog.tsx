@@ -20,6 +20,7 @@ import { CommentEditor, type CommentEditorRef } from '@/components/CommentEditor
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { supabase } from '@/integrations/supabase/client';
 import { Link } from 'react-router-dom';
+import { CandidateDetailDialog } from '@/components/CandidateDetailDialog';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { getAdminDisplayName, getAdminAvatar } from '@/lib/adminDisplayNames';
@@ -112,6 +113,7 @@ export const HiringRequestDetailDialog = ({
   const [reactions, setReactions] = useState<CommentReaction[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
   const [linkedApplicants, setLinkedApplicants] = useState<Record<string, string>>({});
+  const [previewApplicantId, setPreviewApplicantId] = useState<string | null>(null);
   const [showMentions, setShowMentions] = useState(false);
   const [mentionFilter, setMentionFilter] = useState('');
   const commentInputRef = useRef<CommentEditorRef>(null);
@@ -609,6 +611,7 @@ export const HiringRequestDetailDialog = ({
   const stageLabel = stages.find(s => s.slug === request.pipeline_stage)?.name || request.pipeline_stage;
 
   return (
+    <>
     <Dialog open={!!request} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[50vw] w-full p-0 gap-0 overflow-hidden [&>button]:hidden h-screen max-h-screen flex flex-col rounded-none">
         {/* Header */}
@@ -1141,13 +1144,14 @@ export const HiringRequestDetailDialog = ({
                         {comment.linked_applicant_id && (
                           <div className="mt-2">
                             {linkedApplicants[comment.linked_applicant_id] ? (
-                              <Link
-                                to={`/admin/applicants?applicant=${comment.linked_applicant_id}`}
+                              <button
+                                type="button"
+                                onClick={() => setPreviewApplicantId(comment.linked_applicant_id!)}
                                 className="inline-flex items-center gap-1.5 rounded-[20px] px-2.5 py-[3px] text-[11px] font-medium bg-[#E0F7FC] text-[#066F85] hover:bg-[#B2EEF8] transition-colors"
                               >
                                 <User className="w-[11px] h-[11px]" />
                                 {linkedApplicants[comment.linked_applicant_id]}
-                              </Link>
+                              </button>
                             ) : (
                               <span className="inline-flex items-center gap-1.5 rounded-[20px] px-2.5 py-[3px] text-[11px] font-medium bg-muted text-muted-foreground">
                                 <User className="w-[11px] h-[11px]" />
@@ -1328,5 +1332,11 @@ export const HiringRequestDetailDialog = ({
         </div>
       </DialogContent>
     </Dialog>
+    <CandidateDetailDialog
+      open={!!previewApplicantId}
+      onOpenChange={(open) => { if (!open) setPreviewApplicantId(null); }}
+      applicantId={previewApplicantId}
+    />
+  </>
   );
 };
