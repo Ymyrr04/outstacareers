@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Send, Copy, Download, Ban, FileSignature, Trash2, RefreshCw, PenLine, FolderOpen, FolderCheck } from "lucide-react";
+import { Loader2, Send, Copy, Download, Ban, FileSignature, Trash2, RefreshCw, PenLine, FolderOpen, FolderCheck, BellRing } from "lucide-react";
 import { toast } from "sonner";
 import { SendEnvelopeDialog } from "./SendEnvelopeDialog";
 import { CountersignDialog } from "./CountersignDialog";
