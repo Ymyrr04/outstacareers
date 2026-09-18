@@ -15,6 +15,13 @@
       "when": 1789320667019,
       "tag": "0001_timesheet_reminder_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1789737365905,
+      "tag": "0002_add_last_activity_to_scheduled_contractor_emails",
+      "breakpoints": true
     }
   ]
 }

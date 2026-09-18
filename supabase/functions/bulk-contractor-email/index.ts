@@ -155,7 +155,7 @@ const handler = async (req: Request): Promise<Response> => {
       if (Number(scheduledRow?.total_items || 0) !== totalItems) {
         await supabase
           .from("scheduled_contractor_emails")
-          .update({ total_items: totalItems })
+          .update({ total_items: totalItems, last_activity_at: new Date().toISOString() })
           .eq("id", scheduledEmailId);
       }
     }
@@ -237,7 +237,7 @@ const handler = async (req: Request): Promise<Response> => {
           if (scheduledEmailId) {
             await supabase
               .from("scheduled_contractor_emails")
-              .update({ processed_items: processedItems })
+              .update({ processed_items: processedItems, last_activity_at: new Date().toISOString() })
               .eq("id", scheduledEmailId);
           }
           continue;
@@ -309,7 +309,7 @@ const handler = async (req: Request): Promise<Response> => {
         if (scheduledEmailId) {
           await supabase
             .from("scheduled_contractor_emails")
-            .update({ processed_items: processedItems })
+            .update({ processed_items: processedItems, last_activity_at: new Date().toISOString() })
             .eq("id", scheduledEmailId);
         }
       }
@@ -361,6 +361,7 @@ const handler = async (req: Request): Promise<Response> => {
                 status: "processing",
                 processed_items: processedItems,
                 total_items: totalItems,
+                last_activity_at: new Date().toISOString(),
               },
         )
         .eq("id", scheduledEmailId);
