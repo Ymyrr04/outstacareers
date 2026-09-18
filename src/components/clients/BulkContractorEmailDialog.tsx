@@ -340,7 +340,7 @@ export const BulkContractorEmailDialog = ({
       // Re-trigger the edge function to continue from where it left off
       const { data: emailData } = await supabase
         .from('scheduled_contractor_emails' as any)
-        .select('subject, body_html, client_id')
+        .select('subject, body_html, client_id, country')
         .eq('id', id)
         .single();
 
