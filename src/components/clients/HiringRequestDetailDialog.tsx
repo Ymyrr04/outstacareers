@@ -24,7 +24,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { getAdminDisplayName, getAdminAvatar } from '@/lib/adminDisplayNames';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { LinkedCandidatesSection } from '@/components/clients/LinkedCandidatesSection';
 
 // Import admin avatars
 import czaAvatar from '@/assets/team/cza.png';
