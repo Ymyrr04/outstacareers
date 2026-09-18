@@ -611,6 +611,7 @@ export const HiringRequestDetailDialog = ({
   const stageLabel = stages.find(s => s.slug === request.pipeline_stage)?.name || request.pipeline_stage;
 
   return (
+    <>
     <Dialog open={!!request} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-[50vw] w-full p-0 gap-0 overflow-hidden [&>button]:hidden h-screen max-h-screen flex flex-col rounded-none">
         {/* Header */}
