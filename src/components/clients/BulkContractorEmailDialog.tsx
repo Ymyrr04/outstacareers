@@ -357,8 +357,8 @@ export const BulkContractorEmailDialog = ({
             subject: (emailData as any).subject,
             bodyHtml: (emailData as any).body_html,
             scheduledEmailId: id,
-            maxBatchSize: 5,
             clientId: (emailData as any).client_id || undefined,
+            country: (emailData as any).country || undefined,
           }),
         }).catch(console.error);
       }
