@@ -13,12 +13,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useHiringRequests, type HiringRequest, type Priority, type ClientStatus } from '@/hooks/useHiringRequests';
 import { usePipelineStages } from '@/hooks/usePipelineStages';
 import { useSlackNotifications } from '@/hooks/useSlackNotifications';
-import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X, MessageSquare, Send, Save, UserCircle, Pencil, SmilePlus, ChevronDown, Copy } from 'lucide-react';
+import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X, MessageSquare, Send, Save, UserCircle, Pencil, SmilePlus, ChevronDown, Copy, User } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { WysiwygEditor } from '@/components/WysiwygEditor';
 import { CommentEditor, type CommentEditorRef } from '@/components/CommentEditor';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { getAdminDisplayName, getAdminAvatar } from '@/lib/adminDisplayNames';
@@ -52,6 +53,7 @@ interface Comment {
   user_id: string;
   content: string;
   created_at: string;
+  linked_applicant_id?: string | null;
 }
 
 interface CommentReaction {
@@ -110,6 +112,7 @@ export const HiringRequestDetailDialog = ({
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
   const [reactions, setReactions] = useState<CommentReaction[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
+  const [linkedApplicants, setLinkedApplicants] = useState<Record<string, string>>({});
   const [showMentions, setShowMentions] = useState(false);
   const [mentionFilter, setMentionFilter] = useState('');
   const commentInputRef = useRef<CommentEditorRef>(null);
