@@ -333,7 +333,7 @@ export const BulkContractorEmailDialog = ({
       // Set status back to processing
       const { error } = await supabase
         .from('scheduled_contractor_emails' as any)
-        .update({ status: 'processing' } as any)
+        .update({ status: 'processing', last_activity_at: new Date().toISOString() } as any)
         .eq('id', id);
       if (error) throw error;
 
