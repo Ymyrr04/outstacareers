@@ -966,9 +966,6 @@ export const HiringRequestDetailDialog = ({
           </div>
         </div>
 
-        {/* Linked Candidates Section - Collapsible */}
-        {request?.id && <LinkedCandidatesSection hiringRequestId={request.id} />}
-
         {/* Description Section - Collapsible */}
         <Collapsible defaultOpen className="border-t">
           <CollapsibleTrigger className="w-full p-4 flex items-center justify-between hover:bg-muted/30 transition-colors">
