@@ -90,13 +90,6 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
       });
       if (error) throw error;
 
-      // Keep the Linked Candidates section in sync — ignore duplicate-link errors
-      await supabase.from('applicant_hiring_request_links').insert({
-        applicant_id: applicantId,
-        hiring_request_id: request.id,
-        linked_by: userId,
-      });
-
       toast.success(`Linked to ${clientName}`);
       onOpenChange(false);
     } catch (err: any) {

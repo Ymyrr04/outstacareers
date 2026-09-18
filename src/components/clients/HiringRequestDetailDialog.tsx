@@ -24,7 +24,6 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { getAdminDisplayName, getAdminAvatar } from '@/lib/adminDisplayNames';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { LinkedCandidatesSection } from '@/components/clients/LinkedCandidatesSection';
 
 // Import admin avatars
 import czaAvatar from '@/assets/team/cza.png';
@@ -966,9 +965,6 @@ export const HiringRequestDetailDialog = ({
             </div>
           </div>
         </div>
-
-        {/* Linked Candidates Section - Collapsible */}
-        {request?.id && <LinkedCandidatesSection hiringRequestId={request.id} />}
 
         {/* Description Section - Collapsible */}
         <Collapsible defaultOpen className="border-t">
