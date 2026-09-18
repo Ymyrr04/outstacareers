@@ -13,12 +13,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { useHiringRequests, type HiringRequest, type Priority, type ClientStatus } from '@/hooks/useHiringRequests';
 import { usePipelineStages } from '@/hooks/usePipelineStages';
 import { useSlackNotifications } from '@/hooks/useSlackNotifications';
-import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X, MessageSquare, Send, Save, UserCircle, Pencil, SmilePlus, ChevronDown, Copy } from 'lucide-react';
+import { Loader2, Trash2, CheckCircle2, Calendar, Briefcase, Building2, Users, MapPin, FileText, X, MessageSquare, Send, Save, UserCircle, Pencil, SmilePlus, ChevronDown, Copy, User } from 'lucide-react';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { WysiwygEditor } from '@/components/WysiwygEditor';
 import { CommentEditor, type CommentEditorRef } from '@/components/CommentEditor';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import { supabase } from '@/integrations/supabase/client';
+import { Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { getAdminDisplayName, getAdminAvatar } from '@/lib/adminDisplayNames';
@@ -52,6 +53,7 @@ interface Comment {
   user_id: string;
   content: string;
   created_at: string;
+  linked_applicant_id?: string | null;
 }
 
 interface CommentReaction {
@@ -110,6 +112,7 @@ export const HiringRequestDetailDialog = ({
   const [deletingCommentId, setDeletingCommentId] = useState<string | null>(null);
   const [reactions, setReactions] = useState<CommentReaction[]>([]);
   const [showEmojiPicker, setShowEmojiPicker] = useState<string | null>(null);
+  const [linkedApplicants, setLinkedApplicants] = useState<Record<string, string>>({});
   const [showMentions, setShowMentions] = useState(false);
   const [mentionFilter, setMentionFilter] = useState('');
   const commentInputRef = useRef<CommentEditorRef>(null);
@@ -227,6 +230,24 @@ export const HiringRequestDetailDialog = ({
         if (reactionsData) {
           setReactions(reactionsData);
         }
+      }
+      // Fetch linked applicant names in one query
+      const linkedApplicantIds = data
+        .map(c => c.linked_applicant_id)
+        .filter((id): id is string => !!id);
+      if (linkedApplicantIds.length > 0) {
+        const { data: applicantsData } = await supabase
+          .from('applicants_prescreen')
+          .select('id, full_name')
+          .in('id', linkedApplicantIds);
+        const nameMap: Record<string, string> = {};
+        const applicantNames = (applicantsData || []) as { id: string | null; full_name: string | null }[];
+        applicantNames.forEach((a) => {
+          if (a.id) nameMap[a.id] = a.full_name || 'Unknown';
+        });
+        setLinkedApplicants(nameMap);
+      } else {
+        setLinkedApplicants({});
       }
     }
     setLoadingComments(false);
@@ -1117,9 +1138,31 @@ export const HiringRequestDetailDialog = ({
                         </div>
                       </div>
                     ) : (
-                      renderCommentContent(comment.content)
+                      <>
+                        {renderCommentContent(comment.content)}
+
+                        {/* Linked applicant chip */}
+                        {comment.linked_applicant_id && (
+                          <div className="mt-2">
+                            {linkedApplicants[comment.linked_applicant_id] ? (
+                              <Link
+                                to={`/admin/applicants?applicant=${comment.linked_applicant_id}`}
+                                className="inline-flex items-center gap-1.5 rounded-[20px] px-2.5 py-[3px] text-[11px] font-medium bg-[#E0F7FC] text-[#066F85] hover:bg-[#B2EEF8] transition-colors"
+                              >
+                                <User className="w-[11px] h-[11px]" />
+                                {linkedApplicants[comment.linked_applicant_id]}
+                              </Link>
+                            ) : (
+                              <span className="inline-flex items-center gap-1.5 rounded-[20px] px-2.5 py-[3px] text-[11px] font-medium bg-muted text-muted-foreground">
+                                <User className="w-[11px] h-[11px]" />
+                                Candidate removed
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </>
                     )}
-                    
+
                     {/* Reactions */}
                     <div className="flex items-center gap-1 mt-2 flex-wrap">
                       {Object.entries(getReactionsForComment(comment.id)).map(([emoji, data]) => (
