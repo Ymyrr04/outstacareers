@@ -154,6 +154,45 @@ export type Database = {
         }
         Relationships: []
       }
+      applicant_hiring_request_links: {
+        Row: {
+          applicant_id: string
+          created_at: string | null
+          hiring_request_id: string
+          id: string
+          linked_by: string | null
+        }
+        Insert: {
+          applicant_id: string
+          created_at?: string | null
+          hiring_request_id: string
+          id?: string
+          linked_by?: string | null
+        }
+        Update: {
+          applicant_id?: string
+          created_at?: string | null
+          hiring_request_id?: string
+          id?: string
+          linked_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "applicant_hiring_request_links_applicant_id_fkey"
+            columns: ["applicant_id"]
+            isOneToOne: false
+            referencedRelation: "applicants_prescreen"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "applicant_hiring_request_links_hiring_request_id_fkey"
+            columns: ["hiring_request_id"]
+            isOneToOne: false
+            referencedRelation: "client_hiring_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       applicant_notes: {
         Row: {
           applicant_id: string
