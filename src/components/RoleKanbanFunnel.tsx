@@ -16,13 +16,14 @@ import {
   ContextMenuSubContent,
 } from '@/components/ui/context-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity, FileSignature, Loader2, Tag as TagIcon, X as XIcon, Briefcase, UserCog, Calendar, CalendarCheck, CheckCircle2, XCircle, Columns3 } from 'lucide-react';
+import { Users, MapPin, Mail, Search, ArrowRight, Copy, Star, Eye, FileText, Send, History, Trash2, CalendarPlus, Phone, ArrowUpDown, ArrowDownAZ, ArrowUpAZ, ArrowDown01, ArrowUp01, Clock, ClipboardList, UserCircle, Activity, FileSignature, Loader2, Tag as TagIcon, X as XIcon, Briefcase, UserCog, Calendar, CalendarCheck, CheckCircle2, XCircle, Columns3, Link2 } from 'lucide-react';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Button } from '@/components/ui/button';
 import { TagEditorDialog } from '@/components/TagEditorDialog';
 import { SuitableRoleEditorDialog } from '@/components/SuitableRoleEditorDialog';
 import { ReprofilingDialog } from '@/components/ReprofilingDialog';
+import { LinkToClientPipelineDialog } from '@/components/LinkToClientPipelineDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { priorityGate } from '@/lib/priorityGate';
@@ -2004,6 +2005,9 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
   const [mountSuitable, setMountSuitable] = useState(false);
   const [showSuitable, setShowSuitable] = useState(false);
   const openSuitable = useCallback(() => { setMountSuitable(true); setShowSuitable(true); }, []);
+  const [mountLinkPipeline, setMountLinkPipeline] = useState(false);
+  const [showLinkPipeline, setShowLinkPipeline] = useState(false);
+  const openLinkPipeline = useCallback(() => { setMountLinkPipeline(true); setShowLinkPipeline(true); }, []);
   const [mountReprofile, setMountReprofile] = useState(false);
   const [showReprofile, setShowReprofile] = useState(false);
   const [reprofileOrigin, setReprofileOrigin] = useState<{ original_job_id: string | null; original_job_title: string | null }>({ original_job_id: null, original_job_title: null });
@@ -2368,6 +2372,11 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
             Send Pre-pitch
           </ContextMenuItem>
 
+          <ContextMenuItem onClick={openLinkPipeline}>
+            <Link2 className="w-4 h-4 mr-2" />
+            Link to Client Pipeline
+          </ContextMenuItem>
+
           <ContextMenuItem onClick={sendAvailabilityCheck} disabled={sendingAvailability}>
             {sendingAvailability ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <CalendarCheck className="w-4 h-4 mr-2" />}
             Check Availability
@@ -2599,6 +2608,15 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
           initialRoles={candidate.suitable_roles || []}
           knownRoles={knownSuitableRoles}
           onSaved={(roles) => onSuitableRolesUpdated(candidate.id, roles)}
+        />
+      )}
+
+      {mountLinkPipeline && (
+        <LinkToClientPipelineDialog
+          open={showLinkPipeline}
+          onOpenChange={setShowLinkPipeline}
+          applicantId={candidate.id}
+          applicantName={candidate.full_name}
         />
       )}
 
