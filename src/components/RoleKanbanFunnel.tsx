@@ -23,7 +23,7 @@ import { Button } from '@/components/ui/button';
 import { TagEditorDialog } from '@/components/TagEditorDialog';
 import { SuitableRoleEditorDialog } from '@/components/SuitableRoleEditorDialog';
 import { ReprofilingDialog } from '@/components/ReprofilingDialog';
-import { LinkToClientPipelineDialog } from '@/components/LinkToClientPipelineDialog';
+import { LinkCandidateCommentDialog } from '@/components/LinkCandidateCommentDialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { priorityGate } from '@/lib/priorityGate';
@@ -2612,7 +2612,7 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
       )}
 
       {mountLinkPipeline && (
-        <LinkToClientPipelineDialog
+        <LinkCandidateCommentDialog
           open={showLinkPipeline}
           onOpenChange={setShowLinkPipeline}
           applicantId={candidate.id}

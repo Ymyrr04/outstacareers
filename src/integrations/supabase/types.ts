@@ -2782,6 +2782,7 @@ export type Database = {
           content: string
           created_at: string
           id: string
+          linked_applicant_id: string | null
           request_id: string
           updated_at: string
           user_id: string
@@ -2790,6 +2791,7 @@ export type Database = {
           content: string
           created_at?: string
           id?: string
+          linked_applicant_id?: string | null
           request_id: string
           updated_at?: string
           user_id: string
@@ -2798,11 +2800,19 @@ export type Database = {
           content?: string
           created_at?: string
           id?: string
+          linked_applicant_id?: string | null
           request_id?: string
           updated_at?: string
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "hiring_request_comments_linked_applicant_id_fkey"
+            columns: ["linked_applicant_id"]
+            isOneToOne: false
+            referencedRelation: "applicants_prescreen"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "hiring_request_comments_request_id_fkey"
             columns: ["request_id"]

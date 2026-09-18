@@ -29,6 +29,13 @@
       "when": 1789738103732,
       "tag": "0003_create_applicant_hiring_request_links",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1789740012642,
+      "tag": "0004_add_linked_applicant_to_hiring_request_comments",
+      "breakpoints": true
     }
   ]
 }

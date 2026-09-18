@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
-import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Search, Loader2, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -36,84 +37,73 @@ interface Props {
   applicantName: string;
 }
 
-export function LinkToClientPipelineDialog({ open, onOpenChange, applicantId, applicantName }: Props) {
+export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, applicantName }: Props) {
   const [loading, setLoading] = useState(false);
   const [requests, setRequests] = useState<HiringRequestRow[]>([]);
-  const [linkedIds, setLinkedIds] = useState<Set<string>>(new Set());
-  const [pendingIds, setPendingIds] = useState<Set<string>>(new Set());
   const [search, setSearch] = useState('');
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [note, setNote] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
-    const [{ data: reqs, error: reqErr }, { data: links, error: linkErr }] = await Promise.all([
-      supabase
-        .from('client_hiring_requests')
-        .select('id, job_title, pipeline_stage, clients(company_name)')
-        .in('pipeline_stage', [...ACTIVE_STAGES])
-        .order('job_title', { ascending: true }),
-      supabase
-        .from('applicant_hiring_request_links')
-        .select('hiring_request_id')
-        .eq('applicant_id', applicantId),
-    ]);
-    if (reqErr) {
-      console.error('Error loading hiring requests:', reqErr);
+    const { data: reqs, error } = await supabase
+      .from('client_hiring_requests')
+      .select('id, job_title, pipeline_stage, clients(company_name)')
+      .in('pipeline_stage', [...ACTIVE_STAGES])
+      .order('job_title', { ascending: true });
+    if (error) {
+      console.error('Error loading hiring requests:', error);
       toast.error('Failed to load hiring requests');
     }
-    if (linkErr) {
-      console.error('Error loading links:', linkErr);
-    }
     setRequests((reqs as unknown as HiringRequestRow[]) || []);
-    setLinkedIds(new Set((links || []).map((l) => l.hiring_request_id)));
     setLoading(false);
-  }, [applicantId]);
+  }, []);
 
   useEffect(() => {
     if (open) {
       setSearch('');
+      setSelectedId(null);
+      setNote('');
       load();
     }
   }, [open, load]);
 
-  const toggle = async (request: HiringRequestRow, checked: boolean) => {
+  const submit = async () => {
+    if (!selectedId || submitting) return;
+    const request = requests.find((r) => r.id === selectedId);
+    if (!request) return;
     const clientName = request.clients?.company_name || 'client';
-    setPendingIds((prev) => new Set(prev).add(request.id));
+
+    setSubmitting(true);
     try {
-      if (checked) {
-        const { data: auth } = await supabase.auth.getUser();
-        const { error } = await supabase
-          .from('applicant_hiring_request_links')
-          .insert({
-            applicant_id: applicantId,
-            hiring_request_id: request.id,
-            linked_by: auth.user?.id ?? null,
-          });
-        if (error) throw error;
-        setLinkedIds((prev) => new Set(prev).add(request.id));
-        toast.success(`Linked to ${clientName}`);
-      } else {
-        const { error } = await supabase
-          .from('applicant_hiring_request_links')
-          .delete()
-          .eq('applicant_id', applicantId)
-          .eq('hiring_request_id', request.id);
-        if (error) throw error;
-        setLinkedIds((prev) => {
-          const next = new Set(prev);
-          next.delete(request.id);
-          return next;
-        });
-        toast.success(`Unlinked from ${clientName}`);
-      }
-    } catch (err: any) {
-      console.error('Error toggling link:', err);
-      toast.error(err?.message || 'Failed to update link');
-    } finally {
-      setPendingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(request.id);
-        return next;
+      const { data: auth } = await supabase.auth.getUser();
+      const userId = auth.user?.id;
+      if (!userId) throw new Error('Not signed in');
+
+      const trimmed = note.trim();
+      const { error } = await supabase.from('hiring_request_comments').insert({
+        request_id: request.id,
+        user_id: userId,
+        content: trimmed || `Linked ${applicantName}`,
+        linked_applicant_id: applicantId,
       });
+      if (error) throw error;
+
+      // Keep the Linked Candidates section in sync — ignore duplicate-link errors
+      await supabase.from('applicant_hiring_request_links').insert({
+        applicant_id: applicantId,
+        hiring_request_id: request.id,
+        linked_by: userId,
+      });
+
+      toast.success(`Linked to ${clientName}`);
+      onOpenChange(false);
+    } catch (err: any) {
+      console.error('Error linking candidate:', err);
+      toast.error(err?.message || 'Failed to link candidate');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -127,11 +117,11 @@ export function LinkToClientPipelineDialog({ open, onOpenChange, applicantId, ap
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 text-base">
             <Link2 className="w-4 h-4" />
-            Link {applicantName} to client pipeline
+            Link {applicantName} to a client request
           </DialogTitle>
         </DialogHeader>
 
@@ -145,34 +135,32 @@ export function LinkToClientPipelineDialog({ open, onOpenChange, applicantId, ap
           />
         </div>
 
-        <div className="max-h-80 overflow-y-auto -mx-1 px-1">
+        <div className="max-h-64 overflow-y-auto -mx-1 px-1">
           {loading ? (
-            <div className="flex items-center justify-center py-10 text-muted-foreground gap-2">
+            <div className="flex items-center justify-center py-8 text-muted-foreground gap-2">
               <Loader2 className="w-4 h-4 animate-spin" />
               <span className="text-sm">Loading hiring requests...</span>
             </div>
           ) : filtered.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-10">
+            <p className="text-sm text-muted-foreground text-center py-8">
               {requests.length === 0 ? 'No active hiring requests to link to' : 'No requests match your search'}
             </p>
           ) : (
             <div className="space-y-1">
               {filtered.map((r) => {
-                const checked = linkedIds.has(r.id);
-                const pending = pendingIds.has(r.id);
+                const selected = selectedId === r.id;
                 return (
-                  <label
+                  <button
                     key={r.id}
+                    type="button"
+                    onClick={() => setSelectedId(selected ? null : r.id)}
                     className={cn(
-                      'flex items-center gap-3 rounded-md border border-border px-3 py-2 cursor-pointer transition-colors hover:bg-muted/50',
-                      pending && 'opacity-60 pointer-events-none'
+                      'w-full flex items-center gap-3 rounded-md border px-3 py-2 text-left transition-colors',
+                      selected
+                        ? 'border-primary bg-primary/5'
+                        : 'border-border hover:bg-muted/50'
                     )}
                   >
-                    <Checkbox
-                      checked={checked}
-                      disabled={pending}
-                      onCheckedChange={(v) => toggle(r, v === true)}
-                    />
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium truncate">{r.clients?.company_name || 'Unknown client'}</p>
                       <p className="text-xs text-muted-foreground truncate">{r.job_title}</p>
@@ -183,12 +171,28 @@ export function LinkToClientPipelineDialog({ open, onOpenChange, applicantId, ap
                     >
                       {STAGE_LABELS[r.pipeline_stage] || r.pipeline_stage}
                     </Badge>
-                  </label>
+                  </button>
                 );
               })}
             </div>
           )}
         </div>
+
+        <Textarea
+          value={note}
+          onChange={(e) => setNote(e.target.value)}
+          placeholder="Add a note (optional)"
+          className="min-h-[72px] resize-none"
+        />
+
+        <Button
+          onClick={submit}
+          disabled={!selectedId || submitting}
+          className="w-full"
+        >
+          {submitting && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
+          Link &amp; comment
+        </Button>
       </DialogContent>
     </Dialog>
   );
