@@ -67,6 +67,25 @@ export const EnvelopesPanel = () => {
   useEffect(() => { load(); }, []);
 
   const [resendingId, setResendingId] = useState<string | null>(null);
+  const [remindingId, setRemindingId] = useState<string | null>(null);
+
+  const remindEnvelope = async (env: Envelope) => {
+    const note = prompt(`Send a reminder to ${env.recipient_name} (${env.recipient_email}) using the SAME contract link?\n\nOptional extra note (leave blank for none):`, "");
+    if (note === null) return;
+    setRemindingId(env.id);
+    try {
+      const { data, error } = await supabase.functions.invoke("send-contract-reminder", {
+        body: { envelopeId: env.id, note: note.trim() || null },
+      });
+      if (error) throw error;
+      if ((data as any)?.error) throw new Error((data as any).error);
+      toast.success("Reminder sent");
+    } catch (e) {
+      toast.error((e as Error).message);
+    } finally {
+      setRemindingId(null);
+    }
+  };
 
   const copyLink = (token: string) => {
     const url = `${window.location.origin}/sign/${token}`;
@@ -225,6 +244,11 @@ export const EnvelopesPanel = () => {
               </div>
               <div className="list-row-right gap-1">
                 <Button size="sm" variant="outline" onClick={() => copyLink(e.signing_token)} className="gap-1" title="Copy signing link"><Copy className="w-3 h-3" /> Link</Button>
+                {["sent", "viewed", "draft"].includes(e.status) && (
+                  <Button size="sm" variant="outline" onClick={() => remindEnvelope(e)} disabled={remindingId === e.id} className="gap-1" title="Send a reminder using the same contract link">
+                    {remindingId === e.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <BellRing className="w-3 h-3" />} Remind
+                  </Button>
+                )}
                 <Button size="sm" variant="outline" onClick={() => resendEnvelope(e)} disabled={resendingId === e.id} className="gap-1" title="Resend with a new unique link">
                   {resendingId === e.id ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />} Resend
                 </Button>
