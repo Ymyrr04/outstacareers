@@ -98,7 +98,14 @@ export function plainTextToHtml(text: string): string {
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
-  return escaped
+  // Linkify bare URLs so they render as clickable links
+  const linked = escaped.replace(/\bhttps?:\/\/[^\s<)]+/gi, (match) => {
+    // Keep trailing punctuation (.,;!:) outside the link
+    const trailing = match.match(/[.,;:!?]+$/)?.[0] || '';
+    const url = match.slice(0, match.length - trailing.length);
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>${trailing}`;
+  });
+  return linked
     .split(/\n{2,}/)
     .map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`)
     .join('');
