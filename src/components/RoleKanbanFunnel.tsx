@@ -24,6 +24,7 @@ import { TagEditorDialog } from '@/components/TagEditorDialog';
 import { SuitableRoleEditorDialog } from '@/components/SuitableRoleEditorDialog';
 import { ReprofilingDialog } from '@/components/ReprofilingDialog';
 import { LinkCandidateCommentDialog } from '@/components/LinkCandidateCommentDialog';
+import { LinkedClientsBadge } from '@/components/LinkedClientsBadge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { priorityGate } from '@/lib/priorityGate';
