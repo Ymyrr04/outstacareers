@@ -2233,6 +2233,7 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
                   );
                 })()}
                 <ApplicationHistoryBadge email={candidate.email} currentId={candidate.id} phone={candidate.phone} />
+                <LinkedClientsBadge applicantId={candidate.id} />
               </div>
               {((candidate.tags && candidate.tags.length > 0) || (candidate.suitable_roles && candidate.suitable_roles.length > 0)) && (
                 <div className="pl-3.5 flex items-center gap-1 flex-wrap">
