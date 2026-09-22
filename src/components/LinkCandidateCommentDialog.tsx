@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Search, Loader2, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { htmlToWhatsAppText } from '@/lib/htmlToWhatsApp';
+import { htmlToPlainText, plainTextToHtml } from '@/lib/htmlToWhatsApp';
 
 const ACTIVE_STAGES = ['sourcing', 'pitch', 'scheduled_interview'] as const;
 
@@ -74,7 +74,7 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
         .eq('id', applicantId)
         .single()
         .then(({ data }) => {
-          const profileText = htmlToWhatsAppText(data?.candidate_profile || '');
+          const profileText = htmlToPlainText(data?.candidate_profile || '');
           if (profileText) setNote(profileText);
         });
     }
@@ -96,7 +96,7 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
       const { error } = await supabase.from('hiring_request_comments').insert({
         request_id: request.id,
         user_id: userId,
-        content: trimmed || `Linked ${applicantName}`,
+        content: trimmed ? plainTextToHtml(trimmed) : `Linked ${applicantName}`,
         linked_applicant_id: applicantId,
       });
       if (error) throw error;
