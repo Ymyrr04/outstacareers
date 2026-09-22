@@ -187,7 +187,7 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
           value={note}
           onChange={(e) => setNote(e.target.value)}
           placeholder="Add a note (optional)"
-          className="min-h-[72px] resize-none"
+          className="min-h-[160px] resize-y"
         />
 
         <Button
