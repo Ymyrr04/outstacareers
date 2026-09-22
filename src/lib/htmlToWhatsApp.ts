@@ -74,6 +74,37 @@ export function htmlToWhatsAppText(html: string): string {
 }
 
 /**
+ * Converts HTML to readable plain text (no markdown markers):
+ * lists become "• item" lines, paragraphs/line breaks become newlines,
+ * links become "text (url)".
+ */
+export function htmlToPlainText(html: string): string {
+  if (!html) return '';
+  // Reuse the WhatsApp conversion for structure, then strip its markers
+  return htmlToWhatsAppText(html)
+    .replace(/\*([^*\n]+)\*/g, '$1')
+    .replace(/_([^_\n]+)_/g, '$1')
+    .replace(/~([^~\n]+)~/g, '$1')
+    .replace(/```([^`]+)```/g, '$1');
+}
+
+/**
+ * Converts plain text (from a textarea) into simple HTML for rendering:
+ * escapes HTML, blank lines split paragraphs, single newlines become <br>.
+ */
+export function plainTextToHtml(text: string): string {
+  if (!text) return '';
+  const escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+  return escaped
+    .split(/\n{2,}/)
+    .map((p) => `<p>${p.replace(/\n/g, '<br>')}</p>`)
+    .join('');
+}
+
+/**
  * Copies content to clipboard as both HTML (for rich-text apps like
  * Gmail/Docs) AND WhatsApp-friendly markdown text (for WhatsApp/Slack).
  */
