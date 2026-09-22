@@ -54,6 +54,7 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const previousLinks = useCandidateLinks(applicantId);
   const [profiles, setProfiles] = useState<ProfileOption[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
 
