@@ -138,6 +138,7 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
       if (error) throw error;
 
       toast.success(`Linked to ${clientName}`);
+      refreshCandidateLinks();
       onOpenChange(false);
     } catch (err) {
       console.error('Error linking candidate:', err);
