@@ -8,6 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { Search, Loader2, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { htmlToWhatsAppText } from '@/lib/htmlToWhatsApp';
 
 const ACTIVE_STAGES = ['sourcing', 'pitch', 'scheduled_interview'] as const;
 
@@ -66,8 +67,18 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
       setSelectedId(null);
       setNote('');
       load();
+      // Auto-fill the note with the candidate's profile (plain-text version)
+      supabase
+        .from('applicants_prescreen')
+        .select('candidate_profile')
+        .eq('id', applicantId)
+        .single()
+        .then(({ data }) => {
+          const profileText = htmlToWhatsAppText(data?.candidate_profile || '');
+          if (profileText) setNote(profileText);
+        });
     }
-  }, [open, load]);
+  }, [open, load, applicantId]);
 
   const submit = async () => {
     if (!selectedId || submitting) return;
