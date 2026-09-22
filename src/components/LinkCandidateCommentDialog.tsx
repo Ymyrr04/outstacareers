@@ -225,7 +225,12 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
                     )}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{r.clients?.company_name || 'Unknown client'}</p>
+                      <p className="text-sm font-medium truncate">
+                        {r.clients?.company_name || 'Unknown client'}
+                        {linkedRequestIds.has(r.id) && (
+                          <span className="ml-1.5 text-[10px] font-normal text-amber-600 dark:text-amber-400">Already linked</span>
+                        )}
+                      </p>
                       <p className="text-xs text-muted-foreground truncate">{r.job_title}</p>
                     </div>
                     <Badge
