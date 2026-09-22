@@ -9,6 +9,9 @@ import { Search, Loader2, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { htmlToPlainText, plainTextToHtml } from '@/lib/htmlToWhatsApp';
+import { useCandidateLinks, refreshCandidateLinks } from '@/hooks/useCandidateLinks';
+import { formatDate } from '@/lib/dateFormat';
+import { AlertTriangle } from 'lucide-react';
 
 const ACTIVE_STAGES = ['sourcing', 'pitch', 'scheduled_interview'] as const;
 
