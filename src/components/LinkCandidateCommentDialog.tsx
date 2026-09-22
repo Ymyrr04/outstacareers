@@ -70,23 +70,48 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
   }, []);
 
   useEffect(() => {
-    if (open) {
-      setSearch('');
-      setSelectedId(null);
-      setNote('');
-      load();
-      // Auto-fill the note with the candidate's profile (plain-text version)
-      supabase
-        .from('applicants_prescreen')
-        .select('candidate_profile')
-        .eq('id', applicantId)
-        .single()
-        .then(({ data }) => {
-          const profileText = htmlToPlainText(data?.candidate_profile || '');
-          if (profileText) setNote(profileText);
-        });
-    }
+    if (!open) return;
+    setSearch('');
+    setSelectedId(null);
+    setNote('');
+    setProfiles([]);
+    setSelectedProfileId(null);
+    load();
+
+    // Load the main profile plus any additional profiles for this candidate
+    (async () => {
+      const [mainRes, extraRes] = await Promise.all([
+        supabase.from('applicants_prescreen').select('candidate_profile').eq('id', applicantId).single(),
+        supabase
+          .from('candidate_additional_profiles')
+          .select('id, title, content')
+          .eq('applicant_id', applicantId)
+          .order('created_at', { ascending: true }),
+      ]);
+
+      const opts: ProfileOption[] = [];
+      const main = mainRes.data?.candidate_profile || '';
+      if (main && htmlToPlainText(main)) {
+        opts.push({ id: 'main', title: 'Main profile', content: main });
+      }
+      for (const p of extraRes.data || []) {
+        if (p.content && htmlToPlainText(p.content)) {
+          opts.push({ id: p.id, title: p.title || 'Additional profile', content: p.content });
+        }
+      }
+
+      setProfiles(opts);
+      if (opts.length > 0) {
+        setSelectedProfileId(opts[0].id);
+        setNote(htmlToPlainText(opts[0].content));
+      }
+    })();
   }, [open, load, applicantId]);
+
+  const pickProfile = (p: ProfileOption) => {
+    setSelectedProfileId(p.id);
+    setNote(htmlToPlainText(p.content));
+  };
 
   const submit = async () => {
     if (!selectedId || submitting) return;
