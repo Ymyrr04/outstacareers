@@ -31,6 +31,12 @@ interface HiringRequestRow {
   clients: { company_name: string } | null;
 }
 
+interface ProfileOption {
+  id: string;
+  title: string;
+  content: string;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
