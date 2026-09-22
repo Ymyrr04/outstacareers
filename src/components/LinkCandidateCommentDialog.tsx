@@ -9,6 +9,9 @@ import { Search, Loader2, Link2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { htmlToPlainText, plainTextToHtml } from '@/lib/htmlToWhatsApp';
+import { useCandidateLinks, refreshCandidateLinks } from '@/hooks/useCandidateLinks';
+import { formatDate } from '@/lib/dateFormat';
+import { AlertTriangle } from 'lucide-react';
 
 const ACTIVE_STAGES = ['sourcing', 'pitch', 'scheduled_interview'] as const;
 
@@ -51,6 +54,7 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const previousLinks = useCandidateLinks(applicantId);
   const [profiles, setProfiles] = useState<ProfileOption[]>([]);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
 
@@ -135,6 +139,7 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
       if (error) throw error;
 
       toast.success(`Linked to ${clientName}`);
+      refreshCandidateLinks();
       onOpenChange(false);
     } catch (err) {
       console.error('Error linking candidate:', err);
@@ -144,6 +149,9 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
       setSubmitting(false);
     }
   };
+
+  const existingLinks = previousLinks;
+  const linkedRequestIds = new Set(existingLinks.map((l) => l.requestId));
 
   const q = search.trim().toLowerCase();
   const filtered = q
@@ -162,6 +170,23 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
             Link {applicantName} to a client request
           </DialogTitle>
         </DialogHeader>
+
+        {existingLinks.length > 0 && (
+          <div className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-900 dark:bg-amber-950/40 dark:text-amber-300">
+            <p className="flex items-center gap-1.5 font-medium">
+              <AlertTriangle className="w-3.5 h-3.5 shrink-0" />
+              Already linked before
+            </p>
+            <ul className="mt-1 space-y-0.5 pl-5 list-disc">
+              {existingLinks.slice(0, 5).map((l, i) => (
+                <li key={`${l.requestId}-${i}`}>
+                  {l.clientName}{l.jobTitle ? ` — ${l.jobTitle}` : ''} · {formatDate(l.createdAt)}
+                </li>
+              ))}
+              {existingLinks.length > 5 && <li>+{existingLinks.length - 5} more</li>}
+            </ul>
+          </div>
+        )}
 
         <div className="relative">
           <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
@@ -200,7 +225,12 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
                     )}
                   >
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{r.clients?.company_name || 'Unknown client'}</p>
+                      <p className="text-sm font-medium truncate">
+                        {r.clients?.company_name || 'Unknown client'}
+                        {linkedRequestIds.has(r.id) && (
+                          <span className="ml-1.5 text-[10px] font-normal text-amber-600 dark:text-amber-400">Already linked</span>
+                        )}
+                      </p>
                       <p className="text-xs text-muted-foreground truncate">{r.job_title}</p>
                     </div>
                     <Badge

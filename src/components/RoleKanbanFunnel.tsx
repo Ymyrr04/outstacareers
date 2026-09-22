@@ -24,6 +24,7 @@ import { TagEditorDialog } from '@/components/TagEditorDialog';
 import { SuitableRoleEditorDialog } from '@/components/SuitableRoleEditorDialog';
 import { ReprofilingDialog } from '@/components/ReprofilingDialog';
 import { LinkCandidateCommentDialog } from '@/components/LinkCandidateCommentDialog';
+import { LinkedClientsBadge } from '@/components/LinkedClientsBadge';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { priorityGate } from '@/lib/priorityGate';
@@ -2233,6 +2234,7 @@ const CandidateCard = ({ candidate, dotColor, accentColor, currentStage, onMoveT
                   );
                 })()}
                 <ApplicationHistoryBadge email={candidate.email} currentId={candidate.id} phone={candidate.phone} />
+                <LinkedClientsBadge applicantId={candidate.id} />
               </div>
               {((candidate.tags && candidate.tags.length > 0) || (candidate.suitable_roles && candidate.suitable_roles.length > 0)) && (
                 <div className="pl-3.5 flex items-center gap-1 flex-wrap">
