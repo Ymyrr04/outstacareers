@@ -216,6 +216,29 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
           )}
         </div>
 
+        {profiles.length > 1 && (
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">Which profile do you want to link?</p>
+            <div className="flex flex-wrap gap-1.5">
+              {profiles.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => pickProfile(p)}
+                  className={cn(
+                    'rounded-full border px-3 py-1 text-xs transition-colors',
+                    selectedProfileId === p.id
+                      ? 'border-primary bg-primary/10 text-primary font-medium'
+                      : 'border-border text-muted-foreground hover:bg-muted/50'
+                  )}
+                >
+                  {p.title}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
         <Textarea
           value={note}
           onChange={(e) => setNote(e.target.value)}
