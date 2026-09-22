@@ -31,6 +31,12 @@ interface HiringRequestRow {
   clients: { company_name: string } | null;
 }
 
+interface ProfileOption {
+  id: string;
+  title: string;
+  content: string;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -45,6 +51,8 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [profiles, setProfiles] = useState<ProfileOption[]>([]);
+  const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -62,23 +70,48 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
   }, []);
 
   useEffect(() => {
-    if (open) {
-      setSearch('');
-      setSelectedId(null);
-      setNote('');
-      load();
-      // Auto-fill the note with the candidate's profile (plain-text version)
-      supabase
-        .from('applicants_prescreen')
-        .select('candidate_profile')
-        .eq('id', applicantId)
-        .single()
-        .then(({ data }) => {
-          const profileText = htmlToPlainText(data?.candidate_profile || '');
-          if (profileText) setNote(profileText);
-        });
-    }
+    if (!open) return;
+    setSearch('');
+    setSelectedId(null);
+    setNote('');
+    setProfiles([]);
+    setSelectedProfileId(null);
+    load();
+
+    // Load the main profile plus any additional profiles for this candidate
+    (async () => {
+      const [mainRes, extraRes] = await Promise.all([
+        supabase.from('applicants_prescreen').select('candidate_profile').eq('id', applicantId).single(),
+        supabase
+          .from('candidate_additional_profiles')
+          .select('id, title, content')
+          .eq('applicant_id', applicantId)
+          .order('created_at', { ascending: true }),
+      ]);
+
+      const opts: ProfileOption[] = [];
+      const main = mainRes.data?.candidate_profile || '';
+      if (main && htmlToPlainText(main)) {
+        opts.push({ id: 'main', title: 'Main profile', content: main });
+      }
+      for (const p of extraRes.data || []) {
+        if (p.content && htmlToPlainText(p.content)) {
+          opts.push({ id: p.id, title: p.title || 'Additional profile', content: p.content });
+        }
+      }
+
+      setProfiles(opts);
+      if (opts.length > 0) {
+        setSelectedProfileId(opts[0].id);
+        setNote(htmlToPlainText(opts[0].content));
+      }
+    })();
   }, [open, load, applicantId]);
+
+  const pickProfile = (p: ProfileOption) => {
+    setSelectedProfileId(p.id);
+    setNote(htmlToPlainText(p.content));
+  };
 
   const submit = async () => {
     if (!selectedId || submitting) return;
@@ -182,6 +215,29 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
             </div>
           )}
         </div>
+
+        {profiles.length > 1 && (
+          <div className="space-y-1.5">
+            <p className="text-xs font-medium text-muted-foreground">Which profile do you want to link?</p>
+            <div className="flex flex-wrap gap-1.5">
+              {profiles.map((p) => (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => pickProfile(p)}
+                  className={cn(
+                    'rounded-full border px-3 py-1 text-xs transition-colors',
+                    selectedProfileId === p.id
+                      ? 'border-primary bg-primary/10 text-primary font-medium'
+                      : 'border-border text-muted-foreground hover:bg-muted/50'
+                  )}
+                >
+                  {p.title}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         <Textarea
           value={note}
