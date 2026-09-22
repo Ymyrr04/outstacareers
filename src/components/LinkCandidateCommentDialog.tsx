@@ -149,6 +149,9 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
     }
   };
 
+  const existingLinks = previousLinks;
+  const linkedRequestIds = new Set(existingLinks.map((l) => l.requestId));
+
   const q = search.trim().toLowerCase();
   const filtered = q
     ? requests.filter((r) =>
