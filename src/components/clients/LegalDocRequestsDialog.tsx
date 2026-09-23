@@ -5,9 +5,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, FileCheck, MessageSquarePlus } from 'lucide-react';
+import { Loader2, FileCheck, FileText, MessageSquarePlus } from 'lucide-react';
 import { formatDate } from '@/lib/dateFormat';
 import { cn } from '@/lib/utils';
+import { CoeGenerateDialog } from './CoeGenerateDialog';
+
+const extractNoteField = (notes: string | null, label: string): string => {
+  if (!notes) return '';
+  const re = new RegExp(`${label}:\\s*(.+?)(?=\\s+[A-Z][a-z]+ [A-Z]?[a-z]*:|$)`, 's');
+  return notes.match(re)?.[1]?.trim() || '';
+};
 
 const STATUS_OPTIONS = ['Pending', 'In Progress', 'Completed'] as const;
 type StatusFilter = 'All' | (typeof STATUS_OPTIONS)[number];
@@ -22,6 +29,11 @@ interface LegalDocRow {
   created_at: string;
   contractor_name: string;
   company_name: string;
+  job_title: string;
+  start_date: string;
+  hours_per_week: number | null;
+  hourly_rate: number | null;
+  assignment_notes: string | null;
 }
 
 interface Props {
@@ -38,6 +50,7 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
   const [noteOpen, setNoteOpen] = useState<Record<string, boolean>>({});
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [savingNote, setSavingNote] = useState<string | null>(null);
+  const [coeRow, setCoeRow] = useState<LegalDocRow | null>(null);
 
   const fetchRows = useCallback(async () => {
     setLoading(true);
@@ -46,6 +59,7 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
       .select(`
         id, doc_types, reason, status, admin_notes, created_at,
         contractor_assignments (
+          job_title, start_date, hours_per_week, hourly_rate, notes,
           applicants_prescreen ( full_name ),
           clients ( company_name )
         )
@@ -65,6 +79,11 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
         created_at: r.created_at,
         contractor_name: r.contractor_assignments?.applicants_prescreen?.full_name || 'Unknown contractor',
         company_name: r.contractor_assignments?.clients?.company_name || '',
+        job_title: r.contractor_assignments?.job_title || '',
+        start_date: r.contractor_assignments?.start_date || '',
+        hours_per_week: r.contractor_assignments?.hours_per_week ?? null,
+        hourly_rate: r.contractor_assignments?.hourly_rate ?? null,
+        assignment_notes: r.contractor_assignments?.notes || null,
       })));
     }
     setLoading(false);
@@ -114,6 +133,7 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
   const visible = filter === 'All' ? rows : rows.filter((r) => r.status === filter);
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
@@ -190,6 +210,12 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
                     <span className="text-[10px] text-muted-foreground">
                       Requested {formatDate(row.created_at)}
                     </span>
+                    {row.doc_types.includes('COE') && (
+                      <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setCoeRow(row)}>
+                        <FileText className="w-3 h-3 mr-1" />
+                        Generate COE
+                      </Button>
+                    )}
                     <button
                       onClick={() => toggleNote(row)}
                       className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
@@ -240,5 +266,23 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
         </div>
       </DialogContent>
     </Dialog>
+    {coeRow && (
+      <CoeGenerateDialog
+        open={!!coeRow}
+        onOpenChange={(o) => { if (!o) setCoeRow(null); }}
+        data={{
+          fullName:
+            extractNoteField(coeRow.assignment_notes, 'Preferred Name') ||
+            extractNoteField(coeRow.assignment_notes, 'Full Name') ||
+            (coeRow.contractor_name === 'Unknown contractor' ? '' : coeRow.contractor_name),
+          role: coeRow.job_title,
+          startDate: coeRow.start_date,
+          hoursPerWeek: coeRow.hours_per_week,
+          hourlyRate: coeRow.hourly_rate,
+          companyName: coeRow.company_name,
+        }}
+      />
+    )}
+    </>
   );
 };
