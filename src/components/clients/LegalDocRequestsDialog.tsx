@@ -1,0 +1,246 @@
+import React, { useCallback, useEffect, useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, FileCheck, MessageSquarePlus } from 'lucide-react';
+import { formatDate } from '@/lib/dateFormat';
+import { cn } from '@/lib/utils';
+
+const STATUS_OPTIONS = ['Pending', 'In Progress', 'Completed'] as const;
+type StatusFilter = 'All' | (typeof STATUS_OPTIONS)[number];
+const FILTER_TABS: StatusFilter[] = ['All', 'Pending', 'In Progress', 'Completed'];
+
+interface LegalDocRow {
+  id: string;
+  doc_types: string[];
+  reason: string;
+  status: string;
+  admin_notes: string | null;
+  created_at: string;
+  contractor_name: string;
+  company_name: string;
+}
+
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onChanged?: () => void;
+}
+
+export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, onChanged }) => {
+  const { toast } = useToast();
+  const [rows, setRows] = useState<LegalDocRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState<StatusFilter>('Pending');
+  const [noteOpen, setNoteOpen] = useState<Record<string, boolean>>({});
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+  const [savingNote, setSavingNote] = useState<string | null>(null);
+
+  const fetchRows = useCallback(async () => {
+    setLoading(true);
+    const { data, error } = await supabase
+      .from('contractor_legal_doc_requests' as any)
+      .select(`
+        id, doc_types, reason, status, admin_notes, created_at,
+        contractor_assignments (
+          applicants_prescreen ( full_name ),
+          clients ( company_name )
+        )
+      `)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('Error fetching legal doc requests:', error);
+      toast({ title: 'Error', description: 'Could not load legal document requests.', variant: 'destructive' });
+    } else {
+      setRows(((data || []) as any[]).map((r) => ({
+        id: r.id,
+        doc_types: r.doc_types || [],
+        reason: r.reason || '',
+        status: r.status || 'Pending',
+        admin_notes: r.admin_notes,
+        created_at: r.created_at,
+        contractor_name: r.contractor_assignments?.applicants_prescreen?.full_name || 'Unknown contractor',
+        company_name: r.contractor_assignments?.clients?.company_name || '',
+      })));
+    }
+    setLoading(false);
+  }, [toast]);
+
+  useEffect(() => {
+    if (open) fetchRows();
+  }, [open, fetchRows]);
+
+  const updateStatus = async (row: LegalDocRow, status: string) => {
+    const { error } = await supabase
+      .from('contractor_legal_doc_requests' as any)
+      .update({ status })
+      .eq('id', row.id);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, status } : r)));
+    toast({ title: 'Status updated', description: `${row.contractor_name}'s request is now ${status}.` });
+    onChanged?.();
+  };
+
+  const saveNote = async (row: LegalDocRow) => {
+    const note = (noteDrafts[row.id] ?? '').trim();
+    setSavingNote(row.id);
+    const { error } = await supabase
+      .from('contractor_legal_doc_requests' as any)
+      .update({ admin_notes: note || null })
+      .eq('id', row.id);
+    setSavingNote(null);
+    if (error) {
+      toast({ title: 'Error', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, admin_notes: note || null } : r)));
+    toast({ title: 'Note saved' });
+  };
+
+  const toggleNote = (row: LegalDocRow) => {
+    setNoteOpen((prev) => ({ ...prev, [row.id]: !prev[row.id] }));
+    if (!(row.id in noteDrafts)) {
+      setNoteDrafts((prev) => ({ ...prev, [row.id]: row.admin_notes || '' }));
+    }
+  };
+
+  const visible = filter === 'All' ? rows : rows.filter((r) => r.status === filter);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileCheck className="w-5 h-5" />
+            Legal Document Requests
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex gap-1 border-b pb-2">
+          {FILTER_TABS.map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setFilter(tab)}
+              className={cn(
+                'px-3 py-1.5 text-xs rounded-md transition-colors',
+                filter === tab
+                  ? 'bg-primary text-primary-foreground font-medium'
+                  : 'text-muted-foreground hover:bg-muted'
+              )}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex-1 overflow-y-auto -mx-6 px-6">
+          {loading ? (
+            <div className="flex justify-center py-10">
+              <Loader2 className="w-5 h-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : visible.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-10">No requests in this status.</p>
+          ) : (
+            <div className="divide-y">
+              {visible.map((row) => (
+                <div key={row.id} className="py-3 space-y-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-sm">{row.contractor_name}</p>
+                      {row.company_name && (
+                        <p className="text-[10px] text-muted-foreground">{row.company_name}</p>
+                      )}
+                    </div>
+                    <Select value={row.status} onValueChange={(v) => updateStatus(row, v)}>
+                      <SelectTrigger className="w-[130px] h-8 text-xs shrink-0">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STATUS_OPTIONS.map((s) => (
+                          <SelectItem key={s} value={s}>{s}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="flex flex-wrap gap-1.5">
+                    {row.doc_types.map((t) => (
+                      <span
+                        key={t}
+                        className="inline-flex items-center rounded-[20px] px-2.5 py-[3px] text-[11px]"
+                        style={{ background: '#E0F7FC', color: '#066F85' }}
+                      >
+                        {t}
+                      </span>
+                    ))}
+                  </div>
+
+                  {row.reason && (
+                    <p className="text-xs text-muted-foreground line-clamp-2">{row.reason}</p>
+                  )}
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] text-muted-foreground">
+                      Requested {formatDate(row.created_at)}
+                    </span>
+                    <button
+                      onClick={() => toggleNote(row)}
+                      className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <MessageSquarePlus className="w-3 h-3" />
+                      {row.admin_notes ? 'Edit note' : 'Add note'}
+                    </button>
+                  </div>
+
+                  {(noteOpen[row.id] || (!!row.admin_notes && noteOpen[row.id] !== false && false)) && null}
+
+                  {noteOpen[row.id] ? (
+                    <div className="space-y-2">
+                      <Textarea
+                        value={noteDrafts[row.id] ?? ''}
+                        onChange={(e) => setNoteDrafts((prev) => ({ ...prev, [row.id]: e.target.value }))}
+                        placeholder="Internal note about this request..."
+                        rows={2}
+                        className="text-xs"
+                      />
+                      <div className="flex justify-end gap-2">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-7 text-xs"
+                          onClick={() => setNoteOpen((prev) => ({ ...prev, [row.id]: false }))}
+                        >
+                          Cancel
+                        </Button>
+                        <Button
+                          size="sm"
+                          className="h-7 text-xs"
+                          disabled={savingNote === row.id}
+                          onClick={() => saveNote(row)}
+                        >
+                          {savingNote === row.id && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
+                          Save note
+                        </Button>
+                      </div>
+                    </div>
+                  ) : row.admin_notes ? (
+                    <p className="text-[11px] text-muted-foreground bg-muted/50 rounded px-2 py-1.5">
+                      {row.admin_notes}
+                    </p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
