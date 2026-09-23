@@ -34,7 +34,10 @@ const formatLongDate = (value: string): string => {
   return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 };
 
-export const CoeGenerateDialog: React.FC<Props> = ({ open, onOpenChange, data }) => {
+export const CoeGenerateDialog: React.FC<Props> = ({ open, onOpenChange, data, legalDocRequestId, contractorName, onSent }) => {
+  const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [sending, setSending] = useState(false);
   const [fullName, setFullName] = useState(data.fullName);
   const [salutation, setSalutation] = useState('');
   const [role, setRole] = useState(data.role);
