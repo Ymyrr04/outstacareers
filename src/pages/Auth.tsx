@@ -86,9 +86,7 @@ const Auth = () => {
       return;
     }
 
-    const { error } = mode === 'login' 
-      ? await signIn(email, password)
-      : await signUp(email, password);
+    const { error } = await signIn(email, password);
 
     if (error) {
       toast({
@@ -96,12 +94,6 @@ const Auth = () => {
         description: error.message,
         variant: 'destructive',
       });
-    } else if (mode === 'signup') {
-      toast({
-        title: 'Success',
-        description: 'Account created successfully! You can now log in.',
-      });
-      setMode('login');
     }
 
     setIsLoading(false);
