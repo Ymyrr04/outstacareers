@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
-import { HelpCircle, X, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { HelpCircle, X, Search, ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { supabase } from '@/integrations/supabase/client';
 import { HELP_ARTICLES, HELP_TOPICS, HelpArticle, searchHelp } from '@/lib/helpArticles';
 
 export default function HelpDeskWidget() {
@@ -9,6 +10,8 @@ export default function HelpDeskWidget() {
   const [query, setQuery] = useState('');
   const [topic, setTopic] = useState<string | null>(null);
   const [article, setArticle] = useState<HelpArticle | null>(null);
+  const [feedbackGiven, setFeedbackGiven] = useState<string | null>(null);
+  const loggedMisses = useRef<Set<string>>(new Set());
 
   const results = useMemo(() => {
     if (query.trim()) return searchHelp(query);
