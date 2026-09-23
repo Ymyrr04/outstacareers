@@ -152,7 +152,7 @@ export const CoeGenerateDialog: React.FC<Props> = ({ open, onOpenChange, data })
 
           <div className="flex justify-end gap-2 pt-2">
             <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button size="sm" disabled={!canGenerate} onClick={generate}>
+            <Button size="sm" disabled={!canGenerate || generating} onClick={generate}>
               <FileText className="w-3.5 h-3.5 mr-1" />
               Generate
             </Button>
