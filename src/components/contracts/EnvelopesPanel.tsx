@@ -4,11 +4,12 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Send, Copy, Download, Ban, FileSignature, Trash2, RefreshCw, PenLine, FolderOpen, FolderCheck, BellRing } from "lucide-react";
+import { Loader2, Send, Copy, Download, Ban, FileSignature, Trash2, RefreshCw, PenLine, FolderOpen, FolderCheck, BellRing, Search } from "lucide-react";
 import { toast } from "sonner";
 import { SendEnvelopeDialog } from "./SendEnvelopeDialog";
 import { CountersignDialog } from "./CountersignDialog";
 import { formatDateTime } from "@/lib/dateFormat";
+import { Input } from "@/components/ui/input";
 
 const PRE_PITCH_TEMPLATE_NAME = "OutSta Pre-Pitch Agreement";
 
@@ -51,6 +52,7 @@ export const EnvelopesPanel = () => {
   const [sendOpen, setSendOpen] = useState(false);
   const [countersignFor, setCountersignFor] = useState<Envelope | null>(null);
   const [folder, setFolder] = useState<"active" | "completed">("active");
+  const [search, setSearch] = useState("");
 
   const load = async () => {
     setLoading(true);
@@ -186,8 +188,17 @@ export const EnvelopesPanel = () => {
   const nonPitchEnvelopes = useMemo(() => envelopes.filter(e => e.contract_templates?.name !== PRE_PITCH_TEMPLATE_NAME), [envelopes]);
 
   const filtered = useMemo(() => {
-    return nonPitchEnvelopes.filter(e => folder === "completed" ? !!e.countersigned_at : !e.countersigned_at);
-  }, [nonPitchEnvelopes, folder]);
+    const q = search.trim().toLowerCase();
+    return nonPitchEnvelopes.filter(e => {
+      if (folder === "completed" ? !e.countersigned_at : !!e.countersigned_at) return false;
+      if (!q) return true;
+      return (
+        e.recipient_name.toLowerCase().includes(q) ||
+        e.recipient_email.toLowerCase().includes(q) ||
+        (e.contract_templates?.name || "").toLowerCase().includes(q)
+      );
+    });
+  }, [nonPitchEnvelopes, folder, search]);
 
   const activeCount = nonPitchEnvelopes.filter(e => !e.countersigned_at).length;
   const completedCount = nonPitchEnvelopes.filter(e => !!e.countersigned_at).length;
@@ -201,7 +212,18 @@ export const EnvelopesPanel = () => {
             <TabsTrigger value="completed" className="gap-2"><FolderCheck className="w-4 h-4" /> Completed Contracts ({completedCount})</TabsTrigger>
           </TabsList>
         </Tabs>
-        <Button onClick={() => setSendOpen(true)} className="gap-2"><Send className="w-4 h-4" /> Send New Contract</Button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <div className="relative">
+            <Search className="w-4 h-4 absolute left-2.5 top-1/2 -translate-y-1/2 text-muted-foreground" />
+            <Input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search name, email or template..."
+              className="pl-8 w-[240px]"
+            />
+          </div>
+          <Button onClick={() => setSendOpen(true)} className="gap-2"><Send className="w-4 h-4" /> Send New Contract</Button>
+        </div>
       </div>
 
       {loading ? (
