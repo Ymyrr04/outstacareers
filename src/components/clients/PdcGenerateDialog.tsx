@@ -67,12 +67,70 @@ export const PdcGenerateDialog: React.FC<Props> = ({ open, onOpenChange, data, c
   const helper = (isMissing: boolean) =>
     isMissing ? <p className="text-[10px] text-amber-600">Missing — enter manually</p> : null;
 
-  const generate = () => {
-    toast({
-      title: 'Pay Deposit Certificate details ready',
-      description: `${salutation} ${fullName.trim()} — deposit $${deposit}. The certificate layout is not set up yet.`,
-    });
+  const [generating, setGenerating] = useState(false);
+  const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+
+  const generate = async () => {
+    setGenerating(true);
+    try {
+      const blob = await generatePdcPdf({
+        salutation,
+        fullName: fullName.trim(),
+        amount: parseFloat(deposit).toFixed(2),
+        todayDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+      });
+      setPdfUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return URL.createObjectURL(blob);
+      });
+    } catch (err) {
+      console.error('PDC generation failed', err);
+      toast({ title: 'Could not generate the certificate', variant: 'destructive' });
+    } finally {
+      setGenerating(false);
+    }
   };
+
+  const fileName = `Pay_Deposit_Certificate-${fullName.trim().replace(/\s+/g, '_')}.pdf`;
+
+  const download = () => {
+    if (!pdfUrl) return;
+    const a = document.createElement('a');
+    a.href = pdfUrl;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  if (pdfUrl) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Pay deposit certificate preview
+            </DialogTitle>
+          </DialogHeader>
+
+          <object data={pdfUrl} type="application/pdf" className="w-full rounded border" style={{ height: 620 }}>
+            <p className="text-sm text-muted-foreground p-4">Preview unavailable — use Download to view the file.</p>
+          </object>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="ghost" size="sm" onClick={() => { URL.revokeObjectURL(pdfUrl); setPdfUrl(null); }}>
+              Back to edit
+            </Button>
+            <Button variant="outline" size="sm" onClick={download}>
+              <Download className="w-3.5 h-3.5 mr-1" />
+              Download
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
