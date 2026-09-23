@@ -134,9 +134,57 @@ export const AdminPermissionsManager = () => {
       {/* Tab Permissions */}
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
-            <CardTitle>Tab Permissions</CardTitle>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              <CardTitle>Tab Permissions</CardTitle>
+            </div>
+            <Dialog open={addOpen} onOpenChange={setAddOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add Admin
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Add Admin</DialogTitle>
+                  <DialogDescription>
+                    Create an admin account. If the email already has an account, its password will be reset and admin access granted.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-admin-email">Email</Label>
+                    <Input
+                      id="new-admin-email"
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      placeholder="admin@example.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-admin-password">Temporary Password</Label>
+                    <Input
+                      id="new-admin-password"
+                      type="text"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="At least 6 characters"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setAddOpen(false)} disabled={adding}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleAddAdmin} disabled={adding}>
+                    {adding ? 'Adding...' : 'Add Admin'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
           <CardDescription>
             Control which tabs each admin can view. Super admins always have full access.
