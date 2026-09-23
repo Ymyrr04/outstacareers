@@ -70,6 +70,7 @@ import { ContractorStatusDialog } from './ContractorStatusDialog';
 import { SendContractorEmailDialog } from './SendContractorEmailDialog';
 import { BulkContractorEmailDialog } from './BulkContractorEmailDialog';
 import { ContractorEmailTemplateManager } from './ContractorEmailTemplateManager';
+import { LegalDocRequestsDialog } from './LegalDocRequestsDialog';
 import { RecurringSchedulesManager } from './RecurringSchedulesManager';
 import { ContractorColumnFilter } from './ContractorColumnFilter';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
@@ -151,6 +152,20 @@ export const ContractorsDashboard = () => {
   const [emailDialogOpen, setEmailDialogOpen] = useState(false);
   const [bulkEmailDialogOpen, setBulkEmailDialogOpen] = useState(false);
   const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
+  const [legalDocsOpen, setLegalDocsOpen] = useState(false);
+  const [legalDocsPending, setLegalDocsPending] = useState(0);
+
+  const fetchLegalDocsPending = async () => {
+    const { count } = await supabase
+      .from('contractor_legal_doc_requests' as any)
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'Pending');
+    setLegalDocsPending(count || 0);
+  };
+
+  useEffect(() => {
+    fetchLegalDocsPending();
+  }, []);
   const [emailRecipient, setEmailRecipient] = useState<{
     assignmentId: string;
     name: string;
@@ -810,6 +825,14 @@ export const ContractorsDashboard = () => {
           </Popover>
         </div>
         <div className="flex gap-2">
+          <Button
+            variant={legalDocsPending > 0 ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setLegalDocsOpen(true)}
+          >
+            <FileCheck className="w-4 h-4 mr-2" />
+            Legal Docs{legalDocsPending > 0 ? ` (${legalDocsPending})` : ''}
+          </Button>
           <Button variant="outline" size="sm" onClick={() => setTemplateManagerOpen(true)}>
             <FileText className="w-4 h-4 mr-2" />
             Templates
@@ -1717,6 +1740,13 @@ export const ContractorsDashboard = () => {
       <ContractorEmailTemplateManager
         open={templateManagerOpen}
         onOpenChange={setTemplateManagerOpen}
+      />
+
+      {/* Legal Document Requests */}
+      <LegalDocRequestsDialog
+        open={legalDocsOpen}
+        onOpenChange={setLegalDocsOpen}
+        onChanged={fetchLegalDocsPending}
       />
     </div>
   );
