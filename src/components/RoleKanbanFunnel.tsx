@@ -1027,6 +1027,57 @@ export const RoleKanbanFunnel = ({ onRoleSelect: _onRoleSelect, onFiltersChange 
     fetchCandidates(selectedRole);
   }, [fetchCandidates, selectedRole]);
 
+  // Keep availability badges fresh: candidates answer the "check availability"
+  // email outside the app, so poll those two fields for the loaded cards.
+  const candidateIdsKey = useMemo(() => candidates.map(c => c.id).join(','), [candidates]);
+
+  useEffect(() => {
+    if (!candidateIdsKey) return;
+    let cancelled = false;
+
+    const syncAvailability = async () => {
+      if (document.visibilityState === 'hidden') return;
+      const ids = candidateIdsKey.split(',');
+      const updates = new Map<string, { is_available: boolean | null; availability_checked_at: string | null }>();
+
+      for (let i = 0; i < ids.length; i += 200) {
+        const { data, error } = await supabase
+          .from('applicants_prescreen')
+          .select('id, is_available, availability_checked_at')
+          .in('id', ids.slice(i, i + 200));
+        if (error) return;
+        (data || []).forEach((row: any) => {
+          updates.set(row.id, {
+            is_available: row.is_available ?? null,
+            availability_checked_at: row.availability_checked_at ?? null,
+          });
+        });
+      }
+
+      if (cancelled) return;
+      setCandidates(prev => prev.map(c => {
+        const u = updates.get(c.id);
+        if (!u) return c;
+        if (u.is_available === c.is_available && u.availability_checked_at === c.availability_checked_at) return c;
+        return { ...c, ...u };
+      }));
+    };
+
+    const interval = window.setInterval(syncAvailability, 60000);
+    window.addEventListener('focus', syncAvailability);
+    document.addEventListener('visibilitychange', syncAvailability);
+    syncAvailability();
+
+    return () => {
+      cancelled = true;
+      window.clearInterval(interval);
+      window.removeEventListener('focus', syncAvailability);
+      document.removeEventListener('visibilitychange', syncAvailability);
+    };
+  }, [candidateIdsKey]);
+
+
+
 
   const filteredCandidates = useMemo(() => {
     let result = candidates;
