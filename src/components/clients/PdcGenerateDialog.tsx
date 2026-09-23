@@ -4,7 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { FileText, Download } from 'lucide-react';
+import { FileText, Download, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from '@/hooks/use-toast';
 import { generatePdcPdf } from '@/lib/pdcPdf';
@@ -21,6 +21,7 @@ interface Props {
   data: PdcSourceData;
   legalDocRequestId?: string;
   contractorName?: string;
+  onApprove?: (doc: { docType: string; filename: string; bytes: Uint8Array }) => void;
 }
 
 const computeDeposit = (hours: string, rate: string): string => {
@@ -30,7 +31,7 @@ const computeDeposit = (hours: string, rate: string): string => {
   return (r * h * 2).toFixed(2);
 };
 
-export const PdcGenerateDialog: React.FC<Props> = ({ open, onOpenChange, data, contractorName }) => {
+export const PdcGenerateDialog: React.FC<Props> = ({ open, onOpenChange, data, contractorName, onApprove }) => {
   const [salutation, setSalutation] = useState('');
   const [fullName, setFullName] = useState(data.fullName);
   const [hours, setHours] = useState(data.hoursPerWeek != null ? String(data.hoursPerWeek) : '');
@@ -69,6 +70,7 @@ export const PdcGenerateDialog: React.FC<Props> = ({ open, onOpenChange, data, c
 
   const [generating, setGenerating] = useState(false);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
+  const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null);
 
   const generate = async () => {
     setGenerating(true);
@@ -79,6 +81,7 @@ export const PdcGenerateDialog: React.FC<Props> = ({ open, onOpenChange, data, c
         amount: parseFloat(deposit).toFixed(2),
         todayDate: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
       });
+      setPdfBytes(new Uint8Array(await blob.arrayBuffer()));
       setPdfUrl((prev) => {
         if (prev) URL.revokeObjectURL(prev);
         return URL.createObjectURL(blob);
@@ -125,6 +128,14 @@ export const PdcGenerateDialog: React.FC<Props> = ({ open, onOpenChange, data, c
             <Button variant="outline" size="sm" onClick={download}>
               <Download className="w-3.5 h-3.5 mr-1" />
               Download
+            </Button>
+            <Button size="sm" onClick={() => {
+              if (!pdfBytes) return;
+              onApprove?.({ docType: 'Pay Deposit Certificate', filename: fileName, bytes: pdfBytes });
+              onOpenChange(false);
+            }}>
+              <Check className="w-3.5 h-3.5 mr-1" />
+              Approve
             </Button>
           </div>
         </DialogContent>

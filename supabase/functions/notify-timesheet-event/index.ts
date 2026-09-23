@@ -22,8 +22,7 @@ interface Payload {
   timesheetId?: string;
   leaveId?: string;
   legalDocRequestId?: string;
-  pdfBase64?: string;
-  filename?: string;
+  documents?: { filename: string; base64: string }[];
   reason?: string;
   reviewerName?: string;
   source?: "client" | "admin";
@@ -433,7 +432,10 @@ async function handleLegalDocSubmitted(requestId: string) {
   }
 }
 
-async function handleLegalDocCompleted(requestId: string, pdfBase64: string, filename: string) {
+async function handleLegalDocCompleted(
+  requestId: string,
+  documents: { filename: string; base64: string }[],
+) {
   const { data: req, error } = await supabase
     .from("contractor_legal_doc_requests")
     .select("*")
@@ -462,9 +464,10 @@ async function handleLegalDocCompleted(requestId: string, pdfBase64: string, fil
 
   const docTypes = Array.isArray(req.doc_types) ? req.doc_types.join(", ") : String(req.doc_types || "—");
   const subject = `Re: Legal doc request: ${contractorName} — ${docTypes}`;
+  const fileList = documents.map((d) => `${d.filename}`).join("<br>");
   const html = wrap(
-    "Your requested document",
-    `<p>Hi ${contractorName},</p><p>Please find attached the document you requested (<strong>${docTypes}</strong>), issued upon your request.</p><p>Let us know if you need anything else.</p>`
+    "Your requested documents",
+    `<p>Hi ${contractorName},</p><p>Attached:</p><p>${fileList}</p><p>These documents were issued upon your request.</p><p>Let us know if you need anything else.</p>`
   );
 
   const threadId = (req as any).request_email_message_id as string | null;
@@ -475,7 +478,7 @@ async function handleLegalDocCompleted(requestId: string, pdfBase64: string, fil
     ["mark@outsta.io"],
     subject,
     html,
-    [{ filename, content: pdfBase64 }],
+    documents.map((d) => ({ filename: d.filename, content: d.base64 })),
     headers,
   );
 }
@@ -494,12 +497,8 @@ Deno.serve(async (req) => {
       await handleLegalDocSubmitted(body.legalDocRequestId);
     } else if (body.event === "legal_doc_completed") {
       if (!body.legalDocRequestId) throw new Error("legalDocRequestId is required");
-      if (!body.pdfBase64) throw new Error("pdfBase64 is required");
-      await handleLegalDocCompleted(
-        body.legalDocRequestId,
-        body.pdfBase64,
-        body.filename || "document.pdf",
-      );
+      if (!body.documents?.length) throw new Error("documents are required");
+      await handleLegalDocCompleted(body.legalDocRequestId, body.documents);
     } else {
       if (!body.timesheetId) throw new Error("timesheetId is required");
       await handleTimesheetEvent(body.event, body.timesheetId, body.reason, body.reviewerName);

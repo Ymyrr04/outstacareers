@@ -4,8 +4,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { FileText, Download, Send, Loader2 } from 'lucide-react';
-import { supabase } from '@/integrations/supabase/client';
+import { FileText, Download, Check } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { generateCoePdf } from '@/lib/coePdf';
 import { toast } from '@/hooks/use-toast';
@@ -26,6 +25,7 @@ interface Props {
   legalDocRequestId?: string;
   contractorName?: string;
   onSent?: () => void;
+  onApprove?: (doc: { docType: string; filename: string; bytes: Uint8Array }) => void;
 }
 
 const formatLongDate = (value: string): string => {
@@ -35,10 +35,9 @@ const formatLongDate = (value: string): string => {
   return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
 };
 
-export const CoeGenerateDialog: React.FC<Props> = ({ open, onOpenChange, data, legalDocRequestId, contractorName, onSent }) => {
+export const CoeGenerateDialog: React.FC<Props> = ({ open, onOpenChange, data, onApprove }) => {
   const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null);
   const [pdfUrl, setPdfUrl] = useState<string | null>(null);
-  const [sending, setSending] = useState(false);
   const [fullName, setFullName] = useState(data.fullName);
   const [salutation, setSalutation] = useState('');
   const [role, setRole] = useState(data.role);
@@ -109,47 +108,11 @@ export const CoeGenerateDialog: React.FC<Props> = ({ open, onOpenChange, data, l
     a.remove();
   };
 
-  const sendToContractor = async () => {
-    if (!pdfBytes || !legalDocRequestId) return;
-    setSending(true);
-    try {
-      let binary = '';
-      pdfBytes.forEach((b) => { binary += String.fromCharCode(b); });
-      const pdfBase64 = btoa(binary);
-
-      const { error } = await supabase.functions.invoke('notify-timesheet-event', {
-        body: {
-          event: 'legal_doc_completed',
-          legalDocRequestId,
-          pdfBase64,
-          filename: fileName,
-        },
-      });
-      if (error) throw error;
-
-      const { data: existing } = await supabase
-        .from('contractor_legal_doc_requests' as any)
-        .select('admin_notes')
-        .eq('id', legalDocRequestId)
-        .maybeSingle();
-      const prevNote = ((existing as any)?.admin_notes || '').trim();
-      const stamp = `COE sent ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
-      await supabase
-        .from('contractor_legal_doc_requests' as any)
-        .update({ status: 'Completed', admin_notes: prevNote ? `${prevNote}\n${stamp}` : stamp })
-        .eq('id', legalDocRequestId);
-
-      toast({ title: `COE sent to ${contractorName || fullName.trim()}` });
-      onSent?.();
-      onOpenChange(false);
-    } catch (err) {
-      console.error('COE send failed', err);
-      toast({ title: 'Could not send the certificate', variant: 'destructive' });
-    } finally {
-      setSending(false);
-    }
+  const approve = () => {
+    if (!pdfBytes) return;
+    onApprove?.({ docType: 'COE', filename: fileName, bytes: pdfBytes });
+    onOpenChange(false);
   };
-
 
   if (pdfUrl) {
     return (
@@ -174,9 +137,9 @@ export const CoeGenerateDialog: React.FC<Props> = ({ open, onOpenChange, data, l
               <Download className="w-3.5 h-3.5 mr-1" />
               Download
             </Button>
-            <Button size="sm" disabled={sending || !legalDocRequestId} onClick={sendToContractor}>
-              {sending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Send className="w-3.5 h-3.5 mr-1" />}
-              Send to contractor
+            <Button size="sm" onClick={approve}>
+              <Check className="w-3.5 h-3.5 mr-1" />
+              Approve
             </Button>
           </div>
         </DialogContent>
