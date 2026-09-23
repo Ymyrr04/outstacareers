@@ -24,6 +24,27 @@ export default function HelpDeskWidget() {
     [article],
   );
 
+  // Log searches that return no match, once per unique query (debounced).
+  useEffect(() => {
+    const q = query.trim();
+    if (!q || results.length > 0 || loggedMisses.current.has(q.toLowerCase())) return;
+    const t = setTimeout(() => {
+      if (loggedMisses.current.has(q.toLowerCase())) return;
+      loggedMisses.current.add(q.toLowerCase());
+      supabase.from('help_queries').insert({ query: q.slice(0, 200), matched: false }).then(() => undefined);
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [query, results]);
+
+  const giveFeedback = (helpful: boolean) => {
+    if (!article || feedbackGiven === article.id) return;
+    setFeedbackGiven(article.id);
+    supabase
+      .from('help_queries')
+      .insert({ query: `feedback:${article.id}:${helpful ? 'yes' : 'no'}`, matched: true })
+      .then(() => undefined);
+  };
+
   return (
     <>
       {open && (
