@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, FileCheck, FileText, MessageSquarePlus } from 'lucide-react';
+import { Loader2, FileCheck, FileText, MessageSquarePlus, Check } from 'lucide-react';
 import { formatDate } from '@/lib/dateFormat';
 import { cn } from '@/lib/utils';
 import { CoeGenerateDialog } from './CoeGenerateDialog';
@@ -37,6 +37,12 @@ interface LegalDocRow {
   assignment_notes: string | null;
 }
 
+interface StagedDoc {
+  docType: string;
+  filename: string;
+  bytes: Uint8Array;
+}
+
 interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -53,6 +59,63 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
   const [savingNote, setSavingNote] = useState<string | null>(null);
   const [coeRow, setCoeRow] = useState<LegalDocRow | null>(null);
   const [pdcRow, setPdcRow] = useState<LegalDocRow | null>(null);
+  const [stagedDocs, setStagedDocs] = useState<Record<string, StagedDoc[]>>({});
+  const [sendingId, setSendingId] = useState<string | null>(null);
+
+  const stageDoc = (requestId: string, doc: StagedDoc) => {
+    setStagedDocs((prev) => {
+      const list = (prev[requestId] || []).filter((d) => d.docType !== doc.docType);
+      return { ...prev, [requestId]: [...list, doc] };
+    });
+  };
+
+  const sendStaged = async (row: LegalDocRow) => {
+    const docs = stagedDocs[row.id] || [];
+    if (!docs.length) return;
+    setSendingId(row.id);
+    try {
+      const documents = docs.map((d) => {
+        let binary = '';
+        d.bytes.forEach((b) => { binary += String.fromCharCode(b); });
+        return { filename: d.filename, base64: btoa(binary) };
+      });
+
+      const { error } = await supabase.functions.invoke('notify-timesheet-event', {
+        body: { event: 'legal_doc_completed', legalDocRequestId: row.id, documents },
+      });
+      if (error) throw error;
+
+      const stamp = `Sent: ${docs.map((d) => d.docType).join(', ')} — ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+      const prevNote = (row.admin_notes || '').trim();
+      const admin_notes = prevNote ? `${prevNote}\n${stamp}` : stamp;
+      await supabase
+        .from('contractor_legal_doc_requests' as any)
+        .update({ status: 'Completed', admin_notes })
+        .eq('id', row.id);
+
+      setStagedDocs((prev) => {
+        const next = { ...prev };
+        delete next[row.id];
+        return next;
+      });
+      setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, status: 'Completed', admin_notes } : r)));
+      toast({ title: `${docs.length} document${docs.length === 1 ? '' : 's'} sent to ${row.contractor_name}` });
+      onChanged?.();
+    } catch (err) {
+      console.error('Sending legal documents failed', err);
+      toast({ title: 'Error', description: 'Could not send the documents.', variant: 'destructive' });
+    } finally {
+      setSendingId(null);
+    }
+  };
+
+  const handleClose = (nextOpen: boolean) => {
+    if (!nextOpen && Object.values(stagedDocs).some((d) => d.length > 0)) {
+      if (!window.confirm('You have unsent documents. Close anyway?')) return;
+      setStagedDocs({});
+    }
+    onOpenChange(nextOpen);
+  };
 
   const fetchRows = useCallback(async () => {
     setLoading(true);
@@ -136,7 +199,7 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
 
   return (
     <>
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -192,17 +255,36 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
                     </Select>
                   </div>
 
-                  <div className="flex flex-wrap gap-1.5">
+                  <div className="flex flex-wrap items-center gap-1.5">
                     {row.doc_types.map((t) => (
-                      <span
-                        key={t}
-                        className="inline-flex items-center rounded-[20px] px-2.5 py-[3px] text-[11px]"
-                        style={{ background: '#E0F7FC', color: '#066F85' }}
-                      >
-                        {t}
+                      <span key={t} className="inline-flex items-center gap-1">
+                        <span
+                          className="inline-flex items-center rounded-[20px] px-2.5 py-[3px] text-[11px]"
+                          style={{ background: '#E0F7FC', color: '#066F85' }}
+                        >
+                          {t}
+                        </span>
+                        {(stagedDocs[row.id] || []).some((d) => d.docType === t) && (
+                          <span className="inline-flex items-center gap-0.5 text-[10px] text-emerald-600">
+                            <Check className="w-3 h-3" />
+                            Ready
+                          </span>
+                        )}
                       </span>
                     ))}
                   </div>
+
+                  {(stagedDocs[row.id]?.length ?? 0) > 0 && (
+                    <Button
+                      size="sm"
+                      className="h-7 text-xs"
+                      disabled={sendingId === row.id}
+                      onClick={() => sendStaged(row)}
+                    >
+                      {sendingId === row.id && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
+                      Send {stagedDocs[row.id].length} document{stagedDocs[row.id].length === 1 ? '' : 's'}
+                    </Button>
+                  )}
 
                   {row.reason && (
                     <p className="text-xs text-muted-foreground line-clamp-2">{row.reason}</p>
@@ -215,13 +297,13 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
                     {row.doc_types.includes('COE') && (
                       <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setCoeRow(row)}>
                         <FileText className="w-3 h-3 mr-1" />
-                        Generate COE
+                        {(stagedDocs[row.id] || []).some((d) => d.docType === 'COE') ? 'Regenerate COE' : 'Generate COE'}
                       </Button>
                     )}
                     {row.doc_types.includes('Pay Deposit Certificate') && (
                       <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setPdcRow(row)}>
                         <FileText className="w-3 h-3 mr-1" />
-                        Generate PDC
+                        {(stagedDocs[row.id] || []).some((d) => d.docType === 'Pay Deposit Certificate') ? 'Regenerate PDC' : 'Generate PDC'}
                       </Button>
                     )}
                     <button
@@ -280,7 +362,7 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
         onOpenChange={(o) => { if (!o) setCoeRow(null); }}
         legalDocRequestId={coeRow.id}
         contractorName={coeRow.contractor_name}
-        onSent={() => { fetchRows(); onChanged?.(); }}
+        onApprove={(doc) => stageDoc(coeRow.id, doc)}
         data={{
           fullName:
             extractNoteField(coeRow.assignment_notes, 'Preferred Name') ||
@@ -300,6 +382,7 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
         onOpenChange={(o) => { if (!o) setPdcRow(null); }}
         legalDocRequestId={pdcRow.id}
         contractorName={pdcRow.contractor_name}
+        onApprove={(doc) => stageDoc(pdcRow.id, doc)}
         data={{
           fullName:
             extractNoteField(pdcRow.assignment_notes, 'Preferred Name') ||
