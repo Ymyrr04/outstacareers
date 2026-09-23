@@ -184,18 +184,9 @@ const Auth = () => {
                   </div>
                 )}
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Loading...' : mode === 'login' ? 'Sign In' : 'Sign Up'}
+                  {isLoading ? 'Loading...' : 'Sign In'}
                 </Button>
               </form>
-              <div className="mt-4 text-center">
-                <button
-                  type="button"
-                  onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-                  className="text-sm text-muted-foreground hover:text-primary"
-                >
-                  {mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-                </button>
-              </div>
             </>
           )}
         </CardContent>
