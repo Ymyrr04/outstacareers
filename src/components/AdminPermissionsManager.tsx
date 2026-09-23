@@ -78,6 +78,34 @@ export const AdminPermissionsManager = () => {
     setActionLoading(null);
   };
 
+  const handleAddAdmin = async () => {
+    const email = newEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ title: 'Invalid email', description: 'Enter a valid email address', variant: 'destructive' });
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast({ title: 'Password too short', description: 'Password must be at least 6 characters', variant: 'destructive' });
+      return;
+    }
+    setAdding(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-admin-user', {
+        body: { email, password: newPassword },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: 'Admin added', description: `${email} can now sign in as an admin` });
+      setAddOpen(false);
+      setNewEmail('');
+      setNewPassword('');
+      await fetchAdmins();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to create admin', variant: 'destructive' });
+    }
+    setAdding(false);
+  };
+
   const handleRemoveAdmin = async (userId: string, email: string) => {
     setActionLoading(userId);
     try {
