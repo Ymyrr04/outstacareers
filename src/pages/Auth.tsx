@@ -102,7 +102,6 @@ const Auth = () => {
   const getTitle = () => {
     switch (mode) {
       case 'login': return 'Admin Login';
-      case 'signup': return 'Create Account';
       case 'forgot': return 'Reset Password';
     }
   };
@@ -110,7 +109,6 @@ const Auth = () => {
   const getDescription = () => {
     switch (mode) {
       case 'login': return 'Sign in to manage job listings';
-      case 'signup': return 'Register a new admin account';
       case 'forgot': return 'Enter your email to receive a reset link';
     }
   };
