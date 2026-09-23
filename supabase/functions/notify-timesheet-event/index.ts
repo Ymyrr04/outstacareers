@@ -492,6 +492,14 @@ Deno.serve(async (req) => {
     } else if (body.event === "legal_doc_submitted") {
       if (!body.legalDocRequestId) throw new Error("legalDocRequestId is required");
       await handleLegalDocSubmitted(body.legalDocRequestId);
+    } else if (body.event === "legal_doc_completed") {
+      if (!body.legalDocRequestId) throw new Error("legalDocRequestId is required");
+      if (!body.pdfBase64) throw new Error("pdfBase64 is required");
+      await handleLegalDocCompleted(
+        body.legalDocRequestId,
+        body.pdfBase64,
+        body.filename || "document.pdf",
+      );
     } else {
       if (!body.timesheetId) throw new Error("timesheetId is required");
       await handleTimesheetEvent(body.event, body.timesheetId, body.reason, body.reviewerName);
