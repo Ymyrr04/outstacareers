@@ -38,6 +38,7 @@ import {
   ArrowDown,
   ArrowUpDown,
   FileText,
+  FileCheck,
   Pencil
 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';

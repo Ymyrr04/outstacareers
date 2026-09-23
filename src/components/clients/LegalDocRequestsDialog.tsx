@@ -199,8 +199,6 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
                     </button>
                   </div>
 
-                  {(noteOpen[row.id] || (!!row.admin_notes && noteOpen[row.id] !== false && false)) && null}
-
                   {noteOpen[row.id] ? (
                     <div className="space-y-2">
                       <Textarea
