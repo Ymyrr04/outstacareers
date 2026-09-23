@@ -1,0 +1,170 @@
+import React, { useMemo, useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Label } from '@/components/ui/label';
+import { FileText } from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+export interface CoeSourceData {
+  fullName: string;
+  role: string;
+  startDate: string; // ISO or date-only
+  hoursPerWeek: number | null;
+  hourlyRate: number | null;
+  companyName: string;
+}
+
+interface Props {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  data: CoeSourceData;
+}
+
+const formatLongDate = (value: string): string => {
+  if (!value) return '';
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(value) ? new Date(`${value}T12:00:00`) : new Date(value);
+  if (isNaN(d.getTime())) return '';
+  return d.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+};
+
+export const CoeGenerateDialog: React.FC<Props> = ({ open, onOpenChange, data }) => {
+  const [fullName, setFullName] = useState(data.fullName);
+  const [salutation, setSalutation] = useState('');
+  const [role, setRole] = useState(data.role);
+  const [startDate, setStartDate] = useState(formatLongDate(data.startDate));
+  const [hours, setHours] = useState(data.hoursPerWeek != null ? String(data.hoursPerWeek) : '');
+  const [rate, setRate] = useState(data.hourlyRate != null ? String(data.hourlyRate) : '');
+
+  const monthlyIncome = useMemo(() => {
+    const h = parseFloat(hours);
+    const r = parseFloat(rate);
+    if (isNaN(h) || isNaN(r)) return '';
+    return (r * h * 4.3).toFixed(2);
+  }, [hours, rate]);
+
+  const missing = {
+    fullName: !fullName.trim(),
+    salutation: !salutation,
+    role: !role.trim(),
+    startDate: !startDate.trim(),
+    hours: !hours.trim() || isNaN(parseFloat(hours)),
+    rate: !rate.trim() || isNaN(parseFloat(rate)),
+  };
+  const canGenerate = !Object.values(missing).some(Boolean);
+
+  const fieldCls = (isMissing: boolean) =>
+    cn(isMissing && 'border-amber-500 focus-visible:ring-amber-500');
+
+  const helper = (isMissing: boolean) =>
+    isMissing ? <p className="text-[10px] text-amber-600">Missing — enter manually</p> : null;
+
+  const generate = () => {
+    const today = formatLongDate(new Date().toISOString());
+    const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Certificate of Employment - ${fullName}</title>
+<style>
+  body { font-family: Georgia, 'Times New Roman', serif; max-width: 700px; margin: 60px auto; padding: 0 40px; color: #1a1a1a; line-height: 1.7; }
+  h1 { text-align: center; font-size: 22px; letter-spacing: 2px; margin-bottom: 40px; }
+  p { margin: 16px 0; font-size: 14px; }
+  .date { text-align: right; }
+  .sig { margin-top: 70px; }
+  .sig img { height: 60px; }
+  .sig-name { font-weight: bold; border-top: 1px solid #1a1a1a; display: inline-block; padding-top: 4px; margin-top: 4px; }
+  @media print { body { margin: 20px auto; } }
+</style></head><body>
+  <h1>CERTIFICATE OF EMPLOYMENT</h1>
+  <p class="date">${today}</p>
+  <p>To Whom It May Concern:</p>
+  <p>This is to certify that <strong>${salutation} ${fullName}</strong> is employed with OutSta as a <strong>${role}</strong>, starting on <strong>${startDate}</strong>.</p>
+  <p>${salutation} ${fullName} works <strong>${hours} hours per week</strong> at an hourly rate of <strong>$${parseFloat(rate).toFixed(2)}</strong>, with an estimated monthly income of <strong>$${monthlyIncome}</strong>.</p>
+  <p>This certification is issued upon the request of ${salutation} ${fullName} for whatever legal purpose it may serve.</p>
+  <div class="sig">
+    <img src="/images/mark-signature.png" alt="Signature" onerror="this.style.display='none'" />
+    <br />
+    <span class="sig-name">Mark Johnson</span>
+    <p style="margin:0">Operations Manager, OutSta</p>
+  </div>
+  <script>window.onload = function(){ window.print(); };</script>
+</body></html>`;
+    const w = window.open('', '_blank');
+    if (w) {
+      w.document.write(html);
+      w.document.close();
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <FileText className="w-5 h-5" />
+            Generate COE
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <Label className="text-xs">Salutation</Label>
+            <Select value={salutation} onValueChange={setSalutation}>
+              <SelectTrigger className={fieldCls(missing.salutation)}>
+                <SelectValue placeholder="Select..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Mr.">Mr.</SelectItem>
+                <SelectItem value="Ms.">Ms.</SelectItem>
+              </SelectContent>
+            </Select>
+            {helper(missing.salutation)}
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Full name</Label>
+            <Input value={fullName} onChange={(e) => setFullName(e.target.value)} className={fieldCls(missing.fullName)} />
+            {helper(missing.fullName)}
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Role</Label>
+            <Input value={role} onChange={(e) => setRole(e.target.value)} className={fieldCls(missing.role)} />
+            {helper(missing.role)}
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Start date</Label>
+            <Input value={startDate} onChange={(e) => setStartDate(e.target.value)} placeholder="Month DD, YYYY" className={fieldCls(missing.startDate)} />
+            {helper(missing.startDate)}
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-1">
+              <Label className="text-xs">Hours per week</Label>
+              <Input type="number" value={hours} onChange={(e) => setHours(e.target.value)} className={fieldCls(missing.hours)} />
+              {helper(missing.hours)}
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">Hourly rate</Label>
+              <Input type="number" step="0.01" value={rate} onChange={(e) => setRate(e.target.value)} className={fieldCls(missing.rate)} />
+              {helper(missing.rate)}
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs">Monthly income (rate × hours × 4.3)</Label>
+            <Input value={monthlyIncome ? `$${monthlyIncome}` : ''} readOnly className="bg-muted" />
+          </div>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="ghost" size="sm" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button size="sm" disabled={!canGenerate} onClick={generate}>
+              <FileText className="w-3.5 h-3.5 mr-1" />
+              Generate
+            </Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+};
