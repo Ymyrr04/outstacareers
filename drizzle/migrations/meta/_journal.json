@@ -43,6 +43,13 @@
       "when": 1790170665363,
       "tag": "0005_add_legal_doc_request_email_message_id",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1790198097638,
+      "tag": "0006_create_help_queries_table",
+      "breakpoints": true
     }
   ]
 }

@@ -2748,6 +2748,27 @@ export type Database = {
         }
         Relationships: []
       }
+      help_queries: {
+        Row: {
+          created_at: string
+          id: string
+          matched: boolean
+          query: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          matched?: boolean
+          query: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          matched?: boolean
+          query?: string
+        }
+        Relationships: []
+      }
       hiring_request_comment_reactions: {
         Row: {
           comment_id: string

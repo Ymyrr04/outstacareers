@@ -1,7 +1,8 @@
-import { useMemo, useState } from 'react';
-import { HelpCircle, X, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { HelpCircle, X, Search, ChevronLeft, ChevronRight, ThumbsUp, ThumbsDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { supabase } from '@/integrations/supabase/client';
 import { HELP_ARTICLES, HELP_TOPICS, HelpArticle, searchHelp } from '@/lib/helpArticles';
 
 export default function HelpDeskWidget() {
@@ -9,6 +10,8 @@ export default function HelpDeskWidget() {
   const [query, setQuery] = useState('');
   const [topic, setTopic] = useState<string | null>(null);
   const [article, setArticle] = useState<HelpArticle | null>(null);
+  const [feedbackGiven, setFeedbackGiven] = useState<string | null>(null);
+  const loggedMisses = useRef<Set<string>>(new Set());
 
   const results = useMemo(() => {
     if (query.trim()) return searchHelp(query);
@@ -20,6 +23,27 @@ export default function HelpDeskWidget() {
     () => (article ? HELP_ARTICLES.filter((a) => a.topic === article.topic && a.id !== article.id).slice(0, 3) : []),
     [article],
   );
+
+  // Log searches that return no match, once per unique query (debounced).
+  useEffect(() => {
+    const q = query.trim();
+    if (!q || results.length > 0 || loggedMisses.current.has(q.toLowerCase())) return;
+    const t = setTimeout(() => {
+      if (loggedMisses.current.has(q.toLowerCase())) return;
+      loggedMisses.current.add(q.toLowerCase());
+      supabase.from('help_queries').insert({ query: q.slice(0, 200), matched: false }).then(() => undefined);
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [query, results]);
+
+  const giveFeedback = (helpful: boolean) => {
+    if (!article || feedbackGiven === article.id) return;
+    setFeedbackGiven(article.id);
+    supabase
+      .from('help_queries')
+      .insert({ query: `feedback:${article.id}:${helpful ? 'yes' : 'no'}`, matched: true })
+      .then(() => undefined);
+  };
 
   return (
     <>
@@ -44,6 +68,21 @@ export default function HelpDeskWidget() {
               <h3 className="mb-3 text-sm font-semibold">{article.question}</h3>
               <div className="space-y-2 text-sm leading-relaxed">
                 {article.answer.map((p, i) => <p key={i}>{p}</p>)}
+              </div>
+              <div className="mt-4 flex items-center gap-2 border-t pt-3">
+                {feedbackGiven === article.id ? (
+                  <span className="text-xs text-muted-foreground">Thanks for the feedback!</span>
+                ) : (
+                  <>
+                    <span className="text-xs text-muted-foreground">Was this helpful?</span>
+                    <button aria-label="Yes, helpful" onClick={() => giveFeedback(true)} className="rounded p-1 hover:bg-muted">
+                      <ThumbsUp className="h-3.5 w-3.5" />
+                    </button>
+                    <button aria-label="No, not helpful" onClick={() => giveFeedback(false)} className="rounded p-1 hover:bg-muted">
+                      <ThumbsDown className="h-3.5 w-3.5" />
+                    </button>
+                  </>
+                )}
               </div>
               {related.length > 0 && (
                 <div className="mt-5 border-t pt-3">
