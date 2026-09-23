@@ -79,10 +79,12 @@ export const CoeGenerateDialog: React.FC<Props> = ({ open, onOpenChange, data })
         income: monthlyIncome,
         todayDate: formatLongDate(new Date().toISOString()),
       });
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank');
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
-      onOpenChange(false);
+      const bytes = new Uint8Array(await blob.arrayBuffer());
+      setPdfBytes(bytes);
+      setPdfUrl((prev) => {
+        if (prev) URL.revokeObjectURL(prev);
+        return URL.createObjectURL(blob);
+      });
     } catch (err) {
       console.error('COE generation failed', err);
       toast({ title: 'Could not generate the certificate', variant: 'destructive' });
