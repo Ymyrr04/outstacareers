@@ -4,7 +4,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
-import { FileText } from 'lucide-react';
+import { FileText, Download, Send, Loader2 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { cn } from '@/lib/utils';
 import { generateCoePdf } from '@/lib/coePdf';
 import { toast } from '@/hooks/use-toast';
@@ -93,6 +94,59 @@ export const CoeGenerateDialog: React.FC<Props> = ({ open, onOpenChange, data, l
       toast({ title: 'Could not generate the certificate', variant: 'destructive' });
     } finally {
       setGenerating(false);
+    }
+  };
+
+  const fileName = `COE-${fullName.trim().replace(/\s+/g, '_')}.pdf`;
+
+  const download = () => {
+    if (!pdfUrl) return;
+    const a = document.createElement('a');
+    a.href = pdfUrl;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+  };
+
+  const sendToContractor = async () => {
+    if (!pdfBytes || !legalDocRequestId) return;
+    setSending(true);
+    try {
+      let binary = '';
+      pdfBytes.forEach((b) => { binary += String.fromCharCode(b); });
+      const pdfBase64 = btoa(binary);
+
+      const { error } = await supabase.functions.invoke('notify-timesheet-event', {
+        body: {
+          event: 'legal_doc_completed',
+          legalDocRequestId,
+          pdfBase64,
+          filename: fileName,
+        },
+      });
+      if (error) throw error;
+
+      const { data: existing } = await supabase
+        .from('contractor_legal_doc_requests' as any)
+        .select('admin_notes')
+        .eq('id', legalDocRequestId)
+        .maybeSingle();
+      const prevNote = ((existing as any)?.admin_notes || '').trim();
+      const stamp = `COE sent ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}`;
+      await supabase
+        .from('contractor_legal_doc_requests' as any)
+        .update({ status: 'Completed', admin_notes: prevNote ? `${prevNote}\n${stamp}` : stamp })
+        .eq('id', legalDocRequestId);
+
+      toast({ title: `COE sent to ${contractorName || fullName.trim()}` });
+      onSent?.();
+      onOpenChange(false);
+    } catch (err) {
+      console.error('COE send failed', err);
+      toast({ title: 'Could not send the certificate', variant: 'destructive' });
+    } finally {
+      setSending(false);
     }
   };
 
