@@ -2,20 +2,20 @@
 
 Goal: turn the help assistant's draft answers into a verified, complete knowledge base of the questions admins actually ask, with correct wording that matches the real screens.
 
-## Phase 1 — Verify what's already there (35 answers)
+Scope note: **Admin** and **Timesheets** topics are excluded — those questions and answers are removed from the help assistant entirely.
 
-Go through each existing answer against the actual screens and fix any wrong button names, tab names, or steps:
+## Phase 1 — Verify what's already there
+
+Go through each existing answer against the actual screens and fix any wrong button names, tab names, or steps. Remove the Timesheets (3) and Admin (5) articles and their topic buttons.
 
 - **Applicants** (7): search/Boolean, status changes, CV/IV/QA scores, rescore, bulk CV upload, "Nx applied" badge, notes, multiple profiles
 - **Pipeline** (5): Kanban board, availability check, link to client pipeline, linked-clients badge, pre-pitch
 - **Clients** (3): hiring requests, comments & mentions, analytics
 - **Contractors** (5): statuses, Hired flow, bulk email, post-hire pipeline, Internal Team visibility
-- **Timesheets** (3): weekly flow, portal login, locked timesheets
 - **Contracts** (4): send, find/download, resend link, audit trail
 - **Legal Docs** (4): requests panel, COE, PDC, approve & send
-- **Admin** (5): add admin, tab permissions, forgot password, Gmail app password, notifications
 
-Deliverable: corrected `helpArticles.ts`, every answer matching the real UI labels.
+Deliverable: corrected `helpArticles.ts`, every answer matching the real UI labels, no Admin or Timesheets content.
 
 ## Phase 2 — Fill the gaps (new questions)
 
@@ -28,7 +28,6 @@ Topic areas not yet covered, drafted from how the features actually work:
 - **Recruiter Dash / Funnel** — funnel view, historical data filter, role selector syncing
 - **Client Detail pages** — active vs previous contractors, hiring request duplication
 - **Contractors tab extras** — filters, templates, CV image preview, applicant contact editing
-- **Portal (contractor side)** — what contractors see, default password, timesheet lock deadline
 - **Billing & Plans** — credit usage, downgrade policy
 - **Troubleshooting** — "something looks stuck/old" (refresh), who to contact, common error messages
 
@@ -50,7 +49,7 @@ Add a tiny feedback loop so the knowledge base improves itself:
 
 - No AI answers (stays free, keyword-matched)
 - No changes to any feature screens — content only
-- Admin visibility rules stay as they are
+- No Admin or Timesheets help content (per your instruction)
 
 ## Technical notes
 
