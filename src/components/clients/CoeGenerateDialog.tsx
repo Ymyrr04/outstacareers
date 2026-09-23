@@ -22,6 +22,9 @@ interface Props {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   data: CoeSourceData;
+  legalDocRequestId?: string;
+  contractorName?: string;
+  onSent?: () => void;
 }
 
 const formatLongDate = (value: string): string => {
