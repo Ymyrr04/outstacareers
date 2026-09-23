@@ -9,6 +9,7 @@ import { Loader2, FileCheck, FileText, MessageSquarePlus } from 'lucide-react';
 import { formatDate } from '@/lib/dateFormat';
 import { cn } from '@/lib/utils';
 import { CoeGenerateDialog } from './CoeGenerateDialog';
+import { PdcGenerateDialog } from './PdcGenerateDialog';
 
 const extractNoteField = (notes: string | null, label: string): string => {
   if (!notes) return '';
@@ -51,6 +52,7 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
   const [savingNote, setSavingNote] = useState<string | null>(null);
   const [coeRow, setCoeRow] = useState<LegalDocRow | null>(null);
+  const [pdcRow, setPdcRow] = useState<LegalDocRow | null>(null);
 
   const fetchRows = useCallback(async () => {
     setLoading(true);
@@ -216,6 +218,12 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
                         Generate COE
                       </Button>
                     )}
+                    {row.doc_types.includes('Pay Deposit Certificate') && (
+                      <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setPdcRow(row)}>
+                        <FileText className="w-3 h-3 mr-1" />
+                        Generate PDC
+                      </Button>
+                    )}
                     <button
                       onClick={() => toggleNote(row)}
                       className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
@@ -283,6 +291,22 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
           hoursPerWeek: coeRow.hours_per_week,
           hourlyRate: coeRow.hourly_rate,
           companyName: coeRow.company_name,
+        }}
+      />
+    )}
+    {pdcRow && (
+      <PdcGenerateDialog
+        open={!!pdcRow}
+        onOpenChange={(o) => { if (!o) setPdcRow(null); }}
+        legalDocRequestId={pdcRow.id}
+        contractorName={pdcRow.contractor_name}
+        data={{
+          fullName:
+            extractNoteField(pdcRow.assignment_notes, 'Preferred Name') ||
+            extractNoteField(pdcRow.assignment_notes, 'Full Name') ||
+            (pdcRow.contractor_name === 'Unknown contractor' ? '' : pdcRow.contractor_name),
+          hoursPerWeek: pdcRow.hours_per_week,
+          hourlyRate: pdcRow.hourly_rate,
         }}
       />
     )}
