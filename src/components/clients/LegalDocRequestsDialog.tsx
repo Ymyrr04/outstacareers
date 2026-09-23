@@ -209,6 +209,12 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
                     <span className="text-[10px] text-muted-foreground">
                       Requested {formatDate(row.created_at)}
                     </span>
+                    {row.doc_types.includes('COE') && (
+                      <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setCoeRow(row)}>
+                        <FileText className="w-3 h-3 mr-1" />
+                        Generate COE
+                      </Button>
+                    )}
                     <button
                       onClick={() => toggleNote(row)}
                       className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors"
