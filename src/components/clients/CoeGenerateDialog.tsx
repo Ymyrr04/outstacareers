@@ -60,7 +60,33 @@ export const CoeGenerateDialog: React.FC<Props> = ({ open, onOpenChange, data })
   const helper = (isMissing: boolean) =>
     isMissing ? <p className="text-[10px] text-amber-600">Missing — enter manually</p> : null;
 
-  const generate = () => {
+  const [generating, setGenerating] = useState(false);
+
+  const generate = async () => {
+    setGenerating(true);
+    try {
+      const blob = await generateCoePdf({
+        salutation,
+        fullName: fullName.trim(),
+        role: role.trim(),
+        startDate: startDate.trim(),
+        hours: hours.trim(),
+        income: monthlyIncome,
+        todayDate: formatLongDate(new Date().toISOString()),
+      });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      onOpenChange(false);
+    } catch (err) {
+      console.error('COE generation failed', err);
+      toast({ title: 'Could not generate the certificate', variant: 'destructive' });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  const legacyGenerate = () => {
     const today = formatLongDate(new Date().toISOString());
     const html = `<!DOCTYPE html>
 <html><head><meta charset="utf-8"><title>Certificate of Employment - ${fullName}</title>
