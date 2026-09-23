@@ -6,6 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { FileText } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { generateCoePdf } from '@/lib/coePdf';
+import { toast } from '@/hooks/use-toast';
 
 export interface CoeSourceData {
   fullName: string;
@@ -86,40 +88,6 @@ export const CoeGenerateDialog: React.FC<Props> = ({ open, onOpenChange, data })
     }
   };
 
-  const legacyGenerate = () => {
-    const today = formatLongDate(new Date().toISOString());
-    const html = `<!DOCTYPE html>
-<html><head><meta charset="utf-8"><title>Certificate of Employment - ${fullName}</title>
-<style>
-  body { font-family: Georgia, 'Times New Roman', serif; max-width: 700px; margin: 60px auto; padding: 0 40px; color: #1a1a1a; line-height: 1.7; }
-  h1 { text-align: center; font-size: 22px; letter-spacing: 2px; margin-bottom: 40px; }
-  p { margin: 16px 0; font-size: 14px; }
-  .date { text-align: right; }
-  .sig { margin-top: 70px; }
-  .sig img { height: 60px; }
-  .sig-name { font-weight: bold; border-top: 1px solid #1a1a1a; display: inline-block; padding-top: 4px; margin-top: 4px; }
-  @media print { body { margin: 20px auto; } }
-</style></head><body>
-  <h1>CERTIFICATE OF EMPLOYMENT</h1>
-  <p class="date">${today}</p>
-  <p>To Whom It May Concern:</p>
-  <p>This is to certify that <strong>${salutation} ${fullName}</strong> is employed with OutSta as a <strong>${role}</strong>, starting on <strong>${startDate}</strong>.</p>
-  <p>${salutation} ${fullName} works <strong>${hours} hours per week</strong> at an hourly rate of <strong>$${parseFloat(rate).toFixed(2)}</strong>, with an estimated monthly income of <strong>$${monthlyIncome}</strong>.</p>
-  <p>This certification is issued upon the request of ${salutation} ${fullName} for whatever legal purpose it may serve.</p>
-  <div class="sig">
-    <img src="/images/mark-signature.png" alt="Signature" onerror="this.style.display='none'" />
-    <br />
-    <span class="sig-name">Mark Johnson</span>
-    <p style="margin:0">Operations Manager, OutSta</p>
-  </div>
-  <script>window.onload = function(){ window.print(); };</script>
-</body></html>`;
-    const w = window.open('', '_blank');
-    if (w) {
-      w.document.write(html);
-      w.document.close();
-    }
-  };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
