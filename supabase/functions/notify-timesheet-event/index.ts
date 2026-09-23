@@ -14,7 +14,8 @@ type EventType =
   | "timesheet_approved"
   | "timesheet_flagged"
   | "leave_submitted"
-  | "legal_doc_submitted";
+  | "legal_doc_submitted"
+  | "legal_doc_completed";
 
 interface Payload {
   event: EventType;
@@ -428,6 +429,53 @@ async function handleLegalDocSubmitted(requestId: string) {
     );
     await send(contractorEmail, undefined, confirmSubject, confirmHtml);
   }
+}
+
+async function handleLegalDocCompleted(requestId: string, pdfBase64: string, filename: string) {
+  const { data: req, error } = await supabase
+    .from("contractor_legal_doc_requests")
+    .select("*")
+    .eq("id", requestId)
+    .maybeSingle();
+  if (error || !req) throw new Error("Legal doc request not found");
+
+  const { data: assign } = await supabase
+    .from("contractor_assignments")
+    .select("applicant_id, client_id, job_title")
+    .eq("id", req.contractor_assignment_id)
+    .maybeSingle();
+
+  let contractorName = "Contractor";
+  let contractorEmail: string | null = null;
+  if (assign?.applicant_id) {
+    const { data: a } = await supabase
+      .from("applicants_prescreen")
+      .select("full_name, email")
+      .eq("id", assign.applicant_id)
+      .maybeSingle();
+    if (a?.full_name) contractorName = a.full_name;
+    if (a?.email) contractorEmail = a.email;
+  }
+  if (!contractorEmail) throw new Error("Contractor email not found");
+
+  const docTypes = Array.isArray(req.doc_types) ? req.doc_types.join(", ") : String(req.doc_types || "—");
+  const subject = `Re: Legal doc request: ${contractorName} — ${docTypes}`;
+  const html = wrap(
+    "Your requested document",
+    `<p>Hi ${contractorName},</p><p>Please find attached the document you requested (<strong>${docTypes}</strong>), issued upon your request.</p><p>Let us know if you need anything else.</p>`
+  );
+
+  const threadId = (req as any).request_email_message_id as string | null;
+  const headers = threadId ? { "In-Reply-To": threadId, "References": threadId } : undefined;
+
+  await send(
+    contractorEmail,
+    ["mark@outsta.io"],
+    subject,
+    html,
+    [{ filename, content: pdfBase64 }],
+    headers,
+  );
 }
 
 Deno.serve(async (req) => {
