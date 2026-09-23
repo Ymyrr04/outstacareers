@@ -69,6 +69,21 @@ export default function HelpDeskWidget() {
               <div className="space-y-2 text-sm leading-relaxed">
                 {article.answer.map((p, i) => <p key={i}>{p}</p>)}
               </div>
+              <div className="mt-4 flex items-center gap-2 border-t pt-3">
+                {feedbackGiven === article.id ? (
+                  <span className="text-xs text-muted-foreground">Thanks for the feedback!</span>
+                ) : (
+                  <>
+                    <span className="text-xs text-muted-foreground">Was this helpful?</span>
+                    <button aria-label="Yes, helpful" onClick={() => giveFeedback(true)} className="rounded p-1 hover:bg-muted">
+                      <ThumbsUp className="h-3.5 w-3.5" />
+                    </button>
+                    <button aria-label="No, not helpful" onClick={() => giveFeedback(false)} className="rounded p-1 hover:bg-muted">
+                      <ThumbsDown className="h-3.5 w-3.5" />
+                    </button>
+                  </>
+                )}
+              </div>
               {related.length > 0 && (
                 <div className="mt-5 border-t pt-3">
                   <div className="mb-2 text-xs font-medium text-muted-foreground">Related</div>
