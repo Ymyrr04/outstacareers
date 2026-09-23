@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -139,6 +140,36 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
       if (error) throw error;
 
       toast.success(`Linked to ${clientName}`);
+
+      // Email other admins, same as a regular new comment (fire-and-forget)
+      const commentHtml = trimmed ? plainTextToHtml(trimmed) : `Linked ${applicantName}`;
+      const senderEmail = auth.user?.email || '';
+      (async () => {
+        try {
+          const { data } = await supabase.functions.invoke('get-admin-users');
+          const admins: { email?: string }[] = data?.adminUsers || [];
+          const EXCLUDED = new Set(['adam@outsta.io', 'sean@outsta.io']);
+          await Promise.all(
+            admins
+              .filter((a) => a.email && a.email.toLowerCase() !== senderEmail.toLowerCase() && !EXCLUDED.has(a.email.toLowerCase()))
+              .map((a) =>
+                supabase.functions.invoke('send-mention-notification', {
+                  body: {
+                    type: 'new_comment',
+                    recipientEmail: a.email,
+                    recipientName: getAdminDisplayName(a.email),
+                    senderName: getAdminDisplayName(senderEmail),
+                    requestTitle: request.job_title,
+                    clientName: request.clients?.company_name || 'Unknown Client',
+                    commentContent: `Linked candidate: ${applicantName}<br>${commentHtml}`,
+                  },
+                }).then(({ error: e }) => { if (e) console.error(`Link email to ${a.email} failed:`, e); })
+              )
+          );
+        } catch (e) {
+          console.error('Link notification failed:', e);
+        }
+      })();
       refreshCandidateLinks();
       onOpenChange(false);
     } catch (err) {
