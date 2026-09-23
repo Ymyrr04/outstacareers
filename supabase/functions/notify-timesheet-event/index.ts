@@ -22,6 +22,8 @@ interface Payload {
   timesheetId?: string;
   leaveId?: string;
   legalDocRequestId?: string;
+  pdfBase64?: string;
+  filename?: string;
   reason?: string;
   reviewerName?: string;
   source?: "client" | "admin";
