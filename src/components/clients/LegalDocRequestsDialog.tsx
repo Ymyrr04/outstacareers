@@ -133,6 +133,7 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
   const visible = filter === 'All' ? rows : rows.filter((r) => r.status === filter);
 
   return (
+    <>
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
@@ -265,5 +266,23 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
         </div>
       </DialogContent>
     </Dialog>
+    {coeRow && (
+      <CoeGenerateDialog
+        open={!!coeRow}
+        onOpenChange={(o) => { if (!o) setCoeRow(null); }}
+        data={{
+          fullName:
+            extractNoteField(coeRow.assignment_notes, 'Preferred Name') ||
+            extractNoteField(coeRow.assignment_notes, 'Full Name') ||
+            (coeRow.contractor_name === 'Unknown contractor' ? '' : coeRow.contractor_name),
+          role: coeRow.job_title,
+          startDate: coeRow.start_date,
+          hoursPerWeek: coeRow.hours_per_week,
+          hourlyRate: coeRow.hourly_rate,
+          companyName: coeRow.company_name,
+        }}
+      />
+    )}
+    </>
   );
 };
