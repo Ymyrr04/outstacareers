@@ -270,6 +270,9 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
       <CoeGenerateDialog
         open={!!coeRow}
         onOpenChange={(o) => { if (!o) setCoeRow(null); }}
+        legalDocRequestId={coeRow.id}
+        contractorName={coeRow.contractor_name}
+        onSent={() => { fetchRows(); onChanged?.(); }}
         data={{
           fullName:
             extractNoteField(coeRow.assignment_notes, 'Preferred Name') ||
