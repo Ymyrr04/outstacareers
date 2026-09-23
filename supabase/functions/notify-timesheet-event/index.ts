@@ -14,13 +14,16 @@ type EventType =
   | "timesheet_approved"
   | "timesheet_flagged"
   | "leave_submitted"
-  | "legal_doc_submitted";
+  | "legal_doc_submitted"
+  | "legal_doc_completed";
 
 interface Payload {
   event: EventType;
   timesheetId?: string;
   leaveId?: string;
   legalDocRequestId?: string;
+  pdfBase64?: string;
+  filename?: string;
   reason?: string;
   reviewerName?: string;
   source?: "client" | "admin";
@@ -51,21 +54,32 @@ function wrap(title: string, inner: string) {
   </div></body></html>`;
 }
 
-async function send(to: string | string[], cc: string[] | undefined, subject: string, html: string) {
+async function send(
+  to: string | string[],
+  cc: string[] | undefined,
+  subject: string,
+  html: string,
+  attachments?: { filename: string; content: string }[],
+  headers?: Record<string, string>,
+): Promise<string | null> {
   const recipients = Array.isArray(to) ? to : [to];
   const clean = recipients.filter(Boolean);
-  if (clean.length === 0) return;
+  if (clean.length === 0) return null;
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: FROM,
       to: clean,
       cc: cc?.filter(Boolean),
       subject,
       html,
+      attachments: attachments?.map((a) => ({ ...a, encoding: "base64" })),
+      headers,
     });
     console.log("Sent:", subject, "->", clean);
+    return info?.messageId || null;
   } catch (e) {
     console.error("Send failed:", subject, e);
+    return null;
   }
 }
 
@@ -400,7 +414,13 @@ async function handleLegalDocSubmitted(requestId: string) {
   const recipients = ["mark@outsta.io"];
   const cc = contractorEmail ? [contractorEmail] : [];
 
-  await send(recipients, cc, subject, html);
+  const adminMessageId = await send(recipients, cc, subject, html);
+  if (adminMessageId) {
+    await supabase
+      .from("contractor_legal_doc_requests")
+      .update({ request_email_message_id: adminMessageId })
+      .eq("id", requestId);
+  }
 
   // Send a confirmation response to the contractor
   if (contractorEmail) {
@@ -411,6 +431,53 @@ async function handleLegalDocSubmitted(requestId: string) {
     );
     await send(contractorEmail, undefined, confirmSubject, confirmHtml);
   }
+}
+
+async function handleLegalDocCompleted(requestId: string, pdfBase64: string, filename: string) {
+  const { data: req, error } = await supabase
+    .from("contractor_legal_doc_requests")
+    .select("*")
+    .eq("id", requestId)
+    .maybeSingle();
+  if (error || !req) throw new Error("Legal doc request not found");
+
+  const { data: assign } = await supabase
+    .from("contractor_assignments")
+    .select("applicant_id, client_id, job_title")
+    .eq("id", req.contractor_assignment_id)
+    .maybeSingle();
+
+  let contractorName = "Contractor";
+  let contractorEmail: string | null = null;
+  if (assign?.applicant_id) {
+    const { data: a } = await supabase
+      .from("applicants_prescreen")
+      .select("full_name, email")
+      .eq("id", assign.applicant_id)
+      .maybeSingle();
+    if (a?.full_name) contractorName = a.full_name;
+    if (a?.email) contractorEmail = a.email;
+  }
+  if (!contractorEmail) throw new Error("Contractor email not found");
+
+  const docTypes = Array.isArray(req.doc_types) ? req.doc_types.join(", ") : String(req.doc_types || "—");
+  const subject = `Re: Legal doc request: ${contractorName} — ${docTypes}`;
+  const html = wrap(
+    "Your requested document",
+    `<p>Hi ${contractorName},</p><p>Please find attached the document you requested (<strong>${docTypes}</strong>), issued upon your request.</p><p>Let us know if you need anything else.</p>`
+  );
+
+  const threadId = (req as any).request_email_message_id as string | null;
+  const headers = threadId ? { "In-Reply-To": threadId, "References": threadId } : undefined;
+
+  await send(
+    contractorEmail,
+    ["mark@outsta.io"],
+    subject,
+    html,
+    [{ filename, content: pdfBase64 }],
+    headers,
+  );
 }
 
 Deno.serve(async (req) => {
@@ -425,6 +492,14 @@ Deno.serve(async (req) => {
     } else if (body.event === "legal_doc_submitted") {
       if (!body.legalDocRequestId) throw new Error("legalDocRequestId is required");
       await handleLegalDocSubmitted(body.legalDocRequestId);
+    } else if (body.event === "legal_doc_completed") {
+      if (!body.legalDocRequestId) throw new Error("legalDocRequestId is required");
+      if (!body.pdfBase64) throw new Error("pdfBase64 is required");
+      await handleLegalDocCompleted(
+        body.legalDocRequestId,
+        body.pdfBase64,
+        body.filename || "document.pdf",
+      );
     } else {
       if (!body.timesheetId) throw new Error("timesheetId is required");
       await handleTimesheetEvent(body.event, body.timesheetId, body.reason, body.reviewerName);

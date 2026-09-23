@@ -2030,6 +2030,7 @@ export type Database = {
           doc_types: string[]
           id: string
           reason: string
+          request_email_message_id: string | null
           status: string
           updated_at: string
         }
@@ -2040,6 +2041,7 @@ export type Database = {
           doc_types?: string[]
           id?: string
           reason: string
+          request_email_message_id?: string | null
           status?: string
           updated_at?: string
         }
@@ -2050,6 +2052,7 @@ export type Database = {
           doc_types?: string[]
           id?: string
           reason?: string
+          request_email_message_id?: string | null
           status?: string
           updated_at?: string
         }
