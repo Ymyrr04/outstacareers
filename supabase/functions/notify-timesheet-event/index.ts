@@ -411,7 +411,13 @@ async function handleLegalDocSubmitted(requestId: string) {
   const recipients = ["mark@outsta.io"];
   const cc = contractorEmail ? [contractorEmail] : [];
 
-  await send(recipients, cc, subject, html);
+  const adminMessageId = await send(recipients, cc, subject, html);
+  if (adminMessageId) {
+    await supabase
+      .from("contractor_legal_doc_requests")
+      .update({ request_email_message_id: adminMessageId })
+      .eq("id", requestId);
+  }
 
   // Send a confirmation response to the contractor
   if (contractorEmail) {
