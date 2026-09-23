@@ -36,6 +36,13 @@
       "when": 1789740012642,
       "tag": "0004_add_linked_applicant_to_hiring_request_comments",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1790170665363,
+      "tag": "0005_add_legal_doc_request_email_message_id",
+      "breakpoints": true
     }
   ]
 }

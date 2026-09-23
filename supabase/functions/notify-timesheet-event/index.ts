@@ -51,21 +51,32 @@ function wrap(title: string, inner: string) {
   </div></body></html>`;
 }
 
-async function send(to: string | string[], cc: string[] | undefined, subject: string, html: string) {
+async function send(
+  to: string | string[],
+  cc: string[] | undefined,
+  subject: string,
+  html: string,
+  attachments?: { filename: string; content: string }[],
+  headers?: Record<string, string>,
+): Promise<string | null> {
   const recipients = Array.isArray(to) ? to : [to];
   const clean = recipients.filter(Boolean);
-  if (clean.length === 0) return;
+  if (clean.length === 0) return null;
   try {
-    await transporter.sendMail({
+    const info = await transporter.sendMail({
       from: FROM,
       to: clean,
       cc: cc?.filter(Boolean),
       subject,
       html,
+      attachments: attachments?.map((a) => ({ ...a, encoding: "base64" })),
+      headers,
     });
     console.log("Sent:", subject, "->", clean);
+    return info?.messageId || null;
   } catch (e) {
     console.error("Send failed:", subject, e);
+    return null;
   }
 }
 
