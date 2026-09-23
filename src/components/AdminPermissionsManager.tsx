@@ -11,6 +11,9 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Shield, UserPlus, UserMinus, Clock } from 'lucide-react';
 
 interface AdminUser {
@@ -30,6 +33,10 @@ export const AdminPermissionsManager = () => {
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [loadingAdmins, setLoadingAdmins] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [newEmail, setNewEmail] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [adding, setAdding] = useState(false);
   const { loading: loadingPerms, updatePermission, getPermission } = useManageTabPermissions();
   const { toast } = useToast();
 
@@ -71,6 +78,34 @@ export const AdminPermissionsManager = () => {
     setActionLoading(null);
   };
 
+  const handleAddAdmin = async () => {
+    const email = newEmail.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      toast({ title: 'Invalid email', description: 'Enter a valid email address', variant: 'destructive' });
+      return;
+    }
+    if (newPassword.length < 6) {
+      toast({ title: 'Password too short', description: 'Password must be at least 6 characters', variant: 'destructive' });
+      return;
+    }
+    setAdding(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('create-admin-user', {
+        body: { email, password: newPassword },
+      });
+      if (error) throw error;
+      if (data?.error) throw new Error(data.error);
+      toast({ title: 'Admin added', description: `${email} can now sign in as an admin` });
+      setAddOpen(false);
+      setNewEmail('');
+      setNewPassword('');
+      await fetchAdmins();
+    } catch (err: any) {
+      toast({ title: 'Error', description: err.message || 'Failed to create admin', variant: 'destructive' });
+    }
+    setAdding(false);
+  };
+
   const handleRemoveAdmin = async (userId: string, email: string) => {
     setActionLoading(userId);
     try {
@@ -99,9 +134,57 @@ export const AdminPermissionsManager = () => {
       {/* Tab Permissions */}
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-2">
-            <Shield className="h-5 w-5 text-primary" />
-            <CardTitle>Tab Permissions</CardTitle>
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Shield className="h-5 w-5 text-primary" />
+              <CardTitle>Tab Permissions</CardTitle>
+            </div>
+            <Dialog open={addOpen} onOpenChange={setAddOpen}>
+              <DialogTrigger asChild>
+                <Button size="sm">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add Admin
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-md">
+                <DialogHeader>
+                  <DialogTitle>Add Admin</DialogTitle>
+                  <DialogDescription>
+                    Create an admin account. If the email already has an account, its password will be reset and admin access granted.
+                  </DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4 py-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="new-admin-email">Email</Label>
+                    <Input
+                      id="new-admin-email"
+                      type="email"
+                      value={newEmail}
+                      onChange={(e) => setNewEmail(e.target.value)}
+                      placeholder="admin@example.com"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="new-admin-password">Temporary Password</Label>
+                    <Input
+                      id="new-admin-password"
+                      type="text"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="At least 6 characters"
+                    />
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setAddOpen(false)} disabled={adding}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleAddAdmin} disabled={adding}>
+                    {adding ? 'Adding...' : 'Add Admin'}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
           <CardDescription>
             Control which tabs each admin can view. Super admins always have full access.

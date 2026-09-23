@@ -18,14 +18,14 @@ const emailSchema = z.object({
   email: z.string().email('Invalid email address'),
 });
 
-type AuthMode = 'login' | 'signup' | 'forgot';
+type AuthMode = 'login' | 'forgot';
 
 const Auth = () => {
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const { user, signIn, signUp } = useAuth();
+  const { user, signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -86,9 +86,7 @@ const Auth = () => {
       return;
     }
 
-    const { error } = mode === 'login' 
-      ? await signIn(email, password)
-      : await signUp(email, password);
+    const { error } = await signIn(email, password);
 
     if (error) {
       toast({
@@ -96,12 +94,6 @@ const Auth = () => {
         description: error.message,
         variant: 'destructive',
       });
-    } else if (mode === 'signup') {
-      toast({
-        title: 'Success',
-        description: 'Account created successfully! You can now log in.',
-      });
-      setMode('login');
     }
 
     setIsLoading(false);
@@ -110,7 +102,6 @@ const Auth = () => {
   const getTitle = () => {
     switch (mode) {
       case 'login': return 'Admin Login';
-      case 'signup': return 'Create Account';
       case 'forgot': return 'Reset Password';
     }
   };
@@ -118,7 +109,6 @@ const Auth = () => {
   const getDescription = () => {
     switch (mode) {
       case 'login': return 'Sign in to manage job listings';
-      case 'signup': return 'Register a new admin account';
       case 'forgot': return 'Enter your email to receive a reset link';
     }
   };
@@ -194,18 +184,9 @@ const Auth = () => {
                   </div>
                 )}
                 <Button type="submit" className="w-full" disabled={isLoading}>
-                  {isLoading ? 'Loading...' : mode === 'login' ? 'Sign In' : 'Sign Up'}
+                  {isLoading ? 'Loading...' : 'Sign In'}
                 </Button>
               </form>
-              <div className="mt-4 text-center">
-                <button
-                  type="button"
-                  onClick={() => setMode(mode === 'login' ? 'signup' : 'login')}
-                  className="text-sm text-muted-foreground hover:text-primary"
-                >
-                  {mode === 'login' ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
-                </button>
-              </div>
             </>
           )}
         </CardContent>
