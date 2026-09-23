@@ -20,7 +20,11 @@ export const TAB_IDS = [
   'external-scout',
   'outreach',
   'workflow',
+  'internal-team',
 ] as const;
+
+// Permissions that are hidden unless explicitly granted
+export const DEFAULT_OFF_TABS: readonly string[] = ['internal-team'];
 
 export type TabId = typeof TAB_IDS[number];
 
@@ -42,6 +46,7 @@ export const TAB_LABELS: Record<TabId, string> = {
   'external-scout': 'External Scout',
   'outreach': 'Outreach',
   'workflow': 'Workflow',
+  'internal-team': 'Internal Team',
 };
 
 interface TabPermission {
@@ -82,7 +87,7 @@ export const useTabPermissions = () => {
   const canViewTab = useCallback((tabId: TabId): boolean => {
     const permission = permissions.find(p => p.tab_id === tabId);
     // Default to true if no permission record exists
-    return permission?.can_view ?? true;
+    return permission?.can_view ?? !DEFAULT_OFF_TABS.includes(tabId);
   }, [permissions]);
 
   const visibleTabs = TAB_IDS.filter(tabId => canViewTab(tabId));
@@ -168,7 +173,7 @@ export const useManageTabPermissions = () => {
   const getPermission = (userId: string, tabId: TabId): boolean => {
     const userPerms = allPermissions[userId] || [];
     const perm = userPerms.find(p => p.tab_id === tabId);
-    return perm?.can_view ?? true;
+    return perm?.can_view ?? !DEFAULT_OFF_TABS.includes(tabId);
   };
 
   return {

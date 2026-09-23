@@ -74,6 +74,8 @@ import { LegalDocRequestsDialog } from './LegalDocRequestsDialog';
 import { RecurringSchedulesManager } from './RecurringSchedulesManager';
 import { ContractorColumnFilter } from './ContractorColumnFilter';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
+import { useTabPermissions } from '@/hooks/useTabPermissions';
+import { useAuth as useAuthInternal } from '@/hooks/useAuth';
 import { parseDateOnly } from '@/lib/dateOnly';
 import { formatDate, formatDateTime } from "@/lib/dateFormat";
 
@@ -130,6 +132,9 @@ const STATUS_ICONS: Record<string, React.ReactNode> = {
 
 export const ContractorsDashboard = () => {
   const { toast } = useToast();
+  const { isSuperAdmin: isSuperAdminInternal } = useAuthInternal();
+  const { canViewTab: canViewPerm } = useTabPermissions();
+  const canSeeInternalTeam = isSuperAdminInternal || canViewPerm('internal-team');
   const [contractors, setContractors] = useState<ContractorWithDetails[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -1598,7 +1603,7 @@ export const ContractorsDashboard = () => {
           )}
 
           {/* Internal Team Section (OutSta employees - excluded from analytics & counts) */}
-          {internalTeamContractors.length > 0 && (
+          {canSeeInternalTeam && internalTeamContractors.length > 0 && (
             <div className="mt-8 space-y-4">
               <div className="flex items-center gap-3">
                 <div className="h-px flex-1 bg-border" />
