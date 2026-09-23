@@ -151,6 +151,39 @@ export const CoeGenerateDialog: React.FC<Props> = ({ open, onOpenChange, data, l
   };
 
 
+  if (pdfUrl) {
+    return (
+      <Dialog open={open} onOpenChange={onOpenChange}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              Certificate preview
+            </DialogTitle>
+          </DialogHeader>
+
+          <object data={pdfUrl} type="application/pdf" className="w-full rounded border" style={{ height: 620 }}>
+            <p className="text-sm text-muted-foreground p-4">Preview unavailable — use Download to view the file.</p>
+          </object>
+
+          <div className="flex justify-end gap-2 pt-2">
+            <Button variant="ghost" size="sm" onClick={() => { URL.revokeObjectURL(pdfUrl); setPdfUrl(null); setPdfBytes(null); }}>
+              Back to edit
+            </Button>
+            <Button variant="outline" size="sm" onClick={download}>
+              <Download className="w-3.5 h-3.5 mr-1" />
+              Download
+            </Button>
+            <Button size="sm" disabled={sending || !legalDocRequestId} onClick={sendToContractor}>
+              {sending ? <Loader2 className="w-3.5 h-3.5 mr-1 animate-spin" /> : <Send className="w-3.5 h-3.5 mr-1" />}
+              Send to contractor
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    );
+  }
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
