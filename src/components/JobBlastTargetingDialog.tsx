@@ -241,6 +241,20 @@ export default function JobBlastTargetingDialog({ open, onOpenChange, jobId, job
                       </div>
                     )}
                   </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0"
+                    title="View candidate details"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      setPreviewId(r.id);
+                    }}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
                 </label>
               ))
             )}
@@ -261,6 +275,14 @@ export default function JobBlastTargetingDialog({ open, onOpenChange, jobId, job
           </Button>
         </DialogFooter>
       </DialogContent>
+
+      <CandidateDetailDialog
+        open={previewId !== null}
+        onOpenChange={(o) => {
+          if (!o) setPreviewId(null);
+        }}
+        applicantId={previewId}
+      />
     </Dialog>
   );
 }
