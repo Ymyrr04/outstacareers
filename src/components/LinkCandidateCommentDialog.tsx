@@ -94,21 +94,29 @@ export function LinkCandidateCommentDialog({ open, onOpenChange, applicantId, ap
           .order('created_at', { ascending: true }),
       ]);
 
+      // Label untitled profiles by their first line so they're easy to tell apart
+      const labelFor = (html: string, fallback: string) => {
+        const first = htmlToPlainText(html).split('\n').map((l) => l.trim()).find(Boolean) || '';
+        return first ? (first.length > 40 ? `${first.slice(0, 40)}…` : first) : fallback;
+      };
+
       const opts: ProfileOption[] = [];
       const main = mainRes.data?.candidate_profile || '';
       if (main && htmlToPlainText(main)) {
-        opts.push({ id: 'main', title: 'Main profile', content: main });
+        opts.push({ id: 'main', title: `Main: ${labelFor(main, 'profile')}`, content: main });
       }
       for (const p of extraRes.data || []) {
         if (p.content && htmlToPlainText(p.content)) {
-          opts.push({ id: p.id, title: p.title || 'Additional profile', content: p.content });
+          opts.push({ id: p.id, title: p.title || labelFor(p.content, 'Additional profile'), content: p.content });
         }
       }
 
       setProfiles(opts);
       if (opts.length > 0) {
-        setSelectedProfileId(opts[0].id);
-        setNote(htmlToPlainText(opts[0].content));
+        // Default to the most recently added profile
+        const pick = opts[opts.length - 1];
+        setSelectedProfileId(pick.id);
+        setNote(htmlToPlainText(pick.content));
       }
     })();
   }, [open, load, applicantId]);
