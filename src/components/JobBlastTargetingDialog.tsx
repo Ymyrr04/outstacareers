@@ -15,8 +15,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Search, Send, Users } from 'lucide-react';
+import { Eye, Loader2, Search, Send, Users } from 'lucide-react';
 import { scoreCandidate, type MatchCandidate, type MatchJob } from '@/lib/jobCandidateMatch';
+import { CandidateDetailDialog } from '@/components/CandidateDetailDialog';
 
 interface Props {
   open: boolean;
@@ -39,6 +40,7 @@ export default function JobBlastTargetingDialog({ open, onOpenChange, jobId, job
   const [search, setSearch] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [touched, setTouched] = useState(false);
+  const [previewId, setPreviewId] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open || !job) return;
