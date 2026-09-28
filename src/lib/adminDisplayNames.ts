@@ -37,6 +37,7 @@ export const USER_ID_TO_EMAIL: Record<string, string> = {
   '73d829ad-a6a7-48bd-8cac-2ad9a9206705': 'sean@outsta.io',
   '63fcf841-d3ff-4011-85fe-66afbd08917d': 'christian@outsta.io',
   '99873bc9-d2f4-4e6f-8cef-f3b5bce23999': 'jacob@outsta.io',
+  'f5f95553-d3e1-4e83-8e70-670d93893567': 'michael@outsta.io',
 };
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
