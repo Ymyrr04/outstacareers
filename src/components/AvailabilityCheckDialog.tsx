@@ -15,28 +15,23 @@ interface AvailabilityCheckDialogProps {
 }
 
 export function AvailabilityCheckDialog({ open, onOpenChange, applicantId, applicantName, applicantEmail, onSent }: AvailabilityCheckDialogProps) {
-  const [sending, setSending] = useState(false);
-
-  const send = async () => {
-    if (sending) return;
-    setSending(true);
-    try {
-      const { error } = await supabase.functions.invoke('send-availability-check', {
-        body: { applicantId },
+  const send = () => {
+    // Close immediately; the email goes out in the background.
+    onOpenChange(false);
+    supabase.functions
+      .invoke('send-availability-check', { body: { applicantId } })
+      .then(({ error }) => {
+        if (error) throw error;
+        toast.success(`Availability check sent to ${applicantEmail}`);
+        onSent?.();
+      })
+      .catch(() => {
+        toast.error('Failed to send availability check');
       });
-      if (error) throw error;
-      toast.success(`Availability check sent to ${applicantEmail}`);
-      onOpenChange(false);
-      onSent?.();
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to send availability check');
-    } finally {
-      setSending(false);
-    }
   };
 
   return (
-    <Dialog open={open} onOpenChange={(next) => { if (!sending) onOpenChange(next); }}>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-sm">
         <DialogHeader>
           <DialogTitle>Check Availability</DialogTitle>
@@ -46,11 +41,8 @@ export function AvailabilityCheckDialog({ open, onOpenChange, applicantId, appli
           The email will come from <span className="font-medium text-foreground">OutSta Recruitment</span>.
         </p>
         <DialogFooter className="gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={sending}>Cancel</Button>
-          <Button onClick={send} disabled={sending}>
-            {sending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            Send check
-          </Button>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
+          <Button onClick={send}>Send check</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
