@@ -1,10 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useAuth } from '@/hooks/useAuth';
-import { getAdminDisplayName } from '@/lib/adminDisplayNames';
 import { supabase } from '@/integrations/supabase/client';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -19,21 +15,14 @@ interface AvailabilityCheckDialogProps {
 }
 
 export function AvailabilityCheckDialog({ open, onOpenChange, applicantId, applicantName, applicantEmail, onSent }: AvailabilityCheckDialogProps) {
-  const { user } = useAuth();
-  const [senderName, setSenderName] = useState('');
   const [sending, setSending] = useState(false);
 
-  useEffect(() => {
-    if (open) setSenderName(getAdminDisplayName(user?.email, 'OutSta Recruitment'));
-  }, [open, user?.email]);
-
   const send = async () => {
-    const name = senderName.trim();
-    if (!name || sending) return;
+    if (sending) return;
     setSending(true);
     try {
       const { error } = await supabase.functions.invoke('send-availability-check', {
-        body: { applicantId, senderName: name },
+        body: { applicantId },
       });
       if (error) throw error;
       toast.success(`Availability check sent to ${applicantEmail}`);
@@ -53,14 +42,12 @@ export function AvailabilityCheckDialog({ open, onOpenChange, applicantId, appli
           <DialogTitle>Check Availability</DialogTitle>
           <DialogDescription>Send to {applicantName} ({applicantEmail})</DialogDescription>
         </DialogHeader>
-        <div className="space-y-2">
-          <Label htmlFor="availability-sender-name">Sender name</Label>
-          <Input id="availability-sender-name" value={senderName} onChange={(event) => setSenderName(event.target.value)} maxLength={80} autoFocus onKeyDown={(event) => { if (event.key === 'Enter') { event.preventDefault(); void send(); } }} />
-          <p className="text-xs text-muted-foreground">Shown beside your email address in the candidate’s inbox.</p>
-        </div>
+        <p className="text-sm text-muted-foreground">
+          The email will come from <span className="font-medium text-foreground">OutSta Recruitment</span>.
+        </p>
         <DialogFooter className="gap-2">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={sending}>Cancel</Button>
-          <Button onClick={send} disabled={sending || !senderName.trim()}>
+          <Button onClick={send} disabled={sending}>
             {sending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Send check
           </Button>
