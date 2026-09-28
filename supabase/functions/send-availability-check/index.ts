@@ -1,14 +1,10 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { createClient } from "npm:@supabase/supabase-js@2";
+import { corsHeaders } from 'npm:@supabase/supabase-js@2/cors';
 import { SMTPClient } from "https://deno.land/x/denomailer@1.6.0/mod.ts";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
 
 interface SendAvailabilityCheckRequest {
   applicantId: string;
+  senderName?: string;
 }
 
 // Admin-specific Gmail credentials mapping
@@ -20,28 +16,15 @@ const ADMIN_GMAIL_CREDENTIALS: Record<string, { userEnv: string; passEnv: string
   'jil@outsta.io': { userEnv: 'JIL_GMAIL_USER', passEnv: 'JIL_GMAIL_APP_PASSWORD' },
 };
 
-function getAdminEmailFromJwt(authHeader: string | null): string | null {
-  if (!authHeader) return null;
-  try {
-    const token = authHeader.replace('Bearer ', '');
-    const parts = token.split('.');
-    if (parts.length !== 3) return null;
-    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
-    return payload.email?.toLowerCase() || null;
-  } catch {
-    return null;
-  }
-}
-
 function normalizeSmtpSecret(value: string | undefined | null): string | null {
   if (!value) return null;
   const normalized = value.replace(/\s+/g, '');
   return normalized.length > 0 ? normalized : null;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
+    return new Response('ok', { headers: corsHeaders });
   }
 
   try {
@@ -50,14 +33,34 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    if (!defaultGmailUser || !defaultGmailPassword) {
-      throw new Error('Gmail credentials not configured');
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader?.match(/^Bearer (.+)$/i)?.[1];
+    if (!token) {
+      return new Response(JSON.stringify({ error: 'Authentication required' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Authentication required' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const { data: roles, error: roleError } = await supabase.from('user_roles').select('role').eq('user_id', user.id).in('role', ['admin', 'super_admin']);
+    if (roleError || !roles?.length) {
+      return new Response(JSON.stringify({ error: 'Admin access required' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+
+    let payload: SendAvailabilityCheckRequest;
+    try { payload = await req.json(); } catch { payload = { applicantId: '' }; }
+    const { applicantId, senderName } = payload;
+    if (typeof applicantId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(applicantId)
+      || (senderName !== undefined && (typeof senderName !== 'string' || !senderName.trim() || senderName.trim().length > 80 || /[\x00-\x1f\x7f]/.test(senderName)))) {
+      return new Response(JSON.stringify({ error: 'Invalid availability check details' }), { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const displayName = senderName?.trim() || 'OutSta Recruitment';
 
     // Use the clicking admin's own Gmail credentials when available
     let GMAIL_USER = defaultGmailUser;
     let GMAIL_APP_PASSWORD = defaultGmailPassword;
-    const adminEmail = getAdminEmailFromJwt(req.headers.get('authorization'));
+    const adminEmail = user.email?.toLowerCase();
     if (adminEmail) {
       const creds = ADMIN_GMAIL_CREDENTIALS[adminEmail];
       if (creds) {
@@ -71,8 +74,7 @@ serve(async (req) => {
       }
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const { applicantId }: SendAvailabilityCheckRequest = await req.json();
+    if (!GMAIL_USER || !GMAIL_APP_PASSWORD) throw new Error('Gmail credentials not configured');
 
     console.log('Sending availability check for applicant:', applicantId);
 
@@ -156,7 +158,7 @@ serve(async (req) => {
 </html>`;
 
     await client.send({
-      from: GMAIL_USER,
+      from: `"${displayName.replace(/(["\\])/g, '\\$1')}" <${GMAIL_USER}>`,
       to: applicant.email,
       subject: subject,
       content: "auto",
