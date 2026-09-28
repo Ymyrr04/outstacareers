@@ -47,6 +47,7 @@ import { EmailTemplateEditor } from '@/components/EmailTemplateEditor';
 import { CommunicationHistory } from '@/components/CommunicationHistory';
 import { SendEmailDialog } from '@/components/SendEmailDialog';
 import { CheckAvailabilityButton } from '@/components/CheckAvailabilityButton';
+import { AvailabilityCheckDialog } from '@/components/AvailabilityCheckDialog';
 import { ReprofilingDialog } from '@/components/ReprofilingDialog';
 import { CandidateProfileSection } from '@/components/CandidateProfileSection';
 import { RoleHistorySection } from '@/components/RoleHistorySection';
@@ -298,6 +299,7 @@ const Admin = () => {
   const [emailTemplateEditorOpen, setEmailTemplateEditorOpen] = useState(false);
   const [communicationHistoryApplicant, setCommunicationHistoryApplicant] = useState<{ id: string; name: string; email: string } | null>(null);
   const [sendEmailApplicant, setSendEmailApplicant] = useState<{ id: string; full_name: string; email: string; job_title: string; status: string; preselectedTemplate?: string } | null>(null);
+  const [availabilityApplicant, setAvailabilityApplicant] = useState<{ id: string; full_name: string; email: string } | null>(null);
   const { templates, getDefaultTemplateByTrigger } = useEmailTemplates();
   const { unreadCounts, unreadApplicants, markAsRead: markMessagesAsRead, markAllAsRead, fetchUnreadCounts } = useUnreadMessageCounts();
   const { replies: allReplies, fetching: fetchingReplies, fetchNewReplies } = useEmailReplies();
@@ -3244,27 +3246,14 @@ const Admin = () => {
 
                             {/* Check Availability button for Bench candidates */}
                             {applicant.status === 'Bench' && (
-                              <button
-                                onClick={async (e) => {
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={(e) => {
                                   e.stopPropagation();
-                                  try {
-                                    const { error } = await supabase.functions.invoke('send-availability-check', {
-                                      body: { applicantId: applicant.id },
-                                    });
-                                    if (error) throw error;
-                                    toast({
-                                      title: 'Availability check sent',
-                                      description: `Email sent to ${applicant.email}`,
-                                    });
-                                  } catch (error: any) {
-                                    toast({
-                                      title: 'Failed to send',
-                                      description: error.message || 'Please try again',
-                                      variant: 'destructive',
-                                    });
-                                  }
+                                  setAvailabilityApplicant({ id: applicant.id, full_name: applicant.full_name, email: applicant.email });
                                 }}
-                                className="flex items-center gap-1 text-blue-600 hover:underline cursor-pointer"
+                                className="h-auto p-0 flex items-center gap-1 text-primary hover:text-primary hover:underline"
                               >
                                 <CalendarPlus className="w-3.5 h-3.5" />
                                 Check Availability
@@ -3283,7 +3272,7 @@ const Admin = () => {
                                     )}
                                   </>
                                 )}
-                              </button>
+                              </Button>
                             )}
                           </div>
                         </div>
@@ -4413,6 +4402,16 @@ const Admin = () => {
         }}
       />
 
+      {availabilityApplicant && (
+        <AvailabilityCheckDialog
+          open={!!availabilityApplicant}
+          onOpenChange={(open) => { if (!open) setAvailabilityApplicant(null); }}
+          applicantId={availabilityApplicant.id}
+          applicantName={availabilityApplicant.full_name}
+          applicantEmail={availabilityApplicant.email}
+          onSent={fetchApplicants}
+        />
+      )}
       <HelpDeskWidget />
     </div>
   );
