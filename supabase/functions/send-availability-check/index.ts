@@ -101,7 +101,7 @@ Deno.serve(async (req) => {
     }
 
     // Generate a unique token for this availability check
-    const token = crypto.randomUUID();
+    const responseToken = crypto.randomUUID();
 
     // Create the availability response record with 'pending' as placeholder
     // We set response to 'yes' initially (will be updated when they respond)
@@ -111,7 +111,7 @@ Deno.serve(async (req) => {
       .insert({
         applicant_id: applicantId,
         response: 'yes', // Placeholder, will be updated on actual response
-        response_token: token
+        response_token: responseToken
       });
 
     if (insertError) {
@@ -121,8 +121,8 @@ Deno.serve(async (req) => {
 
     // Generate magic links
     const baseUrl = `${supabaseUrl}/functions/v1/handle-availability-response`;
-    const yesLink = `${baseUrl}?token=${token}&response=yes`;
-    const noLink = `${baseUrl}?token=${token}&response=no`;
+    const yesLink = `${baseUrl}?token=${responseToken}&response=yes`;
+    const noLink = `${baseUrl}?token=${responseToken}&response=no`;
 
     // Process template - replace placeholders
     let subject = template.subject.replace(/\{\{full_name\}\}/g, applicant.full_name);
