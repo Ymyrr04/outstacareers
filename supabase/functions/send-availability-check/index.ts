@@ -45,13 +45,30 @@ serve(async (req) => {
   }
 
   try {
-    const GMAIL_USER = Deno.env.get('GMAIL_USER');
-    const GMAIL_APP_PASSWORD = Deno.env.get('GMAIL_APP_PASSWORD');
+    const defaultGmailUser = Deno.env.get('GMAIL_USER');
+    const defaultGmailPassword = normalizeSmtpSecret(Deno.env.get('GMAIL_APP_PASSWORD'));
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
-    if (!GMAIL_USER || !GMAIL_APP_PASSWORD) {
+    if (!defaultGmailUser || !defaultGmailPassword) {
       throw new Error('Gmail credentials not configured');
+    }
+
+    // Use the clicking admin's own Gmail credentials when available
+    let GMAIL_USER = defaultGmailUser;
+    let GMAIL_APP_PASSWORD = defaultGmailPassword;
+    const adminEmail = getAdminEmailFromJwt(req.headers.get('authorization'));
+    if (adminEmail) {
+      const creds = ADMIN_GMAIL_CREDENTIALS[adminEmail];
+      if (creds) {
+        const specificUser = Deno.env.get(creds.userEnv);
+        const specificPass = normalizeSmtpSecret(Deno.env.get(creds.passEnv));
+        if (specificUser && specificPass) {
+          GMAIL_USER = specificUser;
+          GMAIL_APP_PASSWORD = specificPass;
+          console.log(`Using ${adminEmail}'s Gmail credentials for availability check`);
+        }
+      }
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
