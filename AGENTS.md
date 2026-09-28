@@ -1,0 +1,1 @@
+- Keep availability-check sender-name selection in one shared dialog and validate the actual sending account on the server, so every send entry point behaves consistently without allowing a forged From address.
