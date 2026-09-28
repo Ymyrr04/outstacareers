@@ -11,6 +11,34 @@ interface SendAvailabilityCheckRequest {
   applicantId: string;
 }
 
+// Admin-specific Gmail credentials mapping
+const ADMIN_GMAIL_CREDENTIALS: Record<string, { userEnv: string; passEnv: string }> = {
+  'mark@outsta.io': { userEnv: 'MARK_GMAIL_USER', passEnv: 'MARK_GMAIL_APP_PASSWORD' },
+  'kristine@outsta.io': { userEnv: 'KRISTINE_GMAIL_USER', passEnv: 'KRISTINE_GMAIL_APP_PASSWORD' },
+  'czarina@outsta.io': { userEnv: 'CZARINA_GMAIL_USER', passEnv: 'CZARINA_GMAIL_APP_PASSWORD' },
+  'eduardo@outsta.io': { userEnv: 'EDUARDO_GMAIL_USER', passEnv: 'EDUARDO_GMAIL_APP_PASSWORD' },
+  'jil@outsta.io': { userEnv: 'JIL_GMAIL_USER', passEnv: 'JIL_GMAIL_APP_PASSWORD' },
+};
+
+function getAdminEmailFromJwt(authHeader: string | null): string | null {
+  if (!authHeader) return null;
+  try {
+    const token = authHeader.replace('Bearer ', '');
+    const parts = token.split('.');
+    if (parts.length !== 3) return null;
+    const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return payload.email?.toLowerCase() || null;
+  } catch {
+    return null;
+  }
+}
+
+function normalizeSmtpSecret(value: string | undefined | null): string | null {
+  if (!value) return null;
+  const normalized = value.replace(/\s+/g, '');
+  return normalized.length > 0 ? normalized : null;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
