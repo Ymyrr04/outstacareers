@@ -130,8 +130,8 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
 
   // re-parse dates if the year changes after upload
   const sheetsWithDates = useMemo(() => sheets.map((s) => ({ ...s, dates: parseWeekTab(s.name, year) })), [sheets, year]);
-  const badDates = sheetsWithDates.filter((s) => !s.dates || !s.headers.length);
-  const usable = sheetsWithDates.filter((s) => s.dates && s.headers.length);
+  const badDates = sheetsWithDates.filter((s) => !s.dates);
+  const usable = sheetsWithDates.filter((s) => s.headers.length);
   const groups = useMemo(() => {
     const m = new Map<string, { key: string; headers: string[]; sheets: string[] }>();
     for (const s of usable) {
@@ -155,7 +155,7 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
         const hasTotal = Object.values(r).some((v) => /total/i.test(String(v ?? '')));
         if (!name || hasTotal) { skip++; continue; }
         const row: Record<string, unknown> = {
-          week_label: s.name, week_start: s.dates!.start, week_end: s.dates!.end, raw: r,
+          week_label: s.name, week_start: s.dates?.start ?? null, week_end: s.dates?.end ?? null, raw: r,
         };
         for (const f of FIELDS) {
           const h = mp[f.key];
@@ -239,9 +239,9 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
                 </div>
 
                 {badDates.length > 0 && (
-                  <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-1">
+                  <div className="rounded-md border border-amber-400/60 bg-amber-50/50 dark:bg-amber-950/20 p-3 text-sm space-y-1">
                     {badDates.map((s) => (
-                      <div key={`d-${s.name}`} className="flex gap-2"><AlertTriangle className="h-4 w-4 text-destructive shrink-0" />"{s.name}" — couldn't read dates from tab name, skipped</div>
+                      <div key={`d-${s.name}`} className="flex gap-2"><AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />"{s.name}" — couldn't read dates from tab name, will import without week dates</div>
                     ))}
                   </div>
                 )}
