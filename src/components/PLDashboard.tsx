@@ -1655,6 +1655,15 @@ export const PLDashboard = () => {
         style={{ order: sectionOrder.indexOf('timesheets') }}
         rightSlot={
           <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="h-8 text-xs"
+              onClick={() => setImportOpen(true)}
+              title="Import historical timesheets from a CSV file"
+            >
+              <Upload className="w-3.5 h-3.5 mr-1" /> Import
+            </Button>
             <div className="inline-flex items-center rounded-full border border-primary/30 bg-primary/5 text-primary h-8 overflow-hidden">
               <button
                 type="button"
