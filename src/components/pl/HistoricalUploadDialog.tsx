@@ -77,7 +77,7 @@ function readSheet(ws: XLSX.WorkSheet, name: string, year: number): ParsedSheet 
 
 const hKey = (h: string[]) => h.join('\u0001');
 
-function guessMapping(headers: string[]): Mapping {
+export function guessMapping(headers: string[]): Mapping {
   const used = new Set<string>();
   const out = {} as Mapping;
   for (const f of FIELDS) {
