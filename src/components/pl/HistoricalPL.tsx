@@ -6,8 +6,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { StatCard } from '@/components/StatCard';
-import { DollarSign, Wallet, TrendingUp, Clock, Users, Loader2, Upload, Trash2 } from 'lucide-react';
+import { Loader2, Upload, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { HistoricalUploadDialog, HIST_YEARS } from './HistoricalUploadDialog';
@@ -86,14 +85,6 @@ export function HistoricalPL({ onUpload }: Props) {
     });
   }, [rows]);
 
-  const stats = useMemo(() => {
-    const t = weeks.reduce((a, w) => ({
-      hours: a.hours + w.totals.hours, cost: a.cost + w.totals.cost,
-      billing: a.billing + w.totals.billing, margin: a.margin + w.totals.margin,
-      hc: a.hc + w.headcount,
-    }), { hours: 0, cost: 0, billing: 0, margin: 0, hc: 0 });
-    return { ...t, avgHc: weeks.length ? t.hc / weeks.length : 0 };
-  }, [weeks]);
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -151,14 +142,6 @@ export function HistoricalPL({ onUpload }: Props) {
         </div>
       ) : (
         <>
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <StatCard accent="amber" label="Total billing" value={money(stats.billing)} icon={DollarSign} />
-            <StatCard accent="amber" label="Total cost" value={money(stats.cost)} icon={Wallet} />
-            <StatCard accent="amber" label="Total margin" value={money(stats.margin)} icon={TrendingUp} />
-            <StatCard accent="cyan" label="Total hours" value={stats.hours.toLocaleString('en-US', { maximumFractionDigits: 2 })} icon={Clock} />
-            <StatCard accent="blue" label="Avg weekly headcount" value={stats.avgHc.toFixed(1)} icon={Users} />
-          </div>
-
           <div className="border rounded-lg bg-card overflow-x-auto">
             <Table>
               <TableHeader>
