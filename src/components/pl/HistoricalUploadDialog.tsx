@@ -88,7 +88,7 @@ function guessMapping(headers: string[]): Mapping {
   return out;
 }
 
-function toNum(v: unknown): number | null {
+export function toNum(v: unknown): number | null {
   if (v === '' || v == null) return null;
   if (typeof v === 'number') return Number.isFinite(v) ? v : null;
   const n = parseFloat(String(v).replace(/[$,\s]/g, '').replace(/^\((.*)\)$/, '-$1'));
