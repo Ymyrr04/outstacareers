@@ -2877,13 +2877,18 @@ export type Database = {
         Row: {
           batch_id: string
           client_billing: number | null
+          client_deposit: number | null
           client_rate: number | null
           company: string | null
           contractor_cost: number | null
+          contractor_deposit: number | null
           contractor_name: string | null
           contractor_rate: number | null
+          expense_after_1_percent: number | null
+          gross_after_deductions: number | null
           hours: number | null
           id: string
+          income_after_3_percent: number | null
           margin: number | null
           raw: Json | null
           week_end: string | null
@@ -2893,13 +2898,18 @@ export type Database = {
         Insert: {
           batch_id: string
           client_billing?: number | null
+          client_deposit?: number | null
           client_rate?: number | null
           company?: string | null
           contractor_cost?: number | null
+          contractor_deposit?: number | null
           contractor_name?: string | null
           contractor_rate?: number | null
+          expense_after_1_percent?: number | null
+          gross_after_deductions?: number | null
           hours?: number | null
           id?: string
+          income_after_3_percent?: number | null
           margin?: number | null
           raw?: Json | null
           week_end?: string | null
@@ -2909,13 +2919,18 @@ export type Database = {
         Update: {
           batch_id?: string
           client_billing?: number | null
+          client_deposit?: number | null
           client_rate?: number | null
           company?: string | null
           contractor_cost?: number | null
+          contractor_deposit?: number | null
           contractor_name?: string | null
           contractor_rate?: number | null
+          expense_after_1_percent?: number | null
+          gross_after_deductions?: number | null
           hours?: number | null
           id?: string
+          income_after_3_percent?: number | null
           margin?: number | null
           raw?: Json | null
           week_end?: string | null
