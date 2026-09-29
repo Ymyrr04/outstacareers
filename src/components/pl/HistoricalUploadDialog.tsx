@@ -39,7 +39,7 @@ const ymd = (y: number, m: number, d: number) => `${y}-${pad(m)}-${pad(d)}`;
 
 /** "September 4 - September 10" or "Sep 28 - 4" → plain YYYY-MM-DD strings. */
 export function parseWeekTab(name: string, year: number): { start: string; end: string } | null {
-  const m = name.trim().match(/^([A-Za-z]+)\.?\s+(\d{1,2})\s*[-–—to]+\s*(?:([A-Za-z]+)\.?\s+)?(\d{1,2})/i);
+  const m = name.trim().match(/^([A-Za-z]+)\.?\s*(\d{1,2})(?:st|nd|rd|th)?\s*(?:-|–|—|to)+\s*(?:([A-Za-z]+)\.?\s*)?(\d{1,2})/i);
   if (!m) return null;
   const sm = MONTHS.indexOf(m[1].slice(0, 3).toLowerCase()) + 1;
   const em = m[3] ? MONTHS.indexOf(m[3].slice(0, 3).toLowerCase()) + 1 : sm;
