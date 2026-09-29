@@ -130,8 +130,8 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
 
   // re-parse dates if the year changes after upload
   const sheetsWithDates = useMemo(() => sheets.map((s) => ({ ...s, dates: parseWeekTab(s.name, year) })), [sheets, year]);
-  const badDates = sheetsWithDates.filter((s) => !s.dates || !s.headers.length);
-  const usable = sheetsWithDates.filter((s) => s.dates && s.headers.length);
+  const badDates = sheetsWithDates.filter((s) => !s.dates);
+  const usable = sheetsWithDates.filter((s) => s.headers.length);
   const groups = useMemo(() => {
     const m = new Map<string, { key: string; headers: string[]; sheets: string[] }>();
     for (const s of usable) {
