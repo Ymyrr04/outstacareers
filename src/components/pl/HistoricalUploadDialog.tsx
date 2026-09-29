@@ -75,7 +75,7 @@ function readSheet(ws: XLSX.WorkSheet, name: string, year: number): ParsedSheet 
   return { name, headers, rows, dates: parseWeekTab(name, year) };
 }
 
-const hKey = (h: string[]) => h.join('\u0001');
+export const hKey = (h: string[]) => h.join('\u0001');
 
 export function guessMapping(headers: string[]): Mapping {
   const used = new Set<string>();
