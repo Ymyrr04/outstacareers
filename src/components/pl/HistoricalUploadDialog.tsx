@@ -217,7 +217,7 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
             <DialogDescription>One workbook per year. Each sheet tab is one week, e.g. "September 4 - September 10".</DialogDescription>
           </DialogHeader>
 
-          <div className="flex flex-col gap-4">
+           <div className="flex min-w-0 flex-col gap-4">
             <div className="flex items-center gap-3 flex-wrap">
               <span className="text-sm font-medium">Year</span>
               {HIST_YEARS.map((y) => (
