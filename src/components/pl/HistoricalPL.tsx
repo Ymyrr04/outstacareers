@@ -10,9 +10,7 @@ import { StatCard } from '@/components/StatCard';
 import { DollarSign, Wallet, TrendingUp, Clock, Users, Loader2, Upload, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
-import { HistoricalUploadDialog } from './HistoricalUploadDialog';
-
-const YEARS = [2023, 2024, 2025];
+import { HistoricalUploadDialog, HIST_YEARS } from './HistoricalUploadDialog';
 
 interface HistRow {
   id: string;
@@ -34,7 +32,7 @@ const num = (n: number | null | undefined) => Number(n ?? 0);
 interface Props { onUpload?: (year: number) => void }
 
 export function HistoricalPL({ onUpload }: Props) {
-  const [year, setYear] = useState(2025);
+  const [year, setYear] = useState(HIST_YEARS[HIST_YEARS.length - 1]);
   const [batchIds, setBatchIds] = useState<string[]>([]);
   const [rows, setRows] = useState<HistRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -116,7 +114,7 @@ export function HistoricalPL({ onUpload }: Props) {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex gap-2">
-          {YEARS.map((y) => (
+          {HIST_YEARS.map((y) => (
             <button
               key={y}
               type="button"
