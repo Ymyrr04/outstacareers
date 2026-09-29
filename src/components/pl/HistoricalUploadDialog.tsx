@@ -258,7 +258,7 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
                           <span className="text-muted-foreground"> — {g.sheets.slice(0, 4).join(', ')}{g.sheets.length > 4 ? ` +${g.sheets.length - 4} more` : ''}</span>
                         </div>
                       )}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 [&>*]:min-w-0 [&_[role=combobox]]:w-full [&_[role=combobox]]:min-w-0">
                         {FIELDS.map((f) => (
                            <div key={f.key} className="space-y-1 min-w-0">
                             <label className="text-xs font-medium">{f.label}{f.key === 'contractor_name' && ' *'}</label>
