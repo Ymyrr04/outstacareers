@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye, Mail, Settings2, ChevronLeft, ChevronRight, KeyRound, Download, Users, FileText, Clock, Wallet, DollarSign, AlarmClock, Upload } from 'lucide-react';
+import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye, Mail, Settings2, ChevronLeft, ChevronRight, KeyRound, Download, Users, FileText, Clock, Wallet, DollarSign, AlarmClock } from 'lucide-react';
 import { StatCard } from '@/components/StatCard';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
@@ -22,7 +22,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { PLReport } from '@/components/pl/PLReport';
 import { TimesheetEditHistory } from '@/components/pl/TimesheetEditHistory';
 import { TimesheetReminderSettingsDialog } from '@/components/pl/TimesheetReminderSettingsDialog';
-import { ImportTimesheetsDialog } from '@/components/pl/ImportTimesheetsDialog';
 import { parseDateOnly } from '@/lib/dateOnly';
 import { formatDate, formatDateShort, formatDateTime, formatDateWithWeekday } from "@/lib/dateFormat";
 import { timesheetLockAt } from "@/lib/timesheetLock";
@@ -373,7 +372,6 @@ export const PLDashboard = () => {
     return SECTION_DEFS.map((s) => s.id);
   });
   const [reorderOpen, setReorderOpen] = useState(false);
-  const [importOpen, setImportOpen] = useState(false);
   useEffect(() => {
     try { localStorage.setItem(PL_ORDER_KEY, JSON.stringify(sectionOrder)); } catch {}
   }, [sectionOrder]);
@@ -1655,15 +1653,6 @@ export const PLDashboard = () => {
         style={{ order: sectionOrder.indexOf('timesheets') }}
         rightSlot={
           <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 text-xs"
-              onClick={() => setImportOpen(true)}
-              title="Import historical timesheets from a CSV file"
-            >
-              <Upload className="w-3.5 h-3.5 mr-1" /> Import
-            </Button>
             <div className="inline-flex items-center rounded-full border border-primary/30 bg-primary/5 text-primary h-8 overflow-hidden">
               <button
                 type="button"
@@ -2553,12 +2542,6 @@ export const PLDashboard = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <ImportTimesheetsDialog
-        open={importOpen}
-        onOpenChange={setImportOpen}
-        onImported={fetchData}
-      />
     </div>
   );
 };
