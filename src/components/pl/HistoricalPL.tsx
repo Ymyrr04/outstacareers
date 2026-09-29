@@ -10,6 +10,7 @@ import { StatCard } from '@/components/StatCard';
 import { DollarSign, Wallet, TrendingUp, Clock, Users, Loader2, Upload, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { HistoricalUploadDialog } from './HistoricalUploadDialog';
 
 const YEARS = [2023, 2024, 2025];
 
@@ -39,6 +40,7 @@ export function HistoricalPL({ onUpload }: Props) {
   const [loading, setLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [uploadOpen, setUploadOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -107,7 +109,7 @@ export function HistoricalPL({ onUpload }: Props) {
 
   const handleUpload = () => {
     if (onUpload) onUpload(year);
-    else toast.info('Historical upload is not available yet.');
+    else setUploadOpen(true);
   };
 
   return (
@@ -130,11 +132,16 @@ export function HistoricalPL({ onUpload }: Props) {
             </button>
           ))}
         </div>
-        {batchIds.length > 0 && (
-          <Button variant="ghost" size="sm" className="text-destructive gap-1" onClick={() => setConfirmOpen(true)}>
-            <Trash2 className="h-4 w-4" /> Delete {year}
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" className="gap-1" onClick={handleUpload}>
+            <Upload className="h-4 w-4" /> Upload
           </Button>
-        )}
+          {batchIds.length > 0 && (
+            <Button variant="ghost" size="sm" className="text-destructive gap-1" onClick={() => setConfirmOpen(true)}>
+              <Trash2 className="h-4 w-4" /> Delete {year}
+            </Button>
+          )}
+        </div>
       </div>
 
       {loading ? (
@@ -198,6 +205,14 @@ export function HistoricalPL({ onUpload }: Props) {
           </div>
         </>
       )}
+
+      <HistoricalUploadDialog
+        key={uploadOpen ? `open-${year}` : 'closed'}
+        open={uploadOpen}
+        onOpenChange={setUploadOpen}
+        defaultYear={year}
+        onImported={(y) => { if (y === year) void load(); else setYear(y); }}
+      />
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
         <AlertDialogContent>
