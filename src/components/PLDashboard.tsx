@@ -20,6 +20,7 @@ import { AdminLeaveApplications } from '@/components/AdminLeaveApplications';
 import { CollapsibleSection } from '@/components/pl/CollapsibleSection';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { PLReport } from '@/components/pl/PLReport';
+import { HistoricalPL } from '@/components/pl/HistoricalPL';
 import { TimesheetEditHistory } from '@/components/pl/TimesheetEditHistory';
 import { TimesheetReminderSettingsDialog } from '@/components/pl/TimesheetReminderSettingsDialog';
 import { parseDateOnly } from '@/lib/dateOnly';
@@ -1218,11 +1219,15 @@ export const PLDashboard = () => {
           <TabsTrigger value="pl_report" className="gap-2">
             P&amp;L Report
           </TabsTrigger>
+          <TabsTrigger value="historical" className="gap-2">
+            Historical
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
       <div className="flex flex-col gap-3">
       {activeSubtab === 'pl_report' && <PLReport />}
+      {activeSubtab === 'historical' && <HistoricalPL />}
       {activeSubtab === 'leave' && <AdminLeaveApplications />}
       {activeSubtab === 'contractors' && (
 
