@@ -15,6 +15,7 @@ const INTERNAL_RECIPIENTS: { email: string; firstName: string }[] = [
   { email: "mark@outsta.io", firstName: "Mark" },
   { email: "liezl@outsta.io", firstName: "Liezl" },
   { email: "jil@outsta.io", firstName: "Jil" },
+  { email: "christian@outsta.io", firstName: "Christian" },
 ];
 
 function firstNameFrom(fullName: string | null, email: string): string {

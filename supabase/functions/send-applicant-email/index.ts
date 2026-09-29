@@ -12,6 +12,7 @@ const ADMIN_NAMES: Record<string, string> = {
   'mark@outsta.io': 'Mark',
   'liezl@outsta.io': 'Liezl',
   'jil@outsta.io': 'Jil',
+  'christian@outsta.io': 'Christian',
   'yes@outsta.io': 'Yes',
 };
 
@@ -111,6 +112,7 @@ const handler = async (req: Request): Promise<Response> => {
       'czarina@outsta.io': { userEnv: 'CZARINA_GMAIL_USER', passEnv: 'CZARINA_GMAIL_APP_PASSWORD' },
       'eduardo@outsta.io': { userEnv: 'EDUARDO_GMAIL_USER', passEnv: 'EDUARDO_GMAIL_APP_PASSWORD' },
       'jil@outsta.io': { userEnv: 'JIL_GMAIL_USER', passEnv: 'JIL_GMAIL_APP_PASSWORD' },
+      'christian@outsta.io': { userEnv: 'CHRISTIAN_GMAIL_USER', passEnv: 'CHRISTIAN_GMAIL_APP_PASSWORD' },
     };
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
