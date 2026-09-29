@@ -147,11 +147,11 @@ export function HistoricalPL({ onUpload }: Props) {
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-            <StatCard title="Total billing" value={money(stats.billing)} icon={DollarSign} />
-            <StatCard title="Total cost" value={money(stats.cost)} icon={Wallet} />
-            <StatCard title="Total margin" value={money(stats.margin)} icon={TrendingUp} />
-            <StatCard title="Total hours" value={stats.hours.toLocaleString('en-US', { maximumFractionDigits: 2 })} icon={Clock} />
-            <StatCard title="Avg weekly headcount" value={stats.avgHc.toFixed(1)} icon={Users} />
+            <StatCard accent="amber" label="Total billing" value={money(stats.billing)} icon={DollarSign} />
+            <StatCard accent="amber" label="Total cost" value={money(stats.cost)} icon={Wallet} />
+            <StatCard accent="amber" label="Total margin" value={money(stats.margin)} icon={TrendingUp} />
+            <StatCard accent="cyan" label="Total hours" value={stats.hours.toLocaleString('en-US', { maximumFractionDigits: 2 })} icon={Clock} />
+            <StatCard accent="blue" label="Avg weekly headcount" value={stats.avgHc.toFixed(1)} icon={Users} />
           </div>
 
           <div className="border rounded-lg bg-card overflow-x-auto">
