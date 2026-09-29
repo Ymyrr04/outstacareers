@@ -24,14 +24,49 @@ interface SendContractorEmailRequest {
   scheduleFor?: string;
 }
 
+// Admin-specific Gmail credentials mapping
+const ADMIN_GMAIL_CREDENTIALS: Record<string, { userEnv: string; passEnv: string }> = {
+  'mark@outsta.io': { userEnv: 'MARK_GMAIL_USER', passEnv: 'MARK_GMAIL_APP_PASSWORD' },
+  'kristine@outsta.io': { userEnv: 'KRISTINE_GMAIL_USER', passEnv: 'KRISTINE_GMAIL_APP_PASSWORD' },
+  'czarina@outsta.io': { userEnv: 'CZARINA_GMAIL_USER', passEnv: 'CZARINA_GMAIL_APP_PASSWORD' },
+  'eduardo@outsta.io': { userEnv: 'EDUARDO_GMAIL_USER', passEnv: 'EDUARDO_GMAIL_APP_PASSWORD' },
+  'jil@outsta.io': { userEnv: 'JIL_GMAIL_USER', passEnv: 'JIL_GMAIL_APP_PASSWORD' },
+  'christian@outsta.io': { userEnv: 'CHRISTIAN_GMAIL_USER', passEnv: 'CHRISTIAN_GMAIL_APP_PASSWORD' },
+};
+
+function getEmailFromJwt(authHeader: string | null): string | null {
+  if (!authHeader) return null;
+  try {
+    const token = authHeader.replace('Bearer ', '');
+    const payload = JSON.parse(atob(token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+    return typeof payload.email === 'string' ? payload.email.toLowerCase() : null;
+  } catch {
+    return null;
+  }
+}
+
 const handler = async (req: Request): Promise<Response> => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    const gmailUser = Deno.env.get("MARK_GMAIL_USER");
-    const gmailPassword = Deno.env.get("MARK_GMAIL_APP_PASSWORD");
+    // Use the sending admin's own Gmail credentials when available
+    let gmailUser = Deno.env.get("MARK_GMAIL_USER");
+    let gmailPassword = Deno.env.get("MARK_GMAIL_APP_PASSWORD");
+    const adminEmail = getEmailFromJwt(req.headers.get('Authorization'));
+    if (adminEmail) {
+      const creds = ADMIN_GMAIL_CREDENTIALS[adminEmail];
+      if (creds) {
+        const specificUser = Deno.env.get(creds.userEnv);
+        const specificPass = Deno.env.get(creds.passEnv)?.replace(/\s+/g, '');
+        if (specificUser && specificPass) {
+          gmailUser = specificUser;
+          gmailPassword = specificPass;
+          console.log(`Using ${adminEmail}'s Gmail credentials for contractor email`);
+        }
+      }
+    }
     const supabaseUrl = Deno.env.get("SUPABASE_URL");
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
 
