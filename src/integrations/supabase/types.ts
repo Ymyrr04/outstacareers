@@ -2846,6 +2846,92 @@ export type Database = {
           },
         ]
       }
+      historical_pl_batches: {
+        Row: {
+          column_map: Json | null
+          created_at: string
+          filename: string | null
+          id: string
+          uploaded_by: string | null
+          year: number
+        }
+        Insert: {
+          column_map?: Json | null
+          created_at?: string
+          filename?: string | null
+          id?: string
+          uploaded_by?: string | null
+          year: number
+        }
+        Update: {
+          column_map?: Json | null
+          created_at?: string
+          filename?: string | null
+          id?: string
+          uploaded_by?: string | null
+          year?: number
+        }
+        Relationships: []
+      }
+      historical_pl_rows: {
+        Row: {
+          batch_id: string
+          client_billing: number | null
+          client_rate: number | null
+          company: string | null
+          contractor_cost: number | null
+          contractor_name: string | null
+          contractor_rate: number | null
+          hours: number | null
+          id: string
+          margin: number | null
+          raw: Json | null
+          week_end: string | null
+          week_label: string | null
+          week_start: string | null
+        }
+        Insert: {
+          batch_id: string
+          client_billing?: number | null
+          client_rate?: number | null
+          company?: string | null
+          contractor_cost?: number | null
+          contractor_name?: string | null
+          contractor_rate?: number | null
+          hours?: number | null
+          id?: string
+          margin?: number | null
+          raw?: Json | null
+          week_end?: string | null
+          week_label?: string | null
+          week_start?: string | null
+        }
+        Update: {
+          batch_id?: string
+          client_billing?: number | null
+          client_rate?: number | null
+          company?: string | null
+          contractor_cost?: number | null
+          contractor_name?: string | null
+          contractor_rate?: number | null
+          hours?: number | null
+          id?: string
+          margin?: number | null
+          raw?: Json | null
+          week_end?: string | null
+          week_label?: string | null
+          week_start?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "historical_pl_rows_batch_id_fkey"
+            columns: ["batch_id"]
+            isOneToOne: false
+            referencedRelation: "historical_pl_batches"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       interview_answers: {
         Row: {
           ai_feedback: string | null
