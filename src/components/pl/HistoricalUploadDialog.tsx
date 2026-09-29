@@ -14,7 +14,10 @@ import { AlertTriangle, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
-export const HIST_YEARS = [2023, 2024, 2025];
+export const HIST_YEARS = Array.from(
+  { length: Math.max(2025, new Date().getFullYear()) - 2023 + 1 },
+  (_, index) => 2023 + index,
+);
 
 const FIELDS = [
   { key: 'contractor_name', label: 'Contractor', numeric: false, guess: [/contractor|name|employee|va\b/i] },
