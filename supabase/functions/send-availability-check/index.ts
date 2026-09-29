@@ -14,6 +14,7 @@ const ADMIN_GMAIL_CREDENTIALS: Record<string, { userEnv: string; passEnv: string
   'czarina@outsta.io': { userEnv: 'CZARINA_GMAIL_USER', passEnv: 'CZARINA_GMAIL_APP_PASSWORD' },
   'eduardo@outsta.io': { userEnv: 'EDUARDO_GMAIL_USER', passEnv: 'EDUARDO_GMAIL_APP_PASSWORD' },
   'jil@outsta.io': { userEnv: 'JIL_GMAIL_USER', passEnv: 'JIL_GMAIL_APP_PASSWORD' },
+  'christian@outsta.io': { userEnv: 'CHRISTIAN_GMAIL_USER', passEnv: 'CHRISTIAN_GMAIL_APP_PASSWORD' },
 };
 
 function normalizeSmtpSecret(value: string | undefined | null): string | null {
