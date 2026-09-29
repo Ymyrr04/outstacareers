@@ -6,10 +6,11 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ChevronDown, ChevronRight, Loader2, Upload, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader2, Upload, Trash2, Columns3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { HistoricalUploadDialog, HIST_YEARS } from './HistoricalUploadDialog';
+import { HistoricalRemapDialog } from './HistoricalRemapDialog';
 
 interface HistRow {
   id: string;
@@ -39,6 +40,7 @@ export function HistoricalPL({ onUpload }: Props) {
   const [deleting, setDeleting] = useState(false);
   const [openWeeks, setOpenWeeks] = useState<Set<string>>(new Set());
   const [uploadOpen, setUploadOpen] = useState(false);
+  const [remapOpen, setRemapOpen] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -136,9 +138,14 @@ export function HistoricalPL({ onUpload }: Props) {
             <Upload className="h-4 w-4" /> Upload
           </Button>
           {batchIds.length > 0 && (
-            <Button variant="ghost" size="sm" className="text-destructive gap-1" onClick={() => setConfirmOpen(true)}>
-              <Trash2 className="h-4 w-4" /> Delete {year}
-            </Button>
+            <>
+              <Button variant="outline" size="sm" className="gap-1" onClick={() => setRemapOpen(true)}>
+                <Columns3 className="h-4 w-4" /> Edit mapping
+              </Button>
+              <Button variant="ghost" size="sm" className="text-destructive gap-1" onClick={() => setConfirmOpen(true)}>
+                <Trash2 className="h-4 w-4" /> Delete {year}
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -214,6 +221,13 @@ export function HistoricalPL({ onUpload }: Props) {
         onOpenChange={setUploadOpen}
         defaultYear={year}
         onImported={(y) => { if (y === year) void load(); else setYear(y); }}
+      />
+
+      <HistoricalRemapDialog
+        open={remapOpen}
+        onOpenChange={setRemapOpen}
+        year={year}
+        onApplied={() => void load()}
       />
 
       <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>

@@ -19,7 +19,7 @@ export const HIST_YEARS = Array.from(
   (_, index) => 2021 + index,
 );
 
-const FIELDS = [
+export const FIELDS = [
   { key: 'contractor_name', label: 'Contractor', numeric: false, guess: [/^contractors?$/i, /^name$|^employee$|^va$/i] },
   { key: 'company', label: 'Company', numeric: false, guess: [/^client\s*\/\s*company$/i, /^company$|^client$|^account$/i] },
   { key: 'hours', label: 'Hours', numeric: true, guess: [/^standard hours$/i, /^hours$|^no\.? of hours$|^hrs$/i] },
@@ -36,9 +36,9 @@ const FIELDS = [
 ] as const;
 const DISPLAY_FIELDS = FIELDS.slice(0, 8);
 const EXTRA_FIELDS = FIELDS.slice(8);
-type FieldKey = typeof FIELDS[number]['key'];
-type Mapping = Record<FieldKey, string>; // header name or ''
-const NONE = '__none__';
+export type FieldKey = typeof FIELDS[number]['key'];
+export type Mapping = Record<FieldKey, string>; // header name or ''
+export const NONE = '__none__';
 
 const MONTHS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -75,9 +75,9 @@ function readSheet(ws: XLSX.WorkSheet, name: string, year: number): ParsedSheet 
   return { name, headers, rows, dates: parseWeekTab(name, year) };
 }
 
-const hKey = (h: string[]) => h.join('\u0001');
+export const hKey = (h: string[]) => h.join('\u0001');
 
-function guessMapping(headers: string[]): Mapping {
+export function guessMapping(headers: string[]): Mapping {
   const used = new Set<string>();
   const out = {} as Mapping;
   for (const f of FIELDS) {
@@ -88,7 +88,7 @@ function guessMapping(headers: string[]): Mapping {
   return out;
 }
 
-function toNum(v: unknown): number | null {
+export function toNum(v: unknown): number | null {
   if (v === '' || v == null) return null;
   if (typeof v === 'number') return Number.isFinite(v) ? v : null;
   const n = parseFloat(String(v).replace(/[$,\s]/g, '').replace(/^\((.*)\)$/, '-$1'));
