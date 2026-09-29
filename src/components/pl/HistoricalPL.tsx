@@ -36,6 +36,7 @@ export function HistoricalPL({ onUpload }: Props) {
   const [rows, setRows] = useState<HistRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const [openWeeks, setOpenWeeks] = useState<Set<string>>(new Set());
   const [uploadOpen, setUploadOpen] = useState(false);
 
