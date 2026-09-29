@@ -15,8 +15,8 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
 export const HIST_YEARS = Array.from(
-  { length: Math.max(2025, new Date().getFullYear()) - 2023 + 1 },
-  (_, index) => 2023 + index,
+  { length: Math.max(2025, new Date().getFullYear()) - 2021 + 1 },
+  (_, index) => 2021 + index,
 );
 
 const FIELDS = [
