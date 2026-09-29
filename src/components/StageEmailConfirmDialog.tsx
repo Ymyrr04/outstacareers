@@ -14,6 +14,7 @@ const ADMIN_SENDERS = [
   { email: 'czarina@outsta.io', name: 'Czarina' },
   { email: 'eduardo@outsta.io', name: 'Eduardo' },
   { email: 'jil@outsta.io', name: 'Jil' },
+  { email: 'christian@outsta.io', name: 'Christian' },
 ];
 
 export interface StageTemplateOption {
