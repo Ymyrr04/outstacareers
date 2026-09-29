@@ -260,11 +260,11 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
                       )}
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         {FIELDS.map((f) => (
-                          <div key={f.key} className="space-y-1">
+                           <div key={f.key} className="space-y-1 min-w-0">
                             <label className="text-xs font-medium">{f.label}{f.key === 'contractor_name' && ' *'}</label>
                             <Select value={mp[f.key] || NONE}
                               onValueChange={(v) => setMappings({ ...mapping, [g.key]: { ...mp, [f.key]: v === NONE ? '' : v } })}>
-                              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                               <SelectTrigger className="h-8 w-full min-w-0 text-xs"><SelectValue /></SelectTrigger>
                               <SelectContent>
                                 <SelectItem value={NONE}>— Not mapped —</SelectItem>
                                 {g.headers.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
