@@ -68,7 +68,7 @@ function readSheet(ws: XLSX.WorkSheet, name: string, year: number): ParsedSheet 
   return { name, headers, rows, dates: parseWeekTab(name, year) };
 }
 
-const sameHeaders = (a: string[], b: string[]) => a.length === b.length && a.every((h, i) => h === b[i]);
+const hKey = (h: string[]) => h.join('\u0001');
 
 function guessMapping(headers: string[]): Mapping {
   const used = new Set<string>();
@@ -103,12 +103,12 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
   const [year, setYear] = useState(defaultYear);
   const [filename, setFilename] = useState('');
   const [sheets, setSheets] = useState<ParsedSheet[]>([]);
-  const [mapping, setMapping] = useState<Mapping | null>(null);
+  const [mappings, setMappings] = useState<Record<string, Mapping> | null>(null);
   const [parsing, setParsing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [replaceIds, setReplaceIds] = useState<string[] | null>(null);
 
-  const reset = () => { setFilename(''); setSheets([]); setMapping(null); setReplaceIds(null); };
+  const reset = () => { setFilename(''); setSheets([]); setMappings(null); setReplaceIds(null); };
   const close = (o: boolean) => { if (importing) return; if (!o) reset(); onOpenChange(o); };
 
   const onFile = async (file: File | undefined) => {
@@ -117,10 +117,12 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
     try {
       const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
       const parsed = wb.SheetNames.map((n) => readSheet(wb.Sheets[n], n, year));
-      if (!parsed.length || !parsed[0].headers.length) throw new Error('No headers found on the first sheet');
+      if (!parsed.some((p) => p.headers.length)) throw new Error('No headers found in any sheet');
       setFilename(file.name);
       setSheets(parsed);
-      setMapping(guessMapping(parsed[0].headers));
+      const init: Record<string, Mapping> = {};
+      for (const p of parsed) if (p.headers.length && !init[hKey(p.headers)]) init[hKey(p.headers)] = guessMapping(p.headers);
+      setMappings(init);
     } catch (e) {
       toast.error(`Could not read workbook: ${(e as Error).message}`);
     } finally { setParsing(false); }
@@ -128,24 +130,35 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
 
   // re-parse dates if the year changes after upload
   const sheetsWithDates = useMemo(() => sheets.map((s) => ({ ...s, dates: parseWeekTab(s.name, year) })), [sheets, year]);
-  const base = sheetsWithDates[0]?.headers ?? [];
-  const mismatched = sheetsWithDates.filter((s) => !sameHeaders(s.headers, base));
-  const badDates = sheetsWithDates.filter((s) => !s.dates);
-  const usable = sheetsWithDates.filter((s) => sameHeaders(s.headers, base) && s.dates);
+  const badDates = sheetsWithDates.filter((s) => !s.dates || !s.headers.length);
+  const usable = sheetsWithDates.filter((s) => s.dates && s.headers.length);
+  const groups = useMemo(() => {
+    const m = new Map<string, { key: string; headers: string[]; sheets: string[] }>();
+    for (const s of usable) {
+      const k = hKey(s.headers);
+      if (!m.has(k)) m.set(k, { key: k, headers: s.headers, sheets: [] });
+      m.get(k)!.sheets.push(s.name);
+    }
+    return [...m.values()];
+  }, [usable]);
+  const mapping = mappings && groups.length ? mappings : null;
+  const allMapped = !!mapping && groups.every((g) => mapping[g.key]?.contractor_name);
 
   const { importRows, skipped } = useMemo(() => {
-    if (!mapping || !mapping.contractor_name) return { importRows: [], skipped: 0 };
+    if (!mapping) return { importRows: [], skipped: 0 };
     const out: Record<string, unknown>[] = []; let skip = 0;
     for (const s of usable) {
+      const mp = mapping[hKey(s.headers)];
+      if (!mp || !mp.contractor_name) continue;
       for (const r of s.rows) {
-        const name = String(r[mapping.contractor_name] ?? '').trim();
+        const name = String(r[mp.contractor_name] ?? '').trim();
         const hasTotal = Object.values(r).some((v) => /total/i.test(String(v ?? '')));
         if (!name || hasTotal) { skip++; continue; }
         const row: Record<string, unknown> = {
           week_label: s.name, week_start: s.dates!.start, week_end: s.dates!.end, raw: r,
         };
         for (const f of FIELDS) {
-          const h = mapping[f.key];
+          const h = mp[f.key];
           const v = h ? r[h] : null;
           row[f.key] = f.numeric ? toNum(v) : (h ? String(v ?? '').trim() || null : null);
         }
@@ -168,7 +181,7 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
     let batchId: string | null = null;
     try {
       const { data: batch, error: bErr } = await supabase.from('historical_pl_batches')
-        .insert({ year, filename, column_map: mapping as any, uploaded_by: user?.id ?? null })
+        .insert({ year, filename, column_map: groups.map((g) => ({ sheets: g.sheets, map: mapping![g.key] })) as any, uploaded_by: user?.id ?? null })
         .select('id').single();
       if (bErr || !batch) throw bErr ?? new Error('Batch not created');
       batchId = batch.id;
@@ -222,33 +235,45 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
               <>
                 <div className="text-sm text-muted-foreground">
                   <b className="text-foreground">{filename}</b> · {sheets.length} sheets · {usable.length} will be imported
+                  {groups.length > 1 && <> · {groups.length} different column layouts — map each one below</>}
                 </div>
 
-                {(mismatched.length > 0 || badDates.length > 0) && (
+                {badDates.length > 0 && (
                   <div className="rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm space-y-1">
-                    {mismatched.map((s) => (
-                      <div key={`h-${s.name}`} className="flex gap-2"><AlertTriangle className="h-4 w-4 text-destructive shrink-0" />"{s.name}" has different headers — skipped</div>
-                    ))}
-                    {badDates.filter((s) => !mismatched.includes(s)).map((s) => (
+                    {badDates.map((s) => (
                       <div key={`d-${s.name}`} className="flex gap-2"><AlertTriangle className="h-4 w-4 text-destructive shrink-0" />"{s.name}" — couldn't read dates from tab name, skipped</div>
                     ))}
                   </div>
                 )}
 
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                  {FIELDS.map((f) => (
-                    <div key={f.key} className="space-y-1">
-                      <label className="text-xs font-medium">{f.label}{f.key === 'contractor_name' && ' *'}</label>
-                      <Select value={mapping[f.key] || NONE} onValueChange={(v) => setMapping({ ...mapping, [f.key]: v === NONE ? '' : v })}>
-                        <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value={NONE}>— Not mapped —</SelectItem>
-                          {base.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
-                        </SelectContent>
-                      </Select>
+                {groups.map((g, gi) => {
+                  const mp = mapping[g.key] ?? guessMapping(g.headers);
+                  return (
+                    <div key={g.key} className={cn('rounded-md border p-3 space-y-3', !mp.contractor_name && 'border-amber-400')}>
+                      {groups.length > 1 && (
+                        <div className="text-xs">
+                          <b>Layout {gi + 1}</b> · {g.sheets.length} sheet{g.sheets.length === 1 ? '' : 's'}
+                          <span className="text-muted-foreground"> — {g.sheets.slice(0, 4).join(', ')}{g.sheets.length > 4 ? ` +${g.sheets.length - 4} more` : ''}</span>
+                        </div>
+                      )}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        {FIELDS.map((f) => (
+                          <div key={f.key} className="space-y-1">
+                            <label className="text-xs font-medium">{f.label}{f.key === 'contractor_name' && ' *'}</label>
+                            <Select value={mp[f.key] || NONE}
+                              onValueChange={(v) => setMappings({ ...mapping, [g.key]: { ...mp, [f.key]: v === NONE ? '' : v } })}>
+                              <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value={NONE}>— Not mapped —</SelectItem>
+                                {g.headers.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
 
                 <div className="text-sm">
                   <b>{importRows.length.toLocaleString()}</b> rows to import · <b>{skipped.toLocaleString()}</b> skipped (no contractor name or contains "total")
@@ -280,7 +305,7 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
 
           <DialogFooter>
             <Button variant="ghost" onClick={() => close(false)} disabled={importing}>Cancel</Button>
-            <Button onClick={startImport} disabled={!mapping || !mapping.contractor_name || importRows.length === 0 || importing}>
+            <Button onClick={startImport} disabled={!allMapped || importRows.length === 0 || importing}>
               {importing ? <><Loader2 className="h-4 w-4 animate-spin mr-2" />Importing…</> : `Import ${importRows.length.toLocaleString()} rows`}
             </Button>
           </DialogFooter>
