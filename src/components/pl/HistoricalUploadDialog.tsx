@@ -21,19 +21,21 @@ export const HIST_YEARS = Array.from(
 
 const FIELDS = [
   { key: 'contractor_name', label: 'Contractor', numeric: false, guess: [/^contractors?$/i, /^name$|^employee$|^va$/i] },
-  { key: 'company', label: 'Client/Company', numeric: false, guess: [/^client\s*\/\s*company$/i, /^company$|^client$|^account$/i] },
-  { key: 'contractor_rate', label: 'Contractor Rate', numeric: true, guess: [/^contractor rate$/i, /^(?:va|pay) rate$/i] },
-  { key: 'client_rate', label: 'Client Rate', numeric: true, guess: [/^client rate$/i, /^bill rate$/i] },
-  { key: 'contractor_cost', label: 'Expenses', numeric: true, guess: [/^expenses?$/i, /^cost$|^payout$|^(?:contractor|va) (?:pay|amount)$/i] },
+  { key: 'company', label: 'Company', numeric: false, guess: [/^client\s*\/\s*company$/i, /^company$|^client$|^account$/i] },
+  { key: 'hours', label: 'Hours', numeric: true, guess: [/^standard hours$/i, /^hours$|^no\.? of hours$|^hrs$/i] },
+  { key: 'contractor_rate', label: 'Contractor rate', numeric: true, guess: [/^contractor rate$/i, /^(?:va|pay) rate$/i] },
+  { key: 'client_rate', label: 'Client rate', numeric: true, guess: [/^client rate$/i, /^bill rate$/i] },
+  { key: 'contractor_cost', label: 'Cost', numeric: true, guess: [/^expenses?$/i, /^cost$|^payout$|^(?:contractor|va) (?:pay|amount)$/i] },
+  { key: 'client_billing', label: 'Billing', numeric: true, guess: [/^income$/i, /^billing$|^billed(?: to .*)?$|^invoice$|^revenue$/i] },
+  { key: 'margin', label: 'Margin', numeric: true, guess: [/^gross profit$/i, /^margin$|^profit$/i] },
   { key: 'expense_after_1_percent', label: 'Expense After 1%', numeric: true, guess: [/^expenses? after 1\s*%$/i] },
-  { key: 'client_billing', label: 'Income', numeric: true, guess: [/^income$/i, /^billing$|^billed(?: to .*)?$|^invoice$|^revenue$/i] },
   { key: 'income_after_3_percent', label: 'Income After 3%', numeric: true, guess: [/^income after 3\s*%$/i] },
-  { key: 'margin', label: 'Gross Profit', numeric: true, guess: [/^gross profit$/i, /^margin$|^profit$/i] },
   { key: 'gross_after_deductions', label: 'Gross After Deductions', numeric: true, guess: [/^gross after deductions$/i] },
   { key: 'client_deposit', label: 'Client Deposit', numeric: true, guess: [/^client deposit$/i] },
   { key: 'contractor_deposit', label: 'Contractor Deposit', numeric: true, guess: [/^contractor deposit$/i] },
-  { key: 'hours', label: 'Standard Hours', numeric: true, guess: [/^standard hours$/i, /^hours$|^no\.? of hours$|^hrs$/i] },
 ] as const;
+const DISPLAY_FIELDS = FIELDS.slice(0, 8);
+const EXTRA_FIELDS = FIELDS.slice(8);
 type FieldKey = typeof FIELDS[number]['key'];
 type Mapping = Record<FieldKey, string>; // header name or ''
 const NONE = '__none__';
@@ -259,7 +261,7 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
                         </div>
                       )}
                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 [&>*]:min-w-0 [&_[role=combobox]]:w-full [&_[role=combobox]]:min-w-0">
-                        {FIELDS.map((f) => (
+                         {DISPLAY_FIELDS.map((f) => (
                            <div key={f.key} className="space-y-1 min-w-0">
                             <label className="text-xs font-medium">{f.label}{f.key === 'contractor_name' && ' *'}</label>
                             <Select value={mp[f.key] || NONE}
@@ -273,6 +275,24 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
                           </div>
                         ))}
                       </div>
+                       <details className="text-sm">
+                         <summary className="cursor-pointer text-muted-foreground">Additional spreadsheet fields</summary>
+                         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mt-3 [&>*]:min-w-0 [&_[role=combobox]]:w-full [&_[role=combobox]]:min-w-0">
+                           {EXTRA_FIELDS.map((f) => (
+                             <div key={f.key} className="space-y-1 min-w-0">
+                               <label className="text-xs font-medium">{f.label}</label>
+                               <Select value={mp[f.key] || NONE}
+                                 onValueChange={(v) => setMappings({ ...mapping, [g.key]: { ...mp, [f.key]: v === NONE ? '' : v } })}>
+                                 <SelectTrigger className="h-8 w-full min-w-0 text-xs"><SelectValue /></SelectTrigger>
+                                 <SelectContent>
+                                   <SelectItem value={NONE}>— Not mapped —</SelectItem>
+                                   {g.headers.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+                                 </SelectContent>
+                               </Select>
+                             </div>
+                           ))}
+                         </div>
+                       </details>
                     </div>
                   );
                 })}
@@ -287,14 +307,14 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
                       <TableHeader>
                         <TableRow>
                           <TableHead>Week</TableHead>
-                          {FIELDS.map((f) => <TableHead key={f.key}>{f.label}</TableHead>)}
+                           {DISPLAY_FIELDS.map((f) => <TableHead key={f.key}>{f.label}</TableHead>)}
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {preview.map((r, i) => (
                           <TableRow key={i}>
                             <TableCell className="text-xs whitespace-nowrap">{String(r.week_start)} → {String(r.week_end)}</TableCell>
-                            {FIELDS.map((f) => <TableCell key={f.key} className="text-xs">{r[f.key] == null ? '—' : String(r[f.key])}</TableCell>)}
+                             {DISPLAY_FIELDS.map((f) => <TableCell key={f.key} className="text-xs">{r[f.key] == null ? '—' : String(r[f.key])}</TableCell>)}
                           </TableRow>
                         ))}
                       </TableBody>
