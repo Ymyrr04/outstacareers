@@ -2553,6 +2553,12 @@ export const PLDashboard = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ImportTimesheetsDialog
+        open={importOpen}
+        onOpenChange={setImportOpen}
+        onImported={fetchData}
+      />
     </div>
   );
 };
