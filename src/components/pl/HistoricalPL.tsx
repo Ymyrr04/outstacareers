@@ -6,7 +6,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Loader2, Upload, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader2, Upload, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { HistoricalUploadDialog, HIST_YEARS } from './HistoricalUploadDialog';
@@ -37,6 +37,7 @@ export function HistoricalPL({ onUpload }: Props) {
   const [loading, setLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [openWeeks, setOpenWeeks] = useState<Set<string>>(new Set());
   const [uploadOpen, setUploadOpen] = useState(false);
 
   const load = useCallback(async () => {
@@ -67,6 +68,15 @@ export function HistoricalPL({ onUpload }: Props) {
   }, [year]);
 
   useEffect(() => { void load(); }, [load]);
+  useEffect(() => { setOpenWeeks(new Set()); }, [year]);
+
+  const toggleWeek = (key: string) => {
+    setOpenWeeks((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key); else next.add(key);
+      return next;
+    });
+  };
 
   const weeks = useMemo(() => {
     const map = new Map<string, { label: string; rows: HistRow[] }>();
@@ -159,15 +169,26 @@ export function HistoricalPL({ onUpload }: Props) {
               <TableBody>
                 {weeks.map((w) => (
                   <Fragment key={w.key}>
-                    <TableRow className="bg-muted/60 font-semibold hover:bg-muted/60">
-                      <TableCell colSpan={2}>{w.label} <span className="text-xs font-normal text-muted-foreground">· {w.headcount} contractors</span></TableCell>
+                    <TableRow
+                      className="bg-muted/60 font-semibold hover:bg-muted/60 cursor-pointer select-none"
+                      onClick={() => toggleWeek(w.key)}
+                    >
+                      <TableCell colSpan={2}>
+                        <span className="inline-flex items-center gap-1.5">
+                          {openWeeks.has(w.key)
+                            ? <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
+                          {w.label}
+                          <span className="text-xs font-normal text-muted-foreground">· {w.headcount} contractors</span>
+                        </span>
+                      </TableCell>
                       <TableCell className="text-right">{w.totals.hours.toFixed(2)}</TableCell>
                       <TableCell /><TableCell />
                       <TableCell className="text-right">{money(w.totals.cost)}</TableCell>
                       <TableCell className="text-right">{money(w.totals.billing)}</TableCell>
                       <TableCell className="text-right">{money(w.totals.margin)}</TableCell>
                     </TableRow>
-                    {w.rows.map((r) => (
+                    {openWeeks.has(w.key) && w.rows.map((r) => (
                       <TableRow key={r.id}>
                         <TableCell>{r.contractor_name || '—'}</TableCell>
                         <TableCell>{r.company || '—'}</TableCell>
