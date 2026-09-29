@@ -50,6 +50,13 @@
       "when": 1790198097638,
       "tag": "0006_create_help_queries_table",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1790708891964,
+      "tag": "0007_create_historical_pl_tables",
+      "breakpoints": true
     }
   ]
 }
