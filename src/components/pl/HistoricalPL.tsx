@@ -6,7 +6,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Loader2, Upload, Trash2 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader2, Upload, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { HistoricalUploadDialog, HIST_YEARS } from './HistoricalUploadDialog';
@@ -36,7 +36,7 @@ export function HistoricalPL({ onUpload }: Props) {
   const [rows, setRows] = useState<HistRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [openWeeks, setOpenWeeks] = useState<Set<string>>(new Set());
   const [uploadOpen, setUploadOpen] = useState(false);
 
   const load = useCallback(async () => {
