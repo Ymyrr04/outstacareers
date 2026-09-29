@@ -57,6 +57,13 @@
       "when": 1790708891964,
       "tag": "0007_create_historical_pl_tables",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1790714200942,
+      "tag": "0008_add_historical_pl_optional_financial_columns",
+      "breakpoints": true
     }
   ]
 }
