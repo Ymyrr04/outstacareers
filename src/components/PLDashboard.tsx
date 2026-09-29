@@ -22,6 +22,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { PLReport } from '@/components/pl/PLReport';
 import { TimesheetEditHistory } from '@/components/pl/TimesheetEditHistory';
 import { TimesheetReminderSettingsDialog } from '@/components/pl/TimesheetReminderSettingsDialog';
+import { ImportTimesheetsDialog } from '@/components/pl/ImportTimesheetsDialog';
 import { parseDateOnly } from '@/lib/dateOnly';
 import { formatDate, formatDateShort, formatDateTime, formatDateWithWeekday } from "@/lib/dateFormat";
 import { timesheetLockAt } from "@/lib/timesheetLock";
@@ -372,6 +373,7 @@ export const PLDashboard = () => {
     return SECTION_DEFS.map((s) => s.id);
   });
   const [reorderOpen, setReorderOpen] = useState(false);
+  const [importOpen, setImportOpen] = useState(false);
   useEffect(() => {
     try { localStorage.setItem(PL_ORDER_KEY, JSON.stringify(sectionOrder)); } catch {}
   }, [sectionOrder]);
