@@ -251,7 +251,7 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
                 {groups.map((g, gi) => {
                   const mp = mapping[g.key] ?? guessMapping(g.headers);
                   return (
-                    <div key={g.key} className={cn('rounded-md border p-3 space-y-3', !mp.contractor_name && 'border-amber-400')}>
+                     <div key={g.key} className={cn('min-w-0 rounded-md border p-3 space-y-3', !mp.contractor_name && 'border-amber-400')}>
                       {groups.length > 1 && (
                         <div className="text-xs">
                           <b>Layout {gi + 1}</b> · {g.sheets.length} sheet{g.sheets.length === 1 ? '' : 's'}
