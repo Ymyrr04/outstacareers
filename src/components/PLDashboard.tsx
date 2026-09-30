@@ -98,6 +98,7 @@ interface ContractorRow {
   hasPortal: boolean;
   mustChange: boolean | null;
   depositAccumulated: number;
+  hasDepositTarget?: boolean;
   latestTimesheet: {
     id: string;
     status: string;
@@ -509,6 +510,27 @@ export const PLDashboard = () => {
       });
     });
     setDepositByTs(depMap);
+
+    // Threshold contractors: Contractor Deposit auto-tracks the collected amount, capped at the threshold.
+    const hasTarget = new Set<string>();
+    const depositSync: { id: string; value: number }[] = [];
+    ((assignments as any[]) || []).forEach((a) => {
+      if (!(Number(a.deposit_target) > 0)) return;
+      hasTarget.add(a.id);
+      const rate = Number(a.hourly_rate || 0);
+      const capAmt = a.deposit_target_unit === 'hours' ? Number(a.deposit_target) * rate : Number(a.deposit_target);
+      const collected = Math.round(Math.min(depositAccumMap.get(a.id) || 0, capAmt) * 100) / 100;
+      depositAccumMap.set(a.id, collected);
+      if (a.contractor_deposit == null || Math.abs(Number(a.contractor_deposit) - collected) > 0.005 || (a.contractor_deposit_text ?? '') !== '') {
+        depositSync.push({ id: a.id, value: collected });
+        a.contractor_deposit = collected;
+        a.contractor_deposit_text = null;
+      }
+    });
+    depositSync.forEach(({ id, value }) => {
+      supabase.from('contractor_assignments').update({ contractor_deposit: value, contractor_deposit_text: null }).eq('id', id)
+        .then(({ error }) => { if (error) console.error('Deposit sync failed', id, error); });
+    });
     const NO_DEP: DepositWeek = { depositHours: 0, isDeposit: false, weekIndex: null };
 
     const enriched: ContractorRow[] = ((assignments as any[]) || []).map((c) => {
@@ -552,6 +574,7 @@ export const PLDashboard = () => {
         hasPortal: portalMap.has(c.id),
         mustChange: portalMap.get(c.id) ?? null,
         depositAccumulated: depositAccumMap.get(c.id) || 0,
+        hasDepositTarget: hasTarget.has(c.id),
         latestTimesheet,
       };
     });
@@ -1430,7 +1453,7 @@ export const PLDashboard = () => {
                       )}
                     </TableCell>
                     <TableCell data-col="deposit" className="text-right">
-                      {(c.contractor_deposit_text ?? '').trim() !== '' || c.contractor_deposit != null ? (
+                      {!c.hasDepositTarget && ((c.contractor_deposit_text ?? '').trim() !== '' || c.contractor_deposit != null) ? (
                         <span className="text-muted-foreground">—</span>
                       ) : c.latestTimesheet?.isDeposit ? (
                         <div className="flex flex-col items-end">
