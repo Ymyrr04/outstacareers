@@ -1,12 +1,14 @@
-import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ChevronDown, ChevronRight, Loader2, Upload, Trash2, Columns3, ArrowUpDown } from 'lucide-react';
+import { ChevronRight, Loader2, Upload, Trash2, Columns3, ArrowUpDown, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { HistoricalUploadDialog, HIST_YEARS } from './HistoricalUploadDialog';
@@ -55,17 +57,17 @@ function signature(batches: { id: string; created_at: string; column_map: unknow
   return `${batches.length}:${h}`;
 }
 
-interface SortState { key: SortKey; dir: 'asc' | 'desc' }
 type SortKey = 'contractor_name' | 'company' | 'hours' | 'contractor_rate' | 'client_rate' | 'contractor_cost' | 'client_billing' | 'margin';
-const SORTABLE: { key: SortKey; label: string; numeric?: boolean }[] = [
+interface SortState { key: SortKey; dir: 'asc' | 'desc' }
+const SORTABLE: { key: SortKey; label: string; numeric?: boolean; width?: string }[] = [
   { key: 'contractor_name', label: 'Contractor' },
   { key: 'company', label: 'Company' },
-  { key: 'hours', label: 'Hours', numeric: true },
-  { key: 'contractor_rate', label: 'Contractor rate', numeric: true },
-  { key: 'client_rate', label: 'Client rate', numeric: true },
-  { key: 'contractor_cost', label: 'Cost', numeric: true },
-  { key: 'client_billing', label: 'Billing', numeric: true },
-  { key: 'margin', label: 'Margin', numeric: true },
+  { key: 'hours', label: 'Hours', numeric: true, width: 'w-[90px]' },
+  { key: 'contractor_rate', label: 'Contractor rate', numeric: true, width: 'w-[140px]' },
+  { key: 'client_rate', label: 'Client rate', numeric: true, width: 'w-[120px]' },
+  { key: 'contractor_cost', label: 'Cost', numeric: true, width: 'w-[130px]' },
+  { key: 'client_billing', label: 'Billing', numeric: true, width: 'w-[130px]' },
+  { key: 'margin', label: 'Margin', numeric: true, width: 'w-[130px]' },
 ];
 
 interface Props { onUpload?: (year: number) => void }
@@ -77,10 +79,11 @@ export function HistoricalPL({ onUpload }: Props) {
   const [loading, setLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [openWeeks, setOpenWeeks] = useState<Set<string>>(new Set());
+  const [openWeekKey, setOpenWeekKey] = useState<string | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
   const [remapOpen, setRemapOpen] = useState(false);
   const [sort, setSort] = useState<SortState | null>(null);
+  const [query, setQuery] = useState('');
 
   const load = useCallback(async () => {
     // Show cached rows instantly, then check whether anything changed.
@@ -118,15 +121,7 @@ export function HistoricalPL({ onUpload }: Props) {
   }, [year]);
 
   useEffect(() => { void load(); }, [load]);
-  useEffect(() => { setOpenWeeks(new Set()); }, [year]);
-
-  const toggleWeek = (key: string) => {
-    setOpenWeeks((prev) => {
-      const next = new Set(prev);
-      if (next.has(key)) next.delete(key); else next.add(key);
-      return next;
-    });
-  };
+  useEffect(() => { setOpenWeekKey(null); }, [year]);
 
   const sortKey = (r: HistRow): string | number => {
     if (!sort) return '';
@@ -152,16 +147,29 @@ export function HistoricalPL({ onUpload }: Props) {
       map.get(key)!.rows.push(r);
     }
     return [...map.entries()].map(([key, w]) => {
-      const sorted = sort ? [...w.rows].sort(cmpRows) : w.rows;
       const t = w.rows.reduce((a, r) => ({
         hours: a.hours + num(r.hours), cost: a.cost + num(r.contractor_cost),
         billing: a.billing + num(r.client_billing), margin: a.margin + num(r.margin),
       }), { hours: 0, cost: 0, billing: 0, margin: 0 });
       const headcount = new Set(w.rows.map((r) => (r.contractor_name || '').trim().toLowerCase()).filter(Boolean)).size;
-      return { key, label: w.label, rows: sorted, totals: t, headcount };
+      return { key, label: w.label, rows: w.rows, totals: t, headcount };
     });
-  }, [rows, sort]);
+  }, [rows]);
 
+  const openWeek = openWeekKey ? weeks.find((w) => w.key === openWeekKey) ?? null : null;
+
+  // Reset the search whenever a different week is opened.
+  useEffect(() => { setQuery(''); }, [openWeekKey]);
+
+  const detailRows = useMemo(() => {
+    if (!openWeek) return [];
+    const q = query.trim().toLowerCase();
+    const base = q
+      ? openWeek.rows.filter((r) =>
+          (r.contractor_name || '').toLowerCase().includes(q) || (r.company || '').toLowerCase().includes(q))
+      : openWeek.rows;
+    return sort ? [...base].sort(cmpRows) : base;
+  }, [openWeek, query, sort]);
 
   const handleDelete = async () => {
     setDeleting(true);
@@ -223,76 +231,141 @@ export function HistoricalPL({ onUpload }: Props) {
           <Button onClick={handleUpload} className="gap-2"><Upload className="h-4 w-4" /> Upload</Button>
         </div>
       ) : (
-        <>
-          <div className="border rounded-lg bg-card overflow-x-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  {SORTABLE.map((c) => {
-                    const active = sort?.key === c.key;
-                    return (
-                      <TableHead
-                        key={c.key}
-                        className={cn('cursor-pointer select-none hover:bg-muted/60', c.numeric && 'text-right', active && 'text-foreground')}
-                        onClick={() =>
-                          setSort((s) =>
-                            !s || s.key !== c.key ? { key: c.key, dir: c.numeric ? 'desc' : 'asc' }
-                              : s.dir === (c.numeric ? 'desc' : 'asc') ? { key: c.key, dir: c.numeric ? 'asc' : 'desc' }
-                              : null,
-                          )
-                        }
-                      >
-                        <span className="inline-flex items-center gap-1">
-                          {c.label}
-                          <ArrowUpDown className={cn('h-3 w-3', active ? 'text-foreground' : 'text-muted-foreground/50')} />
-                          {active && <span className="text-xs">{sort!.dir === 'asc' ? '↑' : '↓'}</span>}
-                        </span>
-                      </TableHead>
-                    );
-                  })}
+        <div className="border rounded-lg bg-card overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Week</TableHead>
+                <TableHead className="text-right tabular-nums">Hours</TableHead>
+                <TableHead className="text-right tabular-nums">Cost</TableHead>
+                <TableHead className="text-right tabular-nums">Billing</TableHead>
+                <TableHead className="text-right tabular-nums">Margin</TableHead>
+                <TableHead className="w-10" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {weeks.map((w) => (
+                <TableRow
+                  key={w.key}
+                  className="cursor-pointer select-none hover:bg-[#F0FFFE]"
+                  onClick={() => setOpenWeekKey(w.key)}
+                >
+                  <TableCell>
+                    <div className="font-medium">{w.label}</div>
+                    <div className="text-xs text-muted-foreground">{w.headcount} contractors</div>
+                  </TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap">{w.totals.hours.toFixed(2)}</TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap">{money(w.totals.cost)}</TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap">{money(w.totals.billing)}</TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap">{money(w.totals.margin)}</TableCell>
+                  <TableCell className="w-10 text-right pr-4">
+                    <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                  </TableCell>
                 </TableRow>
-              </TableHeader>
-              <TableBody>
-                {weeks.map((w) => (
-                  <Fragment key={w.key}>
-                    <TableRow
-                      className="bg-muted/60 font-semibold hover:bg-muted/60 cursor-pointer select-none"
-                      onClick={() => toggleWeek(w.key)}
-                    >
-                      <TableCell colSpan={2}>
-                        <span className="inline-flex items-center gap-1.5">
-                          {openWeeks.has(w.key)
-                            ? <ChevronDown className="h-4 w-4 text-muted-foreground" />
-                            : <ChevronRight className="h-4 w-4 text-muted-foreground" />}
-                          {w.label}
-                          <span className="text-xs font-normal text-muted-foreground">· {w.headcount} contractors</span>
-                        </span>
-                      </TableCell>
-                      <TableCell className="text-right">{w.totals.hours.toFixed(2)}</TableCell>
-                      <TableCell /><TableCell />
-                      <TableCell className="text-right">{money(w.totals.cost)}</TableCell>
-                      <TableCell className="text-right">{money(w.totals.billing)}</TableCell>
-                      <TableCell className="text-right">{money(w.totals.margin)}</TableCell>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      )}
+
+      <Dialog open={!!openWeek} onOpenChange={(o) => { if (!o) setOpenWeekKey(null); }}>
+        <DialogContent className="max-w-5xl w-[95vw] max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-baseline gap-2 flex-wrap">
+              <span>{openWeek?.label}</span>
+              {openWeek && <span className="text-sm font-normal text-muted-foreground">· {openWeek.headcount} contractors</span>}
+            </DialogTitle>
+          </DialogHeader>
+
+          {openWeek && (
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: 'Hours', value: openWeek.totals.hours.toFixed(2) },
+                  { label: 'Cost', value: money(openWeek.totals.cost) },
+                  { label: 'Billing', value: money(openWeek.totals.billing) },
+                  { label: 'Margin', value: money(openWeek.totals.margin) },
+                ].map((s) => (
+                  <div key={s.label} className="border rounded-lg p-3 bg-muted/30">
+                    <p className="text-xs text-muted-foreground">{s.label}</p>
+                    <p className="text-lg font-semibold tabular-nums whitespace-nowrap mt-0.5">{s.value}</p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="relative">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search contractor or company"
+                  className="pl-8 h-9"
+                />
+              </div>
+
+              <div className="border rounded-lg overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      {SORTABLE.map((c) => {
+                        const active = sort?.key === c.key;
+                        return (
+                          <TableHead
+                            key={c.key}
+                            className={cn(
+                              'cursor-pointer select-none hover:bg-muted/60',
+                              c.width,
+                              c.numeric && 'text-right',
+                              active && 'text-foreground',
+                            )}
+                            onClick={() =>
+                              setSort((s) =>
+                                !s || s.key !== c.key ? { key: c.key, dir: c.numeric ? 'desc' : 'asc' }
+                                  : s.dir === (c.numeric ? 'desc' : 'asc') ? { key: c.key, dir: c.numeric ? 'asc' : 'desc' }
+                                  : null,
+                              )
+                            }
+                          >
+                            <span className="inline-flex items-center gap-1">
+                              {c.label}
+                              <ArrowUpDown className={cn('h-3 w-3', active ? 'text-foreground' : 'text-muted-foreground/50')} />
+                              {active && <span className="text-xs">{sort!.dir === 'asc' ? '↑' : '↓'}</span>}
+                            </span>
+                          </TableHead>
+                        );
+                      })}
                     </TableRow>
-                    {openWeeks.has(w.key) && w.rows.map((r) => (
+                  </TableHeader>
+                  <TableBody>
+                    {detailRows.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={SORTABLE.length} className="text-center text-muted-foreground py-8">
+                          No contractors match "{query}"
+                        </TableCell>
+                      </TableRow>
+                    ) : detailRows.map((r) => (
                       <TableRow key={r.id}>
-                        <TableCell>{r.contractor_name || '—'}</TableCell>
-                        <TableCell>{r.company || '—'}</TableCell>
-                        <TableCell className="text-right">{num(r.hours).toFixed(2)}</TableCell>
-                        <TableCell className="text-right">{r.contractor_rate != null ? money(num(r.contractor_rate)) : '—'}</TableCell>
-                        <TableCell className="text-right">{r.client_rate != null ? money(num(r.client_rate)) : '—'}</TableCell>
-                        <TableCell className="text-right">{money(num(r.contractor_cost))}</TableCell>
-                        <TableCell className="text-right">{money(num(r.client_billing))}</TableCell>
-                        <TableCell className="text-right">{money(num(r.margin))}</TableCell>
+                        <TableCell className="max-w-[240px]">
+                          <div className="truncate" title={r.contractor_name || undefined}>{r.contractor_name || '—'}</div>
+                        </TableCell>
+                        <TableCell className="max-w-[200px]">
+                          <div className="truncate" title={r.company || undefined}>{r.company || '—'}</div>
+                        </TableCell>
+                        <TableCell className="text-right tabular-nums whitespace-nowrap">{num(r.hours).toFixed(2)}</TableCell>
+                        <TableCell className="text-right tabular-nums whitespace-nowrap">{r.contractor_rate != null ? money(num(r.contractor_rate)) : '—'}</TableCell>
+                        <TableCell className="text-right tabular-nums whitespace-nowrap">{r.client_rate != null ? money(num(r.client_rate)) : '—'}</TableCell>
+                        <TableCell className="text-right tabular-nums whitespace-nowrap">{money(num(r.contractor_cost))}</TableCell>
+                        <TableCell className="text-right tabular-nums whitespace-nowrap">{money(num(r.client_billing))}</TableCell>
+                        <TableCell className="text-right tabular-nums whitespace-nowrap">{money(num(r.margin))}</TableCell>
                       </TableRow>
                     ))}
-                  </Fragment>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </>
-      )}
+                  </TableBody>
+                </Table>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <HistoricalUploadDialog
         key={uploadOpen ? `open-${year}` : 'closed'}
