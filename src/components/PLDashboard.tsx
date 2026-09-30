@@ -109,6 +109,8 @@ interface ContractorRow {
     depositHours: number;
     isDeposit: boolean;
     weekIndex: number | null;
+    targetStatus?: 'complete' | 'excess' | null;
+    excessAmount?: number;
     client_approval_status: string;
     client_flag_reason: string | null;
     client_reviewed_at: string | null;
@@ -444,6 +446,8 @@ export const PLDashboard = () => {
             hourly_rate,
             deposit_per_week,
             deposit_per_week_unit,
+            deposit_target,
+            deposit_target_unit,
             client_id,
             applicant:applicants_prescreen(full_name, email),
             client:clients(company_name)
@@ -455,7 +459,7 @@ export const PLDashboard = () => {
         .from('contractor_assignments')
         .select(`
           id, applicant_id, client_id, job_title, status, hourly_rate, hours_per_week, start_date,
-          client_deposit, contractor_deposit, client_deposit_text, contractor_deposit_text, deposit_per_week, deposit_per_week_unit,
+          client_deposit, contractor_deposit, client_deposit_text, contractor_deposit_text, deposit_per_week, deposit_per_week_unit, deposit_target, deposit_target_unit,
           applicant:applicants_prescreen(full_name, email),
           client:clients(company_name)
         `)
@@ -523,6 +527,8 @@ export const PLDashboard = () => {
           depositHours: dep.depositHours,
           isDeposit: dep.isDeposit,
           weekIndex: dep.weekIndex,
+          targetStatus: dep.targetStatus ?? null,
+          excessAmount: dep.excessAmount ?? 0,
           client_approval_status: ts.client_approval_status || 'pending',
           client_flag_reason: ts.client_flag_reason ?? null,
           client_reviewed_at: ts.client_reviewed_at ?? null,
@@ -1118,7 +1124,7 @@ export const PLDashboard = () => {
     dir === 'asc' ? <ArrowUp className="w-3 h-3 ml-1 inline" /> : <ArrowDown className="w-3 h-3 ml-1 inline" />;
 
   // Deposit hours per timesheet come from the precomputed schedule (standard 2 weeks, or a per-week arrangement)
-  const computeDeposit = (r: TimesheetRow): { depositHours: number; isDeposit: boolean; weekIndex: number | null } =>
+  const computeDeposit = (r: TimesheetRow): DepositWeek =>
     depositByTs.get(r.id) || { depositHours: 0, isDeposit: false, weekIndex: null };
 
   const totalHoursAll = filtered.reduce((s, r) => s + Number(r.total_hours), 0);
@@ -1432,6 +1438,12 @@ export const PLDashboard = () => {
                           <Badge variant="outline" className="border-amber-500 text-amber-600 text-[10px] px-1 py-0 h-4 mt-0.5">
                             Wk {(c.latestTimesheet.weekIndex ?? 0) + 1}
                           </Badge>
+                          {c.latestTimesheet.targetStatus === 'complete' && (
+                            <Badge className="bg-emerald-600 text-white text-[10px] px-1 py-0 h-4 mt-0.5">Deposit complete</Badge>
+                          )}
+                          {c.latestTimesheet.targetStatus === 'excess' && (
+                            <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4 mt-0.5">Excess ${(c.latestTimesheet.excessAmount ?? 0).toFixed(2)}</Badge>
+                          )}
                           <span className="text-[10px] text-muted-foreground mt-0.5">${c.depositAccumulated.toFixed(2)} total</span>
                         </div>
                       ) : c.depositAccumulated > 0 ? (
@@ -1922,6 +1934,12 @@ export const PLDashboard = () => {
                             <Badge variant="outline" className="border-amber-500 text-amber-600 text-[10px] px-1 py-0 h-4 mt-0.5">
                               Wk {(dep.weekIndex ?? 0) + 1} deposit
                             </Badge>
+                            {dep.targetStatus === 'complete' && (
+                              <Badge className="bg-emerald-600 text-white text-[10px] px-1 py-0 h-4 mt-0.5">Deposit complete</Badge>
+                            )}
+                            {dep.targetStatus === 'excess' && (
+                              <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4 mt-0.5">Excess ${(dep.excessAmount ?? 0).toFixed(2)}</Badge>
+                            )}
                           </div>
                         ) : (
                           <span className="text-muted-foreground">—</span>

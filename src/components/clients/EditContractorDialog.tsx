@@ -50,6 +50,8 @@ interface ContractorData {
   contractor_deposit_text?: string | null;
   deposit_per_week?: number | null;
   deposit_per_week_unit?: string | null;
+  deposit_target?: number | null;
+  deposit_target_unit?: string | null;
   hours_per_week: number | null;
   start_date: string | null;
   end_date: string | null;
@@ -106,6 +108,8 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
     contractor_deposit: '',
     deposit_per_week: '',
     deposit_per_week_unit: 'hours',
+    deposit_target: '',
+    deposit_target_unit: 'amount',
     hours_per_week: '',
     start_date: '',
     end_date: '',
@@ -171,6 +175,8 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
         contractor_deposit: contractor.contractor_deposit_text || contractor.contractor_deposit?.toString() || '',
         deposit_per_week: contractor.deposit_per_week?.toString() || '',
         deposit_per_week_unit: contractor.deposit_per_week_unit === 'amount' ? 'amount' : 'hours',
+        deposit_target: contractor.deposit_target?.toString() || '',
+        deposit_target_unit: contractor.deposit_target_unit === 'hours' ? 'hours' : 'amount',
         hours_per_week: contractor.hours_per_week?.toString() || '',
         start_date: contractor.start_date || '',
         end_date: contractor.end_date || '',
@@ -218,6 +224,8 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
           ...splitDeposit('contractor_deposit', formData.contractor_deposit),
           deposit_per_week: formData.deposit_per_week && parseFloat(formData.deposit_per_week) > 0 ? parseFloat(formData.deposit_per_week) : null,
           deposit_per_week_unit: formData.deposit_per_week_unit === 'amount' ? 'amount' : 'hours',
+          deposit_target: formData.deposit_target && parseFloat(formData.deposit_target) > 0 ? parseFloat(formData.deposit_target) : null,
+          deposit_target_unit: formData.deposit_target_unit === 'hours' ? 'hours' : 'amount',
           hours_per_week: formData.hours_per_week ? parseFloat(formData.hours_per_week) : null,
           start_date: formData.start_date || null,
           end_date: formData.end_date || null,
@@ -498,6 +506,32 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
             </div>
             <span className="col-span-2 text-xs text-muted-foreground">
               Hours or dollars held each week until the deposit (2 × Hours/Week) is complete. Leave blank for the standard 2-week deposit.
+            </span>
+          </div>
+
+          {/* Deposit threshold: total to collect; PL flags complete / excess */}
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="deposit_target" className="text-right">Deposit Threshold</Label>
+            <div className="col-span-1 flex gap-1">
+              <Input
+                id="deposit_target"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.deposit_target}
+                onChange={(e) => setFormData(prev => ({ ...prev, deposit_target: e.target.value }))}
+                placeholder="2 wks"
+              />
+              <Select value={formData.deposit_target_unit} onValueChange={(v) => setFormData(prev => ({ ...prev, deposit_target_unit: v }))}>
+                <SelectTrigger className="w-20"><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="amount">$</SelectItem>
+                  <SelectItem value="hours">hrs</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <span className="col-span-2 text-xs text-muted-foreground">
+              Total deposit to collect. The PL shows "Deposit complete" when reached, and "Excess" if a week goes over.
             </span>
           </div>
 
