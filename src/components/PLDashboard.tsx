@@ -1433,6 +1433,7 @@ export const PLDashboard = () => {
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
+                    <TableCell data-col="approval">
                       {c.latestTimesheet ? (
                         <ClientApprovalBadge status={c.latestTimesheet.client_approval_status} reason={c.latestTimesheet.client_flag_reason} reviewedAt={c.latestTimesheet.client_reviewed_at} />
                       ) : (
