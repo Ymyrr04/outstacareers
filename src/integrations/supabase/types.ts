@@ -3450,6 +3450,27 @@ export type Database = {
         }
         Relationships: []
       }
+      pl_fee_settings: {
+        Row: {
+          expense_pct: number
+          income_pct: number
+          singleton: boolean
+          updated_at: string | null
+        }
+        Insert: {
+          expense_pct?: number
+          income_pct?: number
+          singleton?: boolean
+          updated_at?: string | null
+        }
+        Update: {
+          expense_pct?: number
+          income_pct?: number
+          singleton?: boolean
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       recurring_contractor_email_schedules: {
         Row: {
           client_id: string | null

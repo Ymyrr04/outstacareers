@@ -120,6 +120,13 @@
       "when": 1790797875188,
       "tag": "0016_historical_sync_start_trigger",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1790797941282,
+      "tag": "0017_create_pl_fee_settings",
+      "breakpoints": true
     }
   ]
 }
