@@ -1560,6 +1560,8 @@ export type Database = {
           contractor_deposit_text: string | null
           country: string | null
           created_at: string
+          deposit_per_week: number | null
+          deposit_per_week_unit: string
           emergency_number: string | null
           end_date: string | null
           hired_by: string | null
@@ -1598,6 +1600,8 @@ export type Database = {
           contractor_deposit_text?: string | null
           country?: string | null
           created_at?: string
+          deposit_per_week?: number | null
+          deposit_per_week_unit?: string
           emergency_number?: string | null
           end_date?: string | null
           hired_by?: string | null
@@ -1636,6 +1640,8 @@ export type Database = {
           contractor_deposit_text?: string | null
           country?: string | null
           created_at?: string
+          deposit_per_week?: number | null
+          deposit_per_week_unit?: string
           emergency_number?: string | null
           end_date?: string | null
           hired_by?: string | null
