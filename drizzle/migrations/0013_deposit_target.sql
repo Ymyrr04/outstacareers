@@ -1,0 +1,1 @@
+ALTER TABLE public.contractor_assignments ADD COLUMN IF NOT EXISTS deposit_target numeric NULL, ADD COLUMN IF NOT EXISTS deposit_target_unit text NULL DEFAULT 'amount';

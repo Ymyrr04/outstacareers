@@ -1562,6 +1562,8 @@ export type Database = {
           created_at: string
           deposit_per_week: number | null
           deposit_per_week_unit: string
+          deposit_target: number | null
+          deposit_target_unit: string | null
           emergency_number: string | null
           end_date: string | null
           hired_by: string | null
@@ -1602,6 +1604,8 @@ export type Database = {
           created_at?: string
           deposit_per_week?: number | null
           deposit_per_week_unit?: string
+          deposit_target?: number | null
+          deposit_target_unit?: string | null
           emergency_number?: string | null
           end_date?: string | null
           hired_by?: string | null
@@ -1642,6 +1646,8 @@ export type Database = {
           created_at?: string
           deposit_per_week?: number | null
           deposit_per_week_unit?: string
+          deposit_target?: number | null
+          deposit_target_unit?: string | null
           emergency_number?: string | null
           end_date?: string | null
           hired_by?: string | null
