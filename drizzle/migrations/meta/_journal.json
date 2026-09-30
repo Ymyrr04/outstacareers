@@ -78,6 +78,13 @@
       "when": 1790781271314,
       "tag": "0010_add_assignment_deposits",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1790784363218,
+      "tag": "0011_add_pl_deposit_text",
+      "breakpoints": true
     }
   ]
 }
