@@ -8,7 +8,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ChevronRight, Loader2, Upload, Trash2, Columns3, ArrowUpDown, Search, BarChart3 } from 'lucide-react';
+import { ChevronRight, Loader2, Upload, Trash2, Columns3, ArrowUpDown, Search, BarChart3, RefreshCw } from 'lucide-react';
+import { HistoricalSyncDialog, lastCompletedMonday, weekLabelOf } from './HistoricalSyncDialog';
+import { SYNC_START } from '@/lib/plWeek';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { HistoricalUploadDialog, HIST_YEARS } from './HistoricalUploadDialog';
@@ -153,6 +155,18 @@ export function HistoricalPL({ onUpload }: Props) {
   const [remapOpen, setRemapOpen] = useState(false);
   const [sort, setSort] = useState<SortState | null>(null);
   const [query, setQuery] = useState('');
+  const [syncOpen, setSyncOpen] = useState(false);
+  const [syncWeek, setSyncWeek] = useState<string | undefined>(undefined);
+  const [readyWeek, setReadyWeek] = useState<string | null>(null);
+
+  const checkReady = useCallback(async () => {
+    const w = lastCompletedMonday();
+    if (w < SYNC_START) { setReadyWeek(null); return; }
+    const { count, error } = await supabase
+      .from('historical_pl_rows').select('id', { count: 'exact', head: true }).eq('week_start', w);
+    setReadyWeek(!error && (count ?? 0) === 0 ? w : null);
+  }, []);
+  useEffect(() => { void checkReady(); }, [checkReady]);
 
   const [compareOpen, setCompareOpen] = useState(false);
   const [compareYears, setCompareYears] = useState<number[]>([]);
@@ -324,6 +338,14 @@ export function HistoricalPL({ onUpload }: Props) {
 
   return (
     <div className="flex flex-col gap-4">
+      {readyWeek && (
+        <div className="flex items-center justify-between gap-3 border rounded-lg px-4 py-2 bg-muted/50 text-sm">
+          <span>{weekLabelOf(readyWeek)} is ready to sync</span>
+          <Button size="sm" className="gap-1" onClick={() => { setSyncWeek(readyWeek); setSyncOpen(true); }}>
+            <RefreshCw className="h-4 w-4" /> Sync now
+          </Button>
+        </div>
+      )}
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <div className="flex gap-2">
           {HIST_YEARS.map((y) => (
@@ -345,6 +367,9 @@ export function HistoricalPL({ onUpload }: Props) {
         <div className="flex gap-2">
           <Button variant="outline" size="sm" className="gap-1" onClick={handleUpload}>
             <Upload className="h-4 w-4" /> Upload
+          </Button>
+          <Button variant="outline" size="sm" className="gap-1" onClick={() => { setSyncWeek(undefined); setSyncOpen(true); }}>
+            <RefreshCw className="h-4 w-4" /> Sync from timesheets
           </Button>
           {uploadIds.length > 0 && (
             <>
@@ -679,6 +704,13 @@ export function HistoricalPL({ onUpload }: Props) {
           )}
         </DialogContent>
       </Dialog>
+
+      <HistoricalSyncDialog
+        open={syncOpen}
+        onOpenChange={setSyncOpen}
+        initialWeek={syncWeek}
+        onSynced={(y) => { void checkReady(); if (y === year) void load(); else setYear(y); }}
+      />
 
       <HistoricalUploadDialog
         key={uploadOpen ? `open-${year}` : 'closed'}
