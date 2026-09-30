@@ -8,7 +8,6 @@ export const SYNC_START = '2026-09-21';
 const clientRateFallback = clientRateFallbackData as Record<string, number>;
 const normalizeName = (s: string) =>
   s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\./g, ' ').replace(/\s+/g, ' ').trim();
-// eslint-disable-next-line no-misleading-character-class
 export const lookupFallbackClientRate = (name: string | null | undefined): number => {
   if (!name) return 0;
   return clientRateFallback[normalizeName(name)] ?? 0;
