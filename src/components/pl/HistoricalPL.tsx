@@ -407,6 +407,11 @@ export function HistoricalPL({ onUpload }: Props) {
               </Button>
             </>
           )}
+          {syncIds.length > 0 && (
+            <Button variant="ghost" size="sm" className="text-destructive gap-1" onClick={() => setConfirmSyncOpen(true)}>
+              <Trash2 className="h-4 w-4" /> Clear synced {year}
+            </Button>
+          )}
           <Button
             variant={compareOpen ? 'default' : 'outline'}
             size="sm"
@@ -765,6 +770,23 @@ export function HistoricalPL({ onUpload }: Props) {
             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={(e) => { e.preventDefault(); void handleDelete(); }} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {deleting ? 'Deleting…' : `Delete ${year}`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmSyncOpen} onOpenChange={setConfirmSyncOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear {year} synced data?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes every week synced from timesheets for {year}. Uploaded rows are kept. Live P&amp;L data and timesheets are not affected. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); void handleDeleteSynced(); }} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? 'Clearing…' : `Clear synced ${year}`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
