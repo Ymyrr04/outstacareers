@@ -121,6 +121,77 @@ const STATUS_META: Record<StatusKey, { label: string; cls: string }> = {
   terminated: { label: 'Terminated', cls: 'bg-gray-200 text-gray-700 border-gray-300' },
 };
 
+// ============ Inline editable cell ============
+interface EditableCellProps {
+  value: number | null;
+  display: string;
+  onSave: (v: number | null) => Promise<void>;
+}
+
+const EditableCell = ({ value, display, onSave }: EditableCellProps) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+
+  const start = () => {
+    setDraft(value == null ? '' : String(value));
+    setEditing(true);
+  };
+  const cancel = () => setEditing(false);
+  const commit = async () => {
+    const trimmed = draft.trim();
+    const parsed = trimmed === '' ? null : Number(trimmed);
+    if (trimmed !== '' && (isNaN(parsed as number) || (parsed as number) < 0)) {
+      toast({ title: 'Enter a valid number (or leave blank)', variant: 'destructive' });
+      return;
+    }
+    if (parsed === value) { setEditing(false); return; }
+    setSaving(true);
+    try {
+      await onSave(parsed);
+      setEditing(false);
+    } catch (e: any) {
+      toast({ title: 'Failed to save', description: e.message, variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={start}
+        title="Click to edit"
+        className="w-full text-right rounded px-1 -mx-1 hover:bg-muted/60 hover:ring-1 hover:ring-border cursor-text"
+      >
+        {display || <span className="text-muted-foreground">—</span>}
+      </button>
+    );
+  }
+  return (
+    <div className="flex items-center justify-end gap-1">
+      <Input
+        autoFocus
+        type="number"
+        step="any"
+        min="0"
+        value={draft}
+        disabled={saving}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit();
+          if (e.key === 'Escape') cancel();
+        }}
+        onBlur={commit}
+        className="h-7 w-24 text-right text-sm px-1"
+      />
+      {saving && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+    </div>
+  );
+};
+
 export const PLReport = () => {
   const { isSuperAdmin } = useAuth();
   const { toast } = useToast();
