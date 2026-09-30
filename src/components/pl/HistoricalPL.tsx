@@ -374,9 +374,9 @@ export function HistoricalPL({ onUpload }: Props) {
       {!loading && rows.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
-            { label: 'Total billing', caption: 'Income after 3%', value: fmtMaybe({ total: yearSummary.billing, has: yearSummary.has.billing }) },
-            { label: 'Total cost', caption: 'Expense after 1%', value: fmtMaybe({ total: yearSummary.cost, has: yearSummary.has.cost }) },
-            { label: 'Total margin', caption: 'Gross after deductions', value: fmtMaybe({ total: yearSummary.margin, has: yearSummary.has.margin }) },
+            { label: 'Total income', caption: 'Income after 3%', value: fmtMaybe({ total: yearSummary.billing, has: yearSummary.has.billing }) },
+            { label: 'Total expense', caption: 'Expense after 1%', value: fmtMaybe({ total: yearSummary.cost, has: yearSummary.has.cost }) },
+            { label: 'Total gross', caption: 'Gross after deductions', value: fmtMaybe({ total: yearSummary.margin, has: yearSummary.has.margin }) },
             { label: 'Total hours', value: yearSummary.hours.toFixed(2) },
             { label: 'Avg weekly headcount', value: yearSummary.avgHeadcount.toFixed(1) },
           ].map((s) => (
@@ -427,7 +427,7 @@ export function HistoricalPL({ onUpload }: Props) {
                     ))}
                     {compare.prev != null && (
                       <th colSpan={2} className="text-center px-3 py-2 font-medium border-l whitespace-nowrap">
-                        Margin change {compare.latest} vs {compare.prev}
+                        Gross change {compare.latest} vs {compare.prev}
                       </th>
                     )}
                   </tr>
