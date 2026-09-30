@@ -343,7 +343,7 @@ export const PLReport = () => {
       .update({ [field]: value } as any)
       .eq('id', assignmentId);
     if (error) throw error;
-    setAssignments((prev) => prev.map((a) => (a.id === assignmentId ? { ...a, [field]: value } : a)));
+    setReloadKey((k) => k + 1);
     toast({ title: 'Saved' });
   };
 
@@ -356,7 +356,7 @@ export const PLReport = () => {
       .update({ [field]: numeric, [textField]: text })
       .eq('id', assignmentId);
     if (error) throw error;
-    setAssignments((prev) => prev.map((a) => a.id === assignmentId ? { ...a, [field]: numeric, [textField]: text } : a));
+    setReloadKey((k) => k + 1);
     toast({ title: 'Saved' });
   };
 
@@ -369,7 +369,7 @@ export const PLReport = () => {
       .update({ total_hours: hours } as any)
       .eq('id', ts.id);
     if (error) throw error;
-    setTimesheets((prev) => prev.map((t) => (t.id === ts.id ? { ...t, total_hours: hours } : t)));
+    setReloadKey((k) => k + 1);
     toast({ title: 'Saved' });
   };
 
