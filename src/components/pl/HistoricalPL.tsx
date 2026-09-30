@@ -528,7 +528,7 @@ export function HistoricalPL({ onUpload }: Props) {
                 <TableHead className="text-right tabular-nums">Hours</TableHead>
                 <TableHead className="text-right tabular-nums">Expense</TableHead>
                 <TableHead className="text-right tabular-nums">Income</TableHead>
-                <TableHead className="text-right tabular-nums">Margin</TableHead>
+                <TableHead className="text-right tabular-nums">Gross</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
             </TableHeader>
