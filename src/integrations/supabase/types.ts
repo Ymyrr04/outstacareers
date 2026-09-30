@@ -2899,6 +2899,7 @@ export type Database = {
       }
       historical_pl_rows: {
         Row: {
+          actual_hours: number | null
           batch_id: string
           client_billing: number | null
           client_deposit: number | null
@@ -2920,6 +2921,7 @@ export type Database = {
           week_start: string | null
         }
         Insert: {
+          actual_hours?: number | null
           batch_id: string
           client_billing?: number | null
           client_deposit?: number | null
@@ -2941,6 +2943,7 @@ export type Database = {
           week_start?: string | null
         }
         Update: {
+          actual_hours?: number | null
           batch_id?: string
           client_billing?: number | null
           client_deposit?: number | null
