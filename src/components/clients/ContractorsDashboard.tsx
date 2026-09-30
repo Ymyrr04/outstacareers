@@ -1656,6 +1656,45 @@ export const ContractorsDashboard = () => {
                               />
                             </TableCell>
                           )}
+                          {visibleColumns.clientRate && (
+                            <TableCell>
+                              {contractor.client_rate ? (
+                                <span className="flex items-center gap-1 whitespace-nowrap">
+                                  <DollarSign className="w-3 h-3 text-muted-foreground" />
+                                  ${contractor.client_rate}/hr
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          )}
+                          {visibleColumns.endDate && (
+                            <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                              {contractor.end_date ? format(parseDateOnly(contractor.end_date), 'MMM d, yyyy') : '—'}
+                            </TableCell>
+                          )}
+                          {visibleColumns.workShift && (
+                            <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                              {contractor.regular_work_shift || '—'}
+                            </TableCell>
+                          )}
+                          {visibleColumns.timezone && (
+                            <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                              {contractor.timezone || '—'}
+                            </TableCell>
+                          )}
+                          {visibleColumns.workDays && (
+                            <TableCell className="text-sm text-muted-foreground">
+                              {Array.isArray(contractor.work_days) && contractor.work_days.length > 0 ? contractor.work_days.join(', ') : '—'}
+                            </TableCell>
+                          )}
+                          {visibleColumns.breakTime && (
+                            <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                              {contractor.break_duration_minutes != null
+                                ? `${contractor.break_duration_minutes} min${contractor.break_is_paid ? ' (paid)' : ''}`
+                                : '—'}
+                            </TableCell>
+                          )}
                         </TableRow>
                       ))}
                     </TableBody>
