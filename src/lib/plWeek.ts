@@ -49,6 +49,7 @@ export interface PlTimesheet {
   total_hours: number;
   overtime_hours: number;
   notes: string | null;
+  incentive_amount: number | null;
   daily_hours: Record<string, { hours?: number; reason?: string }> | null;
 }
 
@@ -73,6 +74,7 @@ export interface PlWeekRow {
   grossAfter: number;
   clientDeposit: number | string | null;
   contractorDeposit: number | string | null;
+  bonus: number | null;
 }
 
 export async function computePlWeek(
@@ -100,7 +102,7 @@ export async function computePlWeek(
   if (ids.length) {
     const { data: tData, error: tErr } = await supabase
       .from('contractor_timesheets')
-      .select('id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, notes, daily_hours')
+      .select('id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, notes, incentive_amount, daily_hours')
       .in('contractor_assignment_id', ids)
       .gte('week_ending_date', weekMondayStr)
       .lte('week_ending_date', weekEndingStr);
@@ -163,6 +165,7 @@ export async function computePlWeek(
         grossAfter,
         clientDeposit,
         contractorDeposit,
+        bonus: ts?.incentive_amount != null ? Number(ts.incentive_amount) : null,
       };
     });
 }
