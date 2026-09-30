@@ -77,31 +77,6 @@ function mapRow(r: PlWeekRow, monday: string, fees: PlFees): MappedRow {
   };
 }
 
-// Bonus goes on its own row (like the spreadsheet): expense = bonus, income = bonus x 1.2,
-// with the same after-fee math, so it is included in every total.
-export const BONUS_MARKUP = 1.2;
-const r2 = (n: number) => Math.round(n * 100) / 100;
-function bonusRow(base: MappedRow, bonus: number, fees: PlFees): MappedRow {
-  const expenseAfter = r2(bonus * (1 + fees.expensePct / 100));
-  const income = r2(bonus * BONUS_MARKUP);
-  const incomeAfter = r2(income * (1 - fees.incomePct / 100));
-  return {
-    ...base,
-    hours: null, actual_hours: null, contractor_rate: null, client_rate: null,
-    contractor_cost: bonus, client_billing: income,
-    expense_after_1_percent: expenseAfter, income_after_3_percent: incomeAfter,
-    margin: null, gross_after_deductions: r2(incomeAfter - expenseAfter),
-    client_deposit: null, contractor_deposit: null, bonus: null,
-    raw: { ...base.raw, kind: 'bonus', bonus_amount: bonus, bonus_markup: BONUS_MARKUP, bonus: null },
-  };
-}
-function mapWithBonus(r: PlWeekRow, monday: string, fees: PlFees): MappedRow[] {
-  const base = { ...mapRow(r, monday, fees), bonus: null };
-  base.raw = { ...base.raw, bonus: null };
-  const b = r.bonus != null ? Number(r.bonus) : 0;
-  return b > 0 ? [base, bonusRow(base, b, fees)] : [base];
-}
-
 type Col = { key: keyof MappedRow; label: string; kind?: 'hours' | 'money' | 'rate'; width: string };
 const COLS: Col[] = [
   { key: 'contractor_name', label: 'Contractor', width: 'w-[220px] min-w-[220px] max-w-[220px]' },
