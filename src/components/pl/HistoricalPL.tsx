@@ -319,8 +319,159 @@ export function HistoricalPL({ onUpload }: Props) {
               </Button>
             </>
           )}
+          <Button
+            variant={compareOpen ? 'default' : 'outline'}
+            size="sm"
+            className="gap-1"
+            onClick={() => {
+              setCompareOpen((o) => {
+                if (!o && compareYears.length === 0) setCompareYears([year]);
+                return !o;
+              });
+            }}
+          >
+            <BarChart3 className="h-4 w-4" /> Compare
+          </Button>
         </div>
       </div>
+
+      {!loading && rows.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {[
+            { label: 'Total billing', value: money(yearSummary.billing) },
+            { label: 'Total cost', value: money(yearSummary.cost) },
+            { label: 'Total margin', value: money(yearSummary.margin) },
+            { label: 'Total hours', value: yearSummary.hours.toFixed(2) },
+            { label: 'Avg weekly headcount', value: yearSummary.avgHeadcount.toFixed(1) },
+          ].map((s) => (
+            <div key={s.label} className="border rounded-lg p-3 bg-card">
+              <p className="text-xs text-muted-foreground">{s.label}</p>
+              <p className="text-lg font-semibold tabular-nums whitespace-nowrap mt-0.5">{s.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {compareOpen && (
+        <div className="border rounded-lg bg-card p-4 flex flex-col gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-muted-foreground mr-1">Years:</span>
+            {HIST_YEARS.map((y) => {
+              const on = compareYears.includes(y);
+              return (
+                <button
+                  key={y}
+                  type="button"
+                  onClick={() => setCompareYears((prev) => (on ? prev.filter((p) => p !== y) : [...prev, y]))}
+                  className={cn(
+                    'px-3 py-1 rounded-full text-xs font-medium border transition-colors',
+                    on
+                      ? 'bg-[var(--brand)] border-[var(--brand)] text-primary-foreground'
+                      : 'bg-background border-border text-muted-foreground hover:bg-muted',
+                  )}
+                >
+                  {y}
+                </button>
+              );
+            })}
+            {compareLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+          </div>
+
+          {compare.years.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4">Select one or more years to compare.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-max min-w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Month</th>
+                    {compare.years.map((y) => (
+                      <th key={y} colSpan={3} className="text-center px-3 py-2 font-medium border-l">{y}</th>
+                    ))}
+                    {compare.prev != null && (
+                      <th colSpan={2} className="text-center px-3 py-2 font-medium border-l whitespace-nowrap">
+                        Margin change {compare.latest} vs {compare.prev}
+                      </th>
+                    )}
+                  </tr>
+                  <tr className="border-b">
+                    <th />
+                    {compare.years.map((y) => (
+                      <>
+                        <th key={`${y}-b`} className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground border-l">Billing</th>
+                        <th key={`${y}-c`} className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground">Cost</th>
+                        <th key={`${y}-m`} className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground">Margin</th>
+                      </>
+                    ))}
+                    {compare.prev != null && (
+                      <>
+                        <th className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground border-l">Amount</th>
+                        <th className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground">%</th>
+                      </>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {MONTHS.map((mn, mi) => {
+                    const cur = compare.byYear[compare.latest].months[mi].margin;
+                    const prv = compare.prev != null ? compare.byYear[compare.prev].months[mi].margin : 0;
+                    const diff = cur - prv;
+                    const p = pct(cur, prv);
+                    return (
+                      <tr key={mn} className="border-b last:border-0">
+                        <td className="px-3 py-2 font-medium whitespace-nowrap">{mn}</td>
+                        {compare.years.map((y) => {
+                          const c = compare.byYear[y].months[mi];
+                          return (
+                            <>
+                              <td key={`${y}-b`} className="text-right px-3 py-2 tabular-nums whitespace-nowrap border-l">{money(c.billing)}</td>
+                              <td key={`${y}-c`} className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(c.cost)}</td>
+                              <td key={`${y}-m`} className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(c.margin)}</td>
+                            </>
+                          );
+                        })}
+                        {compare.prev != null && (
+                          <>
+                            <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap border-l', diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{money(diff)}</td>
+                            <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap', diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{p == null ? '—' : `${p > 0 ? '+' : ''}${p.toFixed(1)}%`}</td>
+                          </>
+                        )}
+                      </tr>
+                    );
+                  })}
+                  <tr className="border-t-2 font-bold">
+                    <td className="px-3 py-2">Total</td>
+                    {compare.years.map((y) => {
+                      const t = compare.byYear[y].total;
+                      return (
+                        <>
+                          <td key={`${y}-b`} className="text-right px-3 py-2 tabular-nums whitespace-nowrap border-l">{money(t.billing)}</td>
+                          <td key={`${y}-c`} className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(t.cost)}</td>
+                          <td key={`${y}-m`} className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(t.margin)}</td>
+                        </>
+                      );
+                    })}
+                    {compare.prev != null && (() => {
+                      const cur = compare.byYear[compare.latest].total.margin;
+                      const prv = compare.byYear[compare.prev].total.margin;
+                      const diff = cur - prv;
+                      const p = pct(cur, prv);
+                      return (
+                        <>
+                          <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap border-l', diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{money(diff)}</td>
+                          <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap', diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{p == null ? '—' : `${p > 0 ? '+' : ''}${p.toFixed(1)}%`}</td>
+                        </>
+                      );
+                    })()}
+                  </tr>
+                </tbody>
+              </table>
+              <p className="text-xs text-muted-foreground mt-2">Weeks are counted in the month they start</p>
+            </div>
+          )}
+        </div>
+      )}
+
 
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
