@@ -268,6 +268,14 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
                   </div>
                 )}
 
+                {syncSkipped.length > 0 && (
+                  <div className="rounded-md border border-sky-400/60 bg-sky-50/50 dark:bg-sky-950/20 p-3 text-sm space-y-1">
+                    {syncSkipped.map((s) => (
+                      <div key={`s-${s.name}`} className="flex gap-2"><AlertTriangle className="h-4 w-4 text-sky-500 shrink-0" />"{s.name}" — skipped, this week is already synced from timesheets</div>
+                    ))}
+                  </div>
+                )}
+
                 {groups.map((g, gi) => {
                   const mp = mapping[g.key] ?? guessMapping(g.headers);
                   return (
