@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ChevronRight, Loader2, Upload, Trash2, Columns3, ArrowUpDown, Search } from 'lucide-react';
+import { ChevronRight, Loader2, Upload, Trash2, Columns3, ArrowUpDown, Search, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { HistoricalUploadDialog, HIST_YEARS } from './HistoricalUploadDialog';
@@ -87,6 +87,41 @@ const SORTABLE: Col[] = [
 const fmtCell = (c: Col, v: number | null | undefined) =>
   v == null || Number.isNaN(Number(v)) ? '—' : c.kind === 'hours' ? Number(v).toFixed(2) : money(Number(v));
 
+const ROW_COLS = 'id, week_label, week_start, contractor_name, company, hours, actual_hours, contractor_rate, client_rate, contractor_cost, expense_after_1_percent, client_billing, income_after_3_percent, margin, gross_after_deductions, client_deposit, contractor_deposit';
+
+// Fetch one year's rows through the existing per-year cache.
+async function fetchYear(y: number): Promise<{ ids: string[]; rows: HistRow[] } | null> {
+  const cached = readCache(y);
+  const { data: batches, error: bErr } = await supabase
+    .from('historical_pl_batches').select('id, created_at, column_map').eq('year', y);
+  if (bErr) return cached ? { ids: cached.ids, rows: cached.rows } : null;
+  const ids = (batches ?? []).map((b) => b.id);
+  const sig = signature(batches ?? []);
+  if (cached && cached.sig === sig) return { ids, rows: cached.rows };
+  if (ids.length === 0) { writeCache(y, { sig, ids, rows: [] }); return { ids, rows: [] }; }
+
+  const all: HistRow[] = [];
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from('historical_pl_rows')
+      .select(ROW_COLS)
+      .in('batch_id', ids)
+      .order('week_start', { ascending: true, nullsFirst: false })
+      .order('contractor_name', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) return null;
+    all.push(...((data ?? []) as HistRow[]));
+    if (!data || data.length < PAGE) break;
+  }
+  writeCache(y, { sig, ids, rows: all });
+  return { ids, rows: all };
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const pct = (cur: number, prev: number) => (prev === 0 ? null : ((cur - prev) / Math.abs(prev)) * 100);
+
 interface Props { onUpload?: (year: number) => void }
 
 export function HistoricalPL({ onUpload }: Props) {
@@ -102,43 +137,54 @@ export function HistoricalPL({ onUpload }: Props) {
   const [sort, setSort] = useState<SortState | null>(null);
   const [query, setQuery] = useState('');
 
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [compareYears, setCompareYears] = useState<number[]>([]);
+  const [compareData, setCompareData] = useState<Record<number, HistRow[]>>({});
+  const [compareLoading, setCompareLoading] = useState(false);
+
   const load = useCallback(async () => {
     // Show cached rows instantly, then check whether anything changed.
     const cached = readCache(year);
     if (cached) { setBatchIds(cached.ids); setRows(cached.rows); setLoading(false); }
     else setLoading(true);
 
-    const { data: batches, error: bErr } = await supabase
-      .from('historical_pl_batches').select('id, created_at, column_map').eq('year', year);
-    if (bErr) { if (!cached) toast.error('Failed to load historical data'); setLoading(false); return; }
-    const ids = (batches ?? []).map((b) => b.id);
-    const sig = signature(batches ?? []);
-    setBatchIds(ids);
-    if (cached && cached.sig === sig) { setLoading(false); return; }
-    if (ids.length === 0) { setRows([]); writeCache(year, { sig, ids, rows: [] }); setLoading(false); return; }
-
-    const all: HistRow[] = [];
-    const PAGE = 1000;
-    for (let from = 0; ; from += PAGE) {
-      const { data, error } = await supabase
-        .from('historical_pl_rows')
-        .select('id, week_label, week_start, contractor_name, company, hours, actual_hours, contractor_rate, client_rate, contractor_cost, expense_after_1_percent, client_billing, income_after_3_percent, margin, gross_after_deductions, client_deposit, contractor_deposit')
-        .in('batch_id', ids)
-        .order('week_start', { ascending: true, nullsFirst: false })
-        .order('contractor_name', { ascending: true })
-        .order('id', { ascending: true })
-        .range(from, from + PAGE - 1);
-      if (error) { toast.error('Failed to load historical rows'); setLoading(false); return; }
-      all.push(...((data ?? []) as HistRow[]));
-      if (!data || data.length < PAGE) break;
-    }
-    setRows(all);
-    writeCache(year, { sig, ids, rows: all });
+    const res = await fetchYear(year);
+    if (!res) { if (!cached) toast.error('Failed to load historical data'); setLoading(false); return; }
+    setBatchIds(res.ids);
+    setRows(res.rows);
     setLoading(false);
   }, [year]);
 
   useEffect(() => { void load(); }, [load]);
   useEffect(() => { setOpenWeekKey(null); }, [year]);
+
+  // On mount, jump to the most recent year that actually has an upload.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase
+        .from('historical_pl_batches').select('year').order('year', { ascending: false }).limit(1);
+      const y = data?.[0]?.year as number | undefined;
+      if (!cancelled && y && HIST_YEARS.includes(y)) setYear(y);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Load every selected comparison year through the per-year cache.
+  useEffect(() => {
+    if (!compareOpen || compareYears.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      setCompareLoading(true);
+      const out: Record<number, HistRow[]> = {};
+      for (const y of compareYears) {
+        const res = await fetchYear(y);
+        out[y] = res?.rows ?? [];
+      }
+      if (!cancelled) { setCompareData((p) => ({ ...p, ...out })); setCompareLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [compareOpen, compareYears]);
 
   const sortKey = (r: HistRow): string | number => {
     if (!sort) return '';
@@ -172,6 +218,42 @@ export function HistoricalPL({ onUpload }: Props) {
       return { key, label: w.label, rows: w.rows, totals: t, headcount };
     });
   }, [rows]);
+
+  // Year totals, from the rows already loaded.
+  const yearSummary = useMemo(() => {
+    const t = rows.reduce((a, r) => ({
+      hours: a.hours + num(r.hours), cost: a.cost + num(r.contractor_cost),
+      billing: a.billing + num(r.client_billing), margin: a.margin + num(r.margin),
+    }), { hours: 0, cost: 0, billing: 0, margin: 0 });
+    const avgHeadcount = weeks.length
+      ? weeks.reduce((a, w) => a + w.headcount, 0) / weeks.length
+      : 0;
+    return { ...t, avgHeadcount };
+  }, [rows, weeks]);
+
+  // Month-by-month billing / cost / margin for each selected comparison year.
+  const compare = useMemo(() => {
+    const years = [...compareYears].sort((a, b) => a - b);
+    const blank = () => ({ billing: 0, cost: 0, margin: 0 });
+    const byYear: Record<number, { months: ReturnType<typeof blank>[]; total: ReturnType<typeof blank> }> = {};
+    for (const y of years) {
+      const months = Array.from({ length: 12 }, blank);
+      const total = blank();
+      for (const r of compareData[y] ?? []) {
+        if (!r.week_start) continue;
+        const m = new Date(`${r.week_start}T00:00:00`).getMonth();
+        if (Number.isNaN(m)) continue;
+        const cell = months[m];
+        const b = num(r.client_billing), c = num(r.contractor_cost), g = num(r.margin);
+        cell.billing += b; cell.cost += c; cell.margin += g;
+        total.billing += b; total.cost += c; total.margin += g;
+      }
+      byYear[y] = { months, total };
+    }
+    const latest = years[years.length - 1];
+    const prev = years.length > 1 ? years[years.length - 2] : null;
+    return { years, byYear, latest, prev };
+  }, [compareYears, compareData]);
 
   const openWeek = openWeekKey ? weeks.find((w) => w.key === openWeekKey) ?? null : null;
 
@@ -237,8 +319,159 @@ export function HistoricalPL({ onUpload }: Props) {
               </Button>
             </>
           )}
+          <Button
+            variant={compareOpen ? 'default' : 'outline'}
+            size="sm"
+            className="gap-1"
+            onClick={() => {
+              setCompareOpen((o) => {
+                if (!o && compareYears.length === 0) setCompareYears([year]);
+                return !o;
+              });
+            }}
+          >
+            <BarChart3 className="h-4 w-4" /> Compare
+          </Button>
         </div>
       </div>
+
+      {!loading && rows.length > 0 && (
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {[
+            { label: 'Total billing', value: money(yearSummary.billing) },
+            { label: 'Total cost', value: money(yearSummary.cost) },
+            { label: 'Total margin', value: money(yearSummary.margin) },
+            { label: 'Total hours', value: yearSummary.hours.toFixed(2) },
+            { label: 'Avg weekly headcount', value: yearSummary.avgHeadcount.toFixed(1) },
+          ].map((s) => (
+            <div key={s.label} className="border rounded-lg p-3 bg-card">
+              <p className="text-xs text-muted-foreground">{s.label}</p>
+              <p className="text-lg font-semibold tabular-nums whitespace-nowrap mt-0.5">{s.value}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {compareOpen && (
+        <div className="border rounded-lg bg-card p-4 flex flex-col gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-sm text-muted-foreground mr-1">Years:</span>
+            {HIST_YEARS.map((y) => {
+              const on = compareYears.includes(y);
+              return (
+                <button
+                  key={y}
+                  type="button"
+                  onClick={() => setCompareYears((prev) => (on ? prev.filter((p) => p !== y) : [...prev, y]))}
+                  className={cn(
+                    'px-3 py-1 rounded-full text-xs font-medium border transition-colors',
+                    on
+                      ? 'bg-[var(--brand)] border-[var(--brand)] text-primary-foreground'
+                      : 'bg-background border-border text-muted-foreground hover:bg-muted',
+                  )}
+                >
+                  {y}
+                </button>
+              );
+            })}
+            {compareLoading && <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />}
+          </div>
+
+          {compare.years.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4">Select one or more years to compare.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-max min-w-full text-sm">
+                <thead>
+                  <tr className="border-b">
+                    <th className="text-left px-3 py-2 font-medium text-muted-foreground">Month</th>
+                    {compare.years.map((y) => (
+                      <th key={y} colSpan={3} className="text-center px-3 py-2 font-medium border-l">{y}</th>
+                    ))}
+                    {compare.prev != null && (
+                      <th colSpan={2} className="text-center px-3 py-2 font-medium border-l whitespace-nowrap">
+                        Margin change {compare.latest} vs {compare.prev}
+                      </th>
+                    )}
+                  </tr>
+                  <tr className="border-b">
+                    <th />
+                    {compare.years.map((y) => (
+                      <Fragment key={y}>
+                        <th className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground border-l">Billing</th>
+                        <th className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground">Cost</th>
+                        <th className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground">Margin</th>
+                      </Fragment>
+                    ))}
+                    {compare.prev != null && (
+                      <>
+                        <th className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground border-l">Amount</th>
+                        <th className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground">%</th>
+                      </>
+                    )}
+                  </tr>
+                </thead>
+                <tbody>
+                  {MONTHS.map((mn, mi) => {
+                    const cur = compare.byYear[compare.latest].months[mi].margin;
+                    const prv = compare.prev != null ? compare.byYear[compare.prev].months[mi].margin : 0;
+                    const diff = cur - prv;
+                    const p = pct(cur, prv);
+                    return (
+                      <tr key={mn} className="border-b last:border-0">
+                        <td className="px-3 py-2 font-medium whitespace-nowrap">{mn}</td>
+                        {compare.years.map((y) => {
+                          const c = compare.byYear[y].months[mi];
+                          return (
+                            <Fragment key={y}>
+                              <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap border-l">{money(c.billing)}</td>
+                              <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(c.cost)}</td>
+                              <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(c.margin)}</td>
+                            </Fragment>
+                          );
+                        })}
+                        {compare.prev != null && (
+                          <>
+                            <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap border-l', diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{money(diff)}</td>
+                            <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap', diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{p == null ? '—' : `${p > 0 ? '+' : ''}${p.toFixed(1)}%`}</td>
+                          </>
+                        )}
+                      </tr>
+                    );
+                  })}
+                  <tr className="border-t-2 font-bold">
+                    <td className="px-3 py-2">Total</td>
+                    {compare.years.map((y) => {
+                      const t = compare.byYear[y].total;
+                      return (
+                        <Fragment key={y}>
+                          <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap border-l">{money(t.billing)}</td>
+                          <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(t.cost)}</td>
+                          <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(t.margin)}</td>
+                        </Fragment>
+                      );
+                    })}
+                    {compare.prev != null && (() => {
+                      const cur = compare.byYear[compare.latest].total.margin;
+                      const prv = compare.byYear[compare.prev].total.margin;
+                      const diff = cur - prv;
+                      const p = pct(cur, prv);
+                      return (
+                        <>
+                          <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap border-l', diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{money(diff)}</td>
+                          <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap', diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{p == null ? '—' : `${p > 0 ? '+' : ''}${p.toFixed(1)}%`}</td>
+                        </>
+                      );
+                    })()}
+                  </tr>
+                </tbody>
+              </table>
+              <p className="text-xs text-muted-foreground mt-2">Weeks are counted in the month they start</p>
+            </div>
+          )}
+        </div>
+      )}
+
 
       {loading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-muted-foreground" /></div>
