@@ -71,6 +71,13 @@
       "when": 1790772798206,
       "tag": "0009_calendar_hidden_admins_fn",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1790781271314,
+      "tag": "0010_add_assignment_deposits",
+      "breakpoints": true
     }
   ]
 }

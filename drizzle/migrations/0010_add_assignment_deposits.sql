@@ -1,0 +1,1 @@
+ALTER TABLE public.contractor_assignments ADD COLUMN IF NOT EXISTS client_deposit numeric, ADD COLUMN IF NOT EXISTS contractor_deposit numeric;
