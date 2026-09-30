@@ -19,7 +19,7 @@ import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 import { AdminLeaveApplications } from '@/components/AdminLeaveApplications';
 import { CollapsibleSection } from '@/components/pl/CollapsibleSection';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { PLReport } from '@/components/pl/PLReport';
+import { PLReport, EditableCell } from '@/components/pl/PLReport';
 import { HistoricalPL } from '@/components/pl/HistoricalPL';
 import { TimesheetEditHistory } from '@/components/pl/TimesheetEditHistory';
 import { TimesheetReminderSettingsDialog } from '@/components/pl/TimesheetReminderSettingsDialog';
@@ -312,6 +312,19 @@ const PayoneerMatchBadge = ({ notes, invoice: expected, timesheetId }: { notes: 
 
 export const PLDashboard = () => {
   const { toast } = useToast();
+
+  const saveDeposit = async (assignmentId: string, field: 'client_deposit' | 'contractor_deposit', value: number | string | null) => {
+    const textField = field === 'client_deposit' ? 'client_deposit_text' : 'contractor_deposit_text';
+    const text = typeof value === 'string' ? value.trim() : null;
+    if (text && text.length > 100) throw new Error('Text must be 100 characters or less');
+    const numeric = typeof value === 'number' ? value : null;
+    const { error } = await supabase.from('contractor_assignments')
+      .update({ [field]: numeric, [textField]: text } as any)
+      .eq('id', assignmentId);
+    if (error) throw error;
+    setContractors((prev) => prev.map((c) => c.id === assignmentId ? { ...c, [field]: numeric, [textField]: text } : c));
+    toast({ title: 'Saved' });
+  };
   const [loading, setLoading] = useState(true);
   const [profileContractor, setProfileContractor] = useState<any | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
@@ -1416,22 +1429,20 @@ export const PLDashboard = () => {
                       )}
                     </TableCell>
                     <TableCell data-col="clientDeposit" className="text-right">
-                      {c.client_deposit_text ? (
-                        <span className="font-medium">{c.client_deposit_text}</span>
-                      ) : c.client_deposit != null ? (
-                        <span className="font-medium">${Number(c.client_deposit).toFixed(2)}</span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
+                      <EditableCell
+                        allowText
+                        value={c.client_deposit_text ?? c.client_deposit}
+                        display={c.client_deposit_text ? c.client_deposit_text : c.client_deposit != null ? `$${Number(c.client_deposit).toFixed(2)}` : ''}
+                        onSave={(v) => saveDeposit(c.id, 'client_deposit', v)}
+                      />
                     </TableCell>
                     <TableCell data-col="contractorDeposit" className="text-right">
-                      {c.contractor_deposit_text ? (
-                        <span className="font-medium">{c.contractor_deposit_text}</span>
-                      ) : c.contractor_deposit != null ? (
-                        <span className="font-medium">${Number(c.contractor_deposit).toFixed(2)}</span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
+                      <EditableCell
+                        allowText
+                        value={c.contractor_deposit_text ?? c.contractor_deposit}
+                        display={c.contractor_deposit_text ? c.contractor_deposit_text : c.contractor_deposit != null ? `$${Number(c.contractor_deposit).toFixed(2)}` : ''}
+                        onSave={(v) => saveDeposit(c.id, 'contractor_deposit', v)}
+                      />
                     </TableCell>
                     <TableCell data-col="approval">
                       {c.latestTimesheet ? (
