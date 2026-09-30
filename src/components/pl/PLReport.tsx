@@ -9,7 +9,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { ChevronLeft, ChevronRight, Download, Loader2, Search, Settings } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Loader2, Search, Settings, ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -147,6 +147,8 @@ export const PLReport = () => {
   const [clientFilter, setClientFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [statusOverrides, setStatusOverrides] = useState<Record<string, StatusKey>>({});
+  const [sortKey, setSortKey] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   const weekEnding = useMemo(() => {
     const d = new Date(weekMonday);
