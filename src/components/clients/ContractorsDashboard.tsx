@@ -73,6 +73,7 @@ import { ContractorEmailTemplateManager } from './ContractorEmailTemplateManager
 import { LegalDocRequestsDialog } from './LegalDocRequestsDialog';
 import { RecurringSchedulesManager } from './RecurringSchedulesManager';
 import { ContractorColumnFilter } from './ContractorColumnFilter';
+import { ColumnOrder } from './ColumnOrder';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 import { useTabPermissions } from '@/hooks/useTabPermissions';
 import { useAuth as useAuthInternal } from '@/hooks/useAuth';
@@ -190,7 +191,7 @@ export const ContractorsDashboard = () => {
     contractorName: string;
     status: 'rendering' | 'resigned' | 'terminated' | 'scheduled';
   } | null>(null);
-  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => ({
     status: true,
     statusChanged: true,
     name: true,
@@ -216,7 +217,21 @@ export const ContractorsDashboard = () => {
     timezone: false,
     workDays: false,
     breakTime: false,
+    ...(() => { try { return JSON.parse(localStorage.getItem('contractors-visible-columns-v1') || '{}'); } catch { return {}; } })(),
+  }));
+  useEffect(() => { localStorage.setItem('contractors-visible-columns-v1', JSON.stringify(visibleColumns)); }, [visibleColumns]);
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+    try { const v = JSON.parse(localStorage.getItem('contractors-column-order-v1') || '[]'); return Array.isArray(v) ? v : []; } catch { return []; }
   });
+  const moveColumn = (from: string, to: string) => {
+    setColumnOrder(prev => {
+      const base = [...prev, ...Object.keys(visibleColumns).filter(k => !prev.includes(k))].filter(k => k !== from);
+      base.splice(base.indexOf(to), 0, from);
+      localStorage.setItem('contractors-column-order-v1', JSON.stringify(base));
+      return base;
+    });
+  };
+
 
   const columnLabels: Record<string, string> = {
     status: 'Status',
@@ -902,31 +917,33 @@ export const ContractorsDashboard = () => {
                 <Table className="w-full table-auto">
                   <TableHeader>
                     <TableRow>
-                      {visibleColumns.status && <TableHead className="w-[140px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('status')}><span className="inline-flex items-center gap-1">Status {getSortIcon('status')}<ContractorColumnFilter options={getColumnOptions('status')} selected={columnFilters['status']} onChange={(v) => setColumnFilter('status', v)} /></span></TableHead>}
-                      {visibleColumns.statusChanged && <TableHead className="w-[130px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('statusChanged')}>Status Changed {getSortIcon('statusChanged')}</TableHead>}
-                      {visibleColumns.name && <TableHead className="min-w-[180px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('name')}>Name {getSortIcon('name')}</TableHead>}
-                      {visibleColumns.email && <TableHead className="min-w-[200px]">Email</TableHead>}
-                      {visibleColumns.company && <TableHead className="min-w-[180px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('company')}><span className="inline-flex items-center gap-1">Company {getSortIcon('company')}<ContractorColumnFilter options={getColumnOptions('company')} selected={columnFilters['company']} onChange={(v) => setColumnFilter('company', v)} /></span></TableHead>}
-                      {visibleColumns.industry && <TableHead className="min-w-[120px]"><span className="inline-flex items-center gap-1">Industry<ContractorColumnFilter options={getColumnOptions('industry')} selected={columnFilters['industry']} onChange={(v) => setColumnFilter('industry', v)} /></span></TableHead>}
-                      {visibleColumns.startDate && <TableHead className="w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('startDate')}>Start Date {getSortIcon('startDate')}</TableHead>}
-                      {visibleColumns.position && <TableHead className="min-w-[150px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('position')}><span className="inline-flex items-center gap-1">Position {getSortIcon('position')}<ContractorColumnFilter options={getColumnOptions('position')} selected={columnFilters['position']} onChange={(v) => setColumnFilter('position', v)} /></span></TableHead>}
-                      {visibleColumns.rate && <TableHead className="w-[80px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('rate')}>Rate {getSortIcon('rate')}</TableHead>}
-                      {visibleColumns.hours && <TableHead className="w-[80px]">Hours</TableHead>}
-                      {visibleColumns.contact && <TableHead className="min-w-[140px]">Contact</TableHead>}
-                      {visibleColumns.emergency && <TableHead className="min-w-[140px]">Emergency</TableHead>}
-                      {visibleColumns.timesheet && <TableHead className="min-w-[100px]">Timesheet</TableHead>}
-                      {visibleColumns.type && <TableHead className="w-[100px]"><span className="inline-flex items-center gap-1">Type<ContractorColumnFilter options={getColumnOptions('type')} selected={columnFilters['type']} onChange={(v) => setColumnFilter('type', v)} /></span></TableHead>}
-                      {visibleColumns.country && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('country')}><span className="inline-flex items-center gap-1">Country {getSortIcon('country')}<ContractorColumnFilter options={getColumnOptions('country')} selected={columnFilters['country']} onChange={(v) => setColumnFilter('country', v)} /></span></TableHead>}
-                      {visibleColumns.source && <TableHead className="min-w-[100px]"><span className="inline-flex items-center gap-1">Source<ContractorColumnFilter options={getColumnOptions('source')} selected={columnFilters['source']} onChange={(v) => setColumnFilter('source', v)} /></span></TableHead>}
-                      {visibleColumns.notes && <TableHead className="min-w-[200px]">Notes</TableHead>}
-                      {visibleColumns.separationNote && <TableHead className="min-w-[200px]">Separation Note</TableHead>}
-                      {visibleColumns.hiredBy && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('hiredBy')}><span className="inline-flex items-center gap-1">Hired By {getSortIcon('hiredBy')}<ContractorColumnFilter options={getColumnOptions('hiredBy')} selected={columnFilters['hiredBy']} onChange={(v) => setColumnFilter('hiredBy', v)} /></span></TableHead>}
-                      {visibleColumns.clientRate && <TableHead className="w-[100px]">Client Rate</TableHead>}
-                      {visibleColumns.endDate && <TableHead className="w-[120px]">End Date</TableHead>}
-                      {visibleColumns.workShift && <TableHead className="min-w-[120px]">Work Shift</TableHead>}
-                      {visibleColumns.timezone && <TableHead className="min-w-[120px]">Timezone</TableHead>}
-                      {visibleColumns.workDays && <TableHead className="min-w-[140px]">Work Days</TableHead>}
-                      {visibleColumns.breakTime && <TableHead className="min-w-[110px]">Break</TableHead>}
+                      <ColumnOrder order={columnOrder} onMove={moveColumn}>
+                      {visibleColumns.status && <TableHead data-col="status" className="w-[140px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('status')}><span className="inline-flex items-center gap-1">Status {getSortIcon('status')}<ContractorColumnFilter options={getColumnOptions('status')} selected={columnFilters['status']} onChange={(v) => setColumnFilter('status', v)} /></span></TableHead>}
+                      {visibleColumns.statusChanged && <TableHead data-col="statusChanged" className="w-[130px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('statusChanged')}>Status Changed {getSortIcon('statusChanged')}</TableHead>}
+                      {visibleColumns.name && <TableHead data-col="name" className="min-w-[180px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('name')}>Name {getSortIcon('name')}</TableHead>}
+                      {visibleColumns.email && <TableHead data-col="email" className="min-w-[200px]">Email</TableHead>}
+                      {visibleColumns.company && <TableHead data-col="company" className="min-w-[180px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('company')}><span className="inline-flex items-center gap-1">Company {getSortIcon('company')}<ContractorColumnFilter options={getColumnOptions('company')} selected={columnFilters['company']} onChange={(v) => setColumnFilter('company', v)} /></span></TableHead>}
+                      {visibleColumns.industry && <TableHead data-col="industry" className="min-w-[120px]"><span className="inline-flex items-center gap-1">Industry<ContractorColumnFilter options={getColumnOptions('industry')} selected={columnFilters['industry']} onChange={(v) => setColumnFilter('industry', v)} /></span></TableHead>}
+                      {visibleColumns.startDate && <TableHead data-col="startDate" className="w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('startDate')}>Start Date {getSortIcon('startDate')}</TableHead>}
+                      {visibleColumns.position && <TableHead data-col="position" className="min-w-[150px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('position')}><span className="inline-flex items-center gap-1">Position {getSortIcon('position')}<ContractorColumnFilter options={getColumnOptions('position')} selected={columnFilters['position']} onChange={(v) => setColumnFilter('position', v)} /></span></TableHead>}
+                      {visibleColumns.rate && <TableHead data-col="rate" className="w-[80px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('rate')}>Rate {getSortIcon('rate')}</TableHead>}
+                      {visibleColumns.hours && <TableHead data-col="hours" className="w-[80px]">Hours</TableHead>}
+                      {visibleColumns.contact && <TableHead data-col="contact" className="min-w-[140px]">Contact</TableHead>}
+                      {visibleColumns.emergency && <TableHead data-col="emergency" className="min-w-[140px]">Emergency</TableHead>}
+                      {visibleColumns.timesheet && <TableHead data-col="timesheet" className="min-w-[100px]">Timesheet</TableHead>}
+                      {visibleColumns.type && <TableHead data-col="type" className="w-[100px]"><span className="inline-flex items-center gap-1">Type<ContractorColumnFilter options={getColumnOptions('type')} selected={columnFilters['type']} onChange={(v) => setColumnFilter('type', v)} /></span></TableHead>}
+                      {visibleColumns.country && <TableHead data-col="country" className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('country')}><span className="inline-flex items-center gap-1">Country {getSortIcon('country')}<ContractorColumnFilter options={getColumnOptions('country')} selected={columnFilters['country']} onChange={(v) => setColumnFilter('country', v)} /></span></TableHead>}
+                      {visibleColumns.source && <TableHead data-col="source" className="min-w-[100px]"><span className="inline-flex items-center gap-1">Source<ContractorColumnFilter options={getColumnOptions('source')} selected={columnFilters['source']} onChange={(v) => setColumnFilter('source', v)} /></span></TableHead>}
+                      {visibleColumns.notes && <TableHead data-col="notes" className="min-w-[200px]">Notes</TableHead>}
+                      {visibleColumns.separationNote && <TableHead data-col="separationNote" className="min-w-[200px]">Separation Note</TableHead>}
+                      {visibleColumns.hiredBy && <TableHead data-col="hiredBy" className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('hiredBy')}><span className="inline-flex items-center gap-1">Hired By {getSortIcon('hiredBy')}<ContractorColumnFilter options={getColumnOptions('hiredBy')} selected={columnFilters['hiredBy']} onChange={(v) => setColumnFilter('hiredBy', v)} /></span></TableHead>}
+                      {visibleColumns.clientRate && <TableHead data-col="clientRate" className="w-[100px]">Client Rate</TableHead>}
+                      {visibleColumns.endDate && <TableHead data-col="endDate" className="w-[120px]">End Date</TableHead>}
+                      {visibleColumns.workShift && <TableHead data-col="workShift" className="min-w-[120px]">Work Shift</TableHead>}
+                      {visibleColumns.timezone && <TableHead data-col="timezone" className="min-w-[120px]">Timezone</TableHead>}
+                      {visibleColumns.workDays && <TableHead data-col="workDays" className="min-w-[140px]">Work Days</TableHead>}
+                      {visibleColumns.breakTime && <TableHead data-col="breakTime" className="min-w-[110px]">Break</TableHead>}
+                      </ColumnOrder>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -939,8 +956,9 @@ export const ContractorsDashboard = () => {
                           setEditingContractor(contractor);
                         }}
                       >
+                        <ColumnOrder order={columnOrder}>
                         {visibleColumns.status && (
-                          <TableCell onClick={(e) => e.stopPropagation()}>
+                          <TableCell data-col="status" onClick={(e) => e.stopPropagation()}>
                             <Select
                               value={contractor.status}
                               onValueChange={(value) => handleStatusChange(contractor.id, value)}
@@ -994,7 +1012,7 @@ export const ContractorsDashboard = () => {
                           </TableCell>
                         )}
                         {visibleColumns.statusChanged && (
-                          <TableCell>
+                          <TableCell data-col="statusChanged">
                             {contractor.status_changed_at ? (
                               <span className="flex items-center gap-1 text-sm text-muted-foreground whitespace-nowrap">
                                 <Clock className="w-3 h-3" />
@@ -1006,7 +1024,7 @@ export const ContractorsDashboard = () => {
                           </TableCell>
                         )}
                         {visibleColumns.name && (
-                          <TableCell className="font-medium whitespace-nowrap">
+                          <TableCell data-col="name" className="font-medium whitespace-nowrap">
                             <span className="flex items-center gap-2">
                               {contractor.applicant?.full_name || 'Unknown'}
                               {contractor.notes?.includes('Reactivated from') && (
@@ -1019,7 +1037,7 @@ export const ContractorsDashboard = () => {
                           </TableCell>
                         )}
                         {visibleColumns.email && (
-                          <TableCell>
+                          <TableCell data-col="email">
                             <span className="flex items-center gap-1 text-sm">
                               <span title={contractor.applicant?.email}>
                                 {contractor.applicant?.email || '—'}
@@ -1050,7 +1068,7 @@ export const ContractorsDashboard = () => {
                           </TableCell>
                         )}
                         {visibleColumns.company && (
-                          <TableCell>
+                          <TableCell data-col="company">
                             <span className="flex items-center gap-1 whitespace-nowrap">
                               <Building2 className="w-3 h-3 text-muted-foreground" />
                               {contractor.client?.company_name || '—'}
@@ -1058,12 +1076,12 @@ export const ContractorsDashboard = () => {
                           </TableCell>
                         )}
                         {visibleColumns.industry && (
-                          <TableCell className="text-muted-foreground">
+                          <TableCell data-col="industry" className="text-muted-foreground">
                             {contractor.client?.industry || '—'}
                           </TableCell>
                         )}
                         {visibleColumns.startDate && (
-                          <TableCell>
+                          <TableCell data-col="startDate">
                             {contractor.start_date ? (() => {
                               const startDate = parseDateOnly(contractor.start_date);
                               const today = new Date();
@@ -1081,7 +1099,7 @@ export const ContractorsDashboard = () => {
                           </TableCell>
                         )}
                         {visibleColumns.position && (
-                          <TableCell>
+                          <TableCell data-col="position">
                             <span className="flex items-center gap-1 whitespace-nowrap">
                               <Briefcase className="w-3 h-3 text-muted-foreground" />
                               {contractor.job_title || '—'}
@@ -1089,7 +1107,7 @@ export const ContractorsDashboard = () => {
                           </TableCell>
                         )}
                         {visibleColumns.rate && (
-                          <TableCell>
+                          <TableCell data-col="rate">
                             {contractor.hourly_rate ? (
                               <span className="flex items-center gap-1 whitespace-nowrap">
                                 <DollarSign className="w-3 h-3 text-muted-foreground" />
@@ -1101,7 +1119,7 @@ export const ContractorsDashboard = () => {
                           </TableCell>
                         )}
                         {visibleColumns.hours && (
-                          <TableCell>
+                          <TableCell data-col="hours">
                             {contractor.hours_per_week ? (
                               <span className="whitespace-nowrap">{contractor.hours_per_week}h/wk</span>
                             ) : (
@@ -1110,7 +1128,7 @@ export const ContractorsDashboard = () => {
                           </TableCell>
                         )}
                         {visibleColumns.contact && (
-                          <TableCell onContextMenu={(e) => e.stopPropagation()}>
+                          <TableCell data-col="contact" onContextMenu={(e) => e.stopPropagation()}>
                             {(contractor.contact_number || contractor.applicant?.phone) ? (
                               <a 
                                 href={`https://wa.me/${String(contractor.contact_number || contractor.applicant?.phone).replace(/\D/g, '')}`}
@@ -1128,7 +1146,7 @@ export const ContractorsDashboard = () => {
                           </TableCell>
                         )}
                         {visibleColumns.emergency && (
-                          <TableCell>
+                          <TableCell data-col="emergency">
                             {contractor.emergency_number ? (
                               <span className="flex items-center gap-1 whitespace-nowrap text-sm">
                                 <Phone className="w-3 h-3 text-muted-foreground flex-shrink-0" />
@@ -1140,7 +1158,7 @@ export const ContractorsDashboard = () => {
                           </TableCell>
                         )}
                         {visibleColumns.timesheet && (
-                          <TableCell>
+                          <TableCell data-col="timesheet">
                             {contractor.timesheet_link ? (
                               <a 
                                 href={contractor.timesheet_link} 
@@ -1157,7 +1175,7 @@ export const ContractorsDashboard = () => {
                           </TableCell>
                         )}
                         {visibleColumns.type && (
-                          <TableCell>
+                          <TableCell data-col="type">
                             <Badge variant="outline" className={contractor.is_replacement ? 'border-amber-300 text-amber-700' : 'border-green-300 text-green-700'}>
                               {contractor.is_replacement ? (
                                 <>
@@ -1174,7 +1192,7 @@ export const ContractorsDashboard = () => {
                           </TableCell>
                         )}
                         {visibleColumns.country && (
-                          <TableCell>
+                          <TableCell data-col="country">
                             {(contractor.country || contractor.applicant?.location) ? (
                               <span className="flex items-center gap-1 whitespace-nowrap">
                                 <Globe className="w-3 h-3 text-muted-foreground" />
@@ -1186,12 +1204,12 @@ export const ContractorsDashboard = () => {
                           </TableCell>
                         )}
                         {visibleColumns.source && (
-                          <TableCell className="text-muted-foreground">
+                          <TableCell data-col="source" className="text-muted-foreground">
                             {contractor.source || '—'}
                           </TableCell>
                         )}
                         {visibleColumns.notes && (
-                          <TableCell>
+                          <TableCell data-col="notes">
                             {contractor.notes ? (
                               <span className="text-sm text-muted-foreground line-clamp-2 max-w-[200px]" title={contractor.notes}>
                                 {contractor.notes}
@@ -1202,7 +1220,7 @@ export const ContractorsDashboard = () => {
                           </TableCell>
                         )}
                         {visibleColumns.separationNote && (
-                          <TableCell>
+                          <TableCell data-col="separationNote">
                             {contractor.separation_note ? (
                               <span className="text-sm text-muted-foreground line-clamp-2 max-w-[200px] whitespace-pre-wrap" title={contractor.separation_note}>
                                 {contractor.separation_note}
@@ -1213,7 +1231,7 @@ export const ContractorsDashboard = () => {
                           </TableCell>
                         )}
                         {visibleColumns.hiredBy && (
-                          <TableCell>
+                          <TableCell data-col="hiredBy">
                             <HiredByEditor
                               contractorId={contractor.id}
                               value={contractor.hired_by}
@@ -1222,7 +1240,7 @@ export const ContractorsDashboard = () => {
                           </TableCell>
                         )}
                         {visibleColumns.clientRate && (
-                          <TableCell>
+                          <TableCell data-col="clientRate">
                             {contractor.client_rate ? (
                               <span className="flex items-center gap-1 whitespace-nowrap">
                                 <DollarSign className="w-3 h-3 text-muted-foreground" />
@@ -1234,32 +1252,33 @@ export const ContractorsDashboard = () => {
                           </TableCell>
                         )}
                         {visibleColumns.endDate && (
-                          <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                          <TableCell data-col="endDate" className="whitespace-nowrap text-sm text-muted-foreground">
                             {contractor.end_date ? format(parseDateOnly(contractor.end_date), 'MMM d, yyyy') : '—'}
                           </TableCell>
                         )}
                         {visibleColumns.workShift && (
-                          <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                          <TableCell data-col="workShift" className="whitespace-nowrap text-sm text-muted-foreground">
                             {contractor.regular_work_shift || '—'}
                           </TableCell>
                         )}
                         {visibleColumns.timezone && (
-                          <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                          <TableCell data-col="timezone" className="whitespace-nowrap text-sm text-muted-foreground">
                             {contractor.timezone || '—'}
                           </TableCell>
                         )}
                         {visibleColumns.workDays && (
-                          <TableCell className="text-sm text-muted-foreground">
+                          <TableCell data-col="workDays" className="text-sm text-muted-foreground">
                             {Array.isArray(contractor.work_days) && contractor.work_days.length > 0 ? contractor.work_days.join(', ') : '—'}
                           </TableCell>
                         )}
                         {visibleColumns.breakTime && (
-                          <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                          <TableCell data-col="breakTime" className="whitespace-nowrap text-sm text-muted-foreground">
                             {contractor.break_duration_minutes != null
                               ? `${contractor.break_duration_minutes} min${contractor.break_is_paid ? ' (paid)' : ''}`
                               : '—'}
                           </TableCell>
                         )}
+                        </ColumnOrder>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -1285,32 +1304,34 @@ export const ContractorsDashboard = () => {
                   <Table className="w-full table-auto">
                     <TableHeader>
                       <TableRow>
-                        {visibleColumns.status && <TableHead className="w-[140px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('status')}><span className="inline-flex items-center gap-1">Status {getSortIcon('status')}<ContractorColumnFilter options={getColumnOptions('status')} selected={columnFilters['status']} onChange={(v) => setColumnFilter('status', v)} /></span></TableHead>}
-                        {visibleColumns.statusChanged && <TableHead className="w-[130px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('statusChanged')}>Status Changed {getSortIcon('statusChanged')}</TableHead>}
-                        {visibleColumns.name && <TableHead className="min-w-[180px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('name')}>Name {getSortIcon('name')}</TableHead>}
-                        {visibleColumns.email && <TableHead className="min-w-[200px]">Email</TableHead>}
-                        {visibleColumns.company && <TableHead className="min-w-[180px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('company')}><span className="inline-flex items-center gap-1">Company {getSortIcon('company')}<ContractorColumnFilter options={getColumnOptions('company')} selected={columnFilters['company']} onChange={(v) => setColumnFilter('company', v)} /></span></TableHead>}
-                        {visibleColumns.industry && <TableHead className="min-w-[120px]"><span className="inline-flex items-center gap-1">Industry<ContractorColumnFilter options={getColumnOptions('industry')} selected={columnFilters['industry']} onChange={(v) => setColumnFilter('industry', v)} /></span></TableHead>}
-                        {visibleColumns.startDate && <TableHead className="w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('startDate')}>Start Date {getSortIcon('startDate')}</TableHead>}
+                        <ColumnOrder order={columnOrder} onMove={moveColumn}>
+                        {visibleColumns.status && <TableHead data-col="status" className="w-[140px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('status')}><span className="inline-flex items-center gap-1">Status {getSortIcon('status')}<ContractorColumnFilter options={getColumnOptions('status')} selected={columnFilters['status']} onChange={(v) => setColumnFilter('status', v)} /></span></TableHead>}
+                        {visibleColumns.statusChanged && <TableHead data-col="statusChanged" className="w-[130px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('statusChanged')}>Status Changed {getSortIcon('statusChanged')}</TableHead>}
+                        {visibleColumns.name && <TableHead data-col="name" className="min-w-[180px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('name')}>Name {getSortIcon('name')}</TableHead>}
+                        {visibleColumns.email && <TableHead data-col="email" className="min-w-[200px]">Email</TableHead>}
+                        {visibleColumns.company && <TableHead data-col="company" className="min-w-[180px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('company')}><span className="inline-flex items-center gap-1">Company {getSortIcon('company')}<ContractorColumnFilter options={getColumnOptions('company')} selected={columnFilters['company']} onChange={(v) => setColumnFilter('company', v)} /></span></TableHead>}
+                        {visibleColumns.industry && <TableHead data-col="industry" className="min-w-[120px]"><span className="inline-flex items-center gap-1">Industry<ContractorColumnFilter options={getColumnOptions('industry')} selected={columnFilters['industry']} onChange={(v) => setColumnFilter('industry', v)} /></span></TableHead>}
+                        {visibleColumns.startDate && <TableHead data-col="startDate" className="w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('startDate')}>Start Date {getSortIcon('startDate')}</TableHead>}
                         <TableHead className="w-[120px]">End Date</TableHead>
-                        {visibleColumns.position && <TableHead className="min-w-[150px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('position')}><span className="inline-flex items-center gap-1">Position {getSortIcon('position')}<ContractorColumnFilter options={getColumnOptions('position')} selected={columnFilters['position']} onChange={(v) => setColumnFilter('position', v)} /></span></TableHead>}
-                        {visibleColumns.rate && <TableHead className="w-[80px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('rate')}>Rate {getSortIcon('rate')}</TableHead>}
-                        {visibleColumns.hours && <TableHead className="w-[80px]">Hours</TableHead>}
-                        {visibleColumns.contact && <TableHead className="min-w-[140px]">Contact</TableHead>}
-                        {visibleColumns.emergency && <TableHead className="min-w-[140px]">Emergency</TableHead>}
-                        {visibleColumns.timesheet && <TableHead className="min-w-[100px]">Timesheet</TableHead>}
-                        {visibleColumns.type && <TableHead className="w-[100px]"><span className="inline-flex items-center gap-1">Type<ContractorColumnFilter options={getColumnOptions('type')} selected={columnFilters['type']} onChange={(v) => setColumnFilter('type', v)} /></span></TableHead>}
-                        {visibleColumns.country && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('country')}><span className="inline-flex items-center gap-1">Country {getSortIcon('country')}<ContractorColumnFilter options={getColumnOptions('country')} selected={columnFilters['country']} onChange={(v) => setColumnFilter('country', v)} /></span></TableHead>}
-                        {visibleColumns.source && <TableHead className="min-w-[100px]"><span className="inline-flex items-center gap-1">Source<ContractorColumnFilter options={getColumnOptions('source')} selected={columnFilters['source']} onChange={(v) => setColumnFilter('source', v)} /></span></TableHead>}
-                        {visibleColumns.separationNote && <TableHead className="min-w-[200px]">Separation Note</TableHead>}
-                        {visibleColumns.notes && <TableHead className="min-w-[200px]">Notes</TableHead>}
-                        {visibleColumns.hiredBy && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('hiredBy')}><span className="inline-flex items-center gap-1">Hired By {getSortIcon('hiredBy')}<ContractorColumnFilter options={getColumnOptions('hiredBy')} selected={columnFilters['hiredBy']} onChange={(v) => setColumnFilter('hiredBy', v)} /></span></TableHead>}
-                        {visibleColumns.clientRate && <TableHead className="w-[100px]">Client Rate</TableHead>}
-                        {visibleColumns.endDate && <TableHead className="w-[120px]">End Date</TableHead>}
-                        {visibleColumns.workShift && <TableHead className="min-w-[120px]">Work Shift</TableHead>}
-                        {visibleColumns.timezone && <TableHead className="min-w-[120px]">Timezone</TableHead>}
-                        {visibleColumns.workDays && <TableHead className="min-w-[140px]">Work Days</TableHead>}
-                        {visibleColumns.breakTime && <TableHead className="min-w-[110px]">Break</TableHead>}
+                        {visibleColumns.position && <TableHead data-col="position" className="min-w-[150px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('position')}><span className="inline-flex items-center gap-1">Position {getSortIcon('position')}<ContractorColumnFilter options={getColumnOptions('position')} selected={columnFilters['position']} onChange={(v) => setColumnFilter('position', v)} /></span></TableHead>}
+                        {visibleColumns.rate && <TableHead data-col="rate" className="w-[80px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('rate')}>Rate {getSortIcon('rate')}</TableHead>}
+                        {visibleColumns.hours && <TableHead data-col="hours" className="w-[80px]">Hours</TableHead>}
+                        {visibleColumns.contact && <TableHead data-col="contact" className="min-w-[140px]">Contact</TableHead>}
+                        {visibleColumns.emergency && <TableHead data-col="emergency" className="min-w-[140px]">Emergency</TableHead>}
+                        {visibleColumns.timesheet && <TableHead data-col="timesheet" className="min-w-[100px]">Timesheet</TableHead>}
+                        {visibleColumns.type && <TableHead data-col="type" className="w-[100px]"><span className="inline-flex items-center gap-1">Type<ContractorColumnFilter options={getColumnOptions('type')} selected={columnFilters['type']} onChange={(v) => setColumnFilter('type', v)} /></span></TableHead>}
+                        {visibleColumns.country && <TableHead data-col="country" className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('country')}><span className="inline-flex items-center gap-1">Country {getSortIcon('country')}<ContractorColumnFilter options={getColumnOptions('country')} selected={columnFilters['country']} onChange={(v) => setColumnFilter('country', v)} /></span></TableHead>}
+                        {visibleColumns.source && <TableHead data-col="source" className="min-w-[100px]"><span className="inline-flex items-center gap-1">Source<ContractorColumnFilter options={getColumnOptions('source')} selected={columnFilters['source']} onChange={(v) => setColumnFilter('source', v)} /></span></TableHead>}
+                        {visibleColumns.separationNote && <TableHead data-col="separationNote" className="min-w-[200px]">Separation Note</TableHead>}
+                        {visibleColumns.notes && <TableHead data-col="notes" className="min-w-[200px]">Notes</TableHead>}
+                        {visibleColumns.hiredBy && <TableHead data-col="hiredBy" className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('hiredBy')}><span className="inline-flex items-center gap-1">Hired By {getSortIcon('hiredBy')}<ContractorColumnFilter options={getColumnOptions('hiredBy')} selected={columnFilters['hiredBy']} onChange={(v) => setColumnFilter('hiredBy', v)} /></span></TableHead>}
+                        {visibleColumns.clientRate && <TableHead data-col="clientRate" className="w-[100px]">Client Rate</TableHead>}
+                        {visibleColumns.endDate && <TableHead data-col="endDate" className="w-[120px]">End Date</TableHead>}
+                        {visibleColumns.workShift && <TableHead data-col="workShift" className="min-w-[120px]">Work Shift</TableHead>}
+                        {visibleColumns.timezone && <TableHead data-col="timezone" className="min-w-[120px]">Timezone</TableHead>}
+                        {visibleColumns.workDays && <TableHead data-col="workDays" className="min-w-[140px]">Work Days</TableHead>}
+                        {visibleColumns.breakTime && <TableHead data-col="breakTime" className="min-w-[110px]">Break</TableHead>}
+                        </ColumnOrder>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1323,8 +1344,9 @@ export const ContractorsDashboard = () => {
                             setEditingContractor(contractor);
                           }}
                         >
+                          <ColumnOrder order={columnOrder}>
                           {visibleColumns.status && (
-                            <TableCell>
+                            <TableCell data-col="status">
                               <Select
                                 value={contractor.status}
                                 onValueChange={(value) => handleStatusChange(contractor.id, value)}
@@ -1378,7 +1400,7 @@ export const ContractorsDashboard = () => {
                             </TableCell>
                           )}
                           {visibleColumns.statusChanged && (
-                            <TableCell>
+                            <TableCell data-col="statusChanged">
                               {contractor.status_changed_at ? (
                                 <span className="flex items-center gap-1 text-sm text-muted-foreground whitespace-nowrap">
                                   <Clock className="w-3 h-3" />
@@ -1390,7 +1412,7 @@ export const ContractorsDashboard = () => {
                             </TableCell>
                           )}
                           {visibleColumns.name && (
-                            <TableCell className="font-medium whitespace-nowrap">
+                            <TableCell data-col="name" className="font-medium whitespace-nowrap">
                               <span className="flex items-center gap-2">
                                 {contractor.applicant?.full_name || 'Unknown'}
                                 {contractor.notes?.includes('Reactivated from') && (
@@ -1403,7 +1425,7 @@ export const ContractorsDashboard = () => {
                             </TableCell>
                           )}
                           {visibleColumns.email && (
-                            <TableCell>
+                            <TableCell data-col="email">
                               <span className="flex items-center gap-1 text-sm">
                                 <span title={contractor.applicant?.email}>
                                   {contractor.applicant?.email || '—'}
@@ -1434,7 +1456,7 @@ export const ContractorsDashboard = () => {
                             </TableCell>
                           )}
                           {visibleColumns.company && (
-                            <TableCell>
+                            <TableCell data-col="company">
                               <span className="flex items-center gap-1 whitespace-nowrap">
                                 <Building2 className="w-3 h-3 text-muted-foreground" />
                                 {contractor.client?.company_name || '—'}
@@ -1442,12 +1464,12 @@ export const ContractorsDashboard = () => {
                             </TableCell>
                           )}
                           {visibleColumns.industry && (
-                            <TableCell className="text-muted-foreground">
+                            <TableCell data-col="industry" className="text-muted-foreground">
                               {contractor.client?.industry || '—'}
                             </TableCell>
                           )}
                           {visibleColumns.startDate && (
-                            <TableCell>
+                            <TableCell data-col="startDate">
                               {contractor.start_date ? (() => {
                                 const startDate = parseDateOnly(contractor.start_date);
                                 const today = new Date();
@@ -1475,7 +1497,7 @@ export const ContractorsDashboard = () => {
                             )}
                           </TableCell>
                           {visibleColumns.position && (
-                            <TableCell>
+                            <TableCell data-col="position">
                               <span className="flex items-center gap-1 whitespace-nowrap">
                                 <Briefcase className="w-3 h-3 text-muted-foreground" />
                                 {contractor.job_title || '—'}
@@ -1483,7 +1505,7 @@ export const ContractorsDashboard = () => {
                             </TableCell>
                           )}
                           {visibleColumns.rate && (
-                            <TableCell>
+                            <TableCell data-col="rate">
                               {contractor.hourly_rate ? (
                                 <span className="flex items-center gap-1 whitespace-nowrap">
                                   <DollarSign className="w-3 h-3 text-muted-foreground" />
@@ -1495,7 +1517,7 @@ export const ContractorsDashboard = () => {
                             </TableCell>
                           )}
                           {visibleColumns.hours && (
-                            <TableCell>
+                            <TableCell data-col="hours">
                               {contractor.hours_per_week ? (
                                 <span className="whitespace-nowrap">{contractor.hours_per_week}h/wk</span>
                               ) : (
@@ -1504,7 +1526,7 @@ export const ContractorsDashboard = () => {
                             </TableCell>
                           )}
                           {visibleColumns.contact && (
-                            <TableCell onContextMenu={(e) => e.stopPropagation()}>
+                            <TableCell data-col="contact" onContextMenu={(e) => e.stopPropagation()}>
                               {(contractor.contact_number || contractor.applicant?.phone) ? (
                                 <a 
                                   href={`https://wa.me/${String(contractor.contact_number || contractor.applicant?.phone).replace(/\D/g, '')}`}
@@ -1522,7 +1544,7 @@ export const ContractorsDashboard = () => {
                             </TableCell>
                           )}
                           {visibleColumns.emergency && (
-                            <TableCell>
+                            <TableCell data-col="emergency">
                               {contractor.emergency_number ? (
                                 <span className="flex items-center gap-1 whitespace-nowrap text-sm">
                                   <Phone className="w-3 h-3 text-muted-foreground flex-shrink-0" />
@@ -1534,7 +1556,7 @@ export const ContractorsDashboard = () => {
                             </TableCell>
                           )}
                           {visibleColumns.timesheet && (
-                            <TableCell>
+                            <TableCell data-col="timesheet">
                               {contractor.timesheet_link ? (
                                 <a 
                                   href={contractor.timesheet_link} 
@@ -1551,7 +1573,7 @@ export const ContractorsDashboard = () => {
                             </TableCell>
                           )}
                           {visibleColumns.type && (
-                            <TableCell>
+                            <TableCell data-col="type">
                               <Badge variant="outline" className={contractor.is_replacement ? 'border-amber-300 text-amber-700' : 'border-green-300 text-green-700'}>
                                 {contractor.is_replacement ? (
                                   <>
@@ -1568,7 +1590,7 @@ export const ContractorsDashboard = () => {
                             </TableCell>
                           )}
                           {visibleColumns.country && (
-                            <TableCell>
+                            <TableCell data-col="country">
                               {(contractor.country || contractor.applicant?.location) ? (
                                 <span className="flex items-center gap-1 whitespace-nowrap">
                                   <Globe className="w-3 h-3 text-muted-foreground" />
@@ -1580,12 +1602,12 @@ export const ContractorsDashboard = () => {
                             </TableCell>
                           )}
                           {visibleColumns.source && (
-                            <TableCell className="text-muted-foreground">
+                            <TableCell data-col="source" className="text-muted-foreground">
                               {contractor.source || '—'}
                             </TableCell>
                           )}
                           {visibleColumns.separationNote && (
-                            <TableCell>
+                            <TableCell data-col="separationNote">
                               <Popover
                                 open={editingSeparationId === contractor.id}
                                 onOpenChange={(open) => {
@@ -1636,7 +1658,7 @@ export const ContractorsDashboard = () => {
                             </TableCell>
                           )}
                           {visibleColumns.notes && (
-                            <TableCell>
+                            <TableCell data-col="notes">
                               {contractor.notes ? (
                                 <HoverCard>
                                   <HoverCardTrigger asChild>
@@ -1654,7 +1676,7 @@ export const ContractorsDashboard = () => {
                             </TableCell>
                           )}
                           {visibleColumns.hiredBy && (
-                            <TableCell>
+                            <TableCell data-col="hiredBy">
                               <HiredByEditor
                                 contractorId={contractor.id}
                                 value={contractor.hired_by}
@@ -1663,7 +1685,7 @@ export const ContractorsDashboard = () => {
                             </TableCell>
                           )}
                           {visibleColumns.clientRate && (
-                            <TableCell>
+                            <TableCell data-col="clientRate">
                               {contractor.client_rate ? (
                                 <span className="flex items-center gap-1 whitespace-nowrap">
                                   <DollarSign className="w-3 h-3 text-muted-foreground" />
@@ -1675,32 +1697,33 @@ export const ContractorsDashboard = () => {
                             </TableCell>
                           )}
                           {visibleColumns.endDate && (
-                            <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                            <TableCell data-col="endDate" className="whitespace-nowrap text-sm text-muted-foreground">
                               {contractor.end_date ? format(parseDateOnly(contractor.end_date), 'MMM d, yyyy') : '—'}
                             </TableCell>
                           )}
                           {visibleColumns.workShift && (
-                            <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                            <TableCell data-col="workShift" className="whitespace-nowrap text-sm text-muted-foreground">
                               {contractor.regular_work_shift || '—'}
                             </TableCell>
                           )}
                           {visibleColumns.timezone && (
-                            <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                            <TableCell data-col="timezone" className="whitespace-nowrap text-sm text-muted-foreground">
                               {contractor.timezone || '—'}
                             </TableCell>
                           )}
                           {visibleColumns.workDays && (
-                            <TableCell className="text-sm text-muted-foreground">
+                            <TableCell data-col="workDays" className="text-sm text-muted-foreground">
                               {Array.isArray(contractor.work_days) && contractor.work_days.length > 0 ? contractor.work_days.join(', ') : '—'}
                             </TableCell>
                           )}
                           {visibleColumns.breakTime && (
-                            <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                            <TableCell data-col="breakTime" className="whitespace-nowrap text-sm text-muted-foreground">
                               {contractor.break_duration_minutes != null
                                 ? `${contractor.break_duration_minutes} min${contractor.break_is_paid ? ' (paid)' : ''}`
                                 : '—'}
                             </TableCell>
                           )}
+                          </ColumnOrder>
                         </TableRow>
                       ))}
                     </TableBody>
