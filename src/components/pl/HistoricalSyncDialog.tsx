@@ -86,7 +86,7 @@ function bonusRow(base: MappedRow, bonus: number, fees: PlFees): MappedRow {
     expense_after_1_percent: expenseAfter, income_after_3_percent: incomeAfter,
     margin: r2(income - bonus),
     gross_after_deductions: r2(incomeAfter - expenseAfter),
-    client_deposit: null, contractor_deposit: null, bonus: null,
+    client_deposit: null, contractor_deposit: null, bonus: bonus,
     raw: { ...base.raw, kind: 'bonus', bonus_amount: bonus, bonus_markup: BONUS_MARKUP, bonus: null },
   };
 }
@@ -105,6 +105,7 @@ const COLS: Col[] = [
   { key: 'actual_hours', label: 'Actual hours', kind: 'hours', width: 'w-[120px] min-w-[120px]' },
   { key: 'contractor_rate', label: 'Contractor rate', kind: 'rate', width: 'w-[140px] min-w-[140px]' },
   { key: 'client_rate', label: 'Client rate', kind: 'rate', width: 'w-[120px] min-w-[120px]' },
+  { key: 'bonus', label: 'Bonus', kind: 'money', width: 'w-[110px] min-w-[110px]' },
     { key: 'contractor_cost', label: 'Expense', kind: 'money', width: 'w-[130px] min-w-[130px]' },
   { key: 'expense_after_1_percent', label: 'Expense after 1%', kind: 'money', width: 'w-[150px] min-w-[150px]' },
   { key: 'client_billing', label: 'Income', kind: 'money', width: 'w-[130px] min-w-[130px]' },

@@ -88,8 +88,11 @@ type SortKey = 'contractor_name' | 'company' | 'bonus' | NumKey;
 interface SortState { key: SortKey; dir: 'asc' | 'desc' }
 type Col = { key: SortKey; label: string; numeric?: boolean; kind?: 'hours' | 'money' | 'rate'; width?: string };
 // Bonus from the timesheet submission lives in raw (synced weeks only); display-only.
+// On a bonus row the amount itself is stored as raw.bonus_amount (same as the row's Expense).
 const bonusOf = (r: HistRow): number | null => {
-  const b = (r.raw as any)?.bonus;
+  const raw = r.raw as any;
+  if (raw?.kind === 'bonus' && raw?.bonus_amount != null) return Number(raw.bonus_amount);
+  const b = raw?.bonus;
   return b != null && !Number.isNaN(Number(b)) ? Number(b) : null;
 };
 const SORTABLE: Col[] = [
@@ -99,7 +102,7 @@ const SORTABLE: Col[] = [
   { key: 'actual_hours', label: 'Actual hours', numeric: true, kind: 'hours', width: 'w-[120px] min-w-[120px]' },
   { key: 'contractor_rate', label: 'Contractor rate', numeric: true, kind: 'rate', width: 'w-[140px] min-w-[140px]' },
   { key: 'client_rate', label: 'Client rate', numeric: true, kind: 'rate', width: 'w-[120px] min-w-[120px]' },
-  
+  { key: 'bonus', label: 'Bonus', numeric: true, kind: 'money', width: 'w-[110px] min-w-[110px]' },
   { key: 'contractor_cost', label: 'Expense', numeric: true, kind: 'money', width: 'w-[130px] min-w-[130px]' },
   { key: 'expense_after_1_percent', label: 'Expense after 1%', numeric: true, kind: 'money', width: 'w-[150px] min-w-[150px]' },
   { key: 'client_billing', label: 'Income', numeric: true, kind: 'money', width: 'w-[130px] min-w-[130px]' },
