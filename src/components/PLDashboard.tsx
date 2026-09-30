@@ -1429,22 +1429,20 @@ export const PLDashboard = () => {
                       )}
                     </TableCell>
                     <TableCell data-col="clientDeposit" className="text-right">
-                      {c.client_deposit_text ? (
-                        <span className="font-medium">{c.client_deposit_text}</span>
-                      ) : c.client_deposit != null ? (
-                        <span className="font-medium">${Number(c.client_deposit).toFixed(2)}</span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
+                      <EditableCell
+                        allowText
+                        value={c.client_deposit_text ?? c.client_deposit}
+                        display={c.client_deposit_text ? c.client_deposit_text : c.client_deposit != null ? `$${Number(c.client_deposit).toFixed(2)}` : ''}
+                        onSave={(v) => saveDeposit(c.id, 'client_deposit', v)}
+                      />
                     </TableCell>
                     <TableCell data-col="contractorDeposit" className="text-right">
-                      {c.contractor_deposit_text ? (
-                        <span className="font-medium">{c.contractor_deposit_text}</span>
-                      ) : c.contractor_deposit != null ? (
-                        <span className="font-medium">${Number(c.contractor_deposit).toFixed(2)}</span>
-                      ) : (
-                        <span className="text-muted-foreground">—</span>
-                      )}
+                      <EditableCell
+                        allowText
+                        value={c.contractor_deposit_text ?? c.contractor_deposit}
+                        display={c.contractor_deposit_text ? c.contractor_deposit_text : c.contractor_deposit != null ? `$${Number(c.contractor_deposit).toFixed(2)}` : ''}
+                        onSave={(v) => saveDeposit(c.id, 'contractor_deposit', v)}
+                      />
                     </TableCell>
                     <TableCell data-col="approval">
                       {c.latestTimesheet ? (
