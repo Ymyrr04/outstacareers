@@ -204,6 +204,12 @@ export const ContractorsDashboard = () => {
     notes: true,
     separationNote: true,
     hiredBy: true,
+    clientRate: false,
+    endDate: false,
+    workShift: false,
+    timezone: false,
+    workDays: false,
+    breakTime: false,
   });
 
   const columnLabels: Record<string, string> = {
@@ -226,6 +232,12 @@ export const ContractorsDashboard = () => {
     notes: 'Notes',
     separationNote: 'Separation Note',
     hiredBy: 'Hired By',
+    clientRate: 'Client Rate',
+    endDate: 'End Date',
+    workShift: 'Work Shift',
+    timezone: 'Timezone',
+    workDays: 'Work Days',
+    breakTime: 'Break',
   };
 
   const COLUMN_SORT_MAP: Record<string, { asc: string; desc: string }> = {
