@@ -157,9 +157,11 @@ interface Props { onUpload?: (year: number) => void }
 export function HistoricalPL({ onUpload }: Props) {
   const [year, setYear] = useState(HIST_YEARS[HIST_YEARS.length - 1]);
   const [uploadIds, setUploadIds] = useState<string[]>([]);
+  const [syncIds, setSyncIds] = useState<string[]>([]);
   const [rows, setRows] = useState<HistRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmSyncOpen, setConfirmSyncOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [openWeekKey, setOpenWeekKey] = useState<string | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -187,12 +189,13 @@ export function HistoricalPL({ onUpload }: Props) {
   const load = useCallback(async () => {
     // Show cached rows instantly, then check whether anything changed.
     const cached = readCache(year);
-    if (cached) { setUploadIds(cached.uploadIds ?? []); setRows(cached.rows); setLoading(false); }
+    if (cached) { setUploadIds(cached.uploadIds ?? []); setSyncIds(cached.syncIds ?? []); setRows(cached.rows); setLoading(false); }
     else setLoading(true);
 
     const res = await fetchYear(year);
     if (!res) { if (!cached) toast.error('Failed to load historical data'); setLoading(false); return; }
     setUploadIds(res.uploadIds);
+    setSyncIds(res.syncIds);
     setRows(res.rows);
     setLoading(false);
   }, [year]);
@@ -341,6 +344,17 @@ export function HistoricalPL({ onUpload }: Props) {
     if (error) { toast.error(`Failed to delete ${year} data`); return; }
     toast.success(`${year} historical data deleted`);
     void load();
+  };
+
+  const handleDeleteSynced = async () => {
+    setDeleting(true);
+    const { error } = await supabase.from('historical_pl_batches').delete().in('id', syncIds).eq('source', 'timesheet_sync');
+    setDeleting(false);
+    setConfirmSyncOpen(false);
+    if (error) { toast.error(`Failed to clear ${year} synced data`); return; }
+    toast.success(`${year} synced data cleared`);
+    void load();
+    void checkReady();
   };
 
   const handleUpload = () => {
