@@ -41,7 +41,7 @@ const money = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('
 const num = (n: number | null | undefined) => Number(n ?? 0);
 
 // ---- Per-year cache (memory + localStorage), invalidated when batches or their mapping change ----
-interface CacheEntry { sig: string; ids: string[]; uploadIds?: string[]; rows: HistRow[] }
+interface CacheEntry { sig: string; ids: string[]; uploadIds?: string[]; syncIds?: string[]; rows: HistRow[] }
 const memCache = new Map<number, CacheEntry>();
 const CACHE_KEY = (y: number) => `hist-pl-cache-v4-${y}`;
 function readCache(y: number): CacheEntry | null {
