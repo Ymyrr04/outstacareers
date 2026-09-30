@@ -24,6 +24,16 @@ import { HistoricalPL } from '@/components/pl/HistoricalPL';
 import { TimesheetEditHistory } from '@/components/pl/TimesheetEditHistory';
 import { TimesheetReminderSettingsDialog } from '@/components/pl/TimesheetReminderSettingsDialog';
 import { parseDateOnly } from '@/lib/dateOnly';
+import { ColumnOrder } from '@/components/clients/ColumnOrder';
+import { Checkbox } from '@/components/ui/checkbox';
+
+const PL_COLS: { key: string; label: string }[] = [
+  { key: 'name', label: 'Contractor' }, { key: 'company', label: 'Company' }, { key: 'status', label: 'Status' },
+  { key: 'rate', label: 'Rate' }, { key: 'latest', label: 'Latest Submission' }, { key: 'hpw', label: 'Regular Work Hours' },
+  { key: 'workHours', label: 'Work Hours' }, { key: 'ot', label: 'OT' }, { key: 'bonus', label: 'Bonus' },
+  { key: 'deposit', label: 'Deposit' }, { key: 'approval', label: 'Client Approval' }, { key: 'portal', label: 'Portal Account' },
+];
+const readLS = (k: string): string[] | null => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return Array.isArray(v) ? v : null; } catch { return null; } };
 import { formatDate, formatDateShort, formatDateTime, formatDateWithWeekday } from "@/lib/dateFormat";
 import { timesheetLockAt } from "@/lib/timesheetLock";
 
@@ -331,6 +341,17 @@ export const PLDashboard = () => {
   const [updatingOutstaId, setUpdatingOutstaId] = useState<string | null>(null);
   const [remindingKey, setRemindingKey] = useState<string | null>(null);
   const [contractorSearch, setContractorSearch] = useState('');
+  const [plColOrder, setPlColOrder] = useState<string[]>(() => {
+    const saved = readLS('pl-contractors-col-order-v1') ?? [];
+    const all = PL_COLS.map(c => c.key);
+    return [...saved.filter(k => all.includes(k)), ...all.filter(k => !saved.includes(k))];
+  });
+  const [plHidden, setPlHidden] = useState<string[]>(() => readLS('pl-contractors-hidden-cols-v1') ?? []);
+  useEffect(() => { localStorage.setItem('pl-contractors-col-order-v1', JSON.stringify(plColOrder)); }, [plColOrder]);
+  useEffect(() => { localStorage.setItem('pl-contractors-hidden-cols-v1', JSON.stringify(plHidden)); }, [plHidden]);
+  const movePlCol = (from: string, to: string) => setPlColOrder(prev => {
+    const next = prev.filter(k => k !== from); next.splice(next.indexOf(to), 0, from); return next;
+  });
   const [contractorSort, setContractorSort] = useState<{ key: 'name' | 'company' | 'status' | 'rate' | 'hpw' | 'latest' | 'workHours' | 'ot' | 'bonus' | 'deposit' | 'approval' | 'portal'; dir: 'asc' | 'desc' }>({ key: 'company', dir: 'asc' });
   const [tsSort, setTsSort] = useState<{ key: 'name' | 'company' | 'week' | 'hours' | 'ot' | 'incentives' | 'status' | 'submitted'; dir: 'asc' | 'desc' }>({ key: 'submitted', dir: 'desc' });
   const [stats, setStats] = useState({ portalUsers: 0, totalEligibleContractors: 0 });
@@ -1239,6 +1260,27 @@ export const PLDashboard = () => {
         collapsedSummary={`${filteredContractors.length} active contractors`}
         style={{ order: sectionOrder.indexOf('contractors') }}
         rightSlot={
+          <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1"><Settings2 className="w-4 h-4" />Columns</Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-60 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Visible columns</span>
+                <button className="text-xs text-muted-foreground hover:text-foreground" onClick={() => { setPlHidden([]); setPlColOrder(PL_COLS.map(c => c.key)); }}>Reset</button>
+              </div>
+              <p className="text-xs text-muted-foreground mb-2">Drag column headers to reorder.</p>
+              <div className="space-y-1.5">
+                {plColOrder.map(k => { const col = PL_COLS.find(c => c.key === k)!; return (
+                  <label key={k} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox checked={!plHidden.includes(k)} disabled={k === 'name'} onCheckedChange={(v) => setPlHidden(h => v ? h.filter(x => x !== k) : [...h, k])} />
+                    {col.label}
+                  </label>
+                ); })}
+              </div>
+            </PopoverContent>
+          </Popover>
           <div className="relative w-72">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -1247,6 +1289,7 @@ export const PLDashboard = () => {
               onChange={(e) => setContractorSearch(e.target.value)}
               className="pl-9 h-8 text-sm"
             />
+          </div>
           </div>
         }
       >

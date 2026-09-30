@@ -4,13 +4,15 @@ interface Props {
   order: string[];
   /** When provided, cells become draggable headers that reorder columns. */
   onMove?: (from: string, to: string) => void;
+  /** Column keys to omit entirely. */
+  hidden?: string[];
   children: ReactNode;
 }
 
 /** Reorders children that carry a `data-col` prop according to `order`; other children keep their slots. */
-export const ColumnOrder = ({ order, onMove, children }: Props) => {
+export const ColumnOrder = ({ order, onMove, hidden, children }: Props) => {
   const [dragOver, setDragOver] = useState<string | null>(null);
-  const items = Children.toArray(children);
+  const items = Children.toArray(children).filter(c => { const k = isValidElement(c) ? (c.props as any)['data-col'] : undefined; return !k || !hidden?.includes(k); });
   const colOf = (c: unknown) => (isValidElement(c) ? (c.props as any)['data-col'] as string | undefined : undefined);
   const cols = items.filter(c => colOf(c));
   const rank = (k: string) => { const i = order.indexOf(k); return i === -1 ? 999 : i; };
