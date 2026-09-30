@@ -121,6 +121,77 @@ const STATUS_META: Record<StatusKey, { label: string; cls: string }> = {
   terminated: { label: 'Terminated', cls: 'bg-gray-200 text-gray-700 border-gray-300' },
 };
 
+// ============ Inline editable cell ============
+interface EditableCellProps {
+  value: number | null;
+  display: string;
+  onSave: (v: number | null) => Promise<void>;
+}
+
+const EditableCell = ({ value, display, onSave }: EditableCellProps) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [saving, setSaving] = useState(false);
+  const { toast } = useToast();
+
+  const start = () => {
+    setDraft(value == null ? '' : String(value));
+    setEditing(true);
+  };
+  const cancel = () => setEditing(false);
+  const commit = async () => {
+    const trimmed = draft.trim();
+    const parsed = trimmed === '' ? null : Number(trimmed);
+    if (trimmed !== '' && (isNaN(parsed as number) || (parsed as number) < 0)) {
+      toast({ title: 'Enter a valid number (or leave blank)', variant: 'destructive' });
+      return;
+    }
+    if (parsed === value) { setEditing(false); return; }
+    setSaving(true);
+    try {
+      await onSave(parsed);
+      setEditing(false);
+    } catch (e: any) {
+      toast({ title: 'Failed to save', description: e.message, variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!editing) {
+    return (
+      <button
+        type="button"
+        onClick={start}
+        title="Click to edit"
+        className="w-full text-right rounded px-1 -mx-1 hover:bg-muted/60 hover:ring-1 hover:ring-border cursor-text"
+      >
+        {display || <span className="text-muted-foreground">—</span>}
+      </button>
+    );
+  }
+  return (
+    <div className="flex items-center justify-end gap-1">
+      <Input
+        autoFocus
+        type="number"
+        step="any"
+        min="0"
+        value={draft}
+        disabled={saving}
+        onChange={(e) => setDraft(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') commit();
+          if (e.key === 'Escape') cancel();
+        }}
+        onBlur={commit}
+        className="h-7 w-24 text-right text-sm px-1"
+      />
+      {saving && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
+    </div>
+  );
+};
+
 export const PLReport = () => {
   const { isSuperAdmin } = useAuth();
   const { toast } = useToast();
@@ -377,6 +448,34 @@ export const PLReport = () => {
     toast({ title: 'Fee settings saved' });
   };
 
+  // ============ Inline edit save handlers ============
+  const saveAssignmentField = async (
+    assignmentId: string,
+    field: 'hourly_rate' | 'client_rate' | 'client_deposit' | 'contractor_deposit' | 'hours_per_week',
+    value: number | null,
+  ) => {
+    const { error } = await supabase
+      .from('contractor_assignments')
+      .update({ [field]: value } as any)
+      .eq('id', assignmentId);
+    if (error) throw error;
+    setAssignments((prev) => prev.map((a) => (a.id === assignmentId ? { ...a, [field]: value } : a)));
+    toast({ title: 'Saved' });
+  };
+
+  const saveActualHours = async (assignmentId: string, value: number | null) => {
+    const ts = tsMap.get(assignmentId);
+    if (!ts) throw new Error('No timesheet submitted for this week — hours can only be edited once one exists.');
+    const hours = value ?? 0;
+    const { error } = await supabase
+      .from('contractor_timesheets')
+      .update({ total_hours: hours } as any)
+      .eq('id', ts.id);
+    if (error) throw error;
+    setTimesheets((prev) => prev.map((t) => (t.id === ts.id ? { ...t, total_hours: hours } : t)));
+    toast({ title: 'Saved' });
+  };
+
   const exportCSV = () => {
     const headers = [
       '#', 'Contractor', 'Client/Company', 'Contractor Rate', 'Client Rate',
@@ -430,18 +529,34 @@ export const PLReport = () => {
       <TableCell className="text-xs text-muted-foreground">{idx + 1}</TableCell>
       <TableCell className="font-medium whitespace-nowrap">{r.assignment.applicant?.full_name || '—'}</TableCell>
       <TableCell className="whitespace-nowrap">{r.assignment.client?.company_name || '—'}</TableCell>
-      <TableCell className="text-right">{fmt$(r.hourlyRate)}</TableCell>
-      <TableCell className="text-right">{fmt$(r.clientRate)}</TableCell>
+      <TableCell className="text-right">
+        <EditableCell value={r.hourlyRate} display={fmt$(r.hourlyRate)} onSave={(v) => saveAssignmentField(r.assignment.id, 'hourly_rate', v)} />
+      </TableCell>
+      <TableCell className="text-right">
+        <EditableCell value={r.clientRate} display={fmt$(r.clientRate)} onSave={(v) => saveAssignmentField(r.assignment.id, 'client_rate', v)} />
+      </TableCell>
       <TableCell className="text-right">{fmt$(r.expenses)}</TableCell>
       <TableCell className="text-right">{fmt$(r.expenseAfter)}</TableCell>
       <TableCell className="text-right">{fmt$(r.income)}</TableCell>
       <TableCell className="text-right">{fmt$(r.incomeAfter)}</TableCell>
       <TableCell className="text-right font-medium">{fmt$(r.grossProfit)}</TableCell>
       <TableCell className="text-right font-medium">{fmt$(r.grossAfter)}</TableCell>
-      <TableCell className="text-right">{r.clientDeposit == null ? '' : fmt$(r.clientDeposit)}</TableCell>
-      <TableCell className="text-right">{r.contractorDeposit == null ? '' : fmt$(r.contractorDeposit)}</TableCell>
-      <TableCell className="text-right">{r.standardHours || 0}</TableCell>
-      <TableCell className="text-right">{r.actualHours || 0}</TableCell>
+      <TableCell className="text-right">
+        <EditableCell value={r.clientDeposit} display={r.clientDeposit == null ? '' : fmt$(r.clientDeposit)} onSave={(v) => saveAssignmentField(r.assignment.id, 'client_deposit', v)} />
+      </TableCell>
+      <TableCell className="text-right">
+        <EditableCell value={r.contractorDeposit} display={r.contractorDeposit == null ? '' : fmt$(r.contractorDeposit)} onSave={(v) => saveAssignmentField(r.assignment.id, 'contractor_deposit', v)} />
+      </TableCell>
+      <TableCell className="text-right">
+        <EditableCell value={r.standardHours} display={String(r.standardHours || 0)} onSave={(v) => saveAssignmentField(r.assignment.id, 'hours_per_week', v)} />
+      </TableCell>
+      <TableCell className="text-right">
+        {r.timesheet ? (
+          <EditableCell value={r.actualHours} display={String(r.actualHours || 0)} onSave={(v) => saveActualHours(r.assignment.id, v)} />
+        ) : (
+          r.actualHours || 0
+        )}
+      </TableCell>
       <TableCell>
         {r.weeksSinceStart && r.weeksSinceStart >= 1 && r.weeksSinceStart <= 4 ? (
           <Badge variant="secondary" className="text-[10px]">Week {r.weeksSinceStart}</Badge>
