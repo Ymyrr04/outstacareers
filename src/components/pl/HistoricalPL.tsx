@@ -41,7 +41,7 @@ const money = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('
 const num = (n: number | null | undefined) => Number(n ?? 0);
 
 // ---- Per-year cache (memory + localStorage), invalidated when batches or their mapping change ----
-interface CacheEntry { sig: string; ids: string[]; uploadIds?: string[]; rows: HistRow[] }
+interface CacheEntry { sig: string; ids: string[]; uploadIds?: string[]; syncIds?: string[]; rows: HistRow[] }
 const memCache = new Map<number, CacheEntry>();
 const CACHE_KEY = (y: number) => `hist-pl-cache-v4-${y}`;
 function readCache(y: number): CacheEntry | null {
@@ -118,16 +118,17 @@ const fmtCell = (c: Col, v: number | null | undefined) =>
 const ROW_COLS = 'id, week_label, week_start, contractor_name, company, hours, actual_hours, contractor_rate, client_rate, contractor_cost, expense_after_1_percent, client_billing, income_after_3_percent, margin, gross_after_deductions, client_deposit, contractor_deposit, raw';
 
 // Fetch one year's rows through the existing per-year cache.
-async function fetchYear(y: number): Promise<{ ids: string[]; uploadIds: string[]; rows: HistRow[] } | null> {
+async function fetchYear(y: number): Promise<{ ids: string[]; uploadIds: string[]; syncIds: string[]; rows: HistRow[] } | null> {
   const cached = readCache(y);
   const { data: batches, error: bErr } = await supabase
     .from('historical_pl_batches').select('id, created_at, updated_at, source, column_map').eq('year', y);
-  if (bErr) return cached ? { ids: cached.ids, uploadIds: cached.uploadIds ?? [], rows: cached.rows } : null;
+  if (bErr) return cached ? { ids: cached.ids, uploadIds: cached.uploadIds ?? [], syncIds: cached.syncIds ?? [], rows: cached.rows } : null;
   const ids = (batches ?? []).map((b) => b.id);
   const uploadIds = (batches ?? []).filter((b) => b.source === 'upload').map((b) => b.id);
+  const syncIds = (batches ?? []).filter((b) => b.source === 'timesheet_sync').map((b) => b.id);
   const sig = signature(batches ?? []);
-  if (cached && cached.sig === sig) return { ids, uploadIds, rows: cached.rows };
-  if (ids.length === 0) { writeCache(y, { sig, ids, uploadIds, rows: [] }); return { ids, uploadIds, rows: [] }; }
+  if (cached && cached.sig === sig) return { ids, uploadIds, syncIds, rows: cached.rows };
+  if (ids.length === 0) { writeCache(y, { sig, ids, uploadIds, syncIds, rows: [] }); return { ids, uploadIds, syncIds, rows: [] }; }
 
   const all: HistRow[] = [];
   const PAGE = 1000;
@@ -144,8 +145,8 @@ async function fetchYear(y: number): Promise<{ ids: string[]; uploadIds: string[
     all.push(...((data ?? []) as HistRow[]));
     if (!data || data.length < PAGE) break;
   }
-  writeCache(y, { sig, ids, uploadIds, rows: all });
-  return { ids, uploadIds, rows: all };
+  writeCache(y, { sig, ids, uploadIds, syncIds, rows: all });
+  return { ids, uploadIds, syncIds, rows: all };
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -156,9 +157,11 @@ interface Props { onUpload?: (year: number) => void }
 export function HistoricalPL({ onUpload }: Props) {
   const [year, setYear] = useState(HIST_YEARS[HIST_YEARS.length - 1]);
   const [uploadIds, setUploadIds] = useState<string[]>([]);
+  const [syncIds, setSyncIds] = useState<string[]>([]);
   const [rows, setRows] = useState<HistRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [confirmSyncOpen, setConfirmSyncOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [openWeekKey, setOpenWeekKey] = useState<string | null>(null);
   const [uploadOpen, setUploadOpen] = useState(false);
@@ -186,12 +189,13 @@ export function HistoricalPL({ onUpload }: Props) {
   const load = useCallback(async () => {
     // Show cached rows instantly, then check whether anything changed.
     const cached = readCache(year);
-    if (cached) { setUploadIds(cached.uploadIds ?? []); setRows(cached.rows); setLoading(false); }
+    if (cached) { setUploadIds(cached.uploadIds ?? []); setSyncIds(cached.syncIds ?? []); setRows(cached.rows); setLoading(false); }
     else setLoading(true);
 
     const res = await fetchYear(year);
     if (!res) { if (!cached) toast.error('Failed to load historical data'); setLoading(false); return; }
     setUploadIds(res.uploadIds);
+    setSyncIds(res.syncIds);
     setRows(res.rows);
     setLoading(false);
   }, [year]);
@@ -342,6 +346,17 @@ export function HistoricalPL({ onUpload }: Props) {
     void load();
   };
 
+  const handleDeleteSynced = async () => {
+    setDeleting(true);
+    const { error } = await supabase.from('historical_pl_batches').delete().in('id', syncIds).eq('source', 'timesheet_sync');
+    setDeleting(false);
+    setConfirmSyncOpen(false);
+    if (error) { toast.error(`Failed to clear ${year} synced data`); return; }
+    toast.success(`${year} synced data cleared`);
+    void load();
+    void checkReady();
+  };
+
   const handleUpload = () => {
     if (onUpload) onUpload(year);
     else setUploadOpen(true);
@@ -391,6 +406,11 @@ export function HistoricalPL({ onUpload }: Props) {
                 <Trash2 className="h-4 w-4" /> Delete {year}
               </Button>
             </>
+          )}
+          {syncIds.length > 0 && (
+            <Button variant="ghost" size="sm" className="text-destructive gap-1" onClick={() => setConfirmSyncOpen(true)}>
+              <Trash2 className="h-4 w-4" /> Clear synced {year}
+            </Button>
           )}
           <Button
             variant={compareOpen ? 'default' : 'outline'}
@@ -750,6 +770,23 @@ export function HistoricalPL({ onUpload }: Props) {
             <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
             <AlertDialogAction onClick={(e) => { e.preventDefault(); void handleDelete(); }} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {deleting ? 'Deleting…' : `Delete ${year}`}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={confirmSyncOpen} onOpenChange={setConfirmSyncOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear {year} synced data?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes every week synced from timesheets for {year}. Uploaded rows are kept. Live P&amp;L data and timesheets are not affected. This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={(e) => { e.preventDefault(); void handleDeleteSynced(); }} disabled={deleting} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              {deleting ? 'Clearing…' : `Clear synced ${year}`}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
