@@ -39,7 +39,7 @@ export function HistoricalRemapDialog({ open, onOpenChange, year, onApplied }: P
     const load = async () => {
       setLoading(true);
       const { data: batches, error: bErr } = await supabase
-        .from('historical_pl_batches').select('id, column_map').eq('year', year);
+        .from('historical_pl_batches').select('id, column_map').eq('year', year).eq('source', 'upload');
       if (bErr || cancelled) { if (!cancelled) toast.error('Failed to load batch info'); setLoading(false); return; }
       const ids = (batches ?? []).map((b) => b.id);
       const stored: StoredGroup[] = (batches ?? []).flatMap((b) =>
@@ -111,7 +111,7 @@ export function HistoricalRemapDialog({ open, onOpenChange, year, onApplied }: P
       }
       const newMap = groups.map((g) => ({ headers: g.headers, map: mappings[g.key] }));
       for (const id of batchIds) {
-        const { error } = await supabase.from('historical_pl_batches').update({ column_map: newMap as any }).eq('id', id);
+        const { error } = await supabase.from('historical_pl_batches').update({ column_map: newMap as any, updated_at: new Date().toISOString() }).eq('id', id).eq('source', 'upload');
         if (error) throw error;
       }
       toast.success(`Mapping applied to ${updates.length.toLocaleString()} rows`);

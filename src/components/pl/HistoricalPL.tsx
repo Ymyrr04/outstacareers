@@ -38,7 +38,7 @@ const money = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('
 const num = (n: number | null | undefined) => Number(n ?? 0);
 
 // ---- Per-year cache (memory + localStorage), invalidated when batches or their mapping change ----
-interface CacheEntry { sig: string; ids: string[]; rows: HistRow[] }
+interface CacheEntry { sig: string; ids: string[]; uploadIds?: string[]; rows: HistRow[] }
 const memCache = new Map<number, CacheEntry>();
 const CACHE_KEY = (y: number) => `hist-pl-cache-v3-${y}`;
 function readCache(y: number): CacheEntry | null {
@@ -55,9 +55,9 @@ function writeCache(y: number, e: CacheEntry) {
   memCache.set(y, e);
   try { localStorage.setItem(CACHE_KEY(y), JSON.stringify(e)); } catch { /* storage full — memory only */ }
 }
-function signature(batches: { id: string; created_at: string; column_map: unknown }[]) {
+function signature(batches: { id: string; created_at: string; updated_at?: string; source?: string; column_map: unknown }[]) {
   const str = [...batches].sort((a, b) => a.id.localeCompare(b.id))
-    .map((b) => `${b.id}|${b.created_at}|${JSON.stringify(b.column_map ?? null)}`).join('#');
+    .map((b) => `${b.id}|${b.created_at}|${b.updated_at ?? ''}|${b.source ?? ''}|${JSON.stringify(b.column_map ?? null)}`).join('#');
   let h = 0;
   for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
   return `${batches.length}:${h}`;
@@ -106,15 +106,16 @@ const fmtCell = (c: Col, v: number | null | undefined) =>
 const ROW_COLS = 'id, week_label, week_start, contractor_name, company, hours, actual_hours, contractor_rate, client_rate, contractor_cost, expense_after_1_percent, client_billing, income_after_3_percent, margin, gross_after_deductions, client_deposit, contractor_deposit';
 
 // Fetch one year's rows through the existing per-year cache.
-async function fetchYear(y: number): Promise<{ ids: string[]; rows: HistRow[] } | null> {
+async function fetchYear(y: number): Promise<{ ids: string[]; uploadIds: string[]; rows: HistRow[] } | null> {
   const cached = readCache(y);
   const { data: batches, error: bErr } = await supabase
-    .from('historical_pl_batches').select('id, created_at, column_map').eq('year', y);
-  if (bErr) return cached ? { ids: cached.ids, rows: cached.rows } : null;
+    .from('historical_pl_batches').select('id, created_at, updated_at, source, column_map').eq('year', y);
+  if (bErr) return cached ? { ids: cached.ids, uploadIds: cached.uploadIds ?? [], rows: cached.rows } : null;
   const ids = (batches ?? []).map((b) => b.id);
+  const uploadIds = (batches ?? []).filter((b) => b.source === 'upload').map((b) => b.id);
   const sig = signature(batches ?? []);
-  if (cached && cached.sig === sig) return { ids, rows: cached.rows };
-  if (ids.length === 0) { writeCache(y, { sig, ids, rows: [] }); return { ids, rows: [] }; }
+  if (cached && cached.sig === sig) return { ids, uploadIds, rows: cached.rows };
+  if (ids.length === 0) { writeCache(y, { sig, ids, uploadIds, rows: [] }); return { ids, uploadIds, rows: [] }; }
 
   const all: HistRow[] = [];
   const PAGE = 1000;
@@ -131,8 +132,8 @@ async function fetchYear(y: number): Promise<{ ids: string[]; rows: HistRow[] } 
     all.push(...((data ?? []) as HistRow[]));
     if (!data || data.length < PAGE) break;
   }
-  writeCache(y, { sig, ids, rows: all });
-  return { ids, rows: all };
+  writeCache(y, { sig, ids, uploadIds, rows: all });
+  return { ids, uploadIds, rows: all };
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
@@ -142,7 +143,7 @@ interface Props { onUpload?: (year: number) => void }
 
 export function HistoricalPL({ onUpload }: Props) {
   const [year, setYear] = useState(HIST_YEARS[HIST_YEARS.length - 1]);
-  const [batchIds, setBatchIds] = useState<string[]>([]);
+  const [uploadIds, setUploadIds] = useState<string[]>([]);
   const [rows, setRows] = useState<HistRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -161,12 +162,12 @@ export function HistoricalPL({ onUpload }: Props) {
   const load = useCallback(async () => {
     // Show cached rows instantly, then check whether anything changed.
     const cached = readCache(year);
-    if (cached) { setBatchIds(cached.ids); setRows(cached.rows); setLoading(false); }
+    if (cached) { setUploadIds(cached.uploadIds ?? []); setRows(cached.rows); setLoading(false); }
     else setLoading(true);
 
     const res = await fetchYear(year);
     if (!res) { if (!cached) toast.error('Failed to load historical data'); setLoading(false); return; }
-    setBatchIds(res.ids);
+    setUploadIds(res.uploadIds);
     setRows(res.rows);
     setLoading(false);
   }, [year]);
@@ -308,7 +309,7 @@ export function HistoricalPL({ onUpload }: Props) {
 
   const handleDelete = async () => {
     setDeleting(true);
-    const { error } = await supabase.from('historical_pl_batches').delete().in('id', batchIds);
+    const { error } = await supabase.from('historical_pl_batches').delete().in('id', uploadIds).eq('source', 'upload');
     setDeleting(false);
     setConfirmOpen(false);
     if (error) { toast.error(`Failed to delete ${year} data`); return; }
@@ -345,7 +346,7 @@ export function HistoricalPL({ onUpload }: Props) {
           <Button variant="outline" size="sm" className="gap-1" onClick={handleUpload}>
             <Upload className="h-4 w-4" /> Upload
           </Button>
-          {batchIds.length > 0 && (
+          {uploadIds.length > 0 && (
             <>
               <Button variant="outline" size="sm" className="gap-1" onClick={() => setRemapOpen(true)}>
                 <Columns3 className="h-4 w-4" /> Edit mapping
@@ -699,7 +700,7 @@ export function HistoricalPL({ onUpload }: Props) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete {year} historical data?</AlertDialogTitle>
             <AlertDialogDescription>
-              This removes every uploaded row for {year}. Live P&amp;L data is not affected. This cannot be undone.
+              This removes every uploaded row for {year}. Live P&amp;L data is not affected. Weeks synced from timesheets are kept. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
