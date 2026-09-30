@@ -124,14 +124,14 @@ const STATUS_META: Record<StatusKey, { label: string; cls: string }> = {
 };
 
 // ============ Inline editable cell ============
-interface EditableCellProps {
+export interface EditableCellProps {
   value: number | string | null;
   display: string;
   onSave: (v: number | string | null) => Promise<void>;
   allowText?: boolean;
 }
 
-const EditableCell = ({ value, display, onSave, allowText = false }: EditableCellProps) => {
+export const EditableCell = ({ value, display, onSave, allowText = false }: EditableCellProps) => {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
