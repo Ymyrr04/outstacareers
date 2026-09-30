@@ -448,6 +448,34 @@ export const PLReport = () => {
     toast({ title: 'Fee settings saved' });
   };
 
+  // ============ Inline edit save handlers ============
+  const saveAssignmentField = async (
+    assignmentId: string,
+    field: 'hourly_rate' | 'client_rate' | 'client_deposit' | 'contractor_deposit' | 'hours_per_week',
+    value: number | null,
+  ) => {
+    const { error } = await supabase
+      .from('contractor_assignments')
+      .update({ [field]: value } as any)
+      .eq('id', assignmentId);
+    if (error) throw error;
+    setAssignments((prev) => prev.map((a) => (a.id === assignmentId ? { ...a, [field]: value } : a)));
+    toast({ title: 'Saved' });
+  };
+
+  const saveActualHours = async (assignmentId: string, value: number | null) => {
+    const ts = tsMap.get(assignmentId);
+    if (!ts) throw new Error('No timesheet submitted for this week — hours can only be edited once one exists.');
+    const hours = value ?? 0;
+    const { error } = await supabase
+      .from('contractor_timesheets')
+      .update({ total_hours: hours } as any)
+      .eq('id', ts.id);
+    if (error) throw error;
+    setTimesheets((prev) => prev.map((t) => (t.id === ts.id ? { ...t, total_hours: hours } : t)));
+    toast({ title: 'Saved' });
+  };
+
   const exportCSV = () => {
     const headers = [
       '#', 'Contractor', 'Client/Company', 'Contractor Rate', 'Client Rate',
