@@ -1551,9 +1551,11 @@ export type Database = {
           break_is_paid: boolean | null
           checkin_reminder_enabled: boolean
           checkin_reminder_time: string | null
+          client_deposit: number | null
           client_id: string
           client_rate: number | null
           contact_number: string | null
+          contractor_deposit: number | null
           country: string | null
           created_at: string
           emergency_number: string | null
@@ -1585,9 +1587,11 @@ export type Database = {
           break_is_paid?: boolean | null
           checkin_reminder_enabled?: boolean
           checkin_reminder_time?: string | null
+          client_deposit?: number | null
           client_id: string
           client_rate?: number | null
           contact_number?: string | null
+          contractor_deposit?: number | null
           country?: string | null
           created_at?: string
           emergency_number?: string | null
@@ -1619,9 +1623,11 @@ export type Database = {
           break_is_paid?: boolean | null
           checkin_reminder_enabled?: boolean
           checkin_reminder_time?: string | null
+          client_deposit?: number | null
           client_id?: string
           client_rate?: number | null
           contact_number?: string | null
+          contractor_deposit?: number | null
           country?: string | null
           created_at?: string
           emergency_number?: string | null
