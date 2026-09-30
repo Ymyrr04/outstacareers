@@ -105,8 +105,8 @@ interface Row {
   incomeAfter: number;
   grossProfit: number;
   grossAfter: number;
-  clientDeposit: number;
-  contractorDeposit: number;
+  clientDeposit: number | null;
+  contractorDeposit: number | null;
   status: StatusKey;
   weeksSinceStart: number | null;
   isNewStarter: boolean;
@@ -248,8 +248,8 @@ export const PLReport = () => {
         const grossProfit = hasHours ? income - expenses : 0;
         const grossAfter = hasHours ? incomeAfter - expenseAfter : 0;
 
-        const clientDeposit = a.client_deposit != null ? Number(a.client_deposit) : clientRate * standardHours;
-        const contractorDeposit = a.contractor_deposit != null ? Number(a.contractor_deposit) : hourlyRate * standardHours;
+        const clientDeposit = a.client_deposit != null ? Number(a.client_deposit) : null;
+        const contractorDeposit = a.contractor_deposit != null ? Number(a.contractor_deposit) : null;
 
         // Weeks since start
         let weeksSinceStart: number | null = null;
@@ -307,8 +307,8 @@ export const PLReport = () => {
       case 'income_after': return r.incomeAfter;
       case 'gross_profit': return r.grossProfit;
       case 'gross_after': return r.grossAfter;
-      case 'client_deposit': return r.clientDeposit;
-      case 'contractor_deposit': return r.contractorDeposit;
+      case 'client_deposit': return r.clientDeposit ?? -1;
+      case 'contractor_deposit': return r.contractorDeposit ?? -1;
       case 'standard_hours': return r.standardHours;
       case 'actual_hours': return r.actualHours;
       case 'tenure': return r.weeksSinceStart ?? 999;
@@ -392,7 +392,7 @@ export const PLReport = () => {
       r.expenses.toFixed(2), r.expenseAfter.toFixed(2),
       r.income.toFixed(2), r.incomeAfter.toFixed(2),
       r.grossProfit.toFixed(2), r.grossAfter.toFixed(2),
-      r.clientDeposit.toFixed(2), r.contractorDeposit.toFixed(2),
+      r.clientDeposit?.toFixed(2) ?? '', r.contractorDeposit?.toFixed(2) ?? '',
       r.standardHours, r.actualHours,
       r.weeksSinceStart && r.weeksSinceStart >= 1 && r.weeksSinceStart <= 4 ? `Week ${r.weeksSinceStart}` : '',
       STATUS_META[r.status].label,
@@ -438,8 +438,8 @@ export const PLReport = () => {
       <TableCell className="text-right">{fmt$(r.incomeAfter)}</TableCell>
       <TableCell className="text-right font-medium">{fmt$(r.grossProfit)}</TableCell>
       <TableCell className="text-right font-medium">{fmt$(r.grossAfter)}</TableCell>
-      <TableCell className="text-right">{fmt$(r.clientDeposit)}</TableCell>
-      <TableCell className="text-right">{fmt$(r.contractorDeposit)}</TableCell>
+      <TableCell className="text-right">{r.clientDeposit == null ? '' : fmt$(r.clientDeposit)}</TableCell>
+      <TableCell className="text-right">{r.contractorDeposit == null ? '' : fmt$(r.contractorDeposit)}</TableCell>
       <TableCell className="text-right">{r.standardHours || 0}</TableCell>
       <TableCell className="text-right">{r.actualHours || 0}</TableCell>
       <TableCell>
