@@ -1424,7 +1424,9 @@ export const PLDashboard = () => {
                       )}
                     </TableCell>
                     <TableCell data-col="deposit" className="text-right">
-                      {c.latestTimesheet?.isDeposit ? (
+                      {(c.contractor_deposit_text ?? '').trim() !== '' || c.contractor_deposit != null ? (
+                        <span className="text-muted-foreground">—</span>
+                      ) : c.latestTimesheet?.isDeposit ? (
                         <div className="flex flex-col items-end">
                           <span className="font-medium text-amber-600">{c.latestTimesheet.depositHours.toFixed(2)}</span>
                           <Badge variant="outline" className="border-amber-500 text-amber-600 text-[10px] px-1 py-0 h-4 mt-0.5">
