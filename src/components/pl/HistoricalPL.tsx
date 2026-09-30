@@ -229,6 +229,7 @@ export function HistoricalPL({ onUpload }: Props) {
     if (sort.key === 'contractor_name' || sort.key === 'company') {
       return (r[sort.key] || '').trim().toLowerCase();
     }
+    if (sort.key === 'bonus') return num(bonusOf(r));
     return num(r[sort.key as NumKey]);
   };
   const cmpRows = (a: HistRow, b: HistRow) => {
@@ -680,7 +681,7 @@ export function HistoricalPL({ onUpload }: Props) {
                           }
                           return (
                             <td key={c.key} className={cn('px-3 py-2 border-b bg-background group-hover:bg-muted text-right tabular-nums whitespace-nowrap', c.width)}>
-                              {fmtCell(c, r[c.key as NumKey])}
+                              {fmtCell(c, c.key === 'bonus' ? bonusOf(r) : r[c.key as NumKey])}
                             </td>
                           );
                         })}
@@ -694,7 +695,7 @@ export function HistoricalPL({ onUpload }: Props) {
                           const base = 'sticky bottom-0 bg-background border-t-2 px-3 py-2 font-bold whitespace-nowrap';
                           if (i === 0) return <td key={c.key} className={cn(base, 'left-0 z-30 border-r', c.width)}>Total</td>;
                           if (!c.numeric || c.kind === 'rate') return <td key={c.key} className={cn(base, 'z-20', c.width)} />;
-                          const vals = detailRows.map((r) => r[c.key as NumKey]).filter((v) => v != null);
+                          const vals = detailRows.map((r) => (c.key === 'bonus' ? bonusOf(r) : r[c.key as NumKey])).filter((v) => v != null);
                           const sum = vals.reduce<number>((a, v) => a + Number(v), 0);
                           return (
                             <td key={c.key} className={cn(base, 'z-20 text-right tabular-nums', c.width)}>
