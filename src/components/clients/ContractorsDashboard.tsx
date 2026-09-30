@@ -101,6 +101,12 @@ interface ContractorWithDetails {
   hired_by: string | null;
   hired_via: string | null;
   hired_from_stage: string | null;
+  client_rate: number | null;
+  regular_work_shift: string | null;
+  timezone: string | null;
+  work_days: string[] | null;
+  break_duration_minutes: number | null;
+  break_is_paid: boolean | null;
   created_at: string;
   applicant: {
     full_name: string;
