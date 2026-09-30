@@ -8,6 +8,7 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { computePlWeek, mondayOf, ymd, SYNC_START, type PlFees, type PlWeekRow } from '@/lib/plWeek';
+import { computeDepositSchedule, type DepositTs } from '@/lib/depositSchedule';
 import { isExcludedFromHeadcount } from '@/lib/internalCompany';
 
 export const SYNC_FILENAME = 'Timesheet sync';
@@ -98,6 +99,57 @@ function mapWithBonus(r: PlWeekRow, monday: string, fees: PlFees): MappedRow[] {
   return b > 0 ? [base, bonusRow(base, b, fees)] : [base];
 }
 
+// New starters: the part of this week's pay held as security deposit is not sent to the
+// contractor, so it is left out of Expense / Expense after 1%. Uses the same deposit
+// schedule as the weekly submissions (default full hours for 2 weeks, or the per-week
+// arrangement such as 50/50, capped by any deposit target).
+type Held = { hours: number; amount: number };
+async function loadDepositHeld(res: PlWeekRow[]): Promise<Map<string, Held>> {
+  const out = new Map<string, Held>();
+  const withTs = res.filter((r) => r.timesheet);
+  if (!withTs.length) return out;
+  const ids = withTs.map((r) => r.assignment.id);
+  const [{ data: as, error: aErr }, { data: ts, error: tErr }] = await Promise.all([
+    supabase.from('contractor_assignments')
+      .select('id, start_date, hours_per_week, hourly_rate, deposit_per_week, deposit_per_week_unit, deposit_target, deposit_target_unit')
+      .in('id', ids),
+    supabase.from('contractor_timesheets')
+      .select('id, contractor_assignment_id, week_ending_date, total_hours')
+      .in('contractor_assignment_id', ids),
+  ]);
+  if (aErr) throw aErr;
+  if (tErr) throw tErr;
+  const byA = new Map<string, DepositTs[]>();
+  (ts ?? []).forEach((t: any) => {
+    const arr = byA.get(t.contractor_assignment_id) || [];
+    arr.push({ id: t.id, week_ending_date: t.week_ending_date, total_hours: Number(t.total_hours) || 0 });
+    byA.set(t.contractor_assignment_id, arr);
+  });
+  const aMap = new Map((as ?? []).map((a: any) => [a.id, a]));
+  for (const r of withTs) {
+    const a = aMap.get(r.assignment.id);
+    if (!a) continue;
+    const dep = computeDepositSchedule(a, byA.get(a.id) || []).get(r.timesheet!.id);
+    if (!dep?.isDeposit || !(dep.depositHours > 0)) continue;
+    const rate = Number(r.hourlyRate || 0);
+    const amount = Math.min(r2(dep.depositHours * rate), Number(r.expenses) || 0);
+    out.set(a.id, { hours: dep.depositHours, amount });
+  }
+  return out;
+}
+function applyDepositHold(row: MappedRow, h: Held, fees: PlFees): MappedRow {
+  const cost = r2(row.contractor_cost - h.amount);
+  const expenseAfter = r2(cost * (1 + fees.expensePct / 100));
+  return {
+    ...row,
+    contractor_cost: cost,
+    expense_after_1_percent: expenseAfter,
+    margin: row.margin != null ? r2(row.client_billing - cost) : null,
+    gross_after_deductions: r2(row.income_after_3_percent - expenseAfter),
+    raw: { ...row.raw, deposit_held_hours: h.hours, deposit_held_amount: h.amount, sent_to_contractor: cost },
+  };
+}
+
 type Col = { key: keyof MappedRow; label: string; kind?: 'hours' | 'money' | 'rate'; width: string };
 const COLS: Col[] = [
   { key: 'contractor_name', label: 'Contractor', width: 'w-[220px] min-w-[220px] max-w-[220px]' },
@@ -180,7 +232,14 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
         if (cancelled) return;
         setNoTimesheet(res.filter((r) => !r.timesheet && !isExcludedFromHeadcount(r.assignment.applicant?.full_name)).length);
         setHeadcount(res.filter((r) => !isExcludedFromHeadcount(r.assignment.applicant?.full_name)).length);
-        setRows(res.flatMap((r) => mapWithBonus(r, week, fees)));
+        const held = await loadDepositHeld(res);
+        if (cancelled) return;
+        setRows(res.flatMap((r) => {
+          const out = mapWithBonus(r, week, fees);
+          const h = held.get(r.assignment.id);
+          if (h && h.amount > 0) out[0] = applyDepositHold(out[0], h, fees);
+          return out;
+        }));
       } catch (e: any) {
         if (!cancelled) setError(e?.message || 'Failed to load the week');
       } finally {
