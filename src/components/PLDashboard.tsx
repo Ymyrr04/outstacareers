@@ -24,6 +24,16 @@ import { HistoricalPL } from '@/components/pl/HistoricalPL';
 import { TimesheetEditHistory } from '@/components/pl/TimesheetEditHistory';
 import { TimesheetReminderSettingsDialog } from '@/components/pl/TimesheetReminderSettingsDialog';
 import { parseDateOnly } from '@/lib/dateOnly';
+import { ColumnOrder } from '@/components/clients/ColumnOrder';
+import { Checkbox } from '@/components/ui/checkbox';
+
+const PL_COLS: { key: string; label: string }[] = [
+  { key: 'name', label: 'Contractor' }, { key: 'company', label: 'Company' }, { key: 'status', label: 'Status' },
+  { key: 'rate', label: 'Rate' }, { key: 'latest', label: 'Latest Submission' }, { key: 'hpw', label: 'Regular Work Hours' },
+  { key: 'workHours', label: 'Work Hours' }, { key: 'ot', label: 'OT' }, { key: 'bonus', label: 'Bonus' },
+  { key: 'deposit', label: 'Deposit' }, { key: 'approval', label: 'Client Approval' }, { key: 'portal', label: 'Portal Account' },
+];
+const readLS = (k: string): string[] | null => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return Array.isArray(v) ? v : null; } catch { return null; } };
 import { formatDate, formatDateShort, formatDateTime, formatDateWithWeekday } from "@/lib/dateFormat";
 import { timesheetLockAt } from "@/lib/timesheetLock";
 
@@ -331,6 +341,17 @@ export const PLDashboard = () => {
   const [updatingOutstaId, setUpdatingOutstaId] = useState<string | null>(null);
   const [remindingKey, setRemindingKey] = useState<string | null>(null);
   const [contractorSearch, setContractorSearch] = useState('');
+  const [plColOrder, setPlColOrder] = useState<string[]>(() => {
+    const saved = readLS('pl-contractors-col-order-v1') ?? [];
+    const all = PL_COLS.map(c => c.key);
+    return [...saved.filter(k => all.includes(k)), ...all.filter(k => !saved.includes(k))];
+  });
+  const [plHidden, setPlHidden] = useState<string[]>(() => readLS('pl-contractors-hidden-cols-v1') ?? []);
+  useEffect(() => { localStorage.setItem('pl-contractors-col-order-v1', JSON.stringify(plColOrder)); }, [plColOrder]);
+  useEffect(() => { localStorage.setItem('pl-contractors-hidden-cols-v1', JSON.stringify(plHidden)); }, [plHidden]);
+  const movePlCol = (from: string, to: string) => setPlColOrder(prev => {
+    const next = prev.filter(k => k !== from); next.splice(next.indexOf(to), 0, from); return next;
+  });
   const [contractorSort, setContractorSort] = useState<{ key: 'name' | 'company' | 'status' | 'rate' | 'hpw' | 'latest' | 'workHours' | 'ot' | 'bonus' | 'deposit' | 'approval' | 'portal'; dir: 'asc' | 'desc' }>({ key: 'company', dir: 'asc' });
   const [tsSort, setTsSort] = useState<{ key: 'name' | 'company' | 'week' | 'hours' | 'ot' | 'incentives' | 'status' | 'submitted'; dir: 'asc' | 'desc' }>({ key: 'submitted', dir: 'desc' });
   const [stats, setStats] = useState({ portalUsers: 0, totalEligibleContractors: 0 });
@@ -1239,6 +1260,27 @@ export const PLDashboard = () => {
         collapsedSummary={`${filteredContractors.length} active contractors`}
         style={{ order: sectionOrder.indexOf('contractors') }}
         rightSlot={
+          <div className="flex items-center gap-2">
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm" className="h-8 gap-1"><Settings2 className="w-4 h-4" />Columns</Button>
+            </PopoverTrigger>
+            <PopoverContent align="end" className="w-60 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium">Visible columns</span>
+                <button className="text-xs text-muted-foreground hover:text-foreground" onClick={() => { setPlHidden([]); setPlColOrder(PL_COLS.map(c => c.key)); }}>Reset</button>
+              </div>
+              <p className="text-xs text-muted-foreground mb-2">Drag column headers to reorder.</p>
+              <div className="space-y-1.5">
+                {plColOrder.map(k => { const col = PL_COLS.find(c => c.key === k)!; return (
+                  <label key={k} className="flex items-center gap-2 text-sm cursor-pointer">
+                    <Checkbox checked={!plHidden.includes(k)} disabled={k === 'name'} onCheckedChange={(v) => setPlHidden(h => v ? h.filter(x => x !== k) : [...h, k])} />
+                    {col.label}
+                  </label>
+                ); })}
+              </div>
+            </PopoverContent>
+          </Popover>
           <div className="relative w-72">
             <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -1247,6 +1289,7 @@ export const PLDashboard = () => {
               onChange={(e) => setContractorSearch(e.target.value)}
               className="pl-9 h-8 text-sm"
             />
+          </div>
           </div>
         }
       >
@@ -1260,40 +1303,43 @@ export const PLDashboard = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('name')}>Contractor<SortIcon active={contractorSort.key === 'name'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('company')}>Company<SortIcon active={contractorSort.key === 'company'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('status')}>Status<SortIcon active={contractorSort.key === 'status'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('rate')}>Rate<SortIcon active={contractorSort.key === 'rate'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('latest')}>Latest Submission<SortIcon active={contractorSort.key === 'latest'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('hpw')}>Regular Work Hours<SortIcon active={contractorSort.key === 'hpw'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('workHours')}>Work Hours<SortIcon active={contractorSort.key === 'workHours'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead className="text-right w-14"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('ot')}>OT<SortIcon active={contractorSort.key === 'ot'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead className="text-right w-16"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('bonus')}>Bonus<SortIcon active={contractorSort.key === 'bonus'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead className="text-right w-20"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('deposit')}>Deposit<SortIcon active={contractorSort.key === 'deposit'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead className="w-28"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('approval')}>Client Approval<SortIcon active={contractorSort.key === 'approval'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('portal')}>Portal Account<SortIcon active={contractorSort.key === 'portal'} dir={contractorSort.dir} /></button></TableHead>
+                  <ColumnOrder order={plColOrder} hidden={plHidden} onMove={movePlCol}>
+                  <TableHead data-col="name"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('name')}>Contractor<SortIcon active={contractorSort.key === 'name'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="company"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('company')}>Company<SortIcon active={contractorSort.key === 'company'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="status"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('status')}>Status<SortIcon active={contractorSort.key === 'status'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="rate" className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('rate')}>Rate<SortIcon active={contractorSort.key === 'rate'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="latest"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('latest')}>Latest Submission<SortIcon active={contractorSort.key === 'latest'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="hpw" className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('hpw')}>Regular Work Hours<SortIcon active={contractorSort.key === 'hpw'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="workHours" className="text-right"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('workHours')}>Work Hours<SortIcon active={contractorSort.key === 'workHours'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="ot" className="text-right w-14"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('ot')}>OT<SortIcon active={contractorSort.key === 'ot'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="bonus" className="text-right w-16"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('bonus')}>Bonus<SortIcon active={contractorSort.key === 'bonus'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="deposit" className="text-right w-20"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('deposit')}>Deposit<SortIcon active={contractorSort.key === 'deposit'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="approval" className="w-28"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('approval')}>Client Approval<SortIcon active={contractorSort.key === 'approval'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="portal"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('portal')}>Portal Account<SortIcon active={contractorSort.key === 'portal'} dir={contractorSort.dir} /></button></TableHead>
+                  </ColumnOrder>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredContractors.map((c, idx) => (
                   <TableRow key={c.id} className={idx % 2 === 1 ? 'bg-muted/20' : ''}>
-                    <TableCell>
+                    <ColumnOrder order={plColOrder} hidden={plHidden}>
+                    <TableCell data-col="name">
                       <div className="font-medium">{c.applicant?.full_name || '—'}</div>
                       <div className="text-xs text-muted-foreground">{c.applicant?.email || '—'}</div>
                     </TableCell>
-                    <TableCell className="max-w-[160px]">
+                    <TableCell data-col="company" className="max-w-[160px]">
                       <div className="truncate" title={c.client?.company_name || ''}>
                         {c.client?.company_name || '—'}
                       </div>
                     </TableCell>
                     
-                    <TableCell>
+                    <TableCell data-col="status">
                       <Badge variant={c.status === 'active' ? 'default' : 'secondary'} className="capitalize">
                         {c.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">{c.hourly_rate != null ? `$${Number(c.hourly_rate).toFixed(2)}` : '—'}</TableCell>
-                    <TableCell>
+                    <TableCell data-col="rate" className="text-right">{c.hourly_rate != null ? `$${Number(c.hourly_rate).toFixed(2)}` : '—'}</TableCell>
+                    <TableCell data-col="latest">
                       {c.latestTimesheet ? (
                         <div className="flex flex-col gap-0.5">
                           {c.latestTimesheet.status === 'pending_approval' ? (
@@ -1311,8 +1357,8 @@ export const PLDashboard = () => {
                         <Badge variant="outline" className="text-muted-foreground">Not submitted</Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">{c.hours_per_week ?? '—'}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell data-col="hpw" className="text-right">{c.hours_per_week ?? '—'}</TableCell>
+                    <TableCell data-col="workHours" className="text-right">
                       {c.latestTimesheet ? (() => {
                         const expected = Number(c.hours_per_week || 0);
                         const total = Number(c.latestTimesheet.total_hours);
@@ -1329,21 +1375,21 @@ export const PLDashboard = () => {
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell data-col="ot" className="text-right">
                       {c.latestTimesheet && c.latestTimesheet.overtime_hours > 0 ? (
                         <span className="font-medium text-emerald-600">{c.latestTimesheet.overtime_hours.toFixed(2)}</span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell data-col="bonus" className="text-right">
                       {c.latestTimesheet && c.latestTimesheet.incentive_amount > 0 ? (
                         <span className="font-medium text-blue-600">${c.latestTimesheet.incentive_amount.toFixed(2)}</span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell data-col="deposit" className="text-right">
                       {c.latestTimesheet?.isDeposit ? (
                         <div className="flex flex-col items-end">
                           <span className="font-medium text-amber-600">{c.latestTimesheet.depositHours.toFixed(2)}</span>
@@ -1355,14 +1401,14 @@ export const PLDashboard = () => {
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-col="approval">
                       {c.latestTimesheet ? (
                         <ClientApprovalBadge status={c.latestTimesheet.client_approval_status} reason={c.latestTimesheet.client_flag_reason} reviewedAt={c.latestTimesheet.client_reviewed_at} />
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-col="portal">
                       {!c.hasPortal ? (
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="text-muted-foreground">No account</Badge>
@@ -1439,6 +1485,7 @@ export const PLDashboard = () => {
                         </div>
                       )}
                     </TableCell>
+                    </ColumnOrder>
                   </TableRow>
                 ))}
               </TableBody>
