@@ -96,6 +96,7 @@ interface ContractorRow {
   client: { company_name: string } | null;
   hasPortal: boolean;
   mustChange: boolean | null;
+  depositAccumulated: number;
   latestTimesheet: {
     id: string;
     status: string;
@@ -489,6 +490,18 @@ export const PLDashboard = () => {
       return { depositHours: Math.min(Number(totalHours), hpw), isDeposit: true, weekIndex };
     };
 
+    // Accumulated deposit amount per contractor: sum of deposit hours (weeks 1-2) x hourly rate
+    const depositAccumMap = new Map<string, number>();
+    ((timesheets as any[]) || []).forEach((t) => {
+      const ca = t.contractor;
+      if (!ca) return;
+      const dep = computeDepositFor(ca.start_date, Number(ca.hours_per_week || 0), t.week_ending_date, Number(t.total_hours));
+      if (dep.isDeposit && dep.depositHours > 0) {
+        const amt = dep.depositHours * Number(ca.hourly_rate || 0);
+        depositAccumMap.set(t.contractor_assignment_id, (depositAccumMap.get(t.contractor_assignment_id) || 0) + amt);
+      }
+    });
+
     const enriched: ContractorRow[] = ((assignments as any[]) || []).map((c) => {
       const ts = latestTsMap.get(c.id);
       let latestTimesheet: ContractorRow['latestTimesheet'] = null;
@@ -527,6 +540,7 @@ export const PLDashboard = () => {
         client: c.client,
         hasPortal: portalMap.has(c.id),
         mustChange: portalMap.get(c.id) ?? null,
+        depositAccumulated: depositAccumMap.get(c.id) || 0,
         latestTimesheet,
       };
     });
@@ -1423,6 +1437,12 @@ export const PLDashboard = () => {
                           <Badge variant="outline" className="border-amber-500 text-amber-600 text-[10px] px-1 py-0 h-4 mt-0.5">
                             Wk {(c.latestTimesheet.weekIndex ?? 0) + 1}
                           </Badge>
+                          <span className="text-[10px] text-muted-foreground mt-0.5">${c.depositAccumulated.toFixed(2)} total</span>
+                        </div>
+                      ) : c.depositAccumulated > 0 ? (
+                        <div className="flex flex-col items-end">
+                          <span className="font-medium text-amber-600">${c.depositAccumulated.toFixed(2)}</span>
+                          <span className="text-[10px] text-muted-foreground">total held</span>
                         </div>
                       ) : (
                         <span className="text-muted-foreground">—</span>
