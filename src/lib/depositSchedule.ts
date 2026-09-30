@@ -12,13 +12,30 @@ export interface DepositAssignment {
   hourly_rate: number | null;
   deposit_per_week?: number | null;
   deposit_per_week_unit?: string | null;
+  deposit_target?: number | null;
+  deposit_target_unit?: string | null;
 }
 
 export interface DepositTs { id: string; week_ending_date: string; total_hours: number }
 
-export interface DepositWeek { depositHours: number; isDeposit: boolean; weekIndex: number | null }
+export interface DepositWeek {
+  depositHours: number; isDeposit: boolean; weekIndex: number | null;
+  /** 'complete' = target reached this week; 'excess' = this week went over the target */
+  targetStatus?: 'complete' | 'excess' | null;
+  excessHours?: number;
+  excessAmount?: number;
+}
 
-export const requiredDepositHours = (a: DepositAssignment) => 2 * Number(a.hours_per_week || 0);
+export const hasDepositTarget = (a: DepositAssignment) => a.deposit_target != null && Number(a.deposit_target) > 0;
+
+export const requiredDepositHours = (a: DepositAssignment): number => {
+  if (hasDepositTarget(a)) {
+    if (a.deposit_target_unit === 'hours') return Number(a.deposit_target);
+    const rate = Number(a.hourly_rate || 0);
+    return rate > 0 ? Number(a.deposit_target) / rate : 0;
+  }
+  return 2 * Number(a.hours_per_week || 0);
+};
 
 export const weeklyDepositCapHours = (a: DepositAssignment): number => {
   const hpw = Number(a.hours_per_week || 0);
@@ -45,6 +62,18 @@ export const computeDepositSchedule = (a: DepositAssignment, timesheets: Deposit
     .sort((x, y) => x.week_ending_date.localeCompare(y.week_ending_date));
   for (const t of sorted) {
     if (remaining <= 0.0001) { out.set(t.id, { depositHours: 0, isDeposit: false, weekIndex: null }); continue; }
+    if (hasDepositTarget(a)) {
+      // With a threshold, the weekly arrangement is held in full; flag completion / excess.
+      const take = Math.max(0, Math.min(Number(t.total_hours) || 0, cap));
+      const before = remaining;
+      remaining -= take;
+      let targetStatus: DepositWeek['targetStatus'] = null;
+      let excessHours = 0;
+      if (remaining < -0.0001) { targetStatus = 'excess'; excessHours = take - before; }
+      else if (remaining <= 0.0001) targetStatus = 'complete';
+      out.set(t.id, { depositHours: take, isDeposit: true, weekIndex: n++, targetStatus, excessHours, excessAmount: excessHours * Number(a.hourly_rate || 0) });
+      continue;
+    }
     const take = Math.max(0, Math.min(Number(t.total_hours) || 0, cap, remaining));
     remaining -= take;
     out.set(t.id, { depositHours: take, isDeposit: true, weekIndex: n++ });
