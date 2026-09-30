@@ -151,8 +151,8 @@ export const PLReport = () => {
 
   const [weekPickerOpen, setWeekPickerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
+  const [baseRows, setBaseRows] = useState<PlWeekRow[]>([]);
+  const [reloadKey, setReloadKey] = useState(0);
   const [fees, setFees] = useState(defaultFees);
   const [feesDialogOpen, setFeesDialogOpen] = useState(false);
 
