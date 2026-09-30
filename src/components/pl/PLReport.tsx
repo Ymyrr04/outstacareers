@@ -293,6 +293,28 @@ export const PLReport = () => {
     return Array.from(s).sort();
   }, [rows]);
 
+  const sortValue = (r: Row, key: string): string | number => {
+    switch (key) {
+      case 'contractor': return r.assignment.applicant?.full_name || '—';
+      case 'client': return r.assignment.client?.company_name || '—';
+      case 'contractor_rate': return r.hourlyRate;
+      case 'client_rate': return r.clientRate;
+      case 'expenses': return r.expenses;
+      case 'expense_after': return r.expenseAfter;
+      case 'income': return r.income;
+      case 'income_after': return r.incomeAfter;
+      case 'gross_profit': return r.grossProfit;
+      case 'gross_after': return r.grossAfter;
+      case 'client_deposit': return r.clientDeposit;
+      case 'contractor_deposit': return r.contractorDeposit;
+      case 'standard_hours': return r.standardHours;
+      case 'actual_hours': return r.actualHours;
+      case 'tenure': return r.weeksSinceStart ?? 999;
+      case 'status': return STATUS_META[r.status].label;
+      default: return 0;
+    }
+  };
+
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
@@ -304,15 +326,26 @@ export const PLReport = () => {
       if (statusFilter !== 'all' && r.status !== statusFilter) return false;
       return true;
     }).sort((a, b) => {
+      if (sortKey) {
+        const va = sortValue(a, sortKey);
+        const vb = sortValue(b, sortKey);
+        const cmp = typeof va === 'number' && typeof vb === 'number'
+          ? va - vb
+          : String(va).localeCompare(String(vb), undefined, { numeric: true, sensitivity: 'base' });
+        return sortDir === 'asc' ? cmp : -cmp;
+      }
       const ca = (a.assignment.client?.company_name || '').toLowerCase();
       const cb = (b.assignment.client?.company_name || '').toLowerCase();
       if (ca !== cb) return ca.localeCompare(cb);
       return (a.assignment.applicant?.full_name || '').localeCompare(b.assignment.applicant?.full_name || '');
     });
-  }, [rows, search, clientFilter, statusFilter]);
+  }, [rows, search, clientFilter, statusFilter, sortKey, sortDir]);
 
-  const mainRows = filteredRows.filter((r) => !r.isNewStarter);
-  const newStarters = filteredRows.filter((r) => r.isNewStarter);
+  const toggleSort = (key: string) => {
+    if (sortKey !== key) { setSortKey(key); setSortDir('asc'); }
+    else if (sortDir === 'asc') setSortDir('desc');
+    else setSortKey(null);
+  };
 
   const totals = useMemo(() => {
     const sum = (k: keyof Row) => filteredRows.reduce((s, r) => s + (Number(r[k] as number) || 0), 0);
