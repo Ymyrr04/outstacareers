@@ -1260,40 +1260,43 @@ export const PLDashboard = () => {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('name')}>Contractor<SortIcon active={contractorSort.key === 'name'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('company')}>Company<SortIcon active={contractorSort.key === 'company'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('status')}>Status<SortIcon active={contractorSort.key === 'status'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('rate')}>Rate<SortIcon active={contractorSort.key === 'rate'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('latest')}>Latest Submission<SortIcon active={contractorSort.key === 'latest'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('hpw')}>Regular Work Hours<SortIcon active={contractorSort.key === 'hpw'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead className="text-right"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('workHours')}>Work Hours<SortIcon active={contractorSort.key === 'workHours'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead className="text-right w-14"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('ot')}>OT<SortIcon active={contractorSort.key === 'ot'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead className="text-right w-16"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('bonus')}>Bonus<SortIcon active={contractorSort.key === 'bonus'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead className="text-right w-20"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('deposit')}>Deposit<SortIcon active={contractorSort.key === 'deposit'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead className="w-28"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('approval')}>Client Approval<SortIcon active={contractorSort.key === 'approval'} dir={contractorSort.dir} /></button></TableHead>
-                  <TableHead><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('portal')}>Portal Account<SortIcon active={contractorSort.key === 'portal'} dir={contractorSort.dir} /></button></TableHead>
+                  <ColumnOrder order={plColOrder} hidden={plHidden} onMove={movePlCol}>
+                  <TableHead data-col="name"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('name')}>Contractor<SortIcon active={contractorSort.key === 'name'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="company"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('company')}>Company<SortIcon active={contractorSort.key === 'company'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="status"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('status')}>Status<SortIcon active={contractorSort.key === 'status'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="rate" className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('rate')}>Rate<SortIcon active={contractorSort.key === 'rate'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="latest"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('latest')}>Latest Submission<SortIcon active={contractorSort.key === 'latest'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="hpw" className="text-right"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('hpw')}>Regular Work Hours<SortIcon active={contractorSort.key === 'hpw'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="workHours" className="text-right"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('workHours')}>Work Hours<SortIcon active={contractorSort.key === 'workHours'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="ot" className="text-right w-14"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('ot')}>OT<SortIcon active={contractorSort.key === 'ot'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="bonus" className="text-right w-16"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('bonus')}>Bonus<SortIcon active={contractorSort.key === 'bonus'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="deposit" className="text-right w-20"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('deposit')}>Deposit<SortIcon active={contractorSort.key === 'deposit'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="approval" className="w-28"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('approval')}>Client Approval<SortIcon active={contractorSort.key === 'approval'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="portal"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('portal')}>Portal Account<SortIcon active={contractorSort.key === 'portal'} dir={contractorSort.dir} /></button></TableHead>
+                  </ColumnOrder>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredContractors.map((c, idx) => (
                   <TableRow key={c.id} className={idx % 2 === 1 ? 'bg-muted/20' : ''}>
-                    <TableCell>
+                    <ColumnOrder order={plColOrder} hidden={plHidden}>
+                    <TableCell data-col="name">
                       <div className="font-medium">{c.applicant?.full_name || '—'}</div>
                       <div className="text-xs text-muted-foreground">{c.applicant?.email || '—'}</div>
                     </TableCell>
-                    <TableCell className="max-w-[160px]">
+                    <TableCell data-col="company" className="max-w-[160px]">
                       <div className="truncate" title={c.client?.company_name || ''}>
                         {c.client?.company_name || '—'}
                       </div>
                     </TableCell>
                     
-                    <TableCell>
+                    <TableCell data-col="status">
                       <Badge variant={c.status === 'active' ? 'default' : 'secondary'} className="capitalize">
                         {c.status}
                       </Badge>
                     </TableCell>
-                    <TableCell className="text-right">{c.hourly_rate != null ? `$${Number(c.hourly_rate).toFixed(2)}` : '—'}</TableCell>
-                    <TableCell>
+                    <TableCell data-col="rate" className="text-right">{c.hourly_rate != null ? `$${Number(c.hourly_rate).toFixed(2)}` : '—'}</TableCell>
+                    <TableCell data-col="latest">
                       {c.latestTimesheet ? (
                         <div className="flex flex-col gap-0.5">
                           {c.latestTimesheet.status === 'pending_approval' ? (
@@ -1311,8 +1314,8 @@ export const PLDashboard = () => {
                         <Badge variant="outline" className="text-muted-foreground">Not submitted</Badge>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">{c.hours_per_week ?? '—'}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell data-col="hpw" className="text-right">{c.hours_per_week ?? '—'}</TableCell>
+                    <TableCell data-col="workHours" className="text-right">
                       {c.latestTimesheet ? (() => {
                         const expected = Number(c.hours_per_week || 0);
                         const total = Number(c.latestTimesheet.total_hours);
@@ -1329,21 +1332,21 @@ export const PLDashboard = () => {
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell data-col="ot" className="text-right">
                       {c.latestTimesheet && c.latestTimesheet.overtime_hours > 0 ? (
                         <span className="font-medium text-emerald-600">{c.latestTimesheet.overtime_hours.toFixed(2)}</span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell data-col="bonus" className="text-right">
                       {c.latestTimesheet && c.latestTimesheet.incentive_amount > 0 ? (
                         <span className="font-medium text-blue-600">${c.latestTimesheet.incentive_amount.toFixed(2)}</span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
-                    <TableCell className="text-right">
+                    <TableCell data-col="deposit" className="text-right">
                       {c.latestTimesheet?.isDeposit ? (
                         <div className="flex flex-col items-end">
                           <span className="font-medium text-amber-600">{c.latestTimesheet.depositHours.toFixed(2)}</span>
@@ -1355,14 +1358,14 @@ export const PLDashboard = () => {
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-col="approval">
                       {c.latestTimesheet ? (
                         <ClientApprovalBadge status={c.latestTimesheet.client_approval_status} reason={c.latestTimesheet.client_flag_reason} reviewedAt={c.latestTimesheet.client_reviewed_at} />
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
-                    <TableCell>
+                    <TableCell data-col="portal">
                       {!c.hasPortal ? (
                         <div className="flex items-center gap-2">
                           <Badge variant="outline" className="text-muted-foreground">No account</Badge>
@@ -1439,6 +1442,7 @@ export const PLDashboard = () => {
                         </div>
                       )}
                     </TableCell>
+                    </ColumnOrder>
                   </TableRow>
                 ))}
               </TableBody>
