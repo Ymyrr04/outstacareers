@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { HistoricalUploadDialog, HIST_YEARS } from './HistoricalUploadDialog';
 import { HistoricalRemapDialog } from './HistoricalRemapDialog';
+import { HEADCOUNT_EXCLUDED_NAMES } from '@/lib/internalCompany';
 
 interface HistRow {
   id: string;

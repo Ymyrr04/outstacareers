@@ -8,6 +8,7 @@ import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { computePlWeek, mondayOf, ymd, SYNC_START, type PlFees, type PlWeekRow } from '@/lib/plWeek';
+import { isExcludedFromHeadcount } from '@/lib/internalCompany';
 
 export const SYNC_FILENAME = 'Timesheet sync';
 
