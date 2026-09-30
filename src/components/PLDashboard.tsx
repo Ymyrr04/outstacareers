@@ -96,6 +96,7 @@ interface ContractorRow {
   client: { company_name: string } | null;
   hasPortal: boolean;
   mustChange: boolean | null;
+  depositAccumulated: number;
   latestTimesheet: {
     id: string;
     status: string;
@@ -488,6 +489,18 @@ export const PLDashboard = () => {
       if (weekIndex > 1) return { depositHours: 0, isDeposit: false, weekIndex };
       return { depositHours: Math.min(Number(totalHours), hpw), isDeposit: true, weekIndex };
     };
+
+    // Accumulated deposit amount per contractor: sum of deposit hours (weeks 1-2) x hourly rate
+    const depositAccumMap = new Map<string, number>();
+    ((timesheets as any[]) || []).forEach((t) => {
+      const ca = t.contractor;
+      if (!ca) return;
+      const dep = computeDepositFor(ca.start_date, Number(ca.hours_per_week || 0), t.week_ending_date, Number(t.total_hours));
+      if (dep.isDeposit && dep.depositHours > 0) {
+        const amt = dep.depositHours * Number(ca.hourly_rate || 0);
+        depositAccumMap.set(t.contractor_assignment_id, (depositAccumMap.get(t.contractor_assignment_id) || 0) + amt);
+      }
+    });
 
     const enriched: ContractorRow[] = ((assignments as any[]) || []).map((c) => {
       const ts = latestTsMap.get(c.id);
