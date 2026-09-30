@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { FIELDS, NONE, guessMapping, hKey, toNum, type Mapping } from './HistoricalUploadDialog';
 
 interface StoredGroup { sheets?: string[]; headers?: string[]; map?: Partial<Mapping> }
-interface RawRow { id: string; raw: Record<string, unknown> | null }
+interface RawRow { id: string; batch_id: string; raw: Record<string, unknown> | null }
 
 interface Props {
   open: boolean;
@@ -50,7 +50,7 @@ export function HistoricalRemapDialog({ open, onOpenChange, year, onApplied }: P
       const PAGE = 1000;
       for (let from = 0; ; from += PAGE) {
         const { data, error } = await supabase
-          .from('historical_pl_rows').select('id, raw').in('batch_id', ids).range(from, from + PAGE - 1);
+          .from('historical_pl_rows').select('id, batch_id, raw').in('batch_id', ids).range(from, from + PAGE - 1);
         if (error) { if (!cancelled) toast.error('Failed to load rows'); setLoading(false); return; }
         raws.push(...((data ?? []) as RawRow[]));
         if (!data || data.length < PAGE) break;
@@ -96,7 +96,7 @@ export function HistoricalRemapDialog({ open, onOpenChange, year, onApplied }: P
         if (!mp) continue;
         for (const r of g.raws) {
           const raw = r.raw ?? {};
-          const row: Record<string, unknown> = { id: r.id };
+          const row: Record<string, unknown> = { id: r.id, batch_id: r.batch_id, raw: r.raw };
           for (const f of FIELDS) {
             const h = mp[f.key];
             const v = h ? raw[h] : null;
