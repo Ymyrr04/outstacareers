@@ -347,6 +347,9 @@ export const PLReport = () => {
     else setSortKey(null);
   };
 
+  const mainRows = filteredRows.filter((r) => !r.isNewStarter);
+  const newStarters = filteredRows.filter((r) => r.isNewStarter);
+
   const totals = useMemo(() => {
     const sum = (k: keyof Row) => filteredRows.reduce((s, r) => s + (Number(r[k] as number) || 0), 0);
     return {
