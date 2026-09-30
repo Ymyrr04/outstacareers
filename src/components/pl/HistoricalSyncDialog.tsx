@@ -177,8 +177,8 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
         // Internal team (OutSta client) is excluded, same as the P&L report.
         const res = await computePlWeek(week, fees, { includeInternal: false });
         if (cancelled) return;
-        setNoTimesheet(res.filter((r) => !r.timesheet).length);
-        setHeadcount(res.length);
+        setNoTimesheet(res.filter((r) => !r.timesheet && !isExcludedFromHeadcount(r.assignment.applicant?.full_name)).length);
+        setHeadcount(res.filter((r) => !isExcludedFromHeadcount(r.assignment.applicant?.full_name)).length);
         setRows(res.flatMap((r) => mapWithBonus(r, week, fees)));
       } catch (e: any) {
         if (!cancelled) setError(e?.message || 'Failed to load the week');
