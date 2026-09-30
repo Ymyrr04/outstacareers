@@ -40,7 +40,7 @@ const num = (n: number | null | undefined) => Number(n ?? 0);
 // ---- Per-year cache (memory + localStorage), invalidated when batches or their mapping change ----
 interface CacheEntry { sig: string; ids: string[]; rows: HistRow[] }
 const memCache = new Map<number, CacheEntry>();
-const CACHE_KEY = (y: number) => `hist-pl-cache-v2-${y}`;
+const CACHE_KEY = (y: number) => `hist-pl-cache-v3-${y}`;
 function readCache(y: number): CacheEntry | null {
   if (memCache.has(y)) return memCache.get(y)!;
   try {
@@ -65,6 +65,22 @@ function signature(batches: { id: string; created_at: string; column_map: unknow
 
 type NumKey = 'hours' | 'actual_hours' | 'contractor_rate' | 'client_rate' | 'contractor_cost' | 'expense_after_1_percent'
   | 'client_billing' | 'income_after_3_percent' | 'margin' | 'gross_after_deductions' | 'client_deposit' | 'contractor_deposit';
+
+// Headline figures come from the after-fee columns.
+const COST_KEY: NumKey = 'expense_after_1_percent';
+const BILLING_KEY: NumKey = 'income_after_3_percent';
+const MARGIN_KEY: NumKey = 'gross_after_deductions';
+
+// Sum a field across rows; has=false when no row has a value (missing, not zero).
+const sumField = (rows: HistRow[], key: NumKey) => {
+  let total = 0, has = false;
+  for (const r of rows) {
+    const v = r[key];
+    if (v != null && !Number.isNaN(Number(v))) { has = true; total += Number(v); }
+  }
+  return { total, has };
+};
+const fmtMaybe = (f: { total: number; has: boolean }) => (f.has ? money(f.total) : '—');
 type SortKey = 'contractor_name' | 'company' | NumKey;
 interface SortState { key: SortKey; dir: 'asc' | 'desc' }
 type Col = { key: SortKey; label: string; numeric?: boolean; kind?: 'hours' | 'money' | 'rate'; width?: string };
@@ -211,30 +227,47 @@ export function HistoricalPL({ onUpload }: Props) {
     }
     return [...map.entries()].map(([key, w]) => {
       const t = w.rows.reduce((a, r) => ({
-        hours: a.hours + num(r.hours), cost: a.cost + num(r.contractor_cost),
-        billing: a.billing + num(r.client_billing), margin: a.margin + num(r.margin),
+        hours: a.hours + num(r.hours),
+        cost: a.cost + num(r[COST_KEY]),
+        billing: a.billing + num(r[BILLING_KEY]),
+        margin: a.margin + num(r[MARGIN_KEY]),
       }), { hours: 0, cost: 0, billing: 0, margin: 0 });
+      const has = {
+        cost: w.rows.some((r) => r[COST_KEY] != null),
+        billing: w.rows.some((r) => r[BILLING_KEY] != null),
+        margin: w.rows.some((r) => r[MARGIN_KEY] != null),
+      };
       const headcount = new Set(w.rows.map((r) => (r.contractor_name || '').trim().toLowerCase()).filter(Boolean)).size;
-      return { key, label: w.label, rows: w.rows, totals: t, headcount };
+      return { key, label: w.label, rows: w.rows, totals: t, has, headcount };
     });
   }, [rows]);
 
   // Year totals, from the rows already loaded.
   const yearSummary = useMemo(() => {
     const t = rows.reduce((a, r) => ({
-      hours: a.hours + num(r.hours), cost: a.cost + num(r.contractor_cost),
-      billing: a.billing + num(r.client_billing), margin: a.margin + num(r.margin),
+      hours: a.hours + num(r.hours),
+      cost: a.cost + num(r[COST_KEY]),
+      billing: a.billing + num(r[BILLING_KEY]),
+      margin: a.margin + num(r[MARGIN_KEY]),
     }), { hours: 0, cost: 0, billing: 0, margin: 0 });
+    const has = {
+      cost: rows.some((r) => r[COST_KEY] != null),
+      billing: rows.some((r) => r[BILLING_KEY] != null),
+      margin: rows.some((r) => r[MARGIN_KEY] != null),
+    };
     const avgHeadcount = weeks.length
       ? weeks.reduce((a, w) => a + w.headcount, 0) / weeks.length
       : 0;
-    return { ...t, avgHeadcount };
+    return { ...t, has, avgHeadcount };
   }, [rows, weeks]);
 
   // Month-by-month billing / cost / margin for each selected comparison year.
   const compare = useMemo(() => {
     const years = [...compareYears].sort((a, b) => a - b);
-    const blank = () => ({ billing: 0, cost: 0, margin: 0 });
+    const blank = () => ({
+      billing: 0, cost: 0, margin: 0,
+      has: { billing: false, cost: false, margin: false },
+    });
     const byYear: Record<number, { months: ReturnType<typeof blank>[]; total: ReturnType<typeof blank> }> = {};
     for (const y of years) {
       const months = Array.from({ length: 12 }, blank);
@@ -244,9 +277,12 @@ export function HistoricalPL({ onUpload }: Props) {
         const m = new Date(`${r.week_start}T00:00:00`).getMonth();
         if (Number.isNaN(m)) continue;
         const cell = months[m];
-        const b = num(r.client_billing), c = num(r.contractor_cost), g = num(r.margin);
+        const b = num(r[BILLING_KEY]), c = num(r[COST_KEY]), g = num(r[MARGIN_KEY]);
         cell.billing += b; cell.cost += c; cell.margin += g;
         total.billing += b; total.cost += c; total.margin += g;
+        if (r[BILLING_KEY] != null) { cell.has.billing = true; total.has.billing = true; }
+        if (r[COST_KEY] != null) { cell.has.cost = true; total.has.cost = true; }
+        if (r[MARGIN_KEY] != null) { cell.has.margin = true; total.has.margin = true; }
       }
       byYear[y] = { months, total };
     }
