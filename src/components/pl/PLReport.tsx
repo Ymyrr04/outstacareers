@@ -187,30 +187,7 @@ export const PLReport = () => {
     (async () => {
       setLoading(true);
       try {
-        // Active OR terminated whose end_date >= week start
-        const { data: aData, error: aErr } = await supabase
-          .from('contractor_assignments')
-          .select(`id, applicant_id, client_id, status, hourly_rate, client_rate, client_deposit, contractor_deposit, client_deposit_text, contractor_deposit_text, hours_per_week, start_date, end_date, sunday_hours_excluded,
-                   applicant:applicants_prescreen(full_name),
-                   client:clients(company_name)`)
-          .or(`status.eq.active,and(status.eq.terminated,end_date.gte.${weekMondayStr})`);
-        if (aErr) throw aErr;
-
-        const active = (aData as any as Assignment[]) || [];
-        const ids = active.map((a) => a.id);
-        let tsRows: Timesheet[] = [];
-        if (ids.length) {
-          const { data: tData, error: tErr } = await supabase
-            .from('contractor_timesheets')
-            .select('id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, notes, daily_hours')
-            .in('contractor_assignment_id', ids)
-            .gte('week_ending_date', weekMondayStr)
-            .lte('week_ending_date', weekEndingStr);
-          if (tErr) throw tErr;
-          tsRows = (tData as any as Timesheet[]) || [];
-        }
-        setAssignments(active);
-        setTimesheets(tsRows);
+        setBaseRows(await computePlWeek(weekMondayStr, fees, { includeInternal: false }));
       } catch (e: any) {
         console.error(e);
         toast({ title: 'Failed to load P&L report', description: e.message, variant: 'destructive' });
@@ -218,13 +195,13 @@ export const PLReport = () => {
         setLoading(false);
       }
     })();
-  }, [weekMondayStr, weekEndingStr, toast]);
+  }, [weekMondayStr, fees, reloadKey, toast]);
 
   const tsMap = useMemo(() => {
     const m = new Map<string, Timesheet>();
-    timesheets.forEach((t) => m.set(t.contractor_assignment_id, t));
+    baseRows.forEach((r) => { if (r.timesheet) m.set(r.assignment.id, r.timesheet); });
     return m;
-  }, [timesheets]);
+  }, [baseRows]);
 
   const computeStatus = (a: Assignment, ts: Timesheet | null, actualHours: number): StatusKey => {
     if (a.status === 'terminated') return 'terminated';
@@ -239,80 +216,27 @@ export const PLReport = () => {
     return 'good';
   };
 
-  const expMul = 1 + fees.expensePct / 100;
-  const incMul = 1 - fees.incomePct / 100;
-
   const rows: Row[] = useMemo(() => {
-    return assignments
-      .filter((a) => a.client_id !== INTERNAL_CLIENT_ID)
-      .map((a) => {
-        const ts = tsMap.get(a.id) || null;
-        let actualHours = Number(ts?.total_hours || 0);
-        // Sunday exclusion
-        if (ts && a.sunday_hours_excluded && ts.daily_hours) {
-          try {
-            const dh = ts.daily_hours as Record<string, { hours?: number }>;
-            let sunHours = 0;
-            Object.entries(dh).forEach(([date, v]) => {
-              const d = new Date(date);
-              if (!isNaN(d.getTime()) && d.getDay() === 0) sunHours += Number(v?.hours || 0);
-            });
-            actualHours = Math.max(0, actualHours - sunHours);
-          } catch {}
+    return baseRows.map((r) => {
+      const a = r.assignment;
+      // Weeks since start
+      let weeksSinceStart: number | null = null;
+      let isNewStarter = false;
+      if (a.start_date) {
+        const start = parseDateOnly(a.start_date);
+        if (!isNaN(start.getTime())) {
+          const diff = Math.floor((weekEnding.getTime() - mondayOf(start).getTime()) / (7 * 86400000));
+          weeksSinceStart = diff + 1;
+          isNewStarter = start >= weekMonday && start <= weekEnding;
         }
-        const hourlyRate = Number(a.hourly_rate || 0);
-        const clientRate = Number(a.client_rate || 0) || lookupFallbackClientRate(a.applicant?.full_name);
-        const standardHours = Number(a.hours_per_week || 0);
-        const overtime = Number(ts?.overtime_hours || 0);
-        const hasHours = actualHours > 0;
+      }
 
-        const expenses = hasHours ? hourlyRate * actualHours : 0;
-        const income = hasHours ? clientRate * actualHours : 0;
-        const expenseAfter = hasHours ? expenses * expMul : 0;
-        const incomeAfter = hasHours ? income * incMul : 0;
-        const grossProfit = hasHours ? income - expenses : 0;
-        const grossAfter = hasHours ? incomeAfter - expenseAfter : 0;
+      const autoStatus = computeStatus(a, r.timesheet, r.actualHours);
+      const status = statusOverrides[a.id] || autoStatus;
 
-        const clientDeposit = a.client_deposit_text || (a.client_deposit != null ? Number(a.client_deposit) : null);
-        const contractorDeposit = a.contractor_deposit_text || (a.contractor_deposit != null ? Number(a.contractor_deposit) : null);
-
-        // Weeks since start
-        let weeksSinceStart: number | null = null;
-        let isNewStarter = false;
-        if (a.start_date) {
-          const start = parseDateOnly(a.start_date);
-          if (!isNaN(start.getTime())) {
-            const diff = Math.floor((weekEnding.getTime() - mondayOf(start).getTime()) / (7 * 86400000));
-            weeksSinceStart = diff + 1;
-            isNewStarter = start >= weekMonday && start <= weekEnding;
-          }
-        }
-
-        const autoStatus = computeStatus(a, ts, actualHours);
-        const status = statusOverrides[a.id] || autoStatus;
-
-        return {
-          assignment: a,
-          timesheet: ts,
-          actualHours,
-          overtime,
-          standardHours,
-          hourlyRate,
-          clientRate,
-          expenses,
-          expenseAfter,
-          income,
-          incomeAfter,
-          grossProfit,
-          grossAfter,
-          clientDeposit,
-          contractorDeposit,
-          status,
-          weeksSinceStart,
-          isNewStarter,
-        };
-      });
-  }, [assignments, tsMap, expMul, incMul, weekMonday, weekEnding, statusOverrides]);
+      return { ...r, status, weeksSinceStart, isNewStarter };
+    });
+  }, [baseRows, weekMonday, weekEnding, statusOverrides]);
 
   const clientOptions = useMemo(() => {
     const s = new Set<string>();
