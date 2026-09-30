@@ -33,6 +33,7 @@ export const FIELDS = [
   { key: 'gross_after_deductions', label: 'Gross After Deductions', numeric: true, guess: [/^gross after deductions$/i] },
   { key: 'client_deposit', label: 'Client Deposit', numeric: true, guess: [/^client deposit$/i] },
   { key: 'contractor_deposit', label: 'Contractor Deposit', numeric: true, guess: [/^contractor deposit$/i] },
+  { key: 'actual_hours', label: 'Actual hours', numeric: true, guess: [/^actual hours$/i] },
 ] as const;
 const DISPLAY_FIELDS = FIELDS.slice(0, 8);
 const EXTRA_FIELDS = FIELDS.slice(8);
