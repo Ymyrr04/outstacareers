@@ -540,6 +540,7 @@ export const PLDashboard = () => {
         client: c.client,
         hasPortal: portalMap.has(c.id),
         mustChange: portalMap.get(c.id) ?? null,
+        depositAccumulated: depositAccumMap.get(c.id) || 0,
         latestTimesheet,
       };
     });
@@ -1436,6 +1437,12 @@ export const PLDashboard = () => {
                           <Badge variant="outline" className="border-amber-500 text-amber-600 text-[10px] px-1 py-0 h-4 mt-0.5">
                             Wk {(c.latestTimesheet.weekIndex ?? 0) + 1}
                           </Badge>
+                          <span className="text-[10px] text-muted-foreground mt-0.5">${c.depositAccumulated.toFixed(2)} total</span>
+                        </div>
+                      ) : c.depositAccumulated > 0 ? (
+                        <div className="flex flex-col items-end">
+                          <span className="font-medium text-amber-600">${c.depositAccumulated.toFixed(2)}</span>
+                          <span className="text-[10px] text-muted-foreground">total held</span>
                         </div>
                       ) : (
                         <span className="text-muted-foreground">—</span>
