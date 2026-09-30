@@ -7,7 +7,7 @@ export const SYNC_START = '2026-09-21';
 
 const clientRateFallback = clientRateFallbackData as Record<string, number>;
 const normalizeName = (s: string) =>
-  s.normalize('NFKD').replace(/[̀-ͯ]/g, '').toLowerCase().replace(/\./g, ' ').replace(/\s+/g, ' ').trim();
+  s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\./g, ' ').replace(/\s+/g, ' ').trim();
 export const lookupFallbackClientRate = (name: string | null | undefined): number => {
   if (!name) return 0;
   return clientRateFallback[normalizeName(name)] ?? 0;
