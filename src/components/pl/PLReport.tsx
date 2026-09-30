@@ -529,18 +529,34 @@ export const PLReport = () => {
       <TableCell className="text-xs text-muted-foreground">{idx + 1}</TableCell>
       <TableCell className="font-medium whitespace-nowrap">{r.assignment.applicant?.full_name || '—'}</TableCell>
       <TableCell className="whitespace-nowrap">{r.assignment.client?.company_name || '—'}</TableCell>
-      <TableCell className="text-right">{fmt$(r.hourlyRate)}</TableCell>
-      <TableCell className="text-right">{fmt$(r.clientRate)}</TableCell>
+      <TableCell className="text-right">
+        <EditableCell value={r.hourlyRate} display={fmt$(r.hourlyRate)} onSave={(v) => saveAssignmentField(r.assignment.id, 'hourly_rate', v)} />
+      </TableCell>
+      <TableCell className="text-right">
+        <EditableCell value={r.clientRate} display={fmt$(r.clientRate)} onSave={(v) => saveAssignmentField(r.assignment.id, 'client_rate', v)} />
+      </TableCell>
       <TableCell className="text-right">{fmt$(r.expenses)}</TableCell>
       <TableCell className="text-right">{fmt$(r.expenseAfter)}</TableCell>
       <TableCell className="text-right">{fmt$(r.income)}</TableCell>
       <TableCell className="text-right">{fmt$(r.incomeAfter)}</TableCell>
       <TableCell className="text-right font-medium">{fmt$(r.grossProfit)}</TableCell>
       <TableCell className="text-right font-medium">{fmt$(r.grossAfter)}</TableCell>
-      <TableCell className="text-right">{r.clientDeposit == null ? '' : fmt$(r.clientDeposit)}</TableCell>
-      <TableCell className="text-right">{r.contractorDeposit == null ? '' : fmt$(r.contractorDeposit)}</TableCell>
-      <TableCell className="text-right">{r.standardHours || 0}</TableCell>
-      <TableCell className="text-right">{r.actualHours || 0}</TableCell>
+      <TableCell className="text-right">
+        <EditableCell value={r.clientDeposit} display={r.clientDeposit == null ? '' : fmt$(r.clientDeposit)} onSave={(v) => saveAssignmentField(r.assignment.id, 'client_deposit', v)} />
+      </TableCell>
+      <TableCell className="text-right">
+        <EditableCell value={r.contractorDeposit} display={r.contractorDeposit == null ? '' : fmt$(r.contractorDeposit)} onSave={(v) => saveAssignmentField(r.assignment.id, 'contractor_deposit', v)} />
+      </TableCell>
+      <TableCell className="text-right">
+        <EditableCell value={r.standardHours} display={String(r.standardHours || 0)} onSave={(v) => saveAssignmentField(r.assignment.id, 'hours_per_week', v)} />
+      </TableCell>
+      <TableCell className="text-right">
+        {r.timesheet ? (
+          <EditableCell value={r.actualHours} display={String(r.actualHours || 0)} onSave={(v) => saveActualHours(r.assignment.id, v)} />
+        ) : (
+          r.actualHours || 0
+        )}
+      </TableCell>
       <TableCell>
         {r.weeksSinceStart && r.weeksSinceStart >= 1 && r.weeksSinceStart <= 4 ? (
           <Badge variant="secondary" className="text-[10px]">Week {r.weeksSinceStart}</Badge>
