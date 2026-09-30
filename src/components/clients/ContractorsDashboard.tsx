@@ -101,6 +101,12 @@ interface ContractorWithDetails {
   hired_by: string | null;
   hired_via: string | null;
   hired_from_stage: string | null;
+  client_rate: number | null;
+  regular_work_shift: string | null;
+  timezone: string | null;
+  work_days: string[] | null;
+  break_duration_minutes: number | null;
+  break_is_paid: boolean | null;
   created_at: string;
   applicant: {
     full_name: string;
@@ -204,6 +210,12 @@ export const ContractorsDashboard = () => {
     notes: true,
     separationNote: true,
     hiredBy: true,
+    clientRate: false,
+    endDate: false,
+    workShift: false,
+    timezone: false,
+    workDays: false,
+    breakTime: false,
   });
 
   const columnLabels: Record<string, string> = {
@@ -226,6 +238,12 @@ export const ContractorsDashboard = () => {
     notes: 'Notes',
     separationNote: 'Separation Note',
     hiredBy: 'Hired By',
+    clientRate: 'Client Rate',
+    endDate: 'End Date',
+    workShift: 'Work Shift',
+    timezone: 'Timezone',
+    workDays: 'Work Days',
+    breakTime: 'Break',
   };
 
   const COLUMN_SORT_MAP: Record<string, { asc: string; desc: string }> = {
@@ -903,6 +921,12 @@ export const ContractorsDashboard = () => {
                       {visibleColumns.notes && <TableHead className="min-w-[200px]">Notes</TableHead>}
                       {visibleColumns.separationNote && <TableHead className="min-w-[200px]">Separation Note</TableHead>}
                       {visibleColumns.hiredBy && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('hiredBy')}><span className="inline-flex items-center gap-1">Hired By {getSortIcon('hiredBy')}<ContractorColumnFilter options={getColumnOptions('hiredBy')} selected={columnFilters['hiredBy']} onChange={(v) => setColumnFilter('hiredBy', v)} /></span></TableHead>}
+                      {visibleColumns.clientRate && <TableHead className="w-[100px]">Client Rate</TableHead>}
+                      {visibleColumns.endDate && <TableHead className="w-[120px]">End Date</TableHead>}
+                      {visibleColumns.workShift && <TableHead className="min-w-[120px]">Work Shift</TableHead>}
+                      {visibleColumns.timezone && <TableHead className="min-w-[120px]">Timezone</TableHead>}
+                      {visibleColumns.workDays && <TableHead className="min-w-[140px]">Work Days</TableHead>}
+                      {visibleColumns.breakTime && <TableHead className="min-w-[110px]">Break</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1197,6 +1221,45 @@ export const ContractorsDashboard = () => {
                             />
                           </TableCell>
                         )}
+                        {visibleColumns.clientRate && (
+                          <TableCell>
+                            {contractor.client_rate ? (
+                              <span className="flex items-center gap-1 whitespace-nowrap">
+                                <DollarSign className="w-3 h-3 text-muted-foreground" />
+                                ${contractor.client_rate}/hr
+                              </span>
+                            ) : (
+                              <span className="text-muted-foreground">—</span>
+                            )}
+                          </TableCell>
+                        )}
+                        {visibleColumns.endDate && (
+                          <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                            {contractor.end_date ? format(parseDateOnly(contractor.end_date), 'MMM d, yyyy') : '—'}
+                          </TableCell>
+                        )}
+                        {visibleColumns.workShift && (
+                          <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                            {contractor.regular_work_shift || '—'}
+                          </TableCell>
+                        )}
+                        {visibleColumns.timezone && (
+                          <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                            {contractor.timezone || '—'}
+                          </TableCell>
+                        )}
+                        {visibleColumns.workDays && (
+                          <TableCell className="text-sm text-muted-foreground">
+                            {Array.isArray(contractor.work_days) && contractor.work_days.length > 0 ? contractor.work_days.join(', ') : '—'}
+                          </TableCell>
+                        )}
+                        {visibleColumns.breakTime && (
+                          <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                            {contractor.break_duration_minutes != null
+                              ? `${contractor.break_duration_minutes} min${contractor.break_is_paid ? ' (paid)' : ''}`
+                              : '—'}
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
@@ -1242,6 +1305,12 @@ export const ContractorsDashboard = () => {
                         {visibleColumns.separationNote && <TableHead className="min-w-[200px]">Separation Note</TableHead>}
                         {visibleColumns.notes && <TableHead className="min-w-[200px]">Notes</TableHead>}
                         {visibleColumns.hiredBy && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('hiredBy')}><span className="inline-flex items-center gap-1">Hired By {getSortIcon('hiredBy')}<ContractorColumnFilter options={getColumnOptions('hiredBy')} selected={columnFilters['hiredBy']} onChange={(v) => setColumnFilter('hiredBy', v)} /></span></TableHead>}
+                        {visibleColumns.clientRate && <TableHead className="w-[100px]">Client Rate</TableHead>}
+                        {visibleColumns.endDate && <TableHead className="w-[120px]">End Date</TableHead>}
+                        {visibleColumns.workShift && <TableHead className="min-w-[120px]">Work Shift</TableHead>}
+                        {visibleColumns.timezone && <TableHead className="min-w-[120px]">Timezone</TableHead>}
+                        {visibleColumns.workDays && <TableHead className="min-w-[140px]">Work Days</TableHead>}
+                        {visibleColumns.breakTime && <TableHead className="min-w-[110px]">Break</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -1591,6 +1660,45 @@ export const ContractorsDashboard = () => {
                                 value={contractor.hired_by}
                                 onSaved={(next) => setContractors(prev => prev.map(c => c.id === contractor.id ? { ...c, hired_by: next } : c))}
                               />
+                            </TableCell>
+                          )}
+                          {visibleColumns.clientRate && (
+                            <TableCell>
+                              {contractor.client_rate ? (
+                                <span className="flex items-center gap-1 whitespace-nowrap">
+                                  <DollarSign className="w-3 h-3 text-muted-foreground" />
+                                  ${contractor.client_rate}/hr
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">—</span>
+                              )}
+                            </TableCell>
+                          )}
+                          {visibleColumns.endDate && (
+                            <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                              {contractor.end_date ? format(parseDateOnly(contractor.end_date), 'MMM d, yyyy') : '—'}
+                            </TableCell>
+                          )}
+                          {visibleColumns.workShift && (
+                            <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                              {contractor.regular_work_shift || '—'}
+                            </TableCell>
+                          )}
+                          {visibleColumns.timezone && (
+                            <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                              {contractor.timezone || '—'}
+                            </TableCell>
+                          )}
+                          {visibleColumns.workDays && (
+                            <TableCell className="text-sm text-muted-foreground">
+                              {Array.isArray(contractor.work_days) && contractor.work_days.length > 0 ? contractor.work_days.join(', ') : '—'}
+                            </TableCell>
+                          )}
+                          {visibleColumns.breakTime && (
+                            <TableCell className="whitespace-nowrap text-sm text-muted-foreground">
+                              {contractor.break_duration_minutes != null
+                                ? `${contractor.break_duration_minutes} min${contractor.break_is_paid ? ' (paid)' : ''}`
+                                : '—'}
                             </TableCell>
                           )}
                         </TableRow>
