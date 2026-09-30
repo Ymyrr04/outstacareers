@@ -110,6 +110,8 @@ interface ContractorWithDetails {
   contractor_deposit: number | null;
   client_deposit_text: string | null;
   contractor_deposit_text: string | null;
+  deposit_per_week?: number | null;
+  deposit_per_week_unit?: string | null;
   regular_work_shift: string | null;
   timezone: string | null;
   work_days: string[] | null;
