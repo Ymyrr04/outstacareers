@@ -435,9 +435,9 @@ export function HistoricalPL({ onUpload }: Props) {
                     <th />
                     {compare.years.map((y) => (
                       <Fragment key={y}>
-                        <th className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground border-l">Billing</th>
-                        <th className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground">Cost</th>
-                        <th className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground">Margin</th>
+                        <th className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground border-l">Income</th>
+                        <th className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground">Expense</th>
+                        <th className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground">Gross</th>
                       </Fragment>
                     ))}
                     {compare.prev != null && (
@@ -526,8 +526,8 @@ export function HistoricalPL({ onUpload }: Props) {
               <TableRow>
                 <TableHead>Week</TableHead>
                 <TableHead className="text-right tabular-nums">Hours</TableHead>
-                <TableHead className="text-right tabular-nums">Cost</TableHead>
-                <TableHead className="text-right tabular-nums">Billing</TableHead>
+                <TableHead className="text-right tabular-nums">Expense</TableHead>
+                <TableHead className="text-right tabular-nums">Income</TableHead>
                 <TableHead className="text-right tabular-nums">Margin</TableHead>
                 <TableHead className="w-10" />
               </TableRow>
@@ -571,9 +571,9 @@ export function HistoricalPL({ onUpload }: Props) {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
                 {[
                   { label: 'Hours', value: openWeek.totals.hours.toFixed(2) },
-                  { label: 'Cost', caption: 'Expense after 1%', value: fmtMaybe({ total: openWeek.totals.cost, has: openWeek.has.cost }) },
-                  { label: 'Billing', caption: 'Income after 3%', value: fmtMaybe({ total: openWeek.totals.billing, has: openWeek.has.billing }) },
-                  { label: 'Margin', caption: 'Gross after deductions', value: fmtMaybe({ total: openWeek.totals.margin, has: openWeek.has.margin }) },
+                  { label: 'Expense', caption: 'Expense after 1%', value: fmtMaybe({ total: openWeek.totals.cost, has: openWeek.has.cost }) },
+                  { label: 'Income', caption: 'Income after 3%', value: fmtMaybe({ total: openWeek.totals.billing, has: openWeek.has.billing }) },
+                  { label: 'Gross', caption: 'Gross after deductions', value: fmtMaybe({ total: openWeek.totals.margin, has: openWeek.has.margin }) },
                 ].map((s) => (
                   <div key={s.label} className="border rounded-lg p-3 bg-muted/30">
                     <p className="text-xs text-muted-foreground">{s.label}</p>
