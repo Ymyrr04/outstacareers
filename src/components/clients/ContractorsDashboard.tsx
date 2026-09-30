@@ -73,6 +73,7 @@ import { ContractorEmailTemplateManager } from './ContractorEmailTemplateManager
 import { LegalDocRequestsDialog } from './LegalDocRequestsDialog';
 import { RecurringSchedulesManager } from './RecurringSchedulesManager';
 import { ContractorColumnFilter } from './ContractorColumnFilter';
+import { ColumnOrder } from './ColumnOrder';
 import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 import { useTabPermissions } from '@/hooks/useTabPermissions';
 import { useAuth as useAuthInternal } from '@/hooks/useAuth';
@@ -190,7 +191,7 @@ export const ContractorsDashboard = () => {
     contractorName: string;
     status: 'rendering' | 'resigned' | 'terminated' | 'scheduled';
   } | null>(null);
-  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>({
+  const [visibleColumns, setVisibleColumns] = useState<Record<string, boolean>>(() => ({
     status: true,
     statusChanged: true,
     name: true,
@@ -216,7 +217,21 @@ export const ContractorsDashboard = () => {
     timezone: false,
     workDays: false,
     breakTime: false,
+    ...(() => { try { return JSON.parse(localStorage.getItem('contractors-visible-columns-v1') || '{}'); } catch { return {}; } })(),
+  }));
+  useEffect(() => { localStorage.setItem('contractors-visible-columns-v1', JSON.stringify(visibleColumns)); }, [visibleColumns]);
+  const [columnOrder, setColumnOrder] = useState<string[]>(() => {
+    try { const v = JSON.parse(localStorage.getItem('contractors-column-order-v1') || '[]'); return Array.isArray(v) ? v : []; } catch { return []; }
   });
+  const moveColumn = (from: string, to: string) => {
+    setColumnOrder(prev => {
+      const base = [...prev, ...Object.keys(visibleColumns).filter(k => !prev.includes(k))].filter(k => k !== from);
+      base.splice(base.indexOf(to), 0, from);
+      localStorage.setItem('contractors-column-order-v1', JSON.stringify(base));
+      return base;
+    });
+  };
+
 
   const columnLabels: Record<string, string> = {
     status: 'Status',
