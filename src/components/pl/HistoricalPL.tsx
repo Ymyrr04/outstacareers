@@ -118,16 +118,17 @@ const fmtCell = (c: Col, v: number | null | undefined) =>
 const ROW_COLS = 'id, week_label, week_start, contractor_name, company, hours, actual_hours, contractor_rate, client_rate, contractor_cost, expense_after_1_percent, client_billing, income_after_3_percent, margin, gross_after_deductions, client_deposit, contractor_deposit, raw';
 
 // Fetch one year's rows through the existing per-year cache.
-async function fetchYear(y: number): Promise<{ ids: string[]; uploadIds: string[]; rows: HistRow[] } | null> {
+async function fetchYear(y: number): Promise<{ ids: string[]; uploadIds: string[]; syncIds: string[]; rows: HistRow[] } | null> {
   const cached = readCache(y);
   const { data: batches, error: bErr } = await supabase
     .from('historical_pl_batches').select('id, created_at, updated_at, source, column_map').eq('year', y);
-  if (bErr) return cached ? { ids: cached.ids, uploadIds: cached.uploadIds ?? [], rows: cached.rows } : null;
+  if (bErr) return cached ? { ids: cached.ids, uploadIds: cached.uploadIds ?? [], syncIds: cached.syncIds ?? [], rows: cached.rows } : null;
   const ids = (batches ?? []).map((b) => b.id);
   const uploadIds = (batches ?? []).filter((b) => b.source === 'upload').map((b) => b.id);
+  const syncIds = (batches ?? []).filter((b) => b.source === 'timesheet_sync').map((b) => b.id);
   const sig = signature(batches ?? []);
-  if (cached && cached.sig === sig) return { ids, uploadIds, rows: cached.rows };
-  if (ids.length === 0) { writeCache(y, { sig, ids, uploadIds, rows: [] }); return { ids, uploadIds, rows: [] }; }
+  if (cached && cached.sig === sig) return { ids, uploadIds, syncIds, rows: cached.rows };
+  if (ids.length === 0) { writeCache(y, { sig, ids, uploadIds, syncIds, rows: [] }); return { ids, uploadIds, syncIds, rows: [] }; }
 
   const all: HistRow[] = [];
   const PAGE = 1000;
@@ -144,8 +145,8 @@ async function fetchYear(y: number): Promise<{ ids: string[]; uploadIds: string[
     all.push(...((data ?? []) as HistRow[]));
     if (!data || data.length < PAGE) break;
   }
-  writeCache(y, { sig, ids, uploadIds, rows: all });
-  return { ids, uploadIds, rows: all };
+  writeCache(y, { sig, ids, uploadIds, syncIds, rows: all });
+  return { ids, uploadIds, syncIds, rows: all };
 }
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
