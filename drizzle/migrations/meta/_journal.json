@@ -64,6 +64,13 @@
       "when": 1790714200942,
       "tag": "0008_add_historical_pl_optional_financial_columns",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1790772798206,
+      "tag": "0009_calendar_hidden_admins_fn",
+      "breakpoints": true
     }
   ]
 }

@@ -3835,6 +3835,7 @@ export type Database = {
     Functions: {
       applicant_exists: { Args: { _applicant_id: string }; Returns: boolean }
       apply_timesheet_reminder_schedule: { Args: never; Returns: undefined }
+      get_calendar_hidden_user_ids: { Args: never; Returns: string[] }
       get_contractor_checkin_messages: {
         Args: { _contractor_assignment_id: string }
         Returns: {
