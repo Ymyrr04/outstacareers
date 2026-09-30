@@ -29,6 +29,14 @@ import {
 } from '@/components/ui/dialog';
 import { ContractorCheckinConfig } from './ContractorCheckinConfig';
 
+// Numbers go in the amount column; words like EXEMPT go in the label column (same as the P&L Report)
+const splitDeposit = (field: 'client_deposit' | 'contractor_deposit', raw: string) => {
+  const v = (raw || '').trim().slice(0, 100);
+  const cleaned = v.replace(/[$,\s]/g, '');
+  const isNum = v !== '' && /^-?\d+(\.\d+)?$/.test(cleaned);
+  return { [field]: isNum ? parseFloat(cleaned) : null, [`${field}_text`]: v && !isNum ? v : null } as Record<string, number | string | null>;
+};
+
 interface ContractorData {
   id: string;
   client_id: string;
@@ -36,6 +44,10 @@ interface ContractorData {
   job_title: string | null;
   hourly_rate: number | null;
   client_rate?: number | null;
+  client_deposit?: number | null;
+  contractor_deposit?: number | null;
+  client_deposit_text?: string | null;
+  contractor_deposit_text?: string | null;
   hours_per_week: number | null;
   start_date: string | null;
   end_date: string | null;
@@ -88,6 +100,8 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
     job_title: '',
     hourly_rate: '',
     client_rate: '',
+    client_deposit: '',
+    contractor_deposit: '',
     hours_per_week: '',
     start_date: '',
     end_date: '',
@@ -149,6 +163,8 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
         job_title: contractor.job_title || '',
         hourly_rate: contractor.hourly_rate?.toString() || '',
         client_rate: contractor.client_rate?.toString() || '',
+        client_deposit: contractor.client_deposit_text || contractor.client_deposit?.toString() || '',
+        contractor_deposit: contractor.contractor_deposit_text || contractor.contractor_deposit?.toString() || '',
         hours_per_week: contractor.hours_per_week?.toString() || '',
         start_date: contractor.start_date || '',
         end_date: contractor.end_date || '',
@@ -192,6 +208,8 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
           job_title: formData.job_title || null,
           hourly_rate: formData.hourly_rate ? parseFloat(formData.hourly_rate) : null,
           client_rate: formData.client_rate ? parseFloat(formData.client_rate) : null,
+          ...splitDeposit('client_deposit', formData.client_deposit),
+          ...splitDeposit('contractor_deposit', formData.contractor_deposit),
           hours_per_week: formData.hours_per_week ? parseFloat(formData.hours_per_week) : null,
           start_date: formData.start_date || null,
           end_date: formData.end_date || null,
@@ -433,6 +451,21 @@ export const EditContractorDialog = ({ contractor, open, onOpenChange, onUpdated
             />
             <span className="col-span-2 text-xs text-muted-foreground">Rate billed to the client. Hidden from contractor.</span>
           </div>
+
+          {(['client_deposit', 'contractor_deposit'] as const).map((f) => (
+            <div key={f} className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor={f} className="text-right">{f === 'client_deposit' ? 'Client Deposit' : 'Contractor Deposit'}</Label>
+              <Input
+                id={f}
+                maxLength={100}
+                value={formData[f]}
+                onChange={(e) => setFormData(prev => ({ ...prev, [f]: e.target.value }))}
+                className="col-span-1"
+                placeholder="0.00"
+              />
+              <span className="col-span-2 text-xs text-muted-foreground">Amount or a word like EXEMPT. Shows in the P&amp;L Report.</span>
+            </div>
+          ))}
 
           {/* Dates */}
           <div className="grid grid-cols-4 items-center gap-4">
