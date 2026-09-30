@@ -137,43 +137,54 @@ export function HistoricalPL({ onUpload }: Props) {
   const [sort, setSort] = useState<SortState | null>(null);
   const [query, setQuery] = useState('');
 
+  const [compareOpen, setCompareOpen] = useState(false);
+  const [compareYears, setCompareYears] = useState<number[]>([]);
+  const [compareData, setCompareData] = useState<Record<number, HistRow[]>>({});
+  const [compareLoading, setCompareLoading] = useState(false);
+
   const load = useCallback(async () => {
     // Show cached rows instantly, then check whether anything changed.
     const cached = readCache(year);
     if (cached) { setBatchIds(cached.ids); setRows(cached.rows); setLoading(false); }
     else setLoading(true);
 
-    const { data: batches, error: bErr } = await supabase
-      .from('historical_pl_batches').select('id, created_at, column_map').eq('year', year);
-    if (bErr) { if (!cached) toast.error('Failed to load historical data'); setLoading(false); return; }
-    const ids = (batches ?? []).map((b) => b.id);
-    const sig = signature(batches ?? []);
-    setBatchIds(ids);
-    if (cached && cached.sig === sig) { setLoading(false); return; }
-    if (ids.length === 0) { setRows([]); writeCache(year, { sig, ids, rows: [] }); setLoading(false); return; }
-
-    const all: HistRow[] = [];
-    const PAGE = 1000;
-    for (let from = 0; ; from += PAGE) {
-      const { data, error } = await supabase
-        .from('historical_pl_rows')
-        .select('id, week_label, week_start, contractor_name, company, hours, actual_hours, contractor_rate, client_rate, contractor_cost, expense_after_1_percent, client_billing, income_after_3_percent, margin, gross_after_deductions, client_deposit, contractor_deposit')
-        .in('batch_id', ids)
-        .order('week_start', { ascending: true, nullsFirst: false })
-        .order('contractor_name', { ascending: true })
-        .order('id', { ascending: true })
-        .range(from, from + PAGE - 1);
-      if (error) { toast.error('Failed to load historical rows'); setLoading(false); return; }
-      all.push(...((data ?? []) as HistRow[]));
-      if (!data || data.length < PAGE) break;
-    }
-    setRows(all);
-    writeCache(year, { sig, ids, rows: all });
+    const res = await fetchYear(year);
+    if (!res) { if (!cached) toast.error('Failed to load historical data'); setLoading(false); return; }
+    setBatchIds(res.ids);
+    setRows(res.rows);
     setLoading(false);
   }, [year]);
 
   useEffect(() => { void load(); }, [load]);
   useEffect(() => { setOpenWeekKey(null); }, [year]);
+
+  // On mount, jump to the most recent year that actually has an upload.
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase
+        .from('historical_pl_batches').select('year').order('year', { ascending: false }).limit(1);
+      const y = data?.[0]?.year as number | undefined;
+      if (!cancelled && y && HIST_YEARS.includes(y)) setYear(y);
+    })();
+    return () => { cancelled = true; };
+  }, []);
+
+  // Load every selected comparison year through the per-year cache.
+  useEffect(() => {
+    if (!compareOpen || compareYears.length === 0) return;
+    let cancelled = false;
+    void (async () => {
+      setCompareLoading(true);
+      const out: Record<number, HistRow[]> = {};
+      for (const y of compareYears) {
+        const res = await fetchYear(y);
+        out[y] = res?.rows ?? [];
+      }
+      if (!cancelled) { setCompareData((p) => ({ ...p, ...out })); setCompareLoading(false); }
+    })();
+    return () => { cancelled = true; };
+  }, [compareOpen, compareYears]);
 
   const sortKey = (r: HistRow): string | number => {
     if (!sort) return '';
