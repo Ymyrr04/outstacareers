@@ -1439,10 +1439,10 @@ export const PLDashboard = () => {
                             Wk {(c.latestTimesheet.weekIndex ?? 0) + 1}
                           </Badge>
                           {c.latestTimesheet.targetStatus === 'complete' && (
-                            <Badge className="bg-emerald-600 text-white text-[10px] px-1 py-0 h-4 mt-0.5">Deposit complete</Badge>
+                            <Badge className="bg-emerald-600 text-white hover:bg-emerald-600 text-[10px] leading-4 px-1.5 py-0 mt-1 whitespace-nowrap">Deposit complete</Badge>
                           )}
                           {c.latestTimesheet.targetStatus === 'excess' && (
-                            <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4 mt-0.5">Excess ${(c.latestTimesheet.excessAmount ?? 0).toFixed(2)}</Badge>
+                            <Badge variant="destructive" className="text-[10px] leading-4 px-1.5 py-0 mt-1 whitespace-nowrap">Excess ${(c.latestTimesheet.excessAmount ?? 0).toFixed(2)}</Badge>
                           )}
                           <span className="text-[10px] text-muted-foreground mt-0.5">${c.depositAccumulated.toFixed(2)} total</span>
                         </div>
@@ -1935,10 +1935,10 @@ export const PLDashboard = () => {
                               Wk {(dep.weekIndex ?? 0) + 1} deposit
                             </Badge>
                             {dep.targetStatus === 'complete' && (
-                              <Badge className="bg-emerald-600 text-white text-[10px] px-1 py-0 h-4 mt-0.5">Deposit complete</Badge>
+                              <Badge className="bg-emerald-600 text-white hover:bg-emerald-600 text-[10px] leading-4 px-1.5 py-0 mt-1 whitespace-nowrap">Deposit complete</Badge>
                             )}
                             {dep.targetStatus === 'excess' && (
-                              <Badge variant="destructive" className="text-[10px] px-1 py-0 h-4 mt-0.5">Excess ${(dep.excessAmount ?? 0).toFixed(2)}</Badge>
+                              <Badge variant="destructive" className="text-[10px] leading-4 px-1.5 py-0 mt-1 whitespace-nowrap">Excess ${(dep.excessAmount ?? 0).toFixed(2)}</Badge>
                             )}
                           </div>
                         ) : (
