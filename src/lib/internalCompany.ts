@@ -9,7 +9,7 @@ export const isInternalContractor = (c: { client_id?: string | null } | null | u
 // These contractors keep their financial rows (income, expense, gross, hours)
 // everywhere, but they are not counted toward contractor headcounts.
 export const HEADCOUNT_EXCLUDED_NAMES = new Set([
-  'reggie joseph arciaaga'.replace('arciaaga', 'arciaga'),
+  'reggie joseph arciaga',
   'richard ryan abes',
 ]);
 
