@@ -174,7 +174,8 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
           if (cErr) throw cErr;
           if ((count ?? 0) > 0) { if (!cancelled) setError('This week came from an upload'); return; }
         }
-        const res = await computePlWeek(week, fees, { includeInternal: true });
+        // Internal team (OutSta client) is excluded, same as the P&L report.
+        const res = await computePlWeek(week, fees, { includeInternal: false });
         if (cancelled) return;
         setNoTimesheet(res.filter((r) => !r.timesheet).length);
         setHeadcount(res.length);
