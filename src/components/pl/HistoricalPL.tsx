@@ -40,7 +40,7 @@ const num = (n: number | null | undefined) => Number(n ?? 0);
 // ---- Per-year cache (memory + localStorage), invalidated when batches or their mapping change ----
 interface CacheEntry { sig: string; ids: string[]; rows: HistRow[] }
 const memCache = new Map<number, CacheEntry>();
-const CACHE_KEY = (y: number) => `hist-pl-cache-v2-${y}`;
+const CACHE_KEY = (y: number) => `hist-pl-cache-v3-${y}`;
 function readCache(y: number): CacheEntry | null {
   if (memCache.has(y)) return memCache.get(y)!;
   try {
@@ -65,6 +65,22 @@ function signature(batches: { id: string; created_at: string; column_map: unknow
 
 type NumKey = 'hours' | 'actual_hours' | 'contractor_rate' | 'client_rate' | 'contractor_cost' | 'expense_after_1_percent'
   | 'client_billing' | 'income_after_3_percent' | 'margin' | 'gross_after_deductions' | 'client_deposit' | 'contractor_deposit';
+
+// Headline figures come from the after-fee columns.
+const COST_KEY: NumKey = 'expense_after_1_percent';
+const BILLING_KEY: NumKey = 'income_after_3_percent';
+const MARGIN_KEY: NumKey = 'gross_after_deductions';
+
+// Sum a field across rows; has=false when no row has a value (missing, not zero).
+const sumField = (rows: HistRow[], key: NumKey) => {
+  let total = 0, has = false;
+  for (const r of rows) {
+    const v = r[key];
+    if (v != null && !Number.isNaN(Number(v))) { has = true; total += Number(v); }
+  }
+  return { total, has };
+};
+const fmtMaybe = (f: { total: number; has: boolean }) => (f.has ? money(f.total) : '—');
 type SortKey = 'contractor_name' | 'company' | NumKey;
 interface SortState { key: SortKey; dir: 'asc' | 'desc' }
 type Col = { key: SortKey; label: string; numeric?: boolean; kind?: 'hours' | 'money' | 'rate'; width?: string };
@@ -211,30 +227,47 @@ export function HistoricalPL({ onUpload }: Props) {
     }
     return [...map.entries()].map(([key, w]) => {
       const t = w.rows.reduce((a, r) => ({
-        hours: a.hours + num(r.hours), cost: a.cost + num(r.contractor_cost),
-        billing: a.billing + num(r.client_billing), margin: a.margin + num(r.margin),
+        hours: a.hours + num(r.hours),
+        cost: a.cost + num(r[COST_KEY]),
+        billing: a.billing + num(r[BILLING_KEY]),
+        margin: a.margin + num(r[MARGIN_KEY]),
       }), { hours: 0, cost: 0, billing: 0, margin: 0 });
+      const has = {
+        cost: w.rows.some((r) => r[COST_KEY] != null),
+        billing: w.rows.some((r) => r[BILLING_KEY] != null),
+        margin: w.rows.some((r) => r[MARGIN_KEY] != null),
+      };
       const headcount = new Set(w.rows.map((r) => (r.contractor_name || '').trim().toLowerCase()).filter(Boolean)).size;
-      return { key, label: w.label, rows: w.rows, totals: t, headcount };
+      return { key, label: w.label, rows: w.rows, totals: t, has, headcount };
     });
   }, [rows]);
 
   // Year totals, from the rows already loaded.
   const yearSummary = useMemo(() => {
     const t = rows.reduce((a, r) => ({
-      hours: a.hours + num(r.hours), cost: a.cost + num(r.contractor_cost),
-      billing: a.billing + num(r.client_billing), margin: a.margin + num(r.margin),
+      hours: a.hours + num(r.hours),
+      cost: a.cost + num(r[COST_KEY]),
+      billing: a.billing + num(r[BILLING_KEY]),
+      margin: a.margin + num(r[MARGIN_KEY]),
     }), { hours: 0, cost: 0, billing: 0, margin: 0 });
+    const has = {
+      cost: rows.some((r) => r[COST_KEY] != null),
+      billing: rows.some((r) => r[BILLING_KEY] != null),
+      margin: rows.some((r) => r[MARGIN_KEY] != null),
+    };
     const avgHeadcount = weeks.length
       ? weeks.reduce((a, w) => a + w.headcount, 0) / weeks.length
       : 0;
-    return { ...t, avgHeadcount };
+    return { ...t, has, avgHeadcount };
   }, [rows, weeks]);
 
   // Month-by-month billing / cost / margin for each selected comparison year.
   const compare = useMemo(() => {
     const years = [...compareYears].sort((a, b) => a - b);
-    const blank = () => ({ billing: 0, cost: 0, margin: 0 });
+    const blank = () => ({
+      billing: 0, cost: 0, margin: 0,
+      has: { billing: false, cost: false, margin: false },
+    });
     const byYear: Record<number, { months: ReturnType<typeof blank>[]; total: ReturnType<typeof blank> }> = {};
     for (const y of years) {
       const months = Array.from({ length: 12 }, blank);
@@ -244,9 +277,12 @@ export function HistoricalPL({ onUpload }: Props) {
         const m = new Date(`${r.week_start}T00:00:00`).getMonth();
         if (Number.isNaN(m)) continue;
         const cell = months[m];
-        const b = num(r.client_billing), c = num(r.contractor_cost), g = num(r.margin);
+        const b = num(r[BILLING_KEY]), c = num(r[COST_KEY]), g = num(r[MARGIN_KEY]);
         cell.billing += b; cell.cost += c; cell.margin += g;
         total.billing += b; total.cost += c; total.margin += g;
+        if (r[BILLING_KEY] != null) { cell.has.billing = true; total.has.billing = true; }
+        if (r[COST_KEY] != null) { cell.has.cost = true; total.has.cost = true; }
+        if (r[MARGIN_KEY] != null) { cell.has.margin = true; total.has.margin = true; }
       }
       byYear[y] = { months, total };
     }
@@ -338,14 +374,15 @@ export function HistoricalPL({ onUpload }: Props) {
       {!loading && rows.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
-            { label: 'Total billing', value: money(yearSummary.billing) },
-            { label: 'Total cost', value: money(yearSummary.cost) },
-            { label: 'Total margin', value: money(yearSummary.margin) },
+            { label: 'Total billing', caption: 'Income after 3%', value: fmtMaybe({ total: yearSummary.billing, has: yearSummary.has.billing }) },
+            { label: 'Total cost', caption: 'Expense after 1%', value: fmtMaybe({ total: yearSummary.cost, has: yearSummary.has.cost }) },
+            { label: 'Total margin', caption: 'Gross after deductions', value: fmtMaybe({ total: yearSummary.margin, has: yearSummary.has.margin }) },
             { label: 'Total hours', value: yearSummary.hours.toFixed(2) },
             { label: 'Avg weekly headcount', value: yearSummary.avgHeadcount.toFixed(1) },
           ].map((s) => (
             <div key={s.label} className="border rounded-lg p-3 bg-card">
               <p className="text-xs text-muted-foreground">{s.label}</p>
+              {'caption' in s && s.caption && <p className="text-[10px] text-muted-foreground/80">{s.caption}</p>}
               <p className="text-lg font-semibold tabular-nums whitespace-nowrap mt-0.5">{s.value}</p>
             </div>
           ))}
@@ -413,10 +450,11 @@ export function HistoricalPL({ onUpload }: Props) {
                 </thead>
                 <tbody>
                   {MONTHS.map((mn, mi) => {
-                    const cur = compare.byYear[compare.latest].months[mi].margin;
-                    const prv = compare.prev != null ? compare.byYear[compare.prev].months[mi].margin : 0;
-                    const diff = cur - prv;
-                    const p = pct(cur, prv);
+                    const curCell = compare.byYear[compare.latest].months[mi];
+                    const prvCell = compare.prev != null ? compare.byYear[compare.prev].months[mi] : null;
+                    const showChange = curCell.has.margin && !!prvCell?.has.margin;
+                    const diff = showChange ? curCell.margin - prvCell!.margin : 0;
+                    const p = showChange ? pct(curCell.margin, prvCell!.margin) : null;
                     return (
                       <tr key={mn} className="border-b last:border-0">
                         <td className="px-3 py-2 font-medium whitespace-nowrap">{mn}</td>
@@ -424,16 +462,16 @@ export function HistoricalPL({ onUpload }: Props) {
                           const c = compare.byYear[y].months[mi];
                           return (
                             <Fragment key={y}>
-                              <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap border-l">{money(c.billing)}</td>
-                              <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(c.cost)}</td>
-                              <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(c.margin)}</td>
+                              <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap border-l">{c.has.billing ? money(c.billing) : '—'}</td>
+                              <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{c.has.cost ? money(c.cost) : '—'}</td>
+                              <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{c.has.margin ? money(c.margin) : '—'}</td>
                             </Fragment>
                           );
                         })}
                         {compare.prev != null && (
                           <>
-                            <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap border-l', diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{money(diff)}</td>
-                            <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap', diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{p == null ? '—' : `${p > 0 ? '+' : ''}${p.toFixed(1)}%`}</td>
+                            <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap border-l', !showChange ? '' : diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{showChange ? money(diff) : '—'}</td>
+                            <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap', !showChange ? '' : diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{p == null ? '—' : `${p > 0 ? '+' : ''}${p.toFixed(1)}%`}</td>
                           </>
                         )}
                       </tr>
@@ -445,21 +483,22 @@ export function HistoricalPL({ onUpload }: Props) {
                       const t = compare.byYear[y].total;
                       return (
                         <Fragment key={y}>
-                          <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap border-l">{money(t.billing)}</td>
-                          <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(t.cost)}</td>
-                          <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(t.margin)}</td>
+                          <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap border-l">{t.has.billing ? money(t.billing) : '—'}</td>
+                          <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{t.has.cost ? money(t.cost) : '—'}</td>
+                          <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{t.has.margin ? money(t.margin) : '—'}</td>
                         </Fragment>
                       );
                     })}
                     {compare.prev != null && (() => {
-                      const cur = compare.byYear[compare.latest].total.margin;
-                      const prv = compare.byYear[compare.prev].total.margin;
-                      const diff = cur - prv;
-                      const p = pct(cur, prv);
+                      const curT = compare.byYear[compare.latest].total;
+                      const prvT = compare.byYear[compare.prev].total;
+                      const showChange = curT.has.margin && prvT.has.margin;
+                      const diff = showChange ? curT.margin - prvT.margin : 0;
+                      const p = showChange ? pct(curT.margin, prvT.margin) : null;
                       return (
                         <>
-                          <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap border-l', diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{money(diff)}</td>
-                          <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap', diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{p == null ? '—' : `${p > 0 ? '+' : ''}${p.toFixed(1)}%`}</td>
+                          <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap border-l', !showChange ? '' : diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{showChange ? money(diff) : '—'}</td>
+                          <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap', !showChange ? '' : diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{p == null ? '—' : `${p > 0 ? '+' : ''}${p.toFixed(1)}%`}</td>
                         </>
                       );
                     })()}
@@ -505,9 +544,9 @@ export function HistoricalPL({ onUpload }: Props) {
                     <div className="text-xs text-muted-foreground">{w.headcount} contractors</div>
                   </TableCell>
                   <TableCell className="text-right tabular-nums whitespace-nowrap">{w.totals.hours.toFixed(2)}</TableCell>
-                  <TableCell className="text-right tabular-nums whitespace-nowrap">{money(w.totals.cost)}</TableCell>
-                  <TableCell className="text-right tabular-nums whitespace-nowrap">{money(w.totals.billing)}</TableCell>
-                  <TableCell className="text-right tabular-nums whitespace-nowrap">{money(w.totals.margin)}</TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap">{fmtMaybe({ total: w.totals.cost, has: w.has.cost })}</TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap">{fmtMaybe({ total: w.totals.billing, has: w.has.billing })}</TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap">{fmtMaybe({ total: w.totals.margin, has: w.has.margin })}</TableCell>
                   <TableCell className="w-10 text-right pr-4">
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </TableCell>
@@ -532,12 +571,13 @@ export function HistoricalPL({ onUpload }: Props) {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
                 {[
                   { label: 'Hours', value: openWeek.totals.hours.toFixed(2) },
-                  { label: 'Cost', value: money(openWeek.totals.cost) },
-                  { label: 'Billing', value: money(openWeek.totals.billing) },
-                  { label: 'Margin', value: money(openWeek.totals.margin) },
+                  { label: 'Cost', caption: 'Expense after 1%', value: fmtMaybe({ total: openWeek.totals.cost, has: openWeek.has.cost }) },
+                  { label: 'Billing', caption: 'Income after 3%', value: fmtMaybe({ total: openWeek.totals.billing, has: openWeek.has.billing }) },
+                  { label: 'Margin', caption: 'Gross after deductions', value: fmtMaybe({ total: openWeek.totals.margin, has: openWeek.has.margin }) },
                 ].map((s) => (
                   <div key={s.label} className="border rounded-lg p-3 bg-muted/30">
                     <p className="text-xs text-muted-foreground">{s.label}</p>
+                    {'caption' in s && s.caption && <p className="text-[10px] text-muted-foreground/80">{s.caption}</p>}
                     <p className="text-lg font-semibold tabular-nums whitespace-nowrap mt-0.5">{s.value}</p>
                   </div>
                 ))}
