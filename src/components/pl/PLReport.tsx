@@ -25,24 +25,11 @@ const lookupFallbackClientRate = (name: string | null | undefined): number => {
   return clientRateFallback[normalizeName(name)] ?? 0;
 };
 
-// ============ Config: fee constants (persisted in localStorage) ============
-const FEE_STORAGE_KEY = 'pl_report_fee_settings';
+// ============ Config: fee constants (persisted in pl_fee_settings table) ============
 const DEFAULT_EXPENSE_FEE_PCT = 1;
 const DEFAULT_INCOME_FEE_PCT = 3;
 
-const loadFees = () => {
-  try {
-    const raw = localStorage.getItem(FEE_STORAGE_KEY);
-    if (raw) {
-      const p = JSON.parse(raw);
-      return {
-        expensePct: Number(p.expensePct ?? DEFAULT_EXPENSE_FEE_PCT),
-        incomePct: Number(p.incomePct ?? DEFAULT_INCOME_FEE_PCT),
-      };
-    }
-  } catch {}
-  return { expensePct: DEFAULT_EXPENSE_FEE_PCT, incomePct: DEFAULT_INCOME_FEE_PCT };
-};
+const defaultFees = () => ({ expensePct: DEFAULT_EXPENSE_FEE_PCT, incomePct: DEFAULT_INCOME_FEE_PCT });
 
 const WEEK_STORAGE_KEY = 'pl_report_selected_week';
 
@@ -224,7 +211,7 @@ export const PLReport = () => {
   const [loading, setLoading] = useState(true);
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
-  const [fees, setFees] = useState(loadFees);
+  const [fees, setFees] = useState(defaultFees);
   const [feesDialogOpen, setFeesDialogOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [clientFilter, setClientFilter] = useState<string>('all');
@@ -452,10 +439,16 @@ export const PLReport = () => {
     };
   }, [filteredRows]);
 
-  const saveFees = (expensePct: number, incomePct: number) => {
-    const next = { expensePct, incomePct };
-    setFees(next);
-    try { localStorage.setItem(FEE_STORAGE_KEY, JSON.stringify(next)); } catch {}
+  const saveFees = async (expensePct: number, incomePct: number) => {
+    const { error } = await supabase
+      .from('pl_fee_settings')
+      .update({ expense_pct: expensePct, income_pct: incomePct, updated_at: new Date().toISOString() })
+      .eq('singleton', true);
+    if (error) {
+      toast({ title: 'Failed to save fee settings', description: error.message, variant: 'destructive' });
+      return;
+    }
+    setFees({ expensePct, incomePct });
     setFeesDialogOpen(false);
     toast({ title: 'Fee settings saved' });
   };
