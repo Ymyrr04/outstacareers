@@ -80,6 +80,9 @@ import { useAuth as useAuthInternal } from '@/hooks/useAuth';
 import { parseDateOnly } from '@/lib/dateOnly';
 import { formatDate, formatDateTime } from "@/lib/dateFormat";
 
+const fmtDeposit = (num: number | null, text: string | null) =>
+  text ? <span>{text}</span> : num != null ? <span>${Number(num).toLocaleString(undefined, { maximumFractionDigits: 2 })}</span> : <span className="text-muted-foreground">—</span>;
+
 interface ContractorWithDetails {
   id: string;
   client_id: string;
@@ -103,6 +106,10 @@ interface ContractorWithDetails {
   hired_via: string | null;
   hired_from_stage: string | null;
   client_rate: number | null;
+  client_deposit: number | null;
+  contractor_deposit: number | null;
+  client_deposit_text: string | null;
+  contractor_deposit_text: string | null;
   regular_work_shift: string | null;
   timezone: string | null;
   work_days: string[] | null;
@@ -212,6 +219,8 @@ export const ContractorsDashboard = () => {
     separationNote: true,
     hiredBy: true,
     clientRate: false,
+    clientDeposit: false,
+    contractorDeposit: false,
     endDate: false,
     workShift: false,
     timezone: false,
@@ -254,6 +263,8 @@ export const ContractorsDashboard = () => {
     separationNote: 'Separation Note',
     hiredBy: 'Hired By',
     clientRate: 'Client Rate',
+    clientDeposit: 'Client Deposit',
+    contractorDeposit: 'Contractor Deposit',
     endDate: 'End Date',
     workShift: 'Work Shift',
     timezone: 'Timezone',
@@ -938,6 +949,8 @@ export const ContractorsDashboard = () => {
                       {visibleColumns.separationNote && <TableHead data-col="separationNote" className="min-w-[200px]">Separation Note</TableHead>}
                       {visibleColumns.hiredBy && <TableHead data-col="hiredBy" className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('hiredBy')}><span className="inline-flex items-center gap-1">Hired By {getSortIcon('hiredBy')}<ContractorColumnFilter options={getColumnOptions('hiredBy')} selected={columnFilters['hiredBy']} onChange={(v) => setColumnFilter('hiredBy', v)} /></span></TableHead>}
                       {visibleColumns.clientRate && <TableHead data-col="clientRate" className="w-[100px]">Client Rate</TableHead>}
+{visibleColumns.clientDeposit && <TableHead data-col="clientDeposit" className="w-[110px]">Client Deposit</TableHead>}
+{visibleColumns.contractorDeposit && <TableHead data-col="contractorDeposit" className="w-[120px]">Contractor Deposit</TableHead>}
                       {visibleColumns.endDate && <TableHead data-col="endDate" className="w-[120px]">End Date</TableHead>}
                       {visibleColumns.workShift && <TableHead data-col="workShift" className="min-w-[120px]">Work Shift</TableHead>}
                       {visibleColumns.timezone && <TableHead data-col="timezone" className="min-w-[120px]">Timezone</TableHead>}
@@ -1251,6 +1264,8 @@ export const ContractorsDashboard = () => {
                             )}
                           </TableCell>
                         )}
+{visibleColumns.clientDeposit && (<TableCell data-col="clientDeposit" className="whitespace-nowrap">{fmtDeposit(contractor.client_deposit, contractor.client_deposit_text)}</TableCell>)}
+{visibleColumns.contractorDeposit && (<TableCell data-col="contractorDeposit" className="whitespace-nowrap">{fmtDeposit(contractor.contractor_deposit, contractor.contractor_deposit_text)}</TableCell>)}
                         {visibleColumns.endDate && (
                           <TableCell data-col="endDate" className="whitespace-nowrap text-sm text-muted-foreground">
                             {contractor.end_date ? format(parseDateOnly(contractor.end_date), 'MMM d, yyyy') : '—'}
@@ -1326,6 +1341,8 @@ export const ContractorsDashboard = () => {
                         {visibleColumns.notes && <TableHead data-col="notes" className="min-w-[200px]">Notes</TableHead>}
                         {visibleColumns.hiredBy && <TableHead data-col="hiredBy" className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('hiredBy')}><span className="inline-flex items-center gap-1">Hired By {getSortIcon('hiredBy')}<ContractorColumnFilter options={getColumnOptions('hiredBy')} selected={columnFilters['hiredBy']} onChange={(v) => setColumnFilter('hiredBy', v)} /></span></TableHead>}
                         {visibleColumns.clientRate && <TableHead data-col="clientRate" className="w-[100px]">Client Rate</TableHead>}
+{visibleColumns.clientDeposit && <TableHead data-col="clientDeposit" className="w-[110px]">Client Deposit</TableHead>}
+{visibleColumns.contractorDeposit && <TableHead data-col="contractorDeposit" className="w-[120px]">Contractor Deposit</TableHead>}
                         {visibleColumns.endDate && <TableHead data-col="endDate" className="w-[120px]">End Date</TableHead>}
                         {visibleColumns.workShift && <TableHead data-col="workShift" className="min-w-[120px]">Work Shift</TableHead>}
                         {visibleColumns.timezone && <TableHead data-col="timezone" className="min-w-[120px]">Timezone</TableHead>}
@@ -1696,6 +1713,8 @@ export const ContractorsDashboard = () => {
                               )}
                             </TableCell>
                           )}
+{visibleColumns.clientDeposit && (<TableCell data-col="clientDeposit" className="whitespace-nowrap">{fmtDeposit(contractor.client_deposit, contractor.client_deposit_text)}</TableCell>)}
+{visibleColumns.contractorDeposit && (<TableCell data-col="contractorDeposit" className="whitespace-nowrap">{fmtDeposit(contractor.contractor_deposit, contractor.contractor_deposit_text)}</TableCell>)}
                           {visibleColumns.endDate && (
                             <TableCell data-col="endDate" className="whitespace-nowrap text-sm text-muted-foreground">
                               {contractor.end_date ? format(parseDateOnly(contractor.end_date), 'MMM d, yyyy') : '—'}
