@@ -87,6 +87,41 @@ const SORTABLE: Col[] = [
 const fmtCell = (c: Col, v: number | null | undefined) =>
   v == null || Number.isNaN(Number(v)) ? '—' : c.kind === 'hours' ? Number(v).toFixed(2) : money(Number(v));
 
+const ROW_COLS = 'id, week_label, week_start, contractor_name, company, hours, actual_hours, contractor_rate, client_rate, contractor_cost, expense_after_1_percent, client_billing, income_after_3_percent, margin, gross_after_deductions, client_deposit, contractor_deposit';
+
+// Fetch one year's rows through the existing per-year cache.
+async function fetchYear(y: number): Promise<{ ids: string[]; rows: HistRow[] } | null> {
+  const cached = readCache(y);
+  const { data: batches, error: bErr } = await supabase
+    .from('historical_pl_batches').select('id, created_at, column_map').eq('year', y);
+  if (bErr) return cached ? { ids: cached.ids, rows: cached.rows } : null;
+  const ids = (batches ?? []).map((b) => b.id);
+  const sig = signature(batches ?? []);
+  if (cached && cached.sig === sig) return { ids, rows: cached.rows };
+  if (ids.length === 0) { writeCache(y, { sig, ids, rows: [] }); return { ids, rows: [] }; }
+
+  const all: HistRow[] = [];
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await supabase
+      .from('historical_pl_rows')
+      .select(ROW_COLS)
+      .in('batch_id', ids)
+      .order('week_start', { ascending: true, nullsFirst: false })
+      .order('contractor_name', { ascending: true })
+      .order('id', { ascending: true })
+      .range(from, from + PAGE - 1);
+    if (error) return null;
+    all.push(...((data ?? []) as HistRow[]));
+    if (!data || data.length < PAGE) break;
+  }
+  writeCache(y, { sig, ids, rows: all });
+  return { ids, rows: all };
+}
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const pct = (cur: number, prev: number) => (prev === 0 ? null : ((cur - prev) / Math.abs(prev)) * 100);
+
 interface Props { onUpload?: (year: number) => void }
 
 export function HistoricalPL({ onUpload }: Props) {
