@@ -33,6 +33,7 @@ interface MappedRow {
   expense_after_1_percent: number; income_after_3_percent: number;
   margin: number; gross_after_deductions: number;
   client_deposit: number | null; contractor_deposit: number | null;
+  bonus: number | null;
   raw: Record<string, unknown>;
 }
 
@@ -57,6 +58,7 @@ function mapRow(r: PlWeekRow, monday: string, fees: PlFees): MappedRow {
     gross_after_deductions: r.grossAfter,
     client_deposit: numDep(r.clientDeposit),
     contractor_deposit: numDep(r.contractorDeposit),
+    bonus: r.bonus,
     raw: {
       source: 'timesheet_sync',
       fees: { expense_pct: fees.expensePct, income_pct: fees.incomePct },
@@ -64,6 +66,7 @@ function mapRow(r: PlWeekRow, monday: string, fees: PlFees): MappedRow {
       timesheet_id: r.timesheet?.id ?? null,
       client_deposit_text: txtDep(r.clientDeposit),
       contractor_deposit_text: txtDep(r.contractorDeposit),
+      bonus: r.bonus,
     },
   };
 }
@@ -76,6 +79,7 @@ const COLS: Col[] = [
   { key: 'actual_hours', label: 'Actual hours', kind: 'hours', width: 'w-[120px] min-w-[120px]' },
   { key: 'contractor_rate', label: 'Contractor rate', kind: 'rate', width: 'w-[140px] min-w-[140px]' },
   { key: 'client_rate', label: 'Client rate', kind: 'rate', width: 'w-[120px] min-w-[120px]' },
+  { key: 'bonus', label: 'Bonus', kind: 'money', width: 'w-[110px] min-w-[110px]' },
   { key: 'contractor_cost', label: 'Expense', kind: 'money', width: 'w-[130px] min-w-[130px]' },
   { key: 'expense_after_1_percent', label: 'Expense after 1%', kind: 'money', width: 'w-[150px] min-w-[150px]' },
   { key: 'client_billing', label: 'Income', kind: 'money', width: 'w-[130px] min-w-[130px]' },
@@ -188,7 +192,7 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
       // Insert new rows first.
       if (rows.length) {
         const { data: ins, error: iErr } = await supabase.from('historical_pl_rows')
-          .insert(rows.map((r) => ({ ...r, batch_id: batchId })) as any).select('id');
+          .insert(rows.map(({ bonus, ...r }) => ({ ...r, batch_id: batchId })) as any).select('id');
         if (iErr) throw iErr;
         insertedIds = (ins ?? []).map((r) => r.id);
       }
