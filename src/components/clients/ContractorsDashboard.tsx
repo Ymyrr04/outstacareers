@@ -915,6 +915,12 @@ export const ContractorsDashboard = () => {
                       {visibleColumns.notes && <TableHead className="min-w-[200px]">Notes</TableHead>}
                       {visibleColumns.separationNote && <TableHead className="min-w-[200px]">Separation Note</TableHead>}
                       {visibleColumns.hiredBy && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('hiredBy')}><span className="inline-flex items-center gap-1">Hired By {getSortIcon('hiredBy')}<ContractorColumnFilter options={getColumnOptions('hiredBy')} selected={columnFilters['hiredBy']} onChange={(v) => setColumnFilter('hiredBy', v)} /></span></TableHead>}
+                      {visibleColumns.clientRate && <TableHead className="w-[100px]">Client Rate</TableHead>}
+                      {visibleColumns.endDate && <TableHead className="w-[120px]">End Date</TableHead>}
+                      {visibleColumns.workShift && <TableHead className="min-w-[120px]">Work Shift</TableHead>}
+                      {visibleColumns.timezone && <TableHead className="min-w-[120px]">Timezone</TableHead>}
+                      {visibleColumns.workDays && <TableHead className="min-w-[140px]">Work Days</TableHead>}
+                      {visibleColumns.breakTime && <TableHead className="min-w-[110px]">Break</TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1254,6 +1260,12 @@ export const ContractorsDashboard = () => {
                         {visibleColumns.separationNote && <TableHead className="min-w-[200px]">Separation Note</TableHead>}
                         {visibleColumns.notes && <TableHead className="min-w-[200px]">Notes</TableHead>}
                         {visibleColumns.hiredBy && <TableHead className="min-w-[120px] cursor-pointer select-none hover:text-foreground" onClick={() => handleHeaderSort('hiredBy')}><span className="inline-flex items-center gap-1">Hired By {getSortIcon('hiredBy')}<ContractorColumnFilter options={getColumnOptions('hiredBy')} selected={columnFilters['hiredBy']} onChange={(v) => setColumnFilter('hiredBy', v)} /></span></TableHead>}
+                        {visibleColumns.clientRate && <TableHead className="w-[100px]">Client Rate</TableHead>}
+                        {visibleColumns.endDate && <TableHead className="w-[120px]">End Date</TableHead>}
+                        {visibleColumns.workShift && <TableHead className="min-w-[120px]">Work Shift</TableHead>}
+                        {visibleColumns.timezone && <TableHead className="min-w-[120px]">Timezone</TableHead>}
+                        {visibleColumns.workDays && <TableHead className="min-w-[140px]">Work Days</TableHead>}
+                        {visibleColumns.breakTime && <TableHead className="min-w-[110px]">Break</TableHead>}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
