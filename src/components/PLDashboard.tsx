@@ -1415,7 +1415,24 @@ export const PLDashboard = () => {
                         <span className="text-muted-foreground">—</span>
                       )}
                     </TableCell>
-                    <TableCell data-col="approval">
+                    <TableCell data-col="clientDeposit" className="text-right">
+                      {c.client_deposit_text ? (
+                        <span className="font-medium">{c.client_deposit_text}</span>
+                      ) : c.client_deposit != null ? (
+                        <span className="font-medium">${Number(c.client_deposit).toFixed(2)}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell data-col="contractorDeposit" className="text-right">
+                      {c.contractor_deposit_text ? (
+                        <span className="font-medium">{c.contractor_deposit_text}</span>
+                      ) : c.contractor_deposit != null ? (
+                        <span className="font-medium">${Number(c.contractor_deposit).toFixed(2)}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
                       {c.latestTimesheet ? (
                         <ClientApprovalBadge status={c.latestTimesheet.client_approval_status} reason={c.latestTimesheet.client_flag_reason} reviewedAt={c.latestTimesheet.client_reviewed_at} />
                       ) : (
