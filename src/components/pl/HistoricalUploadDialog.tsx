@@ -174,7 +174,7 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
   }, [usable, mapping]);
 
   const startImport = async () => {
-    const { data, error } = await supabase.from('historical_pl_batches').select('id').eq('year', year);
+    const { data, error } = await supabase.from('historical_pl_batches').select('id').eq('year', year).eq('source', 'upload');
     if (error) { toast.error('Could not check existing data'); return; }
     if (data && data.length) { setReplaceIds(data.map((b) => b.id)); return; }
     void doImport([]);
@@ -196,7 +196,7 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
         if (error) throw error;
       }
       if (oldIds.length) {
-        const { error } = await supabase.from('historical_pl_batches').delete().in('id', oldIds);
+        const { error } = await supabase.from('historical_pl_batches').delete().in('id', oldIds).eq('source', 'upload');
         if (error) throw error;
       }
       toast.success(`Imported ${importRows.length.toLocaleString()} rows for ${year}`);
