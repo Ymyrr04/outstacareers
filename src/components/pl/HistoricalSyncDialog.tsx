@@ -86,7 +86,7 @@ function bonusRow(base: MappedRow, bonus: number, fees: PlFees): MappedRow {
     expense_after_1_percent: expenseAfter, income_after_3_percent: incomeAfter,
     margin: r2(income - bonus),
     gross_after_deductions: r2(incomeAfter - expenseAfter),
-    client_deposit: null, contractor_deposit: null, bonus: null,
+    client_deposit: null, contractor_deposit: null, bonus: bonus,
     raw: { ...base.raw, kind: 'bonus', bonus_amount: bonus, bonus_markup: BONUS_MARKUP, bonus: null },
   };
 }
