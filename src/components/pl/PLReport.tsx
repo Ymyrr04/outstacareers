@@ -9,7 +9,7 @@ import { Popover, PopoverTrigger, PopoverContent } from '@/components/ui/popover
 import { Calendar } from '@/components/ui/calendar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
-import { ChevronLeft, ChevronRight, Download, Loader2, Search, Settings } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Loader2, Search, Settings, ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -147,6 +147,8 @@ export const PLReport = () => {
   const [clientFilter, setClientFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [statusOverrides, setStatusOverrides] = useState<Record<string, StatusKey>>({});
+  const [sortKey, setSortKey] = useState<string | null>(null);
+  const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   const weekEnding = useMemo(() => {
     const d = new Date(weekMonday);
@@ -291,6 +293,28 @@ export const PLReport = () => {
     return Array.from(s).sort();
   }, [rows]);
 
+  const sortValue = (r: Row, key: string): string | number => {
+    switch (key) {
+      case 'contractor': return r.assignment.applicant?.full_name || '—';
+      case 'client': return r.assignment.client?.company_name || '—';
+      case 'contractor_rate': return r.hourlyRate;
+      case 'client_rate': return r.clientRate;
+      case 'expenses': return r.expenses;
+      case 'expense_after': return r.expenseAfter;
+      case 'income': return r.income;
+      case 'income_after': return r.incomeAfter;
+      case 'gross_profit': return r.grossProfit;
+      case 'gross_after': return r.grossAfter;
+      case 'client_deposit': return r.clientDeposit;
+      case 'contractor_deposit': return r.contractorDeposit;
+      case 'standard_hours': return r.standardHours;
+      case 'actual_hours': return r.actualHours;
+      case 'tenure': return r.weeksSinceStart ?? 999;
+      case 'status': return STATUS_META[r.status].label;
+      default: return 0;
+    }
+  };
+
   const filteredRows = useMemo(() => {
     const q = search.trim().toLowerCase();
     return rows.filter((r) => {
@@ -302,12 +326,26 @@ export const PLReport = () => {
       if (statusFilter !== 'all' && r.status !== statusFilter) return false;
       return true;
     }).sort((a, b) => {
+      if (sortKey) {
+        const va = sortValue(a, sortKey);
+        const vb = sortValue(b, sortKey);
+        const cmp = typeof va === 'number' && typeof vb === 'number'
+          ? va - vb
+          : String(va).localeCompare(String(vb), undefined, { numeric: true, sensitivity: 'base' });
+        return sortDir === 'asc' ? cmp : -cmp;
+      }
       const ca = (a.assignment.client?.company_name || '').toLowerCase();
       const cb = (b.assignment.client?.company_name || '').toLowerCase();
       if (ca !== cb) return ca.localeCompare(cb);
       return (a.assignment.applicant?.full_name || '').localeCompare(b.assignment.applicant?.full_name || '');
     });
-  }, [rows, search, clientFilter, statusFilter]);
+  }, [rows, search, clientFilter, statusFilter, sortKey, sortDir]);
+
+  const toggleSort = (key: string) => {
+    if (sortKey !== key) { setSortKey(key); setSortDir('asc'); }
+    else if (sortDir === 'asc') setSortDir('desc');
+    else setSortKey(null);
+  };
 
   const mainRows = filteredRows.filter((r) => !r.isNewStarter);
   const newStarters = filteredRows.filter((r) => r.isNewStarter);
@@ -517,22 +555,38 @@ export const PLReport = () => {
             <TableHeader>
               <TableRow>
                 <TableHead className="w-10">#</TableHead>
-                <TableHead>Contractor</TableHead>
-                <TableHead>Client/Company</TableHead>
-                <TableHead className="text-right">Contractor Rate</TableHead>
-                <TableHead className="text-right">Client Rate</TableHead>
-                <TableHead className="text-right">Expenses</TableHead>
-                <TableHead className="text-right">Expense After {fees.expensePct}%</TableHead>
-                <TableHead className="text-right">Income</TableHead>
-                <TableHead className="text-right">Income After {fees.incomePct}%</TableHead>
-                <TableHead className="text-right">Gross Profit</TableHead>
-                <TableHead className="text-right">Gross After Deductions</TableHead>
-                <TableHead className="text-right">Client Deposit</TableHead>
-                <TableHead className="text-right">Contractor Deposit</TableHead>
-                <TableHead className="text-right">Standard Hrs</TableHead>
-                <TableHead className="text-right">Actual Hrs</TableHead>
-                <TableHead>Tenure</TableHead>
-                <TableHead>Status</TableHead>
+                {([
+                  ['contractor', 'Contractor', false],
+                  ['client', 'Client/Company', false],
+                  ['contractor_rate', 'Contractor Rate', true],
+                  ['client_rate', 'Client Rate', true],
+                  ['expenses', 'Expenses', true],
+                  ['expense_after', `Expense After ${fees.expensePct}%`, true],
+                  ['income', 'Income', true],
+                  ['income_after', `Income After ${fees.incomePct}%`, true],
+                  ['gross_profit', 'Gross Profit', true],
+                  ['gross_after', 'Gross After Deductions', true],
+                  ['client_deposit', 'Client Deposit', true],
+                  ['contractor_deposit', 'Contractor Deposit', true],
+                  ['standard_hours', 'Standard Hrs', true],
+                  ['actual_hours', 'Actual Hrs', true],
+                  ['tenure', 'Tenure', false],
+                  ['status', 'Status', false],
+                ] as [string, string, boolean][]).map(([key, label, right]) => (
+                  <TableHead key={key} className={right ? 'text-right' : undefined}>
+                    <button
+                      type="button"
+                      onClick={() => toggleSort(key)}
+                      className={`inline-flex items-center gap-1 hover:text-foreground transition-colors ${sortKey === key ? 'text-foreground' : ''}`}
+                      title="Sort"
+                    >
+                      {label}
+                      {sortKey === key
+                        ? (sortDir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />)
+                        : <ArrowUpDown className="w-3 h-3 opacity-30" />}
+                    </button>
+                  </TableHead>
+                ))}
               </TableRow>
             </TableHeader>
             <TableBody>
