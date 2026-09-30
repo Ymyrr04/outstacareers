@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -44,6 +44,7 @@ export const NONE = '__none__';
 const MONTHS = ['jan','feb','mar','apr','may','jun','jul','aug','sep','oct','nov','dec'];
 const pad = (n: number) => String(n).padStart(2, '0');
 const ymd = (y: number, m: number, d: number) => `${y}-${pad(m)}-${pad(d)}`;
+const SYNC_START = '2026-09-21';
 
 /** "September 4 - September 10" or "Sep 28 - 4" → plain YYYY-MM-DD strings. */
 export function parseWeekTab(name: string, year: number): { start: string; end: string } | null {
@@ -112,6 +113,21 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
   const [parsing, setParsing] = useState(false);
   const [importing, setImporting] = useState(false);
   const [replaceIds, setReplaceIds] = useState<string[] | null>(null);
+  const [syncedWeeks, setSyncedWeeks] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    let cancelled = false;
+    setSyncedWeeks(new Set());
+    void (async () => {
+      const { data: batches } = await supabase.from('historical_pl_batches').select('id').eq('year', year).eq('source', 'timesheet_sync');
+      const ids = (batches ?? []).map((b) => b.id);
+      if (!ids.length) return;
+      const { data: rows } = await supabase.from('historical_pl_rows').select('week_start').in('batch_id', ids).gte('week_start', SYNC_START);
+      if (cancelled || !rows) return;
+      setSyncedWeeks(new Set(rows.map((r) => r.week_start).filter((w): w is string => !!w)));
+    })();
+    return () => { cancelled = true; };
+  }, [year]);
 
   const reset = () => { setFilename(''); setSheets([]); setMappings(null); setReplaceIds(null); };
   const close = (o: boolean) => { if (importing) return; if (!o) reset(); onOpenChange(o); };
@@ -136,7 +152,8 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
   // re-parse dates if the year changes after upload
   const sheetsWithDates = useMemo(() => sheets.map((s) => ({ ...s, dates: parseWeekTab(s.name, year) })), [sheets, year]);
   const badDates = sheetsWithDates.filter((s) => !s.dates);
-  const usable = sheetsWithDates.filter((s) => s.headers.length);
+  const syncSkipped = sheetsWithDates.filter((s) => s.dates && s.dates.start >= SYNC_START && syncedWeeks.has(s.dates.start));
+  const usable = sheetsWithDates.filter((s) => s.headers.length && !syncSkipped.includes(s));
   const groups = useMemo(() => {
     const m = new Map<string, { key: string; headers: string[]; sheets: string[] }>();
     for (const s of usable) {
