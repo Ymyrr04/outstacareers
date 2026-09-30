@@ -213,6 +213,19 @@ export const PLReport = () => {
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [fees, setFees] = useState(defaultFees);
   const [feesDialogOpen, setFeesDialogOpen] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data, error } = await supabase
+        .from('pl_fee_settings')
+        .select('expense_pct, income_pct')
+        .eq('singleton', true)
+        .maybeSingle();
+      if (!error && data) {
+        setFees({ expensePct: Number(data.expense_pct), incomePct: Number(data.income_pct) });
+      }
+    })();
+  }, []);
   const [search, setSearch] = useState('');
   const [clientFilter, setClientFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
