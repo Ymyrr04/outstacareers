@@ -1552,10 +1552,12 @@ export type Database = {
           checkin_reminder_enabled: boolean
           checkin_reminder_time: string | null
           client_deposit: number | null
+          client_deposit_text: string | null
           client_id: string
           client_rate: number | null
           contact_number: string | null
           contractor_deposit: number | null
+          contractor_deposit_text: string | null
           country: string | null
           created_at: string
           emergency_number: string | null
@@ -1588,10 +1590,12 @@ export type Database = {
           checkin_reminder_enabled?: boolean
           checkin_reminder_time?: string | null
           client_deposit?: number | null
+          client_deposit_text?: string | null
           client_id: string
           client_rate?: number | null
           contact_number?: string | null
           contractor_deposit?: number | null
+          contractor_deposit_text?: string | null
           country?: string | null
           created_at?: string
           emergency_number?: string | null
@@ -1624,10 +1628,12 @@ export type Database = {
           checkin_reminder_enabled?: boolean
           checkin_reminder_time?: string | null
           client_deposit?: number | null
+          client_deposit_text?: string | null
           client_id?: string
           client_rate?: number | null
           contact_number?: string | null
           contractor_deposit?: number | null
+          contractor_deposit_text?: string | null
           country?: string | null
           created_at?: string
           emergency_number?: string | null

@@ -1,0 +1,2 @@
+ALTER TABLE public.contractor_assignments ADD COLUMN client_deposit_text text, ADD COLUMN contractor_deposit_text text;
+ALTER TABLE public.contractor_assignments ADD CONSTRAINT client_deposit_text_length CHECK (client_deposit_text IS NULL OR length(client_deposit_text) <= 100), ADD CONSTRAINT contractor_deposit_text_length CHECK (contractor_deposit_text IS NULL OR length(contractor_deposit_text) <= 100);

@@ -70,6 +70,8 @@ interface Assignment {
   hourly_rate: number | null;
   client_deposit?: number | null;
   contractor_deposit?: number | null;
+  client_deposit_text?: string | null;
+  contractor_deposit_text?: string | null;
   client_rate: number | null;
   hours_per_week: number | null;
   start_date: string | null;
@@ -105,8 +107,8 @@ interface Row {
   incomeAfter: number;
   grossProfit: number;
   grossAfter: number;
-  clientDeposit: number | null;
-  contractorDeposit: number | null;
+  clientDeposit: number | string | null;
+  contractorDeposit: number | string | null;
   status: StatusKey;
   weeksSinceStart: number | null;
   isNewStarter: boolean;
@@ -123,12 +125,13 @@ const STATUS_META: Record<StatusKey, { label: string; cls: string }> = {
 
 // ============ Inline editable cell ============
 interface EditableCellProps {
-  value: number | null;
+  value: number | string | null;
   display: string;
-  onSave: (v: number | null) => Promise<void>;
+  onSave: (v: number | string | null) => Promise<void>;
+  allowText?: boolean;
 }
 
-const EditableCell = ({ value, display, onSave }: EditableCellProps) => {
+const EditableCell = ({ value, display, onSave, allowText = false }: EditableCellProps) => {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState('');
   const [saving, setSaving] = useState(false);
@@ -141,9 +144,14 @@ const EditableCell = ({ value, display, onSave }: EditableCellProps) => {
   const cancel = () => setEditing(false);
   const commit = async () => {
     const trimmed = draft.trim();
-    const parsed = trimmed === '' ? null : Number(trimmed);
-    if (trimmed !== '' && (isNaN(parsed as number) || (parsed as number) < 0)) {
+    const numeric = trimmed !== '' && /^(?:\d+(?:\.\d*)?|\.\d+)$/.test(trimmed);
+    const parsed = trimmed === '' ? null : numeric ? Number(trimmed) : trimmed;
+    if ((!allowText && typeof parsed === 'string') || (typeof parsed === 'number' && !Number.isFinite(parsed))) {
       toast({ title: 'Enter a valid number (or leave blank)', variant: 'destructive' });
+      return;
+    }
+    if (typeof parsed === 'string' && parsed.length > 100) {
+      toast({ title: 'Text must be 100 characters or less', variant: 'destructive' });
       return;
     }
     if (parsed === value) { setEditing(false); return; }
@@ -160,23 +168,25 @@ const EditableCell = ({ value, display, onSave }: EditableCellProps) => {
 
   if (!editing) {
     return (
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={start}
         title="Click to edit"
-        className="w-full text-right rounded px-1 -mx-1 hover:bg-muted/60 hover:ring-1 hover:ring-border cursor-text"
+        className="w-full h-auto min-h-7 justify-end text-right px-1 whitespace-normal cursor-text"
       >
         {display || <span className="text-muted-foreground">—</span>}
-      </button>
+      </Button>
     );
   }
   return (
     <div className="flex items-center justify-end gap-1">
       <Input
         autoFocus
-        type="number"
-        step="any"
-        min="0"
+        type={allowText ? 'text' : 'number'}
+        step={allowText ? undefined : 'any'}
+        min={allowText ? undefined : '0'}
+        maxLength={allowText ? 100 : undefined}
         value={draft}
         disabled={saving}
         onChange={(e) => setDraft(e.target.value)}
@@ -185,7 +195,7 @@ const EditableCell = ({ value, display, onSave }: EditableCellProps) => {
           if (e.key === 'Escape') cancel();
         }}
         onBlur={commit}
-        className="h-7 w-24 text-right text-sm px-1"
+        className={allowText ? 'h-7 w-36 text-right text-sm px-1' : 'h-7 w-24 text-right text-sm px-1'}
       />
       {saving && <Loader2 className="w-3 h-3 animate-spin text-muted-foreground" />}
     </div>
@@ -238,7 +248,7 @@ export const PLReport = () => {
         // Active OR terminated whose end_date >= week start
         const { data: aData, error: aErr } = await supabase
           .from('contractor_assignments')
-          .select(`id, applicant_id, client_id, status, hourly_rate, client_rate, client_deposit, contractor_deposit, hours_per_week, start_date, end_date, sunday_hours_excluded,
+          .select(`id, applicant_id, client_id, status, hourly_rate, client_rate, client_deposit, contractor_deposit, client_deposit_text, contractor_deposit_text, hours_per_week, start_date, end_date, sunday_hours_excluded,
                    applicant:applicants_prescreen(full_name),
                    client:clients(company_name)`)
           .or(`status.eq.active,and(status.eq.terminated,end_date.gte.${weekMondayStr})`);
@@ -319,8 +329,8 @@ export const PLReport = () => {
         const grossProfit = hasHours ? income - expenses : 0;
         const grossAfter = hasHours ? incomeAfter - expenseAfter : 0;
 
-        const clientDeposit = a.client_deposit != null ? Number(a.client_deposit) : null;
-        const contractorDeposit = a.contractor_deposit != null ? Number(a.contractor_deposit) : null;
+        const clientDeposit = a.client_deposit_text || (a.client_deposit != null ? Number(a.client_deposit) : null);
+        const contractorDeposit = a.contractor_deposit_text || (a.contractor_deposit != null ? Number(a.contractor_deposit) : null);
 
         // Weeks since start
         let weeksSinceStart: number | null = null;
@@ -451,7 +461,7 @@ export const PLReport = () => {
   // ============ Inline edit save handlers ============
   const saveAssignmentField = async (
     assignmentId: string,
-    field: 'hourly_rate' | 'client_rate' | 'client_deposit' | 'contractor_deposit' | 'hours_per_week',
+    field: 'hourly_rate' | 'client_rate' | 'hours_per_week',
     value: number | null,
   ) => {
     const { error } = await supabase
@@ -460,6 +470,19 @@ export const PLReport = () => {
       .eq('id', assignmentId);
     if (error) throw error;
     setAssignments((prev) => prev.map((a) => (a.id === assignmentId ? { ...a, [field]: value } : a)));
+    toast({ title: 'Saved' });
+  };
+
+  const saveDeposit = async (assignmentId: string, field: 'client_deposit' | 'contractor_deposit', value: number | string | null) => {
+    const textField = field === 'client_deposit' ? 'client_deposit_text' : 'contractor_deposit_text';
+    const text = typeof value === 'string' ? value.trim() : null;
+    if (text && text.length > 100) throw new Error('Text must be 100 characters or less');
+    const numeric = typeof value === 'number' ? value : null;
+    const { error } = await supabase.from('contractor_assignments')
+      .update({ [field]: numeric, [textField]: text })
+      .eq('id', assignmentId);
+    if (error) throw error;
+    setAssignments((prev) => prev.map((a) => a.id === assignmentId ? { ...a, [field]: numeric, [textField]: text } : a));
     toast({ title: 'Saved' });
   };
 
@@ -491,7 +514,8 @@ export const PLReport = () => {
       r.expenses.toFixed(2), r.expenseAfter.toFixed(2),
       r.income.toFixed(2), r.incomeAfter.toFixed(2),
       r.grossProfit.toFixed(2), r.grossAfter.toFixed(2),
-      r.clientDeposit?.toFixed(2) ?? '', r.contractorDeposit?.toFixed(2) ?? '',
+       typeof r.clientDeposit === 'number' ? r.clientDeposit.toFixed(2) : `"${(r.clientDeposit || '').replace(/"/g, '""')}"`,
+       typeof r.contractorDeposit === 'number' ? r.contractorDeposit.toFixed(2) : `"${(r.contractorDeposit || '').replace(/"/g, '""')}"`,
       r.standardHours, r.actualHours,
       r.weeksSinceStart && r.weeksSinceStart >= 1 && r.weeksSinceStart <= 4 ? `Week ${r.weeksSinceStart}` : '',
       STATUS_META[r.status].label,
@@ -530,10 +554,10 @@ export const PLReport = () => {
       <TableCell className="font-medium whitespace-nowrap">{r.assignment.applicant?.full_name || '—'}</TableCell>
       <TableCell className="whitespace-nowrap">{r.assignment.client?.company_name || '—'}</TableCell>
       <TableCell className="text-right">
-        <EditableCell value={r.hourlyRate} display={fmt$(r.hourlyRate)} onSave={(v) => saveAssignmentField(r.assignment.id, 'hourly_rate', v)} />
+        <EditableCell value={r.hourlyRate} display={fmt$(r.hourlyRate)} onSave={(v) => { if (typeof v === 'string') throw new Error('Enter a valid number'); return saveAssignmentField(r.assignment.id, 'hourly_rate', v); }} />
       </TableCell>
       <TableCell className="text-right">
-        <EditableCell value={r.clientRate} display={fmt$(r.clientRate)} onSave={(v) => saveAssignmentField(r.assignment.id, 'client_rate', v)} />
+        <EditableCell value={r.clientRate} display={fmt$(r.clientRate)} onSave={(v) => { if (typeof v === 'string') throw new Error('Enter a valid number'); return saveAssignmentField(r.assignment.id, 'client_rate', v); }} />
       </TableCell>
       <TableCell className="text-right">{fmt$(r.expenses)}</TableCell>
       <TableCell className="text-right">{fmt$(r.expenseAfter)}</TableCell>
@@ -542,17 +566,17 @@ export const PLReport = () => {
       <TableCell className="text-right font-medium">{fmt$(r.grossProfit)}</TableCell>
       <TableCell className="text-right font-medium">{fmt$(r.grossAfter)}</TableCell>
       <TableCell className="text-right">
-        <EditableCell value={r.clientDeposit} display={r.clientDeposit == null ? '' : fmt$(r.clientDeposit)} onSave={(v) => saveAssignmentField(r.assignment.id, 'client_deposit', v)} />
+         <EditableCell allowText value={r.clientDeposit} display={r.clientDeposit == null ? '' : typeof r.clientDeposit === 'number' ? fmt$(r.clientDeposit) : r.clientDeposit} onSave={(v) => saveDeposit(r.assignment.id, 'client_deposit', v)} />
       </TableCell>
       <TableCell className="text-right">
-        <EditableCell value={r.contractorDeposit} display={r.contractorDeposit == null ? '' : fmt$(r.contractorDeposit)} onSave={(v) => saveAssignmentField(r.assignment.id, 'contractor_deposit', v)} />
+         <EditableCell allowText value={r.contractorDeposit} display={r.contractorDeposit == null ? '' : typeof r.contractorDeposit === 'number' ? fmt$(r.contractorDeposit) : r.contractorDeposit} onSave={(v) => saveDeposit(r.assignment.id, 'contractor_deposit', v)} />
       </TableCell>
       <TableCell className="text-right">
-        <EditableCell value={r.standardHours} display={String(r.standardHours || 0)} onSave={(v) => saveAssignmentField(r.assignment.id, 'hours_per_week', v)} />
+        <EditableCell value={r.standardHours} display={String(r.standardHours || 0)} onSave={(v) => { if (typeof v === 'string') throw new Error('Enter a valid number'); return saveAssignmentField(r.assignment.id, 'hours_per_week', v); }} />
       </TableCell>
       <TableCell className="text-right">
         {r.timesheet ? (
-          <EditableCell value={r.actualHours} display={String(r.actualHours || 0)} onSave={(v) => saveActualHours(r.assignment.id, v)} />
+          <EditableCell value={r.actualHours} display={String(r.actualHours || 0)} onSave={(v) => { if (typeof v === 'string') throw new Error('Enter a valid number'); return saveActualHours(r.assignment.id, v); }} />
         ) : (
           r.actualHours || 0
         )}
