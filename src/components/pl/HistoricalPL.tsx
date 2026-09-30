@@ -34,6 +34,7 @@ interface HistRow {
   gross_after_deductions: number | null;
   client_deposit: number | null;
   contractor_deposit: number | null;
+  raw: Record<string, unknown> | null;
 }
 
 const money = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
@@ -42,7 +43,7 @@ const num = (n: number | null | undefined) => Number(n ?? 0);
 // ---- Per-year cache (memory + localStorage), invalidated when batches or their mapping change ----
 interface CacheEntry { sig: string; ids: string[]; uploadIds?: string[]; rows: HistRow[] }
 const memCache = new Map<number, CacheEntry>();
-const CACHE_KEY = (y: number) => `hist-pl-cache-v3-${y}`;
+const CACHE_KEY = (y: number) => `hist-pl-cache-v4-${y}`;
 function readCache(y: number): CacheEntry | null {
   if (memCache.has(y)) return memCache.get(y)!;
   try {
@@ -83,9 +84,14 @@ const sumField = (rows: HistRow[], key: NumKey) => {
   return { total, has };
 };
 const fmtMaybe = (f: { total: number; has: boolean }) => (f.has ? money(f.total) : '—');
-type SortKey = 'contractor_name' | 'company' | NumKey;
+type SortKey = 'contractor_name' | 'company' | 'bonus' | NumKey;
 interface SortState { key: SortKey; dir: 'asc' | 'desc' }
 type Col = { key: SortKey; label: string; numeric?: boolean; kind?: 'hours' | 'money' | 'rate'; width?: string };
+// Bonus from the timesheet submission lives in raw (synced weeks only); display-only.
+const bonusOf = (r: HistRow): number | null => {
+  const b = (r.raw as any)?.bonus;
+  return b != null && !Number.isNaN(Number(b)) ? Number(b) : null;
+};
 const SORTABLE: Col[] = [
   { key: 'contractor_name', label: 'Contractor', width: 'w-[220px] min-w-[220px] max-w-[220px]' },
   { key: 'company', label: 'Company', width: 'w-[180px] min-w-[180px] max-w-[180px]' },
@@ -93,6 +99,7 @@ const SORTABLE: Col[] = [
   { key: 'actual_hours', label: 'Actual hours', numeric: true, kind: 'hours', width: 'w-[120px] min-w-[120px]' },
   { key: 'contractor_rate', label: 'Contractor rate', numeric: true, kind: 'rate', width: 'w-[140px] min-w-[140px]' },
   { key: 'client_rate', label: 'Client rate', numeric: true, kind: 'rate', width: 'w-[120px] min-w-[120px]' },
+  { key: 'bonus', label: 'Bonus', numeric: true, kind: 'money', width: 'w-[110px] min-w-[110px]' },
   { key: 'contractor_cost', label: 'Expense', numeric: true, kind: 'money', width: 'w-[130px] min-w-[130px]' },
   { key: 'expense_after_1_percent', label: 'Expense after 1%', numeric: true, kind: 'money', width: 'w-[150px] min-w-[150px]' },
   { key: 'client_billing', label: 'Income', numeric: true, kind: 'money', width: 'w-[130px] min-w-[130px]' },
@@ -105,7 +112,7 @@ const SORTABLE: Col[] = [
 const fmtCell = (c: Col, v: number | null | undefined) =>
   v == null || Number.isNaN(Number(v)) ? '—' : c.kind === 'hours' ? Number(v).toFixed(2) : money(Number(v));
 
-const ROW_COLS = 'id, week_label, week_start, contractor_name, company, hours, actual_hours, contractor_rate, client_rate, contractor_cost, expense_after_1_percent, client_billing, income_after_3_percent, margin, gross_after_deductions, client_deposit, contractor_deposit';
+const ROW_COLS = 'id, week_label, week_start, contractor_name, company, hours, actual_hours, contractor_rate, client_rate, contractor_cost, expense_after_1_percent, client_billing, income_after_3_percent, margin, gross_after_deductions, client_deposit, contractor_deposit, raw';
 
 // Fetch one year's rows through the existing per-year cache.
 async function fetchYear(y: number): Promise<{ ids: string[]; uploadIds: string[]; rows: HistRow[] } | null> {
