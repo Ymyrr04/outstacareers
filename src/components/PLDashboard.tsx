@@ -336,6 +336,7 @@ export const PLDashboard = () => {
   const [resendingId, setResendingId] = useState<string | null>(null);
   const [resettingId, setResettingId] = useState<string | null>(null);
   const [rows, setRows] = useState<TimesheetRow[]>([]);
+  const [depositByTs, setDepositByTs] = useState<Map<string, DepositWeek>>(new Map());
   const [contractors, setContractors] = useState<ContractorRow[]>([]);
   const [search, setSearch] = useState('');
   const mondayOf = (d: Date) => {
@@ -440,6 +441,8 @@ export const PLDashboard = () => {
             start_date,
             hours_per_week,
             hourly_rate,
+            deposit_per_week,
+            deposit_per_week_unit,
             client_id,
             applicant:applicants_prescreen(full_name, email),
             client:clients(company_name)
@@ -451,7 +454,7 @@ export const PLDashboard = () => {
         .from('contractor_assignments')
         .select(`
           id, applicant_id, client_id, job_title, status, hourly_rate, hours_per_week, start_date,
-          client_deposit, contractor_deposit, client_deposit_text, contractor_deposit_text,
+          client_deposit, contractor_deposit, client_deposit_text, contractor_deposit_text, deposit_per_week, deposit_per_week_unit,
           applicant:applicants_prescreen(full_name, email),
           client:clients(company_name)
         `)
@@ -479,34 +482,35 @@ export const PLDashboard = () => {
       }
     });
 
-    const computeDepositFor = (startStr: string | null, hpw: number, weekEndingDate: string, totalHours: number) => {
-      if (!startStr || !hpw) return { depositHours: 0, isDeposit: false, weekIndex: null as number | null };
-      const start = new Date(startStr);
-      const weekEnd = new Date(weekEndingDate);
-      const diffDays = Math.floor((weekEnd.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-      if (diffDays < 0) return { depositHours: 0, isDeposit: false, weekIndex: null };
-      const weekIndex = Math.floor(diffDays / 7);
-      if (weekIndex > 1) return { depositHours: 0, isDeposit: false, weekIndex };
-      return { depositHours: Math.min(Number(totalHours), hpw), isDeposit: true, weekIndex };
-    };
-
-    // Accumulated deposit amount per contractor: sum of deposit hours (weeks 1-2) x hourly rate
-    const depositAccumMap = new Map<string, number>();
+    // Deposit schedule per contractor (supports per-week arrangements that spread the deposit over more weeks)
+    const assignById = new Map<string, any>(((assignments as any[]) || []).map((a) => [a.id, a]));
+    const tsByAssign = new Map<string, any[]>();
     ((timesheets as any[]) || []).forEach((t) => {
-      const ca = t.contractor;
-      if (!ca) return;
-      const dep = computeDepositFor(ca.start_date, Number(ca.hours_per_week || 0), t.week_ending_date, Number(t.total_hours));
-      if (dep.isDeposit && dep.depositHours > 0) {
-        const amt = dep.depositHours * Number(ca.hourly_rate || 0);
-        depositAccumMap.set(t.contractor_assignment_id, (depositAccumMap.get(t.contractor_assignment_id) || 0) + amt);
-      }
+      const arr = tsByAssign.get(t.contractor_assignment_id) || [];
+      arr.push(t);
+      tsByAssign.set(t.contractor_assignment_id, arr);
     });
+    const depMap = new Map<string, DepositWeek>();
+    const depositAccumMap = new Map<string, number>();
+    tsByAssign.forEach((list, assignId) => {
+      const ca = assignById.get(assignId) || list[0]?.contractor;
+      if (!ca) return;
+      const sched = computeDepositSchedule(ca, list);
+      sched.forEach((v, k) => {
+        depMap.set(k, v);
+        if (v.isDeposit && v.depositHours > 0) {
+          depositAccumMap.set(assignId, (depositAccumMap.get(assignId) || 0) + v.depositHours * Number(ca.hourly_rate || 0));
+        }
+      });
+    });
+    setDepositByTs(depMap);
+    const NO_DEP: DepositWeek = { depositHours: 0, isDeposit: false, weekIndex: null };
 
     const enriched: ContractorRow[] = ((assignments as any[]) || []).map((c) => {
       const ts = latestTsMap.get(c.id);
       let latestTimesheet: ContractorRow['latestTimesheet'] = null;
       if (ts) {
-        const dep = computeDepositFor(c.start_date, Number(c.hours_per_week || 0), ts.week_ending_date, Number(ts.total_hours));
+        const dep = depMap.get(ts.id) || NO_DEP;
         latestTimesheet = {
           id: ts.id,
           status: ts.status,
@@ -1112,21 +1116,9 @@ export const PLDashboard = () => {
     !active ? <ArrowUpDown className="w-3 h-3 ml-1 inline opacity-40" /> :
     dir === 'asc' ? <ArrowUp className="w-3 h-3 ml-1 inline" /> : <ArrowDown className="w-3 h-3 ml-1 inline" />;
 
-  // Compute deposit hours: first 2 weeks from start_date are security deposit, capped at hours_per_week
-  const computeDeposit = (r: TimesheetRow): { depositHours: number; isDeposit: boolean; weekIndex: number | null } => {
-    const startStr = r.contractor?.start_date;
-    const hpw = Number(r.contractor?.hours_per_week || 0);
-    if (!startStr || !hpw) return { depositHours: 0, isDeposit: false, weekIndex: null };
-    const start = new Date(startStr);
-    const weekEnd = new Date(r.week_ending_date);
-    const diffDays = Math.floor((weekEnd.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
-    if (diffDays < 0) return { depositHours: 0, isDeposit: false, weekIndex: null };
-    // weekIndex 0 = first week (days 0-6), 1 = second week (days 7-13)
-    const weekIndex = Math.floor(diffDays / 7);
-    if (weekIndex > 1) return { depositHours: 0, isDeposit: false, weekIndex };
-    const regular = Math.min(Number(r.total_hours), hpw);
-    return { depositHours: regular, isDeposit: true, weekIndex };
-  };
+  // Deposit hours per timesheet come from the precomputed schedule (standard 2 weeks, or a per-week arrangement)
+  const computeDeposit = (r: TimesheetRow): { depositHours: number; isDeposit: boolean; weekIndex: number | null } =>
+    depositByTs.get(r.id) || { depositHours: 0, isDeposit: false, weekIndex: null };
 
   const totalHoursAll = filtered.reduce((s, r) => s + Number(r.total_hours), 0);
   const totalOTAll = filtered.reduce((s, r) => s + Number(r.overtime_hours), 0);
