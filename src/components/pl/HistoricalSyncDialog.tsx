@@ -37,9 +37,15 @@ interface MappedRow {
   raw: Record<string, unknown>;
 }
 
+const r2 = (n: number) => Math.round(n * 100) / 100;
 function mapRow(r: PlWeekRow, monday: string, fees: PlFees): MappedRow {
   const numDep = (v: number | string | null) => (typeof v === 'number' ? v : null);
   const txtDep = (v: number | string | null) => (typeof v === 'string' ? v : null);
+  // Bonus from the timesheet submission is its own column and is also
+  // included in the expense figures (and therefore gross).
+  const bonus = r.bonus != null ? Number(r.bonus) : 0;
+  const expense = r2(r.expenses + bonus);
+  const expenseAfter = r2(expense * (1 + fees.expensePct / 100));
   return {
     week_label: weekLabelOf(monday),
     week_start: monday,
