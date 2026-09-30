@@ -15,6 +15,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { HistoricalUploadDialog, HIST_YEARS } from './HistoricalUploadDialog';
 import { HistoricalRemapDialog } from './HistoricalRemapDialog';
+import { HEADCOUNT_EXCLUDED_NAMES } from '@/lib/internalCompany';
 
 interface HistRow {
   id: string;
@@ -272,7 +273,7 @@ export function HistoricalPL({ onUpload }: Props) {
         billing: w.rows.some((r) => r[BILLING_KEY] != null),
         margin: w.rows.some((r) => r[MARGIN_KEY] != null),
       };
-      const headcount = new Set(w.rows.map((r) => (r.contractor_name || '').trim().toLowerCase()).filter(Boolean)).size;
+      const headcount = new Set(w.rows.map((r) => (r.contractor_name || '').trim().toLowerCase()).filter((n) => n && !HEADCOUNT_EXCLUDED_NAMES.has(n))).size;
       return { key, label: w.label, rows: w.rows, totals: t, has, headcount };
     });
   }, [rows]);
