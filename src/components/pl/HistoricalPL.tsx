@@ -219,6 +219,42 @@ export function HistoricalPL({ onUpload }: Props) {
     });
   }, [rows]);
 
+  // Year totals, from the rows already loaded.
+  const yearSummary = useMemo(() => {
+    const t = rows.reduce((a, r) => ({
+      hours: a.hours + num(r.hours), cost: a.cost + num(r.contractor_cost),
+      billing: a.billing + num(r.client_billing), margin: a.margin + num(r.margin),
+    }), { hours: 0, cost: 0, billing: 0, margin: 0 });
+    const avgHeadcount = weeks.length
+      ? weeks.reduce((a, w) => a + w.headcount, 0) / weeks.length
+      : 0;
+    return { ...t, avgHeadcount };
+  }, [rows, weeks]);
+
+  // Month-by-month billing / cost / margin for each selected comparison year.
+  const compare = useMemo(() => {
+    const years = [...compareYears].sort((a, b) => a - b);
+    const blank = () => ({ billing: 0, cost: 0, margin: 0 });
+    const byYear: Record<number, { months: ReturnType<typeof blank>[]; total: ReturnType<typeof blank> }> = {};
+    for (const y of years) {
+      const months = Array.from({ length: 12 }, blank);
+      const total = blank();
+      for (const r of compareData[y] ?? []) {
+        if (!r.week_start) continue;
+        const m = new Date(`${r.week_start}T00:00:00`).getMonth();
+        if (Number.isNaN(m)) continue;
+        const cell = months[m];
+        const b = num(r.client_billing), c = num(r.contractor_cost), g = num(r.margin);
+        cell.billing += b; cell.cost += c; cell.margin += g;
+        total.billing += b; total.cost += c; total.margin += g;
+      }
+      byYear[y] = { months, total };
+    }
+    const latest = years[years.length - 1];
+    const prev = years.length > 1 ? years[years.length - 2] : null;
+    return { years, byYear, latest, prev };
+  }, [compareYears, compareData]);
+
   const openWeek = openWeekKey ? weeks.find((w) => w.key === openWeekKey) ?? null : null;
 
   // Reset the search whenever a different week is opened.
