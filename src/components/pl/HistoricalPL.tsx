@@ -94,7 +94,11 @@ const bonusOf = (r: HistRow): number | null => {
   const raw = r.raw as any;
   if (raw?.kind === 'bonus' && raw?.bonus_amount != null) return Number(raw.bonus_amount);
   const b = raw?.bonus;
-  return b != null && !Number.isNaN(Number(b)) ? Number(b) : null;
+  if (b != null && !Number.isNaN(Number(b))) return Number(b);
+  // Row with an expense but no contractor/client rate = a bonus row (e.g. uploaded sheets)
+  const exp = r.contractor_cost;
+  if (exp != null && Number(exp) !== 0 && r.contractor_rate == null && r.client_rate == null) return Number(exp);
+  return null;
 };
 const SORTABLE: Col[] = [
   { key: 'contractor_name', label: 'Contractor', width: 'w-[220px] min-w-[220px] max-w-[220px]' },
