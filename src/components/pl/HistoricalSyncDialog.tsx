@@ -37,15 +37,9 @@ interface MappedRow {
   raw: Record<string, unknown>;
 }
 
-const r2 = (n: number) => Math.round(n * 100) / 100;
 function mapRow(r: PlWeekRow, monday: string, fees: PlFees): MappedRow {
   const numDep = (v: number | string | null) => (typeof v === 'number' ? v : null);
   const txtDep = (v: number | string | null) => (typeof v === 'string' ? v : null);
-  // Bonus from the timesheet submission is its own column and is also
-  // included in the expense figures (and therefore gross).
-  const bonus = r.bonus != null ? Number(r.bonus) : 0;
-  const expense = r2(r.expenses + bonus);
-  const expenseAfter = r2(expense * (1 + fees.expensePct / 100));
   return {
     week_label: weekLabelOf(monday),
     week_start: monday,
@@ -56,12 +50,12 @@ function mapRow(r: PlWeekRow, monday: string, fees: PlFees): MappedRow {
     actual_hours: r.actualHours,
     contractor_rate: r.hourlyRate,
     client_rate: r.clientRate,
-    contractor_cost: expense,
+    contractor_cost: r.expenses,
     client_billing: r.income,
-    expense_after_1_percent: expenseAfter,
+    expense_after_1_percent: r.expenseAfter,
     income_after_3_percent: r.incomeAfter,
-    margin: r.grossProfit != null ? r2(r.grossProfit - bonus) : null,
-    gross_after_deductions: r2(r.incomeAfter - expenseAfter),
+    margin: r.grossProfit,
+    gross_after_deductions: r.grossAfter,
     client_deposit: numDep(r.clientDeposit),
     contractor_deposit: numDep(r.contractorDeposit),
     bonus: r.bonus,
@@ -77,6 +71,31 @@ function mapRow(r: PlWeekRow, monday: string, fees: PlFees): MappedRow {
   };
 }
 
+// Bonus goes on its own row (like the spreadsheet): expense = bonus, income = bonus x 1.2,
+// with the same after-fee math, so it is included in every total.
+export const BONUS_MARKUP = 1.2;
+const r2 = (n: number) => Math.round(n * 100) / 100;
+function bonusRow(base: MappedRow, bonus: number, fees: PlFees): MappedRow {
+  const expenseAfter = r2(bonus * (1 + fees.expensePct / 100));
+  const income = r2(bonus * BONUS_MARKUP);
+  const incomeAfter = r2(income * (1 - fees.incomePct / 100));
+  return {
+    ...base,
+    hours: null, actual_hours: null, contractor_rate: null, client_rate: null,
+    contractor_cost: bonus, client_billing: income,
+    expense_after_1_percent: expenseAfter, income_after_3_percent: incomeAfter,
+    margin: null, gross_after_deductions: r2(incomeAfter - expenseAfter),
+    client_deposit: null, contractor_deposit: null, bonus: null,
+    raw: { ...base.raw, kind: 'bonus', bonus_amount: bonus, bonus_markup: BONUS_MARKUP, bonus: null },
+  };
+}
+function mapWithBonus(r: PlWeekRow, monday: string, fees: PlFees): MappedRow[] {
+  const base = { ...mapRow(r, monday, fees), bonus: null };
+  base.raw = { ...base.raw, bonus: null };
+  const b = r.bonus != null ? Number(r.bonus) : 0;
+  return b > 0 ? [base, bonusRow(base, b, fees)] : [base];
+}
+
 type Col = { key: keyof MappedRow; label: string; kind?: 'hours' | 'money' | 'rate'; width: string };
 const COLS: Col[] = [
   { key: 'contractor_name', label: 'Contractor', width: 'w-[220px] min-w-[220px] max-w-[220px]' },
@@ -85,7 +104,6 @@ const COLS: Col[] = [
   { key: 'actual_hours', label: 'Actual hours', kind: 'hours', width: 'w-[120px] min-w-[120px]' },
   { key: 'contractor_rate', label: 'Contractor rate', kind: 'rate', width: 'w-[140px] min-w-[140px]' },
   { key: 'client_rate', label: 'Client rate', kind: 'rate', width: 'w-[120px] min-w-[120px]' },
-  { key: 'bonus', label: 'Bonus', kind: 'money', width: 'w-[110px] min-w-[110px]' },
     { key: 'contractor_cost', label: 'Expense', kind: 'money', width: 'w-[130px] min-w-[130px]' },
   { key: 'expense_after_1_percent', label: 'Expense after 1%', kind: 'money', width: 'w-[150px] min-w-[150px]' },
   { key: 'client_billing', label: 'Income', kind: 'money', width: 'w-[130px] min-w-[130px]' },
@@ -158,7 +176,7 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
         if (cancelled) return;
         setNoTimesheet(res.filter((r) => !r.timesheet).length);
         setHeadcount(res.length);
-        setRows(res.map((r) => mapRow(r, week, fees)));
+        setRows(res.flatMap((r) => mapWithBonus(r, week, fees)));
       } catch (e: any) {
         if (!cancelled) setError(e?.message || 'Failed to load the week');
       } finally {
