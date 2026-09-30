@@ -68,6 +68,8 @@ interface Assignment {
   client_id: string | null;
   status: string;
   hourly_rate: number | null;
+  client_deposit?: number | null;
+  contractor_deposit?: number | null;
   client_rate: number | null;
   hours_per_week: number | null;
   start_date: string | null;
@@ -165,7 +167,7 @@ export const PLReport = () => {
         // Active OR terminated whose end_date >= week start
         const { data: aData, error: aErr } = await supabase
           .from('contractor_assignments')
-          .select(`id, applicant_id, client_id, status, hourly_rate, client_rate, hours_per_week, start_date, end_date, sunday_hours_excluded,
+          .select(`id, applicant_id, client_id, status, hourly_rate, client_rate, client_deposit, contractor_deposit, hours_per_week, start_date, end_date, sunday_hours_excluded,
                    applicant:applicants_prescreen(full_name),
                    client:clients(company_name)`)
           .or(`status.eq.active,and(status.eq.terminated,end_date.gte.${weekMondayStr})`);
@@ -246,8 +248,8 @@ export const PLReport = () => {
         const grossProfit = hasHours ? income - expenses : 0;
         const grossAfter = hasHours ? incomeAfter - expenseAfter : 0;
 
-        const clientDeposit = clientRate * standardHours;
-        const contractorDeposit = hourlyRate * standardHours;
+        const clientDeposit = a.client_deposit != null ? Number(a.client_deposit) : clientRate * standardHours;
+        const contractorDeposit = a.contractor_deposit != null ? Number(a.contractor_deposit) : hourlyRate * standardHours;
 
         // Weeks since start
         let weeksSinceStart: number | null = null;
