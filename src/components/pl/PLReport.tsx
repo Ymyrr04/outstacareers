@@ -554,10 +554,10 @@ export const PLReport = () => {
       <TableCell className="font-medium whitespace-nowrap">{r.assignment.applicant?.full_name || '—'}</TableCell>
       <TableCell className="whitespace-nowrap">{r.assignment.client?.company_name || '—'}</TableCell>
       <TableCell className="text-right">
-        <EditableCell value={r.hourlyRate} display={fmt$(r.hourlyRate)} onSave={(v) => saveAssignmentField(r.assignment.id, 'hourly_rate', v)} />
+        <EditableCell value={r.hourlyRate} display={fmt$(r.hourlyRate)} onSave={(v) => { if (typeof v === 'string') throw new Error('Enter a valid number'); return saveAssignmentField(r.assignment.id, 'hourly_rate', v); }} />
       </TableCell>
       <TableCell className="text-right">
-        <EditableCell value={r.clientRate} display={fmt$(r.clientRate)} onSave={(v) => saveAssignmentField(r.assignment.id, 'client_rate', v)} />
+        <EditableCell value={r.clientRate} display={fmt$(r.clientRate)} onSave={(v) => { if (typeof v === 'string') throw new Error('Enter a valid number'); return saveAssignmentField(r.assignment.id, 'client_rate', v); }} />
       </TableCell>
       <TableCell className="text-right">{fmt$(r.expenses)}</TableCell>
       <TableCell className="text-right">{fmt$(r.expenseAfter)}</TableCell>
@@ -572,11 +572,11 @@ export const PLReport = () => {
          <EditableCell allowText value={r.contractorDeposit} display={r.contractorDeposit == null ? '' : typeof r.contractorDeposit === 'number' ? fmt$(r.contractorDeposit) : r.contractorDeposit} onSave={(v) => saveDeposit(r.assignment.id, 'contractor_deposit', v)} />
       </TableCell>
       <TableCell className="text-right">
-        <EditableCell value={r.standardHours} display={String(r.standardHours || 0)} onSave={(v) => saveAssignmentField(r.assignment.id, 'hours_per_week', v)} />
+        <EditableCell value={r.standardHours} display={String(r.standardHours || 0)} onSave={(v) => { if (typeof v === 'string') throw new Error('Enter a valid number'); return saveAssignmentField(r.assignment.id, 'hours_per_week', v); }} />
       </TableCell>
       <TableCell className="text-right">
         {r.timesheet ? (
-          <EditableCell value={r.actualHours} display={String(r.actualHours || 0)} onSave={(v) => saveActualHours(r.assignment.id, v)} />
+          <EditableCell value={r.actualHours} display={String(r.actualHours || 0)} onSave={(v) => { if (typeof v === 'string') throw new Error('Enter a valid number'); return saveActualHours(r.assignment.id, v); }} />
         ) : (
           r.actualHours || 0
         )}
