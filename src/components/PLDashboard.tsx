@@ -31,7 +31,8 @@ const PL_COLS: { key: string; label: string }[] = [
   { key: 'name', label: 'Contractor' }, { key: 'company', label: 'Company' }, { key: 'status', label: 'Status' },
   { key: 'rate', label: 'Rate' }, { key: 'latest', label: 'Latest Submission' }, { key: 'hpw', label: 'Regular Work Hours' },
   { key: 'workHours', label: 'Work Hours' }, { key: 'ot', label: 'OT' }, { key: 'bonus', label: 'Bonus' },
-  { key: 'deposit', label: 'Deposit' }, { key: 'approval', label: 'Client Approval' }, { key: 'portal', label: 'Portal Account' },
+  { key: 'deposit', label: 'Deposit' }, { key: 'clientDeposit', label: 'Client Deposit' }, { key: 'contractorDeposit', label: 'Contractor Deposit' },
+  { key: 'approval', label: 'Client Approval' }, { key: 'portal', label: 'Portal Account' },
 ];
 const readLS = (k: string): string[] | null => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return Array.isArray(v) ? v : null; } catch { return null; } };
 import { formatDate, formatDateShort, formatDateTime, formatDateWithWeekday } from "@/lib/dateFormat";
@@ -86,6 +87,10 @@ interface ContractorRow {
   status: string;
   hourly_rate: number | null;
   hours_per_week: number | null;
+  client_deposit: number | null;
+  contractor_deposit: number | null;
+  client_deposit_text: string | null;
+  contractor_deposit_text: string | null;
   start_date: string | null;
   applicant: { full_name: string; email: string } | null;
   client: { company_name: string } | null;
@@ -346,13 +351,13 @@ export const PLDashboard = () => {
     const all = PL_COLS.map(c => c.key);
     return [...saved.filter(k => all.includes(k)), ...all.filter(k => !saved.includes(k))];
   });
-  const [plHidden, setPlHidden] = useState<string[]>(() => readLS('pl-contractors-hidden-cols-v1') ?? []);
+  const [plHidden, setPlHidden] = useState<string[]>(() => readLS('pl-contractors-hidden-cols-v1') ?? ['clientDeposit', 'contractorDeposit']);
   useEffect(() => { localStorage.setItem('pl-contractors-col-order-v1', JSON.stringify(plColOrder)); }, [plColOrder]);
   useEffect(() => { localStorage.setItem('pl-contractors-hidden-cols-v1', JSON.stringify(plHidden)); }, [plHidden]);
   const movePlCol = (from: string, to: string) => setPlColOrder(prev => {
     const next = prev.filter(k => k !== from); next.splice(next.indexOf(to), 0, from); return next;
   });
-  const [contractorSort, setContractorSort] = useState<{ key: 'name' | 'company' | 'status' | 'rate' | 'hpw' | 'latest' | 'workHours' | 'ot' | 'bonus' | 'deposit' | 'approval' | 'portal'; dir: 'asc' | 'desc' }>({ key: 'company', dir: 'asc' });
+  const [contractorSort, setContractorSort] = useState<{ key: 'name' | 'company' | 'status' | 'rate' | 'hpw' | 'latest' | 'workHours' | 'ot' | 'bonus' | 'deposit' | 'clientDeposit' | 'contractorDeposit' | 'approval' | 'portal'; dir: 'asc' | 'desc' }>({ key: 'company', dir: 'asc' });
   const [tsSort, setTsSort] = useState<{ key: 'name' | 'company' | 'week' | 'hours' | 'ot' | 'incentives' | 'status' | 'submitted'; dir: 'asc' | 'desc' }>({ key: 'submitted', dir: 'desc' });
   const [stats, setStats] = useState({ portalUsers: 0, totalEligibleContractors: 0 });
   const [viewTimesheet, setViewTimesheet] = useState<TimesheetRow | null>(null);
@@ -432,6 +437,7 @@ export const PLDashboard = () => {
         .from('contractor_assignments')
         .select(`
           id, applicant_id, client_id, job_title, status, hourly_rate, hours_per_week, start_date,
+          client_deposit, contractor_deposit, client_deposit_text, contractor_deposit_text,
           applicant:applicants_prescreen(full_name, email),
           client:clients(company_name)
         `)
@@ -499,6 +505,10 @@ export const PLDashboard = () => {
         status: c.status,
         hourly_rate: c.hourly_rate,
         hours_per_week: c.hours_per_week,
+        client_deposit: c.client_deposit ?? null,
+        contractor_deposit: c.contractor_deposit ?? null,
+        client_deposit_text: c.client_deposit_text ?? null,
+        contractor_deposit_text: c.contractor_deposit_text ?? null,
         start_date: c.start_date,
         applicant: c.applicant,
         client: c.client,
@@ -1052,6 +1062,8 @@ export const PLDashboard = () => {
           b.latestTimesheet?.isDeposit ? Number(b.latestTimesheet.depositHours) : null,
           d
         );
+        case 'clientDeposit': return cmp(a.client_deposit != null ? Number(a.client_deposit) : null, b.client_deposit != null ? Number(b.client_deposit) : null, d);
+        case 'contractorDeposit': return cmp(a.contractor_deposit != null ? Number(a.contractor_deposit) : null, b.contractor_deposit != null ? Number(b.contractor_deposit) : null, d);
         case 'approval': return cmp(a.latestTimesheet?.client_approval_status ?? null, b.latestTimesheet?.client_approval_status ?? null, d);
         case 'portal': return cmp(
           a.hasPortal ? (a.mustChange ? 1 : 2) : 0,
@@ -1314,6 +1326,8 @@ export const PLDashboard = () => {
                   <TableHead data-col="ot" className="text-right w-14"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('ot')}>OT<SortIcon active={contractorSort.key === 'ot'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead data-col="bonus" className="text-right w-16"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('bonus')}>Bonus<SortIcon active={contractorSort.key === 'bonus'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead data-col="deposit" className="text-right w-20"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('deposit')}>Deposit<SortIcon active={contractorSort.key === 'deposit'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="clientDeposit" className="text-right w-24"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('clientDeposit')}>Client Deposit<SortIcon active={contractorSort.key === 'clientDeposit'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="contractorDeposit" className="text-right w-24"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('contractorDeposit')}>Contractor Deposit<SortIcon active={contractorSort.key === 'contractorDeposit'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead data-col="approval" className="w-28"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('approval')}>Client Approval<SortIcon active={contractorSort.key === 'approval'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead data-col="portal"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('portal')}>Portal Account<SortIcon active={contractorSort.key === 'portal'} dir={contractorSort.dir} /></button></TableHead>
                   </ColumnOrder>
@@ -1397,6 +1411,24 @@ export const PLDashboard = () => {
                             Wk {(c.latestTimesheet.weekIndex ?? 0) + 1}
                           </Badge>
                         </div>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell data-col="clientDeposit" className="text-right">
+                      {c.client_deposit_text ? (
+                        <span className="font-medium">{c.client_deposit_text}</span>
+                      ) : c.client_deposit != null ? (
+                        <span className="font-medium">${Number(c.client_deposit).toFixed(2)}</span>
+                      ) : (
+                        <span className="text-muted-foreground">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell data-col="contractorDeposit" className="text-right">
+                      {c.contractor_deposit_text ? (
+                        <span className="font-medium">{c.contractor_deposit_text}</span>
+                      ) : c.contractor_deposit != null ? (
+                        <span className="font-medium">${Number(c.contractor_deposit).toFixed(2)}</span>
                       ) : (
                         <span className="text-muted-foreground">—</span>
                       )}
