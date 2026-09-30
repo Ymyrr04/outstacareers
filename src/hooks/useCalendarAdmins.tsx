@@ -24,9 +24,16 @@ export const useCalendarAdmins = () => {
       const rawList: Array<{ user_id: string; email: string }> = data?.adminUsers || [];
       // Admins excluded from the team calendar
       const EXCLUDED = ['sean@outsta.io', 'test-admin'];
+      // Only admins with Calendar access in Tab Permissions
+      const { data: denied } = await supabase
+        .from('admin_tab_permissions')
+        .select('user_id')
+        .eq('tab_id', 'calendar')
+        .eq('can_view', false);
+      const deniedIds = new Set((denied || []).map((r: any) => r.user_id));
       const list = rawList.filter((a) => {
         const email = (a.email || '').toLowerCase();
-        return !EXCLUDED.some((x) => email.includes(x));
+        return !EXCLUDED.some((x) => email.includes(x)) && !deniedIds.has(a.user_id);
       });
 
       const { data: colorRows } = await supabase
