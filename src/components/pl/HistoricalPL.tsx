@@ -6,7 +6,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ChevronDown, ChevronRight, Loader2, Upload, Trash2, Columns3 } from 'lucide-react';
+import { ChevronDown, ChevronRight, Loader2, Upload, Trash2, Columns3, ArrowUpDown } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { HistoricalUploadDialog, HIST_YEARS } from './HistoricalUploadDialog';
@@ -55,6 +55,19 @@ function signature(batches: { id: string; created_at: string; column_map: unknow
   return `${batches.length}:${h}`;
 }
 
+interface SortState { key: SortKey; dir: 'asc' | 'desc' }
+type SortKey = 'contractor_name' | 'company' | 'hours' | 'contractor_rate' | 'client_rate' | 'contractor_cost' | 'client_billing' | 'margin';
+const SORTABLE: { key: SortKey; label: string; numeric?: boolean }[] = [
+  { key: 'contractor_name', label: 'Contractor' },
+  { key: 'company', label: 'Company' },
+  { key: 'hours', label: 'Hours', numeric: true },
+  { key: 'contractor_rate', label: 'Contractor rate', numeric: true },
+  { key: 'client_rate', label: 'Client rate', numeric: true },
+  { key: 'contractor_cost', label: 'Cost', numeric: true },
+  { key: 'client_billing', label: 'Billing', numeric: true },
+  { key: 'margin', label: 'Margin', numeric: true },
+];
+
 interface Props { onUpload?: (year: number) => void }
 
 export function HistoricalPL({ onUpload }: Props) {
@@ -67,6 +80,7 @@ export function HistoricalPL({ onUpload }: Props) {
   const [openWeeks, setOpenWeeks] = useState<Set<string>>(new Set());
   const [uploadOpen, setUploadOpen] = useState(false);
   const [remapOpen, setRemapOpen] = useState(false);
+  const [sort, setSort] = useState<SortState | null>(null);
 
   const load = useCallback(async () => {
     // Show cached rows instantly, then check whether anything changed.
@@ -114,6 +128,22 @@ export function HistoricalPL({ onUpload }: Props) {
     });
   };
 
+  const sortKey = (r: HistRow): string | number => {
+    if (!sort) return '';
+    if (sort.key === 'contractor_name' || sort.key === 'company') {
+      return (r[sort.key] || '').trim().toLowerCase();
+    }
+    return num(r[sort.key]);
+  };
+  const cmpRows = (a: HistRow, b: HistRow) => {
+    const va = sortKey(a);
+    const vb = sortKey(b);
+    let c: number;
+    if (typeof va === 'number' && typeof vb === 'number') c = va - vb;
+    else c = String(va).localeCompare(String(vb));
+    return sort?.dir === 'desc' ? -c : c;
+  };
+
   const weeks = useMemo(() => {
     const map = new Map<string, { label: string; rows: HistRow[] }>();
     for (const r of rows) {
@@ -122,14 +152,15 @@ export function HistoricalPL({ onUpload }: Props) {
       map.get(key)!.rows.push(r);
     }
     return [...map.entries()].map(([key, w]) => {
+      const sorted = sort ? [...w.rows].sort(cmpRows) : w.rows;
       const t = w.rows.reduce((a, r) => ({
         hours: a.hours + num(r.hours), cost: a.cost + num(r.contractor_cost),
         billing: a.billing + num(r.client_billing), margin: a.margin + num(r.margin),
       }), { hours: 0, cost: 0, billing: 0, margin: 0 });
       const headcount = new Set(w.rows.map((r) => (r.contractor_name || '').trim().toLowerCase()).filter(Boolean)).size;
-      return { key, label: w.label, rows: w.rows, totals: t, headcount };
+      return { key, label: w.label, rows: sorted, totals: t, headcount };
     });
-  }, [rows]);
+  }, [rows, sort]);
 
 
   const handleDelete = async () => {
@@ -197,14 +228,28 @@ export function HistoricalPL({ onUpload }: Props) {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Contractor</TableHead>
-                  <TableHead>Company</TableHead>
-                  <TableHead className="text-right">Hours</TableHead>
-                  <TableHead className="text-right">Contractor rate</TableHead>
-                  <TableHead className="text-right">Client rate</TableHead>
-                  <TableHead className="text-right">Cost</TableHead>
-                  <TableHead className="text-right">Billing</TableHead>
-                  <TableHead className="text-right">Margin</TableHead>
+                  {SORTABLE.map((c) => {
+                    const active = sort?.key === c.key;
+                    return (
+                      <TableHead
+                        key={c.key}
+                        className={cn('cursor-pointer select-none hover:bg-muted/60', c.numeric && 'text-right', active && 'text-foreground')}
+                        onClick={() =>
+                          setSort((s) =>
+                            !s || s.key !== c.key ? { key: c.key, dir: c.numeric ? 'desc' : 'asc' }
+                              : s.dir === (c.numeric ? 'desc' : 'asc') ? { key: c.key, dir: c.numeric ? 'asc' : 'desc' }
+                              : null,
+                          )
+                        }
+                      >
+                        <span className="inline-flex items-center gap-1">
+                          {c.label}
+                          <ArrowUpDown className={cn('h-3 w-3', active ? 'text-foreground' : 'text-muted-foreground/50')} />
+                          {active && <span className="text-xs">{sort!.dir === 'asc' ? '↑' : '↓'}</span>}
+                        </span>
+                      </TableHead>
+                    );
+                  })}
                 </TableRow>
               </TableHeader>
               <TableBody>
