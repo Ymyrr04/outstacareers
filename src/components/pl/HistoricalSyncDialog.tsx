@@ -125,6 +125,7 @@ interface Props {
 
 export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced }: Props) {
   const maxWeek = lastCompletedMonday();
+  const [headcount, setHeadcount] = useState(0);
   const [week, setWeek] = useState(initialWeek ?? maxWeek);
   const [fees, setFees] = useState<PlFees | null>(null);
   const [rows, setRows] = useState<MappedRow[] | null>(null);
