@@ -22,7 +22,7 @@ export const HIST_YEARS = Array.from(
 export const FIELDS = [
   { key: 'contractor_name', label: 'Contractor', numeric: false, guess: [/^contractors?$/i, /^name$|^employee$|^va$/i] },
   { key: 'company', label: 'Company', numeric: false, guess: [/^client\s*\/\s*company$/i, /^company$|^client$|^account$/i] },
-  { key: 'hours', label: 'Hours', numeric: true, guess: [/^standard hours$/i, /^hours$|^no\.? of hours$|^hrs$/i] },
+  { key: 'hours', label: 'Standard hours', numeric: true, guess: [/^standard hours$/i, /^hours$|^no\.? of hours$|^hrs$/i] },
   { key: 'contractor_rate', label: 'Contractor rate', numeric: true, guess: [/^contractor rate$/i, /^(?:va|pay) rate$/i] },
   { key: 'client_rate', label: 'Client rate', numeric: true, guess: [/^client rate$/i, /^bill rate$/i] },
   { key: 'contractor_cost', label: 'Cost', numeric: true, guess: [/^expenses?$/i, /^cost$|^payout$|^(?:contractor|va) (?:pay|amount)$/i] },
