@@ -43,7 +43,7 @@ const num = (n: number | null | undefined) => Number(n ?? 0);
 // ---- Per-year cache (memory + localStorage), invalidated when batches or their mapping change ----
 interface CacheEntry { sig: string; ids: string[]; uploadIds?: string[]; syncIds?: string[]; rows: HistRow[] }
 const memCache = new Map<number, CacheEntry>();
-const CACHE_KEY = (y: number) => `hist-pl-cache-v4-${y}`;
+const CACHE_KEY = (y: number) => `hist-pl-cache-v5-${y}`;
 function readCache(y: number): CacheEntry | null {
   if (memCache.has(y)) return memCache.get(y)!;
   try {
@@ -117,6 +117,11 @@ const fmtCell = (c: Col, v: number | null | undefined) =>
 
 const ROW_COLS = 'id, week_label, week_start, contractor_name, company, hours, actual_hours, contractor_rate, client_rate, contractor_cost, expense_after_1_percent, client_billing, income_after_3_percent, margin, gross_after_deductions, client_deposit, contractor_deposit, raw';
 
+// OutSta is the internal team — excluded from all historical calculations,
+// matching the P&L report (which filters by the internal client id).
+const isInternalRow = (r: HistRow) =>
+  (r.company ?? '').replace(/[\s.]/g, '').toLowerCase().startsWith('outsta');
+
 // Fetch one year's rows through the existing per-year cache.
 async function fetchYear(y: number): Promise<{ ids: string[]; uploadIds: string[]; syncIds: string[]; rows: HistRow[] } | null> {
   const cached = readCache(y);
@@ -142,7 +147,7 @@ async function fetchYear(y: number): Promise<{ ids: string[]; uploadIds: string[
       .order('id', { ascending: true })
       .range(from, from + PAGE - 1);
     if (error) return null;
-    all.push(...((data ?? []) as HistRow[]));
+    all.push(...((data ?? []) as HistRow[]).filter((r) => !isInternalRow(r)));
     if (!data || data.length < PAGE) break;
   }
   writeCache(y, { sig, ids, uploadIds, syncIds, rows: all });
