@@ -13,17 +13,8 @@ import { ChevronLeft, ChevronRight, Download, Loader2, Search, Settings, ArrowDo
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
-import clientRateFallbackData from '@/data/clientRateFallback.json';
 import { parseDateOnly } from '@/lib/dateOnly';
-
-const clientRateFallback = clientRateFallbackData as Record<string, number>;
-const normalizeName = (s: string) =>
-  s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\./g, ' ').replace(/\s+/g, ' ').trim();
-const lookupFallbackClientRate = (name: string | null | undefined): number => {
-  if (!name) return 0;
-  return clientRateFallback[normalizeName(name)] ?? 0;
-};
+import { computePlWeek, mondayOf, ymd, type PlAssignment, type PlTimesheet, type PlWeekRow } from '@/lib/plWeek';
 
 // ============ Config: fee constants (persisted in pl_fee_settings table) ============
 const DEFAULT_EXPENSE_FEE_PCT = 1;
@@ -33,19 +24,11 @@ const defaultFees = () => ({ expensePct: DEFAULT_EXPENSE_FEE_PCT, incomePct: DEF
 
 const WEEK_STORAGE_KEY = 'pl_report_selected_week';
 
-const mondayOf = (d: Date) => {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  const dow = x.getDay();
-  x.setDate(x.getDate() + (dow === 0 ? -6 : 1 - dow));
-  return x;
-};
 const getLastCompletedMonday = () => {
   const m = mondayOf(new Date());
   m.setDate(m.getDate() - 7);
   return m;
 };
-const ymd = (d: Date) => format(d, 'yyyy-MM-dd');
 
 const fmt$ = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
