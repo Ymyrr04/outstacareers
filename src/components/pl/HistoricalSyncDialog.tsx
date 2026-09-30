@@ -28,10 +28,10 @@ const money = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('
 interface MappedRow {
   week_label: string; week_start: string; week_end: string;
   contractor_name: string | null; company: string | null;
-  hours: number; actual_hours: number; contractor_rate: number; client_rate: number;
+  hours: number | null; actual_hours: number | null; contractor_rate: number | null; client_rate: number | null;
   contractor_cost: number; client_billing: number;
   expense_after_1_percent: number; income_after_3_percent: number;
-  margin: number; gross_after_deductions: number;
+  margin: number | null; gross_after_deductions: number;
   client_deposit: number | null; contractor_deposit: number | null;
   bonus: number | null;
   raw: Record<string, unknown>;
@@ -71,6 +71,31 @@ function mapRow(r: PlWeekRow, monday: string, fees: PlFees): MappedRow {
   };
 }
 
+// Bonus goes on its own row (like the spreadsheet): expense = bonus, income = bonus x 1.2,
+// with the same after-fee math, so it is included in every total.
+export const BONUS_MARKUP = 1.2;
+const r2 = (n: number) => Math.round(n * 100) / 100;
+function bonusRow(base: MappedRow, bonus: number, fees: PlFees): MappedRow {
+  const expenseAfter = r2(bonus * (1 + fees.expensePct / 100));
+  const income = r2(bonus * BONUS_MARKUP);
+  const incomeAfter = r2(income * (1 - fees.incomePct / 100));
+  return {
+    ...base,
+    hours: null, actual_hours: null, contractor_rate: null, client_rate: null,
+    contractor_cost: bonus, client_billing: income,
+    expense_after_1_percent: expenseAfter, income_after_3_percent: incomeAfter,
+    margin: null, gross_after_deductions: r2(incomeAfter - expenseAfter),
+    client_deposit: null, contractor_deposit: null, bonus: null,
+    raw: { ...base.raw, kind: 'bonus', bonus_amount: bonus, bonus_markup: BONUS_MARKUP, bonus: null },
+  };
+}
+function mapWithBonus(r: PlWeekRow, monday: string, fees: PlFees): MappedRow[] {
+  const base = { ...mapRow(r, monday, fees), bonus: null };
+  base.raw = { ...base.raw, bonus: null };
+  const b = r.bonus != null ? Number(r.bonus) : 0;
+  return b > 0 ? [base, bonusRow(base, b, fees)] : [base];
+}
+
 type Col = { key: keyof MappedRow; label: string; kind?: 'hours' | 'money' | 'rate'; width: string };
 const COLS: Col[] = [
   { key: 'contractor_name', label: 'Contractor', width: 'w-[220px] min-w-[220px] max-w-[220px]' },
@@ -79,8 +104,7 @@ const COLS: Col[] = [
   { key: 'actual_hours', label: 'Actual hours', kind: 'hours', width: 'w-[120px] min-w-[120px]' },
   { key: 'contractor_rate', label: 'Contractor rate', kind: 'rate', width: 'w-[140px] min-w-[140px]' },
   { key: 'client_rate', label: 'Client rate', kind: 'rate', width: 'w-[120px] min-w-[120px]' },
-  { key: 'bonus', label: 'Bonus', kind: 'money', width: 'w-[110px] min-w-[110px]' },
-  { key: 'contractor_cost', label: 'Expense', kind: 'money', width: 'w-[130px] min-w-[130px]' },
+    { key: 'contractor_cost', label: 'Expense', kind: 'money', width: 'w-[130px] min-w-[130px]' },
   { key: 'expense_after_1_percent', label: 'Expense after 1%', kind: 'money', width: 'w-[150px] min-w-[150px]' },
   { key: 'client_billing', label: 'Income', kind: 'money', width: 'w-[130px] min-w-[130px]' },
   { key: 'income_after_3_percent', label: 'Income after 3%', kind: 'money', width: 'w-[150px] min-w-[150px]' },
@@ -150,7 +174,8 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
         const res = await computePlWeek(week, fees, { includeInternal: true });
         if (cancelled) return;
         setNoTimesheet(res.filter((r) => !r.timesheet).length);
-        setRows(res.map((r) => mapRow(r, week, fees)));
+        setHeadcount(res.length);
+        setRows(res.flatMap((r) => mapWithBonus(r, week, fees)));
       } catch (e: any) {
         if (!cancelled) setError(e?.message || 'Failed to load the week');
       } finally {
@@ -248,7 +273,7 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
                 ['Expense', money(totals.expense), 'Expense after 1%'],
                 ['Income', money(totals.income), 'Income after 3%'],
                 ['Gross', money(totals.gross), 'Gross after deductions'],
-                ['Headcount', String(rows.length), 'Contractors'],
+                ['Headcount', String(headcount), 'Contractors'],
                 ['No timesheet', String(noTimesheet), 'Contractors'],
               ].map(([l, v, c]) => (
                 <div key={l} className="border rounded-lg p-3">
