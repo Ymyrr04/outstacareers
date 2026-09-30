@@ -289,9 +289,11 @@ export const PLReport = () => {
     if (!ts) return 'not_submitted';
     const notes = (ts.notes || '').toLowerCase();
     if (notes.includes('sick')) return 'sick';
+    // Standard hours on the assignment are the source of truth
     const hpw = Number(a.hours_per_week || 0);
-    if (Number(ts.overtime_hours || 0) > 0) return 'overtime';
+    if (hpw > 0 && actualHours > hpw) return 'overtime';
     if (hpw > 0 && actualHours < hpw) return 'undertime';
+    if (hpw <= 0 && Number(ts.overtime_hours || 0) > 0) return 'overtime';
     return 'good';
   };
 
