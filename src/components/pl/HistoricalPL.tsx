@@ -21,20 +21,26 @@ interface HistRow {
   contractor_name: string | null;
   company: string | null;
   hours: number | null;
+  actual_hours: number | null;
   contractor_rate: number | null;
   client_rate: number | null;
   contractor_cost: number | null;
   client_billing: number | null;
   margin: number | null;
+  expense_after_1_percent: number | null;
+  income_after_3_percent: number | null;
+  gross_after_deductions: number | null;
+  client_deposit: number | null;
+  contractor_deposit: number | null;
 }
 
-const money = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+const money = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const num = (n: number | null | undefined) => Number(n ?? 0);
 
 // ---- Per-year cache (memory + localStorage), invalidated when batches or their mapping change ----
 interface CacheEntry { sig: string; ids: string[]; rows: HistRow[] }
 const memCache = new Map<number, CacheEntry>();
-const CACHE_KEY = (y: number) => `hist-pl-cache-v1-${y}`;
+const CACHE_KEY = (y: number) => `hist-pl-cache-v2-${y}`;
 function readCache(y: number): CacheEntry | null {
   if (memCache.has(y)) return memCache.get(y)!;
   try {
@@ -57,18 +63,29 @@ function signature(batches: { id: string; created_at: string; column_map: unknow
   return `${batches.length}:${h}`;
 }
 
-type SortKey = 'contractor_name' | 'company' | 'hours' | 'contractor_rate' | 'client_rate' | 'contractor_cost' | 'client_billing' | 'margin';
+type NumKey = 'hours' | 'actual_hours' | 'contractor_rate' | 'client_rate' | 'contractor_cost' | 'expense_after_1_percent'
+  | 'client_billing' | 'income_after_3_percent' | 'margin' | 'gross_after_deductions' | 'client_deposit' | 'contractor_deposit';
+type SortKey = 'contractor_name' | 'company' | NumKey;
 interface SortState { key: SortKey; dir: 'asc' | 'desc' }
-const SORTABLE: { key: SortKey; label: string; numeric?: boolean; width?: string }[] = [
-  { key: 'contractor_name', label: 'Contractor' },
-  { key: 'company', label: 'Company' },
-  { key: 'hours', label: 'Hours', numeric: true, width: 'w-[90px]' },
-  { key: 'contractor_rate', label: 'Contractor rate', numeric: true, width: 'w-[140px]' },
-  { key: 'client_rate', label: 'Client rate', numeric: true, width: 'w-[120px]' },
-  { key: 'contractor_cost', label: 'Cost', numeric: true, width: 'w-[130px]' },
-  { key: 'client_billing', label: 'Billing', numeric: true, width: 'w-[130px]' },
-  { key: 'margin', label: 'Margin', numeric: true, width: 'w-[130px]' },
+type Col = { key: SortKey; label: string; numeric?: boolean; kind?: 'hours' | 'money' | 'rate'; width?: string };
+const SORTABLE: Col[] = [
+  { key: 'contractor_name', label: 'Contractor', width: 'w-[220px] min-w-[220px] max-w-[220px]' },
+  { key: 'company', label: 'Company', width: 'w-[180px] min-w-[180px] max-w-[180px]' },
+  { key: 'hours', label: 'Standard hours', numeric: true, kind: 'hours', width: 'w-[130px] min-w-[130px]' },
+  { key: 'actual_hours', label: 'Actual hours', numeric: true, kind: 'hours', width: 'w-[120px] min-w-[120px]' },
+  { key: 'contractor_rate', label: 'Contractor rate', numeric: true, kind: 'rate', width: 'w-[140px] min-w-[140px]' },
+  { key: 'client_rate', label: 'Client rate', numeric: true, kind: 'rate', width: 'w-[120px] min-w-[120px]' },
+  { key: 'contractor_cost', label: 'Expense', numeric: true, kind: 'money', width: 'w-[130px] min-w-[130px]' },
+  { key: 'expense_after_1_percent', label: 'Expense after 1%', numeric: true, kind: 'money', width: 'w-[150px] min-w-[150px]' },
+  { key: 'client_billing', label: 'Income', numeric: true, kind: 'money', width: 'w-[130px] min-w-[130px]' },
+  { key: 'income_after_3_percent', label: 'Income after 3%', numeric: true, kind: 'money', width: 'w-[150px] min-w-[150px]' },
+  { key: 'margin', label: 'Gross profit', numeric: true, kind: 'money', width: 'w-[130px] min-w-[130px]' },
+  { key: 'gross_after_deductions', label: 'Gross after deductions', numeric: true, kind: 'money', width: 'w-[180px] min-w-[180px]' },
+  { key: 'client_deposit', label: 'Client deposit', numeric: true, kind: 'money', width: 'w-[130px] min-w-[130px]' },
+  { key: 'contractor_deposit', label: 'Contractor deposit', numeric: true, kind: 'money', width: 'w-[160px] min-w-[160px]' },
 ];
+const fmtCell = (c: Col, v: number | null | undefined) =>
+  v == null || Number.isNaN(Number(v)) ? '—' : c.kind === 'hours' ? Number(v).toFixed(2) : money(Number(v));
 
 interface Props { onUpload?: (year: number) => void }
 
@@ -105,7 +122,7 @@ export function HistoricalPL({ onUpload }: Props) {
     for (let from = 0; ; from += PAGE) {
       const { data, error } = await supabase
         .from('historical_pl_rows')
-        .select('id, week_label, week_start, contractor_name, company, hours, contractor_rate, client_rate, contractor_cost, client_billing, margin')
+        .select('id, week_label, week_start, contractor_name, company, hours, actual_hours, contractor_rate, client_rate, contractor_cost, expense_after_1_percent, client_billing, income_after_3_percent, margin, gross_after_deductions, client_deposit, contractor_deposit')
         .in('batch_id', ids)
         .order('week_start', { ascending: true, nullsFirst: false })
         .order('contractor_name', { ascending: true })
@@ -128,7 +145,7 @@ export function HistoricalPL({ onUpload }: Props) {
     if (sort.key === 'contractor_name' || sort.key === 'company') {
       return (r[sort.key] || '').trim().toLowerCase();
     }
-    return num(r[sort.key]);
+    return num(r[sort.key as NumKey]);
   };
   const cmpRows = (a: HistRow, b: HistRow) => {
     const va = sortKey(a);
@@ -269,8 +286,8 @@ export function HistoricalPL({ onUpload }: Props) {
       )}
 
       <Dialog open={!!openWeek} onOpenChange={(o) => { if (!o) setOpenWeekKey(null); }}>
-        <DialogContent className="max-w-5xl w-[95vw] max-h-[85vh] overflow-y-auto">
-          <DialogHeader>
+        <DialogContent className="max-w-[95vw] w-[95vw] max-h-[92vh] flex flex-col gap-4 overflow-hidden">
+          <DialogHeader className="shrink-0">
             <DialogTitle className="flex items-baseline gap-2 flex-wrap">
               <span>{openWeek?.label}</span>
               {openWeek && <span className="text-sm font-normal text-muted-foreground">· {openWeek.headcount} contractors</span>}
@@ -279,7 +296,7 @@ export function HistoricalPL({ onUpload }: Props) {
 
           {openWeek && (
             <>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
                 {[
                   { label: 'Hours', value: openWeek.totals.hours.toFixed(2) },
                   { label: 'Cost', value: money(openWeek.totals.cost) },
@@ -293,7 +310,7 @@ export function HistoricalPL({ onUpload }: Props) {
                 ))}
               </div>
 
-              <div className="relative">
+              <div className="relative shrink-0">
                 <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
                   value={query}
@@ -303,19 +320,20 @@ export function HistoricalPL({ onUpload }: Props) {
                 />
               </div>
 
-              <div className="border rounded-lg overflow-x-auto">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      {SORTABLE.map((c) => {
+              <div className="border rounded-lg overflow-auto max-h-[60vh] min-h-0">
+                <table className="w-max min-w-full text-sm border-separate border-spacing-0">
+                  <thead>
+                    <tr>
+                      {SORTABLE.map((c, i) => {
                         const active = sort?.key === c.key;
                         return (
-                          <TableHead
+                          <th
                             key={c.key}
                             className={cn(
-                              'cursor-pointer select-none hover:bg-muted/60',
+                              'sticky top-0 bg-background border-b h-10 px-3 font-medium text-muted-foreground whitespace-nowrap cursor-pointer select-none hover:bg-muted',
+                              i === 0 ? 'left-0 z-30 border-r' : 'z-20',
                               c.width,
-                              c.numeric && 'text-right',
+                              c.numeric ? 'text-right' : 'text-left',
                               active && 'text-foreground',
                             )}
                             onClick={() =>
@@ -331,36 +349,57 @@ export function HistoricalPL({ onUpload }: Props) {
                               <ArrowUpDown className={cn('h-3 w-3', active ? 'text-foreground' : 'text-muted-foreground/50')} />
                               {active && <span className="text-xs">{sort!.dir === 'asc' ? '↑' : '↓'}</span>}
                             </span>
-                          </TableHead>
+                          </th>
                         );
                       })}
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
+                    </tr>
+                  </thead>
+                  <tbody>
                     {detailRows.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={SORTABLE.length} className="text-center text-muted-foreground py-8">
+                      <tr>
+                        <td colSpan={SORTABLE.length} className="text-center text-muted-foreground py-8">
                           No contractors match "{query}"
-                        </TableCell>
-                      </TableRow>
+                        </td>
+                      </tr>
                     ) : detailRows.map((r) => (
-                      <TableRow key={r.id}>
-                        <TableCell className="max-w-[240px]">
-                          <div className="truncate" title={r.contractor_name || undefined}>{r.contractor_name || '—'}</div>
-                        </TableCell>
-                        <TableCell className="max-w-[200px]">
-                          <div className="truncate" title={r.company || undefined}>{r.company || '—'}</div>
-                        </TableCell>
-                        <TableCell className="text-right tabular-nums whitespace-nowrap">{num(r.hours).toFixed(2)}</TableCell>
-                        <TableCell className="text-right tabular-nums whitespace-nowrap">{r.contractor_rate != null ? money(num(r.contractor_rate)) : '—'}</TableCell>
-                        <TableCell className="text-right tabular-nums whitespace-nowrap">{r.client_rate != null ? money(num(r.client_rate)) : '—'}</TableCell>
-                        <TableCell className="text-right tabular-nums whitespace-nowrap">{money(num(r.contractor_cost))}</TableCell>
-                        <TableCell className="text-right tabular-nums whitespace-nowrap">{money(num(r.client_billing))}</TableCell>
-                        <TableCell className="text-right tabular-nums whitespace-nowrap">{money(num(r.margin))}</TableCell>
-                      </TableRow>
+                      <tr key={r.id} className="group">
+                        {SORTABLE.map((c, i) => {
+                          if (!c.numeric) {
+                            const v = r[c.key as 'contractor_name' | 'company'];
+                            return (
+                              <td key={c.key} className={cn('px-3 py-2 border-b bg-background group-hover:bg-muted', c.width, i === 0 && 'sticky left-0 z-10 border-r font-medium')}>
+                                <div className="truncate" title={v || undefined}>{v || '—'}</div>
+                              </td>
+                            );
+                          }
+                          return (
+                            <td key={c.key} className={cn('px-3 py-2 border-b bg-background group-hover:bg-muted text-right tabular-nums whitespace-nowrap', c.width)}>
+                              {fmtCell(c, r[c.key as NumKey])}
+                            </td>
+                          );
+                        })}
+                      </tr>
                     ))}
-                  </TableBody>
-                </Table>
+                  </tbody>
+                  {detailRows.length > 0 && (
+                    <tfoot>
+                      <tr>
+                        {SORTABLE.map((c, i) => {
+                          const base = 'sticky bottom-0 bg-background border-t-2 px-3 py-2 font-bold whitespace-nowrap';
+                          if (i === 0) return <td key={c.key} className={cn(base, 'left-0 z-30 border-r', c.width)}>Total</td>;
+                          if (!c.numeric || c.kind === 'rate') return <td key={c.key} className={cn(base, 'z-20', c.width)} />;
+                          const vals = detailRows.map((r) => r[c.key as NumKey]).filter((v) => v != null);
+                          const sum = vals.reduce<number>((a, v) => a + Number(v), 0);
+                          return (
+                            <td key={c.key} className={cn(base, 'z-20 text-right tabular-nums', c.width)}>
+                              {vals.length ? fmtCell(c, sum) : '—'}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    </tfoot>
+                  )}
+                </table>
               </div>
             </>
           )}
