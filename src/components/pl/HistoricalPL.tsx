@@ -374,14 +374,15 @@ export function HistoricalPL({ onUpload }: Props) {
       {!loading && rows.length > 0 && (
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           {[
-            { label: 'Total billing', value: money(yearSummary.billing) },
-            { label: 'Total cost', value: money(yearSummary.cost) },
-            { label: 'Total margin', value: money(yearSummary.margin) },
+            { label: 'Total billing', caption: 'Income after 3%', value: fmtMaybe({ total: yearSummary.billing, has: yearSummary.has.billing }) },
+            { label: 'Total cost', caption: 'Expense after 1%', value: fmtMaybe({ total: yearSummary.cost, has: yearSummary.has.cost }) },
+            { label: 'Total margin', caption: 'Gross after deductions', value: fmtMaybe({ total: yearSummary.margin, has: yearSummary.has.margin }) },
             { label: 'Total hours', value: yearSummary.hours.toFixed(2) },
             { label: 'Avg weekly headcount', value: yearSummary.avgHeadcount.toFixed(1) },
           ].map((s) => (
             <div key={s.label} className="border rounded-lg p-3 bg-card">
               <p className="text-xs text-muted-foreground">{s.label}</p>
+              {'caption' in s && s.caption && <p className="text-[10px] text-muted-foreground/80">{s.caption}</p>}
               <p className="text-lg font-semibold tabular-nums whitespace-nowrap mt-0.5">{s.value}</p>
             </div>
           ))}
@@ -541,9 +542,9 @@ export function HistoricalPL({ onUpload }: Props) {
                     <div className="text-xs text-muted-foreground">{w.headcount} contractors</div>
                   </TableCell>
                   <TableCell className="text-right tabular-nums whitespace-nowrap">{w.totals.hours.toFixed(2)}</TableCell>
-                  <TableCell className="text-right tabular-nums whitespace-nowrap">{money(w.totals.cost)}</TableCell>
-                  <TableCell className="text-right tabular-nums whitespace-nowrap">{money(w.totals.billing)}</TableCell>
-                  <TableCell className="text-right tabular-nums whitespace-nowrap">{money(w.totals.margin)}</TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap">{fmtMaybe({ total: w.totals.cost, has: w.has.cost })}</TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap">{fmtMaybe({ total: w.totals.billing, has: w.has.billing })}</TableCell>
+                  <TableCell className="text-right tabular-nums whitespace-nowrap">{fmtMaybe({ total: w.totals.margin, has: w.has.margin })}</TableCell>
                   <TableCell className="w-10 text-right pr-4">
                     <ChevronRight className="h-4 w-4 text-muted-foreground" />
                   </TableCell>
@@ -568,12 +569,13 @@ export function HistoricalPL({ onUpload }: Props) {
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 shrink-0">
                 {[
                   { label: 'Hours', value: openWeek.totals.hours.toFixed(2) },
-                  { label: 'Cost', value: money(openWeek.totals.cost) },
-                  { label: 'Billing', value: money(openWeek.totals.billing) },
-                  { label: 'Margin', value: money(openWeek.totals.margin) },
+                  { label: 'Cost', caption: 'Expense after 1%', value: fmtMaybe({ total: openWeek.totals.cost, has: openWeek.has.cost }) },
+                  { label: 'Billing', caption: 'Income after 3%', value: fmtMaybe({ total: openWeek.totals.billing, has: openWeek.has.billing }) },
+                  { label: 'Margin', caption: 'Gross after deductions', value: fmtMaybe({ total: openWeek.totals.margin, has: openWeek.has.margin }) },
                 ].map((s) => (
                   <div key={s.label} className="border rounded-lg p-3 bg-muted/30">
                     <p className="text-xs text-muted-foreground">{s.label}</p>
+                    {'caption' in s && s.caption && <p className="text-[10px] text-muted-foreground/80">{s.caption}</p>}
                     <p className="text-lg font-semibold tabular-nums whitespace-nowrap mt-0.5">{s.value}</p>
                   </div>
                 ))}
