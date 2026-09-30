@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +8,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { ChevronRight, Loader2, Upload, Trash2, Columns3, ArrowUpDown, Search } from 'lucide-react';
+import { ChevronRight, Loader2, Upload, Trash2, Columns3, ArrowUpDown, Search, BarChart3 } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { HistoricalUploadDialog, HIST_YEARS } from './HistoricalUploadDialog';
@@ -397,11 +397,11 @@ export function HistoricalPL({ onUpload }: Props) {
                   <tr className="border-b">
                     <th />
                     {compare.years.map((y) => (
-                      <>
-                        <th key={`${y}-b`} className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground border-l">Billing</th>
-                        <th key={`${y}-c`} className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground">Cost</th>
-                        <th key={`${y}-m`} className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground">Margin</th>
-                      </>
+                      <Fragment key={y}>
+                        <th className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground border-l">Billing</th>
+                        <th className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground">Cost</th>
+                        <th className="text-right px-3 py-1.5 text-xs font-normal text-muted-foreground">Margin</th>
+                      </Fragment>
                     ))}
                     {compare.prev != null && (
                       <>
@@ -423,11 +423,11 @@ export function HistoricalPL({ onUpload }: Props) {
                         {compare.years.map((y) => {
                           const c = compare.byYear[y].months[mi];
                           return (
-                            <>
-                              <td key={`${y}-b`} className="text-right px-3 py-2 tabular-nums whitespace-nowrap border-l">{money(c.billing)}</td>
-                              <td key={`${y}-c`} className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(c.cost)}</td>
-                              <td key={`${y}-m`} className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(c.margin)}</td>
-                            </>
+                            <Fragment key={y}>
+                              <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap border-l">{money(c.billing)}</td>
+                              <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(c.cost)}</td>
+                              <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(c.margin)}</td>
+                            </Fragment>
                           );
                         })}
                         {compare.prev != null && (
@@ -444,11 +444,11 @@ export function HistoricalPL({ onUpload }: Props) {
                     {compare.years.map((y) => {
                       const t = compare.byYear[y].total;
                       return (
-                        <>
-                          <td key={`${y}-b`} className="text-right px-3 py-2 tabular-nums whitespace-nowrap border-l">{money(t.billing)}</td>
-                          <td key={`${y}-c`} className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(t.cost)}</td>
-                          <td key={`${y}-m`} className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(t.margin)}</td>
-                        </>
+                        <Fragment key={y}>
+                          <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap border-l">{money(t.billing)}</td>
+                          <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(t.cost)}</td>
+                          <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(t.margin)}</td>
+                        </Fragment>
                       );
                     })}
                     {compare.prev != null && (() => {
