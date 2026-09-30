@@ -49,53 +49,12 @@ const ymd = (d: Date) => format(d, 'yyyy-MM-dd');
 
 const fmt$ = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-interface Assignment {
-  id: string;
-  applicant_id: string | null;
-  client_id: string | null;
-  status: string;
-  hourly_rate: number | null;
-  client_deposit?: number | null;
-  contractor_deposit?: number | null;
-  client_deposit_text?: string | null;
-  contractor_deposit_text?: string | null;
-  client_rate: number | null;
-  hours_per_week: number | null;
-  start_date: string | null;
-  end_date: string | null;
-  sunday_hours_excluded: boolean | null;
-  applicant: { full_name: string | null } | null;
-  client: { company_name: string | null } | null;
-}
-
-interface Timesheet {
-  id: string;
-  contractor_assignment_id: string;
-  week_ending_date: string;
-  total_hours: number;
-  overtime_hours: number;
-  notes: string | null;
-  daily_hours: Record<string, { hours?: number; reason?: string }> | null;
-}
+type Assignment = PlAssignment;
+type Timesheet = PlTimesheet;
 
 type StatusKey = 'good' | 'overtime' | 'undertime' | 'sick' | 'not_submitted' | 'terminated';
 
-interface Row {
-  assignment: Assignment;
-  timesheet: Timesheet | null;
-  actualHours: number;
-  overtime: number;
-  standardHours: number;
-  hourlyRate: number;
-  clientRate: number;
-  expenses: number;
-  expenseAfter: number;
-  income: number;
-  incomeAfter: number;
-  grossProfit: number;
-  grossAfter: number;
-  clientDeposit: number | string | null;
-  contractorDeposit: number | string | null;
+interface Row extends PlWeekRow {
   status: StatusKey;
   weeksSinceStart: number | null;
   isNewStarter: boolean;
