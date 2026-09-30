@@ -29,6 +29,32 @@ interface HistRow {
 const money = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const num = (n: number | null | undefined) => Number(n ?? 0);
 
+// ---- Per-year cache (memory + localStorage), invalidated when batches or their mapping change ----
+interface CacheEntry { sig: string; ids: string[]; rows: HistRow[] }
+const memCache = new Map<number, CacheEntry>();
+const CACHE_KEY = (y: number) => `hist-pl-cache-v1-${y}`;
+function readCache(y: number): CacheEntry | null {
+  if (memCache.has(y)) return memCache.get(y)!;
+  try {
+    const s = localStorage.getItem(CACHE_KEY(y));
+    if (!s) return null;
+    const e = JSON.parse(s) as CacheEntry;
+    memCache.set(y, e);
+    return e;
+  } catch { return null; }
+}
+function writeCache(y: number, e: CacheEntry) {
+  memCache.set(y, e);
+  try { localStorage.setItem(CACHE_KEY(y), JSON.stringify(e)); } catch { /* storage full — memory only */ }
+}
+function signature(batches: { id: string; created_at: string; column_map: unknown }[]) {
+  const str = [...batches].sort((a, b) => a.id.localeCompare(b.id))
+    .map((b) => `${b.id}|${b.created_at}|${JSON.stringify(b.column_map ?? null)}`).join('#');
+  let h = 0;
+  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
+  return `${batches.length}:${h}`;
+}
+
 interface Props { onUpload?: (year: number) => void }
 
 export function HistoricalPL({ onUpload }: Props) {
@@ -43,13 +69,19 @@ export function HistoricalPL({ onUpload }: Props) {
   const [remapOpen, setRemapOpen] = useState(false);
 
   const load = useCallback(async () => {
-    setLoading(true);
+    // Show cached rows instantly, then check whether anything changed.
+    const cached = readCache(year);
+    if (cached) { setBatchIds(cached.ids); setRows(cached.rows); setLoading(false); }
+    else setLoading(true);
+
     const { data: batches, error: bErr } = await supabase
-      .from('historical_pl_batches').select('id').eq('year', year);
-    if (bErr) { toast.error('Failed to load historical data'); setLoading(false); return; }
+      .from('historical_pl_batches').select('id, created_at, column_map').eq('year', year);
+    if (bErr) { if (!cached) toast.error('Failed to load historical data'); setLoading(false); return; }
     const ids = (batches ?? []).map((b) => b.id);
+    const sig = signature(batches ?? []);
     setBatchIds(ids);
-    if (ids.length === 0) { setRows([]); setLoading(false); return; }
+    if (cached && cached.sig === sig) { setLoading(false); return; }
+    if (ids.length === 0) { setRows([]); writeCache(year, { sig, ids, rows: [] }); setLoading(false); return; }
 
     const all: HistRow[] = [];
     const PAGE = 1000;
@@ -60,12 +92,14 @@ export function HistoricalPL({ onUpload }: Props) {
         .in('batch_id', ids)
         .order('week_start', { ascending: true, nullsFirst: false })
         .order('contractor_name', { ascending: true })
+        .order('id', { ascending: true })
         .range(from, from + PAGE - 1);
-      if (error) { toast.error('Failed to load historical rows'); break; }
+      if (error) { toast.error('Failed to load historical rows'); setLoading(false); return; }
       all.push(...((data ?? []) as HistRow[]));
       if (!data || data.length < PAGE) break;
     }
     setRows(all);
+    writeCache(year, { sig, ids, rows: all });
     setLoading(false);
   }, [year]);
 
