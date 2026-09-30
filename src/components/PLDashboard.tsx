@@ -19,7 +19,7 @@ import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
 import { AdminLeaveApplications } from '@/components/AdminLeaveApplications';
 import { CollapsibleSection } from '@/components/pl/CollapsibleSection';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { PLReport } from '@/components/pl/PLReport';
+import { PLReport, EditableCell } from '@/components/pl/PLReport';
 import { HistoricalPL } from '@/components/pl/HistoricalPL';
 import { TimesheetEditHistory } from '@/components/pl/TimesheetEditHistory';
 import { TimesheetReminderSettingsDialog } from '@/components/pl/TimesheetReminderSettingsDialog';
@@ -312,6 +312,19 @@ const PayoneerMatchBadge = ({ notes, invoice: expected, timesheetId }: { notes: 
 
 export const PLDashboard = () => {
   const { toast } = useToast();
+
+  const saveDeposit = async (assignmentId: string, field: 'client_deposit' | 'contractor_deposit', value: number | string | null) => {
+    const textField = field === 'client_deposit' ? 'client_deposit_text' : 'contractor_deposit_text';
+    const text = typeof value === 'string' ? value.trim() : null;
+    if (text && text.length > 100) throw new Error('Text must be 100 characters or less');
+    const numeric = typeof value === 'number' ? value : null;
+    const { error } = await supabase.from('contractor_assignments')
+      .update({ [field]: numeric, [textField]: text } as any)
+      .eq('id', assignmentId);
+    if (error) throw error;
+    setContractors((prev) => prev.map((c) => c.id === assignmentId ? { ...c, [field]: numeric, [textField]: text } : c));
+    toast({ title: 'Saved' });
+  };
   const [loading, setLoading] = useState(true);
   const [profileContractor, setProfileContractor] = useState<any | null>(null);
   const [loadingProfile, setLoadingProfile] = useState(false);
