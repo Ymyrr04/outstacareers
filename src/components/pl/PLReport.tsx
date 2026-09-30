@@ -13,17 +13,8 @@ import { ChevronLeft, ChevronRight, Download, Loader2, Search, Settings, ArrowDo
 import { format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
-import { INTERNAL_CLIENT_ID } from '@/lib/internalCompany';
-import clientRateFallbackData from '@/data/clientRateFallback.json';
 import { parseDateOnly } from '@/lib/dateOnly';
-
-const clientRateFallback = clientRateFallbackData as Record<string, number>;
-const normalizeName = (s: string) =>
-  s.normalize('NFKD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/\./g, ' ').replace(/\s+/g, ' ').trim();
-const lookupFallbackClientRate = (name: string | null | undefined): number => {
-  if (!name) return 0;
-  return clientRateFallback[normalizeName(name)] ?? 0;
-};
+import { computePlWeek, mondayOf, ymd, type PlAssignment, type PlTimesheet, type PlWeekRow } from '@/lib/plWeek';
 
 // ============ Config: fee constants (persisted in pl_fee_settings table) ============
 const DEFAULT_EXPENSE_FEE_PCT = 1;
@@ -33,69 +24,20 @@ const defaultFees = () => ({ expensePct: DEFAULT_EXPENSE_FEE_PCT, incomePct: DEF
 
 const WEEK_STORAGE_KEY = 'pl_report_selected_week';
 
-const mondayOf = (d: Date) => {
-  const x = new Date(d);
-  x.setHours(0, 0, 0, 0);
-  const dow = x.getDay();
-  x.setDate(x.getDate() + (dow === 0 ? -6 : 1 - dow));
-  return x;
-};
 const getLastCompletedMonday = () => {
   const m = mondayOf(new Date());
   m.setDate(m.getDate() - 7);
   return m;
 };
-const ymd = (d: Date) => format(d, 'yyyy-MM-dd');
 
 const fmt$ = (n: number) => `$${n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
-interface Assignment {
-  id: string;
-  applicant_id: string | null;
-  client_id: string | null;
-  status: string;
-  hourly_rate: number | null;
-  client_deposit?: number | null;
-  contractor_deposit?: number | null;
-  client_deposit_text?: string | null;
-  contractor_deposit_text?: string | null;
-  client_rate: number | null;
-  hours_per_week: number | null;
-  start_date: string | null;
-  end_date: string | null;
-  sunday_hours_excluded: boolean | null;
-  applicant: { full_name: string | null } | null;
-  client: { company_name: string | null } | null;
-}
-
-interface Timesheet {
-  id: string;
-  contractor_assignment_id: string;
-  week_ending_date: string;
-  total_hours: number;
-  overtime_hours: number;
-  notes: string | null;
-  daily_hours: Record<string, { hours?: number; reason?: string }> | null;
-}
+type Assignment = PlAssignment;
+type Timesheet = PlTimesheet;
 
 type StatusKey = 'good' | 'overtime' | 'undertime' | 'sick' | 'not_submitted' | 'terminated';
 
-interface Row {
-  assignment: Assignment;
-  timesheet: Timesheet | null;
-  actualHours: number;
-  overtime: number;
-  standardHours: number;
-  hourlyRate: number;
-  clientRate: number;
-  expenses: number;
-  expenseAfter: number;
-  income: number;
-  incomeAfter: number;
-  grossProfit: number;
-  grossAfter: number;
-  clientDeposit: number | string | null;
-  contractorDeposit: number | string | null;
+interface Row extends PlWeekRow {
   status: StatusKey;
   weeksSinceStart: number | null;
   isNewStarter: boolean;
@@ -209,8 +151,8 @@ export const PLReport = () => {
 
   const [weekPickerOpen, setWeekPickerOpen] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [assignments, setAssignments] = useState<Assignment[]>([]);
-  const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
+  const [baseRows, setBaseRows] = useState<PlWeekRow[]>([]);
+  const [reloadKey, setReloadKey] = useState(0);
   const [fees, setFees] = useState(defaultFees);
   const [feesDialogOpen, setFeesDialogOpen] = useState(false);
 
@@ -245,30 +187,7 @@ export const PLReport = () => {
     (async () => {
       setLoading(true);
       try {
-        // Active OR terminated whose end_date >= week start
-        const { data: aData, error: aErr } = await supabase
-          .from('contractor_assignments')
-          .select(`id, applicant_id, client_id, status, hourly_rate, client_rate, client_deposit, contractor_deposit, client_deposit_text, contractor_deposit_text, hours_per_week, start_date, end_date, sunday_hours_excluded,
-                   applicant:applicants_prescreen(full_name),
-                   client:clients(company_name)`)
-          .or(`status.eq.active,and(status.eq.terminated,end_date.gte.${weekMondayStr})`);
-        if (aErr) throw aErr;
-
-        const active = (aData as any as Assignment[]) || [];
-        const ids = active.map((a) => a.id);
-        let tsRows: Timesheet[] = [];
-        if (ids.length) {
-          const { data: tData, error: tErr } = await supabase
-            .from('contractor_timesheets')
-            .select('id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, notes, daily_hours')
-            .in('contractor_assignment_id', ids)
-            .gte('week_ending_date', weekMondayStr)
-            .lte('week_ending_date', weekEndingStr);
-          if (tErr) throw tErr;
-          tsRows = (tData as any as Timesheet[]) || [];
-        }
-        setAssignments(active);
-        setTimesheets(tsRows);
+        setBaseRows(await computePlWeek(weekMondayStr, fees, { includeInternal: false }));
       } catch (e: any) {
         console.error(e);
         toast({ title: 'Failed to load P&L report', description: e.message, variant: 'destructive' });
@@ -276,13 +195,13 @@ export const PLReport = () => {
         setLoading(false);
       }
     })();
-  }, [weekMondayStr, weekEndingStr, toast]);
+  }, [weekMondayStr, fees, reloadKey, toast]);
 
   const tsMap = useMemo(() => {
     const m = new Map<string, Timesheet>();
-    timesheets.forEach((t) => m.set(t.contractor_assignment_id, t));
+    baseRows.forEach((r) => { if (r.timesheet) m.set(r.assignment.id, r.timesheet); });
     return m;
-  }, [timesheets]);
+  }, [baseRows]);
 
   const computeStatus = (a: Assignment, ts: Timesheet | null, actualHours: number): StatusKey => {
     if (a.status === 'terminated') return 'terminated';
@@ -297,80 +216,27 @@ export const PLReport = () => {
     return 'good';
   };
 
-  const expMul = 1 + fees.expensePct / 100;
-  const incMul = 1 - fees.incomePct / 100;
-
   const rows: Row[] = useMemo(() => {
-    return assignments
-      .filter((a) => a.client_id !== INTERNAL_CLIENT_ID)
-      .map((a) => {
-        const ts = tsMap.get(a.id) || null;
-        let actualHours = Number(ts?.total_hours || 0);
-        // Sunday exclusion
-        if (ts && a.sunday_hours_excluded && ts.daily_hours) {
-          try {
-            const dh = ts.daily_hours as Record<string, { hours?: number }>;
-            let sunHours = 0;
-            Object.entries(dh).forEach(([date, v]) => {
-              const d = new Date(date);
-              if (!isNaN(d.getTime()) && d.getDay() === 0) sunHours += Number(v?.hours || 0);
-            });
-            actualHours = Math.max(0, actualHours - sunHours);
-          } catch {}
+    return baseRows.map((r) => {
+      const a = r.assignment;
+      // Weeks since start
+      let weeksSinceStart: number | null = null;
+      let isNewStarter = false;
+      if (a.start_date) {
+        const start = parseDateOnly(a.start_date);
+        if (!isNaN(start.getTime())) {
+          const diff = Math.floor((weekEnding.getTime() - mondayOf(start).getTime()) / (7 * 86400000));
+          weeksSinceStart = diff + 1;
+          isNewStarter = start >= weekMonday && start <= weekEnding;
         }
-        const hourlyRate = Number(a.hourly_rate || 0);
-        const clientRate = Number(a.client_rate || 0) || lookupFallbackClientRate(a.applicant?.full_name);
-        const standardHours = Number(a.hours_per_week || 0);
-        const overtime = Number(ts?.overtime_hours || 0);
-        const hasHours = actualHours > 0;
+      }
 
-        const expenses = hasHours ? hourlyRate * actualHours : 0;
-        const income = hasHours ? clientRate * actualHours : 0;
-        const expenseAfter = hasHours ? expenses * expMul : 0;
-        const incomeAfter = hasHours ? income * incMul : 0;
-        const grossProfit = hasHours ? income - expenses : 0;
-        const grossAfter = hasHours ? incomeAfter - expenseAfter : 0;
+      const autoStatus = computeStatus(a, r.timesheet, r.actualHours);
+      const status = statusOverrides[a.id] || autoStatus;
 
-        const clientDeposit = a.client_deposit_text || (a.client_deposit != null ? Number(a.client_deposit) : null);
-        const contractorDeposit = a.contractor_deposit_text || (a.contractor_deposit != null ? Number(a.contractor_deposit) : null);
-
-        // Weeks since start
-        let weeksSinceStart: number | null = null;
-        let isNewStarter = false;
-        if (a.start_date) {
-          const start = parseDateOnly(a.start_date);
-          if (!isNaN(start.getTime())) {
-            const diff = Math.floor((weekEnding.getTime() - mondayOf(start).getTime()) / (7 * 86400000));
-            weeksSinceStart = diff + 1;
-            isNewStarter = start >= weekMonday && start <= weekEnding;
-          }
-        }
-
-        const autoStatus = computeStatus(a, ts, actualHours);
-        const status = statusOverrides[a.id] || autoStatus;
-
-        return {
-          assignment: a,
-          timesheet: ts,
-          actualHours,
-          overtime,
-          standardHours,
-          hourlyRate,
-          clientRate,
-          expenses,
-          expenseAfter,
-          income,
-          incomeAfter,
-          grossProfit,
-          grossAfter,
-          clientDeposit,
-          contractorDeposit,
-          status,
-          weeksSinceStart,
-          isNewStarter,
-        };
-      });
-  }, [assignments, tsMap, expMul, incMul, weekMonday, weekEnding, statusOverrides]);
+      return { ...r, status, weeksSinceStart, isNewStarter };
+    });
+  }, [baseRows, weekMonday, weekEnding, statusOverrides]);
 
   const clientOptions = useMemo(() => {
     const s = new Set<string>();
@@ -477,7 +343,7 @@ export const PLReport = () => {
       .update({ [field]: value } as any)
       .eq('id', assignmentId);
     if (error) throw error;
-    setAssignments((prev) => prev.map((a) => (a.id === assignmentId ? { ...a, [field]: value } : a)));
+    setReloadKey((k) => k + 1);
     toast({ title: 'Saved' });
   };
 
@@ -490,7 +356,7 @@ export const PLReport = () => {
       .update({ [field]: numeric, [textField]: text })
       .eq('id', assignmentId);
     if (error) throw error;
-    setAssignments((prev) => prev.map((a) => a.id === assignmentId ? { ...a, [field]: numeric, [textField]: text } : a));
+    setReloadKey((k) => k + 1);
     toast({ title: 'Saved' });
   };
 
@@ -503,7 +369,7 @@ export const PLReport = () => {
       .update({ total_hours: hours } as any)
       .eq('id', ts.id);
     if (error) throw error;
-    setTimesheets((prev) => prev.map((t) => (t.id === ts.id ? { ...t, total_hours: hours } : t)));
+    setReloadKey((k) => k + 1);
     toast({ title: 'Saved' });
   };
 
