@@ -2876,6 +2876,8 @@ export type Database = {
           created_at: string
           filename: string | null
           id: string
+          source: string
+          updated_at: string
           uploaded_by: string | null
           year: number
         }
@@ -2884,6 +2886,8 @@ export type Database = {
           created_at?: string
           filename?: string | null
           id?: string
+          source?: string
+          updated_at?: string
           uploaded_by?: string | null
           year: number
         }
@@ -2892,6 +2896,8 @@ export type Database = {
           created_at?: string
           filename?: string | null
           id?: string
+          source?: string
+          updated_at?: string
           uploaded_by?: string | null
           year?: number
         }
