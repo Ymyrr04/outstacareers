@@ -450,10 +450,11 @@ export function HistoricalPL({ onUpload }: Props) {
                 </thead>
                 <tbody>
                   {MONTHS.map((mn, mi) => {
-                    const cur = compare.byYear[compare.latest].months[mi].margin;
-                    const prv = compare.prev != null ? compare.byYear[compare.prev].months[mi].margin : 0;
-                    const diff = cur - prv;
-                    const p = pct(cur, prv);
+                    const curCell = compare.byYear[compare.latest].months[mi];
+                    const prvCell = compare.prev != null ? compare.byYear[compare.prev].months[mi] : null;
+                    const showChange = curCell.has.margin && !!prvCell?.has.margin;
+                    const diff = showChange ? curCell.margin - prvCell!.margin : 0;
+                    const p = showChange ? pct(curCell.margin, prvCell!.margin) : null;
                     return (
                       <tr key={mn} className="border-b last:border-0">
                         <td className="px-3 py-2 font-medium whitespace-nowrap">{mn}</td>
@@ -461,16 +462,16 @@ export function HistoricalPL({ onUpload }: Props) {
                           const c = compare.byYear[y].months[mi];
                           return (
                             <Fragment key={y}>
-                              <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap border-l">{money(c.billing)}</td>
-                              <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(c.cost)}</td>
-                              <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(c.margin)}</td>
+                              <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap border-l">{c.has.billing ? money(c.billing) : '—'}</td>
+                              <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{c.has.cost ? money(c.cost) : '—'}</td>
+                              <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{c.has.margin ? money(c.margin) : '—'}</td>
                             </Fragment>
                           );
                         })}
                         {compare.prev != null && (
                           <>
-                            <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap border-l', diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{money(diff)}</td>
-                            <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap', diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{p == null ? '—' : `${p > 0 ? '+' : ''}${p.toFixed(1)}%`}</td>
+                            <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap border-l', !showChange ? '' : diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{showChange ? money(diff) : '—'}</td>
+                            <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap', !showChange ? '' : diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{p == null ? '—' : `${p > 0 ? '+' : ''}${p.toFixed(1)}%`}</td>
                           </>
                         )}
                       </tr>
@@ -482,21 +483,22 @@ export function HistoricalPL({ onUpload }: Props) {
                       const t = compare.byYear[y].total;
                       return (
                         <Fragment key={y}>
-                          <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap border-l">{money(t.billing)}</td>
-                          <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(t.cost)}</td>
-                          <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{money(t.margin)}</td>
+                          <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap border-l">{t.has.billing ? money(t.billing) : '—'}</td>
+                          <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{t.has.cost ? money(t.cost) : '—'}</td>
+                          <td className="text-right px-3 py-2 tabular-nums whitespace-nowrap">{t.has.margin ? money(t.margin) : '—'}</td>
                         </Fragment>
                       );
                     })}
                     {compare.prev != null && (() => {
-                      const cur = compare.byYear[compare.latest].total.margin;
-                      const prv = compare.byYear[compare.prev].total.margin;
-                      const diff = cur - prv;
-                      const p = pct(cur, prv);
+                      const curT = compare.byYear[compare.latest].total;
+                      const prvT = compare.byYear[compare.prev].total;
+                      const showChange = curT.has.margin && prvT.has.margin;
+                      const diff = showChange ? curT.margin - prvT.margin : 0;
+                      const p = showChange ? pct(curT.margin, prvT.margin) : null;
                       return (
                         <>
-                          <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap border-l', diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{money(diff)}</td>
-                          <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap', diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{p == null ? '—' : `${p > 0 ? '+' : ''}${p.toFixed(1)}%`}</td>
+                          <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap border-l', !showChange ? '' : diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{showChange ? money(diff) : '—'}</td>
+                          <td className={cn('text-right px-3 py-2 tabular-nums whitespace-nowrap', !showChange ? '' : diff < 0 ? 'text-destructive' : diff > 0 ? 'text-emerald-600' : '')}>{p == null ? '—' : `${p > 0 ? '+' : ''}${p.toFixed(1)}%`}</td>
                         </>
                       );
                     })()}
