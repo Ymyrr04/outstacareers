@@ -567,11 +567,14 @@ export const ContractorProfilePanel = ({ assignments, clientName }: { assignment
   // Dedupe by applicant + job_title in case of multiple assignment rows
   const seen = new Set<string>();
   const list = assignments.filter(a => {
+    // Hide inactive contractors entirely
+    if ((a.status || 'active').toLowerCase() !== 'active') return false;
     const key = `${a.applicant?.email || a.id}-${a.job_title || ''}`;
     if (seen.has(key)) return false;
     seen.add(key);
     return true;
   });
+  if (list.length === 0) return null;
 
   const toggle = (id: string) => {
     setExpandedIds(prev => {
