@@ -95,6 +95,8 @@ const App = () => (
                 <Route path="/client-portal/setup" element={<ClientPortalSetup />} />
                 <Route path="/client-portal" element={<ClientPortalDashboard />} />
                 <Route path="/client-portal/timesheets" element={<ClientPortalDashboard />} />
+                <Route path="/__portal-collapse-preview" element={<PortalCollapsePreview />} />
+
 
                 {/* Catch-all also guarded so unknown paths on workforce domain bounce */}
                 <Route path="*" element={guard(<NotFound />)} />
