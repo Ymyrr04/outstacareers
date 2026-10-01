@@ -561,8 +561,7 @@ const colorFor = (s: string) => {
   return avatarColors[h % avatarColors.length];
 };
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const ContractorProfilePanel = ({ assignments, clientName }: { assignments: Assignment[]; clientName: string }) => {
+export const ContractorProfilePanel = ({ assignments, clientName }: { assignments: Assignment[]; clientName: string }) => {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   if (!assignments || assignments.length === 0) return null;
   // Dedupe by applicant + job_title in case of multiple assignment rows
