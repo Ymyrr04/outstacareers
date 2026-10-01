@@ -562,6 +562,7 @@ const colorFor = (s: string) => {
 };
 
 const ContractorProfilePanel = ({ assignments, clientName }: { assignments: Assignment[]; clientName: string }) => {
+  const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   if (!assignments || assignments.length === 0) return null;
   // Dedupe by applicant + job_title in case of multiple assignment rows
   const seen = new Set<string>();
@@ -572,40 +573,58 @@ const ContractorProfilePanel = ({ assignments, clientName }: { assignments: Assi
     return true;
   });
 
+  const toggle = (id: string) => {
+    setExpandedIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
       {list.map((a) => {
         const name = a.applicant?.full_name || 'Unnamed contractor';
         const email = a.applicant?.email || '';
         const isActive = (a.status || 'active').toLowerCase() === 'active';
+        const isExpanded = expandedIds.has(a.id);
         return (
-          <div key={a.id} className="relative bg-background border rounded-lg shadow-sm p-4">
-            <div className="absolute top-3 right-3">
-              {isActive ? (
-                <Badge className="bg-green-100 text-green-700 hover:bg-green-100">Active</Badge>
-              ) : (
-                <Badge variant="secondary" className="bg-gray-100 text-gray-600">Inactive</Badge>
-              )}
-            </div>
-            <div className="flex items-start gap-3">
-              <div className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-semibold text-sm shrink-0 ${colorFor(name)}`}>
+          <div key={a.id} className="bg-background border rounded-lg shadow-sm">
+            <button
+              type="button"
+              onClick={() => toggle(a.id)}
+              className="w-full flex items-center gap-3 p-3 text-left cursor-pointer"
+              aria-expanded={isExpanded}
+            >
+              <div className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-semibold text-xs shrink-0 ${colorFor(name)}`}>
                 {initialsOf(name)}
               </div>
-              <div className="min-w-0 flex-1 pr-16">
+              <div className="min-w-0 flex-1">
                 <div className="font-semibold text-sm truncate">{name}</div>
+                <div className="text-xs text-muted-foreground truncate">{a.job_title || '—'}</div>
               </div>
-            </div>
-            <div className="mt-3 space-y-1 text-xs">
-              <div><span className="text-muted-foreground">Role:</span> <span className="font-medium">{a.job_title || '—'}</span></div>
+              {isActive ? (
+                <Badge className="bg-green-100 text-green-700 hover:bg-green-100 shrink-0">Active</Badge>
+              ) : (
+                <Badge variant="secondary" className="bg-gray-100 text-gray-600 shrink-0">Inactive</Badge>
+              )}
+              <ChevronDown className={`w-4 h-4 text-muted-foreground shrink-0 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+            </button>
+            {isExpanded && (
+              <div className="px-4 pb-3 pt-1 border-t">
+                <div className="mt-2 space-y-1 text-xs">
+                  <div><span className="text-muted-foreground">Role:</span> <span className="font-medium">{a.job_title || '—'}</span></div>
 
-              <div>
-                {a.start_date ? (
-                  <span className="text-muted-foreground">Hired: <span className="font-medium text-foreground">{estMonthDay(a.start_date)}</span></span>
-                ) : (
-                  <span className="italic text-muted-foreground">Hire date not set</span>
-                )}
+                  <div>
+                    {a.start_date ? (
+                      <span className="text-muted-foreground">Hired: <span className="font-medium text-foreground">{estMonthDay(a.start_date)}</span></span>
+                    ) : (
+                      <span className="italic text-muted-foreground">Hire date not set</span>
+                    )}
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         );
       })}
