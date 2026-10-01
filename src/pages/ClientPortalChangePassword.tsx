@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { PasswordGuidance, passwordMeetsRequirements, PASSWORD_REQUIREMENTS_MESSAGE } from '@/components/portal/PasswordGuidance';
 
 const ClientPortalChangePassword = () => {
   const navigate = useNavigate();
