@@ -127,6 +127,13 @@
       "when": 1790797941282,
       "tag": "0017_create_pl_fee_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1790861802888,
+      "tag": "0018_add_payoneer_email",
+      "breakpoints": true
     }
   ]
 }

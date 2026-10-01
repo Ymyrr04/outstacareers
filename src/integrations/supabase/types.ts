@@ -1575,6 +1575,7 @@ export type Database = {
           is_replacement: boolean | null
           job_title: string | null
           notes: string | null
+          payoneer_email: string | null
           regular_work_shift: string | null
           separation_note: string | null
           source: string | null
@@ -1617,6 +1618,7 @@ export type Database = {
           is_replacement?: boolean | null
           job_title?: string | null
           notes?: string | null
+          payoneer_email?: string | null
           regular_work_shift?: string | null
           separation_note?: string | null
           source?: string | null
@@ -1659,6 +1661,7 @@ export type Database = {
           is_replacement?: boolean | null
           job_title?: string | null
           notes?: string | null
+          payoneer_email?: string | null
           regular_work_shift?: string | null
           separation_note?: string | null
           source?: string | null

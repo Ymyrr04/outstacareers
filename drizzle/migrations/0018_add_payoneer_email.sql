@@ -1,0 +1,1 @@
+ALTER TABLE public.contractor_assignments ADD COLUMN IF NOT EXISTS payoneer_email text;
