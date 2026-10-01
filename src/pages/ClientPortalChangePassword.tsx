@@ -26,8 +26,8 @@ const ClientPortalChangePassword = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pw1.length < 8) {
-      toast({ title: 'Password too short', description: 'Use at least 8 characters.', variant: 'destructive' });
+    if (!passwordMeetsRequirements(pw1)) {
+      toast({ title: 'Password does not meet requirements', description: PASSWORD_REQUIREMENTS_MESSAGE, variant: 'destructive' });
       return;
     }
     if (pw1 !== pw2) {
