@@ -93,6 +93,7 @@ interface ContractorRow {
   contractor_deposit: number | null;
   client_deposit_text: string | null;
   contractor_deposit_text: string | null;
+  payoneer_email: string | null;
   start_date: string | null;
   applicant: { full_name: string; email: string } | null;
   client: { company_name: string } | null;
@@ -570,6 +571,7 @@ export const PLDashboard = () => {
         contractor_deposit: c.contractor_deposit ?? null,
         client_deposit_text: c.client_deposit_text ?? null,
         contractor_deposit_text: c.contractor_deposit_text ?? null,
+        payoneer_email: c.payoneer_email ?? null,
         start_date: c.start_date,
         applicant: c.applicant,
         client: c.client,
