@@ -561,6 +561,7 @@ const colorFor = (s: string) => {
   return avatarColors[h % avatarColors.length];
 };
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const ContractorProfilePanel = ({ assignments, clientName }: { assignments: Assignment[]; clientName: string }) => {
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
   if (!assignments || assignments.length === 0) return null;
