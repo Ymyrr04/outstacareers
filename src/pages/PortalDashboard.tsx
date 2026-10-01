@@ -159,6 +159,7 @@ interface ContractorInfo {
   timezone: string | null;
   checkin_reminder_enabled: boolean;
   checkin_reminder_time: string | null;
+  payoneer_email: string | null;
 }
 
 interface ProfileForm {
@@ -166,6 +167,7 @@ interface ProfileForm {
   phone: string;
   whatsapp: string;
   location: string;
+  payoneer_email: string;
   country: string;
   contact_number: string;
   emergency_number: string;
@@ -588,7 +590,7 @@ const PortalDashboard = () => {
   const [tabValue, setTabValue] = useState<'timesheet' | 'checkin' | 'leave'>('timesheet');
 
   const emptyProfileForm: ProfileForm = {
-    full_name: '', phone: '', whatsapp: '', location: '', country: '',
+    full_name: '', phone: '', whatsapp: '', location: '', country: '', payoneer_email: '',
     contact_number: '', emergency_number: '', hours_per_week: '',
     hourly_rate: '', regular_work_shift: '', work_days: [],
     break_duration: '', break_unit: 'minutes', break_is_paid: false, break_enabled: false,
@@ -710,7 +712,7 @@ const PortalDashboard = () => {
     // for the dashboard view and (b) join client/job info to past timesheets.
     const { data: assignmentsAll } = await supabase
       .from('contractor_assignments')
-      .select('id, applicant_id, job_title, hourly_rate, hours_per_week, regular_work_shift, contact_number, emergency_number, country, work_days, status, start_date, sunday_hours_excluded, break_duration_minutes, break_is_paid, timezone, checkin_reminder_enabled, checkin_reminder_time, applicant:applicants_prescreen(full_name, email, phone, whatsapp, location), client:clients(company_name)')
+      .select('id, applicant_id, job_title, hourly_rate, hours_per_week, regular_work_shift, contact_number, emergency_number, country, work_days, status, start_date, sunday_hours_excluded, break_duration_minutes, break_is_paid, timezone, checkin_reminder_enabled, checkin_reminder_time, payoneer_email, applicant:applicants_prescreen(full_name, email, phone, whatsapp, location), client:clients(company_name)')
       .in('id', allAssignmentIds);
 
     // Pick the active assignment first; otherwise the most recently started.
@@ -754,6 +756,7 @@ const PortalDashboard = () => {
       timezone: (assignment as any).timezone || null,
       checkin_reminder_enabled: Boolean((assignment as any).checkin_reminder_enabled),
       checkin_reminder_time: (assignment as any).checkin_reminder_time || null,
+      payoneer_email: (assignment as any).payoneer_email || null,
     };
     setInfo(nextInfo);
     setProfileForm({
@@ -761,6 +764,7 @@ const PortalDashboard = () => {
       phone: nextInfo.phone || '',
       whatsapp: nextInfo.whatsapp || '',
       location: nextInfo.location || '',
+      payoneer_email: nextInfo.payoneer_email || '',
       country: nextInfo.country || '',
       contact_number: nextInfo.contact_number || '',
       emergency_number: nextInfo.emergency_number || '',
@@ -775,6 +779,7 @@ const PortalDashboard = () => {
     const incomplete =
       !nextInfo.full_name ||
       !nextInfo.phone ||
+      !nextInfo.payoneer_email ||
       !nextInfo.regular_work_shift ||
       nextInfo.hours_per_week == null ||
       nextInfo.hourly_rate == null;
@@ -804,6 +809,7 @@ const PortalDashboard = () => {
     ? false
     : (!info.full_name ||
        !info.phone ||
+       !info.payoneer_email ||
        !info.regular_work_shift ||
        info.hours_per_week == null ||
        info.hourly_rate == null ||
@@ -1338,6 +1344,7 @@ const PortalDashboard = () => {
       phone: info.phone || '',
       whatsapp: info.whatsapp || '',
       location: info.location || '',
+      payoneer_email: info.payoneer_email || '',
       country: info.country || '',
       contact_number: info.contact_number || '',
       emergency_number: info.emergency_number || '',
@@ -1359,6 +1366,11 @@ const PortalDashboard = () => {
     }
     if (!profileForm.phone.trim()) {
       toast({ title: 'Phone required', description: 'Please enter your phone number.', variant: 'destructive' });
+      return;
+    }
+    const payoneer = profileForm.payoneer_email.trim().toLowerCase();
+    if (!payoneer || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payoneer) || payoneer.length > 255) {
+      toast({ title: 'Payoneer email required', description: 'Please enter a valid Payoneer email address.', variant: 'destructive' });
       return;
     }
     if (!profileForm.regular_work_shift.trim()) {
@@ -1420,6 +1432,7 @@ const PortalDashboard = () => {
           work_days: profileForm.work_days,
           break_duration_minutes: breakMinutesToSave,
           break_is_paid: breakIsPaidToSave,
+          payoneer_email: payoneer,
         } as any)
 
 
@@ -1618,7 +1631,7 @@ const PortalDashboard = () => {
             </DialogHeader>
             {profileIncomplete && (
               <div className="rounded-md border border-amber-300 bg-amber-50 text-amber-900 px-3 py-2 text-xs">
-                Required: Full name, Phone, Regular work shift, Hours per week, Current rate, and Work days.
+                Required: Full name, Phone, Payoneer email, Regular work shift, Hours per week, Current rate, and Work days. You can't submit timesheets until your Payoneer email is added.
               </div>
             )}
             {(!profileEditing && !profileIncomplete) ? (
@@ -1626,6 +1639,7 @@ const PortalDashboard = () => {
                 <ProfileField label="Full name" value={info?.full_name} />
                 <ProfileField label="Email" value={info?.email} />
                 <ProfileField label="Phone" value={info?.phone} />
+                <ProfileField label="Payoneer email" value={info?.payoneer_email} />
                 <ProfileField label="Job title" value={info?.job_title} />
                 <ProfileField label="Company" value={info?.company_name} />
                 <ProfileField label="Regular work shift" value={info?.regular_work_shift} />
@@ -1674,6 +1688,12 @@ const PortalDashboard = () => {
                   <Input value={info?.email || ''} disabled />
                 </div>
                 <div className="space-y-2">
+                  <Label htmlFor="p-payoneer">Payoneer email <span className="text-destructive">*</span></Label>
+                  <Input id="p-payoneer" type="email" placeholder="you@example.com" value={profileForm.payoneer_email} onChange={(e) => setProfileForm({ ...profileForm, payoneer_email: e.target.value })} />
+                  <p className="text-xs text-muted-foreground">Used for your weekly payments via Payoneer.</p>
+                </div>
+                <div className="space-y-2">
+
                   <Label htmlFor="p-phone">Phone <span className="text-destructive">*</span></Label>
                   <Input id="p-phone" value={profileForm.phone} onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })} />
                 </div>
