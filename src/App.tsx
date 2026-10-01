@@ -36,6 +36,7 @@ import GmailOAuthReturn from "./pages/GmailOAuthReturn";
 import AvailabilityResponse from "./pages/AvailabilityResponse";
 import DomainGuard from "./components/DomainGuard";
 import DesignPreviewToggle from "./components/DesignPreviewToggle";
+import PortalCollapsePreview from "./pages/PortalCollapsePreview";
 
 
 const queryClient = new QueryClient({
