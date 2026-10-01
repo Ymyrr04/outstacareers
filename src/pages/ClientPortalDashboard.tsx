@@ -491,7 +491,7 @@ const ClientPortalDashboard = () => {
                             <TableCell>{statusBadge(r.client_approval_status)}</TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-1">
-                                <Button size="sm" variant="outline" onClick={() => setSelected(r)}>
+                                <Button size="sm" variant="outline" onClick={() => { savedScrollRef.current = window.scrollY; setSelected(r); window.scrollTo(0, 0); }}>
                                   <Eye className="w-3.5 h-3.5 mr-1" /> View
                                 </Button>
                                 <Button
