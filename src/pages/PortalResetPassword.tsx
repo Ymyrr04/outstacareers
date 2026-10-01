@@ -52,6 +52,10 @@ const PortalResetPassword = () => {
       toast({ title: 'Passwords do not match', variant: 'destructive' });
       return;
     }
+    if (pw1 === 'OutSta2026!') {
+      toast({ title: 'Choose a different password', description: 'You cannot reuse the default password.', variant: 'destructive' });
+      return;
+    }
     setLoading(true);
     try {
       const { error } = await supabase.auth.updateUser({ password: pw1 });
