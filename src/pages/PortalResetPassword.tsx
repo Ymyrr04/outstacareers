@@ -44,16 +44,12 @@ const PortalResetPassword = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pw1.length < 8) {
-      toast({ title: 'Password too short', description: 'Use at least 8 characters.', variant: 'destructive' });
+    if (!passwordMeetsRequirements(pw1)) {
+      toast({ title: 'Password does not meet requirements', description: PASSWORD_REQUIREMENTS_MESSAGE, variant: 'destructive' });
       return;
     }
     if (pw1 !== pw2) {
       toast({ title: 'Passwords do not match', variant: 'destructive' });
-      return;
-    }
-    if (pw1 === 'OutSta2026!') {
-      toast({ title: 'Choose a different password', description: 'You cannot reuse the default password.', variant: 'destructive' });
       return;
     }
     setLoading(true);

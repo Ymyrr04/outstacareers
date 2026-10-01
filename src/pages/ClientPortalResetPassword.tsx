@@ -49,8 +49,8 @@ const ClientPortalResetPassword = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pw1.length < 8 || !/[A-Z]/.test(pw1) || !/[0-9]/.test(pw1)) {
-      toast({ title: 'Password does not meet requirements', description: 'Min 8 characters, 1 uppercase, 1 number.', variant: 'destructive' });
+    if (!passwordMeetsRequirements(pw1)) {
+      toast({ title: 'Password does not meet requirements', description: PASSWORD_REQUIREMENTS_MESSAGE, variant: 'destructive' });
       return;
     }
     if (pw1 !== pw2) {
