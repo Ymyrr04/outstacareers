@@ -84,6 +84,7 @@ const PortalChangePassword = () => {
               <Label htmlFor="pw2">Confirm new password</Label>
               <Input id="pw2" type="password" autoComplete="new-password" required value={pw2} onChange={(e) => setPw2(e.target.value)} />
             </div>
+            <PasswordGuidance password={pw1} />
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Update password'}
             </Button>
