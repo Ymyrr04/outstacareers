@@ -32,7 +32,7 @@ const PL_COLS: { key: string; label: string }[] = [
   { key: 'name', label: 'Contractor' }, { key: 'company', label: 'Company' }, { key: 'status', label: 'Status' },
   { key: 'rate', label: 'Rate' }, { key: 'latest', label: 'Latest Submission' }, { key: 'hpw', label: 'Regular Work Hours' },
   { key: 'workHours', label: 'Work Hours' }, { key: 'ot', label: 'OT' }, { key: 'bonus', label: 'Bonus' },
-  { key: 'deposit', label: 'Deposit' }, { key: 'clientDeposit', label: 'Client Deposit' }, { key: 'contractorDeposit', label: 'Contractor Deposit' },
+  { key: 'deposit', label: 'Deposit' }, { key: 'clientDeposit', label: 'Client Deposit' }, { key: 'contractorDeposit', label: 'Contractor Deposit' }, { key: 'payoneer', label: 'Payoneer Email' },
   { key: 'approval', label: 'Client Approval' }, { key: 'portal', label: 'Portal Account' },
 ];
 const readLS = (k: string): string[] | null => { try { const v = JSON.parse(localStorage.getItem(k) || 'null'); return Array.isArray(v) ? v : null; } catch { return null; } };
@@ -460,7 +460,7 @@ export const PLDashboard = () => {
         .from('contractor_assignments')
         .select(`
           id, applicant_id, client_id, job_title, status, hourly_rate, hours_per_week, start_date,
-          client_deposit, contractor_deposit, client_deposit_text, contractor_deposit_text, deposit_per_week, deposit_per_week_unit, deposit_target, deposit_target_unit,
+          client_deposit, contractor_deposit, client_deposit_text, contractor_deposit_text, deposit_per_week, deposit_per_week_unit, deposit_target, deposit_target_unit, payoneer_email,
           applicant:applicants_prescreen(full_name, email),
           client:clients(company_name)
         `)
@@ -1377,6 +1377,7 @@ export const PLDashboard = () => {
                   <TableHead data-col="deposit" className="text-right w-20"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('deposit')}>Deposit<SortIcon active={contractorSort.key === 'deposit'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead data-col="clientDeposit" className="text-right w-24"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('clientDeposit')}>Client Deposit<SortIcon active={contractorSort.key === 'clientDeposit'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead data-col="contractorDeposit" className="text-right w-24"><button className="inline-flex items-center hover:text-foreground ml-auto" onClick={() => toggleContractorSort('contractorDeposit')}>Contractor Deposit<SortIcon active={contractorSort.key === 'contractorDeposit'} dir={contractorSort.dir} /></button></TableHead>
+                  <TableHead data-col="payoneer">Payoneer Email</TableHead>
                   <TableHead data-col="approval" className="w-28"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('approval')}>Client Approval<SortIcon active={contractorSort.key === 'approval'} dir={contractorSort.dir} /></button></TableHead>
                   <TableHead data-col="portal"><button className="inline-flex items-center hover:text-foreground" onClick={() => toggleContractorSort('portal')}>Portal Account<SortIcon active={contractorSort.key === 'portal'} dir={contractorSort.dir} /></button></TableHead>
                   </ColumnOrder>
@@ -1493,6 +1494,11 @@ export const PLDashboard = () => {
                         display={c.contractor_deposit_text ? c.contractor_deposit_text : c.contractor_deposit != null ? `$${Number(c.contractor_deposit).toFixed(2)}` : ''}
                         onSave={(v) => saveDeposit(c.id, 'contractor_deposit', v)}
                       />
+                    </TableCell>
+                    <TableCell data-col="payoneer" className="text-xs">
+                      {(c as any).payoneer_email ? (
+                        <button type="button" className="hover:underline text-left break-all" title="Click to copy" onClick={() => { navigator.clipboard.writeText((c as any).payoneer_email); toast({ title: 'Payoneer email copied' }); }}>{(c as any).payoneer_email}</button>
+                      ) : <span className="text-muted-foreground">—</span>}
                     </TableCell>
                     <TableCell data-col="approval">
                       {c.latestTimesheet ? (
@@ -2457,6 +2463,7 @@ export const PLDashboard = () => {
                 <ProfileField label="Full name" value={profileContractor.applicant?.full_name} />
                 <ProfileField label="Email" value={profileContractor.applicant?.email} />
                 <ProfileField label="Phone" value={profileContractor.applicant?.phone} />
+                <ProfileField label="Payoneer email" value={(profileContractor as any).payoneer_email} />
                 <ProfileField label="Job title" value={profileContractor.job_title} />
                 <ProfileField label="Company" value={profileContractor.client?.company_name} />
                 <ProfileField label="Regular work shift" value={profileContractor.regular_work_shift} />
