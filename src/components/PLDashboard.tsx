@@ -75,6 +75,7 @@ interface TimesheetRow {
     hours_per_week: number | null;
     hourly_rate: number | null;
     client_id: string | null;
+    payoneer_email: string | null;
     applicant: { full_name: string; email: string } | null;
     client: { company_name: string } | null;
   } | null;
@@ -450,6 +451,7 @@ export const PLDashboard = () => {
             deposit_target,
             deposit_target_unit,
             client_id,
+            payoneer_email,
             applicant:applicants_prescreen(full_name, email),
             client:clients(company_name)
           )
@@ -1178,7 +1180,7 @@ export const PLDashboard = () => {
     }
 
     const headers = [
-      'Contractor', 'Email', 'Company', 'Week Ending', 'Hours', 'Deposit Hours', 'OT',
+      'Contractor', 'Email', 'Payoneer Email', 'Company', 'Week Ending', 'Hours', 'Deposit Hours', 'OT',
       'Rate', 'Invoice', 'Bonus', 'Payoneer Link', 'Payoneer Amount', 'Payoneer Match',
       'Client Status', 'OutSta Status', 'Notes', 'Submitted (EST)',
     ];
@@ -1207,6 +1209,7 @@ export const PLDashboard = () => {
       return [
         r.contractor?.applicant?.full_name || '',
         r.contractor?.applicant?.email || '',
+        r.contractor?.payoneer_email || '',
         r.contractor?.client?.company_name || '',
         r.week_ending_date,
         totalH.toFixed(2),
@@ -1938,6 +1941,9 @@ export const PLDashboard = () => {
                       <TableCell>
                         <div className="font-medium">{r.contractor?.applicant?.full_name || '—'}</div>
                         <div className="text-xs text-muted-foreground">{r.contractor?.applicant?.email}</div>
+                        {r.contractor?.payoneer_email && (
+                          <div className="text-xs text-muted-foreground" title="Payoneer email">Payoneer: {r.contractor.payoneer_email}</div>
+                        )}
                       </TableCell>
                       <TableCell>{r.contractor?.client?.company_name || '—'}</TableCell>
                       
