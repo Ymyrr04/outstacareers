@@ -128,6 +128,7 @@ const ClientPortalDashboard = () => {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selected, setSelected] = useState<RowView | null>(null);
+  const savedScrollRef = useRef(0);
   const [flagOpen, setFlagOpen] = useState(false);
   const [flagReason, setFlagReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
