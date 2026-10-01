@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -128,6 +128,7 @@ const ClientPortalDashboard = () => {
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [selected, setSelected] = useState<RowView | null>(null);
+  const savedScrollRef = useRef(0);
   const [flagOpen, setFlagOpen] = useState(false);
   const [flagReason, setFlagReason] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
@@ -402,7 +403,12 @@ const ClientPortalDashboard = () => {
         {selected ? (
           <TimesheetDetail
             row={selected}
-            onBack={() => setSelected(null)}
+            onBack={() => {
+              setSelected(null);
+              requestAnimationFrame(() => {
+                requestAnimationFrame(() => window.scrollTo(0, savedScrollRef.current));
+              });
+            }}
             onApprove={handleApprove}
             onOpenFlag={() => { setFlagReason(selected.client_flag_reason || ''); setFlagOpen(true); }}
             actionLoading={actionLoading}
@@ -485,7 +491,7 @@ const ClientPortalDashboard = () => {
                             <TableCell>{statusBadge(r.client_approval_status)}</TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-1">
-                                <Button size="sm" variant="outline" onClick={() => setSelected(r)}>
+                                <Button size="sm" variant="outline" onClick={() => { savedScrollRef.current = window.scrollY; setSelected(r); window.scrollTo(0, 0); }}>
                                   <Eye className="w-3.5 h-3.5 mr-1" /> View
                                 </Button>
                                 <Button
