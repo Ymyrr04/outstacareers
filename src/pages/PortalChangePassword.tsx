@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { PasswordGuidance, passwordMeetsRequirements, PASSWORD_REQUIREMENTS_MESSAGE } from '@/components/portal/PasswordGuidance';
 
 const PortalChangePassword = () => {
   const navigate = useNavigate();
@@ -35,8 +36,8 @@ const PortalChangePassword = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pw1.length < 8) {
-      toast({ title: 'Password too short', description: 'Use at least 8 characters.', variant: 'destructive' });
+    if (!passwordMeetsRequirements(pw1)) {
+      toast({ title: 'Password does not meet requirements', description: PASSWORD_REQUIREMENTS_MESSAGE, variant: 'destructive' });
       return;
     }
     if (pw1 !== pw2) {
@@ -83,6 +84,7 @@ const PortalChangePassword = () => {
               <Label htmlFor="pw2">Confirm new password</Label>
               <Input id="pw2" type="password" autoComplete="new-password" required value={pw2} onChange={(e) => setPw2(e.target.value)} />
             </div>
+            <PasswordGuidance password={pw1} />
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Update password'}
             </Button>

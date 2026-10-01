@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Loader2 } from 'lucide-react';
 import { Helmet } from 'react-helmet-async';
+import { PasswordGuidance, passwordMeetsRequirements, PASSWORD_REQUIREMENTS_MESSAGE } from '@/components/portal/PasswordGuidance';
 
 // Landing page for the password recovery email link.
 // Supabase's recovery link authenticates the session, then this page lets
@@ -48,8 +49,8 @@ const ClientPortalResetPassword = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pw1.length < 8 || !/[A-Z]/.test(pw1) || !/[0-9]/.test(pw1)) {
-      toast({ title: 'Password does not meet requirements', description: 'Min 8 characters, 1 uppercase, 1 number.', variant: 'destructive' });
+    if (!passwordMeetsRequirements(pw1)) {
+      toast({ title: 'Password does not meet requirements', description: PASSWORD_REQUIREMENTS_MESSAGE, variant: 'destructive' });
       return;
     }
     if (pw1 !== pw2) {
@@ -102,11 +103,7 @@ const ClientPortalResetPassword = () => {
               <Label htmlFor="pw2">Confirm new password</Label>
               <Input id="pw2" type="password" autoComplete="new-password" required value={pw2} onChange={(e) => setPw2(e.target.value)} />
             </div>
-            <ul className="text-xs text-muted-foreground space-y-1 pl-1">
-              <li>• At least 8 characters</li>
-              <li>• At least 1 uppercase letter</li>
-              <li>• At least 1 number</li>
-            </ul>
+            <PasswordGuidance password={pw1} />
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Update password'}
             </Button>
