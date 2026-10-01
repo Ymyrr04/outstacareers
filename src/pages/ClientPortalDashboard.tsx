@@ -582,7 +582,7 @@ export const ContractorProfilePanel = ({ assignments, clientName }: { assignment
   };
 
   return (
-    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4">
+    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 mb-4 items-start">
       {list.map((a) => {
         const name = a.applicant?.full_name || 'Unnamed contractor';
         const email = a.applicant?.email || '';

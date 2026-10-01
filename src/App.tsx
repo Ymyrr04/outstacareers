@@ -36,7 +36,6 @@ import GmailOAuthReturn from "./pages/GmailOAuthReturn";
 import AvailabilityResponse from "./pages/AvailabilityResponse";
 import DomainGuard from "./components/DomainGuard";
 import DesignPreviewToggle from "./components/DesignPreviewToggle";
-import PortalCollapsePreview from "./pages/PortalCollapsePreview";
 
 
 const queryClient = new QueryClient({
@@ -96,7 +95,6 @@ const App = () => (
                 <Route path="/client-portal/setup" element={<ClientPortalSetup />} />
                 <Route path="/client-portal" element={<ClientPortalDashboard />} />
                 <Route path="/client-portal/timesheets" element={<ClientPortalDashboard />} />
-                <Route path="/__portal-collapse-preview" element={<PortalCollapsePreview />} />
 
 
                 {/* Catch-all also guarded so unknown paths on workforce domain bounce */}
