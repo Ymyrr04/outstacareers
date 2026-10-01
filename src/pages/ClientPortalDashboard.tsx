@@ -403,7 +403,12 @@ const ClientPortalDashboard = () => {
         {selected ? (
           <TimesheetDetail
             row={selected}
-            onBack={() => setSelected(null)}
+            onBack={() => {
+              setSelected(null);
+              requestAnimationFrame(() => {
+                requestAnimationFrame(() => window.scrollTo(0, savedScrollRef.current));
+              });
+            }}
             onApprove={handleApprove}
             onOpenFlag={() => { setFlagReason(selected.client_flag_reason || ''); setFlagOpen(true); }}
             actionLoading={actionLoading}
