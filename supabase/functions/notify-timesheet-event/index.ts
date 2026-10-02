@@ -111,7 +111,11 @@ async function getClientEmails(clientId: string): Promise<string[]> {
     else if (u.email) out.push(u.email);
     if (u.secondary_email) out.push(u.secondary_email);
   });
-  return Array.from(new Set(out.filter(Boolean)));
+  const blocked = (e: string) => {
+    const l = e.trim().toLowerCase();
+    return l === "portal@outsta.io" || l.endsWith("@portal.outsta.local");
+  };
+  return Array.from(new Set(out.filter((e) => e && !blocked(e))));
 }
 
 async function loadTimesheet(id: string) {
@@ -272,7 +276,7 @@ async function handleTimesheetEvent(event: EventType, timesheetId: string, reaso
     if (clientEmails.length) {
       await send(
         clientEmails,
-        undefined,
+        ["mark@outsta.io"],
         isResub
           ? `Updated timesheet from ${contractorName} — week ending ${fmtDate(ts.week_ending_date)}`
           : `New timesheet from ${contractorName} — week ending ${fmtDate(ts.week_ending_date)}`,
