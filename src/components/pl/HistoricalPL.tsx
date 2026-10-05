@@ -9,6 +9,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ChevronRight, Loader2, Upload, Trash2, Columns3, ArrowUpDown, Search, BarChart3, RefreshCw } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HistoricalSyncDialog, lastCompletedMonday, weekLabelOf } from './HistoricalSyncDialog';
 import { SYNC_START } from '@/lib/plWeek';
 import { toast } from 'sonner';
@@ -118,6 +119,9 @@ const SORTABLE: Col[] = [
   { key: 'contractor_deposit', label: 'Contractor deposit', numeric: true, kind: 'money', width: 'w-[160px] min-w-[160px]' },
 ];
 const NUM_COL = 'w-[56px] min-w-[56px] max-w-[56px]';
+const STATUS_COL = 'w-[130px] min-w-[130px] max-w-[130px]';
+const statusOf = (r: HistRow): string => String((r.raw as Record<string, unknown> | null)?.Status ?? '').trim();
+const isRowExcluded = (r: HistRow) => !!(r.raw && (r.raw as Record<string, unknown>).__exclude_headcount);
 const fmtCell = (c: Col, v: number | null | undefined) =>
   v == null || Number.isNaN(Number(v)) ? '—' : c.kind === 'hours' ? Number(v).toFixed(2) : money(Number(v));
 
@@ -353,6 +357,43 @@ export function HistoricalPL({ onUpload }: Props) {
     }
     return map;
   }, [openWeek]);
+
+  // Statuses available in the open week, and which of them are excluded from headcount.
+  const statusOptions = useMemo(() => {
+    if (!openWeek) return [];
+    const set = new Set<string>();
+    for (const r of openWeek.rows) { const s = statusOf(r); if (s) set.add(s); }
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [openWeek]);
+  const excludedStatuses = useMemo(() => {
+    const set = new Set<string>();
+    if (!openWeek) return set;
+    for (const r of openWeek.rows) {
+      const s = statusOf(r);
+      if (s && isRowExcluded(r)) set.add(s.toLowerCase());
+    }
+    return set;
+  }, [openWeek]);
+
+  // Update a row's status in place; a status that is excluded elsewhere in the
+  // week keeps the row out of the headcount, a blank status clears the flag.
+  const handleStatusChange = async (row: HistRow, newStatus: string) => {
+    const raw = { ...((row.raw as Record<string, unknown>) ?? {}) };
+    if (newStatus) raw.Status = newStatus; else delete raw.Status;
+    if (newStatus && excludedStatuses.has(newStatus.toLowerCase())) raw.__exclude_headcount = true;
+    else delete raw.__exclude_headcount;
+    const prevRows = rows;
+    const nextRows = rows.map((r) => (r.id === row.id ? { ...r, raw } : r));
+    setRows(nextRows);
+    const cached = readCache(year);
+    if (cached) writeCache(year, { ...cached, rows: nextRows });
+    const { error } = await supabase.from('historical_pl_rows').update({ raw: raw as never }).eq('id', row.id);
+    if (error) {
+      setRows(prevRows);
+      if (cached) writeCache(year, { ...cached, rows: prevRows });
+      toast.error('Failed to update status');
+    }
+  };
 
   // Reset the search whenever a different week is opened.
   useEffect(() => { setQuery(''); }, [openWeekKey]);
@@ -689,8 +730,8 @@ export function HistoricalPL({ onUpload }: Props) {
                     {SORTABLE.map((c, i) => {
                         const active = sort?.key === c.key;
                         return (
+                          <Fragment key={c.key}>
                           <th
-                            key={c.key}
                             className={cn(
                               'sticky top-0 bg-background border-b h-10 px-3 font-medium text-muted-foreground whitespace-nowrap cursor-pointer select-none hover:bg-muted',
                               i === 0 ? 'left-[56px] z-30 border-r' : 'z-20',
@@ -712,6 +753,10 @@ export function HistoricalPL({ onUpload }: Props) {
                               {active && <span className="text-xs">{sort!.dir === 'asc' ? '↑' : '↓'}</span>}
                             </span>
                           </th>
+                          {c.key === 'company' && (
+                            <th key="status" className={cn('sticky top-0 z-20 bg-background border-b h-10 px-3 font-medium text-muted-foreground whitespace-nowrap text-left', STATUS_COL)}>Status</th>
+                          )}
+                        </Fragment>
                         );
                       })}
                     </tr>
@@ -719,30 +764,44 @@ export function HistoricalPL({ onUpload }: Props) {
                   <tbody>
                     {detailRows.length === 0 ? (
                       <tr>
-                        <td colSpan={SORTABLE.length + 1} className="text-center text-muted-foreground py-8">
+                        <td colSpan={SORTABLE.length + 2} className="text-center text-muted-foreground py-8">
                           No contractors match "{query}"
                         </td>
                       </tr>
                     ) : detailRows.map((r) => (
                       <tr key={r.id} className="group">
                         <td className={cn('sticky left-0 z-20 bg-background group-hover:bg-muted border-r border-b px-2 py-2 text-right tabular-nums text-muted-foreground', NUM_COL)}>{headcountNumbers.get(r.id) ?? ''}</td>
-                        {SORTABLE.map((c, i) => {
-                          if (!c.numeric) {
-                            const v = r[c.key as 'contractor_name' | 'company'];
-                            return (
-                              <td key={c.key} className={cn('px-3 py-2 border-b bg-background group-hover:bg-muted', c.width, i === 0 && 'sticky left-[56px] z-10 border-r font-medium')}>
-                                <div className="truncate" title={v || undefined}>
-                                  {v || '—'}
-                                </div>
-                              </td>
-                            );
-                          }
-                          return (
-                            <td key={c.key} className={cn('px-3 py-2 border-b bg-background group-hover:bg-muted text-right tabular-nums whitespace-nowrap', c.width)}>
+                        {SORTABLE.map((c, i) => (
+                          <Fragment key={c.key}>
+                          {!c.numeric ? (
+                            <td className={cn('px-3 py-2 border-b bg-background group-hover:bg-muted', c.width, i === 0 && 'sticky left-[56px] z-10 border-r font-medium')}>
+                              <div className="truncate" title={r[c.key as 'contractor_name' | 'company'] || undefined}>
+                                {r[c.key as 'contractor_name' | 'company'] || '—'}
+                              </div>
+                            </td>
+                          ) : (
+                            <td className={cn('px-3 py-2 border-b bg-background group-hover:bg-muted text-right tabular-nums whitespace-nowrap', c.width)}>
                               {fmtCell(c, c.key === 'bonus' ? bonusOf(r) : r[c.key as NumKey])}
                             </td>
-                          );
-                        })}
+                          )}
+                          {c.key === 'company' && (
+                            <td className={cn('px-2 py-1 border-b bg-background group-hover:bg-muted', STATUS_COL)}>
+                              <Select
+                                value={statusOf(r) || '__blank__'}
+                                onValueChange={(v) => void handleStatusChange(r, v === '__blank__' ? '' : v)}
+                              >
+                                <SelectTrigger className={cn('h-7 border-0 shadow-none bg-transparent px-1.5 text-xs focus:ring-0', !statusOf(r) && 'text-muted-foreground')}>
+                                  <SelectValue placeholder="—" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__blank__">—</SelectItem>
+                                  {statusOptions.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </td>
+                          )}
+                          </Fragment>
+                        ))}
                       </tr>
                     ))}
                   </tbody>
@@ -752,14 +811,18 @@ export function HistoricalPL({ onUpload }: Props) {
                         <td className={cn('sticky bottom-0 left-0 z-40 bg-background border-t-2 border-r px-2 py-2 font-bold whitespace-nowrap text-right tabular-nums', NUM_COL)}>{detailRows.filter((r) => headcountNumbers.has(r.id)).length || ''}</td>
                       {SORTABLE.map((c, i) => {
                           const base = 'sticky bottom-0 bg-background border-t-2 px-3 py-2 font-bold whitespace-nowrap';
-                          if (i === 0) return <td key={c.key} className={cn(base, 'left-[56px] z-30 border-r', c.width)}>Total</td>;
-                          if (!c.numeric || c.kind === 'rate') return <td key={c.key} className={cn(base, 'z-20', c.width)} />;
+                          const statusCell = c.key === 'company' ? <td key="status" className={cn(base, 'z-20', STATUS_COL)} /> : null;
+                          if (i === 0) return <Fragment key={c.key}><td className={cn(base, 'left-[56px] z-30 border-r', c.width)}>Total</td>{statusCell}</Fragment>;
+                          if (!c.numeric || c.kind === 'rate') return <Fragment key={c.key}><td className={cn(base, 'z-20', c.width)} />{statusCell}</Fragment>;
                           const vals = detailRows.map((r) => (c.key === 'bonus' ? bonusOf(r) : r[c.key as NumKey])).filter((v) => v != null);
                           const sum = vals.reduce<number>((a, v) => a + Number(v), 0);
                           return (
-                            <td key={c.key} className={cn(base, 'z-20 text-right tabular-nums', c.width)}>
+                            <Fragment key={c.key}>
+                            <td className={cn(base, 'z-20 text-right tabular-nums', c.width)}>
                               {vals.length ? fmtCell(c, sum) : '—'}
                             </td>
+                            {statusCell}
+                            </Fragment>
                           );
                         })}
                       </tr>
