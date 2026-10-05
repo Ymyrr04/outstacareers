@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { TimeSelect } from '@/components/ui/time-select';
@@ -94,6 +94,7 @@ export const AddActivityModal = ({
     setEnd(minutesToInput(eMin));
   };
   const [noTime, setNoTime] = useState(false);
+  const [showFreeTimes, setShowFreeTimes] = useState(false);
   const [notifySlack, setNotifySlack] = useState(false);
 
   const [description, setDescription] = useState('');
