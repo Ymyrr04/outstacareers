@@ -557,7 +557,6 @@ export const AddActivityModal = ({
         </div>
 
         <DialogFooter className="sm:justify-between shrink-0 pt-3 border-t">
-          <span className="text-xs text-muted-foreground self-center">All times are in Eastern Time (ET)</span>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button onClick={() => handleSave()} disabled={saving}>{editEvent ? 'Save changes' : 'Save activity'}</Button>
