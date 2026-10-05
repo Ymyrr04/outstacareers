@@ -9,7 +9,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { computePlWeek, mondayOf, ymd, SYNC_START, type PlFees, type PlWeekRow } from '@/lib/plWeek';
 import { computeDepositSchedule, type DepositTs } from '@/lib/depositSchedule';
-import { isExcludedFromHeadcount } from '@/lib/internalCompany';
+import { isExcludedFromHeadcount, isInternalContractor } from '@/lib/internalCompany';
 
 export const SYNC_FILENAME = 'Timesheet sync';
 
@@ -76,6 +76,7 @@ function mapRow(r: PlWeekRow, monday: string, fees: PlFees): MappedRow {
       source: 'timesheet_sync',
       fees: { expense_pct: fees.expensePct, income_pct: fees.incomePct },
       assignment_id: r.assignment.id,
+      internal_team: isInternalContractor(r.assignment),
       timesheet_id: r.timesheet?.id ?? null,
       client_deposit_text: txtDep(r.clientDeposit),
       contractor_deposit_text: txtDep(r.contractorDeposit),
@@ -141,7 +142,7 @@ async function loadDepositHeld(res: PlWeekRow[]): Promise<Map<string, Held>> {
   for (const r of withTs) {
     const a = aMap.get(r.assignment.id);
     if (!a) continue;
-    const dep = computeDepositSchedule(a, byA.get(a.id) || []).get(r.timesheet!.id);
+    const dep = computeDepositSchedule(a, byA.get(a.id) || []).get(r.timesheet?.id ?? '');
     if (!dep?.isDeposit || !(dep.depositHours > 0)) continue;
     const rate = Number(r.hourlyRate || 0);
     const amount = Math.min(r2(dep.depositHours * rate), Number(r.expenses) || 0);
@@ -160,6 +161,22 @@ function applyDepositHold(row: MappedRow, h: Held, fees: PlFees): MappedRow {
     gross_after_deductions: r2(row.income_after_3_percent - expenseAfter),
     raw: { ...row.raw, deposit_held_hours: h.hours, deposit_held_amount: h.amount, sent_to_contractor: cost },
   };
+}
+
+// Older synced weeks did not store internal rows. Preview them without changing saved figures.
+export async function loadInternalWeekRows(monday: string): Promise<MappedRow[]> {
+  const { data, error } = await supabase.from('pl_fee_settings').select('expense_pct, income_pct').maybeSingle();
+  if (error) throw error;
+  const fees = { expensePct: Number(data?.expense_pct ?? 1), incomePct: Number(data?.income_pct ?? 3) };
+  const res = (await computePlWeek(monday, fees, { includeInternal: true }))
+    .filter((r) => isInternalContractor(r.assignment));
+  const held = await loadDepositHeld(res);
+  return res.flatMap((r) => {
+    const out = mapWithBonus(r, monday, fees);
+    const h = held.get(r.assignment.id);
+    if (h && h.amount > 0) out[0] = applyDepositHold(out[0], h, fees);
+    return out;
+  });
 }
 
 type Col = { key: keyof MappedRow; label: string; kind?: 'hours' | 'money' | 'rate'; width: string };
@@ -245,15 +262,15 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
           upCount = count ?? 0;
         }
         if (!cancelled) { setUploadIds(upCount > 0 ? ubIds : []); setUploadCount(upCount); setOverride(false); }
-        // Internal team (OutSta client) is excluded, same as the P&L report.
-        const res = await computePlWeek(week, fees, { includeInternal: false });
+        // Keep internal rows for display; exclude them from external totals and headcount.
+        const res = await computePlWeek(week, fees, { includeInternal: true });
         if (cancelled) return;
-        const counted = res.filter((r) => !isExcludedFromHeadcount(r.assignment.applicant?.full_name) && !notCountedThisWeek(r, week));
+        const counted = res.filter((r) => !isInternalContractor(r.assignment) && !isExcludedFromHeadcount(r.assignment.applicant?.full_name) && !notCountedThisWeek(r, week));
         setNoTimesheet(counted.filter((r) => !r.timesheet).length);
         setHeadcount(counted.length);
         const held = await loadDepositHeld(res);
         if (cancelled) return;
-        setRows(res.flatMap((r) => {
+        setRows([...res].sort((a, b) => Number(isInternalContractor(a.assignment)) - Number(isInternalContractor(b.assignment))).flatMap((r) => {
           const out = mapWithBonus(r, week, fees);
           const h = held.get(r.assignment.id);
           if (h && h.amount > 0) out[0] = applyDepositHold(out[0], h, fees);
@@ -269,7 +286,7 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
   }, [open, fees, week, weekError]);
 
   const totals = useMemo(() => {
-    const s = (k: keyof MappedRow) => (rows ?? []).reduce((a, r) => a + Number(r[k] ?? 0), 0);
+    const s = (k: keyof MappedRow) => (rows ?? []).filter((r) => !r.raw.internal_team).reduce((a, r) => a + Number(r[k] ?? 0), 0);
     return {
       hours: s('actual_hours'), expense: s('expense_after_1_percent'),
       income: s('income_after_3_percent'), gross: s('gross_after_deductions'),
@@ -277,7 +294,7 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
   }, [rows]);
 
   const save = async () => {
-    if (!rows) return;
+    if (!rows || blockedByUpload) return;
     setSaving(true);
     const y = Number(week.slice(0, 4));
     let insertedIds: string[] = [];
@@ -306,7 +323,7 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
       }
 
       // Then remove the previous rows for this week in the batch.
-      let del = supabase.from('historical_pl_rows').delete().eq('batch_id', batchId!).eq('week_start', week);
+      let del = supabase.from('historical_pl_rows').delete().eq('batch_id', batchId).eq('week_start', week);
       if (insertedIds.length) del = del.not('id', 'in', `(${insertedIds.join(',')})`);
       const { error: dErr } = await del;
       if (dErr) throw dErr;
@@ -319,7 +336,7 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
       }
 
       const { error: upErr } = await supabase.from('historical_pl_batches')
-        .update({ updated_at: new Date().toISOString() } as any).eq('id', batchId!);
+        .update({ updated_at: new Date().toISOString() } as any).eq('id', batchId);
       if (upErr) throw upErr;
 
       toast.success(`${weekLabelOf(week)} synced`);
@@ -397,7 +414,7 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
                   {rows.length === 0 ? (
                     <tr><td colSpan={COLS.length} className="text-center text-muted-foreground py-8">No contractors this week</td></tr>
                   ) : rows.map((r) => (
-                    <tr key={String(r.raw.assignment_id)} className="group">
+                    <tr key={`${r.raw.assignment_id}-${r.raw.kind ?? 'regular'}`} className="group">
                       {COLS.map((c, i) => c.kind ? (
                         <td key={c.key} className={cn('px-3 py-2 border-b bg-background group-hover:bg-muted text-right tabular-nums whitespace-nowrap', c.width)}>
                           {c.key === 'client_deposit' && r.raw.client_deposit_text ? String(r.raw.client_deposit_text)
