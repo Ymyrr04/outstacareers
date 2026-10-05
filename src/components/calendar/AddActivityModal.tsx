@@ -575,19 +575,6 @@ export const AddActivityModal = ({
           )}
 
 
-          <label className="flex items-start gap-2 text-sm rounded-md border p-3 cursor-pointer">
-            <Checkbox
-              className="mt-0.5"
-              checked={notifySlack}
-              onCheckedChange={(v) => setNotifySlack(v === true)}
-            />
-            <span>
-              Needs the team's attention
-              <span className="block text-xs text-muted-foreground">
-                Sends a Slack notification. Leave unchecked to save quietly.
-              </span>
-            </span>
-          </label>
 
           <div className="space-y-2">
             <div className="flex items-baseline gap-2">
@@ -765,11 +752,28 @@ export const AddActivityModal = ({
         </div>
 
         <DialogFooter className="sm:justify-between shrink-0 pt-3 border-t">
-          <div className="flex gap-2">
+          {!editEvent && (
+            <label className="flex items-start gap-2 text-sm cursor-pointer self-center">
+              <Checkbox
+                id="ce-notify-slack"
+                className="mt-0.5"
+                checked={notifySlack}
+                onCheckedChange={(v) => setNotifySlack(v === true)}
+              />
+              <span>
+                Notify on Slack
+                <span className="block text-xs text-muted-foreground">
+                  Posts this activity to Slack when you save
+                </span>
+              </span>
+            </label>
+          )}
+          <div className="flex gap-2 ml-auto">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button onClick={() => handleSave()} disabled={saving}>{editEvent ? 'Save changes' : 'Save activity'}</Button>
           </div>
         </DialogFooter>
+
       </DialogContent>
 
       <AlertDialog open={conflictWarnings.length > 0} onOpenChange={(o) => !o && setConflictWarnings([])}>
