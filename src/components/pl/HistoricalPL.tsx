@@ -358,6 +358,43 @@ export function HistoricalPL({ onUpload }: Props) {
     return map;
   }, [openWeek]);
 
+  // Statuses available in the open week, and which of them are excluded from headcount.
+  const statusOptions = useMemo(() => {
+    if (!openWeek) return [];
+    const set = new Set<string>();
+    for (const r of openWeek.rows) { const s = statusOf(r); if (s) set.add(s); }
+    return [...set].sort((a, b) => a.localeCompare(b));
+  }, [openWeek]);
+  const excludedStatuses = useMemo(() => {
+    const set = new Set<string>();
+    if (!openWeek) return set;
+    for (const r of openWeek.rows) {
+      const s = statusOf(r);
+      if (s && isRowExcluded(r)) set.add(s.toLowerCase());
+    }
+    return set;
+  }, [openWeek]);
+
+  // Update a row's status in place; a status that is excluded elsewhere in the
+  // week keeps the row out of the headcount, a blank status clears the flag.
+  const handleStatusChange = async (row: HistRow, newStatus: string) => {
+    const raw = { ...((row.raw as Record<string, unknown>) ?? {}) };
+    if (newStatus) raw.Status = newStatus; else delete raw.Status;
+    if (newStatus && excludedStatuses.has(newStatus.toLowerCase())) raw.__exclude_headcount = true;
+    else delete raw.__exclude_headcount;
+    const prevRows = rows;
+    const nextRows = rows.map((r) => (r.id === row.id ? { ...r, raw } : r));
+    setRows(nextRows);
+    const cached = readCache(year);
+    if (cached) writeCache(year, { ...cached, rows: nextRows });
+    const { error } = await supabase.from('historical_pl_rows').update({ raw }).eq('id', row.id);
+    if (error) {
+      setRows(prevRows);
+      if (cached) writeCache(year, { ...cached, rows: prevRows });
+      toast.error('Failed to update status');
+    }
+  };
+
   // Reset the search whenever a different week is opened.
   useEffect(() => { setQuery(''); }, [openWeekKey]);
 
