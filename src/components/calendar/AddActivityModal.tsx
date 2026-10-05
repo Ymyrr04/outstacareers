@@ -299,7 +299,7 @@ export const AddActivityModal = ({
     // Slack notification is fired server-side by a database trigger on insert.
 
     onOpenChange(false);
-    onSaved(date);
+    onSaved(dateValue);
   };
 
 
