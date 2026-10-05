@@ -753,6 +753,10 @@ export function HistoricalPL({ onUpload }: Props) {
                               {active && <span className="text-xs">{sort!.dir === 'asc' ? '↑' : '↓'}</span>}
                             </span>
                           </th>
+                          {c.key === 'company' && (
+                            <th key="status" className={cn('sticky top-0 z-20 bg-background border-b h-10 px-3 font-medium text-muted-foreground whitespace-nowrap text-left', STATUS_COL)}>Status</th>
+                          )}
+                        </Fragment>
                         );
                       })}
                     </tr>
