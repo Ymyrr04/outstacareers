@@ -730,8 +730,8 @@ export function HistoricalPL({ onUpload }: Props) {
                     {SORTABLE.map((c, i) => {
                         const active = sort?.key === c.key;
                         return (
+                          <Fragment key={c.key}>
                           <th
-                            key={c.key}
                             className={cn(
                               'sticky top-0 bg-background border-b h-10 px-3 font-medium text-muted-foreground whitespace-nowrap cursor-pointer select-none hover:bg-muted',
                               i === 0 ? 'left-[56px] z-30 border-r' : 'z-20',
