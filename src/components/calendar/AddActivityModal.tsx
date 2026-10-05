@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { TimeSelect } from '@/components/ui/time-select';
@@ -21,6 +22,9 @@ import {
   weekdayOf,
   daysBetween,
   dayOfMonth,
+  todayET,
+  addDays,
+  parseDateString,
   PipelineLink,
 } from '@/lib/calendarTime';
 import PipelineLinkSelect from './PipelineLinkSelect';
@@ -76,6 +80,7 @@ export const AddActivityModal = ({
   const [extraAssignees, setExtraAssignees] = useState<string[]>([]);
   const [start, setStart] = useState('09:00');
   const [end, setEnd] = useState('10:00');
+  const [dateValue, setDateValue] = useState(date);
 
   /** When start changes, auto-adjust end to a 30-min interval 30 mins after start. */
   const handleStartChange = (val: string) => {
@@ -107,24 +112,24 @@ export const AddActivityModal = ({
 
   // Load events occurring on this date (including recurring ones) to detect conflicts
   useEffect(() => {
-    if (!open || !date) return;
+    if (!open || !dateValue) return;
     let cancelled = false;
     (async () => {
       const { data } = await supabase
         .from('calendar_events')
         .select('id,title,event_date,start_time,end_time,assigned_to,created_by,is_recurring,recurrence_rule')
-        .or(`event_date.eq.${date},is_recurring.eq.true`);
+        .or(`event_date.eq.${dateValue},is_recurring.eq.true`);
       if (cancelled) return;
-      const dow = weekdayOf(date);
+      const dow = weekdayOf(dateValue);
       const occurring = (data || []).filter((e: any) => {
         if (editEvent && e.id === editEvent.id) return false;
-        if (e.event_date === date) return true;
-        if (e.is_recurring && e.event_date < date) {
+        if (e.event_date === dateValue) return true;
+        if (e.is_recurring && e.event_date < dateValue) {
           const rule = e.recurrence_rule || 'weekly';
           if (rule === 'weekly') return weekdayOf(e.event_date) === dow;
           if (rule === 'biweekly')
-            return weekdayOf(e.event_date) === dow && daysBetween(e.event_date, date) % 14 === 0;
-          if (rule === 'monthly') return dayOfMonth(e.event_date) === dayOfMonth(date);
+            return weekdayOf(e.event_date) === dow && daysBetween(e.event_date, dateValue) % 14 === 0;
+          if (rule === 'monthly') return dayOfMonth(e.event_date) === dayOfMonth(dateValue);
         }
         return false;
       });
@@ -133,7 +138,7 @@ export const AddActivityModal = ({
     return () => {
       cancelled = true;
     };
-  }, [open, date, editEvent]);
+  }, [open, dateValue, editEvent]);
 
   const isUnassigned = adminId === UNASSIGNED;
   const startMin = inputToMinutes(start);
@@ -199,6 +204,7 @@ export const AddActivityModal = ({
     setAddingType(false);
     setNewType('');
     setError(null);
+    setDateValue(editEvent?.event_date ?? date);
 
     if (editEvent) {
       setTitle(editEvent.title);
@@ -269,7 +275,7 @@ export const AddActivityModal = ({
     const payload = {
       title: title.trim(),
       description: description.trim() || null,
-      event_date: date,
+      event_date: dateValue,
       start_time: s,
       end_time: e,
       event_type: type,
@@ -293,7 +299,7 @@ export const AddActivityModal = ({
     // Slack notification is fired server-side by a database trigger on insert.
 
     onOpenChange(false);
-    onSaved(date);
+    onSaved(dateValue);
   };
 
 
@@ -450,6 +456,55 @@ export const AddActivityModal = ({
           </label>
 
           <div className="space-y-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="ce-date">Date</Label>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 shrink-0"
+                  aria-label="Previous day"
+                  onClick={() => setDateValue(addDays(dateValue, -1))}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Input
+                  id="ce-date"
+                  type="date"
+                  value={dateValue}
+                  onChange={(e) => { if (e.target.value) setDateValue(e.target.value); }}
+                  className="w-auto flex-1 min-w-0"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 shrink-0"
+                  aria-label="Next day"
+                  onClick={() => setDateValue(addDays(dateValue, 1))}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground shrink-0">
+                  {new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(parseDateString(dateValue))}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto shrink-0"
+                  onClick={() => setDateValue(todayET())}
+                >
+                  Today
+                </Button>
+              </div>
+              {repeat !== 'none' && dateValue !== (editEvent?.event_date ?? date) && (
+                <p className="text-xs text-muted-foreground">
+                  Moves the whole series. It repeats on {new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(parseDateString(dateValue))} from {formatDateLong(dateValue)}; earlier dates won't show it.
+                </p>
+              )}
+            </div>
             <label className="flex items-center gap-2 text-sm">
               <Checkbox checked={noTime} onCheckedChange={(v) => setNoTime(v === true)} />
               <span>No specific time yet (any admin can set it)</span>
@@ -502,7 +557,6 @@ export const AddActivityModal = ({
         </div>
 
         <DialogFooter className="sm:justify-between shrink-0 pt-3 border-t">
-          <span className="text-xs text-muted-foreground self-center">{formatDateLong(date)}</span>
           <div className="flex gap-2">
             <Button variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button onClick={() => handleSave()} disabled={saving}>{editEvent ? 'Save changes' : 'Save activity'}</Button>
