@@ -273,7 +273,7 @@ export function HistoricalPL({ onUpload }: Props) {
     return [...map.entries()].map(([key, w]) => {
       const externalRows = w.rows.filter((r) => !isInternalRow(r));
       const t = externalRows.reduce((a, r) => ({
-        hours: a.hours + num(r.hours),
+        hours: a.hours + (r.actual_hours != null ? num(r.actual_hours) : num(r.hours)),
         cost: a.cost + num(r[COST_KEY]),
         billing: a.billing + num(r[BILLING_KEY]),
         margin: a.margin + num(r[MARGIN_KEY]),
@@ -292,7 +292,7 @@ export function HistoricalPL({ onUpload }: Props) {
   const yearSummary = useMemo(() => {
     const externalRows = rows.filter((r) => !isInternalRow(r));
     const t = externalRows.reduce((a, r) => ({
-      hours: a.hours + num(r.hours),
+      hours: a.hours + (r.actual_hours != null ? num(r.actual_hours) : num(r.hours)),
       cost: a.cost + num(r[COST_KEY]),
       billing: a.billing + num(r[BILLING_KEY]),
       margin: a.margin + num(r[MARGIN_KEY]),
