@@ -80,6 +80,7 @@ export const AddActivityModal = ({
   const [extraAssignees, setExtraAssignees] = useState<string[]>([]);
   const [start, setStart] = useState('09:00');
   const [end, setEnd] = useState('10:00');
+  const [dateValue, setDateValue] = useState(date);
 
   /** When start changes, auto-adjust end to a 30-min interval 30 mins after start. */
   const handleStartChange = (val: string) => {
