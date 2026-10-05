@@ -387,7 +387,7 @@ export function HistoricalPL({ onUpload }: Props) {
     setRows(nextRows);
     const cached = readCache(year);
     if (cached) writeCache(year, { ...cached, rows: nextRows });
-    const { error } = await supabase.from('historical_pl_rows').update({ raw }).eq('id', row.id);
+    const { error } = await supabase.from('historical_pl_rows').update({ raw: raw as never }).eq('id', row.id);
     if (error) {
       setRows(prevRows);
       if (cached) writeCache(year, { ...cached, rows: prevRows });
