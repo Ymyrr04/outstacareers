@@ -726,9 +726,13 @@ export function HistoricalPL({ onUpload }: Props) {
                         {SORTABLE.map((c, i) => {
                           if (!c.numeric) {
                             const v = r[c.key as 'contractor_name' | 'company'];
+                            const hcNum = c.key === 'contractor_name' ? headcountNumbers.get(r.id) : undefined;
                             return (
                               <td key={c.key} className={cn('px-3 py-2 border-b bg-background group-hover:bg-muted', c.width, i === 0 && 'sticky left-0 z-10 border-r font-medium')}>
-                                <div className="truncate" title={v || undefined}>{v || '—'}</div>
+                                <div className="truncate" title={v || undefined}>
+                                  {hcNum != null && <span className="text-muted-foreground font-normal tabular-nums mr-1.5">{hcNum}.</span>}
+                                  {v || '—'}
+                                </div>
                               </td>
                             );
                           }
