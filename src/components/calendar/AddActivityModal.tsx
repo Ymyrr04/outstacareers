@@ -173,6 +173,57 @@ export const AddActivityModal = ({
     return c ? `Busy ${formatMinutes(c.start_time)}–${formatMinutes(c.end_time)} · ${c.title}` : null;
   };
 
+  // Inline conflict alert: owner first, then extra assignees who are busy
+  const ownerId = isUnassigned ? undefined : adminId || currentUserId;
+  const conflictPeople: { id: string; name: string; ev: { title: string; start_time: number; end_time: number } }[] = [];
+  if (!isUnassigned && !noTime && endMin > startMin) {
+    if (ownerId && conflicts.has(ownerId)) {
+      conflictPeople.push({
+        id: ownerId,
+        name: admins.find((a) => a.user_id === ownerId)?.name ?? 'Owner',
+        ev: conflicts.get(ownerId)!,
+      });
+    }
+    for (const id of extraAssignees) {
+      if (id !== ownerId && conflicts.has(id)) {
+        conflictPeople.push({
+          id,
+          name: admins.find((a) => a.user_id === id)?.name ?? 'Admin',
+          ev: conflicts.get(id)!,
+        });
+      }
+    }
+  }
+
+  /** Everyone (owner + extra assignees) free for [s, s + duration)? */
+  const isFreeAt = (s: number) => {
+    const dur = Math.max(30, durationMin);
+    const e = s + dur;
+    const people = new Set<string>([...(ownerId ? [ownerId] : []), ...extraAssignees]);
+    for (const ev of dayEvents) {
+      if (!(ev.start_time < e && ev.end_time > s)) continue;
+      const evPeople = new Set<string>([...(ev.assigned_to || []), ...(ev.created_by ? [ev.created_by] : [])]);
+      for (const p of people) if (evPeople.has(p)) return false;
+    }
+    return true;
+  };
+
+  // Earliest start after the current one where everyone is free (before 6:00 PM)
+  let suggestedStart: number | null = null;
+  if (conflictPeople.length > 0) {
+    for (let s = startMin + 30; s < 18 * 60; s += 30) {
+      if (isFreeAt(s)) { suggestedStart = s; break; }
+    }
+  }
+
+  // Free 30-minute slots from 8:00 AM to 6:00 PM (up to six chips)
+  const freeStarts: number[] = [];
+  if (conflictPeople.length > 0) {
+    for (let s = 8 * 60; s < 18 * 60 && freeStarts.length < 6; s += 30) {
+      if (isFreeAt(s)) freeStarts.push(s);
+    }
+  }
+
   const allTypes = [
     ...EVENT_TYPES.map((t) => ({ value: t.value, label: t.label })),
     ...customTypes.filter((c) => !EVENT_TYPES.some((t) => t.value === c.value)),
