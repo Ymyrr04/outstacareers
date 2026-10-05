@@ -398,8 +398,7 @@ export const AddActivityModal = ({
         </DialogHeader>
 
         <div className="space-y-4 flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-1">
-          <div className="space-y-1.5">
-            <Label htmlFor="ce-title">Title</Label>
+          <div className="space-y-3">
             <Input
               id="ce-title"
               ref={titleRef}
@@ -407,10 +406,6 @@ export const AddActivityModal = ({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="What is happening?"
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Type</Label>
             {addingType ? (
               <div className="flex gap-2">
                 <Input
@@ -437,9 +432,10 @@ export const AddActivityModal = ({
               </div>
             ) : (
               <div className="flex flex-wrap gap-1.5">
-                {allTypes.map((t) => {
+                {allTypes.map((t, idx) => {
                   const selected = type === t.value;
                   const red = t.value === 'deadline';
+                  const dot = TYPE_DOT[t.value] ?? CUSTOM_DOTS[idx % CUSTOM_DOTS.length];
                   return (
                     <button
                       key={t.value}
@@ -447,7 +443,7 @@ export const AddActivityModal = ({
                       aria-pressed={selected}
                       onClick={() => setType(t.value)}
                       className={
-                        'rounded-full border px-3 py-1 text-xs font-medium transition-colors ' +
+                        'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ' +
                         (selected
                           ? red
                             ? 'border-destructive bg-destructive/10 text-destructive'
@@ -455,6 +451,7 @@ export const AddActivityModal = ({
                           : 'border-border bg-background text-muted-foreground hover:border-brand/50 hover:text-foreground')
                       }
                     >
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${selected && red ? 'bg-destructive' : dot}`} />
                       {t.label}
                     </button>
                   );
@@ -462,13 +459,132 @@ export const AddActivityModal = ({
                 <button
                   type="button"
                   onClick={() => setAddingType(true)}
-                  className="rounded-full border border-dashed border-border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-brand/50 hover:text-foreground"
+                  className="inline-flex items-center rounded-full border border-dashed border-border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-brand/50 hover:text-foreground"
                 >
                   + New type
                 </button>
               </div>
             )}
           </div>
+
+          <div className="mt-5 border-t pt-4 space-y-3">
+            <div className="flex items-baseline gap-2">
+              <Label>When</Label>
+              <span className="text-xs text-muted-foreground">· Eastern Time (ET) for everyone</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                aria-label="Previous day"
+                onClick={() => setDateValue(addDays(dateValue, -1))}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Input
+                id="ce-date"
+                type="date"
+                value={dateValue}
+                onChange={(e) => { if (e.target.value) setDateValue(e.target.value); }}
+                className="w-auto flex-1 min-w-0"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                aria-label="Next day"
+                onClick={() => setDateValue(addDays(dateValue, 1))}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+              <span className="text-sm text-muted-foreground shrink-0">
+                {new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(parseDateString(dateValue))}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="ml-auto shrink-0"
+                onClick={() => setDateValue(todayET())}
+              >
+                Today
+              </Button>
+            </div>
+            {repeat !== 'none' && dateValue !== (editEvent?.event_date ?? date) && (
+              <p className="text-xs text-muted-foreground">
+                Moves the whole series. It repeats on {new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(parseDateString(dateValue))} from {formatDateLong(dateValue)}; earlier dates won't show it.
+              </p>
+            )}
+            <div className={`flex items-center gap-2 ${noTime ? 'opacity-50' : ''}`}>
+              <TimeSelect value={start} onChange={handleStartChange} disabled={noTime} contentClassName="ce-light" />
+              <span className="text-sm text-muted-foreground shrink-0">to</span>
+              <TimeSelect value={end} onChange={setEnd} disabled={noTime} contentClassName="ce-light" />
+              <span className="shrink-0 rounded border bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">ET</span>
+              {durationLabel && (
+                <span className="ml-auto text-xs text-muted-foreground shrink-0">{durationLabel}</span>
+              )}
+            </div>
+            {conflictPeople.length > 0 && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium text-destructive">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  {conflictPeople.length} {conflictPeople.length === 1 ? 'person is' : 'people are'} busy at this time
+                </div>
+                <ul className="space-y-1 text-xs text-muted-foreground">
+                  {conflictPeople.map((p) => (
+                    <li key={p.id}>
+                      <span className="font-medium text-foreground">{p.name}</span>,{' '}
+                      {formatMinutes(p.ev.start_time)} to {formatMinutes(p.ev.end_time)} ET · {p.ev.title}
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  {suggestedStart !== null && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleStartChange(minutesToInput(suggestedStart))}
+                    >
+                      Use {formatMinutes(suggestedStart)}
+                    </Button>
+                  )}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={() => setShowFreeTimes((v) => !v)}
+                  >
+                    {showFreeTimes ? 'Hide free times' : 'See free times'}
+                  </Button>
+                </div>
+                {showFreeTimes && freeStarts.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {freeStarts.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        className="rounded-full border bg-background px-2.5 py-1 text-xs hover:bg-accent hover:text-accent-foreground"
+                        onClick={() => handleStartChange(minutesToInput(s))}
+                      >
+                        {formatMinutes(s)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            <div className="flex justify-end">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox checked={noTime} onCheckedChange={(v) => setNoTime(v === true)} />
+                <span>No specific time yet</span>
+              </label>
+            </div>
+          </div>
+
 
           <div className="space-y-1.5">
             <Label>Owner</Label>
