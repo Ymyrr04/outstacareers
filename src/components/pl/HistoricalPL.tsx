@@ -45,7 +45,7 @@ const num = (n: number | null | undefined) => Number(n ?? 0);
 // ---- Per-year cache (memory + localStorage), invalidated when batches or their mapping change ----
 interface CacheEntry { sig: string; ids: string[]; uploadIds?: string[]; syncIds?: string[]; rows: HistRow[] }
 const memCache = new Map<number, CacheEntry>();
-const CACHE_KEY = (y: number) => `hist-pl-cache-v5-${y}`;
+const CACHE_KEY = (y: number) => `hist-pl-cache-v6-${y}`;
 function readCache(y: number): CacheEntry | null {
   if (memCache.has(y)) return memCache.get(y)!;
   try {
@@ -157,7 +157,7 @@ async function fetchYear(y: number): Promise<{ ids: string[]; uploadIds: string[
       .order('id', { ascending: true })
       .range(from, from + PAGE - 1);
     if (error) return null;
-    all.push(...((data ?? []) as HistRow[]).filter((r) => !isInternalRow(r)));
+    all.push(...((data ?? []) as HistRow[]));
     if (!data || data.length < PAGE) break;
   }
   writeCache(y, { sig, ids, uploadIds, syncIds, rows: all });
@@ -271,34 +271,36 @@ export function HistoricalPL({ onUpload }: Props) {
       map.get(key)!.rows.push(r);
     }
     return [...map.entries()].map(([key, w]) => {
-      const t = w.rows.reduce((a, r) => ({
+      const externalRows = w.rows.filter((r) => !isInternalRow(r));
+      const t = externalRows.reduce((a, r) => ({
         hours: a.hours + num(r.hours),
         cost: a.cost + num(r[COST_KEY]),
         billing: a.billing + num(r[BILLING_KEY]),
         margin: a.margin + num(r[MARGIN_KEY]),
       }), { hours: 0, cost: 0, billing: 0, margin: 0 });
       const has = {
-        cost: w.rows.some((r) => r[COST_KEY] != null),
-        billing: w.rows.some((r) => r[BILLING_KEY] != null),
-        margin: w.rows.some((r) => r[MARGIN_KEY] != null),
+        cost: externalRows.some((r) => r[COST_KEY] != null),
+        billing: externalRows.some((r) => r[BILLING_KEY] != null),
+        margin: externalRows.some((r) => r[MARGIN_KEY] != null),
       };
-      const headcount = new Set(w.rows.filter((r) => !(r.raw && (r.raw as Record<string, unknown>).__exclude_headcount)).map((r) => (r.contractor_name || '').trim().toLowerCase()).filter((n) => n && !HEADCOUNT_EXCLUDED_NAMES.has(n))).size;
+      const headcount = new Set(externalRows.filter((r) => !(r.raw && (r.raw as Record<string, unknown>).__exclude_headcount)).map((r) => (r.contractor_name || '').trim().toLowerCase()).filter((n) => n && !HEADCOUNT_EXCLUDED_NAMES.has(n))).size;
       return { key, label: w.label, rows: w.rows, totals: t, has, headcount };
     });
   }, [rows]);
 
   // Year totals, from the rows already loaded.
   const yearSummary = useMemo(() => {
-    const t = rows.reduce((a, r) => ({
+    const externalRows = rows.filter((r) => !isInternalRow(r));
+    const t = externalRows.reduce((a, r) => ({
       hours: a.hours + num(r.hours),
       cost: a.cost + num(r[COST_KEY]),
       billing: a.billing + num(r[BILLING_KEY]),
       margin: a.margin + num(r[MARGIN_KEY]),
     }), { hours: 0, cost: 0, billing: 0, margin: 0 });
     const has = {
-      cost: rows.some((r) => r[COST_KEY] != null),
-      billing: rows.some((r) => r[BILLING_KEY] != null),
-      margin: rows.some((r) => r[MARGIN_KEY] != null),
+      cost: externalRows.some((r) => r[COST_KEY] != null),
+      billing: externalRows.some((r) => r[BILLING_KEY] != null),
+      margin: externalRows.some((r) => r[MARGIN_KEY] != null),
     };
     const avgHeadcount = weeks.length
       ? weeks.reduce((a, w) => a + w.headcount, 0) / weeks.length
@@ -318,7 +320,7 @@ export function HistoricalPL({ onUpload }: Props) {
       const months = Array.from({ length: 12 }, blank);
       const total = blank();
       for (const r of compareData[y] ?? []) {
-        if (!r.week_start) continue;
+        if (isInternalRow(r) || !r.week_start) continue;
         const m = new Date(`${r.week_start}T00:00:00`).getMonth();
         if (Number.isNaN(m)) continue;
         const cell = months[m];
@@ -349,6 +351,7 @@ export function HistoricalPL({ onUpload }: Props) {
       const name = (r.contractor_name || '').trim().toLowerCase();
       const excluded =
         !name ||
+        isInternalRow(r) ||
         HEADCOUNT_EXCLUDED_NAMES.has(name) ||
         !!(r.raw && (r.raw as Record<string, unknown>).__exclude_headcount);
       if (excluded || seen.has(name)) continue;
@@ -407,7 +410,8 @@ export function HistoricalPL({ onUpload }: Props) {
       ? openWeek.rows.filter((r) =>
           (r.contractor_name || '').toLowerCase().includes(q) || (r.company || '').toLowerCase().includes(q))
       : openWeek.rows;
-    return sort ? [...base].sort(cmpRows) : base;
+    return [...base].sort((a, b) =>
+      Number(isInternalRow(a)) - Number(isInternalRow(b)) || (sort ? cmpRows(a, b) : 0));
   }, [openWeek, query, sort]);
 
   const handleDelete = async () => {
@@ -752,7 +756,7 @@ export function HistoricalPL({ onUpload }: Props) {
                             <span className="inline-flex items-center gap-1">
                               {c.label}
                               <ArrowUpDown className={cn('h-3 w-3', active ? 'text-foreground' : 'text-muted-foreground/50')} />
-                              {active && <span className="text-xs">{sort!.dir === 'asc' ? '↑' : '↓'}</span>}
+                              {active && <span className="text-xs">{sort?.dir === 'asc' ? '↑' : '↓'}</span>}
                             </span>
                           </th>
                           {c.key === 'company' && (
@@ -771,7 +775,11 @@ export function HistoricalPL({ onUpload }: Props) {
                         </td>
                       </tr>
                     ) : detailRows.map((r) => (
-                      <tr key={r.id} className="group">
+                      <Fragment key={r.id}>
+                      {isInternalRow(r) && r.id === detailRows.find((row) => isInternalRow(row))?.id && (
+                        <tr><td colSpan={SORTABLE.length + 2} className="border-b bg-muted px-3 py-2 font-medium">OutSta · Internal team</td></tr>
+                      )}
+                      <tr className="group">
                         <td className={cn('sticky left-0 z-20 bg-background group-hover:bg-muted border-r border-b px-2 py-2 text-right tabular-nums text-muted-foreground', NUM_COL)}>{headcountNumbers.get(r.id) ?? ''}</td>
                         {SORTABLE.map((c, i) => (
                           <Fragment key={c.key}>
@@ -805,6 +813,7 @@ export function HistoricalPL({ onUpload }: Props) {
                           </Fragment>
                         ))}
                       </tr>
+                      </Fragment>
                     ))}
                   </tbody>
                   {detailRows.length > 0 && (
@@ -816,7 +825,7 @@ export function HistoricalPL({ onUpload }: Props) {
                           const statusCell = c.key === 'company' ? <td key="status" className={cn(base, 'z-20', STATUS_COL)} /> : null;
                           if (i === 0) return <Fragment key={c.key}><td className={cn(base, 'left-[56px] z-30 border-r', c.width)}>Total</td>{statusCell}</Fragment>;
                           if (!c.numeric || c.kind === 'rate') return <Fragment key={c.key}><td className={cn(base, 'z-20', c.width)} />{statusCell}</Fragment>;
-                          const vals = detailRows.map((r) => (c.key === 'bonus' ? bonusOf(r) : r[c.key as NumKey])).filter((v) => v != null);
+                          const vals = detailRows.filter((r) => !isInternalRow(r)).map((r) => (c.key === 'bonus' ? bonusOf(r) : r[c.key as NumKey])).filter((v) => v != null);
                           const sum = vals.reduce<number>((a, v) => a + Number(v), 0);
                           return (
                             <Fragment key={c.key}>
