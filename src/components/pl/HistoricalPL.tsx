@@ -358,11 +358,11 @@ export function HistoricalPL({ onUpload }: Props) {
     return map;
   }, [openWeek]);
 
-  // Statuses available in the open week, and which of them are excluded from headcount.
+  // Statuses available in the open week (plus Rendering, always offered), and
+  // which of them are excluded from headcount.
   const statusOptions = useMemo(() => {
-    if (!openWeek) return [];
-    const set = new Set<string>();
-    for (const r of openWeek.rows) { const s = statusOf(r); if (s) set.add(s); }
+    const set = new Set<string>(['Rendering']);
+    if (openWeek) for (const r of openWeek.rows) { const s = statusOf(r); if (s) set.add(s); }
     return [...set].sort((a, b) => a.localeCompare(b));
   }, [openWeek]);
   const excludedStatuses = useMemo(() => {
@@ -375,12 +375,14 @@ export function HistoricalPL({ onUpload }: Props) {
     return set;
   }, [openWeek]);
 
-  // Update a row's status in place; a status that is excluded elsewhere in the
-  // week keeps the row out of the headcount, a blank status clears the flag.
+  // Update a row's status in place; Rendering always keeps the row out of the
+  // headcount, as does a status that is excluded elsewhere in the week; a
+  // blank status clears the flag.
   const handleStatusChange = async (row: HistRow, newStatus: string) => {
     const raw = { ...((row.raw as Record<string, unknown>) ?? {}) };
     if (newStatus) raw.Status = newStatus; else delete raw.Status;
-    if (newStatus && excludedStatuses.has(newStatus.toLowerCase())) raw.__exclude_headcount = true;
+    const excludes = !!newStatus && (newStatus.toLowerCase() === 'rendering' || excludedStatuses.has(newStatus.toLowerCase()));
+    if (excludes) raw.__exclude_headcount = true;
     else delete raw.__exclude_headcount;
     const prevRows = rows;
     const nextRows = rows.map((r) => (r.id === row.id ? { ...r, raw } : r));
