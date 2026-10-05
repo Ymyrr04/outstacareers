@@ -586,124 +586,130 @@ export const AddActivityModal = ({
           </div>
 
 
-          <div className="space-y-1.5">
-            <Label>Owner</Label>
-            <Select value={adminId} onValueChange={setAdminId}>
-              <SelectTrigger><SelectValue placeholder="Select admin" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value={UNASSIGNED}>🙌 Unassigned — anyone can take it</SelectItem>
-                {admins.map((a) => {
-                  const busy = conflicts.has(a.user_id);
-                  return (
-                    <SelectItem key={a.user_id} value={a.user_id}>
-                      {a.initial} — {a.name}{busy ? ' (busy)' : ''}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-            {!isUnassigned && conflicts.has(adminId) && (
-              <p className="text-xs text-destructive truncate" title={conflictLabel(adminId) ?? undefined}>{conflictLabel(adminId)}</p>
-            )}
-          </div>
-
-
-          {isUnassigned ? (
-            <p className="rounded-md border-[0.5px] border-dashed bg-muted/30 p-2 text-xs text-muted-foreground">
-              This task will appear in the “Up for grabs” band on the calendar. Anyone on the team can take it
-              and set a time.
-            </p>
-          ) : (
-          <div className="space-y-1.5">
+          <div className="mt-5 border-t pt-4 space-y-3">
             <div className="flex items-center justify-between">
-              <Label>Also assign to</Label>
-              <button
-                type="button"
-                className="text-xs text-muted-foreground hover:text-foreground"
-                onClick={() => {
-                  const free = admins.filter((a) => !conflicts.has(a.user_id)).map((a) => a.user_id);
-                  setExtraAssignees(extraAssignees.length >= free.length && free.length > 0 ? [] : free);
-                }}
-              >
-                {extraAssignees.length > 0 ? 'Clear all' : 'Add everyone available'}
-              </button>
-            </div>
-            <Popover open={peopleOpen} onOpenChange={setPeopleOpen}>
-              <PopoverTrigger asChild>
+              <Label>Who</Label>
+              {!isUnassigned && (
                 <button
                   type="button"
-                  className="flex w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground ring-offset-background hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    const free = admins.filter((a) => !conflicts.has(a.user_id)).map((a) => a.user_id);
+                    setExtraAssignees(extraAssignees.length >= free.length && free.length > 0 ? [] : free);
+                  }}
                 >
-                  <Search className="w-4 h-4 shrink-0" />
-                  Add people
+                  {extraAssignees.length > 0 ? 'Clear all' : 'Add everyone available'}
                 </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Search people…" />
-                  <CommandList>
-                    <CommandEmpty>No one found.</CommandEmpty>
-                    <CommandGroup>
-                      {admins
-                        .filter((a) => a.user_id !== adminId)
-                        .map((a) => {
-                          const busy = conflicts.has(a.user_id);
-                          const selected = extraAssignees.includes(a.user_id);
+              )}
+            </div>
+            <div className="grid grid-cols-[56px_minmax(0,1fr)] items-start gap-x-3 gap-y-2">
+              <Label className="pt-2 text-xs text-muted-foreground">Owner</Label>
+              <div className="min-w-0 space-y-1">
+                <Select value={adminId} onValueChange={setAdminId}>
+                  <SelectTrigger className="w-56"><SelectValue placeholder="Select admin" /></SelectTrigger>
+                  <SelectContent className="ce-light">
+                    <SelectItem value={UNASSIGNED}>🙌 Unassigned — anyone can take it</SelectItem>
+                    {admins.map((a) => {
+                      const busy = conflicts.has(a.user_id);
+                      return (
+                        <SelectItem key={a.user_id} value={a.user_id}>
+                          {a.initial} — {a.name}{busy ? ' (busy)' : ''}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                {!isUnassigned && conflicts.has(adminId) && (
+                  <p className="text-xs text-destructive truncate" title={conflictLabel(adminId) ?? undefined}>{conflictLabel(adminId)}</p>
+                )}
+              </div>
+              {isUnassigned ? (
+                <p className="col-span-2 rounded-md border-[0.5px] border-dashed bg-muted/30 p-2 text-xs text-muted-foreground">
+                  This task will appear in the “Up for grabs” band on the calendar. Anyone on the team can take it
+                  and set a time.
+                </p>
+              ) : (
+                <>
+                  <Label className="pt-2 text-xs text-muted-foreground">Also</Label>
+                  <div className="min-w-0 space-y-2">
+                    {extraAssignees.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {extraAssignees.map((id) => {
+                          const a = admins.find((x) => x.user_id === id);
+                          if (!a) return null;
+                          const busy = conflicts.has(id);
                           return (
-                            <CommandItem
-                              key={a.user_id}
-                              value={a.name}
-                              onSelect={() =>
-                                setExtraAssignees((prev) =>
-                                  selected ? prev.filter((id) => id !== a.user_id) : [...prev, a.user_id]
-                                )
-                              }
+                            <span
+                              key={id}
+                              className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 px-2.5 py-1 text-xs"
+                              title={busy ? conflictLabel(id) ?? undefined : 'Free'}
                             >
-                              <span
-                                className={`w-2 h-2 rounded-full shrink-0 ${busy ? 'bg-amber-500' : 'bg-emerald-500'}`}
-                              />
-                              <span className="truncate">{a.name}</span>
-                              <span className="ml-auto min-w-0 max-w-[50%] truncate text-[11px] text-muted-foreground">
-                                {busy ? conflictLabel(a.user_id) : 'Free'}
-                              </span>
-                              {selected && <Check className="w-4 h-4 shrink-0 text-primary" />}
-                            </CommandItem>
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${busy ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                              {a.name}
+                              <button
+                                type="button"
+                                aria-label={`Remove ${a.name}`}
+                                className="text-muted-foreground hover:text-foreground"
+                                onClick={() => setExtraAssignees((prev) => prev.filter((x) => x !== id))}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
                           );
                         })}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-            {extraAssignees.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {extraAssignees.map((id) => {
-                  const a = admins.find((x) => x.user_id === id);
-                  if (!a) return null;
-                  const busy = conflicts.has(id);
-                  return (
-                    <span
-                      key={id}
-                      className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 px-2.5 py-1 text-xs"
-                      title={busy ? conflictLabel(id) ?? undefined : 'Free'}
-                    >
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${busy ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-                      {a.name}
-                      <button
-                        type="button"
-                        aria-label={`Remove ${a.name}`}
-                        className="text-muted-foreground hover:text-foreground"
-                        onClick={() => setExtraAssignees((prev) => prev.filter((x) => x !== id))}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  );
-                })}
-              </div>
-            )}
+                      </div>
+                    )}
+                    <Popover open={peopleOpen} onOpenChange={setPeopleOpen}>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground ring-offset-background hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        >
+                          <Search className="w-4 h-4 shrink-0" />
+                          Add people
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="ce-light w-[--radix-popover-trigger-width] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search people…" />
+                          <CommandList>
+                            <CommandEmpty>No one found.</CommandEmpty>
+                            <CommandGroup>
+                              {admins
+                                .filter((a) => a.user_id !== adminId)
+                                .map((a) => {
+                                  const busy = conflicts.has(a.user_id);
+                                  const selected = extraAssignees.includes(a.user_id);
+                                  return (
+                                    <CommandItem
+                                      key={a.user_id}
+                                      value={a.name}
+                                      onSelect={() =>
+                                        setExtraAssignees((prev) =>
+                                          selected ? prev.filter((id) => id !== a.user_id) : [...prev, a.user_id]
+                                        )
+                                      }
+                                    >
+                                      <span className={`w-2 h-2 rounded-full shrink-0 ${busy ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                                      <span className="truncate">{a.name}</span>
+                                      <span className="ml-auto min-w-0 max-w-[50%] truncate text-[11px] text-muted-foreground">
+                                        {busy ? conflictLabel(a.user_id) : 'Free'}
+                                      </span>
+                                      {selected && <Check className="w-4 h-4 shrink-0 text-primary" />}
+                                    </CommandItem>
+                                  );
+                                })}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </>
+              )}
+            </div>
           </div>
-          )}
+
 
 
 
