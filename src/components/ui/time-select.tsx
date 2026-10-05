@@ -31,6 +31,8 @@ interface TimeSelectProps {
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  /** Optional class for the portaled dropdown content (e.g. theme scoping). */
+  contentClassName?: string;
   disabled?: boolean;
 }
 
