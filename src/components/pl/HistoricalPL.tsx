@@ -381,6 +381,7 @@ export function HistoricalPL({ onUpload }: Props) {
   const handleStatusChange = async (row: HistRow, newStatus: string) => {
     const raw = { ...((row.raw as Record<string, unknown>) ?? {}) };
     if (newStatus) raw.Status = newStatus; else delete raw.Status;
+    const excludes = !!newStatus && (newStatus.toLowerCase() === 'rendering' || excludedStatuses.has(newStatus.toLowerCase()));
     if (excludes) raw.__exclude_headcount = true;
     else delete raw.__exclude_headcount;
     const prevRows = rows;
