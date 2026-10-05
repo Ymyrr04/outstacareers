@@ -56,7 +56,8 @@ export function TimeSelect({ id, value, onChange, className, disabled }: TimeSel
           <SelectValue placeholder="Select time" />
         </span>
       </SelectTrigger>
-      <SelectContent className="max-h-64">
+      <SelectContent className={cn("max-h-64", contentClassName)}>
+
         {options.map((o) => (
           <SelectItem key={o.value} value={o.value}>
             {o.label}
