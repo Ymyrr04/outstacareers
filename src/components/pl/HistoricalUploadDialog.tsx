@@ -114,6 +114,9 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
   const [importing, setImporting] = useState(false);
   const [replaceIds, setReplaceIds] = useState<string[] | null>(null);
   const [syncedWeeks, setSyncedWeeks] = useState<Set<string>>(new Set());
+  // Status filter: per-layout status column + status values excluded from headcount
+  const [statusCols, setStatusCols] = useState<Record<string, string>>({});
+  const [excludedStatuses, setExcludedStatuses] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     let cancelled = false;
@@ -129,7 +132,7 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
     return () => { cancelled = true; };
   }, [year]);
 
-  const reset = () => { setFilename(''); setSheets([]); setMappings(null); setReplaceIds(null); };
+  const reset = () => { setStatusCols({}); setExcludedStatuses(new Set()); setFilename(''); setSheets([]); setMappings(null); setReplaceIds(null); };
   const close = (o: boolean) => { if (importing) return; if (!o) reset(); onOpenChange(o); };
 
   const onFile = async (file: File | undefined) => {
@@ -164,13 +167,36 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
     return [...m.values()];
   }, [usable]);
   const mapping = mappings && groups.length ? mappings : null;
+  const statusColOf = (g: { key: string; headers: string[] }) =>
+    g.key in statusCols ? statusCols[g.key] : (g.headers.find((h) => /^status$/i.test(h.trim())) ?? '');
+  const statusValues = useMemo(() => {
+    const m = new Map<string, { label: string; count: number }>();
+    for (const g of groups) {
+      const col = statusColOf(g);
+      if (!col) continue;
+      for (const s of usable) {
+        if (hKey(s.headers) !== g.key) continue;
+        for (const r of s.rows) {
+          const v = String(r[col] ?? '').trim();
+          if (!v) continue;
+          const k = v.toLowerCase();
+          const e = m.get(k) ?? { label: v, count: 0 };
+          e.count++; m.set(k, e);
+        }
+      }
+    }
+    return [...m.entries()].sort((a, b) => a[1].label.localeCompare(b[1].label));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [groups, usable, statusCols]);
   const allMapped = !!mapping && groups.every((g) => mapping[g.key]?.contractor_name);
 
   const { importRows, skipped } = useMemo(() => {
     if (!mapping) return { importRows: [], skipped: 0 };
     const out: Record<string, unknown>[] = []; let skip = 0;
     for (const s of usable) {
-      const mp = mapping[hKey(s.headers)];
+      const gk = hKey(s.headers);
+      const mp = mapping[gk];
+      const sCol = gk in statusCols ? statusCols[gk] : (s.headers.find((h) => /^status$/i.test(h.trim())) ?? '');
       if (!mp || !mp.contractor_name) continue;
       for (const r of s.rows) {
         const name = String(r[mp.contractor_name] ?? '').trim();
@@ -179,6 +205,10 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
         const row: Record<string, unknown> = {
           week_label: s.name, week_start: s.dates?.start ?? null, week_end: s.dates?.end ?? null, raw: r,
         };
+        if (sCol) {
+          const st = String(r[sCol] ?? '').trim().toLowerCase();
+          if (st && excludedStatuses.has(st)) row.raw = { ...r, __exclude_headcount: true };
+        }
         for (const f of FIELDS) {
           const h = mp[f.key];
           const v = h ? r[h] : null;
@@ -188,7 +218,7 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
       }
     }
     return { importRows: out, skipped: skip };
-  }, [usable, mapping]);
+  }, [usable, mapping, statusCols, excludedStatuses]);
 
   const startImport = async () => {
     const { data, error } = await supabase.from('historical_pl_batches').select('id').eq('year', year).eq('source', 'upload');
@@ -322,6 +352,35 @@ export function HistoricalUploadDialog({ open, onOpenChange, defaultYear, onImpo
                     </div>
                   );
                 })}
+
+                <div className="rounded-md border p-3 space-y-2">
+                  <div className="text-sm font-medium">Status filter <span className="font-normal text-muted-foreground">— ticked statuses are left out of that week's headcount (their money and hours still count)</span></div>
+                  <div className="flex flex-wrap gap-3">
+                    {groups.map((g, gi) => (
+                      <div key={`st-${g.key}`} className="space-y-1 min-w-[180px]">
+                        <label className="text-xs font-medium">Status column{groups.length > 1 ? ` (Layout ${gi + 1})` : ''}</label>
+                        <Select value={statusColOf(g) || NONE} onValueChange={(v) => setStatusCols({ ...statusCols, [g.key]: v === NONE ? '' : v })}>
+                          <SelectTrigger className="h-8 w-full text-xs"><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value={NONE}>— Not mapped —</SelectItem>
+                            {g.headers.map((h) => <SelectItem key={h} value={h}>{h}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    ))}
+                  </div>
+                  {statusValues.length > 0 ? (
+                    <div className="flex flex-wrap gap-x-4 gap-y-2">
+                      {statusValues.map(([k, v]) => (
+                        <label key={k} className="flex items-center gap-2 text-sm cursor-pointer">
+                          <input type="checkbox" className="h-4 w-4" checked={excludedStatuses.has(k)}
+                            onChange={(e) => { const n = new Set(excludedStatuses); if (e.target.checked) n.add(k); else n.delete(k); setExcludedStatuses(n); }} />
+                          Exclude "{v.label}" <span className="text-muted-foreground">({v.count})</span>
+                        </label>
+                      ))}
+                    </div>
+                  ) : <div className="text-xs text-muted-foreground">No status values found — pick the status column above.</div>}
+                </div>
 
                 <div className="text-sm">
                   <b>{importRows.length.toLocaleString()}</b> rows to import · <b>{skipped.toLocaleString()}</b> skipped (no contractor name or contains "total")
