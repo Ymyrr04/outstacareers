@@ -112,24 +112,24 @@ export const AddActivityModal = ({
 
   // Load events occurring on this date (including recurring ones) to detect conflicts
   useEffect(() => {
-    if (!open || !date) return;
+    if (!open || !dateValue) return;
     let cancelled = false;
     (async () => {
       const { data } = await supabase
         .from('calendar_events')
         .select('id,title,event_date,start_time,end_time,assigned_to,created_by,is_recurring,recurrence_rule')
-        .or(`event_date.eq.${date},is_recurring.eq.true`);
+        .or(`event_date.eq.${dateValue},is_recurring.eq.true`);
       if (cancelled) return;
-      const dow = weekdayOf(date);
+      const dow = weekdayOf(dateValue);
       const occurring = (data || []).filter((e: any) => {
         if (editEvent && e.id === editEvent.id) return false;
-        if (e.event_date === date) return true;
-        if (e.is_recurring && e.event_date < date) {
+        if (e.event_date === dateValue) return true;
+        if (e.is_recurring && e.event_date < dateValue) {
           const rule = e.recurrence_rule || 'weekly';
           if (rule === 'weekly') return weekdayOf(e.event_date) === dow;
           if (rule === 'biweekly')
-            return weekdayOf(e.event_date) === dow && daysBetween(e.event_date, date) % 14 === 0;
-          if (rule === 'monthly') return dayOfMonth(e.event_date) === dayOfMonth(date);
+            return weekdayOf(e.event_date) === dow && daysBetween(e.event_date, dateValue) % 14 === 0;
+          if (rule === 'monthly') return dayOfMonth(e.event_date) === dayOfMonth(dateValue);
         }
         return false;
       });
@@ -138,7 +138,7 @@ export const AddActivityModal = ({
     return () => {
       cancelled = true;
     };
-  }, [open, date, editEvent]);
+  }, [open, dateValue, editEvent]);
 
   const isUnassigned = adminId === UNASSIGNED;
   const startMin = inputToMinutes(start);
