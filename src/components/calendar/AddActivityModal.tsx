@@ -457,9 +457,11 @@ export const AddActivityModal = ({
           </label>
 
           <div className="space-y-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="ce-date">Date</Label>
-              <div className="flex items-center gap-1.5">
+            <div className="flex items-baseline gap-2">
+              <Label>When</Label>
+              <span className="text-xs text-muted-foreground">Eastern Time (ET) for everyone</span>
+            </div>
+            <div className="flex items-center gap-1.5">
                 <Button
                   type="button"
                   variant="ghost"
