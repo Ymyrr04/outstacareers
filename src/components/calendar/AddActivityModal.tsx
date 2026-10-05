@@ -713,178 +713,74 @@ export const AddActivityModal = ({
 
 
 
-          <div className="space-y-2">
-            <div className="flex items-baseline gap-2">
-              <Label>When</Label>
-              <span className="text-xs text-muted-foreground">Eastern Time (ET) for everyone</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 shrink-0"
-                  aria-label="Previous day"
-                  onClick={() => setDateValue(addDays(dateValue, -1))}
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <Input
-                  id="ce-date"
-                  type="date"
-                  value={dateValue}
-                  onChange={(e) => { if (e.target.value) setDateValue(e.target.value); }}
-                  className="w-auto flex-1 min-w-0"
+          <div className="mt-5 border-t pt-4 space-y-3">
+            {showDesc ? (
+              <div className="space-y-1.5">
+                <Label htmlFor="ce-desc">Description</Label>
+                <Textarea
+                  id="ce-desc"
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Optional details"
+                  autoFocus={!description}
                 />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 shrink-0"
-                  aria-label="Next day"
-                  onClick={() => setDateValue(addDays(dateValue, 1))}
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-                <span className="text-sm text-muted-foreground shrink-0">
-                  {new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(parseDateString(dateValue))}
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="ml-auto shrink-0"
-                  onClick={() => setDateValue(todayET())}
-                >
-                  Today
-                </Button>
               </div>
-              {repeat !== 'none' && dateValue !== (editEvent?.event_date ?? date) && (
-                <p className="text-xs text-muted-foreground">
-                  Moves the whole series. It repeats on {new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(parseDateString(dateValue))} from {formatDateLong(dateValue)}; earlier dates won't show it.
-                </p>
-              )}
-            <div className={`flex items-center gap-2 ${noTime ? 'opacity-50' : ''}`}>
-              <TimeSelect value={start} onChange={handleStartChange} disabled={noTime} />
-              <span className="text-sm text-muted-foreground shrink-0">to</span>
-              <TimeSelect value={end} onChange={setEnd} disabled={noTime} />
-              <span className="shrink-0 rounded border bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">ET</span>
-              {durationLabel && (
-                <span className="ml-auto text-xs text-muted-foreground shrink-0">{durationLabel}</span>
-              )}
-            </div>
-            {conflictPeople.length > 0 && (
-              <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 space-y-2">
-                <div className="flex items-center gap-2 text-sm font-medium text-destructive">
-                  <AlertTriangle className="w-4 h-4 shrink-0" />
-                  {conflictPeople.length} {conflictPeople.length === 1 ? 'person is' : 'people are'} busy at this time
-                </div>
-                <ul className="space-y-1 text-xs text-muted-foreground">
-                  {conflictPeople.map((p) => (
-                    <li key={p.id}>
-                      <span className="font-medium text-foreground">{p.name}</span>,{' '}
-                      {formatMinutes(p.ev.start_time)} to {formatMinutes(p.ev.end_time)} ET · {p.ev.title}
-                    </li>
-                  ))}
-                </ul>
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  {suggestedStart !== null && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleStartChange(minutesToInput(suggestedStart))}
-                    >
-                      Use {formatMinutes(suggestedStart)}
-                    </Button>
-                  )}
-                  <button
-                    type="button"
-                    className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
-                    onClick={() => setShowFreeTimes((v) => !v)}
-                  >
-                    {showFreeTimes ? 'Hide free times' : 'See free times'}
-                  </button>
-                </div>
-                {showFreeTimes && freeStarts.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5 pt-1">
-                    {freeStarts.map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        className="rounded-full border bg-background px-2.5 py-1 text-xs hover:bg-accent hover:text-accent-foreground"
-                        onClick={() => handleStartChange(minutesToInput(s))}
-                      >
-                        {formatMinutes(s)}
-                      </button>
+            ) : null}
+
+            {showLink ? (
+              <div className="space-y-1.5">
+                <Label>Link to</Label>
+                <PipelineLinkSelect value={pipelineLink} onChange={setPipelineLink} />
+              </div>
+            ) : null}
+
+            {showRepeat ? (
+              <div className="space-y-1.5">
+                <Label>Repeat</Label>
+                <Select value={repeat} onValueChange={setRepeat}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent className="ce-light">
+                    {RECURRENCE_OPTIONS.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
                     ))}
-                  </div>
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+
+            {detailsOpen && (!showDesc || !showLink || !showRepeat) && (
+              <div className="flex flex-wrap gap-2">
+                {!showDesc && (
+                  <button type="button" onClick={() => setShowDesc(true)} className="rounded-lg border bg-background px-3 py-1.5 text-sm font-medium hover:bg-muted">
+                    + Add description
+                  </button>
+                )}
+                {!showLink && (
+                  <button type="button" onClick={() => setShowLink(true)} className="rounded-lg border bg-background px-3 py-1.5 text-sm font-medium hover:bg-muted">
+                    + Link to pipeline
+                  </button>
+                )}
+                {!showRepeat && (
+                  <button type="button" onClick={() => setShowRepeat(true)} className="rounded-lg border bg-background px-3 py-1.5 text-sm font-medium hover:bg-muted">
+                    + Repeat
+                  </button>
                 )}
               </div>
             )}
-            <div className="flex justify-end">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <Checkbox checked={noTime} onCheckedChange={(v) => setNoTime(v === true)} />
-                <span>No specific time yet (any admin can set it)</span>
-              </label>
-            </div>
           </div>
 
+          <div className="mt-1 flex justify-center">
+            <button
+              type="button"
+              aria-label={detailsOpen ? 'Hide extra options' : 'Show extra options'}
+              onClick={() => setDetailsOpen((v) => !v)}
+              className="flex h-7 w-7 items-center justify-center rounded-full border bg-background text-muted-foreground hover:text-foreground"
+            >
+              {detailsOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+            </button>
+          </div>
 
-          {showDesc ? (
-            <div className="space-y-1.5">
-              <Label htmlFor="ce-desc">Description</Label>
-              <Textarea
-                id="ce-desc"
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Optional details"
-                autoFocus={!description}
-              />
-            </div>
-          ) : null}
-
-          {showLink ? (
-            <div className="space-y-1.5">
-              <Label>Link to</Label>
-              <PipelineLinkSelect value={pipelineLink} onChange={setPipelineLink} />
-            </div>
-          ) : null}
-
-          {showRepeat ? (
-            <div className="space-y-1.5">
-              <Label>Repeat</Label>
-              <Select value={repeat} onValueChange={setRepeat}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {RECURRENCE_OPTIONS.map((r) => (
-                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ) : null}
-
-          {(!showDesc || !showLink || !showRepeat) && (
-            <div className="flex flex-wrap gap-x-4 gap-y-1">
-              {!showDesc && (
-                <button type="button" onClick={() => setShowDesc(true)} className="text-sm font-medium text-brand hover:underline">
-                  + Add description
-                </button>
-              )}
-              {!showLink && (
-                <button type="button" onClick={() => setShowLink(true)} className="text-sm font-medium text-brand hover:underline">
-                  + Link to pipeline
-                </button>
-              )}
-              {!showRepeat && (
-                <button type="button" onClick={() => setShowRepeat(true)} className="text-sm font-medium text-brand hover:underline">
-                  + Repeat
-                </button>
-              )}
-            </div>
-          )}
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
 
