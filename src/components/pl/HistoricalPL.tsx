@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { ChevronRight, Loader2, Upload, Trash2, Columns3, ArrowUpDown, Search, BarChart3, RefreshCw } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { HistoricalSyncDialog, lastCompletedMonday, weekLabelOf } from './HistoricalSyncDialog';
+import { HistoricalSyncDialog, lastCompletedMonday, weekLabelOf, loadInternalWeekRows } from './HistoricalSyncDialog';
 import { SYNC_START } from '@/lib/plWeek';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
@@ -338,7 +338,19 @@ export function HistoricalPL({ onUpload }: Props) {
     return { years, byYear, latest, prev };
   }, [compareYears, compareData]);
 
-  const openWeek = openWeekKey ? weeks.find((w) => w.key === openWeekKey) ?? null : null;
+  const savedOpenWeek = openWeekKey ? weeks.find((w) => w.key === openWeekKey) ?? null : null;
+  const [internalPreview, setInternalPreview] = useState<{ week: string; rows: HistRow[] } | null>(null);
+  useEffect(() => {
+    if (!savedOpenWeek || savedOpenWeek.rows.some(isInternalRow) || !savedOpenWeek.rows.some((r) => r.raw?.source === 'timesheet_sync')) return;
+    let cancelled = false;
+    void loadInternalWeekRows(savedOpenWeek.key).then((internal) => {
+      if (!cancelled) setInternalPreview({ week: savedOpenWeek.key, rows: internal.map((r, i) => ({ ...r, id: `internal-preview-${savedOpenWeek.key}-${i}`, raw: { ...r.raw, display_only: true } })) });
+    }).catch(() => { if (!cancelled) toast.error('Could not load internal team details'); });
+    return () => { cancelled = true; };
+  }, [savedOpenWeek]);
+  const openWeek = savedOpenWeek && internalPreview?.week === savedOpenWeek.key && !savedOpenWeek.rows.some(isInternalRow)
+    ? { ...savedOpenWeek, rows: [...savedOpenWeek.rows, ...internalPreview.rows] }
+    : savedOpenWeek;
 
   // Running headcount number per row: only rows that count toward headcount get a
   // number, in sheet order; excluded/duplicate/blank-name rows get none.
@@ -797,6 +809,7 @@ export function HistoricalPL({ onUpload }: Props) {
                           {c.key === 'company' && (
                             <td className={cn('px-2 py-1 border-b bg-background group-hover:bg-muted', STATUS_COL)}>
                               <Select
+                                disabled={!!r.raw?.display_only}
                                 value={statusOf(r) || '__blank__'}
                                 onValueChange={(v) => void handleStatusChange(r, v === '__blank__' ? '' : v)}
                               >

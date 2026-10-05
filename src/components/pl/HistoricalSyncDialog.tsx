@@ -163,6 +163,22 @@ function applyDepositHold(row: MappedRow, h: Held, fees: PlFees): MappedRow {
   };
 }
 
+// Older synced weeks did not store internal rows. Preview them without changing saved figures.
+export async function loadInternalWeekRows(monday: string): Promise<MappedRow[]> {
+  const { data, error } = await supabase.from('pl_fee_settings').select('expense_pct, income_pct').maybeSingle();
+  if (error) throw error;
+  const fees = { expensePct: Number(data?.expense_pct ?? 1), incomePct: Number(data?.income_pct ?? 3) };
+  const res = (await computePlWeek(monday, fees, { includeInternal: true }))
+    .filter((r) => isInternalContractor(r.assignment));
+  const held = await loadDepositHeld(res);
+  return res.flatMap((r) => {
+    const out = mapWithBonus(r, monday, fees);
+    const h = held.get(r.assignment.id);
+    if (h && h.amount > 0) out[0] = applyDepositHold(out[0], h, fees);
+    return out;
+  });
+}
+
 type Col = { key: keyof MappedRow; label: string; kind?: 'hours' | 'money' | 'rate'; width: string };
 const COLS: Col[] = [
   { key: 'contractor_name', label: 'Contractor', width: 'w-[220px] min-w-[220px] max-w-[220px]' },
