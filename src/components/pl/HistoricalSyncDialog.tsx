@@ -39,6 +39,17 @@ interface MappedRow {
   raw: Record<string, unknown>;
 }
 
+// Headcount rule for synced weeks (dates from the contractor record):
+// not counted if they start after the week ends, or ended that week without submitting hours.
+export function notCountedThisWeek(r: PlWeekRow, monday: string): boolean {
+  const weekEnd = addDays(monday, 6);
+  const start = r.assignment.start_date;
+  const end = r.assignment.end_date;
+  if (start && start > weekEnd) return true;
+  if (end && end >= monday && end <= weekEnd && !(r.actualHours > 0)) return true;
+  return false;
+}
+
 function mapRow(r: PlWeekRow, monday: string, fees: PlFees): MappedRow {
   const numDep = (v: number | string | null) => (typeof v === 'number' ? v : null);
   const txtDep = (v: number | string | null) => (typeof v === 'string' ? v : null);
@@ -69,6 +80,7 @@ function mapRow(r: PlWeekRow, monday: string, fees: PlFees): MappedRow {
       client_deposit_text: txtDep(r.clientDeposit),
       contractor_deposit_text: txtDep(r.contractorDeposit),
       bonus: r.bonus,
+      ...(notCountedThisWeek(r, monday) ? { __exclude_headcount: true, headcount_reason: 'not_started_or_ended_no_hours' } : {}),
     },
   };
 }
@@ -236,8 +248,9 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
         // Internal team (OutSta client) is excluded, same as the P&L report.
         const res = await computePlWeek(week, fees, { includeInternal: false });
         if (cancelled) return;
-        setNoTimesheet(res.filter((r) => !r.timesheet && !isExcludedFromHeadcount(r.assignment.applicant?.full_name)).length);
-        setHeadcount(res.filter((r) => !isExcludedFromHeadcount(r.assignment.applicant?.full_name)).length);
+        const counted = res.filter((r) => !isExcludedFromHeadcount(r.assignment.applicant?.full_name) && !notCountedThisWeek(r, week));
+        setNoTimesheet(counted.filter((r) => !r.timesheet).length);
+        setHeadcount(counted.length);
         const held = await loadDepositHeld(res);
         if (cancelled) return;
         setRows(res.flatMap((r) => {
