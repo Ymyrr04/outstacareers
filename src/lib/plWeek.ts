@@ -111,7 +111,14 @@ export async function computePlWeek(
   }
 
   const tsMap = new Map<string, PlTimesheet>();
-  tsRows.forEach((t) => tsMap.set(t.contractor_assignment_id, t));
+  // If a contractor has more than one submission in the week, keep the one
+  // with the latest week-ending date (e.g. the resubmission that adds OT).
+  tsRows.forEach((t) => {
+    const prev = tsMap.get(t.contractor_assignment_id);
+    if (!prev || String(t.week_ending_date) > String(prev.week_ending_date)) {
+      tsMap.set(t.contractor_assignment_id, t);
+    }
+  });
 
   const expMul = 1 + fees.expensePct / 100;
   const incMul = 1 - fees.incomePct / 100;
