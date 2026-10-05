@@ -419,6 +419,7 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
                         <td key={c.key} className={cn('px-3 py-2 border-b bg-background group-hover:bg-muted text-right tabular-nums whitespace-nowrap', c.width)}>
                           {c.key === 'client_deposit' && r.raw.client_deposit_text ? String(r.raw.client_deposit_text)
                             : c.key === 'contractor_deposit' && r.raw.contractor_deposit_text ? String(r.raw.contractor_deposit_text)
+                            : r.raw.internal_team && c.kind === 'hours' ? '—'
                             : fmt(c, r[c.key])}
                         </td>
                       ) : (
