@@ -275,7 +275,7 @@ export const AddActivityModal = ({
     const payload = {
       title: title.trim(),
       description: description.trim() || null,
-      event_date: date,
+      event_date: dateValue,
       start_time: s,
       end_time: e,
       event_type: type,
