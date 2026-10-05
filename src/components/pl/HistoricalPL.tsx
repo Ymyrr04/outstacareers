@@ -771,23 +771,37 @@ export function HistoricalPL({ onUpload }: Props) {
                     ) : detailRows.map((r) => (
                       <tr key={r.id} className="group">
                         <td className={cn('sticky left-0 z-20 bg-background group-hover:bg-muted border-r border-b px-2 py-2 text-right tabular-nums text-muted-foreground', NUM_COL)}>{headcountNumbers.get(r.id) ?? ''}</td>
-                        {SORTABLE.map((c, i) => {
-                          if (!c.numeric) {
-                            const v = r[c.key as 'contractor_name' | 'company'];
-                            return (
-                              <td key={c.key} className={cn('px-3 py-2 border-b bg-background group-hover:bg-muted', c.width, i === 0 && 'sticky left-[56px] z-10 border-r font-medium')}>
-                                <div className="truncate" title={v || undefined}>
-                                  {v || '—'}
-                                </div>
-                              </td>
-                            );
-                          }
-                          return (
-                            <td key={c.key} className={cn('px-3 py-2 border-b bg-background group-hover:bg-muted text-right tabular-nums whitespace-nowrap', c.width)}>
+                        {SORTABLE.map((c, i) => (
+                          <Fragment key={c.key}>
+                          {!c.numeric ? (
+                            <td className={cn('px-3 py-2 border-b bg-background group-hover:bg-muted', c.width, i === 0 && 'sticky left-[56px] z-10 border-r font-medium')}>
+                              <div className="truncate" title={r[c.key as 'contractor_name' | 'company'] || undefined}>
+                                {r[c.key as 'contractor_name' | 'company'] || '—'}
+                              </div>
+                            </td>
+                          ) : (
+                            <td className={cn('px-3 py-2 border-b bg-background group-hover:bg-muted text-right tabular-nums whitespace-nowrap', c.width)}>
                               {fmtCell(c, c.key === 'bonus' ? bonusOf(r) : r[c.key as NumKey])}
                             </td>
-                          );
-                        })}
+                          )}
+                          {c.key === 'company' && (
+                            <td className={cn('px-2 py-1 border-b bg-background group-hover:bg-muted', STATUS_COL)}>
+                              <Select
+                                value={statusOf(r) || '__blank__'}
+                                onValueChange={(v) => void handleStatusChange(r, v === '__blank__' ? '' : v)}
+                              >
+                                <SelectTrigger className={cn('h-7 border-0 shadow-none bg-transparent px-1.5 text-xs focus:ring-0', !statusOf(r) && 'text-muted-foreground')}>
+                                  <SelectValue placeholder="—" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="__blank__">—</SelectItem>
+                                  {statusOptions.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
+                                </SelectContent>
+                              </Select>
+                            </td>
+                          )}
+                          </Fragment>
+                        ))}
                       </tr>
                     ))}
                   </tbody>
