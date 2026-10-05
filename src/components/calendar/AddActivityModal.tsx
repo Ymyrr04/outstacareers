@@ -103,6 +103,9 @@ export const AddActivityModal = ({
   const [description, setDescription] = useState('');
   const [repeat, setRepeat] = useState('none');
   const [pipelineLink, setPipelineLink] = useState<PipelineLink | null>(null);
+  const [showDesc, setShowDesc] = useState(false);
+  const [showLink, setShowLink] = useState(false);
+  const [showRepeat, setShowRepeat] = useState(false);
 
   const [error, setError] = useState<string | null>(null);
   const [customTypes, setCustomTypes] = useState<{ value: string; label: string }[]>([]);
@@ -271,6 +274,9 @@ export const AddActivityModal = ({
     setError(null);
     setShowFreeTimes(false);
     setDateValue(editEvent?.event_date ?? date);
+    setShowDesc(!!editEvent?.description?.trim());
+    setShowLink(!!editEvent?.pipeline_link);
+    setShowRepeat(!!editEvent?.is_recurring);
 
     if (editEvent) {
       setTitle(editEvent.title);
@@ -701,33 +707,60 @@ export const AddActivityModal = ({
           </div>
 
 
-          <div className="space-y-1.5">
-            <Label htmlFor="ce-desc">Description</Label>
-            <Textarea
-              id="ce-desc"
-              rows={3}
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Optional details"
-            />
-          </div>
+          {showDesc ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="ce-desc">Description</Label>
+              <Textarea
+                id="ce-desc"
+                rows={3}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                placeholder="Optional details"
+                autoFocus={!description}
+              />
+            </div>
+          ) : null}
 
-          <div className="space-y-1.5">
-            <Label>Link to pipeline (optional)</Label>
-            <PipelineLinkSelect value={pipelineLink} onChange={setPipelineLink} />
-          </div>
+          {showLink ? (
+            <div className="space-y-1.5">
+              <Label>Link to</Label>
+              <PipelineLinkSelect value={pipelineLink} onChange={setPipelineLink} />
+            </div>
+          ) : null}
 
-          <div className="space-y-1.5">
-            <Label>Repeat</Label>
-            <Select value={repeat} onValueChange={setRepeat}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                {RECURRENCE_OPTIONS.map((r) => (
-                  <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
+          {showRepeat ? (
+            <div className="space-y-1.5">
+              <Label>Repeat</Label>
+              <Select value={repeat} onValueChange={setRepeat}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  {RECURRENCE_OPTIONS.map((r) => (
+                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          ) : null}
+
+          {(!showDesc || !showLink || !showRepeat) && (
+            <div className="flex flex-wrap gap-x-4 gap-y-1">
+              {!showDesc && (
+                <button type="button" onClick={() => setShowDesc(true)} className="text-sm font-medium text-brand hover:underline">
+                  + Add description
+                </button>
+              )}
+              {!showLink && (
+                <button type="button" onClick={() => setShowLink(true)} className="text-sm font-medium text-brand hover:underline">
+                  + Link to pipeline
+                </button>
+              )}
+              {!showRepeat && (
+                <button type="button" onClick={() => setShowRepeat(true)} className="text-sm font-medium text-brand hover:underline">
+                  + Repeat
+                </button>
+              )}
+            </div>
+          )}
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
 
