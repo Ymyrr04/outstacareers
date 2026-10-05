@@ -144,6 +144,15 @@ export const AddActivityModal = ({
   const isUnassigned = adminId === UNASSIGNED;
   const startMin = inputToMinutes(start);
   const endMin = inputToMinutes(end);
+  const durationMin = endMin - startMin;
+  const durationLabel = (() => {
+    if (durationMin <= 0) return null;
+    const hrs = Math.floor(durationMin / 60);
+    const mins = durationMin % 60;
+    const hrText = hrs > 0 ? `${hrs} hr${hrs > 1 ? 's' : ''}` : null;
+    const minText = mins > 0 ? `${mins} min` : null;
+    return [hrText, minText].filter(Boolean).join(' ');
+  })();
 
 
   /** admin user_id -> conflicting event (first overlap found) */
