@@ -732,7 +732,6 @@ export function HistoricalPL({ onUpload }: Props) {
                             return (
                               <td key={c.key} className={cn('px-3 py-2 border-b bg-background group-hover:bg-muted', c.width, i === 0 && 'sticky left-[56px] z-10 border-r font-medium')}>
                                 <div className="truncate" title={v || undefined}>
-                                  {hcNum != null && <span className="text-muted-foreground font-normal tabular-nums mr-1.5">{hcNum}.</span>}
                                   {v || '—'}
                                 </div>
                               </td>
