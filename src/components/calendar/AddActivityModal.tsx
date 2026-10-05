@@ -266,6 +266,7 @@ export const AddActivityModal = ({
     setAddingType(false);
     setNewType('');
     setError(null);
+    setShowFreeTimes(false);
     setDateValue(editEvent?.event_date ?? date);
 
     if (editEvent) {
@@ -577,6 +578,55 @@ export const AddActivityModal = ({
                 <span className="ml-auto text-xs text-muted-foreground shrink-0">{durationLabel}</span>
               )}
             </div>
+            {conflictPeople.length > 0 && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium text-destructive">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  {conflictPeople.length} {conflictPeople.length === 1 ? 'person is' : 'people are'} busy at this time
+                </div>
+                <ul className="space-y-1 text-xs text-muted-foreground">
+                  {conflictPeople.map((p) => (
+                    <li key={p.id}>
+                      <span className="font-medium text-foreground">{p.name}</span>,{' '}
+                      {formatMinutes(p.ev.start_time)} to {formatMinutes(p.ev.end_time)} ET · {p.ev.title}
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  {suggestedStart !== null && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleStartChange(minutesToInput(suggestedStart))}
+                    >
+                      Use {formatMinutes(suggestedStart)}
+                    </Button>
+                  )}
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+                    onClick={() => setShowFreeTimes((v) => !v)}
+                  >
+                    {showFreeTimes ? 'Hide free times' : 'See free times'}
+                  </button>
+                </div>
+                {showFreeTimes && freeStarts.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {freeStarts.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        className="rounded-full border bg-background px-2.5 py-1 text-xs hover:bg-accent hover:text-accent-foreground"
+                        onClick={() => handleStartChange(minutesToInput(s))}
+                      >
+                        {formatMinutes(s)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="flex justify-end">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <Checkbox checked={noTime} onCheckedChange={(v) => setNoTime(v === true)} />
