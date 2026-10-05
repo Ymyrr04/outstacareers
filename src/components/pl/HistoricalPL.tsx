@@ -764,7 +764,7 @@ export function HistoricalPL({ onUpload }: Props) {
                   <tbody>
                     {detailRows.length === 0 ? (
                       <tr>
-                        <td colSpan={SORTABLE.length + 1} className="text-center text-muted-foreground py-8">
+                        <td colSpan={SORTABLE.length + 2} className="text-center text-muted-foreground py-8">
                           No contractors match "{query}"
                         </td>
                       </tr>
@@ -811,14 +811,18 @@ export function HistoricalPL({ onUpload }: Props) {
                         <td className={cn('sticky bottom-0 left-0 z-40 bg-background border-t-2 border-r px-2 py-2 font-bold whitespace-nowrap text-right tabular-nums', NUM_COL)}>{detailRows.filter((r) => headcountNumbers.has(r.id)).length || ''}</td>
                       {SORTABLE.map((c, i) => {
                           const base = 'sticky bottom-0 bg-background border-t-2 px-3 py-2 font-bold whitespace-nowrap';
-                          if (i === 0) return <td key={c.key} className={cn(base, 'left-[56px] z-30 border-r', c.width)}>Total</td>;
-                          if (!c.numeric || c.kind === 'rate') return <td key={c.key} className={cn(base, 'z-20', c.width)} />;
+                          const statusCell = c.key === 'company' ? <td key="status" className={cn(base, 'z-20', STATUS_COL)} /> : null;
+                          if (i === 0) return <Fragment key={c.key}><td className={cn(base, 'left-[56px] z-30 border-r', c.width)}>Total</td>{statusCell}</Fragment>;
+                          if (!c.numeric || c.kind === 'rate') return <Fragment key={c.key}><td className={cn(base, 'z-20', c.width)} />{statusCell}</Fragment>;
                           const vals = detailRows.map((r) => (c.key === 'bonus' ? bonusOf(r) : r[c.key as NumKey])).filter((v) => v != null);
                           const sum = vals.reduce<number>((a, v) => a + Number(v), 0);
                           return (
-                            <td key={c.key} className={cn(base, 'z-20 text-right tabular-nums', c.width)}>
+                            <Fragment key={c.key}>
+                            <td className={cn(base, 'z-20 text-right tabular-nums', c.width)}>
                               {vals.length ? fmtCell(c, sum) : '—'}
                             </td>
+                            {statusCell}
+                            </Fragment>
                           );
                         })}
                       </tr>
