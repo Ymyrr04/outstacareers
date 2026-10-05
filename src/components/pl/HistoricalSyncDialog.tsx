@@ -298,6 +298,13 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
       const { error: dErr } = await del;
       if (dErr) throw dErr;
 
+      // Override: remove the uploaded rows for this week so the synced figures replace them.
+      if (override && uploadIds.length) {
+        const { error: uErr } = await supabase.from('historical_pl_rows').delete()
+          .in('batch_id', uploadIds).eq('week_start', week);
+        if (uErr) throw uErr;
+      }
+
       const { error: upErr } = await supabase.from('historical_pl_batches')
         .update({ updated_at: new Date().toISOString() } as any).eq('id', batchId!);
       if (upErr) throw upErr;
@@ -330,6 +337,16 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
           </label>
           {!weekError && <div className="text-sm pb-2">{weekLabelOf(week)}</div>}
         </div>
+
+        {!weekError && !error && uploadCount > 0 && (
+          <label className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
+            <input type="checkbox" className="mt-0.5" checked={override} onChange={(e) => setOverride(e.target.checked)} disabled={saving} />
+            <span>
+              <span className="font-medium text-destructive">This week came from an upload ({uploadCount} rows).</span>{' '}
+              Tick to override: saving replaces the uploaded rows for this week with the synced figures below. This can't be undone except by uploading the sheet again.
+            </span>
+          </label>
+        )}
 
         {weekError || error ? (
           <div className="text-sm text-destructive">{weekError || error}</div>
@@ -389,7 +406,7 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-          <Button onClick={save} disabled={saving || loading || !rows || !!weekError || !!error}>
+          <Button onClick={save} disabled={saving || loading || !rows || !!weekError || !!error || blockedByUpload}>
             {saving && <Loader2 className="h-4 w-4 animate-spin mr-1" />} Save week
           </Button>
         </DialogFooter>
