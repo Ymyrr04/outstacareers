@@ -117,6 +117,7 @@ const SORTABLE: Col[] = [
   { key: 'client_deposit', label: 'Client deposit', numeric: true, kind: 'money', width: 'w-[130px] min-w-[130px]' },
   { key: 'contractor_deposit', label: 'Contractor deposit', numeric: true, kind: 'money', width: 'w-[160px] min-w-[160px]' },
 ];
+const NUM_COL = 'w-[56px] min-w-[56px] max-w-[56px]';
 const fmtCell = (c: Col, v: number | null | undefined) =>
   v == null || Number.isNaN(Number(v)) ? '—' : c.kind === 'hours' ? Number(v).toFixed(2) : money(Number(v));
 
@@ -684,14 +685,15 @@ export function HistoricalPL({ onUpload }: Props) {
                 <table className="w-max min-w-full text-sm border-separate border-spacing-0">
                   <thead>
                     <tr>
-                      {SORTABLE.map((c, i) => {
+                      <th className={cn('sticky top-0 left-0 z-40 bg-background border-b border-r h-10 px-2 font-medium text-muted-foreground whitespace-nowrap text-right', NUM_COL)}>#</th>
+                    {SORTABLE.map((c, i) => {
                         const active = sort?.key === c.key;
                         return (
                           <th
                             key={c.key}
                             className={cn(
                               'sticky top-0 bg-background border-b h-10 px-3 font-medium text-muted-foreground whitespace-nowrap cursor-pointer select-none hover:bg-muted',
-                              i === 0 ? 'left-0 z-30 border-r' : 'z-20',
+                              i === 0 ? 'left-[56px] z-30 border-r' : 'z-20',
                               c.width,
                               c.numeric ? 'text-right' : 'text-left',
                               active && 'text-foreground',
@@ -717,18 +719,18 @@ export function HistoricalPL({ onUpload }: Props) {
                   <tbody>
                     {detailRows.length === 0 ? (
                       <tr>
-                        <td colSpan={SORTABLE.length} className="text-center text-muted-foreground py-8">
+                        <td colSpan={SORTABLE.length + 1} className="text-center text-muted-foreground py-8">
                           No contractors match "{query}"
                         </td>
                       </tr>
                     ) : detailRows.map((r) => (
                       <tr key={r.id} className="group">
+                        <td className={cn('sticky left-0 z-20 bg-background group-hover:bg-muted border-r border-b px-2 py-2 text-right tabular-nums text-muted-foreground', NUM_COL)}>{headcountNumbers.get(r.id) ?? ''}</td>
                         {SORTABLE.map((c, i) => {
                           if (!c.numeric) {
                             const v = r[c.key as 'contractor_name' | 'company'];
-                            const hcNum = c.key === 'contractor_name' ? headcountNumbers.get(r.id) : undefined;
                             return (
-                              <td key={c.key} className={cn('px-3 py-2 border-b bg-background group-hover:bg-muted', c.width, i === 0 && 'sticky left-0 z-10 border-r font-medium')}>
+                              <td key={c.key} className={cn('px-3 py-2 border-b bg-background group-hover:bg-muted', c.width, i === 0 && 'sticky left-[56px] z-10 border-r font-medium')}>
                                 <div className="truncate" title={v || undefined}>
                                   {hcNum != null && <span className="text-muted-foreground font-normal tabular-nums mr-1.5">{hcNum}.</span>}
                                   {v || '—'}
@@ -748,9 +750,10 @@ export function HistoricalPL({ onUpload }: Props) {
                   {detailRows.length > 0 && (
                     <tfoot>
                       <tr>
-                        {SORTABLE.map((c, i) => {
+                        <td className={cn('sticky bottom-0 left-0 z-40 bg-background border-t-2 border-r px-2 py-2 font-bold whitespace-nowrap text-right tabular-nums', NUM_COL)}>{detailRows.filter((r) => headcountNumbers.has(r.id)).length || ''}</td>
+                      {SORTABLE.map((c, i) => {
                           const base = 'sticky bottom-0 bg-background border-t-2 px-3 py-2 font-bold whitespace-nowrap';
-                          if (i === 0) return <td key={c.key} className={cn(base, 'left-0 z-30 border-r', c.width)}>Total</td>;
+                          if (i === 0) return <td key={c.key} className={cn(base, 'left-[56px] z-30 border-r', c.width)}>Total</td>;
                           if (!c.numeric || c.kind === 'rate') return <td key={c.key} className={cn(base, 'z-20', c.width)} />;
                           const vals = detailRows.map((r) => (c.key === 'bonus' ? bonusOf(r) : r[c.key as NumKey])).filter((v) => v != null);
                           const sum = vals.reduce<number>((a, v) => a + Number(v), 0);
