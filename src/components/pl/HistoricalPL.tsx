@@ -277,7 +277,7 @@ export function HistoricalPL({ onUpload }: Props) {
         billing: w.rows.some((r) => r[BILLING_KEY] != null),
         margin: w.rows.some((r) => r[MARGIN_KEY] != null),
       };
-      const headcount = new Set(w.rows.map((r) => (r.contractor_name || '').trim().toLowerCase()).filter((n) => n && !HEADCOUNT_EXCLUDED_NAMES.has(n))).size;
+      const headcount = new Set(w.rows.filter((r) => !(r.raw && (r.raw as Record<string, unknown>).__exclude_headcount)).map((r) => (r.contractor_name || '').trim().toLowerCase()).filter((n) => n && !HEADCOUNT_EXCLUDED_NAMES.has(n))).size;
       return { key, label: w.label, rows: w.rows, totals: t, has, headcount };
     });
   }, [rows]);
