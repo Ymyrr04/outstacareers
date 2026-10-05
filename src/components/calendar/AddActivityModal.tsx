@@ -506,22 +506,21 @@ export const AddActivityModal = ({
                 </p>
               )}
             </div>
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox checked={noTime} onCheckedChange={(v) => setNoTime(v === true)} />
-              <span>No specific time yet (any admin can set it)</span>
-            </label>
-            {!noTime && (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="ce-start">Start (ET)</Label>
-                  <TimeSelect id="ce-start" value={start} onChange={handleStartChange} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="ce-end">End (ET)</Label>
-                  <TimeSelect id="ce-end" value={end} onChange={setEnd} />
-                </div>
-              </div>
-            )}
+            <div className={`flex items-center gap-2 ${noTime ? 'opacity-50' : ''}`}>
+              <TimeSelect value={start} onChange={handleStartChange} disabled={noTime} />
+              <span className="text-sm text-muted-foreground shrink-0">to</span>
+              <TimeSelect value={end} onChange={setEnd} disabled={noTime} />
+              <span className="shrink-0 rounded border bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">ET</span>
+              {durationLabel && (
+                <span className="ml-auto text-xs text-muted-foreground shrink-0">{durationLabel}</span>
+              )}
+            </div>
+            <div className="flex justify-end">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox checked={noTime} onCheckedChange={(v) => setNoTime(v === true)} />
+                <span>No specific time yet (any admin can set it)</span>
+              </label>
+            </div>
           </div>
 
 
