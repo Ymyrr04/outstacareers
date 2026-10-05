@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Check, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
+import { AlertTriangle, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Search, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { TimeSelect } from '@/components/ui/time-select';
@@ -42,6 +42,17 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const UNASSIGNED = '__unassigned__';
+
+/** Dot color per activity type chip (custom types cycle through a palette). */
+const TYPE_DOT: Record<string, string> = {
+  task: 'bg-brand',
+  meeting: 'bg-brand',
+  interview: 'bg-brand',
+  followup: 'bg-amber-500',
+  deadline: 'bg-red-500',
+};
+const CUSTOM_DOTS = ['bg-brand', 'bg-amber-500', 'bg-violet-500', 'bg-emerald-500', 'bg-rose-500', 'bg-sky-500'];
+
 
 
 
@@ -99,6 +110,8 @@ export const AddActivityModal = ({
   const [showFreeTimes, setShowFreeTimes] = useState(false);
   const [peopleOpen, setPeopleOpen] = useState(false);
   const [notifySlack, setNotifySlack] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(true);
+
 
   const [description, setDescription] = useState('');
   const [repeat, setRepeat] = useState('none');
