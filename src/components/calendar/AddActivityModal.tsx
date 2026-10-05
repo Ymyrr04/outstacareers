@@ -82,13 +82,14 @@ export const AddActivityModal = ({
   const [end, setEnd] = useState('10:00');
   const [dateValue, setDateValue] = useState(date);
 
-  /** When start changes, auto-adjust end to a 30-min interval 30 mins after start. */
+  /** When start changes, keep the current duration: new end = new start + (old end − old start). */
   const handleStartChange = (val: string) => {
+    const oldS = inputToMinutes(start);
+    const oldE = inputToMinutes(end);
+    const dur = Math.max(30, oldE - oldS);
     setStart(val);
     const sMin = inputToMinutes(val);
-    // Snap to the nearest 30-min interval, at least 30 mins after start.
-    let eMin = Math.round((sMin + 30) / 30) * 30;
-    if (eMin <= sMin) eMin = sMin + 30;
+    let eMin = sMin + dur;
     if (eMin > 23 * 60 + 59) eMin = 23 * 60 + 59;
     setEnd(minutesToInput(eMin));
   };
@@ -143,6 +144,15 @@ export const AddActivityModal = ({
   const isUnassigned = adminId === UNASSIGNED;
   const startMin = inputToMinutes(start);
   const endMin = inputToMinutes(end);
+  const durationMin = endMin - startMin;
+  const durationLabel = (() => {
+    if (durationMin <= 0) return null;
+    const hrs = Math.floor(durationMin / 60);
+    const mins = durationMin % 60;
+    const hrText = hrs > 0 ? `${hrs} hr${hrs > 1 ? 's' : ''}` : null;
+    const minText = mins > 0 ? `${mins} min` : null;
+    return [hrText, minText].filter(Boolean).join(' ');
+  })();
 
 
   /** admin user_id -> conflicting event (first overlap found) */
@@ -456,9 +466,11 @@ export const AddActivityModal = ({
           </label>
 
           <div className="space-y-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="ce-date">Date</Label>
-              <div className="flex items-center gap-1.5">
+            <div className="flex items-baseline gap-2">
+              <Label>When</Label>
+              <span className="text-xs text-muted-foreground">Eastern Time (ET) for everyone</span>
+            </div>
+            <div className="flex items-center gap-1.5">
                 <Button
                   type="button"
                   variant="ghost"
@@ -504,23 +516,21 @@ export const AddActivityModal = ({
                   Moves the whole series. It repeats on {new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(parseDateString(dateValue))} from {formatDateLong(dateValue)}; earlier dates won't show it.
                 </p>
               )}
+            <div className={`flex items-center gap-2 ${noTime ? 'opacity-50' : ''}`}>
+              <TimeSelect value={start} onChange={handleStartChange} disabled={noTime} />
+              <span className="text-sm text-muted-foreground shrink-0">to</span>
+              <TimeSelect value={end} onChange={setEnd} disabled={noTime} />
+              <span className="shrink-0 rounded border bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">ET</span>
+              {durationLabel && (
+                <span className="ml-auto text-xs text-muted-foreground shrink-0">{durationLabel}</span>
+              )}
             </div>
-            <label className="flex items-center gap-2 text-sm">
-              <Checkbox checked={noTime} onCheckedChange={(v) => setNoTime(v === true)} />
-              <span>No specific time yet (any admin can set it)</span>
-            </label>
-            {!noTime && (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="ce-start">Start (ET)</Label>
-                  <TimeSelect id="ce-start" value={start} onChange={handleStartChange} />
-                </div>
-                <div className="space-y-1.5">
-                  <Label htmlFor="ce-end">End (ET)</Label>
-                  <TimeSelect id="ce-end" value={end} onChange={setEnd} />
-                </div>
-              </div>
-            )}
+            <div className="flex justify-end">
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <Checkbox checked={noTime} onCheckedChange={(v) => setNoTime(v === true)} />
+                <span>No specific time yet (any admin can set it)</span>
+              </label>
+            </div>
           </div>
 
 
@@ -551,8 +561,6 @@ export const AddActivityModal = ({
               </SelectContent>
             </Select>
           </div>
-
-          <p className="text-xs text-muted-foreground">All times are in Eastern Time (ET)</p>
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
 
