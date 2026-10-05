@@ -11,6 +11,7 @@ export const isInternalContractor = (c: { client_id?: string | null } | null | u
 export const HEADCOUNT_EXCLUDED_NAMES = new Set([
   'reggie joseph arciaga',
   'richard ryan abes',
+  'rosemarie cemanes',
 ]);
 
 export const isExcludedFromHeadcount = (name: string | null | undefined): boolean => {
