@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertTriangle, Check, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { TimeSelect } from '@/components/ui/time-select';
@@ -8,6 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useSlackNotifications } from '@/hooks/useSlackNotifications';
@@ -95,6 +97,7 @@ export const AddActivityModal = ({
   };
   const [noTime, setNoTime] = useState(false);
   const [showFreeTimes, setShowFreeTimes] = useState(false);
+  const [peopleOpen, setPeopleOpen] = useState(false);
   const [notifySlack, setNotifySlack] = useState(false);
 
   const [description, setDescription] = useState('');
@@ -467,39 +470,83 @@ export const AddActivityModal = ({
                   setExtraAssignees(extraAssignees.length >= free.length && free.length > 0 ? [] : free);
                 }}
               >
-                {extraAssignees.length > 0 ? 'Clear all' : 'Select all available'}
+                {extraAssignees.length > 0 ? 'Clear all' : 'Add everyone available'}
               </button>
             </div>
-            <div className="max-h-44 overflow-y-auto rounded-md border p-2 space-y-1.5">
-              {admins.map((a) => {
-                const busy = conflicts.has(a.user_id);
-                return (
-                  <label
-                    key={a.user_id}
-                    className={`flex items-center gap-2 text-sm cursor-pointer min-w-0 ${
-                      busy ? 'opacity-70' : ''
-                    }`}
-                    title={conflictLabel(a.user_id) ?? undefined}
-                  >
-                    <Checkbox
-                      className="shrink-0"
-                      checked={extraAssignees.includes(a.user_id)}
-                      onCheckedChange={(v) =>
-                        setExtraAssignees((prev) =>
-                          v === true ? [...prev, a.user_id] : prev.filter((id) => id !== a.user_id)
-                        )
-                      }
-                    />
-                    <span className="font-normal shrink-0">{a.name}</span>
-                    {busy && (
-                      <span className="ml-auto min-w-0 max-w-[55%] text-[11px] text-muted-foreground truncate text-right">
-                        {conflictLabel(a.user_id)}
-                      </span>
-                    )}
-                  </label>
-                );
-              })}
-            </div>
+            <Popover open={peopleOpen} onOpenChange={setPeopleOpen}>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="flex w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground ring-offset-background hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                >
+                  <Search className="w-4 h-4 shrink-0" />
+                  Add people
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
+                <Command>
+                  <CommandInput placeholder="Search people…" />
+                  <CommandList>
+                    <CommandEmpty>No one found.</CommandEmpty>
+                    <CommandGroup>
+                      {admins
+                        .filter((a) => a.user_id !== adminId)
+                        .map((a) => {
+                          const busy = conflicts.has(a.user_id);
+                          const selected = extraAssignees.includes(a.user_id);
+                          return (
+                            <CommandItem
+                              key={a.user_id}
+                              value={a.name}
+                              onSelect={() =>
+                                setExtraAssignees((prev) =>
+                                  selected ? prev.filter((id) => id !== a.user_id) : [...prev, a.user_id]
+                                )
+                              }
+                            >
+                              <span
+                                className={`w-2 h-2 rounded-full shrink-0 ${busy ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                              />
+                              <span className="truncate">{a.name}</span>
+                              <span className="ml-auto min-w-0 max-w-[50%] truncate text-[11px] text-muted-foreground">
+                                {busy ? conflictLabel(a.user_id) : 'Free'}
+                              </span>
+                              {selected && <Check className="w-4 h-4 shrink-0 text-primary" />}
+                            </CommandItem>
+                          );
+                        })}
+                    </CommandGroup>
+                  </CommandList>
+                </Command>
+              </PopoverContent>
+            </Popover>
+            {extraAssignees.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 pt-1">
+                {extraAssignees.map((id) => {
+                  const a = admins.find((x) => x.user_id === id);
+                  if (!a) return null;
+                  const busy = conflicts.has(id);
+                  return (
+                    <span
+                      key={id}
+                      className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 px-2.5 py-1 text-xs"
+                      title={busy ? conflictLabel(id) ?? undefined : 'Free'}
+                    >
+                      <span className={`w-2 h-2 rounded-full shrink-0 ${busy ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                      {a.name}
+                      <button
+                        type="button"
+                        aria-label={`Remove ${a.name}`}
+                        className="text-muted-foreground hover:text-foreground"
+                        onClick={() => setExtraAssignees((prev) => prev.filter((x) => x !== id))}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
           </div>
           )}
 
