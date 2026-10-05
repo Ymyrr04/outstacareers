@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Show OutSta rows last in historical weekly details and sync previews without adding them to headcount or external totals.
+- [x] Show OutSta rows last in historical weekly details and sync previews without adding them to headcount or external totals.
 
 - [x] Allow text as well as numbers in weekly P&L client and contractor deposit cells.
 - [x] List current help desk questions & answers for review
