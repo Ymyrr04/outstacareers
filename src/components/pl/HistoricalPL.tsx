@@ -803,7 +803,7 @@ export function HistoricalPL({ onUpload }: Props) {
                             </td>
                           ) : (
                             <td className={cn('px-3 py-2 border-b bg-background group-hover:bg-muted text-right tabular-nums whitespace-nowrap', c.width)}>
-                              {fmtCell(c, c.key === 'bonus' ? bonusOf(r) : r[c.key as NumKey])}
+                              {isInternalRow(r) && c.kind === 'hours' ? '—' : fmtCell(c, c.key === 'bonus' ? bonusOf(r) : r[c.key as NumKey])}
                             </td>
                           )}
                           {c.key === 'company' && (
