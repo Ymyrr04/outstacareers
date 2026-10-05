@@ -562,8 +562,6 @@ export const AddActivityModal = ({
               </SelectContent>
             </Select>
           </div>
-
-          <p className="text-xs text-muted-foreground">All times are in Eastern Time (ET)</p>
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
 
