@@ -82,13 +82,14 @@ export const AddActivityModal = ({
   const [end, setEnd] = useState('10:00');
   const [dateValue, setDateValue] = useState(date);
 
-  /** When start changes, auto-adjust end to a 30-min interval 30 mins after start. */
+  /** When start changes, keep the current duration: new end = new start + (old end − old start). */
   const handleStartChange = (val: string) => {
+    const oldS = inputToMinutes(start);
+    const oldE = inputToMinutes(end);
+    const dur = Math.max(30, oldE - oldS);
     setStart(val);
     const sMin = inputToMinutes(val);
-    // Snap to the nearest 30-min interval, at least 30 mins after start.
-    let eMin = Math.round((sMin + 30) / 30) * 30;
-    if (eMin <= sMin) eMin = sMin + 30;
+    let eMin = sMin + dur;
     if (eMin > 23 * 60 + 59) eMin = 23 * 60 + 59;
     setEnd(minutesToInput(eMin));
   };
