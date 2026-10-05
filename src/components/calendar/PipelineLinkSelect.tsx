@@ -83,7 +83,7 @@ export const PipelineLinkSelect = ({
             )}
           </Button>
         </PopoverTrigger>
-        <PopoverContent className="w-[320px] p-2" align="start">
+        <PopoverContent className="ce-light w-[320px] p-2" align="start">
           <Input
             autoFocus
             value={query}

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { AlertTriangle, Check, ChevronLeft, ChevronRight, Search, X } from 'lucide-react';
+import { AlertTriangle, Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, Search, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { TimeSelect } from '@/components/ui/time-select';
@@ -42,6 +42,17 @@ import {
 } from '@/components/ui/alert-dialog';
 
 const UNASSIGNED = '__unassigned__';
+
+/** Dot color per activity type chip (custom types cycle through a palette). */
+const TYPE_DOT: Record<string, string> = {
+  task: 'bg-brand',
+  meeting: 'bg-brand',
+  interview: 'bg-brand',
+  followup: 'bg-amber-500',
+  deadline: 'bg-red-500',
+};
+const CUSTOM_DOTS = ['bg-brand', 'bg-amber-500', 'bg-violet-500', 'bg-emerald-500', 'bg-rose-500', 'bg-sky-500'];
+
 
 
 
@@ -99,6 +110,8 @@ export const AddActivityModal = ({
   const [showFreeTimes, setShowFreeTimes] = useState(false);
   const [peopleOpen, setPeopleOpen] = useState(false);
   const [notifySlack, setNotifySlack] = useState(false);
+  const [detailsOpen, setDetailsOpen] = useState(true);
+
 
   const [description, setDescription] = useState('');
   const [repeat, setRepeat] = useState('none');
@@ -272,7 +285,9 @@ export const AddActivityModal = ({
     setAddingType(false);
     setNewType('');
     setError(null);
+    setDetailsOpen(true);
     setShowFreeTimes(false);
+
     setDateValue(editEvent?.event_date ?? date);
     setShowDesc(!!editEvent?.description?.trim());
     setShowLink(!!editEvent?.pipeline_link);
@@ -377,14 +392,13 @@ export const AddActivityModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[640px] max-h-[90vh] flex flex-col overflow-hidden">
+      <DialogContent className="ce-light sm:max-w-[640px] max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
           <DialogTitle>{editEvent ? 'Edit activity' : 'Add activity'}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4 flex-1 min-h-0 overflow-y-auto overflow-x-hidden pr-1">
-          <div className="space-y-1.5">
-            <Label htmlFor="ce-title">Title</Label>
+          <div className="space-y-3">
             <Input
               id="ce-title"
               ref={titleRef}
@@ -392,10 +406,6 @@ export const AddActivityModal = ({
               onChange={(e) => setTitle(e.target.value)}
               placeholder="What is happening?"
             />
-          </div>
-
-          <div className="space-y-1.5">
-            <Label>Type</Label>
             {addingType ? (
               <div className="flex gap-2">
                 <Input
@@ -422,9 +432,10 @@ export const AddActivityModal = ({
               </div>
             ) : (
               <div className="flex flex-wrap gap-1.5">
-                {allTypes.map((t) => {
+                {allTypes.map((t, idx) => {
                   const selected = type === t.value;
                   const red = t.value === 'deadline';
+                  const dot = TYPE_DOT[t.value] ?? CUSTOM_DOTS[idx % CUSTOM_DOTS.length];
                   return (
                     <button
                       key={t.value}
@@ -432,7 +443,7 @@ export const AddActivityModal = ({
                       aria-pressed={selected}
                       onClick={() => setType(t.value)}
                       className={
-                        'rounded-full border px-3 py-1 text-xs font-medium transition-colors ' +
+                        'inline-flex items-center gap-1.5 rounded-full border px-3 py-1 text-xs font-medium transition-colors ' +
                         (selected
                           ? red
                             ? 'border-destructive bg-destructive/10 text-destructive'
@@ -440,6 +451,7 @@ export const AddActivityModal = ({
                           : 'border-border bg-background text-muted-foreground hover:border-brand/50 hover:text-foreground')
                       }
                     >
+                      <span className={`h-2 w-2 shrink-0 rounded-full ${selected && red ? 'bg-destructive' : dot}`} />
                       {t.label}
                     </button>
                   );
@@ -447,7 +459,7 @@ export const AddActivityModal = ({
                 <button
                   type="button"
                   onClick={() => setAddingType(true)}
-                  className="rounded-full border border-dashed border-border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-brand/50 hover:text-foreground"
+                  className="inline-flex items-center rounded-full border border-dashed border-border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-brand/50 hover:text-foreground"
                 >
                   + New type
                 </button>
@@ -455,182 +467,61 @@ export const AddActivityModal = ({
             )}
           </div>
 
-          <div className="space-y-1.5">
-            <Label>Owner</Label>
-            <Select value={adminId} onValueChange={setAdminId}>
-              <SelectTrigger><SelectValue placeholder="Select admin" /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value={UNASSIGNED}>🙌 Unassigned — anyone can take it</SelectItem>
-                {admins.map((a) => {
-                  const busy = conflicts.has(a.user_id);
-                  return (
-                    <SelectItem key={a.user_id} value={a.user_id}>
-                      {a.initial} — {a.name}{busy ? ' (busy)' : ''}
-                    </SelectItem>
-                  );
-                })}
-              </SelectContent>
-            </Select>
-            {!isUnassigned && conflicts.has(adminId) && (
-              <p className="text-xs text-destructive truncate" title={conflictLabel(adminId) ?? undefined}>{conflictLabel(adminId)}</p>
-            )}
-          </div>
-
-
-          {isUnassigned ? (
-            <p className="rounded-md border-[0.5px] border-dashed bg-muted/30 p-2 text-xs text-muted-foreground">
-              This task will appear in the “Up for grabs” band on the calendar. Anyone on the team can take it
-              and set a time.
-            </p>
-          ) : (
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between">
-              <Label>Also assign to</Label>
-              <button
-                type="button"
-                className="text-xs text-muted-foreground hover:text-foreground"
-                onClick={() => {
-                  const free = admins.filter((a) => !conflicts.has(a.user_id)).map((a) => a.user_id);
-                  setExtraAssignees(extraAssignees.length >= free.length && free.length > 0 ? [] : free);
-                }}
-              >
-                {extraAssignees.length > 0 ? 'Clear all' : 'Add everyone available'}
-              </button>
-            </div>
-            <Popover open={peopleOpen} onOpenChange={setPeopleOpen}>
-              <PopoverTrigger asChild>
-                <button
-                  type="button"
-                  className="flex w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground ring-offset-background hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
-                >
-                  <Search className="w-4 h-4 shrink-0" />
-                  Add people
-                </button>
-              </PopoverTrigger>
-              <PopoverContent className="w-[--radix-popover-trigger-width] p-0" align="start">
-                <Command>
-                  <CommandInput placeholder="Search people…" />
-                  <CommandList>
-                    <CommandEmpty>No one found.</CommandEmpty>
-                    <CommandGroup>
-                      {admins
-                        .filter((a) => a.user_id !== adminId)
-                        .map((a) => {
-                          const busy = conflicts.has(a.user_id);
-                          const selected = extraAssignees.includes(a.user_id);
-                          return (
-                            <CommandItem
-                              key={a.user_id}
-                              value={a.name}
-                              onSelect={() =>
-                                setExtraAssignees((prev) =>
-                                  selected ? prev.filter((id) => id !== a.user_id) : [...prev, a.user_id]
-                                )
-                              }
-                            >
-                              <span
-                                className={`w-2 h-2 rounded-full shrink-0 ${busy ? 'bg-amber-500' : 'bg-emerald-500'}`}
-                              />
-                              <span className="truncate">{a.name}</span>
-                              <span className="ml-auto min-w-0 max-w-[50%] truncate text-[11px] text-muted-foreground">
-                                {busy ? conflictLabel(a.user_id) : 'Free'}
-                              </span>
-                              {selected && <Check className="w-4 h-4 shrink-0 text-primary" />}
-                            </CommandItem>
-                          );
-                        })}
-                    </CommandGroup>
-                  </CommandList>
-                </Command>
-              </PopoverContent>
-            </Popover>
-            {extraAssignees.length > 0 && (
-              <div className="flex flex-wrap gap-1.5 pt-1">
-                {extraAssignees.map((id) => {
-                  const a = admins.find((x) => x.user_id === id);
-                  if (!a) return null;
-                  const busy = conflicts.has(id);
-                  return (
-                    <span
-                      key={id}
-                      className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 px-2.5 py-1 text-xs"
-                      title={busy ? conflictLabel(id) ?? undefined : 'Free'}
-                    >
-                      <span className={`w-2 h-2 rounded-full shrink-0 ${busy ? 'bg-amber-500' : 'bg-emerald-500'}`} />
-                      {a.name}
-                      <button
-                        type="button"
-                        aria-label={`Remove ${a.name}`}
-                        className="text-muted-foreground hover:text-foreground"
-                        onClick={() => setExtraAssignees((prev) => prev.filter((x) => x !== id))}
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    </span>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-          )}
-
-
-
-          <div className="space-y-2">
+          <div className="mt-5 border-t pt-4 space-y-3">
             <div className="flex items-baseline gap-2">
               <Label>When</Label>
-              <span className="text-xs text-muted-foreground">Eastern Time (ET) for everyone</span>
+              <span className="text-xs text-muted-foreground">· Eastern Time (ET) for everyone</span>
             </div>
             <div className="flex items-center gap-1.5">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 shrink-0"
-                  aria-label="Previous day"
-                  onClick={() => setDateValue(addDays(dateValue, -1))}
-                >
-                  <ChevronLeft className="w-4 h-4" />
-                </Button>
-                <Input
-                  id="ce-date"
-                  type="date"
-                  value={dateValue}
-                  onChange={(e) => { if (e.target.value) setDateValue(e.target.value); }}
-                  className="w-auto flex-1 min-w-0"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-9 w-9 shrink-0"
-                  aria-label="Next day"
-                  onClick={() => setDateValue(addDays(dateValue, 1))}
-                >
-                  <ChevronRight className="w-4 h-4" />
-                </Button>
-                <span className="text-sm text-muted-foreground shrink-0">
-                  {new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(parseDateString(dateValue))}
-                </span>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  className="ml-auto shrink-0"
-                  onClick={() => setDateValue(todayET())}
-                >
-                  Today
-                </Button>
-              </div>
-              {repeat !== 'none' && dateValue !== (editEvent?.event_date ?? date) && (
-                <p className="text-xs text-muted-foreground">
-                  Moves the whole series. It repeats on {new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(parseDateString(dateValue))} from {formatDateLong(dateValue)}; earlier dates won't show it.
-                </p>
-              )}
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                aria-label="Previous day"
+                onClick={() => setDateValue(addDays(dateValue, -1))}
+              >
+                <ChevronLeft className="w-4 h-4" />
+              </Button>
+              <Input
+                id="ce-date"
+                type="date"
+                value={dateValue}
+                onChange={(e) => { if (e.target.value) setDateValue(e.target.value); }}
+                className="w-auto flex-1 min-w-0"
+              />
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0"
+                aria-label="Next day"
+                onClick={() => setDateValue(addDays(dateValue, 1))}
+              >
+                <ChevronRight className="w-4 h-4" />
+              </Button>
+              <span className="text-sm text-muted-foreground shrink-0">
+                {new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(parseDateString(dateValue))}
+              </span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="ml-auto shrink-0"
+                onClick={() => setDateValue(todayET())}
+              >
+                Today
+              </Button>
+            </div>
+            {repeat !== 'none' && dateValue !== (editEvent?.event_date ?? date) && (
+              <p className="text-xs text-muted-foreground">
+                Moves the whole series. It repeats on {new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(parseDateString(dateValue))} from {formatDateLong(dateValue)}; earlier dates won't show it.
+              </p>
+            )}
             <div className={`flex items-center gap-2 ${noTime ? 'opacity-50' : ''}`}>
-              <TimeSelect value={start} onChange={handleStartChange} disabled={noTime} />
+              <TimeSelect value={start} onChange={handleStartChange} disabled={noTime} contentClassName="ce-light" />
               <span className="text-sm text-muted-foreground shrink-0">to</span>
-              <TimeSelect value={end} onChange={setEnd} disabled={noTime} />
+              <TimeSelect value={end} onChange={setEnd} disabled={noTime} contentClassName="ce-light" />
               <span className="shrink-0 rounded border bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">ET</span>
               {durationLabel && (
                 <span className="ml-auto text-xs text-muted-foreground shrink-0">{durationLabel}</span>
@@ -661,13 +552,14 @@ export const AddActivityModal = ({
                       Use {formatMinutes(suggestedStart)}
                     </Button>
                   )}
-                  <button
+                  <Button
                     type="button"
-                    className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+                    size="sm"
+                    variant="outline"
                     onClick={() => setShowFreeTimes((v) => !v)}
                   >
                     {showFreeTimes ? 'Hide free times' : 'See free times'}
-                  </button>
+                  </Button>
                 </div>
                 {showFreeTimes && freeStarts.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 pt-1">
@@ -688,66 +580,207 @@ export const AddActivityModal = ({
             <div className="flex justify-end">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <Checkbox checked={noTime} onCheckedChange={(v) => setNoTime(v === true)} />
-                <span>No specific time yet (any admin can set it)</span>
+                <span>No specific time yet</span>
               </label>
             </div>
           </div>
 
 
-          {showDesc ? (
-            <div className="space-y-1.5">
-              <Label htmlFor="ce-desc">Description</Label>
-              <Textarea
-                id="ce-desc"
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="Optional details"
-                autoFocus={!description}
-              />
-            </div>
-          ) : null}
-
-          {showLink ? (
-            <div className="space-y-1.5">
-              <Label>Link to</Label>
-              <PipelineLinkSelect value={pipelineLink} onChange={setPipelineLink} />
-            </div>
-          ) : null}
-
-          {showRepeat ? (
-            <div className="space-y-1.5">
-              <Label>Repeat</Label>
-              <Select value={repeat} onValueChange={setRepeat}>
-                <SelectTrigger><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {RECURRENCE_OPTIONS.map((r) => (
-                    <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          ) : null}
-
-          {(!showDesc || !showLink || !showRepeat) && (
-            <div className="flex flex-wrap gap-x-4 gap-y-1">
-              {!showDesc && (
-                <button type="button" onClick={() => setShowDesc(true)} className="text-sm font-medium text-brand hover:underline">
-                  + Add description
-                </button>
-              )}
-              {!showLink && (
-                <button type="button" onClick={() => setShowLink(true)} className="text-sm font-medium text-brand hover:underline">
-                  + Link to pipeline
-                </button>
-              )}
-              {!showRepeat && (
-                <button type="button" onClick={() => setShowRepeat(true)} className="text-sm font-medium text-brand hover:underline">
-                  + Repeat
+          <div className="mt-5 border-t pt-4 space-y-3">
+            <div className="flex items-center justify-between">
+              <Label>Who</Label>
+              {!isUnassigned && (
+                <button
+                  type="button"
+                  className="text-xs text-muted-foreground hover:text-foreground"
+                  onClick={() => {
+                    const free = admins.filter((a) => !conflicts.has(a.user_id)).map((a) => a.user_id);
+                    setExtraAssignees(extraAssignees.length >= free.length && free.length > 0 ? [] : free);
+                  }}
+                >
+                  {extraAssignees.length > 0 ? 'Clear all' : 'Add everyone available'}
                 </button>
               )}
             </div>
-          )}
+            <div className="grid grid-cols-[56px_minmax(0,1fr)] items-start gap-x-3 gap-y-2">
+              <Label className="pt-2 text-xs text-muted-foreground">Owner</Label>
+              <div className="min-w-0 space-y-1">
+                <Select value={adminId} onValueChange={setAdminId}>
+                  <SelectTrigger className="w-56"><SelectValue placeholder="Select admin" /></SelectTrigger>
+                  <SelectContent className="ce-light">
+                    <SelectItem value={UNASSIGNED}>🙌 Unassigned — anyone can take it</SelectItem>
+                    {admins.map((a) => {
+                      const busy = conflicts.has(a.user_id);
+                      return (
+                        <SelectItem key={a.user_id} value={a.user_id}>
+                          {a.initial} — {a.name}{busy ? ' (busy)' : ''}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+                {!isUnassigned && conflicts.has(adminId) && (
+                  <p className="text-xs text-destructive truncate" title={conflictLabel(adminId) ?? undefined}>{conflictLabel(adminId)}</p>
+                )}
+              </div>
+              {isUnassigned ? (
+                <p className="col-span-2 rounded-md border-[0.5px] border-dashed bg-muted/30 p-2 text-xs text-muted-foreground">
+                  This task will appear in the “Up for grabs” band on the calendar. Anyone on the team can take it
+                  and set a time.
+                </p>
+              ) : (
+                <>
+                  <Label className="pt-2 text-xs text-muted-foreground">Also</Label>
+                  <div className="min-w-0 space-y-2">
+                    {extraAssignees.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {extraAssignees.map((id) => {
+                          const a = admins.find((x) => x.user_id === id);
+                          if (!a) return null;
+                          const busy = conflicts.has(id);
+                          return (
+                            <span
+                              key={id}
+                              className="inline-flex items-center gap-1.5 rounded-full border bg-muted/50 px-2.5 py-1 text-xs"
+                              title={busy ? conflictLabel(id) ?? undefined : 'Free'}
+                            >
+                              <span className={`w-2 h-2 rounded-full shrink-0 ${busy ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                              {a.name}
+                              <button
+                                type="button"
+                                aria-label={`Remove ${a.name}`}
+                                className="text-muted-foreground hover:text-foreground"
+                                onClick={() => setExtraAssignees((prev) => prev.filter((x) => x !== id))}
+                              >
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          );
+                        })}
+                      </div>
+                    )}
+                    <Popover open={peopleOpen} onOpenChange={setPeopleOpen}>
+                      <PopoverTrigger asChild>
+                        <button
+                          type="button"
+                          className="flex w-full items-center gap-2 rounded-md border border-input bg-background px-3 py-2 text-sm text-muted-foreground ring-offset-background hover:bg-accent/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                        >
+                          <Search className="w-4 h-4 shrink-0" />
+                          Add people
+                        </button>
+                      </PopoverTrigger>
+                      <PopoverContent className="ce-light w-[--radix-popover-trigger-width] p-0" align="start">
+                        <Command>
+                          <CommandInput placeholder="Search people…" />
+                          <CommandList>
+                            <CommandEmpty>No one found.</CommandEmpty>
+                            <CommandGroup>
+                              {admins
+                                .filter((a) => a.user_id !== adminId)
+                                .map((a) => {
+                                  const busy = conflicts.has(a.user_id);
+                                  const selected = extraAssignees.includes(a.user_id);
+                                  return (
+                                    <CommandItem
+                                      key={a.user_id}
+                                      value={a.name}
+                                      onSelect={() =>
+                                        setExtraAssignees((prev) =>
+                                          selected ? prev.filter((id) => id !== a.user_id) : [...prev, a.user_id]
+                                        )
+                                      }
+                                    >
+                                      <span className={`w-2 h-2 rounded-full shrink-0 ${busy ? 'bg-amber-500' : 'bg-emerald-500'}`} />
+                                      <span className="truncate">{a.name}</span>
+                                      <span className="ml-auto min-w-0 max-w-[50%] truncate text-[11px] text-muted-foreground">
+                                        {busy ? conflictLabel(a.user_id) : 'Free'}
+                                      </span>
+                                      {selected && <Check className="w-4 h-4 shrink-0 text-primary" />}
+                                    </CommandItem>
+                                  );
+                                })}
+                            </CommandGroup>
+                          </CommandList>
+                        </Command>
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+
+
+
+          <div className="mt-5 border-t pt-4 space-y-3">
+            {showDesc ? (
+              <div className="space-y-1.5">
+                <Label htmlFor="ce-desc">Description</Label>
+                <Textarea
+                  id="ce-desc"
+                  rows={3}
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Optional details"
+                  autoFocus={!description}
+                />
+              </div>
+            ) : null}
+
+            {showLink ? (
+              <div className="space-y-1.5">
+                <Label>Link to</Label>
+                <PipelineLinkSelect value={pipelineLink} onChange={setPipelineLink} />
+              </div>
+            ) : null}
+
+            {showRepeat ? (
+              <div className="space-y-1.5">
+                <Label>Repeat</Label>
+                <Select value={repeat} onValueChange={setRepeat}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent className="ce-light">
+                    {RECURRENCE_OPTIONS.map((r) => (
+                      <SelectItem key={r.value} value={r.value}>{r.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+
+            {detailsOpen && (!showDesc || !showLink || !showRepeat) && (
+              <div className="flex flex-wrap gap-2">
+                {!showDesc && (
+                  <button type="button" onClick={() => setShowDesc(true)} className="rounded-lg border bg-background px-3 py-1.5 text-sm font-medium hover:bg-muted">
+                    + Add description
+                  </button>
+                )}
+                {!showLink && (
+                  <button type="button" onClick={() => setShowLink(true)} className="rounded-lg border bg-background px-3 py-1.5 text-sm font-medium hover:bg-muted">
+                    + Link to pipeline
+                  </button>
+                )}
+                {!showRepeat && (
+                  <button type="button" onClick={() => setShowRepeat(true)} className="rounded-lg border bg-background px-3 py-1.5 text-sm font-medium hover:bg-muted">
+                    + Repeat
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-1 flex justify-center">
+            <button
+              type="button"
+              aria-label={detailsOpen ? 'Hide extra options' : 'Show extra options'}
+              onClick={() => setDetailsOpen((v) => !v)}
+              className="flex h-7 w-7 items-center justify-center rounded-full border bg-background text-muted-foreground hover:text-foreground"
+            >
+              {detailsOpen ? <ChevronDown className="h-3.5 w-3.5" /> : <ChevronUp className="h-3.5 w-3.5" />}
+            </button>
+          </div>
+
           {error && <p className="text-xs text-destructive">{error}</p>}
         </div>
 
@@ -777,7 +810,7 @@ export const AddActivityModal = ({
       </DialogContent>
 
       <AlertDialog open={conflictWarnings.length > 0} onOpenChange={(o) => !o && setConflictWarnings([])}>
-        <AlertDialogContent>
+        <AlertDialogContent className="ce-light">
           <AlertDialogHeader>
             <AlertDialogTitle>Scheduling conflict</AlertDialogTitle>
             <AlertDialogDescription asChild>

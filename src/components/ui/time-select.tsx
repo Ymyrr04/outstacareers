@@ -31,11 +31,13 @@ interface TimeSelectProps {
   value: string;
   onChange: (value: string) => void;
   className?: string;
+  /** Optional class for the portaled dropdown content (e.g. theme scoping). */
+  contentClassName?: string;
   disabled?: boolean;
 }
 
 /** 15-minute increment time picker (12-hour labels, 24-hour "HH:mm" value). */
-export function TimeSelect({ id, value, onChange, className, disabled }: TimeSelectProps) {
+export function TimeSelect({ id, value, onChange, className, contentClassName, disabled }: TimeSelectProps) {
   // Include the current value even if it isn't on a 15-minute boundary.
   const options = React.useMemo(() => {
     if (value && !TIME_OPTIONS.some((o) => o.value === value)) {
@@ -54,7 +56,8 @@ export function TimeSelect({ id, value, onChange, className, disabled }: TimeSel
           <SelectValue placeholder="Select time" />
         </span>
       </SelectTrigger>
-      <SelectContent className="max-h-64">
+      <SelectContent className={cn("max-h-64", contentClassName)}>
+
         {options.map((o) => (
           <SelectItem key={o.value} value={o.value}>
             {o.label}
