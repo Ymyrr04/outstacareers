@@ -516,7 +516,6 @@ export const AddActivityModal = ({
                   Moves the whole series. It repeats on {new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(parseDateString(dateValue))} from {formatDateLong(dateValue)}; earlier dates won't show it.
                 </p>
               )}
-            </div>
             <div className={`flex items-center gap-2 ${noTime ? 'opacity-50' : ''}`}>
               <TimeSelect value={start} onChange={handleStartChange} disabled={noTime} />
               <span className="text-sm text-muted-foreground shrink-0">to</span>
