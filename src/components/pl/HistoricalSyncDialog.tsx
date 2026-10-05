@@ -188,6 +188,10 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadIds, setUploadIds] = useState<string[]>([]);
+  const [uploadCount, setUploadCount] = useState(0);
+  const [override, setOverride] = useState(false);
+  const blockedByUpload = uploadCount > 0 && !override;
 
   useEffect(() => { if (open) setWeek(initialWeek ?? lastCompletedMonday()); }, [open, initialWeek]);
 
@@ -220,13 +224,15 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
           .from('historical_pl_batches').select('id').eq('year', y).eq('source', 'upload');
         if (ubErr) throw ubErr;
         const ubIds = (ub ?? []).map((b) => b.id);
+        let upCount = 0;
         if (ubIds.length) {
           const { count, error: cErr } = await supabase
             .from('historical_pl_rows').select('id', { count: 'exact', head: true })
             .in('batch_id', ubIds).eq('week_start', week);
           if (cErr) throw cErr;
-          if ((count ?? 0) > 0) { if (!cancelled) setError('This week came from an upload'); return; }
+          upCount = count ?? 0;
         }
+        if (!cancelled) { setUploadIds(upCount > 0 ? ubIds : []); setUploadCount(upCount); setOverride(false); }
         // Internal team (OutSta client) is excluded, same as the P&L report.
         const res = await computePlWeek(week, fees, { includeInternal: false });
         if (cancelled) return;
