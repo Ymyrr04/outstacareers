@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { AlertTriangle, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { TimeSelect } from '@/components/ui/time-select';
@@ -94,6 +94,7 @@ export const AddActivityModal = ({
     setEnd(minutesToInput(eMin));
   };
   const [noTime, setNoTime] = useState(false);
+  const [showFreeTimes, setShowFreeTimes] = useState(false);
   const [notifySlack, setNotifySlack] = useState(false);
 
   const [description, setDescription] = useState('');
@@ -172,6 +173,57 @@ export const AddActivityModal = ({
     return c ? `Busy ${formatMinutes(c.start_time)}–${formatMinutes(c.end_time)} · ${c.title}` : null;
   };
 
+  // Inline conflict alert: owner first, then extra assignees who are busy
+  const ownerId = isUnassigned ? undefined : adminId || currentUserId;
+  const conflictPeople: { id: string; name: string; ev: { title: string; start_time: number; end_time: number } }[] = [];
+  if (!isUnassigned && !noTime && endMin > startMin) {
+    if (ownerId && conflicts.has(ownerId)) {
+      conflictPeople.push({
+        id: ownerId,
+        name: admins.find((a) => a.user_id === ownerId)?.name ?? 'Owner',
+        ev: conflicts.get(ownerId)!,
+      });
+    }
+    for (const id of extraAssignees) {
+      if (id !== ownerId && conflicts.has(id)) {
+        conflictPeople.push({
+          id,
+          name: admins.find((a) => a.user_id === id)?.name ?? 'Admin',
+          ev: conflicts.get(id)!,
+        });
+      }
+    }
+  }
+
+  /** Everyone (owner + extra assignees) free for [s, s + duration)? */
+  const isFreeAt = (s: number) => {
+    const dur = Math.max(30, durationMin);
+    const e = s + dur;
+    const people = new Set<string>([...(ownerId ? [ownerId] : []), ...extraAssignees]);
+    for (const ev of dayEvents) {
+      if (!(ev.start_time < e && ev.end_time > s)) continue;
+      const evPeople = new Set<string>([...(ev.assigned_to || []), ...(ev.created_by ? [ev.created_by] : [])]);
+      for (const p of people) if (evPeople.has(p)) return false;
+    }
+    return true;
+  };
+
+  // Earliest start after the current one where everyone is free (before 6:00 PM)
+  let suggestedStart: number | null = null;
+  if (conflictPeople.length > 0) {
+    for (let s = startMin + 30; s < 18 * 60; s += 30) {
+      if (isFreeAt(s)) { suggestedStart = s; break; }
+    }
+  }
+
+  // Free 30-minute slots from 8:00 AM to 6:00 PM (up to six chips)
+  const freeStarts: number[] = [];
+  if (conflictPeople.length > 0) {
+    for (let s = 8 * 60; s < 18 * 60 && freeStarts.length < 6; s += 30) {
+      if (isFreeAt(s)) freeStarts.push(s);
+    }
+  }
+
   const allTypes = [
     ...EVENT_TYPES.map((t) => ({ value: t.value, label: t.label })),
     ...customTypes.filter((c) => !EVENT_TYPES.some((t) => t.value === c.value)),
@@ -214,6 +266,7 @@ export const AddActivityModal = ({
     setAddingType(false);
     setNewType('');
     setError(null);
+    setShowFreeTimes(false);
     setDateValue(editEvent?.event_date ?? date);
 
     if (editEvent) {
@@ -525,6 +578,55 @@ export const AddActivityModal = ({
                 <span className="ml-auto text-xs text-muted-foreground shrink-0">{durationLabel}</span>
               )}
             </div>
+            {conflictPeople.length > 0 && (
+              <div className="rounded-md border border-destructive/40 bg-destructive/10 p-3 space-y-2">
+                <div className="flex items-center gap-2 text-sm font-medium text-destructive">
+                  <AlertTriangle className="w-4 h-4 shrink-0" />
+                  {conflictPeople.length} {conflictPeople.length === 1 ? 'person is' : 'people are'} busy at this time
+                </div>
+                <ul className="space-y-1 text-xs text-muted-foreground">
+                  {conflictPeople.map((p) => (
+                    <li key={p.id}>
+                      <span className="font-medium text-foreground">{p.name}</span>,{' '}
+                      {formatMinutes(p.ev.start_time)} to {formatMinutes(p.ev.end_time)} ET · {p.ev.title}
+                    </li>
+                  ))}
+                </ul>
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  {suggestedStart !== null && (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleStartChange(minutesToInput(suggestedStart))}
+                    >
+                      Use {formatMinutes(suggestedStart)}
+                    </Button>
+                  )}
+                  <button
+                    type="button"
+                    className="text-xs text-muted-foreground hover:text-foreground underline underline-offset-2"
+                    onClick={() => setShowFreeTimes((v) => !v)}
+                  >
+                    {showFreeTimes ? 'Hide free times' : 'See free times'}
+                  </button>
+                </div>
+                {showFreeTimes && freeStarts.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 pt-1">
+                    {freeStarts.map((s) => (
+                      <button
+                        key={s}
+                        type="button"
+                        className="rounded-full border bg-background px-2.5 py-1 text-xs hover:bg-accent hover:text-accent-foreground"
+                        onClick={() => handleStartChange(minutesToInput(s))}
+                      >
+                        {formatMinutes(s)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             <div className="flex justify-end">
               <label className="flex items-center gap-2 text-sm cursor-pointer">
                 <Checkbox checked={noTime} onCheckedChange={(v) => setNoTime(v === true)} />
