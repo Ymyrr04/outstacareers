@@ -388,70 +388,88 @@ export const AddActivityModal = ({
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div className="space-y-1.5">
-              <Label>Type</Label>
-              {addingType ? (
-                <div className="flex gap-2">
-                  <Input
-                    autoFocus
-                    value={newType}
-                    onChange={(e) => setNewType(e.target.value)}
-                    placeholder="New type name"
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') { e.preventDefault(); handleCreateType(); }
-                      if (e.key === 'Escape') { setAddingType(false); setNewType(''); }
-                    }}
-                  />
-                  <Button type="button" size="sm" onClick={handleCreateType} disabled={creatingType}>
-                    Save
-                  </Button>
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => { setAddingType(false); setNewType(''); }}
-                  >
-                    Cancel
-                  </Button>
-                </div>
-              ) : (
-                <Select
-                  value={type}
-                  onValueChange={(v) => (v === '__new__' ? setAddingType(true) : setType(v))}
+          <div className="space-y-1.5">
+            <Label>Type</Label>
+            {addingType ? (
+              <div className="flex gap-2">
+                <Input
+                  autoFocus
+                  value={newType}
+                  onChange={(e) => setNewType(e.target.value)}
+                  placeholder="New type name"
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') { e.preventDefault(); handleCreateType(); }
+                    if (e.key === 'Escape') { setAddingType(false); setNewType(''); }
+                  }}
+                />
+                <Button type="button" size="sm" onClick={handleCreateType} disabled={creatingType}>
+                  Save
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  onClick={() => { setAddingType(false); setNewType(''); }}
                 >
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {allTypes.map((t) => (
-                      <SelectItem key={t.value} value={t.value}>{t.label}</SelectItem>
-                    ))}
-                    <SelectItem value="__new__">+ Add new type…</SelectItem>
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
-            <div className="space-y-1.5">
-              <Label>Owner</Label>
-              <Select value={adminId} onValueChange={setAdminId}>
-                <SelectTrigger><SelectValue placeholder="Select admin" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value={UNASSIGNED}>🙌 Unassigned — anyone can take it</SelectItem>
-                  {admins.map((a) => {
-                    const busy = conflicts.has(a.user_id);
-                    return (
-                      <SelectItem key={a.user_id} value={a.user_id}>
-                        {a.initial} — {a.name}{busy ? ' (busy)' : ''}
-                      </SelectItem>
-                    );
-                  })}
-                </SelectContent>
-              </Select>
-              {!isUnassigned && conflicts.has(adminId) && (
-                <p className="text-xs text-destructive truncate" title={conflictLabel(adminId) ?? undefined}>{conflictLabel(adminId)}</p>
-              )}
-            </div>
-
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <div className="flex flex-wrap gap-1.5">
+                {allTypes.map((t) => {
+                  const selected = type === t.value;
+                  const red = t.value === 'deadline';
+                  return (
+                    <button
+                      key={t.value}
+                      type="button"
+                      aria-pressed={selected}
+                      onClick={() => setType(t.value)}
+                      className={
+                        'rounded-full border px-3 py-1 text-xs font-medium transition-colors ' +
+                        (selected
+                          ? red
+                            ? 'border-destructive bg-destructive/10 text-destructive'
+                            : 'border-brand bg-brand/10 text-foreground'
+                          : 'border-border bg-background text-muted-foreground hover:border-brand/50 hover:text-foreground')
+                      }
+                    >
+                      {t.label}
+                    </button>
+                  );
+                })}
+                <button
+                  type="button"
+                  onClick={() => setAddingType(true)}
+                  className="rounded-full border border-dashed border-border px-3 py-1 text-xs font-medium text-muted-foreground transition-colors hover:border-brand/50 hover:text-foreground"
+                >
+                  + New type
+                </button>
+              </div>
+            )}
           </div>
+
+          <div className="space-y-1.5">
+            <Label>Owner</Label>
+            <Select value={adminId} onValueChange={setAdminId}>
+              <SelectTrigger><SelectValue placeholder="Select admin" /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value={UNASSIGNED}>🙌 Unassigned — anyone can take it</SelectItem>
+                {admins.map((a) => {
+                  const busy = conflicts.has(a.user_id);
+                  return (
+                    <SelectItem key={a.user_id} value={a.user_id}>
+                      {a.initial} — {a.name}{busy ? ' (busy)' : ''}
+                    </SelectItem>
+                  );
+                })}
+              </SelectContent>
+            </Select>
+            {!isUnassigned && conflicts.has(adminId) && (
+              <p className="text-xs text-destructive truncate" title={conflictLabel(adminId) ?? undefined}>{conflictLabel(adminId)}</p>
+            )}
+          </div>
+
 
           {isUnassigned ? (
             <p className="rounded-md border-[0.5px] border-dashed bg-muted/30 p-2 text-xs text-muted-foreground">
