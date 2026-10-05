@@ -375,11 +375,13 @@ export function HistoricalPL({ onUpload }: Props) {
     return set;
   }, [openWeek]);
 
-  // Update a row's status in place; a status that is excluded elsewhere in the
-  // week keeps the row out of the headcount, a blank status clears the flag.
+  // Update a row's status in place; Rendering always keeps the row out of the
+  // headcount, as does a status that is excluded elsewhere in the week; a
+  // blank status clears the flag.
   const handleStatusChange = async (row: HistRow, newStatus: string) => {
     const raw = { ...((row.raw as Record<string, unknown>) ?? {}) };
     if (newStatus) raw.Status = newStatus; else delete raw.Status;
+    const excludes = newStatus && (newStatus.toLowerCase() === 'rendering' || excludedStatuses.has(newStatus.toLowerCase()));
     if (newStatus && excludedStatuses.has(newStatus.toLowerCase())) raw.__exclude_headcount = true;
     else delete raw.__exclude_headcount;
     const prevRows = rows;
