@@ -358,11 +358,11 @@ export function HistoricalPL({ onUpload }: Props) {
     return map;
   }, [openWeek]);
 
-  // Statuses available in the open week, and which of them are excluded from headcount.
+  // Statuses available in the open week (plus Rendering, always offered), and
+  // which of them are excluded from headcount.
   const statusOptions = useMemo(() => {
-    if (!openWeek) return [];
-    const set = new Set<string>();
-    for (const r of openWeek.rows) { const s = statusOf(r); if (s) set.add(s); }
+    const set = new Set<string>(['Rendering']);
+    if (openWeek) for (const r of openWeek.rows) { const s = statusOf(r); if (s) set.add(s); }
     return [...set].sort((a, b) => a.localeCompare(b));
   }, [openWeek]);
   const excludedStatuses = useMemo(() => {
