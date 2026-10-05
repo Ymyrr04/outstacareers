@@ -188,6 +188,10 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [uploadIds, setUploadIds] = useState<string[]>([]);
+  const [uploadCount, setUploadCount] = useState(0);
+  const [override, setOverride] = useState(false);
+  const blockedByUpload = uploadCount > 0 && !override;
 
   useEffect(() => { if (open) setWeek(initialWeek ?? lastCompletedMonday()); }, [open, initialWeek]);
 
@@ -220,13 +224,15 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
           .from('historical_pl_batches').select('id').eq('year', y).eq('source', 'upload');
         if (ubErr) throw ubErr;
         const ubIds = (ub ?? []).map((b) => b.id);
+        let upCount = 0;
         if (ubIds.length) {
           const { count, error: cErr } = await supabase
             .from('historical_pl_rows').select('id', { count: 'exact', head: true })
             .in('batch_id', ubIds).eq('week_start', week);
           if (cErr) throw cErr;
-          if ((count ?? 0) > 0) { if (!cancelled) setError('This week came from an upload'); return; }
+          upCount = count ?? 0;
         }
+        if (!cancelled) { setUploadIds(upCount > 0 ? ubIds : []); setUploadCount(upCount); setOverride(false); }
         // Internal team (OutSta client) is excluded, same as the P&L report.
         const res = await computePlWeek(week, fees, { includeInternal: false });
         if (cancelled) return;
@@ -292,6 +298,13 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
       const { error: dErr } = await del;
       if (dErr) throw dErr;
 
+      // Override: remove the uploaded rows for this week so the synced figures replace them.
+      if (override && uploadIds.length) {
+        const { error: uErr } = await supabase.from('historical_pl_rows').delete()
+          .in('batch_id', uploadIds).eq('week_start', week);
+        if (uErr) throw uErr;
+      }
+
       const { error: upErr } = await supabase.from('historical_pl_batches')
         .update({ updated_at: new Date().toISOString() } as any).eq('id', batchId!);
       if (upErr) throw upErr;
@@ -324,6 +337,16 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
           </label>
           {!weekError && <div className="text-sm pb-2">{weekLabelOf(week)}</div>}
         </div>
+
+        {!weekError && !error && uploadCount > 0 && (
+          <label className="flex items-start gap-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm">
+            <input type="checkbox" className="mt-0.5" checked={override} onChange={(e) => setOverride(e.target.checked)} disabled={saving} />
+            <span>
+              <span className="font-medium text-destructive">This week came from an upload ({uploadCount} rows).</span>{' '}
+              Tick to override: saving replaces the uploaded rows for this week with the synced figures below. This can't be undone except by uploading the sheet again.
+            </span>
+          </label>
+        )}
 
         {weekError || error ? (
           <div className="text-sm text-destructive">{weekError || error}</div>
@@ -383,7 +406,7 @@ export function HistoricalSyncDialog({ open, onOpenChange, initialWeek, onSynced
 
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={saving}>Cancel</Button>
-          <Button onClick={save} disabled={saving || loading || !rows || !!weekError || !!error}>
+          <Button onClick={save} disabled={saving || loading || !rows || !!weekError || !!error || blockedByUpload}>
             {saving && <Loader2 className="h-4 w-4 animate-spin mr-1" />} Save week
           </Button>
         </DialogFooter>
