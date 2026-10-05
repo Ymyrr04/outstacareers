@@ -456,6 +456,55 @@ export const AddActivityModal = ({
           </label>
 
           <div className="space-y-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="ce-date">Date</Label>
+              <div className="flex items-center gap-1.5">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 shrink-0"
+                  aria-label="Previous day"
+                  onClick={() => setDateValue(addDays(dateValue, -1))}
+                >
+                  <ChevronLeft className="w-4 h-4" />
+                </Button>
+                <Input
+                  id="ce-date"
+                  type="date"
+                  value={dateValue}
+                  onChange={(e) => { if (e.target.value) setDateValue(e.target.value); }}
+                  className="w-auto flex-1 min-w-0"
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-9 w-9 shrink-0"
+                  aria-label="Next day"
+                  onClick={() => setDateValue(addDays(dateValue, 1))}
+                >
+                  <ChevronRight className="w-4 h-4" />
+                </Button>
+                <span className="text-sm text-muted-foreground shrink-0">
+                  {new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(parseDateString(dateValue))}
+                </span>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="ml-auto shrink-0"
+                  onClick={() => setDateValue(todayET())}
+                >
+                  Today
+                </Button>
+              </div>
+              {repeat !== 'none' && dateValue !== (editEvent?.event_date ?? date) && (
+                <p className="text-xs text-muted-foreground">
+                  Moves the whole series. It repeats on {new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(parseDateString(dateValue))} from {formatDateLong(dateValue)}; earlier dates won't show it.
+                </p>
+              )}
+            </div>
             <label className="flex items-center gap-2 text-sm">
               <Checkbox checked={noTime} onCheckedChange={(v) => setNoTime(v === true)} />
               <span>No specific time yet (any admin can set it)</span>
