@@ -9,6 +9,7 @@ import {
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { ChevronRight, Loader2, Upload, Trash2, Columns3, ArrowUpDown, Search, BarChart3, RefreshCw } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { HistoricalSyncDialog, lastCompletedMonday, weekLabelOf } from './HistoricalSyncDialog';
 import { SYNC_START } from '@/lib/plWeek';
 import { toast } from 'sonner';
@@ -118,6 +119,9 @@ const SORTABLE: Col[] = [
   { key: 'contractor_deposit', label: 'Contractor deposit', numeric: true, kind: 'money', width: 'w-[160px] min-w-[160px]' },
 ];
 const NUM_COL = 'w-[56px] min-w-[56px] max-w-[56px]';
+const STATUS_COL = 'w-[130px] min-w-[130px] max-w-[130px]';
+const statusOf = (r: HistRow): string => String((r.raw as Record<string, unknown> | null)?.Status ?? '').trim();
+const isRowExcluded = (r: HistRow) => !!(r.raw && (r.raw as Record<string, unknown>).__exclude_headcount);
 const fmtCell = (c: Col, v: number | null | undefined) =>
   v == null || Number.isNaN(Number(v)) ? '—' : c.kind === 'hours' ? Number(v).toFixed(2) : money(Number(v));
 
