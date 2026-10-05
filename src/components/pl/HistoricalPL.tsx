@@ -333,6 +333,26 @@ export function HistoricalPL({ onUpload }: Props) {
 
   const openWeek = openWeekKey ? weeks.find((w) => w.key === openWeekKey) ?? null : null;
 
+  // Running headcount number per row: only rows that count toward headcount get a
+  // number, in sheet order; excluded/duplicate/blank-name rows get none.
+  const headcountNumbers = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!openWeek) return map;
+    const seen = new Set<string>();
+    let n = 0;
+    for (const r of openWeek.rows) {
+      const name = (r.contractor_name || '').trim().toLowerCase();
+      const excluded =
+        !name ||
+        HEADCOUNT_EXCLUDED_NAMES.has(name) ||
+        !!(r.raw && (r.raw as Record<string, unknown>).__exclude_headcount);
+      if (excluded || seen.has(name)) continue;
+      seen.add(name);
+      map.set(r.id, ++n);
+    }
+    return map;
+  }, [openWeek]);
+
   // Reset the search whenever a different week is opened.
   useEffect(() => { setQuery(''); }, [openWeekKey]);
 
@@ -706,9 +726,13 @@ export function HistoricalPL({ onUpload }: Props) {
                         {SORTABLE.map((c, i) => {
                           if (!c.numeric) {
                             const v = r[c.key as 'contractor_name' | 'company'];
+                            const hcNum = c.key === 'contractor_name' ? headcountNumbers.get(r.id) : undefined;
                             return (
                               <td key={c.key} className={cn('px-3 py-2 border-b bg-background group-hover:bg-muted', c.width, i === 0 && 'sticky left-0 z-10 border-r font-medium')}>
-                                <div className="truncate" title={v || undefined}>{v || '—'}</div>
+                                <div className="truncate" title={v || undefined}>
+                                  {hcNum != null && <span className="text-muted-foreground font-normal tabular-nums mr-1.5">{hcNum}.</span>}
+                                  {v || '—'}
+                                </div>
                               </td>
                             );
                           }
