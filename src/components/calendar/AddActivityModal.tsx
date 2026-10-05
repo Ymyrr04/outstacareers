@@ -810,7 +810,7 @@ export const AddActivityModal = ({
       </DialogContent>
 
       <AlertDialog open={conflictWarnings.length > 0} onOpenChange={(o) => !o && setConflictWarnings([])}>
-        <AlertDialogContent>
+        <AlertDialogContent className="ce-light">
           <AlertDialogHeader>
             <AlertDialogTitle>Scheduling conflict</AlertDialogTitle>
             <AlertDialogDescription asChild>
