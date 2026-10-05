@@ -121,16 +121,21 @@ export async function computePlWeek(
     .map((a) => {
       const ts = tsMap.get(a.id) || null;
       let actualHours = Number(ts?.total_hours || 0);
-      // Sunday exclusion (date keys parsed as UTC)
+      // Sunday exclusion (date keys parsed as UTC). The portal may already have
+      // left Sunday out of total_hours, so use the sum of non-Sunday days
+      // (capped at total_hours) instead of subtracting Sunday a second time.
       if (ts && a.sunday_hours_excluded && ts.daily_hours) {
         try {
           const dh = ts.daily_hours as Record<string, { hours?: number }>;
-          let sunHours = 0;
+          let nonSun = 0;
+          let any = false;
           Object.entries(dh).forEach(([date, v]) => {
             const d = new Date(date + 'T00:00:00Z');
-            if (!isNaN(d.getTime()) && d.getUTCDay() === 0) sunHours += Number(v?.hours || 0);
+            if (isNaN(d.getTime())) return;
+            any = true;
+            if (d.getUTCDay() !== 0) nonSun += Number(v?.hours || 0);
           });
-          actualHours = Math.max(0, actualHours - sunHours);
+          if (any) actualHours = Math.min(actualHours, nonSun);
         } catch {}
       }
       const hourlyRate = Number(a.hourly_rate || 0);
