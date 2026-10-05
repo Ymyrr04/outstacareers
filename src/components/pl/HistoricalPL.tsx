@@ -333,6 +333,26 @@ export function HistoricalPL({ onUpload }: Props) {
 
   const openWeek = openWeekKey ? weeks.find((w) => w.key === openWeekKey) ?? null : null;
 
+  // Running headcount number per row: only rows that count toward headcount get a
+  // number, in sheet order; excluded/duplicate/blank-name rows get none.
+  const headcountNumbers = useMemo(() => {
+    const map = new Map<string, number>();
+    if (!openWeek) return map;
+    const seen = new Set<string>();
+    let n = 0;
+    for (const r of openWeek.rows) {
+      const name = (r.contractor_name || '').trim().toLowerCase();
+      const excluded =
+        !name ||
+        HEADCOUNT_EXCLUDED_NAMES.has(name) ||
+        !!(r.raw && (r.raw as Record<string, unknown>).__exclude_headcount);
+      if (excluded || seen.has(name)) continue;
+      seen.add(name);
+      map.set(r.id, ++n);
+    }
+    return map;
+  }, [openWeek]);
+
   // Reset the search whenever a different week is opened.
   useEffect(() => { setQuery(''); }, [openWeekKey]);
 
