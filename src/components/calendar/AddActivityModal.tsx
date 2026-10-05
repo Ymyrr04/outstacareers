@@ -285,7 +285,9 @@ export const AddActivityModal = ({
     setAddingType(false);
     setNewType('');
     setError(null);
+    setDetailsOpen(true);
     setShowFreeTimes(false);
+
     setDateValue(editEvent?.event_date ?? date);
     setShowDesc(!!editEvent?.description?.trim());
     setShowLink(!!editEvent?.pipeline_link);
@@ -390,7 +392,7 @@ export const AddActivityModal = ({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[640px] max-h-[90vh] flex flex-col overflow-hidden">
+      <DialogContent className="ce-light sm:max-w-[640px] max-h-[90vh] flex flex-col overflow-hidden">
         <DialogHeader className="shrink-0">
           <DialogTitle>{editEvent ? 'Edit activity' : 'Add activity'}</DialogTitle>
         </DialogHeader>
