@@ -204,6 +204,7 @@ export const AddActivityModal = ({
     setAddingType(false);
     setNewType('');
     setError(null);
+    setDateValue(editEvent?.event_date ?? date);
 
     if (editEvent) {
       setTitle(editEvent.title);
