@@ -261,13 +261,13 @@ export function AnalyticsPL() {
     <div className="flex flex-col gap-4 min-w-0">
       <Card className="p-4 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
-          <span className="h-3 w-3 rounded-sm" style={{ background: COLOR_A }} />
+          <span className="h-3 w-3 rounded-sm" style={{ background: colorA }} />
           <Select value={yearA != null ? String(yearA) : undefined} onValueChange={(v) => setYearA(Number(v))}>
             <SelectTrigger className="h-8 w-24"><SelectValue placeholder="Year A" /></SelectTrigger>
             <SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
           </Select>
           <span className="text-xs text-muted-foreground">vs</span>
-          <span className="h-3 w-3 rounded-sm" style={{ background: COLOR_B }} />
+          <span className="h-3 w-3 rounded-sm" style={{ background: colorB }} />
           <Select value={yearB != null ? String(yearB) : undefined} onValueChange={(v) => setYearB(Number(v))}>
             <SelectTrigger className="h-8 w-24"><SelectValue placeholder="Year B" /></SelectTrigger>
             <SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
