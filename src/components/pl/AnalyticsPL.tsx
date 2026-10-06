@@ -379,8 +379,8 @@ export function AnalyticsPL() {
                     return p ? `${p.labelA} · ${p.labelB}` : '';
                   }} />
                 <Legend />
-                <Line type="monotone" dataKey="a" name={String(yearA ?? '')} stroke={COLOR_A} strokeWidth={2} dot={false} connectNulls />
-                <Line type="monotone" dataKey="b" name={String(yearB ?? '')} stroke={COLOR_B} strokeWidth={2} strokeDasharray="6 4" dot={false} connectNulls />
+                <Line type="monotone" dataKey="a" name={String(yearA ?? '')} stroke={colorA} strokeWidth={2} dot={false} connectNulls />
+                <Line type="monotone" dataKey="b" name={String(yearB ?? '')} stroke={colorB} strokeWidth={2} strokeDasharray="6 4" dot={false} connectNulls />
               </LineChart>
             </ResponsiveContainer>
           )}
