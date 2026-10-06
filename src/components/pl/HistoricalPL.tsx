@@ -278,7 +278,7 @@ export function HistoricalPL({ onUpload }: Props) {
     return [...map.entries()].map(([key, w]) => {
       const externalRows = w.rows.filter((r) => !isInternalRow(r));
       const t = externalRows.reduce((a, r) => ({
-        hours: a.hours + (r.actual_hours != null ? num(r.actual_hours) : num(r.hours)),
+        hours: a.hours + rowHours(r),
         cost: a.cost + num(r[COST_KEY]),
         billing: a.billing + num(r[BILLING_KEY]),
         margin: a.margin + num(r[MARGIN_KEY]),
@@ -288,7 +288,7 @@ export function HistoricalPL({ onUpload }: Props) {
         billing: externalRows.some((r) => r[BILLING_KEY] != null),
         margin: externalRows.some((r) => r[MARGIN_KEY] != null),
       };
-      const headcount = new Set(externalRows.filter((r) => !(r.raw && (r.raw as Record<string, unknown>).__exclude_headcount)).map((r) => (r.contractor_name || '').trim().toLowerCase()).filter((n) => n && !HEADCOUNT_EXCLUDED_NAMES.has(n))).size;
+      const headcount = weekHeadcount(w.rows);
       return { key, label: w.label, rows: w.rows, totals: t, has, headcount };
     });
   }, [rows]);
@@ -297,7 +297,7 @@ export function HistoricalPL({ onUpload }: Props) {
   const yearSummary = useMemo(() => {
     const externalRows = rows.filter((r) => !isInternalRow(r));
     const t = externalRows.reduce((a, r) => ({
-      hours: a.hours + (r.actual_hours != null ? num(r.actual_hours) : num(r.hours)),
+      hours: a.hours + rowHours(r),
       cost: a.cost + num(r[COST_KEY]),
       billing: a.billing + num(r[BILLING_KEY]),
       margin: a.margin + num(r[MARGIN_KEY]),
