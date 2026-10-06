@@ -225,6 +225,11 @@ export function AnalyticsPL() {
   const colorA = yearA === curYear ? COLOR_A : yearB === curYear ? COLOR_B : COLOR_A;
   const colorB = yearB === curYear ? COLOR_A : COLOR_B;
 
+  // Cards compare years: the weeks are already fixed by the filters above.
+  const yearLabelA = String(yearA ?? '—');
+  const yearLabelB = String(yearB ?? '—');
+
+
   const specific = mode === 'specific';
   const cards: { key: MetricKey; title: string; caption: string; fmt: (v: number) => string; money?: boolean }[] = [
     { key: 'active', title: 'Active contractors', caption: specific ? 'that week' : 'avg per week', fmt: (v) => fmtCount(v, specific) },
