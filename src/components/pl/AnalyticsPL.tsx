@@ -670,48 +670,50 @@ function MixPanel({ years, fixedYear, weekRows, title, subtitle, swatch }: {
         <div className="text-xs text-muted-foreground py-6 text-center">No markup data for this year.</div>
       ) : (
         <>
-          <div className="h-[160px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie data={mix.slices} dataKey="count" nameKey="name" innerRadius={40} outerRadius={70} stroke="none" isAnimationActive={false}>
-                  {mix.slices.map((s) => <Cell key={s.name} fill={s.color} />)}
-                </Pie>
-                <Tooltip formatter={((v: number, n: string) => [`${v} contractors`, n]) as any} />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="space-y-1">
-            {mix.slices.map((s) => {
-              const pct = Math.round((s.count / mix.total) * 100);
-              const tip = s.rate != null ? `${s.count} contractor${s.count === 1 ? ' has' : 's have'} a $${s.rate.toFixed(2)} markup rate` : `${s.count} contractors across ${s.other} other rates`;
-              if (s.other != null && s.other > 0) {
+          <div className="flex items-center gap-4">
+            <div className="h-[190px] flex-1 min-w-0">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={mix.slices} dataKey="count" nameKey="name" innerRadius="52%" outerRadius="88%" cy="50%" stroke="none" isAnimationActive={false}>
+                    {mix.slices.map((s) => <Cell key={s.name} fill={s.color} />)}
+                  </Pie>
+                  <Tooltip formatter={((v: number, n: string) => [`${v} contractors`, n]) as any} />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="space-y-1 w-[140px] shrink-0">
+              {mix.slices.map((s) => {
+                const pct = Math.round((s.count / mix.total) * 100);
+                const tip = s.rate != null ? `${s.count} contractor${s.count === 1 ? ' has' : 's have'} a $${s.rate.toFixed(2)} markup rate` : `${s.count} contractors across ${s.other} other rates`;
+                if (s.other != null && s.other > 0) {
+                  return (
+                    <div key={s.name}>
+                      <button type="button" title={tip} onClick={() => setShowOther((v) => !v)}
+                        className="flex items-center gap-1.5 text-xs tabular-nums w-full text-left rounded hover:bg-muted/50 -mx-1 px-1 py-0.5">
+                        {showOther ? <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />}
+                        <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
+                        <span>{s.name} · {s.count} · {pct}%</span>
+                      </button>
+                      {showOther && mix.rest.map(([rate, cnt]) => {
+                        const opct = Math.round((cnt / mix.total) * 100);
+                        return (
+                          <div key={rate} title={`${cnt} contractor${cnt === 1 ? ' has' : 's have'} a $${rate.toFixed(2)} markup rate`} className="flex items-center gap-1.5 text-xs tabular-nums pl-[24px] pr-1 py-0.5 text-muted-foreground">
+                            <span className="h-2 w-2 rounded-sm shrink-0" style={{ background: s.color }} />
+                            <span>${rate.toFixed(2)} · {cnt} · {opct}%</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                }
                 return (
-                  <div key={s.name}>
-                    <button type="button" title={tip} onClick={() => setShowOther((v) => !v)}
-                      className="flex items-center gap-2 text-xs tabular-nums w-full text-left rounded hover:bg-muted/50 -mx-1 px-1 py-0.5">
-                      {showOther ? <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />}
-                      <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
-                      <span>{s.name} · {s.count} · {pct}%</span>
-                    </button>
-                    {showOther && mix.rest.map(([rate, cnt]) => {
-                      const opct = Math.round((cnt / mix.total) * 100);
-                      return (
-                        <div key={rate} title={`${cnt} contractor${cnt === 1 ? ' has' : 's have'} a $${rate.toFixed(2)} markup rate`} className="flex items-center gap-2 text-xs tabular-nums pl-[26px] pr-1 py-0.5 text-muted-foreground">
-                          <span className="h-2 w-2 rounded-sm shrink-0" style={{ background: s.color }} />
-                          <span>${rate.toFixed(2)} · {cnt} · {opct}%</span>
-                        </div>
-                      );
-                    })}
+                  <div key={s.name} title={tip} className="flex items-center gap-1.5 text-xs tabular-nums">
+                    <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
+                    <span>{s.name} · {s.count} · {pct}%</span>
                   </div>
                 );
-              }
-              return (
-                <div key={s.name} title={tip} className="flex items-center gap-2 text-xs tabular-nums">
-                  <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
-                  <span>{s.name} · {s.count} · {pct}%</span>
-                </div>
-              );
-            })}
+              })}
+            </div>
           </div>
           <div className="text-xs text-muted-foreground border-t pt-2">{mix.total} contractors · {mix.noRate} with no rate on file</div>
         </>
