@@ -510,6 +510,12 @@ function buildFacts(selA: WeekFig[], selB: WeekFig[], basis: Basis, labelA: stri
     weeklyDatasetB: selB.map((w) => ({ weekStart: w.weekStart, label: w.label, weekOfYear: w.woy, active: w.active, hours: r2(w.hours), income: r2(basis === 'gross' ? w.incomeGross : w.incomeAfter), expense: r2(basis === 'gross' ? w.expenseGross : w.expenseAfter), markup: w.markupHours > 0 ? r2(w.markupSum / w.markupHours) : null })),
     income: driverFacts(selA, selB, basis, 'income'),
     expense: driverFacts(selA, selB, basis, 'expense'),
+    grossProfit: (() => {
+      const inc = driverFacts(selA, selB, basis, 'income'), exp = driverFacts(selA, selB, basis, 'expense');
+      const profitA = r2(inc.amountA - exp.amountA), profitB = r2(inc.amountB - exp.amountB);
+      const change = r2(profitA - profitB);
+      return { profitA, profitB, change, changePct: profitB !== 0 ? r2((change / Math.abs(profitB)) * 100) : null, note: 'gross profit = income minus expense' };
+    })(),
     markupPerHour: ra && rb ? { A: r2(ra.markup), B: r2(rb.markup), clientRateA: r2(ra.client), clientRateB: r2(rb.client), contractorRateA: r2(ra.contractor), contractorRateB: r2(rb.contractor), note: 'markup is before fees' } : null,
   };
 }
