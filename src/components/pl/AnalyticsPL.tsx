@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { todayET } from '@/lib/calendarTime';
 import { PieChart, Pie } from 'recharts';
 import { summaryDatasets } from '@/lib/plSummaryFacts';
+import { FormattedNotes } from '@/components/FormattedNotes';
 import {
   type HistRow, fetchYear, weekHeadcount, isContractorRow, rowHours, markupOf, num,
 } from '@/lib/historicalData';
@@ -565,7 +566,7 @@ function AiSummary({ facts }: { facts: Record<string, unknown> }) {
         : summary ? (
           <ul className="list-disc pl-5 space-y-2 text-sm leading-relaxed marker:text-primary">
             {(summary.includes('\n') ? summary.trim().split(/\n+/) : summary.trim().split(/(?<=[.!?])\s+(?=[A-Z])/)).filter((point) => point.trim()).map((point, index) => (
-              <li key={index}>{point.replace(/^\s*[-•]\s*/, '').trim()}</li>
+              <li key={index}><FormattedNotes content={point.replace(/^\s*[-•]\s*/, '').trim()} className="leading-relaxed" /></li>
             ))}
           </ul>
         )

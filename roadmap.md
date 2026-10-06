@@ -1,6 +1,6 @@
 # Roadmap
 
-- [ ] Compare underlying selected weekly datasets in the P&L analyst summary, retaining bullet points and data-sensitive caching.
+- [x] Compare underlying selected weekly datasets in the P&L analyst summary, retaining bullet points and data-sensitive caching.
 
 - [x] Show OutSta rows last in historical weekly details and sync previews without adding them to headcount or external totals.
 
