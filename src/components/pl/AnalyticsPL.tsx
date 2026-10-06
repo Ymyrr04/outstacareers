@@ -220,6 +220,11 @@ export function AnalyticsPL() {
     return rowsByYear[yearB].filter((r) => r.week_start && s.has(r.week_start.slice(0, 10)));
   }, [yearB, rowsByYear, selB]);
 
+  // Teal for the current year (2026), gray for 2025 or any other year.
+  const curYear = todayET().getFullYear();
+  const colorA = yearA === curYear ? COLOR_A : yearB === curYear ? COLOR_B : COLOR_A;
+  const colorB = yearB === curYear ? COLOR_A : COLOR_B;
+
   const specific = mode === 'specific';
   const cards: { key: MetricKey; title: string; caption: string; fmt: (v: number) => string; money?: boolean }[] = [
     { key: 'active', title: 'Active contractors', caption: specific ? 'that week' : 'avg per week', fmt: (v) => fmtCount(v, specific) },
