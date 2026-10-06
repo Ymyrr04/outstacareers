@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { todayET } from '@/lib/calendarTime';
 import { PieChart, Pie } from 'recharts';
+import { summaryDatasets } from '@/lib/plSummaryFacts';
 import {
   type HistRow, fetchYear, weekHeadcount, isContractorRow, rowHours, markupOf, num,
 } from '@/lib/historicalData';
@@ -376,7 +377,7 @@ export function AnalyticsPL() {
         </div>
       </Card>
 
-      <DriversPanel selA={selA} selB={selB} basis={basis} labelA={labelA} labelB={labelB} />
+      <DriversPanel selA={selA} selB={selB} basis={basis} labelA={labelA} labelB={labelB} rowsA={weekRowsA ?? []} rowsB={weekRowsB ?? []} />
     </div>
     <div className="flex flex-col gap-4">
       <MixPanel years={years} weekRows={weekRowsA} swatch={COLOR_A}
@@ -458,7 +459,7 @@ function DriverBlock({ title, selA, selB, basis, kind, labelA, labelB }: {
   );
 }
 
-function DriversPanel({ selA, selB, basis, labelA, labelB }: { selA: WeekFig[]; selB: WeekFig[]; basis: Basis; labelA: string; labelB: string }) {
+function DriversPanel({ selA, selB, basis, labelA, labelB, rowsA, rowsB }: { selA: WeekFig[]; selB: WeekFig[]; basis: Basis; labelA: string; labelB: string; rowsA: HistRow[]; rowsB: HistRow[] }) {
   if (selA.length === 0 || selB.length === 0) return null;
   const rates = (ws: WeekFig[]) => {
     const mh = ws.reduce((a, w) => a + w.markupHours, 0);
@@ -474,7 +475,7 @@ function DriversPanel({ selA, selB, basis, labelA, labelB }: { selA: WeekFig[]; 
     <Card className="p-4 space-y-4">
       <div className="text-sm font-semibold">What made the difference</div>
       <SafeSection>
-        <AiSummary facts={buildFacts(selA, selB, basis, labelA, labelB, ra, rb)} />
+        <AiSummary facts={{ ...buildFacts(selA, selB, basis, labelA, labelB, ra, rb), ...summaryDatasets(rowsA, rowsB, basis) }} />
       </SafeSection>
     </Card>
   );
@@ -488,7 +489,8 @@ function driverFacts(selA: WeekFig[], selB: WeekFig[], basis: Basis, kind: 'inco
   return {
     amountA: r2(A.amount), amountB: r2(B.amount), change: r2(total),
     changePct: B.amount !== 0 ? r2((total / Math.abs(B.amount)) * 100) : null,
-    avgActiveContractorsA: r2(A.c), avgActiveContractorsB: r2(B.c),
+    contractorWeeksA: r2(A.c), contractorWeeksB: r2(B.c),
+    avgActiveContractorsA: r2(A.c / selA.length), avgActiveContractorsB: r2(B.c / selB.length),
     hoursPerContractorA: r2(A.h), hoursPerContractorB: r2(B.h),
     effectOfContractorCount: r2(count), effectOfHoursPerContractor: r2(hours), effectOfRate: r2(total - count - hours),
   };
@@ -500,6 +502,8 @@ function buildFacts(selA: WeekFig[], selB: WeekFig[], basis: Basis, labelA: stri
   return {
     periodA: labelA, periodB: labelB, weeksCompared: selA.length,
     basis: basis === 'gross' ? 'gross (before fees)' : 'after fees',
+    weeklyDatasetA: selA.map((w) => ({ weekStart: w.weekStart, label: w.label, weekOfYear: w.woy, active: w.active, hours: r2(w.hours), income: r2(basis === 'gross' ? w.incomeGross : w.incomeAfter), expense: r2(basis === 'gross' ? w.expenseGross : w.expenseAfter), markup: w.markupHours > 0 ? r2(w.markupSum / w.markupHours) : null })),
+    weeklyDatasetB: selB.map((w) => ({ weekStart: w.weekStart, label: w.label, weekOfYear: w.woy, active: w.active, hours: r2(w.hours), income: r2(basis === 'gross' ? w.incomeGross : w.incomeAfter), expense: r2(basis === 'gross' ? w.expenseGross : w.expenseAfter), markup: w.markupHours > 0 ? r2(w.markupSum / w.markupHours) : null })),
     income: driverFacts(selA, selB, basis, 'income'),
     expense: driverFacts(selA, selB, basis, 'expense'),
     markupPerHour: ra && rb ? { A: r2(ra.markup), B: r2(rb.markup), clientRateA: r2(ra.client), clientRateB: r2(rb.client), contractorRateA: r2(ra.contractor), contractorRateB: r2(rb.contractor), note: 'markup is before fees' } : null,
