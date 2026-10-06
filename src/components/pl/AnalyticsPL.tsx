@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import {
-  ResponsiveContainer, LineChart, Line, BarChart, Bar, XAxis, YAxis, Tooltip, Legend, LabelList, CartesianGrid,
+  ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, Tooltip, Legend, LabelList, CartesianGrid,
 } from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
@@ -302,10 +302,9 @@ export function AnalyticsPL() {
                   { value: String(yearA ?? ''), type: 'square', color: COLOR_A },
                   { value: String(yearB ?? ''), type: 'square', color: COLOR_B },
                 ]} />
-                <Bar dataKey="value" radius={[4, 4, 0, 0]}
-                  fill={COLOR_A}
-                  // per-bar colours via Cell-like shape
-                  >
+                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                  <Cell fill={COLOR_A} />
+                  <Cell fill={COLOR_B} />
                   <LabelList dataKey="value" position="top" formatter={(v: number) => chartFmt(metric, v)} fontSize={12} />
                 </Bar>
               </BarChart>
