@@ -378,7 +378,7 @@ export function AnalyticsPL() {
         </div>
       </Card>
 
-      <DriversPanel selA={selA} selB={selB} basis={basis} labelA={labelA} labelB={labelB} rowsA={weekRowsA ?? []} rowsB={weekRowsB ?? []} />
+      <DriversPanel selA={selA} selB={selB} basis={basis} labelA={labelA} labelB={labelB} yearA={yearA} yearB={yearB} rowsA={weekRowsA ?? []} rowsB={weekRowsB ?? []} />
     </div>
     <div className="flex flex-col gap-4">
       <MixPanel years={years} weekRows={weekRowsA} swatch={COLOR_A}
@@ -460,7 +460,7 @@ function DriverBlock({ title, selA, selB, basis, kind, labelA, labelB }: {
   );
 }
 
-function DriversPanel({ selA, selB, basis, labelA, labelB, rowsA, rowsB }: { selA: WeekFig[]; selB: WeekFig[]; basis: Basis; labelA: string; labelB: string; rowsA: HistRow[]; rowsB: HistRow[] }) {
+function DriversPanel({ selA, selB, basis, labelA, labelB, yearA, yearB, rowsA, rowsB }: { selA: WeekFig[]; selB: WeekFig[]; basis: Basis; labelA: string; labelB: string; yearA: number | null; yearB: number | null; rowsA: HistRow[]; rowsB: HistRow[] }) {
   if (selA.length === 0 || selB.length === 0) return null;
   const rates = (ws: WeekFig[]) => {
     const mh = ws.reduce((a, w) => a + w.markupHours, 0);
