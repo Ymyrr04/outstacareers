@@ -221,7 +221,7 @@ export function AnalyticsPL() {
   }, [yearB, rowsByYear, selB]);
 
   // Teal for the current year (2026), gray for 2025 or any other year.
-  const curYear = todayET().getFullYear();
+  const curYear = Number(todayET().slice(0, 4));
   const colorA = yearA === curYear ? COLOR_A : yearB === curYear ? COLOR_B : COLOR_A;
   const colorB = yearB === curYear ? COLOR_A : COLOR_B;
 
