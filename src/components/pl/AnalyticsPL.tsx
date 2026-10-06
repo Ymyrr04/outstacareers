@@ -490,7 +490,8 @@ function buildMix(rows: HistRow[]) {
     sorted.slice(0, 6).map(([rate, count], i) => ({ name: `$${rate.toFixed(2)}`, rate, count, color: MIX_COLORS[i] }));
   const rest = sorted.slice(6);
   if (rest.length) slices.push({ name: `Other (${rest.length} rates)`, rate: null, count: rest.reduce((a, [, c]) => a + c, 0), color: MIX_OTHER, other: rest.length });
-  return { slices, total, noRate: all.size - total, lastLabel: lastWeek?.label ?? null };
+  return { slices, total, noRate: all.size - total, lastLabel: lastWeek?.label ?? null, rest };
+
 }
 
 function MixPanel({ years, fixedYear }: { years: number[]; fixedYear?: number }) {
