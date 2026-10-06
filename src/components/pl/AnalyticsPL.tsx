@@ -225,6 +225,11 @@ export function AnalyticsPL() {
   const colorA = yearA === curYear ? COLOR_A : yearB === curYear ? COLOR_B : COLOR_A;
   const colorB = yearB === curYear ? COLOR_A : COLOR_B;
 
+  // Cards compare years: the weeks are already fixed by the filters above.
+  const yearLabelA = String(yearA ?? '—');
+  const yearLabelB = String(yearB ?? '—');
+
+
   const specific = mode === 'specific';
   const cards: { key: MetricKey; title: string; caption: string; fmt: (v: number) => string; money?: boolean }[] = [
     { key: 'active', title: 'Active contractors', caption: specific ? 'that week' : 'avg per week', fmt: (v) => fmtCount(v, specific) },
@@ -243,7 +248,7 @@ export function AnalyticsPL() {
     const pct = b !== 0 ? (diff / Math.abs(b)) * 100 : null;
     if (diff === 0) return <span className="text-muted-foreground">No change</span>;
     const up = diff > 0;
-    const who = up ? labelA : labelB;
+    const who = up ? yearLabelA : yearLabelB;
     return (
       <span style={{ color: COLOR_A }}>
         {up ? '▲' : '▼'} {pct != null ? `${Math.abs(pct).toFixed(1)}%` : ''}
@@ -304,7 +309,7 @@ export function AnalyticsPL() {
                 <span className="text-[11px] text-muted-foreground">{c.caption}</span>
               </div>
               <div className="mt-2 space-y-1">
-                {[{ v: a, color: colorA, label: labelA }, { v: b, color: colorB, label: labelB }].map((l, i) => (
+                {[{ v: a, color: colorA, label: yearLabelA }, { v: b, color: colorB, label: yearLabelB }].map((l, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: l.color }} />
                     <span className="text-lg font-semibold tabular-nums">{l.v == null ? '—' : c.fmt(l.v)}</span>
