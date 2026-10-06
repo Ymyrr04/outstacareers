@@ -304,7 +304,7 @@ export function AnalyticsPL() {
                 <span className="text-[11px] text-muted-foreground">{c.caption}</span>
               </div>
               <div className="mt-2 space-y-1">
-                {[{ v: a, color: COLOR_A, label: labelA }, { v: b, color: COLOR_A, label: labelB }].map((l, i) => (
+                {[{ v: a, color: colorA, label: labelA }, { v: b, color: colorB, label: labelB }].map((l, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: l.color }} />
                     <span className="text-lg font-semibold tabular-nums">{l.v == null ? '—' : c.fmt(l.v)}</span>
