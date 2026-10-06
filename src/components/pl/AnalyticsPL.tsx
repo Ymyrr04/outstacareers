@@ -7,6 +7,9 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
+import { Badge } from '@/components/ui/badge';
+import { todayET } from '@/lib/calendarTime';
+import { PieChart, Pie } from 'recharts';
 import {
   type HistRow, fetchYear, weekHeadcount, isContractorRow, rowHours, markupOf, num,
 } from '@/lib/historicalData';
@@ -232,7 +235,8 @@ export function AnalyticsPL() {
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_236px] items-start">
+    <div className="flex flex-col gap-4 min-w-0">
       <Card className="p-4 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
           <span className="h-3 w-3 rounded-sm" style={{ background: COLOR_A }} />
@@ -363,6 +367,11 @@ export function AnalyticsPL() {
 
       <DriversPanel selA={selA} selB={selB} basis={basis} labelA={labelA} labelB={labelB} />
     </div>
+    <div className="flex flex-col gap-4">
+      <MixPanel years={years} />
+      <MixPanel years={years} fixedYear={Number(todayET().slice(0, 4))} />
+    </div>
+    </div>
   );
 }
 
@@ -448,6 +457,102 @@ function DriversPanel({ selA, selB, basis, labelA, labelB }: { selA: WeekFig[]; 
         <div className="text-xs text-muted-foreground border-t pt-3">
           Markup rate {fmtRate(ra.markup)}/h in {labelA} vs {fmtRate(rb.markup)}/h in {labelB} ({fmtRateSigned(ra.markup - rb.markup)}) · client rate {fmtRateSigned(ra.client - rb.client)} · contractor rate {fmtRateSigned(ra.contractor - rb.contractor)} · Markup is before fees
         </div>
+      )}
+    </Card>
+  );
+}
+
+
+const MIX_COLORS = ['#0ABEDF', '#534AB7', '#185FA5', '#EF9F27', '#1D9E75', '#D85A30'];
+const MIX_OTHER = 'hsl(var(--muted-foreground))';
+
+function buildMix(rows: HistRow[]) {
+  // Latest week per contractor with both rates; ties broken by most hours.
+  const best = new Map<string, { ws: string; h: number; mk: number }>();
+  const all = new Set<string>();
+  let lastWeek: { ws: string; label: string } | null = null;
+  for (const r of rows) {
+    if (r.week_start && (!lastWeek || r.week_start > lastWeek.ws)) lastWeek = { ws: r.week_start, label: r.week_label ?? r.week_start.slice(0, 10) };
+    if (!isContractorRow(r)) continue;
+    const name = (r.contractor_name ?? '').trim().toLowerCase();
+    if (!name) continue;
+    all.add(name);
+    const mk = markupOf(r);
+    if (mk == null || r.client_rate == null || r.contractor_rate == null || !r.week_start) continue;
+    const ws = r.week_start.slice(0, 10), h = rowHours(r), cur = best.get(name);
+    if (!cur || ws > cur.ws || (ws === cur.ws && h > cur.h)) best.set(name, { ws, h, mk: Math.round(mk * 100) / 100 });
+  }
+  const counts = new Map<number, number>();
+  for (const b of best.values()) counts.set(b.mk, (counts.get(b.mk) ?? 0) + 1);
+  const sorted = [...counts.entries()].sort((a, b) => b[1] - a[1] || b[0] - a[0]);
+  const total = best.size;
+  const slices: { name: string; rate: number | null; count: number; color: string; other?: number }[] =
+    sorted.slice(0, 6).map(([rate, count], i) => ({ name: `$${rate.toFixed(2)}`, rate, count, color: MIX_COLORS[i] }));
+  const rest = sorted.slice(6);
+  if (rest.length) slices.push({ name: `Other (${rest.length} rates)`, rate: null, count: rest.reduce((a, [, c]) => a + c, 0), color: MIX_OTHER, other: rest.length });
+  return { slices, total, noRate: all.size - total, lastLabel: lastWeek?.label ?? null };
+}
+
+function MixPanel({ years, fixedYear }: { years: number[]; fixedYear?: number }) {
+  const [year, setYear] = useState<number | null>(fixedYear ?? null);
+  const [rows, setRows] = useState<HistRow[] | null>(null);
+  useEffect(() => {
+    if (fixedYear != null || year != null || years.length === 0) return;
+    const prev = Number(todayET().slice(0, 4)) - 1;
+    setYear(years.includes(prev) ? prev : years[0]);
+  }, [years, fixedYear, year]);
+  useEffect(() => {
+    if (year == null) return;
+    let cancelled = false;
+    setRows(null);
+    fetchYear(year).then((d) => { if (!cancelled) setRows(d?.rows ?? []); });
+    return () => { cancelled = true; };
+  }, [year]);
+  const mix = useMemo(() => (rows ? buildMix(rows) : null), [rows]);
+  return (
+    <Card className="p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-sm font-semibold">{fixedYear != null ? `Markup rate mix · ${fixedYear}` : 'Markup rate mix'}</div>
+        {fixedYear != null ? (
+          <Badge variant="secondary" className="text-[10px]">Current year</Badge>
+        ) : (
+          <Select value={year != null ? String(year) : undefined} onValueChange={(v) => setYear(Number(v))}>
+            <SelectTrigger className="h-7 w-[84px] text-xs"><SelectValue placeholder="Year" /></SelectTrigger>
+            <SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
+          </Select>
+        )}
+      </div>
+      {fixedYear != null && mix?.lastLabel && <div className="text-xs text-muted-foreground">As of the last synced week, {mix.lastLabel}</div>}
+      {!mix ? (
+        <div className="flex justify-center py-8"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
+      ) : mix.total === 0 ? (
+        <div className="text-xs text-muted-foreground py-6 text-center">No markup data for this year.</div>
+      ) : (
+        <>
+          <div className="h-[160px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={mix.slices} dataKey="count" nameKey="name" innerRadius={40} outerRadius={70} stroke="none" isAnimationActive={false}>
+                  {mix.slices.map((s) => <Cell key={s.name} fill={s.color} />)}
+                </Pie>
+                <Tooltip formatter={((v: number, n: string) => [`${v} contractors`, n]) as any} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="space-y-1">
+            {mix.slices.map((s) => {
+              const pct = Math.round((s.count / mix.total) * 100);
+              const tip = s.rate != null ? `${s.count} contractor${s.count === 1 ? ' has' : 's have'} a $${s.rate.toFixed(2)} markup rate` : `${s.count} contractors across ${s.other} other rates`;
+              return (
+                <div key={s.name} title={tip} className="flex items-center gap-2 text-xs tabular-nums">
+                  <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
+                  <span>{s.name} · {s.count} · {pct}%</span>
+                </div>
+              );
+            })}
+          </div>
+          <div className="text-xs text-muted-foreground border-t pt-2">{mix.total} contractors · {mix.noRate} with no rate on file</div>
+        </>
       )}
     </Card>
   );
