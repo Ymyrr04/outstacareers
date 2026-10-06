@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Component, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Loader2, ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -504,6 +504,19 @@ function buildFacts(selA: WeekFig[], selB: WeekFig[], basis: Basis, labelA: stri
     expense: driverFacts(selA, selB, basis, 'expense'),
     markupPerHour: ra && rb ? { A: r2(ra.markup), B: r2(rb.markup), clientRateA: r2(ra.client), clientRateB: r2(rb.client), contractorRateA: r2(ra.contractor), contractorRateB: r2(rb.contractor), note: 'markup is before fees' } : null,
   };
+}
+
+// Keeps a failed summary (or any unexpected error inside it) from taking the whole page down.
+class SafeSection extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(err: unknown) { console.warn('Summary section failed:', err); }
+  render() {
+    if (this.state.failed) {
+      return <p className="text-xs text-muted-foreground">The summary could not be shown right now. The figures above are unaffected.</p>;
+    }
+    return this.props.children;
+  }
 }
 
 function AiSummary({ facts }: { facts: Record<string, unknown> }) {
