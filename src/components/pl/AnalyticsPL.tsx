@@ -210,8 +210,8 @@ export function AnalyticsPL() {
             <SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
           </Select>
         </div>
-        <Segmented<Mode> value={mode} onChange={setMode} options={[{ v: 'all', label: 'All weeks' }, { v: 'specific', label: 'Specific weeks' }]} />
-        <Segmented<Basis> value={basis} onChange={setBasis} options={[{ v: 'gross', label: 'Gross' }, { v: 'after', label: 'After fees' }]} />
+        <Segmented value={mode} onChange={(v) => setMode(v as Mode)} options={[{ v: 'all', label: 'All weeks' }, { v: 'specific', label: 'Specific weeks' }]} />
+        <Segmented value={basis} onChange={(v) => setBasis(v as Basis)} options={[{ v: 'gross', label: 'Gross' }, { v: 'after', label: 'After fees' }]} />
         {specific ? (
           <div className="flex items-center gap-2">
             <Select value={weekA ?? undefined} onValueChange={setWeekA}>
