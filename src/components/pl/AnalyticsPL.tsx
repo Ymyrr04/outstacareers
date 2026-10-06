@@ -22,7 +22,7 @@ interface WeekFig {
   weekStart: string; label: string; woy: number;
   active: number; on40: number; on50: number; hours: number;
   incomeGross: number; expenseGross: number; incomeAfter: number; expenseAfter: number;
-  markupSum: number; markupHours: number;
+  markupSum: number; markupHours: number; clientRateSum: number; contractorRateSum: number;
 }
 
 // Week of year from a plain YYYY-MM-DD string, no timezone conversion.
@@ -43,7 +43,7 @@ function buildWeeks(rows: HistRow[]): WeekFig[] {
   return [...by.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([ws, all]) => {
     const cr = all.filter(isContractorRow);
     const n40 = new Set<string>(), n50 = new Set<string>();
-    let hours = 0, ig = 0, eg = 0, ia = 0, ea = 0, ms = 0, mh = 0;
+    let hours = 0, ig = 0, eg = 0, ia = 0, ea = 0, ms = 0, mh = 0, crs = 0, kts = 0;
     for (const r of cr) {
       const h = rowHours(r);
       const name = (r.contractor_name ?? '').trim().toLowerCase();
@@ -53,12 +53,12 @@ function buildWeeks(rows: HistRow[]): WeekFig[] {
       ig += num(r.client_billing); eg += num(r.contractor_cost);
       ia += num(r.income_after_3_percent); ea += num(r.expense_after_1_percent);
       const mk = markupOf(r);
-      if (mk != null && r.client_rate != null && r.contractor_rate != null && h > 0) { ms += mk * h; mh += h; }
+      if (mk != null && r.client_rate != null && r.contractor_rate != null && h > 0) { ms += mk * h; mh += h; crs += num(r.client_rate) * h; kts += num(r.contractor_rate) * h; }
     }
     return {
       weekStart: ws, label: all.find((r) => r.week_label)?.week_label ?? ws, woy: weekOfYear(ws),
       active: weekHeadcount(all), on40: n40.size, on50: n50.size, hours,
-      incomeGross: ig, expenseGross: eg, incomeAfter: ia, expenseAfter: ea, markupSum: ms, markupHours: mh,
+      incomeGross: ig, expenseGross: eg, incomeAfter: ia, expenseAfter: ea, markupSum: ms, markupHours: mh, clientRateSum: crs, contractorRateSum: kts,
     };
   });
 }
@@ -189,6 +189,17 @@ export function AnalyticsPL() {
       labelA: String(yearA ?? ''), labelB: String(yearB ?? ''), sharedCount: shared.size,
     };
   }, [mode, basis, weeksA, weeksB, weekA, weekB, yearA, yearB]);
+
+  const selA = useMemo(() => {
+    if (mode === 'specific') return weeksA.filter((w) => w.weekStart === weekA);
+    const wB = new Set(weeksB.map((w) => w.woy));
+    return weeksA.filter((w) => wB.has(w.woy));
+  }, [mode, weeksA, weeksB, weekA]);
+  const selB = useMemo(() => {
+    if (mode === 'specific') return weeksB.filter((w) => w.weekStart === weekB);
+    const wA = new Set(weeksA.map((w) => w.woy));
+    return weeksB.filter((w) => wA.has(w.woy));
+  }, [mode, weeksA, weeksB, weekB]);
 
   const specific = mode === 'specific';
   const cards: { key: MetricKey; title: string; caption: string; fmt: (v: number) => string; money?: boolean }[] = [
@@ -349,6 +360,95 @@ export function AnalyticsPL() {
           )}
         </div>
       </Card>
+
+      <DriversPanel selA={selA} selB={selB} basis={basis} labelA={labelA} labelB={labelB} />
     </div>
+  );
+}
+
+const COLOR_POS = '#0ABEDF';
+const COLOR_NEG = '#EF9F27';
+const fmtSigned = (v: number) => `${v >= 0 ? '+' : '−'}$${Math.abs(v).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+const fmtRate = (v: number) => `$${v.toFixed(2)}`;
+const fmtRateSigned = (v: number) => `${v >= 0 ? '+' : '−'}$${Math.abs(v).toFixed(2)}`;
+
+function totals(weeks: WeekFig[], basis: Basis, kind: 'income' | 'expense') {
+  let c = 0, hours = 0, amount = 0;
+  for (const w of weeks) {
+    c += w.active; hours += w.hours;
+    amount += kind === 'income' ? (basis === 'gross' ? w.incomeGross : w.incomeAfter) : (basis === 'gross' ? w.expenseGross : w.expenseAfter);
+  }
+  return { c, hours, amount, h: c > 0 ? hours / c : 0, r: hours > 0 ? amount / hours : 0 };
+}
+
+function DriverBlock({ title, selA, selB, basis, kind, labelA, labelB }: {
+  title: string; selA: WeekFig[]; selB: WeekFig[]; basis: Basis; kind: 'income' | 'expense'; labelA: string; labelB: string;
+}) {
+  const A = totals(selA, basis, kind), B = totals(selB, basis, kind);
+  const total = A.amount - B.amount;
+  const pct = B.amount !== 0 ? (total / Math.abs(B.amount)) * 100 : null;
+  const parts = [
+    { label: 'Contractor count', v: (A.c - B.c) * B.h * B.r, detail: `${A.c.toFixed(1)} in ${labelA} vs ${B.c.toFixed(1)} in ${labelB}` },
+    { label: 'Hours per contractor', v: A.c * (A.h - B.h) * B.r, detail: `${A.h.toFixed(1)} in ${labelA} vs ${B.h.toFixed(1)} in ${labelB}` },
+    { label: kind === 'income' ? 'Rate (client)' : 'Rate (contractor)', v: A.c * A.h * (A.r - B.r), detail: `${fmtRate(A.r)}/h in ${labelA} vs ${fmtRate(B.r)}/h in ${labelB}` },
+  ];
+  // Residual only appears when one side has no contractors/hours; fold it into rate so parts always sum to total.
+  const residual = total - parts.reduce((a, p) => a + p.v, 0);
+  if (Math.abs(residual) > 0.005) parts[2].v += residual;
+  const maxAbs = Math.max(1, ...parts.map((p) => Math.abs(p.v)));
+  const biggest = parts.reduce((a, p) => (Math.abs(p.v) > Math.abs(a.v) ? p : a), parts[0]);
+  return (
+    <div className="space-y-3">
+      <div>
+        <div className="text-base font-semibold">
+          {title} {fmtSigned(total)}{pct != null && ` (${pct >= 0 ? '+' : '−'}${Math.abs(pct).toFixed(1)}%)`} <span className="text-muted-foreground font-normal">vs {labelB}</span>
+        </div>
+        <div className="text-xs text-muted-foreground">Biggest driver: {biggest.label.toLowerCase()} ({fmtSigned(biggest.v)})</div>
+      </div>
+      {parts.map((p) => {
+        const w = (Math.abs(p.v) / maxAbs) * 50;
+        return (
+          <div key={p.label} className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 items-center">
+            <div>
+              <div className="text-sm font-medium">{p.label}</div>
+              <div className="text-xs text-muted-foreground">{p.detail}</div>
+            </div>
+            <div className="text-sm font-semibold tabular-nums text-right" style={{ color: p.v >= 0 ? COLOR_POS : COLOR_NEG }}>{fmtSigned(p.v)}</div>
+            <div className="col-span-2 relative h-2 rounded bg-muted">
+              <div className="absolute top-0 bottom-0 w-px bg-border" style={{ left: '50%' }} />
+              <div className="absolute top-0 bottom-0 rounded" style={{ background: p.v >= 0 ? COLOR_POS : COLOR_NEG, width: `${w}%`, left: p.v >= 0 ? '50%' : `${50 - w}%` }} />
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+function DriversPanel({ selA, selB, basis, labelA, labelB }: { selA: WeekFig[]; selB: WeekFig[]; basis: Basis; labelA: string; labelB: string }) {
+  if (selA.length === 0 || selB.length === 0) return null;
+  const rates = (ws: WeekFig[]) => {
+    const mh = ws.reduce((a, w) => a + w.markupHours, 0);
+    if (mh <= 0) return null;
+    return {
+      markup: ws.reduce((a, w) => a + w.markupSum, 0) / mh,
+      client: ws.reduce((a, w) => a + w.clientRateSum, 0) / mh,
+      contractor: ws.reduce((a, w) => a + w.contractorRateSum, 0) / mh,
+    };
+  };
+  const ra = rates(selA), rb = rates(selB);
+  return (
+    <Card className="p-4 space-y-4">
+      <div className="text-sm font-semibold">What made the difference</div>
+      <div className="grid gap-6 md:grid-cols-2">
+        <DriverBlock title="Income" kind="income" selA={selA} selB={selB} basis={basis} labelA={labelA} labelB={labelB} />
+        <DriverBlock title="Expense" kind="expense" selA={selA} selB={selB} basis={basis} labelA={labelA} labelB={labelB} />
+      </div>
+      {ra && rb && (
+        <div className="text-xs text-muted-foreground border-t pt-3">
+          Markup rate {fmtRate(ra.markup)}/h in {labelA} vs {fmtRate(rb.markup)}/h in {labelB} ({fmtRateSigned(ra.markup - rb.markup)}) · client rate {fmtRateSigned(ra.client - rb.client)} · contractor rate {fmtRateSigned(ra.contractor - rb.contractor)} · Markup is before fees
+        </div>
+      )}
+    </Card>
   );
 }
