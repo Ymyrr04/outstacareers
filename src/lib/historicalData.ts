@@ -31,7 +31,7 @@ export const num = (n: number | null | undefined) => Number(n ?? 0);
 // ---- Per-year cache (memory + localStorage), invalidated when batches or their mapping change ----
 export interface CacheEntry { sig: string; ids: string[]; uploadIds?: string[]; syncIds?: string[]; rows: HistRow[] }
 const memCache = new Map<number, CacheEntry>();
-export const CACHE_KEY = (y: number) => `hist-pl-cache-v8-${y}`;
+export const CACHE_KEY = (y: number) => `hist-pl-cache-v9-${y}`;
 export function readCache(y: number): CacheEntry | null {
   if (memCache.has(y)) return memCache.get(y)!;
   try {
