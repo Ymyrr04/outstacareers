@@ -474,15 +474,6 @@ function DriversPanel({ selA, selB, basis, labelA, labelB }: { selA: WeekFig[]; 
     <Card className="p-4 space-y-4">
       <div className="text-sm font-semibold">What made the difference</div>
       <AiSummary facts={buildFacts(selA, selB, basis, labelA, labelB, ra, rb)} />
-      <div className="grid gap-6 md:grid-cols-2">
-        <DriverBlock title="Income" kind="income" selA={selA} selB={selB} basis={basis} labelA={labelA} labelB={labelB} />
-        <DriverBlock title="Expense" kind="expense" selA={selA} selB={selB} basis={basis} labelA={labelA} labelB={labelB} />
-      </div>
-      {ra && rb && (
-        <div className="text-xs text-muted-foreground border-t pt-3">
-          Markup rate {fmtRate(ra.markup)}/h in {labelA} vs {fmtRate(rb.markup)}/h in {labelB} ({fmtRateSigned(ra.markup - rb.markup)}) · client rate {fmtRateSigned(ra.client - rb.client)} · contractor rate {fmtRateSigned(ra.contractor - rb.contractor)} · Markup is before fees
-        </div>
-      )}
     </Card>
   );
 }
