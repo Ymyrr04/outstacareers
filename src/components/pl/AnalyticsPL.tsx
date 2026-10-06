@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2 } from 'lucide-react';
+import { Loader2, ChevronDown, ChevronRight } from 'lucide-react';
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, Tooltip, Legend, LabelList, CartesianGrid,
 } from 'recharts';
@@ -490,12 +490,14 @@ function buildMix(rows: HistRow[]) {
     sorted.slice(0, 6).map(([rate, count], i) => ({ name: `$${rate.toFixed(2)}`, rate, count, color: MIX_COLORS[i] }));
   const rest = sorted.slice(6);
   if (rest.length) slices.push({ name: `Other (${rest.length} rates)`, rate: null, count: rest.reduce((a, [, c]) => a + c, 0), color: MIX_OTHER, other: rest.length });
-  return { slices, total, noRate: all.size - total, lastLabel: lastWeek?.label ?? null };
+  return { slices, total, noRate: all.size - total, lastLabel: lastWeek?.label ?? null, rest };
+
 }
 
 function MixPanel({ years, fixedYear }: { years: number[]; fixedYear?: number }) {
   const [year, setYear] = useState<number | null>(fixedYear ?? null);
   const [rows, setRows] = useState<HistRow[] | null>(null);
+  const [showOther, setShowOther] = useState(false);
   useEffect(() => {
     if (fixedYear != null || year != null || years.length === 0) return;
     const prev = Number(todayET().slice(0, 4)) - 1;
@@ -543,6 +545,27 @@ function MixPanel({ years, fixedYear }: { years: number[]; fixedYear?: number })
             {mix.slices.map((s) => {
               const pct = Math.round((s.count / mix.total) * 100);
               const tip = s.rate != null ? `${s.count} contractor${s.count === 1 ? ' has' : 's have'} a $${s.rate.toFixed(2)} markup rate` : `${s.count} contractors across ${s.other} other rates`;
+              if (s.other != null && s.other > 0) {
+                return (
+                  <div key={s.name}>
+                    <button type="button" title={tip} onClick={() => setShowOther((v) => !v)}
+                      className="flex items-center gap-2 text-xs tabular-nums w-full text-left rounded hover:bg-muted/50 -mx-1 px-1 py-0.5">
+                      {showOther ? <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />}
+                      <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
+                      <span>{s.name} · {s.count} · {pct}%</span>
+                    </button>
+                    {showOther && mix.rest.map(([rate, cnt]) => {
+                      const opct = Math.round((cnt / mix.total) * 100);
+                      return (
+                        <div key={rate} title={`${cnt} contractor${cnt === 1 ? ' has' : 's have'} a $${rate.toFixed(2)} markup rate`} className="flex items-center gap-2 text-xs tabular-nums pl-[26px] pr-1 py-0.5 text-muted-foreground">
+                          <span className="h-2 w-2 rounded-sm shrink-0" style={{ background: s.color }} />
+                          <span>${rate.toFixed(2)} · {cnt} · {opct}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              }
               return (
                 <div key={s.name} title={tip} className="flex items-center gap-2 text-xs tabular-nums">
                   <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
