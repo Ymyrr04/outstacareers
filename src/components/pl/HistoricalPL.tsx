@@ -45,7 +45,7 @@ const num = (n: number | null | undefined) => Number(n ?? 0);
 // ---- Per-year cache (memory + localStorage), invalidated when batches or their mapping change ----
 interface CacheEntry { sig: string; ids: string[]; uploadIds?: string[]; syncIds?: string[]; rows: HistRow[] }
 const memCache = new Map<number, CacheEntry>();
-const CACHE_KEY = (y: number) => `hist-pl-cache-v7-${y}`;
+const CACHE_KEY = (y: number) => `hist-pl-cache-v8-${y}`;
 function readCache(y: number): CacheEntry | null {
   if (memCache.has(y)) return memCache.get(y)!;
   try {
