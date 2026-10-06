@@ -1,5 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2 } from 'lucide-react';
+import {
+  ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, Tooltip, Legend, LabelList, CartesianGrid,
+} from 'recharts';
 import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -79,6 +82,29 @@ function aggregate(weeks: WeekFig[], basis: Basis): Agg | null {
 
 const fmtMoney = (v: number) => `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const fmtCount = (v: number, specific: boolean) => (specific ? v.toFixed(0) : v.toFixed(1));
+
+const METRIC_TITLES: Record<MetricKey, string> = {
+  active: 'Active contractors', on40: 'On 40 hours', on50: 'On 50 hours',
+  income: 'Income', expense: 'Expense', markup: 'Markup rate',
+};
+
+// Per-week value for a metric, respecting the gross/after-fees switch.
+function weekValue(w: WeekFig, key: MetricKey, basis: Basis): number | null {
+  switch (key) {
+    case 'active': return w.active;
+    case 'on40': return w.on40;
+    case 'on50': return w.on50;
+    case 'income': return basis === 'gross' ? w.incomeGross : w.incomeAfter;
+    case 'expense': return basis === 'gross' ? w.expenseGross : w.expenseAfter;
+    case 'markup': return w.markupHours > 0 ? w.markupSum / w.markupHours : null;
+  }
+}
+
+const chartFmt = (key: MetricKey, v: number) =>
+  key === 'income' || key === 'expense' || key === 'markup' ? fmtMoney(v) : v.toFixed(0);
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthOf = (ws: string) => MONTHS[Number(ws.slice(5, 7)) - 1];
 
 function Segmented<T extends string>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: { v: T; label: string }[] }) {
   return (
@@ -255,6 +281,74 @@ export function AnalyticsPL() {
           );
         })}
       </div>
+
+      <Card className="p-4">
+        <div className="mb-3 text-sm font-medium">
+          {METRIC_TITLES[metric]} {specific ? '— selected weeks' : 'per week'} · {labelA} vs {labelB}
+        </div>
+        <div className="h-72">
+          {specific ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={[
+                { name: labelA, value: aggA?.[metric] ?? 0 },
+                { name: labelB, value: aggB?.[metric] ?? 0 },
+              ]} margin={{ top: 24, right: 16, left: 8, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis domain={[0, 'auto']} tick={{ fontSize: 12 }} width={70}
+                  tickFormatter={(v: number) => (metric === 'income' || metric === 'expense' || metric === 'markup' ? `$${v.toLocaleString()}` : String(v))} />
+                <Tooltip formatter={(v: number) => chartFmt(metric, v)} />
+                <Legend content={() => (
+                  <div className="flex justify-center gap-6 text-xs text-muted-foreground pt-2">
+                    <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: COLOR_A }} />{yearA}</span>
+                    <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: COLOR_B }} />{yearB}</span>
+                  </div>
+                )} />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]}>
+                  <Cell fill={COLOR_A} />
+                  <Cell fill={COLOR_B} />
+                  <LabelList dataKey="value" position="top" formatter={(v: number) => chartFmt(metric, v)} fontSize={12} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={(() => {
+                const byA = new Map(weeksA.map((w) => [w.woy, w]));
+                const byB = new Map(weeksB.map((w) => [w.woy, w]));
+                const woys = [...new Set([...byA.keys()].filter((k) => byB.has(k)))].sort((a, b) => a - b);
+                return woys.map((k) => {
+                  const wa = byA.get(k)!, wb = byB.get(k)!;
+                  return {
+                    woy: k, month: monthOf(wa.weekStart),
+                    a: weekValue(wa, metric, basis), b: weekValue(wb, metric, basis),
+                    labelA: wa.label, labelB: wb.label,
+                  };
+                });
+              })()} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }}
+                  ticks={(() => {
+                    const seen = new Set<string>(); const out: string[] = [];
+                    for (const w of weeksA) { const m = monthOf(w.weekStart); if (!seen.has(m)) { seen.add(m); out.push(m); } }
+                    return out;
+                  })()} />
+                <YAxis domain={[0, 'auto']} tick={{ fontSize: 12 }} width={70}
+                  tickFormatter={(v: number) => (metric === 'income' || metric === 'expense' || metric === 'markup' ? `$${v.toLocaleString()}` : String(v))} />
+                <Tooltip
+                  formatter={(v: number, name: string) => chartFmt(metric, v)}
+                  labelFormatter={(_, payload) => {
+                    const p = payload?.[0]?.payload as { labelA?: string; labelB?: string } | undefined;
+                    return p ? `${p.labelA} · ${p.labelB}` : '';
+                  }} />
+                <Legend />
+                <Line type="monotone" dataKey="a" name={String(yearA ?? '')} stroke={COLOR_A} strokeWidth={2} dot={false} connectNulls />
+                <Line type="monotone" dataKey="b" name={String(yearB ?? '')} stroke={COLOR_B} strokeWidth={2} strokeDasharray="6 4" dot={false} connectNulls />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </Card>
     </div>
   );
 }
