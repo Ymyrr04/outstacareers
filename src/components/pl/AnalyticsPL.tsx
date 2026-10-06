@@ -22,12 +22,12 @@ const COLOR_B = 'hsl(var(--muted-foreground))';
 
 type Mode = 'all' | 'specific';
 type Basis = 'gross' | 'after';
-export type MetricKey = 'active' | 'on40' | 'on50' | 'income' | 'expense' | 'markup';
+export type MetricKey = 'active' | 'on40' | 'on50' | 'income' | 'expense' | 'grossAfter' | 'markup';
 
 interface WeekFig {
   weekStart: string; label: string; woy: number;
   active: number; on40: number; on50: number; hours: number;
-  incomeGross: number; expenseGross: number; incomeAfter: number; expenseAfter: number;
+  incomeGross: number; expenseGross: number; incomeAfter: number; expenseAfter: number; grossAfter: number;
   markupSum: number; markupHours: number; clientRateSum: number; contractorRateSum: number;
 }
 
@@ -44,12 +44,12 @@ function buildWeeks(rows: HistRow[]): WeekFig[] {
     if (!r.week_start) continue;
     const k = r.week_start.slice(0, 10);
     if (!by.has(k)) by.set(k, []);
-    by.get(k)!.push(r);
+    by.get(k)?.push(r);
   }
   return [...by.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([ws, all]) => {
     const cr = all.filter(isContractorRow);
     const n40 = new Set<string>(), n50 = new Set<string>();
-    let hours = 0, ig = 0, eg = 0, ia = 0, ea = 0, ms = 0, mh = 0, crs = 0, kts = 0;
+    let hours = 0, ig = 0, eg = 0, ia = 0, ea = 0, ga = 0, ms = 0, mh = 0, crs = 0, kts = 0;
     for (const r of cr) {
       const h = rowHours(r);
       const name = (r.contractor_name ?? '').trim().toLowerCase();
@@ -58,18 +58,19 @@ function buildWeeks(rows: HistRow[]): WeekFig[] {
       hours += h;
       ig += num(r.client_billing); eg += num(r.contractor_cost);
       ia += num(r.income_after_3_percent); ea += num(r.expense_after_1_percent);
+      ga += num(r.gross_after_deductions);
       const mk = markupOf(r);
       if (mk != null && r.client_rate != null && r.contractor_rate != null && h > 0) { ms += mk * h; mh += h; crs += num(r.client_rate) * h; kts += num(r.contractor_rate) * h; }
     }
     return {
       weekStart: ws, label: all.find((r) => r.week_label)?.week_label ?? ws, woy: weekOfYear(ws),
       active: weekHeadcount(all), on40: n40.size, on50: n50.size, hours,
-      incomeGross: ig, expenseGross: eg, incomeAfter: ia, expenseAfter: ea, markupSum: ms, markupHours: mh, clientRateSum: crs, contractorRateSum: kts,
+      incomeGross: ig, expenseGross: eg, incomeAfter: ia, expenseAfter: ea, grossAfter: ga, markupSum: ms, markupHours: mh, clientRateSum: crs, contractorRateSum: kts,
     };
   });
 }
 
-interface Agg { active: number; on40: number; on50: number; income: number; expense: number; markup: number | null }
+interface Agg { active: number; on40: number; on50: number; income: number; expense: number; grossAfter: number; markup: number | null }
 
 function aggregate(weeks: WeekFig[], basis: Basis): Agg | null {
   if (weeks.length === 0) return null;
@@ -82,6 +83,7 @@ function aggregate(weeks: WeekFig[], basis: Basis): Agg | null {
     on50: s((w) => w.on50) / n,
     income: s((w) => (basis === 'gross' ? w.incomeGross : w.incomeAfter)),
     expense: s((w) => (basis === 'gross' ? w.expenseGross : w.expenseAfter)),
+    grossAfter: s((w) => w.grossAfter),
     markup: mh > 0 ? s((w) => w.markupSum) / mh : null,
   };
 }
@@ -91,7 +93,7 @@ const fmtCount = (v: number, specific: boolean) => (specific ? v.toFixed(0) : v.
 
 const METRIC_TITLES: Record<MetricKey, string> = {
   active: 'Active contractors', on40: 'On 40 hours', on50: 'On 50 hours',
-  income: 'Income', expense: 'Expense', markup: 'Markup rate',
+  income: 'Income after 3%', expense: 'Expense after 1%', grossAfter: 'Gross after deductions', markup: 'Markup rate',
 };
 
 // Per-week value for a metric, respecting the gross/after-fees switch.
@@ -102,12 +104,13 @@ function weekValue(w: WeekFig, key: MetricKey, basis: Basis): number | null {
     case 'on50': return w.on50;
     case 'income': return basis === 'gross' ? w.incomeGross : w.incomeAfter;
     case 'expense': return basis === 'gross' ? w.expenseGross : w.expenseAfter;
+    case 'grossAfter': return w.grossAfter;
     case 'markup': return w.markupHours > 0 ? w.markupSum / w.markupHours : null;
   }
 }
 
 const chartFmt = (key: MetricKey, v: number) =>
-  key === 'income' || key === 'expense' || key === 'markup' ? fmtMoney(v) : v.toFixed(0);
+  key === 'income' || key === 'expense' || key === 'grossAfter' || key === 'markup' ? fmtMoney(v) : v.toFixed(0);
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const monthOf = (ws: string) => MONTHS[Number(ws.slice(5, 7)) - 1];
@@ -133,7 +136,7 @@ export function AnalyticsPL() {
   const [rowsByYear, setRowsByYear] = useState<Record<number, HistRow[]>>({});
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<Mode>('all');
-  const [basis, setBasis] = useState<Basis>('gross');
+  const basis: Basis = 'after';
   const [weekA, setWeekA] = useState<string | null>(null);
   const [weekB, setWeekB] = useState<string | null>(null);
   const [metric, setMetric] = useState<MetricKey>('active');
@@ -222,8 +225,9 @@ export function AnalyticsPL() {
     { key: 'active', title: 'Active contractors', caption: specific ? 'that week' : 'avg per week', fmt: (v) => fmtCount(v, specific) },
     { key: 'on40', title: 'On 40 hours', caption: specific ? 'that week' : 'avg per week', fmt: (v) => fmtCount(v, specific) },
     { key: 'on50', title: 'On 50 hours', caption: specific ? 'that week' : 'avg per week', fmt: (v) => fmtCount(v, specific) },
-    { key: 'income', title: 'Income', caption: specific ? 'that week' : 'total', fmt: fmtMoney },
-    { key: 'expense', title: 'Expense', caption: specific ? 'that week' : 'total', fmt: fmtMoney },
+    { key: 'expense', title: 'Expense after 1%', caption: specific ? 'that week' : 'total', fmt: fmtMoney },
+    { key: 'income', title: 'Income after 3%', caption: specific ? 'that week' : 'total', fmt: fmtMoney },
+    { key: 'grossAfter', title: 'Gross after deductions', caption: specific ? 'that week' : 'total', fmt: fmtMoney },
     { key: 'markup', title: 'Markup rate', caption: specific ? 'that week' : '$ per hour', fmt: fmtMoney, money: true },
   ];
 
@@ -265,7 +269,6 @@ export function AnalyticsPL() {
           </Select>
         </div>
         <Segmented value={mode} onChange={(v) => setMode(v as Mode)} options={[{ v: 'all', label: 'All weeks' }, { v: 'specific', label: 'Specific weeks' }]} />
-        <Segmented value={basis} onChange={(v) => setBasis(v as Basis)} options={[{ v: 'gross', label: 'Gross' }, { v: 'after', label: 'After fees' }]} />
         {specific ? (
           <div className="flex items-center gap-2">
             <Select value={weekA ?? undefined} onValueChange={setWeekA}>
@@ -324,7 +327,7 @@ export function AnalyticsPL() {
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <XAxis dataKey="name" tick={{ fontSize: 12 }} />
                 <YAxis domain={[0, 'auto']} tick={{ fontSize: 12 }} width={70}
-                  tickFormatter={(v: number) => (metric === 'income' || metric === 'expense' || metric === 'markup' ? `$${v.toLocaleString()}` : String(v))} />
+                  tickFormatter={(v: number) => (metric === 'income' || metric === 'expense' || metric === 'grossAfter' || metric === 'markup' ? `$${v.toLocaleString()}` : String(v))} />
                 <Tooltip formatter={(v: number) => chartFmt(metric, v)} />
                 <Legend content={() => (
                   <div className="flex justify-center gap-6 text-xs text-muted-foreground pt-2">
@@ -345,8 +348,9 @@ export function AnalyticsPL() {
                 const byA = new Map(weeksA.map((w) => [w.woy, w]));
                 const byB = new Map(weeksB.map((w) => [w.woy, w]));
                 const woys = [...new Set([...byA.keys()].filter((k) => byB.has(k)))].sort((a, b) => a - b);
-                return woys.map((k) => {
-                  const wa = byA.get(k)!, wb = byB.get(k)!;
+                return woys.flatMap((k) => {
+                  const wa = byA.get(k), wb = byB.get(k);
+                  if (!wa || !wb) return [];
                   return {
                     woy: k, month: monthOf(wa.weekStart),
                     a: weekValue(wa, metric, basis), b: weekValue(wb, metric, basis),
@@ -362,7 +366,7 @@ export function AnalyticsPL() {
                     return out;
                   })()} />
                 <YAxis domain={[0, 'auto']} tick={{ fontSize: 12 }} width={70}
-                  tickFormatter={(v: number) => (metric === 'income' || metric === 'expense' || metric === 'markup' ? `$${v.toLocaleString()}` : String(v))} />
+                  tickFormatter={(v: number) => (metric === 'income' || metric === 'expense' || metric === 'grossAfter' || metric === 'markup' ? `$${v.toLocaleString()}` : String(v))} />
                 <Tooltip
                   formatter={(v: number, name: string) => chartFmt(metric, v)}
                   labelFormatter={(_, payload) => {
