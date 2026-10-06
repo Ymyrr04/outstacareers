@@ -298,10 +298,12 @@ export function AnalyticsPL() {
                 <YAxis domain={[0, 'auto']} tick={{ fontSize: 12 }} width={70}
                   tickFormatter={(v: number) => (metric === 'income' || metric === 'expense' || metric === 'markup' ? `$${v.toLocaleString()}` : String(v))} />
                 <Tooltip formatter={(v: number) => chartFmt(metric, v)} />
-                <Legend payload={[
-                  { value: String(yearA ?? ''), type: 'square', color: COLOR_A },
-                  { value: String(yearB ?? ''), type: 'square', color: COLOR_B },
-                ]} />
+                <Legend content={() => (
+                  <div className="flex justify-center gap-6 text-xs text-muted-foreground pt-2">
+                    <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: COLOR_A }} />{yearA}</span>
+                    <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: COLOR_B }} />{yearB}</span>
+                  </div>
+                )} />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                   <Cell fill={COLOR_A} />
                   <Cell fill={COLOR_B} />
