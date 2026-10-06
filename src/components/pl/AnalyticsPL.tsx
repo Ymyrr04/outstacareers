@@ -671,7 +671,7 @@ function MixPanel({ years, fixedYear, weekRows, title, subtitle, swatch }: {
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-            <div className="h-[210px] min-w-[190px] flex-[1_1_220px]">
+            <div className="h-[240px] min-w-[190px] flex-[1_1_220px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={mix.slices} dataKey="count" nameKey="name" innerRadius="52%" outerRadius="88%" cy="50%" stroke="none" isAnimationActive={false}>
