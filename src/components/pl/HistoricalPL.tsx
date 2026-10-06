@@ -86,7 +86,7 @@ const sumField = (rows: HistRow[], key: NumKey) => {
   return { total, has };
 };
 const fmtMaybe = (f: { total: number; has: boolean }) => (f.has ? money(f.total) : '—');
-type SortKey = 'contractor_name' | 'company' | 'bonus' | NumKey;
+type SortKey = 'contractor_name' | 'company' | 'bonus' | 'markup' | NumKey;
 interface SortState { key: SortKey; dir: 'asc' | 'desc' }
 type Col = { key: SortKey; label: string; numeric?: boolean; kind?: 'hours' | 'money' | 'rate'; width?: string };
 // Bonus from the timesheet submission lives in raw (synced weeks only); display-only.
@@ -101,6 +101,9 @@ const bonusOf = (r: HistRow): number | null => {
   if (exp != null && Number(exp) !== 0 && r.contractor_rate == null && r.client_rate == null) return Number(exp);
   return null;
 };
+// Markup rate = client rate − contractor rate (computed, not stored).
+const markupOf = (r: HistRow): number | null =>
+  r.client_rate != null && r.contractor_rate != null ? Number(r.client_rate) - Number(r.contractor_rate) : null;
 const SORTABLE: Col[] = [
   { key: 'contractor_name', label: 'Contractor', width: 'w-[220px] min-w-[220px] max-w-[220px]' },
   { key: 'company', label: 'Company', width: 'w-[180px] min-w-[180px] max-w-[180px]' },
@@ -117,6 +120,7 @@ const SORTABLE: Col[] = [
   { key: 'gross_after_deductions', label: 'Gross after deductions', numeric: true, kind: 'money', width: 'w-[180px] min-w-[180px]' },
   { key: 'client_deposit', label: 'Client deposit', numeric: true, kind: 'money', width: 'w-[130px] min-w-[130px]' },
   { key: 'contractor_deposit', label: 'Contractor deposit', numeric: true, kind: 'money', width: 'w-[160px] min-w-[160px]' },
+  { key: 'markup', label: 'Markup rate', numeric: true, kind: 'rate', width: 'w-[120px] min-w-[120px]' },
 ];
 const NUM_COL = 'w-[56px] min-w-[56px] max-w-[56px]';
 const STATUS_COL = 'w-[130px] min-w-[130px] max-w-[130px]';
@@ -252,6 +256,7 @@ export function HistoricalPL({ onUpload }: Props) {
       return (r[sort.key] || '').trim().toLowerCase();
     }
     if (sort.key === 'bonus') return num(bonusOf(r));
+    if (sort.key === 'markup') return num(markupOf(r));
     return num(r[sort.key as NumKey]);
   };
   const cmpRows = (a: HistRow, b: HistRow) => {
@@ -803,7 +808,7 @@ export function HistoricalPL({ onUpload }: Props) {
                             </td>
                           ) : (
                             <td className={cn('px-3 py-2 border-b bg-background group-hover:bg-muted text-right tabular-nums whitespace-nowrap', c.width)}>
-                              {isInternalRow(r) && c.kind === 'hours' ? '—' : fmtCell(c, c.key === 'bonus' ? bonusOf(r) : r[c.key as NumKey])}
+                              {isInternalRow(r) && c.kind === 'hours' ? '—' : fmtCell(c, c.key === 'bonus' ? bonusOf(r) : c.key === 'markup' ? markupOf(r) : r[c.key as NumKey])}
                             </td>
                           )}
                           {c.key === 'company' && (
