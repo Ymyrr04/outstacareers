@@ -134,6 +134,13 @@
       "when": 1790861802888,
       "tag": "0018_add_payoneer_email",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1791313981498,
+      "tag": "0019_pl_ai_summaries",
+      "breakpoints": true
     }
   ]
 }

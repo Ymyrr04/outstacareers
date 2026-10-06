@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Loader2, ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
   ResponsiveContainer, LineChart, Line, BarChart, Bar, Cell, XAxis, YAxis, Tooltip, Legend, LabelList, CartesianGrid,
 } from 'recharts';
@@ -472,6 +473,7 @@ function DriversPanel({ selA, selB, basis, labelA, labelB }: { selA: WeekFig[]; 
   return (
     <Card className="p-4 space-y-4">
       <div className="text-sm font-semibold">What made the difference</div>
+      <AiSummary facts={buildFacts(selA, selB, basis, labelA, labelB, ra, rb)} />
       <div className="grid gap-6 md:grid-cols-2">
         <DriverBlock title="Income" kind="income" selA={selA} selB={selB} basis={basis} labelA={labelA} labelB={labelB} />
         <DriverBlock title="Expense" kind="expense" selA={selA} selB={selB} basis={basis} labelA={labelA} labelB={labelB} />
@@ -485,6 +487,77 @@ function DriversPanel({ selA, selB, basis, labelA, labelB }: { selA: WeekFig[]; 
   );
 }
 
+function driverFacts(selA: WeekFig[], selB: WeekFig[], basis: Basis, kind: 'income' | 'expense') {
+  const A = totals(selA, basis, kind), B = totals(selB, basis, kind);
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  const total = A.amount - B.amount;
+  const count = (A.c - B.c) * B.h * B.r, hours = A.c * (A.h - B.h) * B.r;
+  return {
+    amountA: r2(A.amount), amountB: r2(B.amount), change: r2(total),
+    changePct: B.amount !== 0 ? r2((total / Math.abs(B.amount)) * 100) : null,
+    avgActiveContractorsA: r2(A.c), avgActiveContractorsB: r2(B.c),
+    hoursPerContractorA: r2(A.h), hoursPerContractorB: r2(B.h),
+    effectOfContractorCount: r2(count), effectOfHoursPerContractor: r2(hours), effectOfRate: r2(total - count - hours),
+  };
+}
+
+function buildFacts(selA: WeekFig[], selB: WeekFig[], basis: Basis, labelA: string, labelB: string,
+  ra: { markup: number; client: number; contractor: number } | null, rb: { markup: number; client: number; contractor: number } | null) {
+  const r2 = (n: number) => Math.round(n * 100) / 100;
+  return {
+    periodA: labelA, periodB: labelB, weeksCompared: selA.length,
+    basis: basis === 'gross' ? 'gross (before fees)' : 'after fees',
+    income: driverFacts(selA, selB, basis, 'income'),
+    expense: driverFacts(selA, selB, basis, 'expense'),
+    markupPerHour: ra && rb ? { A: r2(ra.markup), B: r2(rb.markup), clientRateA: r2(ra.client), clientRateB: r2(rb.client), contractorRateA: r2(ra.contractor), contractorRateB: r2(rb.contractor), note: 'markup is before fees' } : null,
+  };
+}
+
+function AiSummary({ facts }: { facts: Record<string, unknown> }) {
+  const key = JSON.stringify(facts);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [state, setState] = useState<'checking' | 'idle' | 'loading'>('checking');
+  const [error, setError] = useState<string | null>(null);
+  const call = async (cacheOnly: boolean) => {
+    const { data, error: err } = await supabase.functions.invoke('pl-analytics-summary', { body: { facts: JSON.parse(key), cacheOnly } });
+    if (err) {
+      let msg = err.message;
+      try { const b = await (err as any).context?.json?.(); if (b?.error) msg = b.error; } catch { /* ignore */ }
+      throw new Error(msg);
+    }
+    return data as { summary: string | null; cached?: boolean };
+  };
+  useEffect(() => {
+    let off = false;
+    setSummary(null); setError(null); setState('checking');
+    call(true).then((d) => { if (!off) { setSummary(d.summary); setState('idle'); } })
+      .catch(() => { if (!off) setState('idle'); });
+    return () => { off = true; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+  const generate = async () => {
+    setState('loading'); setError(null);
+    try { const d = await call(false); setSummary(d.summary); }
+    catch (e) { setError(e instanceof Error ? e.message : 'Could not generate summary'); }
+    finally { setState('idle'); }
+  };
+  return (
+    <div className="rounded-md border bg-muted/40 p-3 space-y-2">
+      <div className="flex items-center justify-between gap-2">
+        <div className="text-xs font-semibold flex items-center gap-1.5"><Sparkles className="h-3.5 w-3.5" style={{ color: COLOR_A }} /> Analyst summary</div>
+        {state !== 'checking' && !summary && (
+          <Button size="sm" variant="outline" className="h-7 text-xs" onClick={generate} disabled={state === 'loading'}>
+            {state === 'loading' ? <><Loader2 className="h-3 w-3 animate-spin mr-1" />Writing…</> : 'Generate summary'}
+          </Button>
+        )}
+      </div>
+      {state === 'checking' ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+        : summary ? <p className="text-sm leading-relaxed">{summary}</p>
+        : <p className="text-xs text-muted-foreground">Uses a small amount of AI credit. Saved once written — reopening this same comparison is free.</p>}
+      {error && <p className="text-xs text-destructive">{error}</p>}
+    </div>
+  );
+}
 
 const MIX_COLORS = ['#0ABEDF', '#534AB7', '#185FA5', '#EF9F27', '#1D9E75', '#D85A30'];
 const MIX_OTHER = 'hsl(var(--muted-foreground))';

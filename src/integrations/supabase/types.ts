@@ -3453,6 +3453,24 @@ export type Database = {
         }
         Relationships: []
       }
+      pl_ai_summaries: {
+        Row: {
+          created_at: string
+          signature: string
+          summary: string
+        }
+        Insert: {
+          created_at?: string
+          signature: string
+          summary: string
+        }
+        Update: {
+          created_at?: string
+          signature?: string
+          summary?: string
+        }
+        Relationships: []
+      }
       pl_fee_settings: {
         Row: {
           expense_pct: number
