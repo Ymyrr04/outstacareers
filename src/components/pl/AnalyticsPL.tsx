@@ -83,6 +83,29 @@ function aggregate(weeks: WeekFig[], basis: Basis): Agg | null {
 const fmtMoney = (v: number) => `$${v.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 const fmtCount = (v: number, specific: boolean) => (specific ? v.toFixed(0) : v.toFixed(1));
 
+const METRIC_TITLES: Record<MetricKey, string> = {
+  active: 'Active contractors', on40: 'On 40 hours', on50: 'On 50 hours',
+  income: 'Income', expense: 'Expense', markup: 'Markup rate',
+};
+
+// Per-week value for a metric, respecting the gross/after-fees switch.
+function weekValue(w: WeekFig, key: MetricKey, basis: Basis): number | null {
+  switch (key) {
+    case 'active': return w.active;
+    case 'on40': return w.on40;
+    case 'on50': return w.on50;
+    case 'income': return basis === 'gross' ? w.incomeGross : w.incomeAfter;
+    case 'expense': return basis === 'gross' ? w.expenseGross : w.expenseAfter;
+    case 'markup': return w.markupHours > 0 ? w.markupSum / w.markupHours : null;
+  }
+}
+
+const chartFmt = (key: MetricKey, v: number) =>
+  key === 'income' || key === 'expense' || key === 'markup' ? fmtMoney(v) : v.toFixed(0);
+
+const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+const monthOf = (ws: string) => MONTHS[Number(ws.slice(5, 7)) - 1];
+
 function Segmented<T extends string>({ value, onChange, options }: { value: T; onChange: (v: T) => void; options: { v: T; label: string }[] }) {
   return (
     <div className="inline-flex rounded-md border bg-muted/40 p-0.5">
