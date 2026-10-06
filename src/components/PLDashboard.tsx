@@ -1166,12 +1166,14 @@ export const PLDashboard = () => {
   };
 
   const handleExtractCSV = async () => {
-    if (filtered.length === 0) {
+    // Export external submissions plus the internal OutSta team (listed last).
+    const exportRows = [...filtered, ...filteredInternal];
+    if (exportRows.length === 0) {
       toast({ title: 'Nothing to extract', description: 'No submissions match the current filters.' });
       return;
     }
     // Bulk-load cached Payoneer verifications for links in the current view
-    const links = Array.from(new Set(filtered.map((r) => extractPayoneerLink(r.notes)).filter(Boolean) as string[]));
+    const links = Array.from(new Set(exportRows.map((r) => extractPayoneerLink(r.notes)).filter(Boolean) as string[]));
     const payoneerMap = new Map<string, { amount: number | null; currency: string | null }>();
     if (links.length > 0) {
       const { data } = await supabase
@@ -1192,7 +1194,7 @@ export const PLDashboard = () => {
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
 
-    const rowsCsv = filtered.map((r) => {
+    const rowsCsv = exportRows.map((r) => {
       const dep = computeDeposit(r);
       const rate = Number(r.contractor?.hourly_rate || 0);
       const totalH = Number(r.total_hours);
@@ -1243,7 +1245,7 @@ export const PLDashboard = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast({ title: 'Extracted', description: `${filtered.length} submission(s) exported to CSV.` });
+    toast({ title: 'Extracted', description: `${exportRows.length} submission(s) exported to CSV (incl. ${filteredInternal.length} internal team).` });
   };
 
   const statTiles = [
