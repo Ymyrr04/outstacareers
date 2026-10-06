@@ -17,6 +17,11 @@ import { cn } from '@/lib/utils';
 import { HistoricalUploadDialog, HIST_YEARS } from './HistoricalUploadDialog';
 import { HistoricalRemapDialog } from './HistoricalRemapDialog';
 import { HEADCOUNT_EXCLUDED_NAMES } from '@/lib/internalCompany';
+import type { HistRow } from '@/lib/historicalData';
+import {
+  ROW_COLS, num, CACHE_KEY, readCache, writeCache, signature, fetchYear,
+  isInternalRow, markupOf, weekHeadcount, isContractorRow, rowHours,
+} from '@/lib/historicalData';
 
 
 const money = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
