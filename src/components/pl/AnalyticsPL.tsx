@@ -220,6 +220,11 @@ export function AnalyticsPL() {
     return rowsByYear[yearB].filter((r) => r.week_start && s.has(r.week_start.slice(0, 10)));
   }, [yearB, rowsByYear, selB]);
 
+  // Teal for the current year (2026), gray for 2025 or any other year.
+  const curYear = Number(todayET().slice(0, 4));
+  const colorA = yearA === curYear ? COLOR_A : yearB === curYear ? COLOR_B : COLOR_A;
+  const colorB = yearB === curYear ? COLOR_A : COLOR_B;
+
   const specific = mode === 'specific';
   const cards: { key: MetricKey; title: string; caption: string; fmt: (v: number) => string; money?: boolean }[] = [
     { key: 'active', title: 'Active contractors', caption: specific ? 'that week' : 'avg per week', fmt: (v) => fmtCount(v, specific) },
@@ -256,13 +261,13 @@ export function AnalyticsPL() {
     <div className="flex flex-col gap-4 min-w-0">
       <Card className="p-4 flex flex-wrap items-center gap-3">
         <div className="flex items-center gap-2">
-          <span className="h-3 w-3 rounded-sm" style={{ background: COLOR_A }} />
+          <span className="h-3 w-3 rounded-sm" style={{ background: colorA }} />
           <Select value={yearA != null ? String(yearA) : undefined} onValueChange={(v) => setYearA(Number(v))}>
             <SelectTrigger className="h-8 w-24"><SelectValue placeholder="Year A" /></SelectTrigger>
             <SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
           </Select>
           <span className="text-xs text-muted-foreground">vs</span>
-          <span className="h-3 w-3 rounded-sm" style={{ background: COLOR_B }} />
+          <span className="h-3 w-3 rounded-sm" style={{ background: colorB }} />
           <Select value={yearB != null ? String(yearB) : undefined} onValueChange={(v) => setYearB(Number(v))}>
             <SelectTrigger className="h-8 w-24"><SelectValue placeholder="Year B" /></SelectTrigger>
             <SelectContent>{years.map((y) => <SelectItem key={y} value={String(y)}>{y}</SelectItem>)}</SelectContent>
@@ -299,7 +304,7 @@ export function AnalyticsPL() {
                 <span className="text-[11px] text-muted-foreground">{c.caption}</span>
               </div>
               <div className="mt-2 space-y-1">
-                {[{ v: a, color: COLOR_A, label: labelA }, { v: b, color: COLOR_A, label: labelB }].map((l, i) => (
+                {[{ v: a, color: colorA, label: labelA }, { v: b, color: colorB, label: labelB }].map((l, i) => (
                   <div key={i} className="flex items-center gap-2">
                     <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: l.color }} />
                     <span className="text-lg font-semibold tabular-nums">{l.v == null ? '—' : c.fmt(l.v)}</span>
@@ -331,13 +336,13 @@ export function AnalyticsPL() {
                 <Tooltip formatter={(v: number) => chartFmt(metric, v)} />
                 <Legend content={() => (
                   <div className="flex justify-center gap-6 text-xs text-muted-foreground pt-2">
-                    <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: COLOR_A }} />{yearA}</span>
-                    <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: COLOR_B }} />{yearB}</span>
+                    <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: colorA }} />{yearA}</span>
+                    <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: colorB }} />{yearB}</span>
                   </div>
                 )} />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                  <Cell fill={COLOR_A} />
-                  <Cell fill={COLOR_B} />
+                  <Cell fill={colorA} />
+                  <Cell fill={colorB} />
                   <LabelList dataKey="value" position="top" formatter={(v: number) => chartFmt(metric, v)} fontSize={12} />
                 </Bar>
               </BarChart>
@@ -374,8 +379,8 @@ export function AnalyticsPL() {
                     return p ? `${p.labelA} · ${p.labelB}` : '';
                   }} />
                 <Legend />
-                <Line type="monotone" dataKey="a" name={String(yearA ?? '')} stroke={COLOR_A} strokeWidth={2} dot={false} connectNulls />
-                <Line type="monotone" dataKey="b" name={String(yearB ?? '')} stroke={COLOR_B} strokeWidth={2} strokeDasharray="6 4" dot={false} connectNulls />
+                <Line type="monotone" dataKey="a" name={String(yearA ?? '')} stroke={colorA} strokeWidth={2} dot={false} connectNulls />
+                <Line type="monotone" dataKey="b" name={String(yearB ?? '')} stroke={colorB} strokeWidth={2} strokeDasharray="6 4" dot={false} connectNulls />
               </LineChart>
             </ResponsiveContainer>
           )}
@@ -385,9 +390,9 @@ export function AnalyticsPL() {
       <DriversPanel selA={selA} selB={selB} basis={basis} labelA={labelA} labelB={labelB} yearA={yearA} yearB={yearB} rowsA={weekRowsA ?? []} rowsB={weekRowsB ?? []} />
     </div>
     <div className="flex flex-col gap-4">
-      <MixPanel years={years} weekRows={weekRowsA} swatch={COLOR_A}
+      <MixPanel years={years} weekRows={weekRowsA} swatch={colorA}
         title={`Markup rate mix · ${yearA ?? ''}`} subtitle={mixSub(selA)} />
-      <MixPanel years={years} weekRows={weekRowsB} swatch={COLOR_B}
+      <MixPanel years={years} weekRows={weekRowsB} swatch={colorB}
         title={`Markup rate mix · ${yearB ?? ''}`} subtitle={mixSub(selB)} />
     </div>
     <div className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
