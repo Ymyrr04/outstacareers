@@ -203,6 +203,16 @@ export function AnalyticsPL() {
     const wA = new Set(weeksA.map((w) => w.woy));
     return weeksB.filter((w) => wA.has(w.woy));
   }, [mode, weeksA, weeksB, weekB]);
+  const weekRowsA = useMemo(() => {
+    if (yearA == null || !rowsByYear[yearA]) return null;
+    const s = new Set(selA.map((w) => w.weekStart));
+    return rowsByYear[yearA].filter((r) => r.week_start && s.has(r.week_start.slice(0, 10)));
+  }, [yearA, rowsByYear, selA]);
+  const weekRowsB = useMemo(() => {
+    if (yearB == null || !rowsByYear[yearB]) return null;
+    const s = new Set(selB.map((w) => w.weekStart));
+    return rowsByYear[yearB].filter((r) => r.week_start && s.has(r.week_start.slice(0, 10)));
+  }, [yearB, rowsByYear, selB]);
 
   const specific = mode === 'specific';
   const cards: { key: MetricKey; title: string; caption: string; fmt: (v: number) => string; money?: boolean }[] = [
