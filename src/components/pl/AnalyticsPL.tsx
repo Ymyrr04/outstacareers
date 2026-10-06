@@ -281,6 +281,73 @@ export function AnalyticsPL() {
           );
         })}
       </div>
+
+      <Card className="p-4">
+        <div className="mb-3 text-sm font-medium">
+          {METRIC_TITLES[metric]} {specific ? '— selected weeks' : 'per week'} · {labelA} vs {labelB}
+        </div>
+        <div className="h-72">
+          {specific ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={[
+                { name: labelA, value: aggA?.[metric] ?? 0 },
+                { name: labelB, value: aggB?.[metric] ?? 0 },
+              ]} margin={{ top: 24, right: 16, left: 8, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="name" tick={{ fontSize: 12 }} />
+                <YAxis domain={[0, 'auto']} tick={{ fontSize: 12 }} width={70}
+                  tickFormatter={(v: number) => (metric === 'income' || metric === 'expense' || metric === 'markup' ? `$${v.toLocaleString()}` : String(v))} />
+                <Tooltip formatter={(v: number) => chartFmt(metric, v)} />
+                <Legend payload={[
+                  { value: String(yearA ?? ''), type: 'square', color: COLOR_A },
+                  { value: String(yearB ?? ''), type: 'square', color: COLOR_B },
+                ]} />
+                <Bar dataKey="value" radius={[4, 4, 0, 0]}
+                  fill={COLOR_A}
+                  // per-bar colours via Cell-like shape
+                  >
+                  <LabelList dataKey="value" position="top" formatter={(v: number) => chartFmt(metric, v)} fontSize={12} />
+                </Bar>
+              </BarChart>
+            </ResponsiveContainer>
+          ) : (
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={(() => {
+                const byA = new Map(weeksA.map((w) => [w.woy, w]));
+                const byB = new Map(weeksB.map((w) => [w.woy, w]));
+                const woys = [...new Set([...byA.keys()].filter((k) => byB.has(k)))].sort((a, b) => a - b);
+                return woys.map((k) => {
+                  const wa = byA.get(k)!, wb = byB.get(k)!;
+                  return {
+                    woy: k, month: monthOf(wa.weekStart),
+                    a: weekValue(wa, metric, basis), b: weekValue(wb, metric, basis),
+                    labelA: wa.label, labelB: wb.label,
+                  };
+                });
+              })()} margin={{ top: 8, right: 16, left: 8, bottom: 0 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} />
+                <XAxis dataKey="month" tick={{ fontSize: 12 }}
+                  ticks={(() => {
+                    const seen = new Set<string>(); const out: string[] = [];
+                    for (const w of weeksA) { const m = monthOf(w.weekStart); if (!seen.has(m)) { seen.add(m); out.push(m); } }
+                    return out;
+                  })()} />
+                <YAxis domain={[0, 'auto']} tick={{ fontSize: 12 }} width={70}
+                  tickFormatter={(v: number) => (metric === 'income' || metric === 'expense' || metric === 'markup' ? `$${v.toLocaleString()}` : String(v))} />
+                <Tooltip
+                  formatter={(v: number, name: string) => chartFmt(metric, v)}
+                  labelFormatter={(_, payload) => {
+                    const p = payload?.[0]?.payload as { labelA?: string; labelB?: string } | undefined;
+                    return p ? `${p.labelA} · ${p.labelB}` : '';
+                  }} />
+                <Legend />
+                <Line type="monotone" dataKey="a" name={String(yearA ?? '')} stroke={COLOR_A} strokeWidth={2} dot={false} connectNulls />
+                <Line type="monotone" dataKey="b" name={String(yearB ?? '')} stroke={COLOR_B} strokeWidth={2} strokeDasharray="6 4" dot={false} connectNulls />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
+        </div>
+      </Card>
     </div>
   );
 }
