@@ -545,6 +545,27 @@ function MixPanel({ years, fixedYear }: { years: number[]; fixedYear?: number })
             {mix.slices.map((s) => {
               const pct = Math.round((s.count / mix.total) * 100);
               const tip = s.rate != null ? `${s.count} contractor${s.count === 1 ? ' has' : 's have'} a $${s.rate.toFixed(2)} markup rate` : `${s.count} contractors across ${s.other} other rates`;
+              if (s.other != null && s.other > 0) {
+                return (
+                  <div key={s.name}>
+                    <button type="button" title={tip} onClick={() => setShowOther((v) => !v)}
+                      className="flex items-center gap-2 text-xs tabular-nums w-full text-left rounded hover:bg-muted/50 -mx-1 px-1 py-0.5">
+                      {showOther ? <ChevronDown className="h-3 w-3 shrink-0 text-muted-foreground" /> : <ChevronRight className="h-3 w-3 shrink-0 text-muted-foreground" />}
+                      <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
+                      <span>{s.name} · {s.count} · {pct}%</span>
+                    </button>
+                    {showOther && mix.rest.map(([rate, cnt]) => {
+                      const opct = Math.round((cnt / mix.total) * 100);
+                      return (
+                        <div key={rate} title={`${cnt} contractor${cnt === 1 ? ' has' : 's have'} a $${rate.toFixed(2)} markup rate`} className="flex items-center gap-2 text-xs tabular-nums pl-[26px] pr-1 py-0.5 text-muted-foreground">
+                          <span className="h-2 w-2 rounded-sm shrink-0" style={{ background: s.color }} />
+                          <span>${rate.toFixed(2)} · {cnt} · {opct}%</span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              }
               return (
                 <div key={s.name} title={tip} className="flex items-center gap-2 text-xs tabular-nums">
                   <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: s.color }} />
