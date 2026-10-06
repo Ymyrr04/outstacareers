@@ -23,7 +23,6 @@ import {
   isInternalRow, markupOf, weekHeadcount, isContractorRow, rowHours,
 } from '@/lib/historicalData';
 
-
 const money = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 
 type NumKey = 'hours' | 'actual_hours' | 'contractor_rate' | 'client_rate' | 'contractor_cost' | 'expense_after_1_percent'
@@ -59,6 +58,7 @@ const bonusOf = (r: HistRow): number | null => {
   if (exp != null && Number(exp) !== 0 && r.contractor_rate == null && r.client_rate == null) return Number(exp);
   return null;
 };
+
 const SORTABLE: Col[] = [
   { key: 'contractor_name', label: 'Contractor', width: 'w-[220px] min-w-[220px] max-w-[220px]' },
   { key: 'company', label: 'Company', width: 'w-[180px] min-w-[180px] max-w-[180px]' },
