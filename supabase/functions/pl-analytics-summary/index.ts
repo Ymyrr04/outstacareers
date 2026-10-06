@@ -20,7 +20,8 @@ Write 5-7 bullet points, each on its own line beginning with "- ". Cover, in thi
 3. Average submitted hours per contractor per week in each year, and explain WHY it moved using the mix, e.g. "The average was lower in 2026 because 30 contractors were on 40-hour standards compared with 22 in 2025, while 50-hour contractors dropped from 40 to 35." Also mention if contractors logged less/more than their standard (compare group averages to 40/50).
 4. Markup rate per hour in yearA vs yearB and the difference; note if one group (40 vs 50) carries a higher markup.
 5. Income vs expense change in dollars and percent (use the supplied exact totals).
-6. One clear, practical takeaway for the CEO.
+6. Gross profit: use the supplied grossProfit figures — state the gross profit in each year and the change in dollars and percent, and spell out what it means in plain terms (e.g. "even though income grew by $2,993, gross profit only grew by $122 because contractor costs rose almost as fast"). If expense grew faster than income, say plainly that margins are being squeezed.
+7. One clear, practical takeaway for the CEO.
 Never invent numbers or causes; only compute from supplied figures. For a single week on each side do not describe a trend. Money like $4,884, percentages to one decimal, hours to one decimal. Markup is before fees.`;
 
 Deno.serve(async (req) => {
