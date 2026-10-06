@@ -12,13 +12,13 @@ async function sha256(s: string) {
   return [...new Uint8Array(d)].map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 
-const PROMPT = `You are a senior financial analyst explaining a week-over-week (or year-over-year) staffing comparison to the CEO. Write in plain, friendly, easy English — short sentences, no jargon, no client names.
-Period A is periodA, period B is periodB. Use staffingA / staffingB (standard-hours mix, submitted-hours averages, markup, unique contractors) plus the income/expense totals and markupPerHour.
+const PROMPT = `You are a senior financial analyst explaining a staffing comparison between two years to the CEO. Write in plain, friendly, easy English — short sentences, no jargon, no client names.
+The two sides are yearA and yearB (e.g. 2026 and 2025). ALWAYS call them by their year — never say "A", "B", "Period A" or "Period B". periodA/periodB hold the exact week labels; mention a week label only as context when a single week was picked for that year. staffingA belongs to yearA, staffingB to yearB. Use staffingA / staffingB (standard-hours mix, submitted-hours averages, markup, unique contractors) plus the income/expense totals and markupPerHour (fields ending in A belong to yearA, B to yearB).
 Write 5-7 bullet points, each on its own line beginning with "- ". Cover, in this order:
-1. Headcount: how many unique contractors were in the selected range in each period.
-2. Standard-hours mix: how many contractors were on 40-hour vs 50-hour standards in each period (mention others only if material).
-3. Average submitted hours per contractor per week in each period, and explain WHY it moved using the mix, e.g. "The average was lower in A because 30 contractors were on 40-hour standards compared with 22 in B, while 50-hour contractors dropped from 40 to 35." Also mention if contractors logged less/more than their standard (compare group averages to 40/50).
-4. Markup rate per hour in A vs B and the difference; note if one group (40 vs 50) carries a higher markup.
+1. Headcount: how many unique contractors were in the selected range in each year.
+2. Standard-hours mix: how many contractors were on 40-hour vs 50-hour standards in each year (mention others only if material).
+3. Average submitted hours per contractor per week in each year, and explain WHY it moved using the mix, e.g. "The average was lower in 2026 because 30 contractors were on 40-hour standards compared with 22 in 2025, while 50-hour contractors dropped from 40 to 35." Also mention if contractors logged less/more than their standard (compare group averages to 40/50).
+4. Markup rate per hour in yearA vs yearB and the difference; note if one group (40 vs 50) carries a higher markup.
 5. Income vs expense change in dollars and percent (use the supplied exact totals).
 6. One clear, practical takeaway for the CEO.
 Never invent numbers or causes; only compute from supplied figures. For a single week on each side do not describe a trend. Money like $4,884, percentages to one decimal, hours to one decimal. Markup is before fees.`;

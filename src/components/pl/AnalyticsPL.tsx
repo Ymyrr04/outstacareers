@@ -378,7 +378,7 @@ export function AnalyticsPL() {
         </div>
       </Card>
 
-      <DriversPanel selA={selA} selB={selB} basis={basis} labelA={labelA} labelB={labelB} rowsA={weekRowsA ?? []} rowsB={weekRowsB ?? []} />
+      <DriversPanel selA={selA} selB={selB} basis={basis} labelA={labelA} labelB={labelB} yearA={yearA} yearB={yearB} rowsA={weekRowsA ?? []} rowsB={weekRowsB ?? []} />
     </div>
     <div className="flex flex-col gap-4">
       <MixPanel years={years} weekRows={weekRowsA} swatch={COLOR_A}
@@ -460,7 +460,7 @@ function DriverBlock({ title, selA, selB, basis, kind, labelA, labelB }: {
   );
 }
 
-function DriversPanel({ selA, selB, basis, labelA, labelB, rowsA, rowsB }: { selA: WeekFig[]; selB: WeekFig[]; basis: Basis; labelA: string; labelB: string; rowsA: HistRow[]; rowsB: HistRow[] }) {
+function DriversPanel({ selA, selB, basis, labelA, labelB, yearA, yearB, rowsA, rowsB }: { selA: WeekFig[]; selB: WeekFig[]; basis: Basis; labelA: string; labelB: string; yearA: number | null; yearB: number | null; rowsA: HistRow[]; rowsB: HistRow[] }) {
   if (selA.length === 0 || selB.length === 0) return null;
   const rates = (ws: WeekFig[]) => {
     const mh = ws.reduce((a, w) => a + w.markupHours, 0);
@@ -476,7 +476,7 @@ function DriversPanel({ selA, selB, basis, labelA, labelB, rowsA, rowsB }: { sel
     <Card className="p-4 space-y-4">
       <div className="text-sm font-semibold">What made the difference</div>
       <SafeSection>
-        <AiSummary facts={{ ...buildFacts(selA, selB, basis, labelA, labelB, ra, rb), ...summaryDatasets(rowsA, rowsB, basis) }} />
+        <AiSummary facts={{ ...buildFacts(selA, selB, basis, labelA, labelB, yearA, yearB, ra, rb), ...summaryDatasets(rowsA, rowsB, basis) }} />
       </SafeSection>
     </Card>
   );
@@ -497,11 +497,14 @@ function driverFacts(selA: WeekFig[], selB: WeekFig[], basis: Basis, kind: 'inco
   };
 }
 
-function buildFacts(selA: WeekFig[], selB: WeekFig[], basis: Basis, labelA: string, labelB: string,
+function buildFacts(selA: WeekFig[], selB: WeekFig[], basis: Basis, labelA: string, labelB: string, yearA: number | null, yearB: number | null,
   ra: { markup: number; client: number; contractor: number } | null, rb: { markup: number; client: number; contractor: number } | null) {
   const r2 = (n: number) => Math.round(n * 100) / 100;
   return {
-    periodA: labelA, periodB: labelB, weeksCompared: selA.length,
+    yearA, yearB,
+    periodA: labelA, periodB: labelB,
+    periodNote: 'Always refer to the two sides by their year (yearA, yearB). periodA/periodB are the exact week labels — mention them only as context when a single week was picked, never as "A" or "B".',
+    weeksCompared: selA.length,
     basis: basis === 'gross' ? 'gross (before fees)' : 'after fees',
     weeklyDatasetA: selA.map((w) => ({ weekStart: w.weekStart, label: w.label, weekOfYear: w.woy, active: w.active, hours: r2(w.hours), income: r2(basis === 'gross' ? w.incomeGross : w.incomeAfter), expense: r2(basis === 'gross' ? w.expenseGross : w.expenseAfter), markup: w.markupHours > 0 ? r2(w.markupSum / w.markupHours) : null })),
     weeklyDatasetB: selB.map((w) => ({ weekStart: w.weekStart, label: w.label, weekOfYear: w.woy, active: w.active, hours: r2(w.hours), income: r2(basis === 'gross' ? w.incomeGross : w.incomeAfter), expense: r2(basis === 'gross' ? w.expenseGross : w.expenseAfter), markup: w.markupHours > 0 ? r2(w.markupSum / w.markupHours) : null })),
