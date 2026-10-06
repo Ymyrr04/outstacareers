@@ -396,16 +396,17 @@ function DriverBlock({ title, selA, selB, basis, kind, labelA, labelB }: {
   const A = totals(selA, basis, kind), B = totals(selB, basis, kind);
   const total = A.amount - B.amount;
   const pct = B.amount !== 0 ? (total / Math.abs(B.amount)) * 100 : null;
-  const parts = [
+  const parts: { label: string; v: number; detail: string; hidden?: boolean }[] = [
     { label: 'Contractor count', v: (A.c - B.c) * B.h * B.r, detail: `${A.c.toFixed(1)} in ${labelA} vs ${B.c.toFixed(1)} in ${labelB}` },
     { label: 'Hours per contractor', v: A.c * (A.h - B.h) * B.r, detail: `${A.h.toFixed(1)} in ${labelA} vs ${B.h.toFixed(1)} in ${labelB}` },
-    { label: kind === 'income' ? 'Rate (client)' : 'Rate (contractor)', v: A.c * A.h * (A.r - B.r), detail: `${fmtRate(A.r)}/h in ${labelA} vs ${fmtRate(B.r)}/h in ${labelB}` },
+    { label: kind === 'income' ? 'Rate (client)' : 'Rate (contractor)', v: A.c * A.h * (A.r - B.r), detail: `${fmtRate(A.r)}/h in ${labelA} vs ${fmtRate(B.r)}/h in ${labelB}`, hidden: true },
   ];
   // Residual only appears when one side has no contractors/hours; fold it into rate so parts always sum to total.
   const residual = total - parts.reduce((a, p) => a + p.v, 0);
   if (Math.abs(residual) > 0.005) parts[2].v += residual;
-  const maxAbs = Math.max(1, ...parts.map((p) => Math.abs(p.v)));
-  const biggest = parts.reduce((a, p) => (Math.abs(p.v) > Math.abs(a.v) ? p : a), parts[0]);
+  const shown = parts.filter((p) => !p.hidden);
+  const maxAbs = Math.max(1, ...shown.map((p) => Math.abs(p.v)));
+  const biggest = shown.reduce((a, p) => (Math.abs(p.v) > Math.abs(a.v) ? p : a), shown[0]);
   return (
     <div className="space-y-3">
       <div>
@@ -414,7 +415,7 @@ function DriverBlock({ title, selA, selB, basis, kind, labelA, labelB }: {
         </div>
         <div className="text-xs text-muted-foreground">Biggest driver: {biggest.label.toLowerCase()} ({fmtSigned(biggest.v)})</div>
       </div>
-      {parts.map((p) => {
+      {shown.map((p) => {
         const w = (Math.abs(p.v) / maxAbs) * 50;
         return (
           <div key={p.label} className="grid grid-cols-[1fr_auto] gap-x-3 gap-y-1 items-center">
