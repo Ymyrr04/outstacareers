@@ -593,7 +593,7 @@ function AiSummary({ facts }: { facts: Record<string, unknown> }) {
             ))}
           </ul>
         )
-        : <p className="text-xs text-muted-foreground">Uses a small amount of AI credit. Saved once written — reopening this same comparison is free.</p>}
+        : null}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
   );
