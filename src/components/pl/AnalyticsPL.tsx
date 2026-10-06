@@ -558,7 +558,13 @@ function AiSummary({ facts }: { facts: Record<string, unknown> }) {
         )}
       </div>
       {state === 'checking' ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
-        : summary ? <p className="text-sm leading-relaxed">{summary}</p>
+        : summary ? (
+          <ul className="list-disc pl-5 space-y-2 text-sm leading-relaxed marker:text-primary">
+            {summary.trim().split(/\n+|(?<=[.!?])\s+(?=[A-Z])/).map((point, index) => (
+              <li key={index}>{point.replace(/^\s*[-•]\s*/, '').trim()}</li>
+            ))}
+          </ul>
+        )
         : <p className="text-xs text-muted-foreground">Uses a small amount of AI credit. Saved once written — reopening this same comparison is free.</p>}
       {error && <p className="text-xs text-destructive">{error}</p>}
     </div>
