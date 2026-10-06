@@ -497,6 +497,7 @@ function buildMix(rows: HistRow[]) {
 function MixPanel({ years, fixedYear }: { years: number[]; fixedYear?: number }) {
   const [year, setYear] = useState<number | null>(fixedYear ?? null);
   const [rows, setRows] = useState<HistRow[] | null>(null);
+  const [showOther, setShowOther] = useState(false);
   useEffect(() => {
     if (fixedYear != null || year != null || years.length === 0) return;
     const prev = Number(todayET().slice(0, 4)) - 1;
