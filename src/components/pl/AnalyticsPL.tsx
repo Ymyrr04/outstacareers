@@ -390,9 +390,9 @@ export function AnalyticsPL() {
       <DriversPanel selA={selA} selB={selB} basis={basis} labelA={labelA} labelB={labelB} yearA={yearA} yearB={yearB} rowsA={weekRowsA ?? []} rowsB={weekRowsB ?? []} />
     </div>
     <div className="flex flex-col gap-4">
-      <MixPanel years={years} weekRows={weekRowsA} swatch={COLOR_A}
+      <MixPanel years={years} weekRows={weekRowsA} swatch={colorA}
         title={`Markup rate mix · ${yearA ?? ''}`} subtitle={mixSub(selA)} />
-      <MixPanel years={years} weekRows={weekRowsB} swatch={COLOR_B}
+      <MixPanel years={years} weekRows={weekRowsB} swatch={colorB}
         title={`Markup rate mix · ${yearB ?? ''}`} subtitle={mixSub(selB)} />
     </div>
     <div className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
