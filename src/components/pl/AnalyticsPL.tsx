@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { Component, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { Loader2, ChevronDown, ChevronRight, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -473,16 +473,9 @@ function DriversPanel({ selA, selB, basis, labelA, labelB }: { selA: WeekFig[]; 
   return (
     <Card className="p-4 space-y-4">
       <div className="text-sm font-semibold">What made the difference</div>
-      <AiSummary facts={buildFacts(selA, selB, basis, labelA, labelB, ra, rb)} />
-      <div className="grid gap-6 md:grid-cols-2">
-        <DriverBlock title="Income" kind="income" selA={selA} selB={selB} basis={basis} labelA={labelA} labelB={labelB} />
-        <DriverBlock title="Expense" kind="expense" selA={selA} selB={selB} basis={basis} labelA={labelA} labelB={labelB} />
-      </div>
-      {ra && rb && (
-        <div className="text-xs text-muted-foreground border-t pt-3">
-          Markup rate {fmtRate(ra.markup)}/h in {labelA} vs {fmtRate(rb.markup)}/h in {labelB} ({fmtRateSigned(ra.markup - rb.markup)}) · client rate {fmtRateSigned(ra.client - rb.client)} · contractor rate {fmtRateSigned(ra.contractor - rb.contractor)} · Markup is before fees
-        </div>
-      )}
+      <SafeSection>
+        <AiSummary facts={buildFacts(selA, selB, basis, labelA, labelB, ra, rb)} />
+      </SafeSection>
     </Card>
   );
 }
@@ -511,6 +504,19 @@ function buildFacts(selA: WeekFig[], selB: WeekFig[], basis: Basis, labelA: stri
     expense: driverFacts(selA, selB, basis, 'expense'),
     markupPerHour: ra && rb ? { A: r2(ra.markup), B: r2(rb.markup), clientRateA: r2(ra.client), clientRateB: r2(rb.client), contractorRateA: r2(ra.contractor), contractorRateB: r2(rb.contractor), note: 'markup is before fees' } : null,
   };
+}
+
+// Keeps a failed summary (or any unexpected error inside it) from taking the whole page down.
+class SafeSection extends Component<{ children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() { return { failed: true }; }
+  componentDidCatch(err: unknown) { console.warn('Summary section failed:', err); }
+  render() {
+    if (this.state.failed) {
+      return <p className="text-xs text-muted-foreground">The summary could not be shown right now. The figures above are unaffected.</p>;
+    }
+    return this.props.children;
+  }
 }
 
 function AiSummary({ facts }: { facts: Record<string, unknown> }) {

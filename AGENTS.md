@@ -3,3 +3,5 @@
 - Store weekly P&L deposit labels separately from numeric deposit amounts on assignments, so notes such as EXEMPT display without corrupting financial values.
 - Retain internal-company historical rows for display, but filter them at every headcount and financial aggregation boundary so visibility does not change external reports.
 - Keep Historical P&L data helpers (row shape, per-year cache and fetch, internal/markup/headcount/hours rules) in src/lib/historicalData.ts and import them from components, so every view of historical data counts the same way.
+- Verify admin access in edge functions with the `is_admin(_user_id)` helper rather than `has_role(..., 'admin')`, so super_admin callers are not wrongly rejected.
+- Cache AI-written output by a signature of the prompt plus its input facts in a database table and require an explicit user action to generate, so an unchanged view never spends credits again.

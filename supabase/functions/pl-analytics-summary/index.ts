@@ -25,7 +25,8 @@ Deno.serve(async (req) => {
     const { data: u } = await userClient.auth.getUser();
     if (!u?.user) return json({ error: "Not signed in" }, 401);
     const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: isAdmin } = await admin.rpc("has_role", { _user_id: u.user.id, _role: "admin" });
+    const { data: isAdmin, error: adminErr } = await admin.rpc("is_admin", { _user_id: u.user.id });
+    if (adminErr) return json({ error: "Could not verify access" }, 500);
     if (!isAdmin) return json({ error: "Admins only" }, 403);
 
     const { facts, cacheOnly } = await req.json();
