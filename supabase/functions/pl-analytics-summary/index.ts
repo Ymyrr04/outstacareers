@@ -25,9 +25,14 @@ Deno.serve(async (req) => {
     const { data: u } = await userClient.auth.getUser();
     if (!u?.user) return json({ error: "Not signed in" }, 401);
     const admin = createClient(url, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: isAdmin, error: adminErr } = await admin.rpc("is_admin", { _user_id: u.user.id });
-    if (adminErr) return json({ error: "Could not verify access" }, 500);
-    if (!isAdmin) return json({ error: "Admins only" }, 403);
+    // Same rule as the PL tab: any dashboard user unless PL was explicitly switched off for them
+    const [{ data: isAdmin, error: adminErr }, { data: perm, error: permErr }] = await Promise.all([
+      admin.rpc("is_admin", { _user_id: u.user.id }),
+      admin.from("admin_tab_permissions").select("can_view").eq("user_id", u.user.id).eq("tab_id", "pl").maybeSingle(),
+    ]);
+    if (adminErr || permErr) return json({ error: "Could not verify access" }, 500);
+    const plAllowed = perm ? perm.can_view === true : !!isAdmin;
+    if (!plAllowed) return json({ error: "You don't have access to P&L" }, 403);
 
     const { facts, cacheOnly } = await req.json();
     if (!facts || typeof facts !== "object") return json({ error: "Missing data" }, 400);
