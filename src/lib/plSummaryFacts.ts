@@ -1,63 +1,53 @@
 import { type HistRow, isContractorRow, rowHours, num, markupOf } from '@/lib/historicalData';
 
-// Compact, deterministic datasets retain contractor and client mix without sending names or contact details to AI.
+// Compact, deterministic facts for the analyst summary: headcount, standard-hours mix (40 vs 50),
+// submitted-hours averages and markup. No names, contact details or client data are sent to AI.
 export function summaryDatasets(rowsA: HistRow[], rowsB: HistRow[], basis: 'gross' | 'after') {
-  const eligibleA = rowsA.filter(isContractorRow), eligibleB = rowsB.filter(isContractorRow);
-  const names = [...new Set([...eligibleA, ...eligibleB].map((r) => (r.contractor_name ?? '').trim().toLowerCase()))].sort();
-  const ids = new Map(names.map((name, i) => [name, `Contractor ${i + 1}`]));
+  void basis;
   const round = (n: number) => Math.round(n * 100) / 100;
-  const dataset = (rows: HistRow[]) => {
-    const contractors = new Map<string, number[]>();
-    const clients = new Map<string, number[]>();
-    const weeks = new Map<string, Set<string>>();
-    const missing = { actualHoursFallbackRows: 0, missingClientRateRows: 0, missingContractorRateRows: 0 };
-    for (const row of rows) {
-      const name = (row.contractor_name ?? '').trim().toLowerCase();
-      const id = ids.get(name);
-      if (!id) continue;
-      const week = row.week_start?.slice(0, 10) ?? '';
-      const h = rowHours(row);
-      const income = num(basis === 'gross' ? row.client_billing : row.income_after_3_percent);
-      const expense = num(basis === 'gross' ? row.contractor_cost : row.expense_after_1_percent);
-      const pairedHours = markupOf(row) != null && h > 0 ? h : 0;
-      const values = [h, income, expense, income - expense, pairedHours,
-        num(row.client_rate) * pairedHours, num(row.contractor_rate) * pairedHours];
-      const company = (row.company ?? '').trim() || 'Unspecified client';
-      for (const [map, key] of [[contractors, id], [clients, company]] as const) {
-        const totals = map.get(key) ?? values.map(() => 0);
-        values.forEach((value, i) => { totals[i] += value; });
-        map.set(key, totals);
-      }
-      const seen = weeks.get(id) ?? new Set<string>();
-      seen.add(week); weeks.set(id, seen);
-      if (row.actual_hours == null) missing.actualHoursFallbackRows++;
-      if (row.client_rate == null) missing.missingClientRateRows++;
-      if (row.contractor_rate == null) missing.missingContractorRateRows++;
+  const dataset = (all: HistRow[]) => {
+    const rows = all.filter(isContractorRow);
+    const people = new Set<string>();
+    const weeks = new Set<string>();
+    type G = { people: Set<string>; contractorWeeks: number; hours: number; mSum: number; mHours: number };
+    const mk = (): G => ({ people: new Set(), contractorWeeks: 0, hours: 0, mSum: 0, mHours: 0 });
+    const groups: Record<'standard40' | 'standard50' | 'otherStandard', G> = { standard40: mk(), standard50: mk(), otherStandard: mk() };
+    let totalHours = 0, mSum = 0, mHours = 0, contractorWeeks = 0, fallbackRows = 0;
+    for (const r of rows) {
+      const name = (r.contractor_name ?? '').trim().toLowerCase();
+      if (!name) continue;
+      people.add(name);
+      weeks.add(r.week_start?.slice(0, 10) ?? '');
+      const std = num(r.hours);
+      const g = groups[std === 40 ? 'standard40' : std === 50 ? 'standard50' : 'otherStandard'];
+      const h = rowHours(r);
+      const m = markupOf(r);
+      g.people.add(name); g.contractorWeeks++; g.hours += h;
+      totalHours += h; contractorWeeks++;
+      if (m != null && h > 0) { g.mSum += m * h; g.mHours += h; mSum += m * h; mHours += h; }
+      if (r.actual_hours == null) fallbackRows++;
     }
+    const summarise = (g: G) => ({
+      uniqueContractors: g.people.size,
+      contractorWeeks: g.contractorWeeks,
+      submittedHours: round(g.hours),
+      avgSubmittedHoursPerContractorWeek: g.contractorWeeks ? round(g.hours / g.contractorWeeks) : null,
+      markupPerHour: g.mHours ? round(g.mSum / g.mHours) : null,
+    });
     return {
-      rowCount: rows.length, uniqueContractors: contractors.size, missing,
-      contractorColumns: ['anonymousContractor', 'weeksPresent', 'hours', 'income', 'expense', 'incomeMinusExpense', 'hoursWithBothRates', 'clientRateTimesHours', 'contractorRateTimesHours'],
-      contractors: [...contractors].sort(([a], [b]) => a.localeCompare(b)).map(([id, values]) => [id, weeks.get(id)?.size ?? 0, ...values.map(round)]),
-      clientColumns: ['client', 'hours', 'income', 'expense', 'incomeMinusExpense', 'hoursWithBothRates', 'clientRateTimesHours', 'contractorRateTimesHours'],
-      clients: [...clients].sort(([a], [b]) => a.localeCompare(b)).map(([client, values]) => [client, ...values.map(round)]),
+      weeksInRange: weeks.size,
+      uniqueContractorsInRange: people.size,
+      contractorWeeks,
+      totalSubmittedHours: round(totalHours),
+      avgSubmittedHoursPerContractorWeek: contractorWeeks ? round(totalHours / contractorWeeks) : null,
+      markupPerHour: mHours ? round(mSum / mHours) : null,
+      byStandardHours: { standard40: summarise(groups.standard40), standard50: summarise(groups.standard50), otherStandard: summarise(groups.otherStandard) },
+      rowsUsingSheetHoursFallback: fallbackRows,
     };
   };
-  const datasetA = dataset(eligibleA), datasetB = dataset(eligibleB);
-  const idsA = new Set(datasetA.contractors.map((r) => r[0]));
-  const idsB = new Set(datasetB.contractors.map((r) => r[0]));
-  const cohort = (records: (string | number)[][], include: (id: string) => boolean) => {
-    const selected = records.filter((r) => include(String(r[0])));
-    const sum = (index: number) => round(selected.reduce((total, r) => total + Number(r[index]), 0));
-    return { uniqueContractors: selected.length, hours: sum(2), income: sum(3), expense: sum(4), incomeMinusExpense: sum(5) };
-  };
   return {
-    datasetA, datasetB,
-    cohorts: {
-      presentInBothA: cohort(datasetA.contractors, (id) => idsB.has(id)),
-      presentInBothB: cohort(datasetB.contractors, (id) => idsA.has(id)),
-      presentOnlyInA: cohort(datasetA.contractors, (id) => !idsB.has(id)),
-      presentOnlyInB: cohort(datasetB.contractors, (id) => !idsA.has(id)),
-    },
-    interpretation: 'Anonymous contractor identifiers are stable across A and B. Present only in A/B means present only in that selected dataset, NOT proven hires or departures. Rates are weighted by hoursWithBothRates. Null actual hours fall back to sheet hours. Internal, bonus and excluded contractor rows follow the existing Analytics eligibility rules. Missing financial amounts follow the report zero-value convention, not evidence of free work.',
+    staffingA: dataset(rowsA),
+    staffingB: dataset(rowsB),
+    interpretation: 'Standard hours = the contractor\'s contracted weekly hours (40 or 50). Submitted hours = actual hours logged. A higher share of 50-hour contractors naturally raises average submitted hours. Markup per hour = client rate minus contractor rate, hour-weighted, before fees.',
   };
 }
