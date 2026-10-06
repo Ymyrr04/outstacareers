@@ -2,3 +2,4 @@
 - Store optional historical spreadsheet financial columns as nullable historical P&L row fields, while keeping the weekly table unchanged, so imports retain their values without altering the existing report.
 - Store weekly P&L deposit labels separately from numeric deposit amounts on assignments, so notes such as EXEMPT display without corrupting financial values.
 - Retain internal-company historical rows for display, but filter them at every headcount and financial aggregation boundary so visibility does not change external reports.
+- Keep Historical P&L data helpers (row shape, per-year cache and fetch, internal/markup/headcount/hours rules) in src/lib/historicalData.ts and import them from components, so every view of historical data counts the same way.

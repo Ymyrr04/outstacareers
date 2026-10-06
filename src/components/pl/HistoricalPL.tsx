@@ -17,56 +17,13 @@ import { cn } from '@/lib/utils';
 import { HistoricalUploadDialog, HIST_YEARS } from './HistoricalUploadDialog';
 import { HistoricalRemapDialog } from './HistoricalRemapDialog';
 import { HEADCOUNT_EXCLUDED_NAMES } from '@/lib/internalCompany';
-
-interface HistRow {
-  id: string;
-  week_label: string | null;
-  week_start: string | null;
-  contractor_name: string | null;
-  company: string | null;
-  hours: number | null;
-  actual_hours: number | null;
-  contractor_rate: number | null;
-  client_rate: number | null;
-  contractor_cost: number | null;
-  client_billing: number | null;
-  margin: number | null;
-  expense_after_1_percent: number | null;
-  income_after_3_percent: number | null;
-  gross_after_deductions: number | null;
-  client_deposit: number | null;
-  contractor_deposit: number | null;
-  raw: Record<string, unknown> | null;
-}
+import type { HistRow } from '@/lib/historicalData';
+import {
+  ROW_COLS, num, CACHE_KEY, readCache, writeCache, signature, fetchYear,
+  isInternalRow, markupOf, weekHeadcount, isContractorRow, rowHours,
+} from '@/lib/historicalData';
 
 const money = (n: number) => `${n < 0 ? '-' : ''}$${Math.abs(n).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-const num = (n: number | null | undefined) => Number(n ?? 0);
-
-// ---- Per-year cache (memory + localStorage), invalidated when batches or their mapping change ----
-interface CacheEntry { sig: string; ids: string[]; uploadIds?: string[]; syncIds?: string[]; rows: HistRow[] }
-const memCache = new Map<number, CacheEntry>();
-const CACHE_KEY = (y: number) => `hist-pl-cache-v8-${y}`;
-function readCache(y: number): CacheEntry | null {
-  if (memCache.has(y)) return memCache.get(y)!;
-  try {
-    const s = localStorage.getItem(CACHE_KEY(y));
-    if (!s) return null;
-    const e = JSON.parse(s) as CacheEntry;
-    memCache.set(y, e);
-    return e;
-  } catch { return null; }
-}
-function writeCache(y: number, e: CacheEntry) {
-  memCache.set(y, e);
-  try { localStorage.setItem(CACHE_KEY(y), JSON.stringify(e)); } catch { /* storage full — memory only */ }
-}
-function signature(batches: { id: string; created_at: string; updated_at?: string; source?: string; column_map: unknown }[]) {
-  const str = [...batches].sort((a, b) => a.id.localeCompare(b.id))
-    .map((b) => `${b.id}|${b.created_at}|${b.updated_at ?? ''}|${b.source ?? ''}|${JSON.stringify(b.column_map ?? null)}`).join('#');
-  let h = 0;
-  for (let i = 0; i < str.length; i++) h = (h * 31 + str.charCodeAt(i)) | 0;
-  return `${batches.length}:${h}`;
-}
 
 type NumKey = 'hours' | 'actual_hours' | 'contractor_rate' | 'client_rate' | 'contractor_cost' | 'expense_after_1_percent'
   | 'client_billing' | 'income_after_3_percent' | 'margin' | 'gross_after_deductions' | 'client_deposit' | 'contractor_deposit';
@@ -101,9 +58,7 @@ const bonusOf = (r: HistRow): number | null => {
   if (exp != null && Number(exp) !== 0 && r.contractor_rate == null && r.client_rate == null) return Number(exp);
   return null;
 };
-// Markup rate = client rate − contractor rate (computed, not stored).
-const markupOf = (r: HistRow): number | null =>
-  r.client_rate != null && r.contractor_rate != null ? Number(r.client_rate) - Number(r.contractor_rate) : null;
+
 const SORTABLE: Col[] = [
   { key: 'contractor_name', label: 'Contractor', width: 'w-[220px] min-w-[220px] max-w-[220px]' },
   { key: 'company', label: 'Company', width: 'w-[180px] min-w-[180px] max-w-[180px]' },
@@ -129,44 +84,6 @@ const isRowExcluded = (r: HistRow) => !!(r.raw && (r.raw as Record<string, unkno
 const fmtCell = (c: Col, v: number | null | undefined) =>
   v == null || Number.isNaN(Number(v)) ? '—' : c.kind === 'hours' ? Number(v).toFixed(2) : money(Number(v));
 
-const ROW_COLS = 'id, week_label, week_start, contractor_name, company, hours, actual_hours, contractor_rate, client_rate, contractor_cost, expense_after_1_percent, client_billing, income_after_3_percent, margin, gross_after_deductions, client_deposit, contractor_deposit, raw';
-
-// OutSta is the internal team — excluded from all historical calculations,
-// matching the P&L report (which filters by the internal client id).
-const isInternalRow = (r: HistRow) =>
-  (r.company ?? '').replace(/[\s.]/g, '').toLowerCase().startsWith('outsta');
-
-// Fetch one year's rows through the existing per-year cache.
-async function fetchYear(y: number): Promise<{ ids: string[]; uploadIds: string[]; syncIds: string[]; rows: HistRow[] } | null> {
-  const cached = readCache(y);
-  const { data: batches, error: bErr } = await supabase
-    .from('historical_pl_batches').select('id, created_at, updated_at, source, column_map').eq('year', y);
-  if (bErr) return cached ? { ids: cached.ids, uploadIds: cached.uploadIds ?? [], syncIds: cached.syncIds ?? [], rows: cached.rows } : null;
-  const ids = (batches ?? []).map((b) => b.id);
-  const uploadIds = (batches ?? []).filter((b) => b.source === 'upload').map((b) => b.id);
-  const syncIds = (batches ?? []).filter((b) => b.source === 'timesheet_sync').map((b) => b.id);
-  const sig = signature(batches ?? []);
-  if (cached && cached.sig === sig) return { ids, uploadIds, syncIds, rows: cached.rows };
-  if (ids.length === 0) { writeCache(y, { sig, ids, uploadIds, syncIds, rows: [] }); return { ids, uploadIds, syncIds, rows: [] }; }
-
-  const all: HistRow[] = [];
-  const PAGE = 1000;
-  for (let from = 0; ; from += PAGE) {
-    const { data, error } = await supabase
-      .from('historical_pl_rows')
-      .select(ROW_COLS)
-      .in('batch_id', ids)
-      .order('week_start', { ascending: true, nullsFirst: false })
-      .order('contractor_name', { ascending: true })
-      .order('id', { ascending: true })
-      .range(from, from + PAGE - 1);
-    if (error) return null;
-    all.push(...((data ?? []) as HistRow[]));
-    if (!data || data.length < PAGE) break;
-  }
-  writeCache(y, { sig, ids, uploadIds, syncIds, rows: all });
-  return { ids, uploadIds, syncIds, rows: all };
-}
 
 const MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 const pct = (cur: number, prev: number) => (prev === 0 ? null : ((cur - prev) / Math.abs(prev)) * 100);
@@ -278,7 +195,7 @@ export function HistoricalPL({ onUpload }: Props) {
     return [...map.entries()].map(([key, w]) => {
       const externalRows = w.rows.filter((r) => !isInternalRow(r));
       const t = externalRows.reduce((a, r) => ({
-        hours: a.hours + (r.actual_hours != null ? num(r.actual_hours) : num(r.hours)),
+        hours: a.hours + rowHours(r),
         cost: a.cost + num(r[COST_KEY]),
         billing: a.billing + num(r[BILLING_KEY]),
         margin: a.margin + num(r[MARGIN_KEY]),
@@ -288,7 +205,7 @@ export function HistoricalPL({ onUpload }: Props) {
         billing: externalRows.some((r) => r[BILLING_KEY] != null),
         margin: externalRows.some((r) => r[MARGIN_KEY] != null),
       };
-      const headcount = new Set(externalRows.filter((r) => !(r.raw && (r.raw as Record<string, unknown>).__exclude_headcount)).map((r) => (r.contractor_name || '').trim().toLowerCase()).filter((n) => n && !HEADCOUNT_EXCLUDED_NAMES.has(n))).size;
+      const headcount = weekHeadcount(w.rows);
       return { key, label: w.label, rows: w.rows, totals: t, has, headcount };
     });
   }, [rows]);
@@ -297,7 +214,7 @@ export function HistoricalPL({ onUpload }: Props) {
   const yearSummary = useMemo(() => {
     const externalRows = rows.filter((r) => !isInternalRow(r));
     const t = externalRows.reduce((a, r) => ({
-      hours: a.hours + (r.actual_hours != null ? num(r.actual_hours) : num(r.hours)),
+      hours: a.hours + rowHours(r),
       cost: a.cost + num(r[COST_KEY]),
       billing: a.billing + num(r[BILLING_KEY]),
       margin: a.margin + num(r[MARGIN_KEY]),
