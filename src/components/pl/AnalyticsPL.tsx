@@ -473,7 +473,9 @@ function DriversPanel({ selA, selB, basis, labelA, labelB }: { selA: WeekFig[]; 
   return (
     <Card className="p-4 space-y-4">
       <div className="text-sm font-semibold">What made the difference</div>
-      <AiSummary facts={buildFacts(selA, selB, basis, labelA, labelB, ra, rb)} />
+      <SafeSection>
+        <AiSummary facts={buildFacts(selA, selB, basis, labelA, labelB, ra, rb)} />
+      </SafeSection>
     </Card>
   );
 }
