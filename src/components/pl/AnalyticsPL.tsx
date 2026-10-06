@@ -203,6 +203,16 @@ export function AnalyticsPL() {
     const wA = new Set(weeksA.map((w) => w.woy));
     return weeksB.filter((w) => wA.has(w.woy));
   }, [mode, weeksA, weeksB, weekB]);
+  const weekRowsA = useMemo(() => {
+    if (yearA == null || !rowsByYear[yearA]) return null;
+    const s = new Set(selA.map((w) => w.weekStart));
+    return rowsByYear[yearA].filter((r) => r.week_start && s.has(r.week_start.slice(0, 10)));
+  }, [yearA, rowsByYear, selA]);
+  const weekRowsB = useMemo(() => {
+    if (yearB == null || !rowsByYear[yearB]) return null;
+    const s = new Set(selB.map((w) => w.weekStart));
+    return rowsByYear[yearB].filter((r) => r.week_start && s.has(r.week_start.slice(0, 10)));
+  }, [yearB, rowsByYear, selB]);
 
   const specific = mode === 'specific';
   const cards: { key: MetricKey; title: string; caption: string; fmt: (v: number) => string; money?: boolean }[] = [
@@ -368,11 +378,23 @@ export function AnalyticsPL() {
       <DriversPanel selA={selA} selB={selB} basis={basis} labelA={labelA} labelB={labelB} />
     </div>
     <div className="flex flex-col gap-4">
+      <MixPanel years={years} weekRows={weekRowsA} swatch={COLOR_A}
+        title={`Markup rate mix · ${yearA ?? ''}`} subtitle={mixSub(selA)} />
+      <MixPanel years={years} weekRows={weekRowsB} swatch={COLOR_B}
+        title={`Markup rate mix · ${yearB ?? ''}`} subtitle={mixSub(selB)} />
+    </div>
+    <div className="grid gap-4 sm:grid-cols-2 lg:col-span-2">
       <MixPanel years={years} />
       <MixPanel years={years} fixedYear={Number(todayET().slice(0, 4))} />
     </div>
     </div>
   );
+}
+
+function mixSub(sel: WeekFig[]) {
+  if (sel.length === 0) return 'No matching week';
+  if (sel.length === 1) return sel[0].label;
+  return `${sel.length} weeks · ${sel[0].label} to ${sel[sel.length - 1].label}`;
 }
 
 const COLOR_POS = '#0ABEDF';
@@ -495,28 +517,35 @@ function buildMix(rows: HistRow[]) {
 
 }
 
-function MixPanel({ years, fixedYear }: { years: number[]; fixedYear?: number }) {
+function MixPanel({ years, fixedYear, weekRows, title, subtitle, swatch }: {
+  years: number[]; fixedYear?: number; weekRows?: HistRow[] | null; title?: string; subtitle?: string; swatch?: string;
+}) {
+  const isWeek = weekRows !== undefined;
   const [year, setYear] = useState<number | null>(fixedYear ?? null);
-  const [rows, setRows] = useState<HistRow[] | null>(null);
+  const [yearRows, setRows] = useState<HistRow[] | null>(null);
   const [showOther, setShowOther] = useState(false);
   useEffect(() => {
-    if (fixedYear != null || year != null || years.length === 0) return;
+    if (isWeek || fixedYear != null || year != null || years.length === 0) return;
     const prev = Number(todayET().slice(0, 4)) - 1;
     setYear(years.includes(prev) ? prev : years[0]);
-  }, [years, fixedYear, year]);
+  }, [years, fixedYear, year, isWeek]);
   useEffect(() => {
-    if (year == null) return;
+    if (isWeek || year == null) return;
     let cancelled = false;
     setRows(null);
     fetchYear(year).then((d) => { if (!cancelled) setRows(d?.rows ?? []); });
     return () => { cancelled = true; };
-  }, [year]);
+  }, [year, isWeek]);
+  const rows = isWeek ? weekRows ?? null : yearRows;
   const mix = useMemo(() => (rows ? buildMix(rows) : null), [rows]);
   return (
     <Card className="p-3 space-y-2">
       <div className="flex items-center justify-between gap-2">
-        <div className="text-sm font-semibold">{fixedYear != null ? `Markup rate mix · ${fixedYear}` : 'Markup rate mix'}</div>
-        {fixedYear != null ? (
+        <div className="text-sm font-semibold flex items-center gap-1.5">
+          {swatch && <span className="h-2.5 w-2.5 rounded-sm shrink-0" style={{ background: swatch }} />}
+          {title ?? (fixedYear != null ? `Markup rate mix · ${fixedYear}` : 'Markup rate mix')}
+        </div>
+        {isWeek ? null : fixedYear != null ? (
           <Badge variant="secondary" className="text-[10px]">Current year</Badge>
         ) : (
           <Select value={year != null ? String(year) : undefined} onValueChange={(v) => setYear(Number(v))}>
@@ -525,7 +554,8 @@ function MixPanel({ years, fixedYear }: { years: number[]; fixedYear?: number })
           </Select>
         )}
       </div>
-      {fixedYear != null && mix?.lastLabel && <div className="text-xs text-muted-foreground">As of the last synced week, {mix.lastLabel}</div>}
+      {subtitle && <div className="text-xs text-muted-foreground">{subtitle}</div>}
+      {!isWeek && fixedYear != null && mix?.lastLabel && <div className="text-xs text-muted-foreground">As of the last synced week, {mix.lastLabel}</div>}
       {!mix ? (
         <div className="flex justify-center py-8"><Loader2 className="h-4 w-4 animate-spin text-muted-foreground" /></div>
       ) : mix.total === 0 ? (
