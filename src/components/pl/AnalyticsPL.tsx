@@ -336,13 +336,13 @@ export function AnalyticsPL() {
                 <Tooltip formatter={(v: number) => chartFmt(metric, v)} />
                 <Legend content={() => (
                   <div className="flex justify-center gap-6 text-xs text-muted-foreground pt-2">
-                    <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: COLOR_A }} />{yearA}</span>
-                    <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: COLOR_B }} />{yearB}</span>
+                    <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: colorA }} />{yearA}</span>
+                    <span className="flex items-center gap-1.5"><span className="h-2.5 w-2.5 rounded-sm" style={{ background: colorB }} />{yearB}</span>
                   </div>
                 )} />
                 <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                  <Cell fill={COLOR_A} />
-                  <Cell fill={COLOR_B} />
+                  <Cell fill={colorA} />
+                  <Cell fill={colorB} />
                   <LabelList dataKey="value" position="top" formatter={(v: number) => chartFmt(metric, v)} fontSize={12} />
                 </Bar>
               </BarChart>
