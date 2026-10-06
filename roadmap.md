@@ -1,5 +1,7 @@
 # Roadmap
 
+- [ ] Compare underlying selected weekly datasets in the P&L analyst summary, retaining bullet points and data-sensitive caching.
+
 - [x] Show OutSta rows last in historical weekly details and sync previews without adding them to headcount or external totals.
 
 - [x] Allow text as well as numbers in weekly P&L client and contractor deposit cells.
