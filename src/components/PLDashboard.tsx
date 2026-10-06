@@ -1194,7 +1194,7 @@ export const PLDashboard = () => {
       return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
     };
 
-    const rowsCsv = filtered.map((r) => {
+    const rowsCsv = exportRows.map((r) => {
       const dep = computeDeposit(r);
       const rate = Number(r.contractor?.hourly_rate || 0);
       const totalH = Number(r.total_hours);
@@ -1245,7 +1245,7 @@ export const PLDashboard = () => {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    toast({ title: 'Extracted', description: `${filtered.length} submission(s) exported to CSV.` });
+    toast({ title: 'Extracted', description: `${exportRows.length} submission(s) exported to CSV (incl. ${filteredInternal.length} internal team).` });
   };
 
   const statTiles = [
