@@ -42,8 +42,22 @@ export function summaryDatasets(rowsA: HistRow[], rowsB: HistRow[], basis: 'gros
       clients: [...clients].sort(([a], [b]) => a.localeCompare(b)).map(([client, values]) => [client, ...values.map(round)]),
     };
   };
+  const datasetA = dataset(eligibleA), datasetB = dataset(eligibleB);
+  const idsA = new Set(datasetA.contractors.map((r) => r[0]));
+  const idsB = new Set(datasetB.contractors.map((r) => r[0]));
+  const cohort = (records: (string | number)[][], include: (id: string) => boolean) => {
+    const selected = records.filter((r) => include(String(r[0])));
+    const sum = (index: number) => round(selected.reduce((total, r) => total + Number(r[index]), 0));
+    return { uniqueContractors: selected.length, hours: sum(2), income: sum(3), expense: sum(4), incomeMinusExpense: sum(5) };
+  };
   return {
-    datasetA: dataset(eligibleA), datasetB: dataset(eligibleB),
+    datasetA, datasetB,
+    cohorts: {
+      presentInBothA: cohort(datasetA.contractors, (id) => idsB.has(id)),
+      presentInBothB: cohort(datasetB.contractors, (id) => idsA.has(id)),
+      presentOnlyInA: cohort(datasetA.contractors, (id) => !idsB.has(id)),
+      presentOnlyInB: cohort(datasetB.contractors, (id) => !idsA.has(id)),
+    },
     interpretation: 'Anonymous contractor identifiers are stable across A and B. Present only in A/B means present only in that selected dataset, NOT proven hires or departures. Rates are weighted by hoursWithBothRates. Null actual hours fall back to sheet hours. Internal, bonus and excluded contractor rows follow the existing Analytics eligibility rules. Missing financial amounts follow the report zero-value convention, not evidence of free work.',
   };
 }

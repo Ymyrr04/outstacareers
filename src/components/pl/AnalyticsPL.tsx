@@ -564,7 +564,7 @@ function AiSummary({ facts }: { facts: Record<string, unknown> }) {
       {state === 'checking' ? <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
         : summary ? (
           <ul className="list-disc pl-5 space-y-2 text-sm leading-relaxed marker:text-primary">
-            {summary.trim().split(/\n+|(?<=[.!?])\s+(?=[A-Z])/).map((point, index) => (
+            {(summary.includes('\n') ? summary.trim().split(/\n+/) : summary.trim().split(/(?<=[.!?])\s+(?=[A-Z])/)).filter((point) => point.trim()).map((point, index) => (
               <li key={index}>{point.replace(/^\s*[-•]\s*/, '').trim()}</li>
             ))}
           </ul>
