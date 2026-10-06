@@ -670,8 +670,8 @@ function MixPanel({ years, fixedYear, weekRows, title, subtitle, swatch }: {
         <div className="text-xs text-muted-foreground py-6 text-center">No markup data for this year.</div>
       ) : (
         <>
-          <div className="flex items-center gap-4">
-            <div className="h-[190px] flex-1 min-w-0">
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+            <div className="h-[210px] min-w-[190px] flex-[1_1_220px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie data={mix.slices} dataKey="count" nameKey="name" innerRadius="52%" outerRadius="88%" cy="50%" stroke="none" isAnimationActive={false}>
@@ -681,7 +681,7 @@ function MixPanel({ years, fixedYear, weekRows, title, subtitle, swatch }: {
                 </PieChart>
               </ResponsiveContainer>
             </div>
-            <div className="space-y-1 w-[140px] shrink-0">
+            <div className="space-y-1 flex-[1_1_150px] min-w-[135px] max-w-[190px]">
               {mix.slices.map((s) => {
                 const pct = Math.round((s.count / mix.total) * 100);
                 const tip = s.rate != null ? `${s.count} contractor${s.count === 1 ? ' has' : 's have'} a $${s.rate.toFixed(2)} markup rate` : `${s.count} contractors across ${s.other} other rates`;
