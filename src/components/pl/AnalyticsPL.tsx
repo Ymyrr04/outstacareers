@@ -231,14 +231,18 @@ export function AnalyticsPL() {
 
 
   const specific = mode === 'specific';
+  // One week each side → exact "that week" values; several weeks → averages/totals.
+  const single = specific && selA.length <= 1 && selB.length <= 1;
+  const cntCap = single ? 'that week' : 'avg per week';
+  const sumCap = single ? 'that week' : 'total';
   const cards: { key: MetricKey; title: string; caption: string; fmt: (v: number) => string; money?: boolean }[] = [
-    { key: 'active', title: 'Active contractors', caption: specific ? 'that week' : 'avg per week', fmt: (v) => fmtCount(v, specific) },
-    { key: 'on40', title: 'On 40 hours', caption: specific ? 'that week' : 'avg per week', fmt: (v) => fmtCount(v, specific) },
-    { key: 'on50', title: 'On 50 hours', caption: specific ? 'that week' : 'avg per week', fmt: (v) => fmtCount(v, specific) },
-    { key: 'expense', title: 'Expense after 1%', caption: specific ? 'that week' : 'total', fmt: fmtMoney },
-    { key: 'income', title: 'Income after 3%', caption: specific ? 'that week' : 'total', fmt: fmtMoney },
-    { key: 'grossAfter', title: 'Gross after deductions', caption: specific ? 'that week' : 'total', fmt: fmtMoney },
-    { key: 'markup', title: 'Markup rate', caption: specific ? 'that week' : '$ per hour', fmt: fmtMoney, money: true },
+    { key: 'active', title: 'Active contractors', caption: cntCap, fmt: (v) => fmtCount(v, single) },
+    { key: 'on40', title: 'On 40 hours', caption: cntCap, fmt: (v) => fmtCount(v, single) },
+    { key: 'on50', title: 'On 50 hours', caption: cntCap, fmt: (v) => fmtCount(v, single) },
+    { key: 'expense', title: 'Expense after 1%', caption: sumCap, fmt: fmtMoney },
+    { key: 'income', title: 'Income after 3%', caption: sumCap, fmt: fmtMoney },
+    { key: 'grossAfter', title: 'Gross after deductions', caption: sumCap, fmt: fmtMoney },
+    { key: 'markup', title: 'Markup rate', caption: single ? 'that week' : '$ per hour', fmt: fmtMoney, money: true },
   ];
 
   const footer = (key: MetricKey) => {
@@ -281,14 +285,8 @@ export function AnalyticsPL() {
         <Segmented value={mode} onChange={(v) => setMode(v as Mode)} options={[{ v: 'all', label: 'All weeks' }, { v: 'specific', label: 'Specific weeks' }]} />
         {specific ? (
           <div className="flex items-center gap-2">
-            <Select value={weekA ?? undefined} onValueChange={setWeekA}>
-              <SelectTrigger className="h-8 w-48"><SelectValue placeholder={`${yearA} week`} /></SelectTrigger>
-              <SelectContent>{weeksA.map((w) => <SelectItem key={w.weekStart} value={w.weekStart}>{w.label}</SelectItem>)}</SelectContent>
-            </Select>
-            <Select value={weekB ?? undefined} onValueChange={setWeekB}>
-              <SelectTrigger className="h-8 w-48"><SelectValue placeholder={`${yearB} week`} /></SelectTrigger>
-              <SelectContent>{weeksB.map((w) => <SelectItem key={w.weekStart} value={w.weekStart}>{w.label}</SelectItem>)}</SelectContent>
-            </Select>
+            <WeekMultiSelect weeks={weeksA} value={weekA} onChange={setWeekA} placeholder={`${yearA} weeks`} />
+            <WeekMultiSelect weeks={weeksB} value={weekB} onChange={setWeekB} placeholder={`${yearB} weeks`} />
           </div>
         ) : (
           <span className="text-xs text-muted-foreground">{sharedCount} shared weeks</span>
