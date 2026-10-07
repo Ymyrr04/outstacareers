@@ -137,7 +137,7 @@ function WeekMultiSelect({ weeks, value, onChange, placeholder }: { weeks: WeekF
   const text = chosen.length === 0 ? placeholder : chosen.length === 1 ? chosen[0].label : `${chosen.length} weeks selected`;
   const toggle = (ws: string) => {
     const n = new Set(sel);
-    if (n.has(ws)) { if (n.size > 1) n.delete(ws); } else n.add(ws);
+    if (n.has(ws)) n.delete(ws); else n.add(ws);
     onChange(weeks.filter((w) => n.has(w.weekStart)).map((w) => w.weekStart));
   };
   return (
@@ -148,9 +148,10 @@ function WeekMultiSelect({ weeks, value, onChange, placeholder }: { weeks: WeekF
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-64 p-1" align="start">
-        <div className="flex justify-between px-2 py-1 text-xs">
+        <div className="flex items-center justify-between gap-2 px-2 py-1 text-xs">
           <button type="button" className="text-primary hover:underline" onClick={() => onChange(weeks.map((w) => w.weekStart))}>Select all</button>
-          <button type="button" className="text-muted-foreground hover:underline" onClick={() => onChange(chosen.slice(0, 1).map((w) => w.weekStart))}>Keep first only</button>
+          <button type="button" className="text-muted-foreground hover:underline" onClick={() => onChange(chosen.slice(0, 1).map((w) => w.weekStart))}>Keep first</button>
+          <button type="button" className="text-muted-foreground hover:underline disabled:opacity-40" disabled={value.length === 0} onClick={() => onChange([])}>Clear</button>
         </div>
         <div className="max-h-72 overflow-y-auto">
           {weeks.map((w) => (
@@ -209,18 +210,14 @@ export function AnalyticsPL() {
   const weeksA = useMemo(() => (yearA != null ? buildWeeks(rowsByYear[yearA] ?? []) : []), [yearA, rowsByYear]);
   const weeksB = useMemo(() => (yearB != null ? buildWeeks(rowsByYear[yearB] ?? []) : []), [yearB, rowsByYear]);
 
-  // Default specific weeks: week 3 (Year A) and week 5 (Year B); drop selections not in the year
+  // Nothing is ticked by default; only drop selections the picked year no longer has.
   useEffect(() => {
     const valid = weekA.filter((s) => weeksA.some((w) => w.weekStart === s));
-    if (valid.length) { if (valid.length !== weekA.length) setWeekA(valid); return; }
-    const d = (weeksA.find((w) => w.woy === 3) ?? weeksA[0])?.weekStart;
-    setWeekA(d ? [d] : []);
+    if (valid.length !== weekA.length) setWeekA(valid);
   }, [weeksA]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
     const valid = weekB.filter((s) => weeksB.some((w) => w.weekStart === s));
-    if (valid.length) { if (valid.length !== weekB.length) setWeekB(valid); return; }
-    const d = (weeksB.find((w) => w.woy === 5) ?? weeksB[0])?.weekStart;
-    setWeekB(d ? [d] : []);
+    if (valid.length !== weekB.length) setWeekB(valid);
   }, [weeksB]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const selA = useMemo(() => {
@@ -321,8 +318,8 @@ export function AnalyticsPL() {
         <Segmented value={mode} onChange={(v) => setMode(v as Mode)} options={[{ v: 'all', label: 'All weeks' }, { v: 'specific', label: 'Specific weeks' }]} />
         {specific ? (
           <div className="flex items-center gap-2">
-            <WeekMultiSelect weeks={weeksA} value={weekA} onChange={setWeekA} placeholder={`${yearA} weeks`} />
-            <WeekMultiSelect weeks={weeksB} value={weekB} onChange={setWeekB} placeholder={`${yearB} weeks`} />
+            <WeekMultiSelect weeks={weeksA} value={weekA} onChange={setWeekA} placeholder={`Select ${yearA} weeks`} />
+            <WeekMultiSelect weeks={weeksB} value={weekB} onChange={setWeekB} placeholder={`Select ${yearB} weeks`} />
           </div>
         ) : (
           <span className="text-xs text-muted-foreground">{sharedCount} shared weeks</span>
@@ -362,7 +359,13 @@ export function AnalyticsPL() {
           {METRIC_TITLES[metric]} {specific ? '— selected weeks' : 'per week'} · {labelA} vs {labelB}
         </div>
         <div className="h-72">
-          {specific ? (
+          {specific && (selA.length === 0 || selB.length === 0) ? (
+            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
+              {selA.length === 0 && selB.length === 0
+                ? `Tick at least one ${yearA} week and one ${yearB} week to compare.`
+                : selA.length === 0 ? `Tick at least one ${yearA} week.` : `Tick at least one ${yearB} week.`}
+            </div>
+          ) : specific ? (
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={[
                 { name: labelA, value: aggA?.[metric] ?? 0 },
