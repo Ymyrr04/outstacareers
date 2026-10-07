@@ -1903,7 +1903,7 @@ const PortalDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="leave">Leave</TabsTrigger>
             <TabsTrigger value="legal-doc">Legal Doc</TabsTrigger>
-            <TabsTrigger value="announcement">Announcement</TabsTrigger>
+            <TabsTrigger value="announcement">Announcements</TabsTrigger>
           </TabsList>
           <TabsContent value="timesheet" className="space-y-6 mt-0">
         <Card>
