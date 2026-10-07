@@ -16,7 +16,7 @@ import { PieChart, Pie } from 'recharts';
 import { summaryDatasets } from '@/lib/plSummaryFacts';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import {
-  type HistRow, fetchYear, weekHeadcount, isContractorRow, rowHours, markupOf, num,
+  type HistRow, fetchYear, weekHeadcount, isContractorRow, isInternalRow, rowHours, markupOf, num,
 } from '@/lib/historicalData';
 
 const COLOR_A = '#0ABEDF';
