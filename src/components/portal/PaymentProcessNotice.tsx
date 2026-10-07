@@ -26,6 +26,26 @@ export function PaymentProcessNotice({ firstName, busy, error, onAcknowledge }: 
           <DialogDescription>Starting Friday, October 16, 2026</DialogDescription>
         </DialogHeader>
         <div className="min-h-0 overflow-y-auto overscroll-contain p-5 sm:p-6 space-y-5 text-sm leading-relaxed text-foreground" tabIndex={0} aria-label="Payment process announcement">
+          <PaymentProcessAnnouncement firstName={firstName} />
+        </div>
+        <div className="shrink-0 border-t p-5 sm:p-6 space-y-3">
+          <div className="flex items-start gap-3">
+            <Checkbox id="payment-notice-read" checked={read} onCheckedChange={(value) => setRead(value === true)} disabled={busy} />
+            <Label htmlFor="payment-notice-read" className="leading-relaxed cursor-pointer">I have read and acknowledge this payment process update.</Label>
+          </div>
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
+          <Button className="w-full" disabled={!read || busy} onClick={onAcknowledge}>
+            {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
+            Acknowledge and continue
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+export function PaymentProcessAnnouncement({ firstName }: { firstName: string }) {
+  return (
+    <div className="space-y-5 text-sm leading-relaxed text-foreground">
           <p>Hi {firstName},</p>
           <p>We have some exciting news to share about how your weekly payments will be processed moving forward!</p>
           <p>We have officially improved our payment process to make things faster, simpler, and easier for everyone.</p>
@@ -46,19 +66,6 @@ export function PaymentProcessNotice({ firstName, busy, error, onAcknowledge }: 
           </section>
           <p><strong>Important Reminder:</strong> If you miss the deadline for a given week, you are still required to submit your timesheet for that week. Skipping it will not only delay that week's payment, it will also cause the following week to not be processed as well.</p>
           <p>We are excited about this update as it simplifies the process significantly on your end. If you have any questions, please do not hesitate to reach out!</p>
-        </div>
-        <div className="shrink-0 border-t p-5 sm:p-6 space-y-3">
-          <div className="flex items-start gap-3">
-            <Checkbox id="payment-notice-read" checked={read} onCheckedChange={(value) => setRead(value === true)} disabled={busy} />
-            <Label htmlFor="payment-notice-read" className="leading-relaxed cursor-pointer">I have read and acknowledge this payment process update.</Label>
-          </div>
-          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
-          <Button className="w-full" disabled={!read || busy} onClick={onAcknowledge}>
-            {busy ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <CheckCircle2 className="mr-2 h-4 w-4" />}
-            Acknowledge and continue
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+    </div>
   );
 }

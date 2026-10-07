@@ -1,5 +1,7 @@
 # Roadmap
 
+- [x] Add contractor Announcement tab to reread the acknowledged payment update.
+
 - [x] Add contractor-only payment notice with saved acknowledgement required before portal access and timesheet submission.
 
 - [x] Compare underlying selected weekly datasets in the P&L analyst summary, retaining bullet points and data-sensitive caching.
