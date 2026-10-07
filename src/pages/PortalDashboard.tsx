@@ -592,6 +592,7 @@ const PortalDashboard = () => {
   const [pendingManagerCheckins, setPendingManagerCheckins] = useState<number>(0);
   const [reminderOpen, setReminderOpen] = useState(false);
   const [tabValue, setTabValue] = useState<'timesheet' | 'checkin' | 'leave' | 'legal-doc' | 'announcement'>('timesheet');
+  const [announcementExpanded, setAnnouncementExpanded] = useState(false);
 
   const emptyProfileForm: ProfileForm = {
     full_name: '', phone: '', whatsapp: '', location: '', country: '', payoneer_email: '',
@@ -2675,12 +2676,26 @@ const PortalDashboard = () => {
             {info && <LegalDocRequest contractorAssignmentId={info.contractor_assignment_id} />}
           </TabsContent>
           <TabsContent value="announcement" className="mt-0">
-            <section className="max-w-3xl py-4" aria-labelledby="payment-announcement-title">
-              <header className="mb-6 space-y-2 border-b pb-4">
-                <h2 id="payment-announcement-title" className="text-xl font-semibold">Weekly payment process update</h2>
-                <p className="text-sm text-muted-foreground">Starting Friday, October 16, 2026</p>
-              </header>
-              <PaymentProcessAnnouncement firstName={info?.full_name?.trim().split(/\s+/)[0] || 'there'} />
+            <section className="max-w-3xl py-4" aria-label="Announcements">
+              <Button
+                variant="ghost"
+                className="h-auto w-full justify-start gap-3 whitespace-normal rounded-none border-y px-3 py-4 text-left"
+                aria-expanded={announcementExpanded}
+                aria-controls="payment-announcement-content"
+                onClick={() => setAnnouncementExpanded((expanded) => !expanded)}
+              >
+                <ChevronRight className={cn('h-4 w-4 shrink-0', announcementExpanded && 'rotate-90')} />
+                <span className="flex min-w-0 flex-1 flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <span className="font-semibold">Weekly payment process update</span>
+                  <time dateTime="2026-10-07" className="shrink-0 text-xs font-normal text-muted-foreground">October 7, 2026</time>
+                </span>
+              </Button>
+              {announcementExpanded && (
+                <div id="payment-announcement-content" className="space-y-6 px-3 py-6">
+                  <p className="text-sm text-muted-foreground">Effective Friday, October 16, 2026</p>
+                  <PaymentProcessAnnouncement firstName={info?.full_name?.trim().split(/\s+/)[0] || 'there'} />
+                </div>
+              )}
             </section>
           </TabsContent>
         </Tabs>
