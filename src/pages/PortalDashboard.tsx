@@ -1625,12 +1625,12 @@ const PortalDashboard = () => {
     <div className="min-h-screen bg-muted/30">
       <Helmet><title>My Timesheets | OutSta PL Portal</title></Helmet>
       <header className="border-b bg-background">
-        <div className="max-w-[1600px] mx-auto px-4 py-4 flex items-center justify-between">
-          <div>
-            <h1 className="text-lg font-semibold">OutSta PL Portal</h1>
-            <p className="text-xs text-muted-foreground">{info?.full_name} · {info?.company_name} · {info?.job_title}</p>
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-4 py-3 sm:py-4 flex items-center justify-between gap-2">
+          <div className="min-w-0">
+            <h1 className="text-base sm:text-lg font-semibold">OutSta PL Portal</h1>
+            <p className="text-xs text-muted-foreground truncate">{info?.full_name} · {info?.company_name} · {info?.job_title}</p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1 sm:gap-2 shrink-0">
             <Button
               variant="ghost"
               size="sm"
@@ -1641,12 +1641,12 @@ const PortalDashboard = () => {
               <UserCircle2 className="w-6 h-6 text-primary" />
               <span className="hidden sm:inline text-sm">Profile</span>
             </Button>
-            <Button variant="outline" size="sm" onClick={handleSignOut}><LogOut className="w-4 h-4 mr-2" />Sign out</Button>
+            <Button variant="outline" size="sm" onClick={handleSignOut}><LogOut className="w-4 h-4 sm:mr-2" /><span className="hidden sm:inline">Sign out</span></Button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-[1600px] mx-auto px-4 py-6 space-y-6">
+      <main className="max-w-[1600px] mx-auto px-2 sm:px-4 py-4 sm:py-6 space-y-4 sm:space-y-6">
         <Dialog
           open={profileOpen || profileIncomplete}
           onOpenChange={(open) => {
@@ -1888,7 +1888,7 @@ const PortalDashboard = () => {
         </Dialog>
 
         <Tabs value={tabValue} onValueChange={(v) => setTabValue(v as any)} className="space-y-6">
-          <TabsList className="h-auto flex-wrap justify-start">
+          <TabsList className="h-auto w-full sm:w-auto justify-start overflow-x-auto flex-nowrap sm:flex-wrap [&>button]:shrink-0">
             <TabsTrigger value="timesheet">Timesheet</TabsTrigger>
             <TabsTrigger value="checkin" className="relative">
               Check-in
@@ -1907,8 +1907,8 @@ const PortalDashboard = () => {
           </TabsList>
           <TabsContent value="timesheet" className="space-y-6 mt-0">
         <Card>
-          <CardHeader>
-            <div className="flex items-start justify-between gap-3">
+          <CardHeader className="px-4 sm:px-6">
+            <div className="flex flex-col-reverse sm:flex-row items-start justify-between gap-3">
               <div>
                 <CardTitle>{editingId ? 'Edit Weekly Hours' : 'Submit Weekly Hours'}</CardTitle>
                 <CardDescription>
@@ -1917,13 +1917,13 @@ const PortalDashboard = () => {
                     : 'Pick the date range (From – To) and enter the hours you worked each day.'}
                 </CardDescription>
               </div>
-              <Button type="button" variant="outline" size="sm" onClick={() => setTutorialOpen(true)} className="shrink-0">
+              <Button type="button" variant="outline" size="sm" onClick={() => setTutorialOpen(true)} className="shrink-0 self-end sm:self-auto">
                 <HelpCircle className="w-4 h-4 mr-2" />
                 How it works
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6">
             {!hasWorkDays && (
               <div className="mb-4 flex items-start justify-between gap-3 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-100 px-4 py-3">
                 <div className="text-sm">
@@ -2098,7 +2098,7 @@ const PortalDashboard = () => {
                         : isOTRow
                         ? 'border-amber-500 focus-visible:ring-amber-500'
                         : 'border-blue-300 dark:border-blue-700 focus-visible:ring-blue-500';
-                      const timeInputClass = `bg-background border-2 h-12 text-base font-medium w-[100px] text-center ${borderTone}`;
+                      const timeInputClass = `bg-background border-2 h-12 text-base font-medium w-full md:w-[100px] text-center ${borderTone}`;
                       const rowBg = isMissing
                         ? 'bg-red-50/60 dark:bg-red-950/20'
                         : isOTRow
@@ -2123,10 +2123,10 @@ const PortalDashboard = () => {
                           key={k}
                           className={`px-4 py-3 border-b last:border-b-0 ${leftBorder} ${rowBg}`}
                         >
-                          <div className="grid grid-cols-1 md:grid-cols-[110px_100px_100px_72px_1fr] gap-2.5 md:gap-3 items-center">
+                          <div className="grid grid-cols-3 md:grid-cols-[110px_100px_100px_72px_1fr] gap-2.5 md:gap-3 items-center">
 
 
-                          <div>
+                          <div className="col-span-3 md:col-span-1">
                             <div className="font-semibold text-sm">{label}</div>
                             <div className="text-xs text-muted-foreground">{format(date, 'MMM d, yyyy')}</div>
                             {scheduled && (
@@ -2223,10 +2223,10 @@ const PortalDashboard = () => {
                             <Input
                               readOnly
                               value={hoursNum > 0 ? hoursNum.toFixed(2) : '0.00'}
-                              className={`h-12 w-[72px] text-center text-base font-semibold border-2 bg-muted/40 ${isMissing ? 'border-red-500 text-red-900 dark:text-red-200' : isOTRow ? 'border-amber-500 text-amber-900 dark:text-amber-200' : 'border-blue-300 dark:border-blue-700'}`}
+                              className={`h-12 w-full md:w-[72px] text-center text-base font-semibold border-2 bg-muted/40 ${isMissing ? 'border-red-500 text-red-900 dark:text-red-200' : isOTRow ? 'border-amber-500 text-amber-900 dark:text-amber-200' : 'border-blue-300 dark:border-blue-700'}`}
                             />
                           </div>
-                          <div className="space-y-1 min-w-0">
+                          <div className="col-span-3 md:col-span-1 space-y-1 min-w-0">
                             <Label htmlFor={`reason-${k}`} className="text-[11px] font-medium text-muted-foreground">
                               Reason {reasonLabel}
                             </Label>
@@ -2249,8 +2249,8 @@ const PortalDashboard = () => {
                                 shifts: extraShifts.map((x, xi) => (xi === si ? { ...x, ...patch } : x)),
                               });
                             return (
-                            <div key={si} className="mt-2 grid grid-cols-1 md:grid-cols-[110px_100px_100px_72px_1fr] gap-2.5 md:gap-3 items-center">
-                              <div className="text-[11px] font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300">
+                            <div key={si} className="mt-2 grid grid-cols-3 md:grid-cols-[110px_100px_100px_72px_1fr] gap-2.5 md:gap-3 items-center">
+                              <div className="col-span-3 md:col-span-1 text-[11px] font-semibold uppercase tracking-wide text-teal-700 dark:text-teal-300">
                                 Shift {ordinal}
                               </div>
                               <div className="space-y-1">
@@ -2273,8 +2273,8 @@ const PortalDashboard = () => {
                                   className={timeInputClass}
                                 />
                               </div>
-                              <div />
-                              <div className="space-y-1 min-w-0">
+                              <div className="hidden md:block" />
+                              <div className="col-span-3 md:col-span-1 space-y-1 min-w-0">
                                 <Label htmlFor={`note${ordinal}-${k}`} className="text-[11px] font-medium text-muted-foreground">Note (optional)</Label>
                                 <Input
                                   id={`note${ordinal}-${k}`}
@@ -2284,7 +2284,7 @@ const PortalDashboard = () => {
                                   className="bg-background border-2 h-10"
                                 />
                               </div>
-                              <div className="md:col-span-5 flex flex-wrap items-center gap-2">
+                              <div className="col-span-3 md:col-span-5 flex flex-wrap items-center gap-2">
                                 <Button
                                   type="button"
                                   variant="ghost"
