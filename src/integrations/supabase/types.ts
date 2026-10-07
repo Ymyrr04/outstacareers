@@ -2096,6 +2096,24 @@ export type Database = {
           },
         ]
       }
+      contractor_payment_notice_acknowledgements: {
+        Row: {
+          acknowledged_at: string
+          notice_version: string
+          user_id: string
+        }
+        Insert: {
+          acknowledged_at?: string
+          notice_version: string
+          user_id: string
+        }
+        Update: {
+          acknowledged_at?: string
+          notice_version?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       contractor_pipeline_stages: {
         Row: {
           checkin_email_body: string | null
@@ -3914,6 +3932,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      acknowledge_contractor_payment_notice: { Args: never; Returns: undefined }
       applicant_exists: { Args: { _applicant_id: string }; Returns: boolean }
       apply_timesheet_reminder_schedule: { Args: never; Returns: undefined }
       get_calendar_hidden_user_ids: { Args: never; Returns: string[] }
@@ -3935,6 +3954,10 @@ export type Database = {
       get_my_assigned_assignment_ids: { Args: never; Returns: string[] }
       get_my_client_id: { Args: never; Returns: string }
       get_my_contractor_assignment_id: { Args: never; Returns: string }
+      has_acknowledged_contractor_payment_notice: {
+        Args: never
+        Returns: boolean
+      }
       has_active_interview_session: {
         Args: { _applicant_id: string }
         Returns: boolean

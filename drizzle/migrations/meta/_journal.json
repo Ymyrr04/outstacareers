@@ -148,6 +148,13 @@
       "when": 1791408207486,
       "tag": "0020_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1791409752008,
+      "tag": "0021_contractor_payment_notice_acknowledgement",
+      "breakpoints": true
     }
   ]
 }
