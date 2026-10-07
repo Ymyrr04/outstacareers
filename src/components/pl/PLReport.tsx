@@ -209,7 +209,7 @@ export const PLReport = () => {
     const notes = (ts.notes || '').toLowerCase();
     if (notes.includes('sick')) return 'sick';
     // Standard hours on the assignment are the source of truth
-    const hpw = Number(a.hours_per_week || 0);
+    const hpw = Number(((a as any).pl_standard_hours ?? a.hours_per_week) || 0);
     if (hpw > 0 && actualHours > hpw) return 'overtime';
     if (hpw > 0 && actualHours < hpw) return 'undertime';
     if (hpw <= 0 && Number(ts.overtime_hours || 0) > 0) return 'overtime';
@@ -335,7 +335,7 @@ export const PLReport = () => {
   // ============ Inline edit save handlers ============
   const saveAssignmentField = async (
     assignmentId: string,
-    field: 'hourly_rate' | 'client_rate' | 'hours_per_week',
+    field: 'hourly_rate' | 'client_rate' | 'pl_standard_hours',
     value: number | null,
   ) => {
     const { error } = await supabase
@@ -363,10 +363,10 @@ export const PLReport = () => {
   const saveActualHours = async (assignmentId: string, value: number | null) => {
     const ts = tsMap.get(assignmentId);
     if (!ts) throw new Error('No timesheet submitted for this week — hours can only be edited once one exists.');
-    const hours = value ?? 0;
+    // P&L-only override: the contractor's submitted total_hours stays untouched.
     const { error } = await supabase
       .from('contractor_timesheets')
-      .update({ total_hours: hours } as any)
+      .update({ pl_actual_hours: value } as any)
       .eq('id', ts.id);
     if (error) throw error;
     setReloadKey((k) => k + 1);
@@ -446,7 +446,7 @@ export const PLReport = () => {
          <EditableCell allowText value={r.contractorDeposit} display={r.contractorDeposit == null ? '' : typeof r.contractorDeposit === 'number' ? fmt$(r.contractorDeposit) : r.contractorDeposit} onSave={(v) => saveDeposit(r.assignment.id, 'contractor_deposit', v)} />
       </TableCell>
       <TableCell className="text-right">
-        <EditableCell value={r.standardHours} display={String(r.standardHours || 0)} onSave={(v) => { if (typeof v === 'string') throw new Error('Enter a valid number'); return saveAssignmentField(r.assignment.id, 'hours_per_week', v); }} />
+        <EditableCell value={r.standardHours} display={String(r.standardHours || 0)} onSave={(v) => { if (typeof v === 'string') throw new Error('Enter a valid number'); return saveAssignmentField(r.assignment.id, 'pl_standard_hours', v); }} />
       </TableCell>
       <TableCell className="text-right">
         {r.timesheet ? (

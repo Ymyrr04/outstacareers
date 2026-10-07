@@ -141,6 +141,13 @@
       "when": 1791313981498,
       "tag": "0019_pl_ai_summaries",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1791408207486,
+      "tag": "0020_migration",
+      "breakpoints": true
     }
   ]
 }

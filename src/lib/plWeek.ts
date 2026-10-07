@@ -35,6 +35,7 @@ export interface PlAssignment {
   contractor_deposit_text?: string | null;
   client_rate: number | null;
   hours_per_week: number | null;
+  pl_standard_hours?: number | null;
   start_date: string | null;
   end_date: string | null;
   sunday_hours_excluded: boolean | null;
@@ -51,6 +52,7 @@ export interface PlTimesheet {
   notes: string | null;
   incentive_amount: number | null;
   daily_hours: Record<string, { hours?: number; reason?: string }> | null;
+  pl_actual_hours?: number | null;
 }
 
 export interface PlFees {
@@ -90,7 +92,7 @@ export async function computePlWeek(
   // Active OR terminated whose end_date >= week start
   const { data: aData, error: aErr } = await supabase
     .from('contractor_assignments')
-    .select(`id, applicant_id, client_id, status, hourly_rate, client_rate, client_deposit, contractor_deposit, client_deposit_text, contractor_deposit_text, hours_per_week, start_date, end_date, sunday_hours_excluded,
+    .select(`id, applicant_id, client_id, status, hourly_rate, client_rate, client_deposit, contractor_deposit, client_deposit_text, contractor_deposit_text, hours_per_week, pl_standard_hours, start_date, end_date, sunday_hours_excluded,
              applicant:applicants_prescreen(full_name),
              client:clients(company_name)`)
     .or(`status.eq.active,and(status.eq.terminated,end_date.gte.${weekMondayStr})`);
@@ -105,7 +107,7 @@ export async function computePlWeek(
   if (ids.length) {
     const { data: tData, error: tErr } = await supabase
       .from('contractor_timesheets')
-      .select('id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, notes, incentive_amount, daily_hours')
+      .select('id, contractor_assignment_id, week_ending_date, total_hours, overtime_hours, notes, incentive_amount, daily_hours, pl_actual_hours')
       .in('contractor_assignment_id', ids)
       .gte('week_ending_date', weekMondayStr)
       .lte('week_ending_date', weekEndingStr);
@@ -148,9 +150,11 @@ export async function computePlWeek(
           if (any) actualHours = Math.min(actualHours, nonSun);
         } catch {}
       }
+      // Internal P&L-only override (never touches the contractor's own submission).
+      if (ts && ts.pl_actual_hours != null) actualHours = Number(ts.pl_actual_hours);
       const hourlyRate = Number(a.hourly_rate || 0);
       const clientRate = Number(a.client_rate || 0) || lookupFallbackClientRate(a.applicant?.full_name);
-      const standardHours = Number(a.hours_per_week || 0);
+      const standardHours = Number((a.pl_standard_hours ?? a.hours_per_week) || 0);
       const overtime = Number(ts?.overtime_hours || 0);
       const hasHours = actualHours > 0;
 
