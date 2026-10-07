@@ -1923,7 +1923,7 @@ const PortalDashboard = () => {
               </Button>
             </div>
           </CardHeader>
-          <CardContent>
+          <CardContent className="px-3 sm:px-6">
             {!hasWorkDays && (
               <div className="mb-4 flex items-start justify-between gap-3 rounded-md border border-amber-300 bg-amber-50 dark:bg-amber-950/30 text-amber-900 dark:text-amber-100 px-4 py-3">
                 <div className="text-sm">
