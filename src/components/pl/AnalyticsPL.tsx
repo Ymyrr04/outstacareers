@@ -9,6 +9,8 @@ import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
 import { todayET } from '@/lib/calendarTime';
 import { PieChart, Pie } from 'recharts';
 import { summaryDatasets } from '@/lib/plSummaryFacts';
@@ -126,6 +128,40 @@ function Segmented<T extends string>({ value, onChange, options }: { value: T; o
         </button>
       ))}
     </div>
+  );
+}
+
+function WeekMultiSelect({ weeks, value, onChange, placeholder }: { weeks: WeekFig[]; value: string[]; onChange: (v: string[]) => void; placeholder: string }) {
+  const sel = new Set(value);
+  const chosen = weeks.filter((w) => sel.has(w.weekStart));
+  const text = chosen.length === 0 ? placeholder : chosen.length === 1 ? chosen[0].label : `${chosen.length} weeks selected`;
+  const toggle = (ws: string) => {
+    const n = new Set(sel);
+    if (n.has(ws)) { if (n.size > 1) n.delete(ws); } else n.add(ws);
+    onChange(weeks.filter((w) => n.has(w.weekStart)).map((w) => w.weekStart));
+  };
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="h-8 w-52 justify-between font-normal">
+          <span className="truncate">{text}</span><ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-1" align="start">
+        <div className="flex justify-between px-2 py-1 text-xs">
+          <button type="button" className="text-primary hover:underline" onClick={() => onChange(weeks.map((w) => w.weekStart))}>Select all</button>
+          <button type="button" className="text-muted-foreground hover:underline" onClick={() => onChange(chosen.slice(0, 1).map((w) => w.weekStart))}>Keep first only</button>
+        </div>
+        <div className="max-h-72 overflow-y-auto">
+          {weeks.map((w) => (
+            <label key={w.weekStart} className="flex items-center gap-2 rounded px-2 py-1.5 text-sm cursor-pointer hover:bg-accent">
+              <Checkbox checked={sel.has(w.weekStart)} onCheckedChange={() => toggle(w.weekStart)} />
+              {w.label}
+            </label>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }
 
