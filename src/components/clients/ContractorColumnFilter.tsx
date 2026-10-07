@@ -80,7 +80,7 @@ export const ContractorColumnFilter = ({ options, selected, onChange }: ColumnFi
             variant="ghost"
             size="sm"
             className="h-7 text-xs flex-1"
-            onClick={() => onChange(undefined)}
+            onClick={() => onChange(options)}
           >
             Select all
           </Button>
