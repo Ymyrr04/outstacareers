@@ -9,6 +9,8 @@ import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Checkbox } from '@/components/ui/checkbox';
 import { todayET } from '@/lib/calendarTime';
 import { PieChart, Pie } from 'recharts';
 import { summaryDatasets } from '@/lib/plSummaryFacts';
@@ -129,6 +131,40 @@ function Segmented<T extends string>({ value, onChange, options }: { value: T; o
   );
 }
 
+function WeekMultiSelect({ weeks, value, onChange, placeholder }: { weeks: WeekFig[]; value: string[]; onChange: (v: string[]) => void; placeholder: string }) {
+  const sel = new Set(value);
+  const chosen = weeks.filter((w) => sel.has(w.weekStart));
+  const text = chosen.length === 0 ? placeholder : chosen.length === 1 ? chosen[0].label : `${chosen.length} weeks selected`;
+  const toggle = (ws: string) => {
+    const n = new Set(sel);
+    if (n.has(ws)) { if (n.size > 1) n.delete(ws); } else n.add(ws);
+    onChange(weeks.filter((w) => n.has(w.weekStart)).map((w) => w.weekStart));
+  };
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="outline" size="sm" className="h-8 w-52 justify-between font-normal">
+          <span className="truncate">{text}</span><ChevronDown className="h-4 w-4 opacity-50 shrink-0" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-64 p-1" align="start">
+        <div className="flex justify-between px-2 py-1 text-xs">
+          <button type="button" className="text-primary hover:underline" onClick={() => onChange(weeks.map((w) => w.weekStart))}>Select all</button>
+          <button type="button" className="text-muted-foreground hover:underline" onClick={() => onChange(chosen.slice(0, 1).map((w) => w.weekStart))}>Keep first only</button>
+        </div>
+        <div className="max-h-72 overflow-y-auto">
+          {weeks.map((w) => (
+            <label key={w.weekStart} className="flex items-center gap-2 rounded px-2 py-1.5 text-sm cursor-pointer hover:bg-accent">
+              <Checkbox checked={sel.has(w.weekStart)} onCheckedChange={() => toggle(w.weekStart)} />
+              {w.label}
+            </label>
+          ))}
+        </div>
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 export function AnalyticsPL() {
   const [years, setYears] = useState<number[]>([]);
   const [yearA, setYearA] = useState<number | null>(null);
@@ -137,8 +173,8 @@ export function AnalyticsPL() {
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<Mode>('all');
   const basis: Basis = 'after';
-  const [weekA, setWeekA] = useState<string | null>(null);
-  const [weekB, setWeekB] = useState<string | null>(null);
+  const [weekA, setWeekA] = useState<string[]>([]);
+  const [weekB, setWeekB] = useState<string[]>([]);
   const [metric, setMetric] = useState<MetricKey>('active');
 
   // Years with data
@@ -173,42 +209,42 @@ export function AnalyticsPL() {
   const weeksA = useMemo(() => (yearA != null ? buildWeeks(rowsByYear[yearA] ?? []) : []), [yearA, rowsByYear]);
   const weeksB = useMemo(() => (yearB != null ? buildWeeks(rowsByYear[yearB] ?? []) : []), [yearB, rowsByYear]);
 
-  // Default specific weeks: week 3 (Year A) and week 5 (Year B)
+  // Default specific weeks: week 3 (Year A) and week 5 (Year B); drop selections not in the year
   useEffect(() => {
-    if (!weeksA.some((w) => w.weekStart === weekA)) setWeekA((weeksA.find((w) => w.woy === 3) ?? weeksA[0])?.weekStart ?? null);
+    const valid = weekA.filter((s) => weeksA.some((w) => w.weekStart === s));
+    if (valid.length) { if (valid.length !== weekA.length) setWeekA(valid); return; }
+    const d = (weeksA.find((w) => w.woy === 3) ?? weeksA[0])?.weekStart;
+    setWeekA(d ? [d] : []);
   }, [weeksA]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (!weeksB.some((w) => w.weekStart === weekB)) setWeekB((weeksB.find((w) => w.woy === 5) ?? weeksB[0])?.weekStart ?? null);
+    const valid = weekB.filter((s) => weeksB.some((w) => w.weekStart === s));
+    if (valid.length) { if (valid.length !== weekB.length) setWeekB(valid); return; }
+    const d = (weeksB.find((w) => w.woy === 5) ?? weeksB[0])?.weekStart;
+    setWeekB(d ? [d] : []);
   }, [weeksB]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const { aggA, aggB, labelA, labelB, sharedCount } = useMemo(() => {
-    if (mode === 'specific') {
-      const wa = weeksA.find((w) => w.weekStart === weekA);
-      const wb = weeksB.find((w) => w.weekStart === weekB);
-      return {
-        aggA: wa ? aggregate([wa], basis) : null, aggB: wb ? aggregate([wb], basis) : null,
-        labelA: wa?.label ?? '—', labelB: wb?.label ?? '—', sharedCount: 0,
-      };
-    }
-    const wB = new Set(weeksB.map((w) => w.woy));
-    const shared = new Set(weeksA.filter((w) => wB.has(w.woy)).map((w) => w.woy));
-    return {
-      aggA: aggregate(weeksA.filter((w) => shared.has(w.woy)), basis),
-      aggB: aggregate(weeksB.filter((w) => shared.has(w.woy)), basis),
-      labelA: String(yearA ?? ''), labelB: String(yearB ?? ''), sharedCount: shared.size,
-    };
-  }, [mode, basis, weeksA, weeksB, weekA, weekB, yearA, yearB]);
-
   const selA = useMemo(() => {
-    if (mode === 'specific') return weeksA.filter((w) => w.weekStart === weekA);
+    if (mode === 'specific') { const s = new Set(weekA); return weeksA.filter((w) => s.has(w.weekStart)); }
     const wB = new Set(weeksB.map((w) => w.woy));
     return weeksA.filter((w) => wB.has(w.woy));
   }, [mode, weeksA, weeksB, weekA]);
   const selB = useMemo(() => {
-    if (mode === 'specific') return weeksB.filter((w) => w.weekStart === weekB);
+    if (mode === 'specific') { const s = new Set(weekB); return weeksB.filter((w) => s.has(w.weekStart)); }
     const wA = new Set(weeksA.map((w) => w.woy));
     return weeksB.filter((w) => wA.has(w.woy));
   }, [mode, weeksA, weeksB, weekB]);
+
+  // Counts average per week, money totals, markup hour-weighted — for one or many weeks.
+  const { aggA, aggB, labelA, labelB, sharedCount } = useMemo(() => {
+    const lbl = (sel: WeekFig[]) => (sel.length === 0 ? '—' : sel.length === 1 ? sel[0].label : `${sel.length} weeks`);
+    if (mode === 'specific') {
+      return { aggA: aggregate(selA, basis), aggB: aggregate(selB, basis), labelA: lbl(selA), labelB: lbl(selB), sharedCount: 0 };
+    }
+    return {
+      aggA: aggregate(selA, basis), aggB: aggregate(selB, basis),
+      labelA: String(yearA ?? ''), labelB: String(yearB ?? ''), sharedCount: selA.length,
+    };
+  }, [mode, basis, selA, selB, yearA, yearB]);
   const weekRowsA = useMemo(() => {
     if (yearA == null || !rowsByYear[yearA]) return null;
     const s = new Set(selA.map((w) => w.weekStart));
@@ -231,14 +267,18 @@ export function AnalyticsPL() {
 
 
   const specific = mode === 'specific';
+  // One week each side → exact "that week" values; several weeks → averages/totals.
+  const single = specific && selA.length <= 1 && selB.length <= 1;
+  const cntCap = single ? 'that week' : 'avg per week';
+  const sumCap = single ? 'that week' : 'total';
   const cards: { key: MetricKey; title: string; caption: string; fmt: (v: number) => string; money?: boolean }[] = [
-    { key: 'active', title: 'Active contractors', caption: specific ? 'that week' : 'avg per week', fmt: (v) => fmtCount(v, specific) },
-    { key: 'on40', title: 'On 40 hours', caption: specific ? 'that week' : 'avg per week', fmt: (v) => fmtCount(v, specific) },
-    { key: 'on50', title: 'On 50 hours', caption: specific ? 'that week' : 'avg per week', fmt: (v) => fmtCount(v, specific) },
-    { key: 'expense', title: 'Expense after 1%', caption: specific ? 'that week' : 'total', fmt: fmtMoney },
-    { key: 'income', title: 'Income after 3%', caption: specific ? 'that week' : 'total', fmt: fmtMoney },
-    { key: 'grossAfter', title: 'Gross after deductions', caption: specific ? 'that week' : 'total', fmt: fmtMoney },
-    { key: 'markup', title: 'Markup rate', caption: specific ? 'that week' : '$ per hour', fmt: fmtMoney, money: true },
+    { key: 'active', title: 'Active contractors', caption: cntCap, fmt: (v) => fmtCount(v, single) },
+    { key: 'on40', title: 'On 40 hours', caption: cntCap, fmt: (v) => fmtCount(v, single) },
+    { key: 'on50', title: 'On 50 hours', caption: cntCap, fmt: (v) => fmtCount(v, single) },
+    { key: 'expense', title: 'Expense after 1%', caption: sumCap, fmt: fmtMoney },
+    { key: 'income', title: 'Income after 3%', caption: sumCap, fmt: fmtMoney },
+    { key: 'grossAfter', title: 'Gross after deductions', caption: sumCap, fmt: fmtMoney },
+    { key: 'markup', title: 'Markup rate', caption: single ? 'that week' : '$ per hour', fmt: fmtMoney, money: true },
   ];
 
   const footer = (key: MetricKey) => {
@@ -281,14 +321,8 @@ export function AnalyticsPL() {
         <Segmented value={mode} onChange={(v) => setMode(v as Mode)} options={[{ v: 'all', label: 'All weeks' }, { v: 'specific', label: 'Specific weeks' }]} />
         {specific ? (
           <div className="flex items-center gap-2">
-            <Select value={weekA ?? undefined} onValueChange={setWeekA}>
-              <SelectTrigger className="h-8 w-48"><SelectValue placeholder={`${yearA} week`} /></SelectTrigger>
-              <SelectContent>{weeksA.map((w) => <SelectItem key={w.weekStart} value={w.weekStart}>{w.label}</SelectItem>)}</SelectContent>
-            </Select>
-            <Select value={weekB ?? undefined} onValueChange={setWeekB}>
-              <SelectTrigger className="h-8 w-48"><SelectValue placeholder={`${yearB} week`} /></SelectTrigger>
-              <SelectContent>{weeksB.map((w) => <SelectItem key={w.weekStart} value={w.weekStart}>{w.label}</SelectItem>)}</SelectContent>
-            </Select>
+            <WeekMultiSelect weeks={weeksA} value={weekA} onChange={setWeekA} placeholder={`${yearA} weeks`} />
+            <WeekMultiSelect weeks={weeksB} value={weekB} onChange={setWeekB} placeholder={`${yearB} weeks`} />
           </div>
         ) : (
           <span className="text-xs text-muted-foreground">{sharedCount} shared weeks</span>
