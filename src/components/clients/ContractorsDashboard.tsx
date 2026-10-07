@@ -568,7 +568,7 @@ export const ContractorsDashboard = () => {
     .filter(contractor => {
       // Per-column filters
       for (const [key, values] of Object.entries(columnFilters)) {
-        if (values === undefined) continue;
+        if (!values || values.length === 0) continue;
         if (!values.includes(getColumnValue(contractor, key))) return false;
       }
 
