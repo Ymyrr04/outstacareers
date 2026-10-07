@@ -1576,6 +1576,7 @@ export type Database = {
           job_title: string | null
           notes: string | null
           payoneer_email: string | null
+          pl_standard_hours: number | null
           regular_work_shift: string | null
           separation_note: string | null
           source: string | null
@@ -1619,6 +1620,7 @@ export type Database = {
           job_title?: string | null
           notes?: string | null
           payoneer_email?: string | null
+          pl_standard_hours?: number | null
           regular_work_shift?: string | null
           separation_note?: string | null
           source?: string | null
@@ -1662,6 +1664,7 @@ export type Database = {
           job_title?: string | null
           notes?: string | null
           payoneer_email?: string | null
+          pl_standard_hours?: number | null
           regular_work_shift?: string | null
           separation_note?: string | null
           source?: string | null
@@ -2294,6 +2297,7 @@ export type Database = {
           notes: string | null
           outsta_status: string
           overtime_hours: number
+          pl_actual_hours: number | null
           status: string
           submitted_at: string
           total_hours: number
@@ -2314,6 +2318,7 @@ export type Database = {
           notes?: string | null
           outsta_status?: string
           overtime_hours?: number
+          pl_actual_hours?: number | null
           status?: string
           submitted_at?: string
           total_hours: number
@@ -2334,6 +2339,7 @@ export type Database = {
           notes?: string | null
           outsta_status?: string
           overtime_hours?: number
+          pl_actual_hours?: number | null
           status?: string
           submitted_at?: string
           total_hours?: number
