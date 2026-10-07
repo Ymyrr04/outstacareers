@@ -96,7 +96,10 @@ export async function computePlWeek(
     .or(`status.eq.active,and(status.eq.terminated,end_date.gte.${weekMondayStr})`);
   if (aErr) throw aErr;
 
-  const active = (aData as any as PlAssignment[]) || [];
+  // Skip contractors whose start date is after this week ends — they weren't working yet.
+  const active = ((aData as any as PlAssignment[]) || []).filter(
+    (a) => !a.start_date || String(a.start_date).slice(0, 10) <= weekEndingStr,
+  );
   const ids = active.map((a) => a.id);
   let tsRows: PlTimesheet[] = [];
   if (ids.length) {
