@@ -16,7 +16,7 @@ import { PieChart, Pie } from 'recharts';
 import { summaryDatasets } from '@/lib/plSummaryFacts';
 import { FormattedNotes } from '@/components/FormattedNotes';
 import {
-  type HistRow, fetchYear, weekHeadcount, isContractorRow, rowHours, markupOf, num,
+  type HistRow, fetchYear, weekHeadcount, isContractorRow, isInternalRow, rowHours, markupOf, num,
 } from '@/lib/historicalData';
 
 const COLOR_A = '#0ABEDF';
@@ -52,15 +52,20 @@ function buildWeeks(rows: HistRow[]): WeekFig[] {
     const cr = all.filter(isContractorRow);
     const n40 = new Set<string>(), n50 = new Set<string>();
     let hours = 0, ig = 0, eg = 0, ia = 0, ea = 0, ga = 0, ms = 0, mh = 0, crs = 0, kts = 0;
+    // Money and hours match the Historical week totals: every non-internal row,
+    // including bonus rows and rows kept out of headcount.
+    for (const r of all) {
+      if (isInternalRow(r)) continue;
+      hours += rowHours(r);
+      ig += num(r.client_billing); eg += num(r.contractor_cost);
+      ia += num(r.income_after_3_percent); ea += num(r.expense_after_1_percent);
+      ga += num(r.gross_after_deductions);
+    }
     for (const r of cr) {
       const h = rowHours(r);
       const name = (r.contractor_name ?? '').trim().toLowerCase();
       if (h === 40) n40.add(name);
       if (h === 50) n50.add(name);
-      hours += h;
-      ig += num(r.client_billing); eg += num(r.contractor_cost);
-      ia += num(r.income_after_3_percent); ea += num(r.expense_after_1_percent);
-      ga += num(r.gross_after_deductions);
       const mk = markupOf(r);
       if (mk != null && r.client_rate != null && r.contractor_rate != null && h > 0) { ms += mk * h; mh += h; crs += num(r.client_rate) * h; kts += num(r.contractor_rate) * h; }
     }
