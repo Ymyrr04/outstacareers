@@ -20,7 +20,7 @@ import { DailyCheckin } from '@/components/portal/DailyCheckin';
 import { LeaveApplication } from '@/components/portal/LeaveApplication';
 import { LegalDocRequest } from '@/components/portal/LegalDocRequest';
 import { TimesheetTutorialDialog } from '@/components/portal/TimesheetTutorialDialog';
-import { PaymentProcessNotice } from '@/components/portal/PaymentProcessNotice';
+import { PaymentProcessNotice, PaymentProcessAnnouncement } from '@/components/portal/PaymentProcessNotice';
 import { addDays, format, startOfWeek } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -591,7 +591,7 @@ const PortalDashboard = () => {
   const [hasCheckinToday, setHasCheckinToday] = useState<boolean>(true);
   const [pendingManagerCheckins, setPendingManagerCheckins] = useState<number>(0);
   const [reminderOpen, setReminderOpen] = useState(false);
-  const [tabValue, setTabValue] = useState<'timesheet' | 'checkin' | 'leave'>('timesheet');
+  const [tabValue, setTabValue] = useState<'timesheet' | 'checkin' | 'leave' | 'legal-doc' | 'announcement'>('timesheet');
 
   const emptyProfileForm: ProfileForm = {
     full_name: '', phone: '', whatsapp: '', location: '', country: '', payoneer_email: '',
@@ -1887,7 +1887,7 @@ const PortalDashboard = () => {
         </Dialog>
 
         <Tabs value={tabValue} onValueChange={(v) => setTabValue(v as any)} className="space-y-6">
-          <TabsList>
+          <TabsList className="h-auto flex-wrap justify-start">
             <TabsTrigger value="timesheet">Timesheet</TabsTrigger>
             <TabsTrigger value="checkin" className="relative">
               Check-in
@@ -1902,6 +1902,7 @@ const PortalDashboard = () => {
             </TabsTrigger>
             <TabsTrigger value="leave">Leave</TabsTrigger>
             <TabsTrigger value="legal-doc">Legal Doc</TabsTrigger>
+            <TabsTrigger value="announcement">Announcement</TabsTrigger>
           </TabsList>
           <TabsContent value="timesheet" className="space-y-6 mt-0">
         <Card>
@@ -2672,6 +2673,15 @@ const PortalDashboard = () => {
           </TabsContent>
           <TabsContent value="legal-doc" className="mt-0">
             {info && <LegalDocRequest contractorAssignmentId={info.contractor_assignment_id} />}
+          </TabsContent>
+          <TabsContent value="announcement" className="mt-0">
+            <section className="max-w-3xl py-4" aria-labelledby="payment-announcement-title">
+              <header className="mb-6 space-y-2 border-b pb-4">
+                <h2 id="payment-announcement-title" className="text-xl font-semibold">Weekly payment process update</h2>
+                <p className="text-sm text-muted-foreground">Starting Friday, October 16, 2026</p>
+              </header>
+              <PaymentProcessAnnouncement firstName={info?.full_name?.trim().split(/\s+/)[0] || 'there'} />
+            </section>
           </TabsContent>
         </Tabs>
       </main>
