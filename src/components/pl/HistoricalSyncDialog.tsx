@@ -122,16 +122,24 @@ async function loadDepositHeld(res: PlWeekRow[]): Promise<Map<string, Held>> {
   const withTs = res.filter((r) => r.timesheet);
   if (!withTs.length) return out;
   const ids = withTs.map((r) => r.assignment.id);
-  const [{ data: as, error: aErr }, { data: ts, error: tErr }] = await Promise.all([
-    supabase.from('contractor_assignments')
-      .select('id, start_date, hours_per_week, hourly_rate, deposit_per_week, deposit_per_week_unit, deposit_target, deposit_target_unit')
-      .in('id', ids),
-    supabase.from('contractor_timesheets')
-      .select('id, contractor_assignment_id, week_ending_date, total_hours')
-      .in('contractor_assignment_id', ids),
-  ]);
+  const { data: as, error: aErr } = await supabase.from('contractor_assignments')
+    .select('id, start_date, hours_per_week, hourly_rate, deposit_per_week, deposit_per_week_unit, deposit_target, deposit_target_unit')
+    .in('id', ids);
   if (aErr) throw aErr;
-  if (tErr) throw tErr;
+  // Page through every timesheet: a single request is capped at 1000 rows, which
+  // silently dropped later starters' weeks and skipped their deposit hold.
+  const ts: any[] = [];
+  const PAGE = 1000;
+  for (let from = 0; ; from += PAGE) {
+    const { data, error: tErr } = await supabase.from('contractor_timesheets')
+      .select('id, contractor_assignment_id, week_ending_date, total_hours')
+      .in('contractor_assignment_id', ids)
+      .order('id')
+      .range(from, from + PAGE - 1);
+    if (tErr) throw tErr;
+    ts.push(...(data ?? []));
+    if (!data || data.length < PAGE) break;
+  }
   const byA = new Map<string, DepositTs[]>();
   (ts ?? []).forEach((t: any) => {
     const arr = byA.get(t.contractor_assignment_id) || [];
