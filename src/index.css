@@ -111,9 +111,9 @@ All colors MUST be HSL.
   }
 }
 
-/* The add/edit activity dialog always renders on a white surface,
-   regardless of the app's light/dark theme. */
-.ce-light {
+/* Calendar dialogs and their portalled menus preserve their light palette
+   only in light mode; dark mode inherits the app's semantic theme tokens. */
+html:not(.dark) .ce-light {
   --background: 0 0% 98%;
   --foreground: 210 20% 20%;
   --card: 0 0% 100%;
