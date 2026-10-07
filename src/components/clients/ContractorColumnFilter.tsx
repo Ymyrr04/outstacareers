@@ -8,7 +8,7 @@ import { ListFilter, Search } from 'lucide-react';
 interface ColumnFilterProps {
   /** Distinct values available for this column */
   options: string[];
-  /** undefined = no filter (show all); otherwise only these values show */
+  /** undefined or [] = no filter (show all); otherwise only these values show */
   selected: string[] | undefined;
   onChange: (values: string[] | undefined) => void;
 }
@@ -23,14 +23,14 @@ export const ContractorColumnFilter = ({ options, selected, onChange }: ColumnFi
     return options.filter(o => o.toLowerCase().includes(q));
   }, [options, query]);
 
-  const isActive = selected !== undefined && selected.length !== options.length;
-  const effective = selected === undefined ? options : selected;
+  const effective = selected ?? [];
+  const isActive = effective.length > 0;
 
   const toggleValue = (value: string) => {
     const next = effective.includes(value)
       ? effective.filter(v => v !== value)
       : [...effective, value];
-    onChange(next.length === options.length ? undefined : next);
+    onChange(next);
   };
 
   const isChecked = (value: string) => effective.includes(value);
@@ -80,7 +80,7 @@ export const ContractorColumnFilter = ({ options, selected, onChange }: ColumnFi
             variant="ghost"
             size="sm"
             className="h-7 text-xs flex-1"
-            onClick={() => onChange(undefined)}
+            onClick={() => onChange(options)}
           >
             Select all
           </Button>

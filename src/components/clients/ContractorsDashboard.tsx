@@ -543,7 +543,7 @@ export const ContractorsDashboard = () => {
   const externalContractors = contractors.filter(c => c.client_id !== INTERNAL_CLIENT_ID);
   const internalTeamContractors = contractors.filter(c => c.client_id === INTERNAL_CLIENT_ID);
 
-  // Per-column value filters: key -> selected values (undefined = no filter)
+  // Per-column value filters: key -> checked values (empty/undefined = show all)
   const getColumnValue = (c: ContractorWithDetails, key: string): string => {
     switch (key) {
       case 'status': return c.status || '';
@@ -568,7 +568,7 @@ export const ContractorsDashboard = () => {
     .filter(contractor => {
       // Per-column filters
       for (const [key, values] of Object.entries(columnFilters)) {
-        if (values === undefined) continue;
+        if (!values || values.length === 0) continue;
         if (!values.includes(getColumnValue(contractor, key))) return false;
       }
 
