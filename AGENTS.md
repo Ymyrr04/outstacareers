@@ -6,3 +6,4 @@
 - Verify admin access in edge functions with the `is_admin(_user_id)` helper rather than `has_role(..., 'admin')`, so super_admin callers are not wrongly rejected.
 - Cache AI-written output by a signature of the prompt plus its input facts in a database table and require an explicit user action to generate, so an unchanged view never spends credits again.
 - Build analyst inputs from selected historical row datasets plus weekly observations, using stable anonymous contractor identifiers and client aggregates, so analysis includes cohort and mix differences without disclosing contractor identities or changing report calculations.
+- Persist versioned contractor payment-notice acknowledgements through authenticated database functions and enforce them on contractor timesheet submission, so browser bypasses cannot skip consent while admin/client workflows remain unchanged.

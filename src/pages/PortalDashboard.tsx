@@ -20,6 +20,7 @@ import { DailyCheckin } from '@/components/portal/DailyCheckin';
 import { LeaveApplication } from '@/components/portal/LeaveApplication';
 import { LegalDocRequest } from '@/components/portal/LegalDocRequest';
 import { TimesheetTutorialDialog } from '@/components/portal/TimesheetTutorialDialog';
+import { PaymentProcessNotice } from '@/components/portal/PaymentProcessNotice';
 import { addDays, format, startOfWeek } from 'date-fns';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -570,6 +571,9 @@ const PortalDashboard = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
+  const [paymentNoticeAcknowledged, setPaymentNoticeAcknowledged] = useState(false);
+  const [paymentNoticeBusy, setPaymentNoticeBusy] = useState(false);
+  const [paymentNoticeError, setPaymentNoticeError] = useState<string | null>(null);
   const [info, setInfo] = useState<ContractorInfo | null>(null);
   const [timesheets, setTimesheets] = useState<Timesheet[]>([]);
   const [flagDialogTimesheet, setFlagDialogTimesheet] = useState<Timesheet | null>(null);
@@ -707,6 +711,11 @@ const PortalDashboard = () => {
     }
 
     const allAssignmentIds = portalRows.map((r: any) => r.contractor_assignment_id);
+
+    // Fail closed: a failed lookup must never bypass the announcement.
+    const { data: noticeAcknowledged, error: noticeError } = await supabase.rpc('has_acknowledged_contractor_payment_notice');
+    setPaymentNoticeAcknowledged(!noticeError && noticeAcknowledged === true);
+    setPaymentNoticeError(noticeError ? 'We could not check your acknowledgement. Please read the notice and try acknowledging again.' : null);
 
     // Pull every assignment the user is linked to so we can (a) pick the active one
     // for the dashboard view and (b) join client/job info to past timesheets.
@@ -1073,6 +1082,7 @@ const PortalDashboard = () => {
 
   const handleSubmitClick = (e?: React.FormEvent) => {
     e?.preventDefault();
+    if (!paymentNoticeAcknowledged) return;
     if (!info) return;
     if (!hasWorkDays) {
       toast({ title: 'Work days not set', description: 'Please set your scheduled work days in your profile before submitting.', variant: 'destructive' });
@@ -1130,6 +1140,7 @@ const PortalDashboard = () => {
   };
 
   const performSubmit = async () => {
+    if (!paymentNoticeAcknowledged) return;
     if (!info) return;
     if (!validateNumbers()) return;
     const ot = parseFloat(overtimeHours || '0');
@@ -1577,8 +1588,36 @@ const PortalDashboard = () => {
     });
   }, [info?.break_duration_minutes, info?.break_is_paid]);
 
+  const acknowledgePaymentNotice = async () => {
+    setPaymentNoticeBusy(true);
+    setPaymentNoticeError(null);
+    try {
+      const { error } = await supabase.rpc('acknowledge_contractor_payment_notice');
+      if (error) throw error;
+      setPaymentNoticeAcknowledged(true);
+    } catch {
+      setPaymentNoticeError('Your acknowledgement could not be saved. Please try again before continuing.');
+    } finally {
+      setPaymentNoticeBusy(false);
+    }
+  };
+
   if (loading) {
     return <div className="min-h-screen flex items-center justify-center"><Loader2 className="w-6 h-6 animate-spin" /></div>;
+  }
+
+  if (info && !paymentNoticeAcknowledged) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Helmet><title>Payment Update | OutSta Contractor Portal</title></Helmet>
+        <PaymentProcessNotice
+          firstName={info.full_name?.trim().split(/\s+/)[0] || 'there'}
+          busy={paymentNoticeBusy}
+          error={paymentNoticeError}
+          onAcknowledge={acknowledgePaymentNotice}
+        />
+      </div>
+    );
   }
 
   return (
