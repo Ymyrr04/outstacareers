@@ -137,8 +137,8 @@ export function AnalyticsPL() {
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<Mode>('all');
   const basis: Basis = 'after';
-  const [weekA, setWeekA] = useState<string | null>(null);
-  const [weekB, setWeekB] = useState<string | null>(null);
+  const [weekA, setWeekA] = useState<string[]>([]);
+  const [weekB, setWeekB] = useState<string[]>([]);
   const [metric, setMetric] = useState<MetricKey>('active');
 
   // Years with data
@@ -173,42 +173,42 @@ export function AnalyticsPL() {
   const weeksA = useMemo(() => (yearA != null ? buildWeeks(rowsByYear[yearA] ?? []) : []), [yearA, rowsByYear]);
   const weeksB = useMemo(() => (yearB != null ? buildWeeks(rowsByYear[yearB] ?? []) : []), [yearB, rowsByYear]);
 
-  // Default specific weeks: week 3 (Year A) and week 5 (Year B)
+  // Default specific weeks: week 3 (Year A) and week 5 (Year B); drop selections not in the year
   useEffect(() => {
-    if (!weeksA.some((w) => w.weekStart === weekA)) setWeekA((weeksA.find((w) => w.woy === 3) ?? weeksA[0])?.weekStart ?? null);
+    const valid = weekA.filter((s) => weeksA.some((w) => w.weekStart === s));
+    if (valid.length) { if (valid.length !== weekA.length) setWeekA(valid); return; }
+    const d = (weeksA.find((w) => w.woy === 3) ?? weeksA[0])?.weekStart;
+    setWeekA(d ? [d] : []);
   }, [weeksA]); // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => {
-    if (!weeksB.some((w) => w.weekStart === weekB)) setWeekB((weeksB.find((w) => w.woy === 5) ?? weeksB[0])?.weekStart ?? null);
+    const valid = weekB.filter((s) => weeksB.some((w) => w.weekStart === s));
+    if (valid.length) { if (valid.length !== weekB.length) setWeekB(valid); return; }
+    const d = (weeksB.find((w) => w.woy === 5) ?? weeksB[0])?.weekStart;
+    setWeekB(d ? [d] : []);
   }, [weeksB]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const { aggA, aggB, labelA, labelB, sharedCount } = useMemo(() => {
-    if (mode === 'specific') {
-      const wa = weeksA.find((w) => w.weekStart === weekA);
-      const wb = weeksB.find((w) => w.weekStart === weekB);
-      return {
-        aggA: wa ? aggregate([wa], basis) : null, aggB: wb ? aggregate([wb], basis) : null,
-        labelA: wa?.label ?? '—', labelB: wb?.label ?? '—', sharedCount: 0,
-      };
-    }
-    const wB = new Set(weeksB.map((w) => w.woy));
-    const shared = new Set(weeksA.filter((w) => wB.has(w.woy)).map((w) => w.woy));
-    return {
-      aggA: aggregate(weeksA.filter((w) => shared.has(w.woy)), basis),
-      aggB: aggregate(weeksB.filter((w) => shared.has(w.woy)), basis),
-      labelA: String(yearA ?? ''), labelB: String(yearB ?? ''), sharedCount: shared.size,
-    };
-  }, [mode, basis, weeksA, weeksB, weekA, weekB, yearA, yearB]);
-
   const selA = useMemo(() => {
-    if (mode === 'specific') return weeksA.filter((w) => w.weekStart === weekA);
+    if (mode === 'specific') { const s = new Set(weekA); return weeksA.filter((w) => s.has(w.weekStart)); }
     const wB = new Set(weeksB.map((w) => w.woy));
     return weeksA.filter((w) => wB.has(w.woy));
   }, [mode, weeksA, weeksB, weekA]);
   const selB = useMemo(() => {
-    if (mode === 'specific') return weeksB.filter((w) => w.weekStart === weekB);
+    if (mode === 'specific') { const s = new Set(weekB); return weeksB.filter((w) => s.has(w.weekStart)); }
     const wA = new Set(weeksA.map((w) => w.woy));
     return weeksB.filter((w) => wA.has(w.woy));
   }, [mode, weeksA, weeksB, weekB]);
+
+  // Counts average per week, money totals, markup hour-weighted — for one or many weeks.
+  const { aggA, aggB, labelA, labelB, sharedCount } = useMemo(() => {
+    const lbl = (sel: WeekFig[]) => (sel.length === 0 ? '—' : sel.length === 1 ? sel[0].label : `${sel.length} weeks`);
+    if (mode === 'specific') {
+      return { aggA: aggregate(selA, basis), aggB: aggregate(selB, basis), labelA: lbl(selA), labelB: lbl(selB), sharedCount: 0 };
+    }
+    return {
+      aggA: aggregate(selA, basis), aggB: aggregate(selB, basis),
+      labelA: String(yearA ?? ''), labelB: String(yearB ?? ''), sharedCount: selA.length,
+    };
+  }, [mode, basis, selA, selB, yearA, yearB]);
   const weekRowsA = useMemo(() => {
     if (yearA == null || !rowsByYear[yearA]) return null;
     const s = new Set(selA.map((w) => w.weekStart));
