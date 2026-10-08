@@ -734,15 +734,31 @@ export const WorkflowBoard = () => {
     });
   });
 
+  // Keep at least part of the diagram visible so it can never be panned off-screen
+  const clampPan = useCallback((p: { x: number; y: number }, z = zoom) => {
+    const el = containerRef.current;
+    const cw = el?.clientWidth ?? 800;
+    const ch = el?.clientHeight ?? 600;
+    const margin = 120;
+    const minX = Math.min(0, cw - svgW * z) - margin;
+    const minY = Math.min(0, ch - svgH * z) - margin;
+    return {
+      x: Math.min(margin, Math.max(minX, p.x)),
+      y: Math.min(margin, Math.max(minY, p.y)),
+    };
+  }, [zoom, svgW, svgH]);
+
+  useEffect(() => { setPan(p => clampPan(p)); }, [zoom, clampPan]);
+
   // Pan/zoom handlers
   const handleWheel = useCallback((e: React.WheelEvent) => {
     if (e.ctrlKey || e.metaKey) {
       e.preventDefault();
       setZoom(z => Math.max(0.2, Math.min(1.5, z - e.deltaY * 0.001)));
     } else {
-      setPan(p => ({ x: p.x - e.deltaX, y: p.y - e.deltaY }));
+      setPan(p => clampPan({ x: p.x - e.deltaX, y: p.y - e.deltaY }));
     }
-  }, []);
+  }, [clampPan]);
 
   const handleMouseDown = useCallback((e: React.MouseEvent) => {
     if (e.button === 1 || (e.button === 0 && e.shiftKey)) {
@@ -753,9 +769,9 @@ export const WorkflowBoard = () => {
 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (isPanning) {
-      setPan({ x: e.clientX - panStart.x, y: e.clientY - panStart.y });
+      setPan(clampPan({ x: e.clientX - panStart.x, y: e.clientY - panStart.y }));
     }
-  }, [isPanning, panStart]);
+  }, [isPanning, panStart, clampPan]);
 
   const handleMouseUp = useCallback(() => {
     setIsPanning(false);
@@ -775,7 +791,7 @@ export const WorkflowBoard = () => {
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setZoom(z => Math.min(1.5, z + 0.1))}><ZoomIn className="w-4 h-4" /></Button>
           <span className="text-xs font-mono text-muted-foreground w-10 text-center">{Math.round(zoom * 100)}%</span>
           <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setZoom(z => Math.max(0.2, z - 0.1))}><ZoomOut className="w-4 h-4" /></Button>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={resetView}><Maximize2 className="w-4 h-4" /></Button>
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={resetView} title="Reset view"><Maximize2 className="w-4 h-4" /></Button>
         </div>
       </div>
 
