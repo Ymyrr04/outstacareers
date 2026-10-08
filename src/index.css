@@ -487,7 +487,7 @@ html:not(.dark) .admin-shell [role="combobox"]:focus-visible {
   box-shadow: 0 0 0 2px hsl(var(--brand-light));
 }
 /* Search input icons (icon inside a relative wrapper with a padded input) */
-html:not(.dark) .admin-shell .relative > svg.absolute {
+html:not(.dark) .admin-shell .relative:has(> input) > svg.absolute {
   width: 13px;
   height: 13px;
   color: hsl(var(--muted-foreground));
