@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye, Mail, Settings2, ChevronLeft, ChevronRight, KeyRound, Download, Users, FileText, Clock, Wallet, DollarSign, AlarmClock } from 'lucide-react';
+import { Loader2, UserPlus, Search, Check, X, ArrowUpDown, ArrowUp, ArrowDown, Eye, Mail, Settings2, ChevronLeft, ChevronRight, KeyRound, Download, Users, FileText, Clock, Wallet, DollarSign, AlarmClock, Trash2 } from 'lucide-react';
 import { StatCard } from '@/components/StatCard';
 import { Calendar } from '@/components/ui/calendar';
 import { format } from 'date-fns';
@@ -943,6 +943,18 @@ export const PLDashboard = () => {
       return;
     }
     toast({ title: `Timesheet ${decision}` });
+    fetchData();
+  };
+
+  const handleDeleteTimesheet = async (r: TimesheetRow) => {
+    if (!confirm(`Delete timesheet for ${r.contractor?.applicant?.full_name} (week ending ${formatDate(r.week_ending_date)})? This cannot be undone.`)) return;
+    const { error } = await supabase.from('contractor_timesheets').delete().eq('id', r.id);
+    if (error) {
+      toast({ title: 'Delete failed', description: error.message, variant: 'destructive' });
+      return;
+    }
+    toast({ title: 'Timesheet deleted' });
+    setViewTimesheet(null);
     fetchData();
   };
 
@@ -2451,6 +2463,19 @@ export const PLDashboard = () => {
             );
           })()}
           <DialogFooter>
+            {viewTimesheet && (() => {
+              const v: any = viewTimesheet;
+              const cs = v.client_approval_status || 'pending';
+              const flagged = cs === 'flagged' || v.outsta_status === 'flagged' || v.status === 'rejected' || v.status === 'flagged';
+              const bothApproved = cs === 'approved' && (v.outsta_status === 'approved' || v.status === 'approved');
+              const open = Date.now() < timesheetLockAt(v.week_ending_date, v.submitted_at).getTime();
+              if (bothApproved || !(open || flagged)) return null;
+              return (
+                <Button variant="outline" className="mr-auto border-destructive text-destructive hover:bg-destructive/10" onClick={() => handleDeleteTimesheet(viewTimesheet)}>
+                  <Trash2 className="w-4 h-4 mr-1" />Delete
+                </Button>
+              );
+            })()}
             {viewTimesheet?.status === 'pending_approval' && (
               <>
                 <Button variant="outline" className="border-destructive text-destructive hover:bg-destructive/10" onClick={() => { handleDecision(viewTimesheet, 'rejected'); setViewTimesheet(null); }}>

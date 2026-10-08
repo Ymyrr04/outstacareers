@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, LogOut, Pencil, CalendarIcon, UserCircle2, Check, ChevronsUpDown, HelpCircle, ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle, Lock, Info, Plus, X, Split } from 'lucide-react';
+import { Loader2, LogOut, Pencil, CalendarIcon, UserCircle2, Check, ChevronsUpDown, HelpCircle, ChevronLeft, ChevronRight, CheckCircle2, AlertTriangle, Lock, Info, Plus, X, Split, Trash2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Progress } from '@/components/ui/progress';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -1251,6 +1251,18 @@ const PortalDashboard = () => {
       setSubmitting(false);
       setConfirmOpen(false);
     }
+  };
+
+  const handleDeleteTimesheet = async (t: Timesheet) => {
+    if (!confirm(`Delete your timesheet for week ending ${formatDate(t.week_ending_date)}? This cannot be undone.`)) return;
+    const { error } = await supabase.rpc('delete_my_timesheet' as any, { _timesheet_id: t.id });
+    if (error) {
+      toast({ title: 'Delete failed', description: error.message, variant: 'destructive' });
+      return;
+    }
+    if (editingId === t.id) setEditingId(null);
+    toast({ title: 'Timesheet deleted' });
+    loadAll();
   };
 
   const handleEdit = (t: Timesheet) => {
@@ -2616,6 +2628,9 @@ const PortalDashboard = () => {
                             <div className="inline-flex items-center gap-2 justify-end">
                               <Button variant="ghost" size="sm" onClick={() => handleEdit(t)}>
                                 <Pencil className="w-3.5 h-3.5 mr-1" />Edit
+                              </Button>
+                              <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDeleteTimesheet(t)}>
+                                <Trash2 className="w-3.5 h-3.5 mr-1" />Delete
                               </Button>
                               {isFlagged && (
                                 <button
