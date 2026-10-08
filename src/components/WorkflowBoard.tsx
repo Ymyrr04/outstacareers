@@ -489,8 +489,8 @@ const SubNodeFO = ({ node, x, y, w, onClick }: { node: DetailNode; x: number; y:
           <Icon className="w-3 h-3 text-white" />
         </div>
         <div className="flex-1 min-w-0 overflow-hidden">
-          <p className="text-[10px] font-semibold text-foreground truncate leading-tight">{node.label}</p>
-          <p className="text-[9px] text-muted-foreground truncate">{node.description}</p>
+          <p className="text-[10px] font-semibold text-slate-100 truncate leading-tight">{node.label}</p>
+          <p className="text-[9px] text-slate-400 truncate">{node.description}</p>
         </div>
         <div className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{ background: tc.bg }} />
       </div>
