@@ -3803,6 +3803,39 @@ export type Database = {
           },
         ]
       }
+      rm_resources: {
+        Row: {
+          content_text: string
+          created_at: string
+          file_name: string | null
+          file_path: string | null
+          id: string
+          mime_type: string | null
+          title: string
+          uploaded_by: string | null
+        }
+        Insert: {
+          content_text?: string
+          created_at?: string
+          file_name?: string | null
+          file_path?: string | null
+          id?: string
+          mime_type?: string | null
+          title: string
+          uploaded_by?: string | null
+        }
+        Update: {
+          content_text?: string
+          created_at?: string
+          file_name?: string | null
+          file_path?: string | null
+          id?: string
+          mime_type?: string | null
+          title?: string
+          uploaded_by?: string | null
+        }
+        Relationships: []
+      }
       sales_lead_notes: {
         Row: {
           created_at: string

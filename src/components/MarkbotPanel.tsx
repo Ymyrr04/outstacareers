@@ -83,6 +83,7 @@ const TYPE_LABELS: Record<string, string> = {
   interview_answer: 'Interview',
   hiring_comment: 'Hiring comment',
   calendar_comment: 'Calendar comment',
+  resource: 'RM resource',
 };
 
 const STARTERS: { tab: TabId; text: string }[] = [
