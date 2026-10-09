@@ -156,7 +156,7 @@ async function pipelineSummary(args: unknown, { sb }: ToolCtx) {
   }));
 
   const hasFilter = !!(stage || a.client?.trim() || a.assignee?.trim() || addedSinceIso);
-  if (!hasFilter) return { counts_by_stage: counts, note: "Counts are exact. Pass stage, client or assignee to list requests." };
+  if (!hasFilter) return { all_time_counts_by_stage: counts, note: "Counts are exact. Pass stage, client or assignee to list requests." };
 
   let clientIds: string[] | null = null;
   if (a.client?.trim()) {
@@ -164,12 +164,12 @@ async function pipelineSummary(args: unknown, { sb }: ToolCtx) {
     const { data, error } = await sb.from("clients").select("id").ilike("company_name", pattern).limit(50);
     if (error) throw error;
     clientIds = (data ?? []).map((c: any) => c.id);
-    if (!clientIds.length) return { counts_by_stage: counts, message: `No client matched "${a.client}".`, requests: [] };
+    if (!clientIds.length) return { all_time_counts_by_stage: counts, message: `No client matched "${a.client}".`, requests: [] };
   }
   let assigneeIds: string[] | null = null;
   if (a.assignee?.trim()) {
     assigneeIds = await adminIdsByName(sb, a.assignee.slice(0, 100));
-    if (!assigneeIds.length) return { counts_by_stage: counts, message: `No admin matched "${a.assignee}".`, requests: [] };
+    if (!assigneeIds.length) return { all_time_counts_by_stage: counts, message: `No admin matched "${a.assignee}".`, requests: [] };
   }
 
   let q = sb.from("client_hiring_requests")
@@ -193,10 +193,10 @@ async function pipelineSummary(args: unknown, { sb }: ToolCtx) {
     days_in_stage: r.updated_at ? Math.floor((now - new Date(r.updated_at).getTime()) / DAY_MS) : null,
   })));
   return {
-    counts_by_stage: counts,
+    all_time_counts_by_stage: counts,
     matching_total: count ?? requests.length,
     requests,
-    note: "days_in_stage is measured from the request's last update. Showing up to 20, oldest first.",
+    note: "matching_total is the number of requests matching the filter. all_time_counts_by_stage ignores the filter. days_in_stage is measured from the request's last update. Showing up to 20, oldest first.",
   };
 }
 
