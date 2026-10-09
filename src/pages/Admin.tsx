@@ -70,6 +70,7 @@ import { useTabPermissions, TabId } from '@/hooks/useTabPermissions';
 import { AdminPermissionsManager } from '@/components/AdminPermissionsManager';
 import { MarkbotIndexCard } from '@/components/MarkbotIndexCard';
 import { MarkbotRulesCard } from '@/components/MarkbotRulesCard';
+
 import { HiredAssignmentDialog } from '@/components/HiredAssignmentDialog';
 import { BooleanSearchBuilder } from '@/components/BooleanSearchBuilder';
 import { SearchApplicantExpandedView } from '@/components/SearchApplicantExpandedView';
