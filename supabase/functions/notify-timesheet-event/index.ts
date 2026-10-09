@@ -2,6 +2,7 @@
 // Events: timesheet_submitted, timesheet_resubmitted, timesheet_approved, timesheet_flagged, leave_submitted
 import { createClient } from "npm:@supabase/supabase-js@2.39.3";
 import nodemailer from "npm:nodemailer@6.9.14";
+import { pdcEmail, type LegalEmailDocument } from "./pdcEmail.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -22,7 +23,7 @@ interface Payload {
   timesheetId?: string;
   leaveId?: string;
   legalDocRequestId?: string;
-  documents?: { filename: string; base64: string }[];
+  documents?: LegalEmailDocument[];
   reason?: string;
   reviewerName?: string;
   source?: "client" | "admin";
@@ -438,7 +439,7 @@ async function handleLegalDocSubmitted(requestId: string) {
 
 async function handleLegalDocCompleted(
   requestId: string,
-  documents: { filename: string; base64: string }[],
+  documents: LegalEmailDocument[],
 ) {
   const { data: req, error } = await supabase
     .from("contractor_legal_doc_requests")
@@ -466,6 +467,20 @@ async function handleLegalDocCompleted(
   }
   if (!contractorEmail) throw new Error("Contractor email not found");
 
+  // Request provenance comes from the stored record, never the send payload.
+  const standalonePdcs = req.reason === 'Created by admin'
+    ? documents.filter((d) => d.docType === 'Pay Deposit Certificate' || d.filename.startsWith('Pay_Deposit_Certificate-'))
+    : [];
+  // Validate all certificate details before sending any attachment.
+  const pdcMessages = standalonePdcs.map((document) => ({ document, ...pdcEmail(document) }));
+  for (const message of pdcMessages) {
+    const messageId = await send(contractorEmail, ['mark@outsta.io'], message.subject, message.html,
+      [{ filename: message.document.filename, content: message.document.base64 }]);
+    if (!messageId) throw new Error('Could not send the Pay Deposit Certificate');
+  }
+  documents = documents.filter((d) => !standalonePdcs.includes(d));
+  if (!documents.length) return;
+
   const docTypes = Array.isArray(req.doc_types) ? req.doc_types.join(", ") : String(req.doc_types || "—");
   const subject = `Re: Legal doc request: ${contractorName} — ${docTypes}`;
   const fileList = documents.map((d) => `${d.filename}`).join("<br>");
@@ -477,7 +492,7 @@ async function handleLegalDocCompleted(
   const threadId = (req as any).request_email_message_id as string | null;
   const headers = threadId ? { "In-Reply-To": threadId, "References": threadId } : undefined;
 
-  await send(
+  const messageId = await send(
     contractorEmail,
     ["mark@outsta.io"],
     subject,
@@ -485,6 +500,7 @@ async function handleLegalDocCompleted(
     documents.map((d) => ({ filename: d.filename, content: d.base64 })),
     headers,
   );
+  if (!messageId) throw new Error('Could not send the legal documents');
 }
 
 Deno.serve(async (req) => {
@@ -500,6 +516,12 @@ Deno.serve(async (req) => {
       if (!body.legalDocRequestId) throw new Error("legalDocRequestId is required");
       await handleLegalDocSubmitted(body.legalDocRequestId);
     } else if (body.event === "legal_doc_completed") {
+      const token = req.headers.get('Authorization')?.replace(/^Bearer\s+/i, '');
+      if (!token) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      const { data: auth, error: authError } = await supabase.auth.getUser(token);
+      if (authError || !auth.user) return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      const { data: isAdmin, error: roleError } = await supabase.rpc('is_admin', { _user_id: auth.user.id });
+      if (roleError || !isAdmin) return new Response(JSON.stringify({ error: 'Admin access required' }), { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
       if (!body.legalDocRequestId) throw new Error("legalDocRequestId is required");
       if (!body.documents?.length) throw new Error("documents are required");
       await handleLegalDocCompleted(body.legalDocRequestId, body.documents);
