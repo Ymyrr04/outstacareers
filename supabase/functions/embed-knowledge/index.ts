@@ -235,6 +235,14 @@ Deno.serve(async (req) => {
   if (!apiKey) return json({ error: "LOVABLE_API_KEY not configured" }, 500);
   const sb = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
 
+  // Single-flight lease; a paused job (credits/policy) processes one probe item per run
+  const { data: lock, error: lockErr } = await sb.rpc("claim_knowledge_job_lock", { _seconds: 90 });
+  if (lockErr) return json({ error: lockErr.message }, 500);
+  if (!lock?.length) return json({ skipped: "another run is in progress" });
+  const pausedReason = (lock[0] as any).paused_reason as string | null;
+  const release = (patch: Record<string, unknown> = {}) =>
+    sb.from("knowledge_job_state").update({ locked_until: null, ...patch }).eq("id", true);
+
   const started = Date.now();
   let processed = 0, failed = 0;
   let halted: string | null = null;
@@ -242,7 +250,7 @@ Deno.serve(async (req) => {
 
   while (Date.now() - started < RUN_BUDGET_MS && !halted) {
     let q = sb.from("knowledge_dirty_queue").select("id, source_type, source_id, action")
-      .is("processed_at", null).order("created_at", { ascending: true }).limit(BATCH);
+      .is("processed_at", null).order("created_at", { ascending: true }).limit(pausedReason ? 1 : BATCH);
     if (tried.size) q = q.not("id", "in", `(${[...tried].join(",")})`);
     const { data: batch, error } = await q;
     if (error) return json({ error: error.message, processed, failed }, 500);
@@ -257,9 +265,11 @@ Deno.serve(async (req) => {
           await processRow(sb, apiKey, row);
           await sb.from("knowledge_dirty_queue").update({ processed_at: new Date().toISOString(), error: null }).eq("id", row.id);
           processed++;
+          if (pausedReason) halted = "probe ok";
         } catch (e) {
           const msg = e instanceof Error ? e.message : String((e as any)?.message ?? e);
           if (e instanceof HaltError) halted = msg;
+          if (pausedReason) halted = halted ?? msg;
           await sb.from("knowledge_dirty_queue").update({ error: msg.slice(0, 1000) }).eq("id", row.id);
           failed++;
         }
@@ -267,5 +277,11 @@ Deno.serve(async (req) => {
     }
   }
 
-  return json({ processed, failed, halted, elapsed_ms: Date.now() - started }, halted ? 503 : 200);
+  // Persist pause on credit/policy blocks; clear it after a successful probe
+  const blocked = !!halted && /Embeddings failed: (401|402|403)/.test(halted);
+  if (blocked) await release({ paused_reason: halted!.slice(0, 500), paused_at: new Date().toISOString() });
+  else if (pausedReason && processed > 0) await release({ paused_reason: null, paused_at: null });
+  else await release();
+  const ok = !halted || halted === "probe ok";
+  return json({ processed, failed, halted: ok ? null : halted, paused: blocked, elapsed_ms: Date.now() - started }, ok ? 200 : 503);
 });
