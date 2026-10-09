@@ -725,7 +725,7 @@ Deno.serve(async (req) => {
 
     const msgs = (body as { messages: { role: "user" | "assistant"; content: string }[] }).messages;
     const recent = msgs.slice(-CONTEXT_MESSAGES);
-    const convCtx: ConvContext = { ...((body as any).context ?? {}) };
+    const convCtx: ConvContext = { client: null, role_title: null, hiring_request_id: null, job_id: null, applicant_ids: [], date_range: null, ...((body as any).context ?? {}) };
     const question = msgs[msgs.length - 1];
     if (question.role !== "user") return json({ error: "The last message must be from the user" }, 400);
 
