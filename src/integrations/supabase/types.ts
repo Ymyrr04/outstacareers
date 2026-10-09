@@ -3322,6 +3322,84 @@ export type Database = {
           },
         ]
       }
+      knowledge_chunks: {
+        Row: {
+          chunk_index: number
+          content: string
+          created_at: string | null
+          embedding: string | null
+          entity_id: string | null
+          entity_type: string | null
+          id: string
+          metadata: Json | null
+          required_tab: string
+          source_hash: string | null
+          source_id: string
+          source_type: string
+          title: string | null
+        }
+        Insert: {
+          chunk_index?: number
+          content: string
+          created_at?: string | null
+          embedding?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json | null
+          required_tab: string
+          source_hash?: string | null
+          source_id: string
+          source_type: string
+          title?: string | null
+        }
+        Update: {
+          chunk_index?: number
+          content?: string
+          created_at?: string | null
+          embedding?: string | null
+          entity_id?: string | null
+          entity_type?: string | null
+          id?: string
+          metadata?: Json | null
+          required_tab?: string
+          source_hash?: string | null
+          source_id?: string
+          source_type?: string
+          title?: string | null
+        }
+        Relationships: []
+      }
+      knowledge_dirty_queue: {
+        Row: {
+          action: string
+          created_at: string | null
+          error: string | null
+          id: string
+          processed_at: string | null
+          source_id: string
+          source_type: string
+        }
+        Insert: {
+          action: string
+          created_at?: string | null
+          error?: string | null
+          id?: string
+          processed_at?: string | null
+          source_id: string
+          source_type: string
+        }
+        Update: {
+          action?: string
+          created_at?: string | null
+          error?: string | null
+          id?: string
+          processed_at?: string | null
+          source_id?: string
+          source_type?: string
+        }
+        Relationships: []
+      }
       outreach_prospects: {
         Row: {
           about: string | null
@@ -3513,6 +3591,45 @@ export type Database = {
           income_pct?: number
           singleton?: boolean
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      rag_chat_logs: {
+        Row: {
+          admin_user_id: string | null
+          answer: string | null
+          completion_tokens: number | null
+          created_at: string | null
+          id: string
+          prompt_tokens: number | null
+          question: string | null
+          rating: number | null
+          sources: Json | null
+          tools_used: Json | null
+        }
+        Insert: {
+          admin_user_id?: string | null
+          answer?: string | null
+          completion_tokens?: number | null
+          created_at?: string | null
+          id?: string
+          prompt_tokens?: number | null
+          question?: string | null
+          rating?: number | null
+          sources?: Json | null
+          tools_used?: Json | null
+        }
+        Update: {
+          admin_user_id?: string | null
+          answer?: string | null
+          completion_tokens?: number | null
+          created_at?: string | null
+          id?: string
+          prompt_tokens?: number | null
+          question?: string | null
+          rating?: number | null
+          sources?: Json | null
+          tools_used?: Json | null
         }
         Relationships: []
       }
