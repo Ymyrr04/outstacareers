@@ -275,7 +275,7 @@ async function timesheetStatus(args: unknown, { sb }: ToolCtx) {
 }
 
 // ---- find_candidates ----
-const EXCLUDED_BY_DEFAULT = ["Reject", "Archived", "Archive"];
+const EXCLUDED_BY_DEFAULT = ["Hired", "Reject", "Archived", "Archive"];
 
 async function fetchAllIds(build: (from: number, to: number) => any): Promise<any[]> {
   const out: any[] = [];
@@ -406,10 +406,66 @@ async function findCandidates(args: unknown, { sb, allowedTabs, apiKey }: ToolCt
   };
 }
 
+// ---- get_role_requirements ----
+async function getRoleRequirements(args: unknown, { sb, allowedTabs }: ToolCtx) {
+  const a = (args ?? {}) as { client?: string; role?: string };
+  const client = a.client?.trim().slice(0, 100) || "";
+  const role = a.role?.trim().slice(0, 100) || "";
+  if (!client && !role) return { error: "Give a client name and/or a role title." };
+  const like = (s: string) => `%${s.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+
+  let clientIds: string[] | null = null;
+  if (client) {
+    const { data, error } = await sb.from("clients").select("id").ilike("company_name", like(client)).limit(50);
+    if (error) throw error;
+    clientIds = (data ?? []).map((c: any) => c.id);
+  }
+  const out: Record<string, unknown> = { filters: { client: client || null, role: role || null } };
+
+  if (allowedTabs.includes("jobs")) {
+    if (clientIds && !clientIds.length) out.jobs = [];
+    else {
+      let q = sb.from("jobs").select("id, title, region, rate, is_active, description, qualifications, responsibilities, updated_at, client:clients(company_name)");
+      if (role) q = q.ilike("title", like(role));
+      if (clientIds) q = q.in("client_id", clientIds);
+      const { data, error } = await q.order("is_active", { ascending: false }).order("updated_at", { ascending: false }).limit(5);
+      if (error) throw error;
+      out.jobs = (data ?? []).map((j: any) => ({
+        title: j.title, client: j.client?.company_name ?? null, region: j.region, rate: j.rate, is_active: j.is_active,
+        description: j.description, qualifications: j.qualifications, responsibilities: j.responsibilities,
+      }));
+    }
+  }
+
+  if (allowedTabs.includes("pipeline")) {
+    if (clientIds && !clientIds.length) out.hiring_requests = [];
+    else {
+      let q = sb.from("client_hiring_requests").select("id, job_title, pipeline_stage, priority, hours_per_week, start_date, target_end_date, industry, notes, updated_at, client:clients(company_name)");
+      if (role) q = q.ilike("job_title", like(role));
+      if (clientIds) q = q.in("client_id", clientIds);
+      const { data, error } = await q.order("updated_at", { ascending: false }).limit(5);
+      if (error) throw error;
+      out.hiring_requests = await Promise.all((data ?? []).map(async (r: any) => {
+        const { data: cm, error: cErr } = await sb.from("hiring_request_comments")
+          .select("user_id, content, created_at").eq("request_id", r.id).order("created_at", { ascending: false }).limit(5);
+        if (cErr) throw cErr;
+        return {
+          job_title: r.job_title, client: r.client?.company_name ?? null, pipeline_stage: r.pipeline_stage, priority: r.priority,
+          hours_per_week: r.hours_per_week, start_date: r.start_date, target_end_date: r.target_end_date, industry: r.industry, notes: r.notes,
+          latest_comments: await Promise.all((cm ?? []).map(async (c: any) => ({
+            author: c.user_id ? await authorName(sb, c.user_id) : null, date: c.created_at, comment: c.content,
+          }))),
+        };
+      }));
+    }
+  }
+  return out;
+}
+
 const TOOLS: MarkbotTool[] = [
   {
     name: "find_candidates",
-    description: "Find candidates by status, role keywords (job title and skills), availability, RM profile and/or a free-text query. Returns the exact total matching the filters and up to `limit` candidates with availability, profile flag and top matching excerpts. Reject and Archived are excluded unless listed in statuses.",
+    description: "Find candidates by status, role keywords (job title and skills), availability, RM profile and/or a free-text query. Returns the exact total matching the filters and up to `limit` candidates with availability, profile flag and top matching excerpts. Hired, Reject and Archived are excluded unless listed in statuses.",
     required_tab: "applicants",
     parameters: {
       type: "object",
@@ -459,6 +515,19 @@ const TOOLS: MarkbotTool[] = [
       required: ["candidate"],
     },
     handler: candidateStatus,
+  },
+  {
+    name: "get_role_requirements",
+    description: "Look up a role's requirements by client name and/or role title (partial, case-insensitive). Returns up to 5 matching jobs (title, client, region, rate, active, description, qualifications, responsibilities) and up to 5 client hiring requests (title, client, stage, priority, hours, dates, industry, notes, latest 5 comments with author and date).",
+    required_tab: "pipeline",
+    parameters: {
+      type: "object",
+      properties: {
+        client: { type: "string", description: "Client company name (partial is fine)" },
+        role: { type: "string", description: "Role title (partial is fine)" },
+      },
+    },
+    handler: getRoleRequirements,
   },
 ];
 
@@ -530,7 +599,13 @@ Finding candidates (find_candidates tool):
 - Map words to exact status values before calling: "bench" = Bench; "talent pool" = Talent Pool (add Cold Talent Pool only if they say cold or all talent pool); "qualified" = Qualified; "hired" = Hired. Say which status values you used.
 - Quote the total exactly and say which filters were applied. The free-text query does not narrow the total: never describe total_matches as people matching the query. Only candidates with matched_query true are matches for it; if candidates_with_text_matching_query is 0, say no CVs, notes or profiles matched that text and don't present the others as matches.
 - Say how many of the listed candidates have an RM profile.
-- Present candidates as suggestions with reasons taken from the excerpts (name the author and date). The recruitment manager makes the decision.` : ""}`;
+- Present candidates as suggestions with reasons taken from the excerpts (name the author and date). The recruitment manager makes the decision.` : ""}${allowed.includes("pipeline") ? `
+
+Role requirements (get_role_requirements tool):
+- When asked for candidates for a client or role, first call get_role_requirements, then${allowed.includes("applicants") ? " call find_candidates using the must-have skills as query" : " explain the requirements (you can't search candidates for this user)"}.
+- For each candidate, say which requirements they match and which they lack, quoting the excerpts.
+- If both a job and a hiring request match, use both and say which each requirement came from.
+- If nothing matches, say so and ask which role is meant.` : ""}`;
 }
 
 Deno.serve(async (req) => {
