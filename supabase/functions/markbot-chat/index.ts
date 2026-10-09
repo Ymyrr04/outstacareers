@@ -950,7 +950,7 @@ Deno.serve(async (req) => {
           model: CHAT_MODEL, max_tokens: MAX_TOKENS,
           messages: [
             chatMessages[0],
-            { role: "user", content: `Question: ${question.content}\n\nLookup results already gathered:\n${gathered}\n\nWrite the final answer now from these results. End with "USED_EXCERPTS: none".` },
+            { role: "user", content: `Question: ${question.content}\n\nLookup results already gathered:\n${gathered}\n\nWrite the final answer now from these results.` },
           ],
         });
         promptTokens += resp?.usage?.prompt_tokens ?? 0;
