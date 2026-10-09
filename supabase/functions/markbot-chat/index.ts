@@ -771,7 +771,6 @@ type CandidateCard = {
   availability_state: string | null; days_since_check: number | null;
   ai_cv_score: number | null; interview_score: number | null; years_of_experience: number | null; has_profile: boolean | null;
 };
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 // Walk a tool result and gather any candidate-shaped objects (id + name) for quick-view cards.
 function collectCandidates(node: unknown, pool: Map<string, CandidateCard>, depth = 0): void {
   if (!node || typeof node !== "object" || depth > 4) return;
