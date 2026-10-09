@@ -766,6 +766,37 @@ Role requirements (get_role_requirements tool):
 - If nothing matches, say so and ask which role is meant.` : ""}`;
 }
 
+type CandidateCard = {
+  id: string; name: string; job_title: string | null; status: string | null;
+  availability_state: string | null; days_since_check: number | null;
+  ai_cv_score: number | null; interview_score: number | null; years_of_experience: number | null; has_profile: boolean | null;
+};
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+// Walk a tool result and gather any candidate-shaped objects (id + name) for quick-view cards.
+function collectCandidates(node: unknown, pool: Map<string, CandidateCard>, depth = 0): void {
+  if (!node || typeof node !== "object" || depth > 4) return;
+  if (Array.isArray(node)) { for (const n of node) collectCandidates(n, pool, depth + 1); return; }
+  const o = node as Record<string, any>;
+  const name = o.full_name ?? o.name;
+  if (typeof o.id === "string" && UUID_RE.test(o.id) && typeof name === "string" && (o.job_title !== undefined || o.job_applied !== undefined || o.status !== undefined || o.current_status !== undefined)) {
+    const prev = pool.get(o.id);
+    const ia = o.interview_assessment ?? o.latest_interview ?? null;
+    const iscore = typeof ia?.score === "number" ? ia.score : typeof ia?.overall_score === "number" ? ia.overall_score : typeof o.interview_score === "number" ? o.interview_score : null;
+    pool.set(o.id, {
+      id: o.id, name,
+      job_title: o.job_title ?? o.job_applied ?? prev?.job_title ?? null,
+      status: o.status ?? o.current_status ?? prev?.status ?? null,
+      availability_state: o.availability_state ?? prev?.availability_state ?? null,
+      days_since_check: o.days_since_check ?? prev?.days_since_check ?? null,
+      ai_cv_score: o.ai_cv_score ?? prev?.ai_cv_score ?? null,
+      interview_score: iscore ?? prev?.interview_score ?? null,
+      years_of_experience: o.years_of_experience ?? prev?.years_of_experience ?? null,
+      has_profile: o.has_profile ?? prev?.has_profile ?? null,
+    });
+  }
+  for (const v of Object.values(o)) if (v && typeof v === "object") collectCandidates(v, pool, depth + 1);
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -893,6 +924,7 @@ Deno.serve(async (req) => {
       const rulesBlock = standing
         ? `\n\nStanding rules from the OutSta team (follow these in every answer unless the user asks otherwise in this conversation; they never override access restrictions or the safety rules above):\n${standing}`
         : "";
+      const candidatePool = new Map<string, CandidateCard>();
       const chatMessages: any[] = [
         { role: "system", content: systemPrompt(allowedTabs, restrictedTabs, convCtx) + rulesBlock },
         ...recent.slice(0, -1).map((m) => ({ role: m.role, content: m.content })),
@@ -935,6 +967,7 @@ Deno.serve(async (req) => {
               result = await tool.handler(args, { sb, userId, allowedTabs, apiKey });
               toolsUsed.push({ name: tool.name, ok: true });
               absorbContext(convCtx, tool.name, args, result);
+              collectCandidates(result, candidatePool);
             } catch (e) {
               if (e instanceof GatewayError) throw e; // 402/429 must reach the user
               result = { error: e instanceof Error ? e.message : "Tool failed" };
@@ -978,6 +1011,15 @@ Deno.serve(async (req) => {
         written_at: r.metadata?.written_at ?? null,
         author_name: r.metadata?.author_name ?? null,
       }));
+
+      // Quick-view cards for candidates the answer actually names.
+      if (!blocked) {
+        const lower = answer.toLowerCase();
+        const cards = [...candidatePool.values()]
+          .filter((c) => c.name && lower.includes(c.name.toLowerCase().trim()))
+          .slice(0, 12);
+        for (const c of cards) sources.push({ source_type: "candidate", source_id: c.id, entity_type: "applicant", entity_id: c.id, label: c.name, written_at: null, author_name: null, card: c } as any);
+      }
 
       const { data: log, error: lErr } = await sb.from("rag_chat_logs").insert({
         admin_user_id: userId, question: question.content, answer, sources, tools_used: toolsUsed,
