@@ -3400,6 +3400,33 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_job_state: {
+        Row: {
+          id: boolean
+          job_token: string | null
+          last_run_at: string | null
+          locked_until: string | null
+          paused_at: string | null
+          paused_reason: string | null
+        }
+        Insert: {
+          id?: boolean
+          job_token?: string | null
+          last_run_at?: string | null
+          locked_until?: string | null
+          paused_at?: string | null
+          paused_reason?: string | null
+        }
+        Update: {
+          id?: boolean
+          job_token?: string | null
+          last_run_at?: string | null
+          locked_until?: string | null
+          paused_at?: string | null
+          paused_reason?: string | null
+        }
+        Relationships: []
+      }
       markbot_conversations: {
         Row: {
           admin_user_id: string
@@ -4123,10 +4150,18 @@ export type Database = {
       acknowledge_contractor_payment_notice: { Args: never; Returns: undefined }
       applicant_exists: { Args: { _applicant_id: string }; Returns: boolean }
       apply_timesheet_reminder_schedule: { Args: never; Returns: undefined }
+      arm_knowledge_job: { Args: never; Returns: undefined }
+      claim_knowledge_job_lock: {
+        Args: { _seconds: number }
+        Returns: {
+          paused_reason: string
+        }[]
+      }
       delete_my_timesheet: {
         Args: { _timesheet_id: string }
         Returns: undefined
       }
+      disarm_knowledge_job: { Args: never; Returns: undefined }
       get_calendar_hidden_user_ids: { Args: never; Returns: string[] }
       get_contractor_checkin_messages: {
         Args: { _contractor_assignment_id: string }
