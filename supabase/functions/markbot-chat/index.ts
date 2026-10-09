@@ -422,6 +422,11 @@ async function findCandidates(args: unknown, { sb, allowedTabs, apiKey }: ToolCt
 
   return {
     total_matches: total,
+    breakdown_by_job_title: (() => {
+      const m = new Map<string, number>();
+      for (const r of matched) { const k = String(r.job_title ?? "Unknown").trim() || "Unknown"; m.set(k, (m.get(k) ?? 0) + 1); }
+      return [...m.entries()].sort((x, y) => y[1] - x[1]).slice(0, 30).map(([job_title, count]) => ({ job_title, count }));
+    })(),
     listed: candidates.length,
     candidates_with_text_matching_query: query ? excerpts.size : null,
     note: query ? "total_matches counts the filters only; the free-text query only re-orders. Only candidates with matched_query true have text matching the query." : undefined,
@@ -538,7 +543,7 @@ async function getRoleRequirements(args: unknown, { sb, allowedTabs }: ToolCtx) 
 const TOOLS: MarkbotTool[] = [
   {
     name: "find_candidates",
-    description: "Find candidates by status, role keywords (job title and skills), availability, RM profile and/or a free-text query. Returns the exact total matching the filters and up to `limit` candidates with availability, profile flag and top matching excerpts. Hired, Reject and Archived are excluded unless listed in statuses.",
+    description: "Find candidates by status, role keywords (job title and skills), availability, RM profile and/or a free-text query. Returns the exact total matching the filters, an exact breakdown_by_job_title of ALL matches (use this for 'breakdown'/'how many per role' questions in one call; do not call repeatedly per role), and up to `limit` candidates with availability, profile flag and top matching excerpts. Hired, Reject and Archived are excluded unless listed in statuses.",
     required_tab: "applicants",
     parameters: {
       type: "object",
@@ -937,7 +942,22 @@ Deno.serve(async (req) => {
         answer = answer.slice(0, usedMatch.index).trim();
         used = new Set((usedMatch[1].match(/\d+/g) ?? []).map(Number));
       }
-      if (!answer) answer = "Sorry, I couldn't put together an answer. Please try rephrasing.";
+      // Fallback: the model sometimes returns nothing after many tool rounds. Re-ask once
+      // with the tool results inlined as plain text (no tool turns), so it must write an answer.
+      if (!answer && chatMessages.some((m) => m.role === "tool")) {
+        const gathered = chatMessages.filter((m) => m.role === "tool").map((m, i) => `[Result ${i + 1}]\n${String(m.content).slice(0, 6000)}`).join("\n\n").slice(0, 60000);
+        const resp = await gatewayFetch("/chat/completions", apiKey, {
+          model: CHAT_MODEL, max_tokens: MAX_TOKENS,
+          messages: [
+            chatMessages[0],
+            { role: "user", content: `Question: ${question.content}\n\nLookup results already gathered:\n${gathered}\n\nWrite the final answer now from these results.` },
+          ],
+        });
+        promptTokens += resp?.usage?.prompt_tokens ?? 0;
+        completionTokens += resp?.usage?.completion_tokens ?? 0;
+        answer = String(resp?.choices?.[0]?.message?.content ?? "").trim();
+      }
+ if (!answer) answer = "Sorry, I couldn't put together an answer. Please try rephrasing.";
 
       const blocked = /^You don't have access to .+ data\.?$/i.test(answer.trim());
       const sources = blocked ? [] : results.filter((_, i) => used.has(i + 1)).map((r) => ({
