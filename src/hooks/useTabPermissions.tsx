@@ -21,6 +21,7 @@ export const TAB_IDS = [
   'outreach',
   'workflow',
   'internal-team',
+  'markbot',
 ] as const;
 
 // Permissions that are hidden unless explicitly granted
@@ -47,6 +48,7 @@ export const TAB_LABELS: Record<TabId, string> = {
   'outreach': 'Outreach',
   'workflow': 'Workflow',
   'internal-team': 'Internal Team',
+  'markbot': 'Markbot AI',
 };
 
 interface TabPermission {

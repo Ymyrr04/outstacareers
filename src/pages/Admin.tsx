@@ -262,7 +262,9 @@ const Admin = () => {
   const { toast } = useToast();
   const { canViewTab, loading: tabPermissionsLoading } = useTabPermissions();
   const [markbotOpen, setMarkbotOpen] = useState(false);
+  const canUseMarkbot = isSuperAdmin || (!tabPermissionsLoading && canViewTab('markbot'));
   useEffect(() => {
+    if (!canUseMarkbot) { setMarkbotOpen(false); return; }
     const onKey = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
         e.preventDefault();
@@ -271,7 +273,7 @@ const Admin = () => {
     };
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
-  }, []);
+  }, [canUseMarkbot]);
   const heroStats = useHeroBannerStats(Boolean(user && isAdmin));
   const [jobs, setJobs] = useState<Job[]>([]);
   const [jobsLoading, setJobsLoading] = useState(true);
@@ -1786,7 +1788,7 @@ const Admin = () => {
             <h1 className="text-[11px] text-muted-foreground">Admin Dashboard</h1>
           </div>
           <div className="flex items-center gap-1.5">
-            <Button
+            {canUseMarkbot && <Button
               size="sm"
               className="h-7 text-[11px] bg-[hsl(var(--markbot))] text-[hsl(var(--markbot-foreground))] hover:bg-[hsl(var(--markbot))]/90"
               onClick={() => setMarkbotOpen(true)}
@@ -1794,7 +1796,7 @@ const Admin = () => {
             >
               <Sparkles className="w-3 h-3 mr-1.5" />
               Ask Markbot AI
-            </Button>
+            </Button>}
             <ThemeToggle />
             <Button variant="ghost" size="sm" className="h-7 text-[11px]" onClick={() => setMyCalendarOpen(true)}>
               <CalendarIcon className="w-3 h-3 mr-1.5" />
@@ -4440,7 +4442,7 @@ const Admin = () => {
         />
       )}
       <HelpDeskWidget />
-      <MarkbotPanel open={markbotOpen} onOpenChange={setMarkbotOpen} canViewTab={canViewTab} onOpenTab={handleMainTabChange} />
+      {canUseMarkbot && <MarkbotPanel open={markbotOpen} onOpenChange={setMarkbotOpen} canViewTab={canViewTab} onOpenTab={handleMainTabChange} />}
     </div>
   );
 };
