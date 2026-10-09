@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Sparkles, Plus, X, Send, Lock, ThumbsUp, ThumbsDown, Loader2, Clock, ArrowLeft, Trash2 } from 'lucide-react';
+import { Sparkles, Plus, X, Send, Lock, ThumbsUp, ThumbsDown, Loader2, Clock, ArrowLeft, Trash2, Square, Pencil } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -119,6 +119,7 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
   const loadedOnce = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const requestRef = useRef<{ id: number; abort: AbortController; question: string; msgId: string } | null>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -194,14 +195,20 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
   const send = async (text: string) => {
     const question = text.trim();
     if (!question || loading) return;
-    const history = [...messages, { id: newId(), role: 'user' as const, content: question }];
+    const msgId = newId();
+    const history = [...messages, { id: msgId, role: 'user' as const, content: question }];
     setMessages(history);
     setInput('');
     setLoading(true);
+    const req = { id: Date.now(), abort: new AbortController(), question, msgId };
+    requestRef.current = req;
+    const isCurrent = () => requestRef.current?.id === req.id;
     try {
       const { data, error } = await supabase.functions.invoke('markbot-chat', {
         body: { messages: history.map((m) => ({ role: m.role, content: m.content })), context, conversation_id: conversationId },
-      });
+        signal: req.abort.signal,
+      } as any);
+      if (!isCurrent()) return;
       if (error) {
         let msg = error.message;
         try {
@@ -226,10 +233,33 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
         },
       ]);
     } catch (e) {
+      if (!isCurrent()) return;
       toast({ title: 'Markbot AI', description: e instanceof Error ? e.message : 'Something went wrong', variant: 'destructive' });
     } finally {
-      setLoading(false);
+      if (isCurrent()) { requestRef.current = null; setLoading(false); }
     }
+  };
+
+  // Stop: drop the pending answer and put the question back in the box for editing.
+  const stop = () => {
+    const req = requestRef.current;
+    if (!req) return;
+    requestRef.current = null;
+    req.abort.abort();
+    setMessages((prev) => prev.filter((m) => m.id !== req.msgId));
+    setInput(req.question);
+    setLoading(false);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
+
+  // Edit: load a previous question into the box and drop it and everything after it from view.
+  const editMessage = (id: string) => {
+    if (loading) return;
+    const idx = messages.findIndex((m) => m.id === id);
+    if (idx < 0) return;
+    setInput(messages[idx].content);
+    setMessages(messages.slice(0, idx));
+    setTimeout(() => inputRef.current?.focus(), 50);
   };
 
   const rate = async (msg: ChatMessage, rating: 1 | -1) => {
@@ -339,7 +369,13 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
 
             {messages.map((m) =>
               m.role === 'user' ? (
-                <div key={m.id} className="flex justify-end">
+                <div key={m.id} className="group flex justify-end items-center gap-1">
+                  {!loading && (
+                    <Button variant="ghost" size="icon" aria-label="Edit question" title="Edit question"
+                      className="h-6 w-6 opacity-0 group-hover:opacity-100 focus:opacity-100" onClick={() => editMessage(m.id)}>
+                      <Pencil className="w-3 h-3" />
+                    </Button>
+                  )}
                   <div className="max-w-[85%] rounded-2xl rounded-br-sm bg-primary text-primary-foreground px-3 py-2 text-[12.5px] whitespace-pre-wrap">
                     {m.content}
                   </div>
@@ -404,10 +440,17 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
                 onKeyDown={(e) => {
                   if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); send(input); }
                 }} />
-              <Button size="icon" aria-label="Send" disabled={loading || !input.trim()} onClick={() => send(input)}
+              {loading ? (
+              <Button size="icon" aria-label="Stop" title="Stop and edit" onClick={stop}
+                className="h-[38px] w-[38px] shrink-0 bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                <Square className="w-3.5 h-3.5 fill-current" />
+              </Button>
+              ) : (
+              <Button size="icon" aria-label="Send" disabled={!input.trim()} onClick={() => send(input)}
                 className="h-[38px] w-[38px] shrink-0 bg-[hsl(var(--markbot))] text-[hsl(var(--markbot-foreground))] hover:bg-[hsl(var(--markbot))]/90">
                 <Send className="w-4 h-4" />
               </Button>
+              )}
             </div>
             <p className="text-[10px] text-muted-foreground mt-1.5">Questions are logged to improve answers.</p>
           </div>
