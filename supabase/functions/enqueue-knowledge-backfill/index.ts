@@ -1,6 +1,6 @@
 // Super-admin only: reports knowledge index status and queues existing rows for indexing.
-import { createClient } from "npm:@supabase/supabase-js@2.45.0";
-import type { SupabaseClient } from "npm:@supabase/supabase-js@2.45.0";
+import { createClient } from "npm:@supabase/supabase-js@2.95.0";
+import type { SupabaseClient } from "npm:@supabase/supabase-js@2.95.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
