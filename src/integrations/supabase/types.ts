@@ -3400,6 +3400,30 @@ export type Database = {
         }
         Relationships: []
       }
+      knowledge_job_state: {
+        Row: {
+          id: boolean
+          last_run_at: string | null
+          locked_until: string | null
+          paused_at: string | null
+          paused_reason: string | null
+        }
+        Insert: {
+          id?: boolean
+          last_run_at?: string | null
+          locked_until?: string | null
+          paused_at?: string | null
+          paused_reason?: string | null
+        }
+        Update: {
+          id?: boolean
+          last_run_at?: string | null
+          locked_until?: string | null
+          paused_at?: string | null
+          paused_reason?: string | null
+        }
+        Relationships: []
+      }
       markbot_conversations: {
         Row: {
           admin_user_id: string
@@ -4123,6 +4147,12 @@ export type Database = {
       acknowledge_contractor_payment_notice: { Args: never; Returns: undefined }
       applicant_exists: { Args: { _applicant_id: string }; Returns: boolean }
       apply_timesheet_reminder_schedule: { Args: never; Returns: undefined }
+      claim_knowledge_job_lock: {
+        Args: { _seconds: number }
+        Returns: {
+          paused_reason: string
+        }[]
+      }
       delete_my_timesheet: {
         Args: { _timesheet_id: string }
         Returns: undefined
