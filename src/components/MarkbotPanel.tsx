@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Sparkles, Plus, X, Send, Lock, ThumbsUp, ThumbsDown, Loader2, Clock, ArrowLeft, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import {
@@ -13,6 +15,44 @@ import { useToast } from '@/hooks/use-toast';
 import { CandidateProfileDialog } from '@/components/CandidateProfileDialog';
 import type { TabId } from '@/hooks/useTabPermissions';
 import { cn } from '@/lib/utils';
+
+// Renders assistant markdown in the narrow panel: tight spacing, small headings, one-line list items.
+function MarkdownContent({ content }: { content: string }) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        p: ({ children }) => <p className="my-1.5 first:mt-0 last:mb-0">{children}</p>,
+        strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
+        em: ({ children }) => <em>{children}</em>,
+        a: ({ children, href }) => (
+          <a href={href} target="_blank" rel="noreferrer" className="underline text-[hsl(var(--markbot))]">{children}</a>
+        ),
+        ul: ({ children }) => <ul className="my-1.5 pl-4 list-disc space-y-0.5">{children}</ul>,
+        ol: ({ children }) => <ol className="my-1.5 pl-4 list-decimal space-y-0.5">{children}</ol>,
+        li: ({ children }) => <li className="my-0.5">{children}</li>,
+        h1: ({ children }) => <div className="font-semibold text-[13.5px] mt-3 mb-1 first:mt-0">{children}</div>,
+        h2: ({ children }) => <div className="font-semibold text-[13.5px] mt-3 mb-1 first:mt-0">{children}</div>,
+        h3: ({ children }) => <div className="font-semibold text-[13px] mt-3 mb-1 first:mt-0">{children}</div>,
+        h4: ({ children }) => <div className="font-semibold text-[12.5px] mt-3 mb-1 first:mt-0">{children}</div>,
+        hr: () => <hr className="my-2 border-border" />,
+        blockquote: ({ children }) => (
+          <blockquote className="border-l-2 border-border pl-2 my-1.5 text-muted-foreground">{children}</blockquote>
+        ),
+        code: ({ children }) => <code className="bg-muted px-1 py-0.5 rounded text-[11.5px]">{children}</code>,
+        table: ({ children }) => (
+          <div className="overflow-x-auto my-1.5">
+            <table className="text-[11.5px]">{children}</table>
+          </div>
+        ),
+        th: ({ children }) => <th className="text-left font-semibold px-2 py-1 border-b border-border">{children}</th>,
+        td: ({ children }) => <td className="px-2 py-1 border-b border-border/50 align-top">{children}</td>,
+      }}
+    >
+      {content}
+    </ReactMarkdown>
+  );
+}
 
 interface MarkbotSource {
   source_type: string;
@@ -312,7 +352,9 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
                       <span>{m.content}</span>
                     </div>
                   ) : (
-                    <div className="max-w-[95%] text-[12.5px] leading-relaxed whitespace-pre-wrap">{m.content}</div>
+                    <div className="max-w-[95%] text-[12.5px] leading-relaxed">
+                      <MarkdownContent content={m.content} />
+                    </div>
                   )}
                   {!m.blocked && !!m.sources?.length && (
                     <div className="flex flex-wrap gap-1">
