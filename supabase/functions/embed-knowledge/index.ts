@@ -227,8 +227,9 @@ async function processRow(sb: SupabaseClient, apiKey: string, row: QueueRow) {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const secret = Deno.env.get("KNOWLEDGE_JOB_SECRET");
-  if (!secret || req.headers.get("x-internal-secret") !== secret) return json({ error: "Unauthorized" }, 401);
+  const provided = req.headers.get("x-internal-secret");
+  const secrets = [Deno.env.get("KNOWLEDGE_JOB_SECRET"), Deno.env.get("KNOWLEDGE_CRON_SECRET")].filter(Boolean);
+  if (!provided || !secrets.includes(provided)) return json({ error: "Unauthorized" }, 401);
 
   const apiKey = Deno.env.get("LOVABLE_API_KEY");
   if (!apiKey) return json({ error: "LOVABLE_API_KEY not configured" }, 500);
