@@ -250,7 +250,7 @@ Deno.serve(async (req) => {
 
   while (Date.now() - started < RUN_BUDGET_MS && !halted) {
     let q = sb.from("knowledge_dirty_queue").select("id, source_type, source_id, action")
-      .is("processed_at", null).order("created_at", { ascending: true }).limit(pausedReason ? 1 : BATCH);
+      .is("processed_at", null).is("error", null).order("created_at", { ascending: true }).limit(pausedReason ? 1 : BATCH);
     if (tried.size) q = q.not("id", "in", `(${[...tried].join(",")})`);
     const { data: batch, error } = await q;
     if (error) return json({ error: error.message, processed, failed }, 500);
@@ -270,7 +270,8 @@ Deno.serve(async (req) => {
           const msg = e instanceof Error ? e.message : String((e as any)?.message ?? e);
           if (e instanceof HaltError) halted = msg;
           if (pausedReason) halted = halted ?? msg;
-          await sb.from("knowledge_dirty_queue").update({ error: msg.slice(0, 1000) }).eq("id", row.id);
+          // Credit/rate halts leave the row untouched so it's retried later
+          if (!(e instanceof HaltError)) await sb.from("knowledge_dirty_queue").update({ error: msg.slice(0, 1000) }).eq("id", row.id);
           failed++;
         }
       }));
