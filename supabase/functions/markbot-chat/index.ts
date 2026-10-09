@@ -129,7 +129,19 @@ async function candidateStatus(args: unknown, { sb }: ToolCtx) {
 const PIPELINE_STAGES = ["backlog", "sourcing", "pitch", "scheduled_interview", "closed"] as const;
 
 async function pipelineSummary(args: unknown, { sb }: ToolCtx) {
-  const a = (args ?? {}) as { stage?: string; client?: string; assignee?: string };
+  const a = (args ?? {}) as { stage?: string; client?: string; assignee?: string; added_since?: string };
+  let addedSinceIso: string | null = null;
+  if (a.added_since?.trim()) {
+    const v = a.added_since.trim().toLowerCase();
+    const etToday = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+    const day = v === "today" ? etToday : v;
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day)) return { error: 'added_since must be "today" or a date like 2026-10-09.' };
+    // Midnight Eastern Time on that day, as UTC
+    const probe = new Date(day + "T12:00:00Z");
+    const etHour = Number(new Intl.DateTimeFormat("en-US", { timeZone: "America/New_York", hour: "2-digit", hourCycle: "h23" }).format(probe));
+    const offsetH = 12 - etHour; // 4 (EDT) or 5 (EST)
+    addedSinceIso = new Date(Date.parse(day + "T00:00:00Z") + offsetH * 3600_000).toISOString();
+  }
   const stage = a.stage?.trim().toLowerCase().replace(/[\s-]+/g, "_") || null;
   if (stage && !(PIPELINE_STAGES as readonly string[]).includes(stage)) {
     return { error: `Unknown stage "${a.stage}". Use one of: ${PIPELINE_STAGES.join(", ")}.` };
@@ -143,7 +155,7 @@ async function pipelineSummary(args: unknown, { sb }: ToolCtx) {
     counts[s] = count ?? 0;
   }));
 
-  const hasFilter = !!(stage || a.client?.trim() || a.assignee?.trim());
+  const hasFilter = !!(stage || a.client?.trim() || a.assignee?.trim() || addedSinceIso);
   if (!hasFilter) return { counts_by_stage: counts, note: "Counts are exact. Pass stage, client or assignee to list requests." };
 
   let clientIds: string[] | null = null;
@@ -161,8 +173,10 @@ async function pipelineSummary(args: unknown, { sb }: ToolCtx) {
   }
 
   let q = sb.from("client_hiring_requests")
-    .select("id, job_title, pipeline_stage, priority, assigned_admin_id, updated_at, client:clients(company_name)", { count: "exact" });
-  q = stage ? q.eq("pipeline_stage", stage) : q.in("pipeline_stage", [...PIPELINE_STAGES]);
+    .select("id, job_title, pipeline_stage, priority, assigned_admin_id, updated_at, created_at, client:clients(company_name)", { count: "exact" });
+  // A date filter alone covers every stage (including lost ones) so nothing added that day is missed
+  q = stage ? q.eq("pipeline_stage", stage) : addedSinceIso ? q : q.in("pipeline_stage", [...PIPELINE_STAGES]);
+  if (addedSinceIso) q = q.gte("created_at", addedSinceIso);
   if (clientIds) q = q.in("client_id", clientIds);
   if (assigneeIds) q = q.in("assigned_admin_id", assigneeIds);
   const { data, count, error } = await q.order("updated_at", { ascending: true }).limit(20);
@@ -175,6 +189,7 @@ async function pipelineSummary(args: unknown, { sb }: ToolCtx) {
     stage: r.pipeline_stage,
     priority: r.priority,
     assignee: r.assigned_admin_id ? await authorName(sb, r.assigned_admin_id) : null,
+    added_at: r.created_at,
     days_in_stage: r.updated_at ? Math.floor((now - new Date(r.updated_at).getTime()) / DAY_MS) : null,
   })));
   return {
@@ -262,7 +277,7 @@ async function timesheetStatus(args: unknown, { sb }: ToolCtx) {
 const TOOLS: MarkbotTool[] = [
   {
     name: "pipeline_summary",
-    description: "Exact counts of client hiring requests per pipeline stage (backlog, sourcing, pitch, scheduled_interview, closed). With an optional stage, client name or assignee filter, also lists up to 20 matching requests with title, client, stage, priority, assignee and days in stage.",
+    description: "Exact counts of client hiring requests per pipeline stage (backlog, sourcing, pitch, scheduled_interview, closed). With an optional stage, client name, assignee or added_since (date added, e.g. "today") filter, also lists up to 20 matching requests with title, client, stage, priority, assignee and days in stage.",
     required_tab: "pipeline",
     parameters: {
       type: "object",
@@ -270,6 +285,7 @@ const TOOLS: MarkbotTool[] = [
         stage: { type: "string", description: "One of backlog, sourcing, pitch, scheduled_interview, closed" },
         client: { type: "string", description: "Client company name (partial is fine)" },
         assignee: { type: "string", description: "Assigned admin's first name" },
+        added_since: { type: "string", description: 'Only requests created on or after this day (Eastern Time). "today" or YYYY-MM-DD.' },
       },
     },
     handler: pipelineSummary,
