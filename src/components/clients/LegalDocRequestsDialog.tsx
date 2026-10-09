@@ -69,6 +69,7 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
       const list = (prev[requestId] || []).filter((d) => d.docType !== doc.docType);
       return { ...prev, [requestId]: [...list, doc] };
     });
+    toast({ title: `${doc.docType} ready to send`, description: 'Click the Send button on the request to email it.' });
   };
 
   const sendStaged = async (row: LegalDocRow) => {
@@ -290,7 +291,7 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
                   {(stagedDocs[row.id]?.length ?? 0) > 0 && (
                     <Button
                       size="sm"
-                      className="h-7 text-xs"
+                      className="h-8 text-xs w-full"
                       disabled={sendingId === row.id}
                       onClick={() => sendStaged(row)}
                     >
