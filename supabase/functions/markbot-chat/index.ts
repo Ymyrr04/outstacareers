@@ -710,6 +710,8 @@ Deno.serve(async (req) => {
         .eq("id", body.log_id).eq("admin_user_id", userId).select("id");
       if (error) throw error;
       if (!data?.length) return json({ error: "Not found" }, 404);
+      // Mirror the rating onto the saved message so reopened chats show it
+      await sb.from("markbot_messages").update({ rating: body.rating }).eq("log_id", body.log_id);
       return json({ ok: true });
     }
 
