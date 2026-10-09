@@ -885,9 +885,10 @@ Deno.serve(async (req) => {
 
       let answer = "";
       for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-        if (round === MAX_TOOL_ROUNDS) {
-          chatMessages.push({ role: "user", content: "Stop calling tools now. Write your answer from the tool results above." });
-        }
+        // Final round: no tools are offered below, so the model must write its
+        // answer from the tool results already gathered. Do not append a user
+        // message here — after tool results, the Gemini route rejects requests
+        // ("Requests ending with a model turn are not supported").
         const resp = await gatewayFetch("/chat/completions", apiKey, {
           model: CHAT_MODEL,
           messages: chatMessages,
