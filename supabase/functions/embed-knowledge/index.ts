@@ -2,7 +2,10 @@
 // Internal job: requires x-internal-secret === KNOWLEDGE_JOB_SECRET.
 import { createClient } from "npm:@supabase/supabase-js@2.45.0";
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.45.0";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-internal-secret",
+};
 import { authorName } from "./authors.ts";
 
 const EMBED_MODEL = "google/gemini-embedding-2";
