@@ -884,7 +884,7 @@ Deno.serve(async (req) => {
         ...recent.slice(0, -1).map((m) => ({ role: m.role, content: m.content })),
         {
           role: "user",
-          content: `<excerpts>\n${excerpts}\n</excerpts>\n\nQuestion: ${question.content}`,
+          content: `<excerpts>\n${excerpts}\n</excerpts>\n\nQuestion: ${question.content}\n\n(When you finish, add one last line exactly like "USED_EXCERPTS: 2,5" listing only the excerpt numbers you actually relied on for this answer, or "USED_EXCERPTS: none" if you used none. Most questions that are not about specific CVs, notes or comments use none.)`,
         },
       ];
 
@@ -930,10 +930,17 @@ Deno.serve(async (req) => {
           chatMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result).slice(0, 14000) });
         }
       }
+      // Only show sources the answer actually relied on.
+      let used = new Set<number>();
+      const usedMatch = answer.match(/\n?\s*USED_EXCERPTS:\s*([^\n]*)\s*$/i);
+      if (usedMatch) {
+        answer = answer.slice(0, usedMatch.index).trim();
+        used = new Set((usedMatch[1].match(/\d+/g) ?? []).map(Number));
+      }
       if (!answer) answer = "Sorry, I couldn't put together an answer. Please try rephrasing.";
 
       const blocked = /^You don't have access to .+ data\.?$/i.test(answer.trim());
-      const sources = blocked ? [] : results.map((r) => ({
+      const sources = blocked ? [] : results.filter((_, i) => used.has(i + 1)).map((r) => ({
         source_type: r.source_type,
         source_id: r.source_id,
         entity_type: r.entity_type,
