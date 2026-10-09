@@ -389,6 +389,7 @@ async function findCandidates(args: unknown, { sb, allowedTabs, apiKey }: ToolCt
       availability_checked_at: checkedAt,
       days_since_check: checkedAt ? Math.floor((now - new Date(checkedAt).getTime()) / DAY_MS) : null,
       has_profile: profileSet.has(id),
+      matched_query: query ? excerpts.has(id) : null,
       excerpts: excerpts.get(id) ?? [],
     };
   });
@@ -396,6 +397,8 @@ async function findCandidates(args: unknown, { sb, allowedTabs, apiKey }: ToolCt
   return {
     total_matches: total,
     listed: candidates.length,
+    candidates_with_text_matching_query: query ? excerpts.size : null,
+    note: query ? "total_matches counts the filters only; the free-text query only re-orders. Only candidates with matched_query true have text matching the query." : undefined,
     listed_with_rm_profile: candidates.filter((c) => c.has_profile).length,
     filters_applied: applied,
     order: query ? "most relevant to the query first, then RM-profile candidates first" : "newest first, then RM-profile candidates first",
@@ -525,7 +528,7 @@ Tool numbers:
 Finding candidates (find_candidates tool):
 - Call find_candidates directly; don't ask the user to pick statuses first. Use query for skills, experience or anything descriptive (e.g. "QuickBooks cleanup"); use role_keywords only for short role names (e.g. bookkeeper, paralegal), and you may set both.
 - Map words to exact status values before calling: "bench" = Bench; "talent pool" = Talent Pool (add Cold Talent Pool only if they say cold or all talent pool); "qualified" = Qualified; "hired" = Hired. Say which status values you used.
-- Quote the total exactly and say which filters were applied.
+- Quote the total exactly and say which filters were applied. The free-text query does not narrow the total: never describe total_matches as people matching the query. Only candidates with matched_query true are matches for it; if candidates_with_text_matching_query is 0, say no CVs, notes or profiles matched that text and don't present the others as matches.
 - Say how many of the listed candidates have an RM profile.
 - Present candidates as suggestions with reasons taken from the excerpts (name the author and date). The recruitment manager makes the decision.` : ""}`;
 }
