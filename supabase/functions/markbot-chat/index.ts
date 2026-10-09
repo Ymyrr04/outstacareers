@@ -2,6 +2,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.95.0";
 import { z } from "npm:zod@3.23.8";
+import { authorName, adminIdsByName } from "./authors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -353,7 +354,11 @@ Candidate status (candidate_status tool):
 - If the tool returns several matches, list them briefly and ask which one the user means.
 - Always state the date of any availability answer. If days_since_check is over 14, warn that the answer may be out of date.
 - Never say a candidate is "still available" if their status is Hired or they have an active contractor assignment.
-- You cannot send availability checks. If availability_state is never_asked, suggest using the Check Availability button.` : ""}`;
+- You cannot send availability checks. If availability_state is never_asked, suggest using the Check Availability button.` : ""}
+
+Tool numbers:
+- When a tool returns counts or totals, quote them exactly as given. Never add, subtract or recalculate them, and do not use "at least" for tool numbers.
+- Always state which week or filter the numbers are for.`;
 }
 
 Deno.serve(async (req) => {
