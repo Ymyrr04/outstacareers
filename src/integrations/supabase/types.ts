@@ -4100,6 +4100,7 @@ export type Database = {
         Args: {
           allowed_tabs: string[]
           entity_filter?: string
+          entity_ids?: string[]
           match_count?: number
           query_embedding: string
           query_text: string

@@ -45,7 +45,7 @@ const TAB_IDS = Object.keys(TAB_LABELS);
 const DEFAULT_OFF_TABS = ["internal-team"];
 
 // ---- Tool registry (ships empty). Only tools whose required_tab is allowed are offered. ----
-type ToolCtx = { sb: SupabaseClient; userId: string; allowedTabs: string[] };
+type ToolCtx = { sb: SupabaseClient; userId: string; allowedTabs: string[]; apiKey: string };
 type MarkbotTool = {
   name: string;
   description: string;
@@ -274,7 +274,156 @@ async function timesheetStatus(args: unknown, { sb }: ToolCtx) {
   };
 }
 
+// ---- find_candidates ----
+const EXCLUDED_BY_DEFAULT = ["Reject", "Archived", "Archive"];
+
+async function fetchAllIds(build: (from: number, to: number) => any): Promise<any[]> {
+  const out: any[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await build(from, from + 999);
+    if (error) throw error;
+    out.push(...(data ?? []));
+    if (!data || data.length < 1000) break;
+  }
+  return out;
+}
+
+async function findCandidates(args: unknown, { sb, allowedTabs, apiKey }: ToolCtx) {
+  const a = (args ?? {}) as {
+    statuses?: string[]; role_keywords?: string[] | string; available_only?: boolean;
+    has_profile?: boolean; query?: string; limit?: number;
+  };
+  const statuses = Array.isArray(a.statuses) ? a.statuses.map((x) => String(x).trim()).filter(Boolean).slice(0, 20) : [];
+  const keywords = (Array.isArray(a.role_keywords) ? a.role_keywords : a.role_keywords ? [a.role_keywords] : [])
+    .map((k) => String(k).trim().toLowerCase()).filter(Boolean).slice(0, 10);
+  const limit = Math.min(Math.max(Math.floor(Number(a.limit) || 10), 1), 20);
+  const query = a.query?.trim().slice(0, 500) || null;
+
+  // 1. Every applicant matching the status / availability filters (named columns only)
+  const rows = await fetchAllIds((from, to) => {
+    let q = sb.from("applicants_prescreen").select("id, job_title, extracted_skills, created_at");
+    if (statuses.length) q = q.in("status", statuses);
+    else q = q.not("status", "in", `(${EXCLUDED_BY_DEFAULT.map((x) => `"${x}"`).join(",")})`);
+    if (a.available_only) q = q.eq("is_available", true);
+    return q.order("created_at", { ascending: false }).order("id").range(from, to);
+  });
+
+  // 2. Role keywords against job title and skills (case-insensitive, any keyword)
+  let matched = keywords.length
+    ? rows.filter((r) => {
+        const hay = [r.job_title ?? "", ...((r.extracted_skills as string[] | null) ?? [])].join(" | ").toLowerCase();
+        return keywords.some((k) => hay.includes(k));
+      })
+    : rows;
+
+  // 3. RM profile = non-empty candidate_profile or any additional profile row
+  const [withText, withExtra] = await Promise.all([
+    fetchAllIds((f, t) => sb.from("applicants_prescreen").select("id").not("candidate_profile", "is", null).neq("candidate_profile", "").order("id").range(f, t)),
+    fetchAllIds((f, t) => sb.from("candidate_additional_profiles").select("applicant_id").order("id").range(f, t)),
+  ]);
+  const profileSet = new Set<string>([...withText.map((r) => r.id), ...withExtra.map((r) => r.applicant_id)]);
+  if (a.has_profile === true) matched = matched.filter((r) => profileSet.has(r.id));
+  if (a.has_profile === false) matched = matched.filter((r) => !profileSet.has(r.id));
+
+  const total = matched.length;
+  const applied = {
+    statuses: statuses.length ? statuses : `all except ${EXCLUDED_BY_DEFAULT.join(", ")}`,
+    role_keywords: keywords.length ? keywords : null,
+    available_only: !!a.available_only,
+    has_profile: a.has_profile ?? null,
+    query,
+  };
+  if (!total) return { total_matches: 0, filters_applied: applied, candidates: [] };
+
+  // 4. Order: relevance when query is set, otherwise newest first; then RM-profile first (stable)
+  let ordered = matched.map((r) => r.id as string);
+  const excerpts = new Map<string, { content: string; author: string | null; date: string | null }[]>();
+  if (query) {
+    const emb = await gatewayFetch("/embeddings", apiKey, { model: EMBED_MODEL, input: [query], dimensions: EMBED_DIMENSIONS });
+    const vector = emb?.data?.[0]?.embedding;
+    if (!Array.isArray(vector) || vector.length !== EMBED_DIMENSIONS) throw new Error("Invalid embedding response");
+    const { data: hits, error } = await sb.rpc("search_knowledge", {
+      query_embedding: JSON.stringify(vector), query_text: query, allowed_tabs: allowedTabs,
+      match_count: 60, entity_filter: null, entity_ids: ordered,
+    } as any);
+    if (error) throw error;
+    const best = new Map<string, number>();
+    for (const h of (hits ?? []) as any[]) {
+      if (!h.entity_id) continue;
+      if (!best.has(h.entity_id)) best.set(h.entity_id, h.score);
+      const list = excerpts.get(h.entity_id) ?? [];
+      if (list.length < 2) {
+        list.push({ content: String(h.content).slice(0, 600), author: h.metadata?.author_name ?? null, date: h.metadata?.written_at ?? null });
+        excerpts.set(h.entity_id, list);
+      }
+    }
+    const rank = new Map(ordered.map((id, i) => [id, i]));
+    ordered = [...ordered].sort((x, y) => {
+      const bx = best.get(x), by = best.get(y);
+      if (bx !== undefined && by !== undefined) return by - bx;
+      if (bx !== undefined) return -1;
+      if (by !== undefined) return 1;
+      return rank.get(x)! - rank.get(y)!;
+    });
+  }
+  ordered = [...ordered.filter((id) => profileSet.has(id)), ...ordered.filter((id) => !profileSet.has(id))];
+  const pageIds = ordered.slice(0, limit);
+
+  // 5. Details for the listed candidates
+  const { data: details, error: dErr } = await sb.from("applicants_prescreen")
+    .select("id, full_name, job_title, status, years_of_experience, is_available, availability_checked_at")
+    .in("id", pageIds);
+  if (dErr) throw dErr;
+  const byId = new Map((details ?? []).map((d: any) => [d.id, d]));
+  const now = Date.now();
+  const candidates = pageIds.map((id) => {
+    const d: any = byId.get(id) ?? {};
+    const checkedAt = d.availability_checked_at as string | null;
+    return {
+      id,
+      full_name: d.full_name,
+      job_title: d.job_title,
+      status: d.status,
+      years_of_experience: d.years_of_experience ?? null,
+      availability_state: d.is_available === true ? "available" : d.is_available === false ? "not_available" : checkedAt ? "asked_no_reply" : "never_asked",
+      availability_checked_at: checkedAt,
+      days_since_check: checkedAt ? Math.floor((now - new Date(checkedAt).getTime()) / DAY_MS) : null,
+      has_profile: profileSet.has(id),
+      matched_query: query ? excerpts.has(id) : null,
+      excerpts: excerpts.get(id) ?? [],
+    };
+  });
+
+  return {
+    total_matches: total,
+    listed: candidates.length,
+    candidates_with_text_matching_query: query ? excerpts.size : null,
+    note: query ? "total_matches counts the filters only; the free-text query only re-orders. Only candidates with matched_query true have text matching the query." : undefined,
+    listed_with_rm_profile: candidates.filter((c) => c.has_profile).length,
+    filters_applied: applied,
+    order: query ? "most relevant to the query first, then RM-profile candidates first" : "newest first, then RM-profile candidates first",
+    candidates,
+  };
+}
+
 const TOOLS: MarkbotTool[] = [
+  {
+    name: "find_candidates",
+    description: "Find candidates by status, role keywords (job title and skills), availability, RM profile and/or a free-text query. Returns the exact total matching the filters and up to `limit` candidates with availability, profile flag and top matching excerpts. Reject and Archived are excluded unless listed in statuses.",
+    required_tab: "applicants",
+    parameters: {
+      type: "object",
+      properties: {
+        statuses: { type: "array", items: { type: "string" }, description: "Exact status values, e.g. Bench, Talent Pool, Cold Talent Pool, Qualified, Hired, For Review, For Interview, Pitch, SIV, Client Interview, Reject, Archived" },
+        role_keywords: { type: "array", items: { type: "string" }, description: "Words matched against job title and skills" },
+        available_only: { type: "boolean", description: "Only candidates who answered available" },
+        has_profile: { type: "boolean", description: "true = only with an RM profile, false = only without" },
+        query: { type: "string", description: "Free text for meaning-based matching against CVs, notes and profiles" },
+        limit: { type: "integer", description: "How many to list (default 10, max 20)" },
+      },
+    },
+    handler: findCandidates,
+  },
   {
     name: "pipeline_summary",
     description: "Exact counts of client hiring requests per pipeline stage (backlog, sourcing, pitch, scheduled_interview, closed). With an optional stage, client name, assignee or added_since (date added, e.g. today) filter, also lists up to 20 matching requests with title, client, stage, priority, assignee and days in stage.",
@@ -374,7 +523,14 @@ Candidate status (candidate_status tool):
 
 Tool numbers:
 - When a tool returns counts or totals, quote them exactly as given. Never add, subtract or recalculate them, and do not use "at least" for tool numbers.
-- Always state which week or filter the numbers are for.`;
+- Always state which week or filter the numbers are for.${allowed.includes("applicants") ? `
+
+Finding candidates (find_candidates tool):
+- Call find_candidates directly; don't ask the user to pick statuses first. Use query for skills, experience or anything descriptive (e.g. "QuickBooks cleanup"); use role_keywords only for short role names (e.g. bookkeeper, paralegal), and you may set both.
+- Map words to exact status values before calling: "bench" = Bench; "talent pool" = Talent Pool (add Cold Talent Pool only if they say cold or all talent pool); "qualified" = Qualified; "hired" = Hired. Say which status values you used.
+- Quote the total exactly and say which filters were applied. The free-text query does not narrow the total: never describe total_matches as people matching the query. Only candidates with matched_query true are matches for it; if candidates_with_text_matching_query is 0, say no CVs, notes or profiles matched that text and don't present the others as matches.
+- Say how many of the listed candidates have an RM profile.
+- Present candidates as suggestions with reasons taken from the excerpts (name the author and date). The recruitment manager makes the decision.` : ""}`;
 }
 
 Deno.serve(async (req) => {
@@ -496,9 +652,10 @@ Deno.serve(async (req) => {
           } else {
             try {
               const args = call.function?.arguments ? JSON.parse(call.function.arguments) : {};
-              result = await tool.handler(args, { sb, userId, allowedTabs });
+              result = await tool.handler(args, { sb, userId, allowedTabs, apiKey });
               toolsUsed.push({ name: tool.name, ok: true });
             } catch (e) {
+              if (e instanceof GatewayError) throw e; // 402/429 must reach the user
               result = { error: e instanceof Error ? e.message : "Tool failed" };
               toolsUsed.push({ name: tool.name, ok: false });
             }
