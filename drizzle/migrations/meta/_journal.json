@@ -218,6 +218,13 @@
       "when": 1791563947343,
       "tag": "0030_knowledge_job_wake_on_enqueue",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1791565692722,
+      "tag": "0031_markbot_rules",
+      "breakpoints": true
     }
   ]
 }

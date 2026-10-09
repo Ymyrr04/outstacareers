@@ -3498,6 +3498,27 @@ export type Database = {
           },
         ]
       }
+      markbot_rules: {
+        Row: {
+          id: number
+          rules: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          id?: number
+          rules?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          id?: number
+          rules?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       outreach_prospects: {
         Row: {
           about: string | null
