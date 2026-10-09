@@ -232,6 +232,13 @@
       "when": 1791568633927,
       "tag": "0032_fast_search_knowledge",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1791570924584,
+      "tag": "0033_rm_resources",
+      "breakpoints": true
     }
   ]
 }
