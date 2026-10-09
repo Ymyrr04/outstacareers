@@ -17,7 +17,7 @@ const EMBED_DIMENSIONS = 768;
 const CHAT_MODEL = "google/gemini-3.8-flash";
 const MAX_TOKENS = 4000;
 const MATCH_COUNT = 10;
-const CONTEXT_MESSAGES = 6;
+const CONTEXT_MESSAGES = 20;
 const MAX_TOOL_ROUNDS = 8;
 
 // Same tab list and default rules as src/hooks/useTabPermissions.tsx
