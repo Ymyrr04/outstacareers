@@ -17,3 +17,4 @@
 - [x] Move Historical P&L data helpers into src/lib/historicalData.ts without changing cache keys, totals or headcount output.
 
 - [x] RM Resources: shared file uploads for all admins, indexed into Markbot knowledge
+- [x] Index RM resource guides: allow resource entries in the knowledge checks and let guides jump the indexing queue

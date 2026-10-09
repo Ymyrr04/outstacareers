@@ -13,3 +13,5 @@
 - Embed knowledge chunks with the gateway's google/gemini-embedding-2 at 768 dimensions in the internal embed-knowledge job, so stored vectors and future query vectors always match.
 
 - Index the shared RM resource library under the always-allowed "resources" knowledge tab, so every admin and Markbot can use it regardless of tab permissions.
+
+- When adding a new knowledge source type, extend the source_type and entity_type CHECK constraints on knowledge_chunks in the same migration and clear error-marked queue rows, so new sources index instead of failing silently.

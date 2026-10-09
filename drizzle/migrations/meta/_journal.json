@@ -239,6 +239,13 @@
       "when": 1791570924584,
       "tag": "0033_rm_resources",
       "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1791571743070,
+      "tag": "0034_knowledge_allow_resource_source",
+      "breakpoints": true
     }
   ]
 }

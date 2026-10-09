@@ -260,10 +260,16 @@ Deno.serve(async (req) => {
   const tried = new Set<string>(); // failed rows stay unprocessed; don't retry within this run
 
   while (Date.now() - started < RUN_BUDGET_MS && !halted) {
-    let q = sb.from("knowledge_dirty_queue").select("id, source_type, source_id, action")
-      .is("processed_at", null).is("error", null).order("created_at", { ascending: true }).limit(pausedReason ? 1 : BATCH);
-    if (tried.size) q = q.not("id", "in", `(${[...tried].join(",")})`);
-    const { data: batch, error } = await q;
+    // RM resource library uploads jump the queue so guides are usable right away.
+    const pick = (priority: boolean) => {
+      let q = sb.from("knowledge_dirty_queue").select("id, source_type, source_id, action")
+        .is("processed_at", null).is("error", null).order("created_at", { ascending: true }).limit(pausedReason ? 1 : BATCH);
+      if (tried.size) q = q.not("id", "in", `(${[...tried].join(",")})`);
+      if (priority) q = q.eq("source_type", "resource");
+      return q;
+    };
+    const prio = await pick(true);
+    const { data: batch, error } = prio.data?.length ? prio : await pick(false);
     if (error) return json({ error: error.message, processed, failed }, 500);
     if (!batch?.length) { await sb.rpc("disarm_knowledge_job"); break; }
 
