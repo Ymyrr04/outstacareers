@@ -1,0 +1,1 @@
+CREATE POLICY "Admins can create legal doc requests" ON public.contractor_legal_doc_requests FOR INSERT TO authenticated WITH CHECK (public.is_admin(auth.uid()));

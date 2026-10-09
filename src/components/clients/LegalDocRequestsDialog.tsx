@@ -5,11 +5,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, FileCheck, FileText, MessageSquarePlus, Check } from 'lucide-react';
+import { Loader2, FileCheck, FileText, MessageSquarePlus, Check, Plus } from 'lucide-react';
 import { formatDate } from '@/lib/dateFormat';
 import { cn } from '@/lib/utils';
 import { CoeGenerateDialog } from './CoeGenerateDialog';
 import { PdcGenerateDialog } from './PdcGenerateDialog';
+import { NewLegalDocForm } from './NewLegalDocForm';
 
 const extractNoteField = (notes: string | null, label: string): string => {
   if (!notes) return '';
@@ -61,6 +62,7 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
   const [pdcRow, setPdcRow] = useState<LegalDocRow | null>(null);
   const [stagedDocs, setStagedDocs] = useState<Record<string, StagedDoc[]>>({});
   const [sendingId, setSendingId] = useState<string | null>(null);
+  const [showNew, setShowNew] = useState(false);
 
   const stageDoc = (requestId: string, doc: StagedDoc) => {
     setStagedDocs((prev) => {
@@ -202,11 +204,22 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="max-w-2xl max-h-[85vh] flex flex-col">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
+          <DialogTitle className="flex items-center gap-2 pr-8">
             <FileCheck className="w-5 h-5" />
             Legal Document Requests
+            <Button size="sm" variant="outline" className="h-7 text-xs ml-auto" onClick={() => setShowNew((v) => !v)}>
+              <Plus className="w-3 h-3 mr-1" />
+              New document
+            </Button>
           </DialogTitle>
         </DialogHeader>
+
+        {showNew && (
+          <NewLegalDocForm
+            onCancel={() => setShowNew(false)}
+            onCreated={() => { setShowNew(false); setFilter('In Progress'); fetchRows(); onChanged?.(); }}
+          />
+        )}
 
         <div className="flex gap-1 border-b pb-2">
           {FILTER_TABS.map((tab) => (
