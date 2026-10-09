@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { CandidateProfileDialog } from '@/components/CandidateProfileDialog';
 import type { TabId } from '@/hooks/useTabPermissions';
 import { cn } from '@/lib/utils';
+import { MarkbotCandidateCards, type CandidateCardData } from '@/components/MarkbotCandidateCards';
 
 // Renders assistant markdown in the narrow panel: tight spacing, small headings, one-line list items.
 function MarkdownContent({ content }: { content: string }) {
@@ -62,6 +63,7 @@ interface MarkbotSource {
   label: string | null;
   written_at: string | null;
   author_name?: string | null;
+  card?: CandidateCardData;
 }
 
 interface ChatMessage {
@@ -392,9 +394,14 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
                       <MarkdownContent content={m.content} />
                     </div>
                   )}
-                  {!m.blocked && !!m.sources?.length && (
+                  {!m.blocked && (
+                    <MarkbotCandidateCards
+                      cards={(m.sources ?? []).filter((s) => s.source_type === 'candidate' && s.card).map((s) => s.card!)}
+                      onOpen={(c) => setProfile({ id: c.id, name: c.name })} />
+                  )}
+                  {!m.blocked && !!m.sources?.some((s) => s.source_type !== 'candidate') && (
                     <div className="flex flex-wrap gap-1">
-                      {m.sources.map((s, i) => {
+                      {m.sources!.filter((s) => s.source_type !== 'candidate').map((s, i) => {
                         const clickable = (s.entity_type === 'applicant' && s.entity_id) || s.entity_type === 'hiring_request';
                         const parts = [TYPE_LABELS[s.source_type] ?? s.source_type, s.author_name, formatDate(s.written_at)].filter(Boolean);
                         return (
