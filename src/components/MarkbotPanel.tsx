@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Sparkles, Plus, X, Send, Lock, ThumbsUp, ThumbsDown, Loader2, Clock, ArrowLeft, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import {
@@ -312,7 +314,9 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
                       <span>{m.content}</span>
                     </div>
                   ) : (
-                    <div className="max-w-[95%] text-[12.5px] leading-relaxed whitespace-pre-wrap">{m.content}</div>
+                    <div className="max-w-[95%] text-[12.5px] leading-relaxed">
+                      <MarkdownContent content={m.content} />
+                    </div>
                   )}
                   {!m.blocked && !!m.sources?.length && (
                     <div className="flex flex-wrap gap-1">
