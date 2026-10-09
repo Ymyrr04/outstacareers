@@ -277,7 +277,7 @@ async function timesheetStatus(args: unknown, { sb }: ToolCtx) {
 const TOOLS: MarkbotTool[] = [
   {
     name: "pipeline_summary",
-    description: "Exact counts of client hiring requests per pipeline stage (backlog, sourcing, pitch, scheduled_interview, closed). With an optional stage, client name, assignee or added_since (date added, e.g. "today") filter, also lists up to 20 matching requests with title, client, stage, priority, assignee and days in stage.",
+    description: "Exact counts of client hiring requests per pipeline stage (backlog, sourcing, pitch, scheduled_interview, closed). With an optional stage, client name, assignee or added_since (date added, e.g. today) filter, also lists up to 20 matching requests with title, client, stage, priority, assignee and days in stage.",
     required_tab: "pipeline",
     parameters: {
       type: "object",
