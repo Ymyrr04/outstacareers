@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Sparkles, Plus, X, Send, Lock, ThumbsUp, ThumbsDown, Loader2, Clock, ArrowLeft, Trash2, Square, Pencil } from 'lucide-react';
+import { Sparkles, Plus, X, Send, Lock, ThumbsUp, ThumbsDown, Loader2, Clock, ArrowLeft, Trash2, Square, Pencil, ExternalLink } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
@@ -278,8 +278,26 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
     }
   };
 
-  const openSource = (s: MarkbotSource) => {
-    if (s.entity_type === 'applicant' && s.entity_id) {
+  const openSource = async (s: MarkbotSource) => {
+    if (s.source_type === 'resource') {
+      // Open synchronously so the browser permits the new tab, then resolve a private URL.
+      const tab = window.open('about:blank', '_blank');
+      if (tab) tab.opener = null;
+      try {
+        const { data: resource, error } = await supabase.from('rm_resources')
+          .select('file_path').eq('id', s.source_id).maybeSingle();
+        if (error) throw error;
+        if (!resource?.file_path) throw new Error('This document is no longer available.');
+        const { data, error: urlError } = await supabase.storage.from('rm-resources')
+          .createSignedUrl(resource.file_path, 300);
+        if (urlError) throw urlError;
+        if (tab) tab.location.href = data.signedUrl;
+        else throw new Error('Please allow pop-ups to open this document.');
+      } catch (e) {
+        tab?.close();
+        toastError('Could not open document', e);
+      }
+    } else if (s.entity_type === 'applicant' && s.entity_id) {
       setProfile({ id: s.entity_id, name: s.label || 'Candidate' });
     } else if (s.entity_type === 'hiring_request') {
       onOpenTab('pipeline');
@@ -397,20 +415,25 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
                   )}
                   {!m.blocked && (
                     <MarkbotCandidateCards
-                      cards={(m.sources ?? []).filter((s) => s.source_type === 'candidate' && s.card).map((s) => s.card!)}
+                      cards={(m.sources ?? []).flatMap((s) => s.source_type === 'candidate' && s.card ? [s.card] : [])}
                       onOpen={(c) => setProfile({ id: c.id, name: c.name })} />
                   )}
                   {!m.blocked && !!m.sources?.some((s) => s.source_type !== 'candidate') && (
                     <div className="flex flex-wrap gap-1">
-                      {m.sources!.filter((s) => s.source_type !== 'candidate').map((s, i) => {
-                        const clickable = (s.entity_type === 'applicant' && s.entity_id) || s.entity_type === 'hiring_request';
-                        const parts = [TYPE_LABELS[s.source_type] ?? s.source_type, s.author_name, formatDate(s.written_at)].filter(Boolean);
+                      {(m.sources ?? []).filter((s, i, sources) => s.source_type !== 'candidate' &&
+                        (s.source_type !== 'resource' || sources.findIndex((other) => other.source_type === 'resource' && other.source_id === s.source_id) === i)).map((s, i) => {
+                        const isResource = s.source_type === 'resource';
+                        const clickable = isResource || (s.entity_type === 'applicant' && !!s.entity_id) || s.entity_type === 'hiring_request';
+                        const parts = isResource
+                          ? [s.label?.replace(/^RM resource:\s*/i, '') || 'RM resource']
+                          : [TYPE_LABELS[s.source_type] ?? s.source_type, s.author_name, formatDate(s.written_at)].filter(Boolean);
                         return (
-                          <button key={`${s.source_id}-${i}`} type="button" disabled={!clickable} onClick={() => openSource(s)}
-                            title={s.label ?? undefined}
-                            className={cn('text-[11px] px-2 py-0.5 rounded bg-accent text-accent-foreground', clickable ? 'hover:opacity-80' : 'cursor-default')}>
-                            {parts.join(' · ')}
-                          </button>
+                          <Button key={`${s.source_id}-${i}`} type="button" variant="ghost" disabled={!clickable} onClick={() => openSource(s)}
+                            title={isResource ? `Open ${parts[0]}` : s.label ?? undefined}
+                            className={cn('h-auto max-w-full justify-start gap-1 text-[11px] font-normal px-2 py-0.5 rounded bg-accent text-accent-foreground whitespace-normal text-left', clickable ? 'hover:bg-accent/80' : 'cursor-default')}>
+                            {isResource && <ExternalLink className="h-3 w-3 shrink-0" />}
+                            <span className="min-w-0 break-words">{parts.join(' · ')}</span>
+                          </Button>
                         );
                       })}
                     </div>
