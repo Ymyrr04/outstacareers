@@ -9,3 +9,4 @@
 - Persist versioned contractor payment-notice acknowledgements through authenticated database functions and enforce them on contractor timesheet submission, so browser bypasses cannot skip consent while admin/client workflows remain unchanged.
 
 - Reuse the same payment announcement content in the acknowledgement dialog and contractor Announcement tab, so rereading never diverges from the accepted notice.
+- Carry approved PDC details with staged attachments and select standalone email handling from stored request provenance on the server, so edited certificate details match the email without changing portal reply threads.

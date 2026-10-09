@@ -42,6 +42,7 @@ interface StagedDoc {
   docType: string;
   filename: string;
   bytes: Uint8Array;
+  pdc?: { fullName: string; salutation: string; amount: string };
 }
 
 interface Props {
@@ -80,7 +81,7 @@ export const LegalDocRequestsDialog: React.FC<Props> = ({ open, onOpenChange, on
       const documents = docs.map((d) => {
         let binary = '';
         d.bytes.forEach((b) => { binary += String.fromCharCode(b); });
-        return { filename: d.filename, base64: btoa(binary) };
+        return { filename: d.filename, base64: btoa(binary), docType: d.docType, pdc: d.pdc };
       });
 
       const { error } = await supabase.functions.invoke('notify-timesheet-event', {

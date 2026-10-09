@@ -21,7 +21,7 @@ interface Props {
   data: PdcSourceData;
   legalDocRequestId?: string;
   contractorName?: string;
-  onApprove?: (doc: { docType: string; filename: string; bytes: Uint8Array }) => void;
+  onApprove?: (doc: { docType: string; filename: string; bytes: Uint8Array; pdc: { fullName: string; salutation: string; amount: string } }) => void;
 }
 
 const computeDeposit = (hours: string, rate: string): string => {
@@ -131,7 +131,7 @@ export const PdcGenerateDialog: React.FC<Props> = ({ open, onOpenChange, data, c
             </Button>
             <Button size="sm" onClick={() => {
               if (!pdfBytes) return;
-              onApprove?.({ docType: 'Pay Deposit Certificate', filename: fileName, bytes: pdfBytes });
+              onApprove?.({ docType: 'Pay Deposit Certificate', filename: fileName, bytes: pdfBytes, pdc: { fullName: fullName.trim(), salutation, amount: parseFloat(deposit).toFixed(2) } });
               onOpenChange(false);
             }}>
               <Check className="w-3.5 h-3.5 mr-1" />
