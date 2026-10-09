@@ -15,7 +15,7 @@ const GATEWAY = "https://ai.gateway.lovable.dev/v1";
 const EMBED_MODEL = "google/gemini-embedding-2"; // must match embed-knowledge
 const EMBED_DIMENSIONS = 768;
 const CHAT_MODEL = "google/gemini-3.8-flash";
-const MAX_TOKENS = 1200;
+const MAX_TOKENS = 4000;
 const MATCH_COUNT = 10;
 const CONTEXT_MESSAGES = 6;
 const MAX_TOOL_ROUNDS = 8;
@@ -881,6 +881,9 @@ Deno.serve(async (req) => {
 
       let answer = "";
       for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
+        if (round === MAX_TOOL_ROUNDS) {
+          chatMessages.push({ role: "user", content: "Stop calling tools now. Write your answer from the tool results above." });
+        }
         const resp = await gatewayFetch("/chat/completions", apiKey, {
           model: CHAT_MODEL,
           messages: chatMessages,
@@ -893,7 +896,7 @@ Deno.serve(async (req) => {
         completionTokens += resp?.usage?.completion_tokens ?? 0;
         const msg = resp?.choices?.[0]?.message;
         const calls = msg?.tool_calls as any[] | undefined;
-        if (!calls?.length) { answer = (msg?.content ?? "").trim(); break; }
+        if (!calls?.length || round === MAX_TOOL_ROUNDS) { answer = (msg?.content ?? "").trim(); break; }
 
         chatMessages.push({ role: "assistant", content: msg.content ?? "", tool_calls: calls });
         for (const call of calls) {
@@ -914,7 +917,7 @@ Deno.serve(async (req) => {
               toolsUsed.push({ name: tool.name, ok: false });
             }
           }
-          chatMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result).slice(0, 20000) });
+          chatMessages.push({ role: "tool", tool_call_id: call.id, content: JSON.stringify(result).slice(0, 14000) });
         }
       }
       if (!answer) answer = "Sorry, I couldn't put together an answer. Please try rephrasing.";
