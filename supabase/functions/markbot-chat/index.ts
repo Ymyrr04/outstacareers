@@ -2,6 +2,7 @@
 import { createClient } from "npm:@supabase/supabase-js@2.95.0";
 import type { SupabaseClient } from "npm:@supabase/supabase-js@2.95.0";
 import { z } from "npm:zod@3.23.8";
+import { authorName, adminIdsByName } from "./authors.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -124,7 +125,165 @@ async function candidateStatus(args: unknown, { sb }: ToolCtx) {
   };
 }
 
+// ---- pipeline_summary ----
+const PIPELINE_STAGES = ["backlog", "sourcing", "pitch", "scheduled_interview", "closed"] as const;
+
+async function pipelineSummary(args: unknown, { sb }: ToolCtx) {
+  const a = (args ?? {}) as { stage?: string; client?: string; assignee?: string };
+  const stage = a.stage?.trim().toLowerCase().replace(/[\s-]+/g, "_") || null;
+  if (stage && !(PIPELINE_STAGES as readonly string[]).includes(stage)) {
+    return { error: `Unknown stage "${a.stage}". Use one of: ${PIPELINE_STAGES.join(", ")}.` };
+  }
+
+  // Exact counts per stage (head-only count queries, no row limit)
+  const counts: Record<string, number> = {};
+  await Promise.all(PIPELINE_STAGES.map(async (s) => {
+    const { count, error } = await sb.from("client_hiring_requests").select("id", { count: "exact", head: true }).eq("pipeline_stage", s);
+    if (error) throw error;
+    counts[s] = count ?? 0;
+  }));
+
+  const hasFilter = !!(stage || a.client?.trim() || a.assignee?.trim());
+  if (!hasFilter) return { counts_by_stage: counts, note: "Counts are exact. Pass stage, client or assignee to list requests." };
+
+  let clientIds: string[] | null = null;
+  if (a.client?.trim()) {
+    const pattern = `%${a.client.trim().slice(0, 100).replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+    const { data, error } = await sb.from("clients").select("id").ilike("company_name", pattern).limit(50);
+    if (error) throw error;
+    clientIds = (data ?? []).map((c: any) => c.id);
+    if (!clientIds.length) return { counts_by_stage: counts, message: `No client matched "${a.client}".`, requests: [] };
+  }
+  let assigneeIds: string[] | null = null;
+  if (a.assignee?.trim()) {
+    assigneeIds = await adminIdsByName(sb, a.assignee.slice(0, 100));
+    if (!assigneeIds.length) return { counts_by_stage: counts, message: `No admin matched "${a.assignee}".`, requests: [] };
+  }
+
+  let q = sb.from("client_hiring_requests")
+    .select("id, job_title, pipeline_stage, priority, assigned_admin_id, updated_at, client:clients(company_name)", { count: "exact" });
+  q = stage ? q.eq("pipeline_stage", stage) : q.in("pipeline_stage", [...PIPELINE_STAGES]);
+  if (clientIds) q = q.in("client_id", clientIds);
+  if (assigneeIds) q = q.in("assigned_admin_id", assigneeIds);
+  const { data, count, error } = await q.order("updated_at", { ascending: true }).limit(20);
+  if (error) throw error;
+
+  const now = Date.now();
+  const requests = await Promise.all((data ?? []).map(async (r: any) => ({
+    title: r.job_title,
+    client: r.client?.company_name ?? null,
+    stage: r.pipeline_stage,
+    priority: r.priority,
+    assignee: r.assigned_admin_id ? await authorName(sb, r.assigned_admin_id) : null,
+    days_in_stage: r.updated_at ? Math.floor((now - new Date(r.updated_at).getTime()) / DAY_MS) : null,
+  })));
+  return {
+    counts_by_stage: counts,
+    matching_total: count ?? requests.length,
+    requests,
+    note: "days_in_stage is measured from the request's last update. Showing up to 20, oldest first.",
+  };
+}
+
+// ---- timesheet_status ----
+const INTERNAL_CLIENT_ID = "baadbf53-0ca9-4abb-9af1-28f41f415bf1"; // OutSta internal team, excluded like the P&L report
+const ymdUTC = (d: Date) => d.toISOString().slice(0, 10);
+
+function lastCompletedWeekMonday(): string {
+  // Today's date in Eastern Time, then the Monday of the previous Mon–Sun week
+  const et = new Intl.DateTimeFormat("en-CA", { timeZone: "America/New_York", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date());
+  const d = new Date(et + "T00:00:00Z");
+  const dow = d.getUTCDay();
+  d.setUTCDate(d.getUTCDate() - (dow === 0 ? 6 : dow - 1) - 7);
+  return ymdUTC(d);
+}
+
+async function timesheetStatus(args: unknown, { sb }: ToolCtx) {
+  const raw = String((args as any)?.week_start ?? "").trim();
+  let monday: string;
+  if (raw) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(raw) || isNaN(new Date(raw + "T00:00:00Z").getTime())) {
+      return { error: "week_start must be a date like 2026-09-28." };
+    }
+    const d = new Date(raw + "T00:00:00Z");
+    const dow = d.getUTCDay();
+    d.setUTCDate(d.getUTCDate() - (dow === 0 ? 6 : dow - 1)); // snap to Monday
+    monday = ymdUTC(d);
+  } else monday = lastCompletedWeekMonday();
+  const sundayD = new Date(monday + "T00:00:00Z");
+  sundayD.setUTCDate(sundayD.getUTCDate() + 6);
+  const sunday = ymdUTC(sundayD);
+
+  // Same contractor set as the P&L weekly report
+  const { data: aData, error: aErr } = await sb.from("contractor_assignments")
+    .select("id, client_id, status, start_date, applicant:applicants_prescreen(full_name)")
+    .or(`status.eq.active,and(status.eq.terminated,end_date.gte.${monday})`);
+  if (aErr) throw aErr;
+  const assignments = (aData ?? []).filter((a: any) =>
+    a.client_id !== INTERNAL_CLIENT_ID && (!a.start_date || String(a.start_date).slice(0, 10) <= sunday));
+  const ids = assignments.map((a: any) => a.id);
+
+  const tsMap = new Map<string, any>();
+  for (let i = 0; i < ids.length; i += 200) {
+    const { data, error } = await sb.from("contractor_timesheets")
+      .select("contractor_assignment_id, week_ending_date, status, client_approval_status, outsta_status")
+      .in("contractor_assignment_id", ids.slice(i, i + 200))
+      .gte("week_ending_date", monday).lte("week_ending_date", sunday);
+    if (error) throw error;
+    for (const t of data ?? []) {
+      const prev = tsMap.get(t.contractor_assignment_id);
+      if (!prev || String(t.week_ending_date) > String(prev.week_ending_date)) tsMap.set(t.contractor_assignment_id, t);
+    }
+  }
+
+  const name = (a: any) => a.applicant?.full_name ?? "Unknown";
+  let submitted = 0, approved = 0, flagged = 0;
+  const missing: string[] = [], flaggedNames: string[] = [];
+  for (const a of assignments as any[]) {
+    const t = tsMap.get(a.id);
+    if (!t) {
+      if (a.status !== "terminated") missing.push(name(a));
+      continue;
+    }
+    submitted++;
+    if (t.client_approval_status === "flagged" || t.outsta_status === "flagged") { flagged++; flaggedNames.push(name(a)); }
+    else if (t.client_approval_status === "approved" || t.outsta_status === "approved" || t.status === "approved") approved++;
+  }
+  missing.sort(); flaggedNames.sort();
+  return {
+    week: `${monday} to ${sunday} (Monday to Sunday)`,
+    counts: { submitted, approved, flagged, missing: missing.length },
+    missing_contractors: missing,
+    flagged_contractors: flaggedNames,
+    note: "Exact counts. Approved and flagged are subsets of submitted. Internal team excluded, as in the P&L report.",
+  };
+}
+
 const TOOLS: MarkbotTool[] = [
+  {
+    name: "pipeline_summary",
+    description: "Exact counts of client hiring requests per pipeline stage (backlog, sourcing, pitch, scheduled_interview, closed). With an optional stage, client name or assignee filter, also lists up to 20 matching requests with title, client, stage, priority, assignee and days in stage.",
+    required_tab: "pipeline",
+    parameters: {
+      type: "object",
+      properties: {
+        stage: { type: "string", description: "One of backlog, sourcing, pitch, scheduled_interview, closed" },
+        client: { type: "string", description: "Client company name (partial is fine)" },
+        assignee: { type: "string", description: "Assigned admin's first name" },
+      },
+    },
+    handler: pipelineSummary,
+  },
+  {
+    name: "timesheet_status",
+    description: "Exact counts of submitted, approved, flagged and missing contractor timesheets for one Monday-to-Sunday week, plus names of contractors who are missing or flagged. Defaults to the last completed week.",
+    required_tab: "contractors",
+    parameters: {
+      type: "object",
+      properties: { week_start: { type: "string", description: "Any date in the week, YYYY-MM-DD (snaps to Monday). Omit for last completed week." } },
+    },
+    handler: timesheetStatus,
+  },
   {
     name: "candidate_status",
     description: "Look up one candidate's current status, job applied, availability check result and date, recent status changes, linked hiring requests, active contractor assignment, and latest note date. Pass a full or partial name, or the candidate id. Returns up to 5 matches if the name is ambiguous.",
@@ -195,7 +354,11 @@ Candidate status (candidate_status tool):
 - If the tool returns several matches, list them briefly and ask which one the user means.
 - Always state the date of any availability answer. If days_since_check is over 14, warn that the answer may be out of date.
 - Never say a candidate is "still available" if their status is Hired or they have an active contractor assignment.
-- You cannot send availability checks. If availability_state is never_asked, suggest using the Check Availability button.` : ""}`;
+- You cannot send availability checks. If availability_state is never_asked, suggest using the Check Availability button.` : ""}
+
+Tool numbers:
+- When a tool returns counts or totals, quote them exactly as given. Never add, subtract or recalculate them, and do not use "at least" for tool numbers.
+- Always state which week or filter the numbers are for.`;
 }
 
 Deno.serve(async (req) => {
