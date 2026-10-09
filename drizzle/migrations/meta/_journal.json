@@ -169,6 +169,13 @@
       "when": 1791543932421,
       "tag": "0023_admin_insert_legal_doc_requests",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1791559975391,
+      "tag": "0024_knowledge_assistant_layer",
+      "breakpoints": true
     }
   ]
 }
