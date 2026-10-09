@@ -1,5 +1,10 @@
 import { useEffect, useRef, useState } from 'react';
-import { Sparkles, Plus, X, Send, Lock, ThumbsUp, ThumbsDown, Loader2 } from 'lucide-react';
+import { Sparkles, Plus, X, Send, Lock, ThumbsUp, ThumbsDown, Loader2, Clock, ArrowLeft, Trash2 } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
+  AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Sheet, SheetContent, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
@@ -66,6 +71,12 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<{ id: string; name: string } | null>(null);
+  const [showHistory, setShowHistory] = useState(false);
+  const [conversations, setConversations] = useState<{ id: string; title: string | null; updated_at: string | null }[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; title: string | null } | null>(null);
+  const [restoring, setRestoring] = useState(false);
+  const loadedOnce = useRef(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
 
@@ -76,6 +87,69 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
   useEffect(() => {
     if (open && !loading) setTimeout(() => inputRef.current?.focus(), 50);
   }, [open, loading]);
+
+  const toastError = (title: string, e: unknown) =>
+    toast({ title, description: e instanceof Error ? e.message : (e as any)?.message ?? 'Something went wrong', variant: 'destructive' });
+
+  const loadConversation = async (id: string) => {
+    setRestoring(true);
+    try {
+      const [{ data: conv, error: cErr }, { data: rows, error: mErr }] = await Promise.all([
+        supabase.from('markbot_conversations').select('id, context').eq('id', id).maybeSingle(),
+        supabase.from('markbot_messages').select('id, role, content, sources, blocked, log_id, rating')
+          .eq('conversation_id', id).order('created_at', { ascending: true }),
+      ]);
+      if (cErr) throw cErr;
+      if (mErr) throw mErr;
+      if (!conv) throw new Error('Conversation not found');
+      setConversationId(conv.id);
+      setContext((conv.context as Record<string, unknown>) ?? null);
+      setMessages((rows ?? []).map((r: any) => ({
+        id: r.id, role: r.role, content: r.content,
+        sources: (r.sources as MarkbotSource[]) ?? [], blocked: !!r.blocked,
+        logId: r.log_id, rating: r.rating === 1 || r.rating === -1 ? r.rating : null,
+      })));
+      setShowHistory(false);
+    } catch (e) {
+      toastError('Could not open conversation', e);
+    } finally {
+      setRestoring(false);
+    }
+  };
+
+  const loadHistory = async () => {
+    setHistoryLoading(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    const { data, error } = await supabase.from('markbot_conversations').select('id, title, updated_at')
+      .eq('admin_user_id', user?.id ?? '').order('updated_at', { ascending: false }).limit(100);
+    setHistoryLoading(false);
+    if (error) { toastError('Could not load history', error); return []; }
+    setConversations(data ?? []);
+    return data ?? [];
+  };
+
+  // On first open, restore the most recent conversation
+  useEffect(() => {
+    if (!open || loadedOnce.current) return;
+    loadedOnce.current = true;
+    loadHistory().then((list) => { if (list[0] && messages.length === 0) loadConversation(list[0].id); });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
+
+  const startNewChat = () => {
+    setMessages([]); setContext(null); setConversationId(null); setInput(''); setShowHistory(false);
+    inputRef.current?.focus();
+  };
+
+  const confirmDelete = async () => {
+    if (!pendingDelete) return;
+    const id = pendingDelete.id;
+    setPendingDelete(null);
+    const { error } = await supabase.from('markbot_conversations').delete().eq('id', id);
+    if (error) { toastError('Could not delete conversation', error); return; }
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+    if (id === conversationId) { setMessages([]); setContext(null); setConversationId(null); }
+  };
 
   const send = async (text: string) => {
     const question = text.trim();
@@ -98,6 +172,7 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
       }
       if (data?.context) setContext(data.context);
       if (data?.conversation_id) setConversationId(data.conversation_id);
+      loadedOnce.current = true;
       setMessages((prev) => [
         ...prev,
         {
@@ -153,8 +228,12 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
             </div>
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" className="h-7 w-7" title="New chat" aria-label="New chat"
-                onClick={() => { setMessages([]); setContext(null); setConversationId(null); setInput(''); inputRef.current?.focus(); }} disabled={loading}>
+                onClick={startNewChat} disabled={loading}>
                 <Plus className="w-4 h-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className={cn('h-7 w-7', showHistory && 'bg-muted')} title="History" aria-label="History"
+                onClick={() => { if (!showHistory) loadHistory(); setShowHistory((v) => !v); }} disabled={loading}>
+                <Clock className="w-4 h-4" />
               </Button>
               <Button variant="ghost" size="icon" className="h-7 w-7" title="Close" aria-label="Close" onClick={() => onOpenChange(false)}>
                 <X className="w-4 h-4" />
@@ -162,8 +241,47 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
             </div>
           </div>
 
+          {showHistory ? (
+            <div className="flex-1 overflow-y-auto">
+              <div className="flex items-center gap-2 px-3 py-2 border-b">
+                <Button variant="ghost" size="icon" className="h-7 w-7" aria-label="Back to chat" title="Back to chat" onClick={() => setShowHistory(false)}>
+                  <ArrowLeft className="w-4 h-4" />
+                </Button>
+                <span className="text-[12.5px] font-medium">Conversation history</span>
+              </div>
+              {historyLoading ? (
+                <div className="flex items-center gap-2 px-4 py-4 text-[12.5px] text-muted-foreground">
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading…
+                </div>
+              ) : conversations.length === 0 ? (
+                <p className="px-4 py-6 text-center text-[12.5px] text-muted-foreground">No saved conversations yet.</p>
+              ) : (
+                <ul className="divide-y">
+                  {conversations.map((c) => (
+                    <li key={c.id} className={cn('flex items-center gap-2 px-3 py-2 hover:bg-muted/60', c.id === conversationId && 'bg-muted/40')}>
+                      <button type="button" className="flex-1 min-w-0 text-left" onClick={() => loadConversation(c.id)} disabled={restoring}>
+                        <div className="truncate text-[12.5px]">{c.title || 'Untitled conversation'}</div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {c.updated_at ? formatDistanceToNow(new Date(c.updated_at), { addSuffix: true }) : ''}
+                        </div>
+                      </button>
+                      <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 text-muted-foreground hover:text-destructive"
+                        aria-label="Delete conversation" title="Delete" onClick={() => setPendingDelete(c)}>
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          ) : (
           <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-4">
-            {messages.length === 0 && (
+            {restoring && messages.length === 0 && (
+              <div className="flex items-center gap-2 text-[12.5px] text-muted-foreground">
+                <Loader2 className="w-3.5 h-3.5 animate-spin" /> Loading conversation…
+              </div>
+            )}
+            {messages.length === 0 && !restoring && (
               <div className="text-center pt-8 space-y-4">
                 <p className="text-[12.5px] text-muted-foreground">Ask about candidates, notes, interviews and comments.</p>
                 {starters.length > 0 && (
@@ -234,6 +352,7 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
               </div>
             )}
           </div>
+          )}
 
           <div className="border-t px-4 pt-3 pb-2">
             <div className="flex items-end gap-2">
@@ -252,6 +371,21 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
           </div>
         </SheetContent>
       </Sheet>
+
+      <AlertDialog open={!!pendingDelete} onOpenChange={(o) => !o && setPendingDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this conversation?</AlertDialogTitle>
+            <AlertDialogDescription>
+              "{pendingDelete?.title || 'Untitled conversation'}" will be permanently deleted.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {profile && (
         <CandidateProfileDialog open={!!profile} onOpenChange={(o) => !o && setProfile(null)}
