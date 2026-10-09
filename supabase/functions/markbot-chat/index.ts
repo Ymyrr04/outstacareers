@@ -862,7 +862,8 @@ Deno.serve(async (req) => {
       .select("tab_id, can_view").eq("user_id", userId);
     if (pErr) throw pErr;
     const permMap = new Map((perms ?? []).map((p: any) => [p.tab_id, p.can_view]));
-    const allowedTabs = TAB_IDS.filter((t) => permMap.has(t) ? permMap.get(t) === true : !DEFAULT_OFF_TABS.includes(t));
+    // "resources" = shared RM resource library, readable by every admin.
+    const allowedTabs = [...TAB_IDS.filter((t) => permMap.has(t) ? permMap.get(t) === true : !DEFAULT_OFF_TABS.includes(t)), "resources"];
     const restrictedTabs = TAB_IDS.filter((t) => !allowedTabs.includes(t));
 
     const msgs = (body as { messages: { role: "user" | "assistant"; content: string }[] }).messages;

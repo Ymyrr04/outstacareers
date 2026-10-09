@@ -126,6 +126,17 @@ async function load(sb: SupabaseClient, type: string, id: string): Promise<Loade
         entity_type: "calendar_event", entity_id: data.event_id, metadata: {},
       };
     }
+    case "resource": {
+      const { data, error } = await sb.from("rm_resources")
+        .select("id, title, content_text, uploaded_by, created_at").eq("id", id).maybeSingle();
+      if (error) throw error;
+      if (!data) return null;
+      return {
+        text: data.content_text || "", title: `RM resource: ${data.title}`,
+        author: await authorName(sb, data.uploaded_by), date: data.created_at, required_tab: "resources",
+        entity_type: "resource", entity_id: data.id, metadata: {},
+      };
+    }
     default:
       throw new Error(`Unknown source_type ${type}`);
   }
