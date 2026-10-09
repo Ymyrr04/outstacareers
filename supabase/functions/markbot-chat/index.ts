@@ -717,6 +717,11 @@ How to work:
 - Don't make the user re-ask: if a reasonable next step is obvious (e.g. evaluating the candidates you just found), do it.
 - End with a short, practical next step when one makes sense.
 
+Team playbook (excerpts tagged "resource"):
+- Excerpts tagged (resource) come from the team's uploaded playbooks and guides. For how-to, process, methodology or "how do we..." questions (writing job descriptions, screening, interviewing, outreach, client handling), base your answer on these first and name the guide you used.
+- Never say there is no playbook, SOP or official guidance unless the search returned no resource excerpts at all.
+- Candidate interviews and notes describe what individuals did; the playbooks describe how the team works. For process questions, prefer the playbooks.
+
 Formatting:
 - Your answer renders as markdown in a narrow chat panel. Keep formatting light: bold for names and key figures, plain bullets for lists, short paragraphs. Never use headings (#, ##, ###), tables, or nested bullets.
 - Keep each list item to one line, e.g. "**Bilingual Sales Expert** — Qredio · Priority High · Eduardo · 3 days in stage".
@@ -918,16 +923,31 @@ Deno.serve(async (req) => {
       const vector = emb?.data?.[0]?.embedding;
       if (!Array.isArray(vector) || vector.length !== EMBED_DIMENSIONS) throw new Error("Invalid embedding response");
 
-      const { data: hits, error: sErr } = await sb.rpc("search_knowledge", {
-        query_embedding: JSON.stringify(vector),
-        query_text: question.content,
-        allowed_tabs: allowedTabs,
-        match_count: MATCH_COUNT,
-        entity_filter: null,
-      });
+      // Run a resource-library search alongside the general one so playbook
+      // guidance is always considered, not outranked by candidate data.
+      const [{ data: hits, error: sErr }, { data: resHits, error: rErr }] = await Promise.all([
+        sb.rpc("search_knowledge", {
+          query_embedding: JSON.stringify(vector),
+          query_text: question.content,
+          allowed_tabs: allowedTabs,
+          match_count: MATCH_COUNT,
+          entity_filter: null,
+        }),
+        sb.rpc("search_knowledge", {
+          query_embedding: JSON.stringify(vector),
+          query_text: question.content,
+          allowed_tabs: ["resources"],
+          match_count: 6,
+          entity_filter: null,
+        }),
+      ]);
       // A failed/slow excerpt search must not break the answer; tools can still respond.
       if (sErr) console.error("search_knowledge failed, continuing without excerpts:", sErr);
-      const results = (sErr ? [] : (hits ?? [])) as any[];
+      if (rErr) console.error("resource search failed, continuing without resource excerpts:", rErr);
+      const general = (sErr ? [] : (hits ?? [])) as any[];
+      const resourceHits = (rErr ? [] : (resHits ?? [])) as any[];
+      const seenIds = new Set(resourceHits.map((r) => r.id));
+      const results = [...resourceHits, ...general.filter((r) => !seenIds.has(r.id))].slice(0, MATCH_COUNT);
 
       const excerpts = results.length
         ? results.map((r, i) => `[Excerpt ${i + 1}] (${r.source_type})\n${r.content}`).join("\n\n---\n\n")
