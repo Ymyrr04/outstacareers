@@ -183,6 +183,13 @@
       "when": 1791560288812,
       "tag": "0025_knowledge_queue_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1791560622099,
+      "tag": "0026_search_knowledge_function",
+      "breakpoints": true
     }
   ]
 }

@@ -4096,6 +4096,26 @@ export type Database = {
         Returns: boolean
       }
       is_super_admin: { Args: { _user_id: string }; Returns: boolean }
+      search_knowledge: {
+        Args: {
+          allowed_tabs: string[]
+          entity_filter?: string
+          match_count?: number
+          query_embedding: string
+          query_text: string
+        }
+        Returns: {
+          content: string
+          entity_id: string
+          entity_type: string
+          id: string
+          metadata: Json
+          score: number
+          source_id: string
+          source_type: string
+          title: string
+        }[]
+      }
       set_timesheet_reminder_schedule: {
         Args: { p_day_of_week: number; p_enabled: boolean; p_time: string }
         Returns: undefined
