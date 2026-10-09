@@ -225,6 +225,13 @@
       "when": 1791565692722,
       "tag": "0031_markbot_rules",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1791568633927,
+      "tag": "0032_fast_search_knowledge",
+      "breakpoints": true
     }
   ]
 }

@@ -878,8 +878,9 @@ Deno.serve(async (req) => {
         match_count: MATCH_COUNT,
         entity_filter: null,
       });
-      if (sErr) throw sErr;
-      const results = (hits ?? []) as any[];
+      // A failed/slow excerpt search must not break the answer; tools can still respond.
+      if (sErr) console.error("search_knowledge failed, continuing without excerpts:", sErr);
+      const results = (sErr ? [] : (hits ?? [])) as any[];
 
       const excerpts = results.length
         ? results.map((r, i) => `[Excerpt ${i + 1}] (${r.source_type})\n${r.content}`).join("\n\n---\n\n")
