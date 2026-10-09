@@ -254,7 +254,7 @@ Deno.serve(async (req) => {
     if (tried.size) q = q.not("id", "in", `(${[...tried].join(",")})`);
     const { data: batch, error } = await q;
     if (error) return json({ error: error.message, processed, failed }, 500);
-    if (!batch?.length) break;
+    if (!batch?.length) { await sb.rpc("disarm_knowledge_job"); break; }
 
     for (let i = 0; i < batch.length && !halted; i += PARALLEL) {
       if (Date.now() - started >= RUN_BUDGET_MS) break;
