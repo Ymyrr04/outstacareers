@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { FileText, Upload, Trash2, Download, Loader2 } from 'lucide-react';
+import { FileText, Upload, Trash2, Download, Loader2, ChevronDown } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription,
   AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
@@ -40,6 +40,14 @@ export function RmResourcesCard() {
   const [busy, setBusy] = useState(false);
   const [toDelete, setToDelete] = useState<Resource | null>(null);
   const input = useRef<HTMLInputElement>(null);
+  const [open, setOpen] = useState(() => {
+    try { return localStorage.getItem('rm-resources-open') !== '0'; } catch { return true; }
+  });
+
+  const toggle = () => setOpen((v) => {
+    try { localStorage.setItem('rm-resources-open', v ? '0' : '1'); } catch { /* ignore */ }
+    return !v;
+  });
 
   const load = async () => {
     const { data, error } = await supabase.from('rm_resources')
