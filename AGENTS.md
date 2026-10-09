@@ -10,3 +10,4 @@
 
 - Reuse the same payment announcement content in the acknowledgement dialog and contractor Announcement tab, so rereading never diverges from the accepted notice.
 - Carry approved PDC details with staged attachments and select standalone email handling from stored request provenance on the server, so edited certificate details match the email without changing portal reply threads.
+- Embed knowledge chunks with the gateway's google/gemini-embedding-2 at 768 dimensions in the internal embed-knowledge job, so stored vectors and future query vectors always match.
