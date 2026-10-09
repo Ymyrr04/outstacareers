@@ -247,6 +247,7 @@ Deno.serve(async (req) => {
         entity_id: r.entity_id,
         label: r.title,
         written_at: r.metadata?.written_at ?? null,
+        author_name: r.metadata?.author_name ?? null,
       }));
 
       const { data: log, error: lErr } = await sb.from("rag_chat_logs").insert({

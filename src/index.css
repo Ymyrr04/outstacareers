@@ -30,6 +30,9 @@ All colors MUST be HSL.
     --accent: 192 100% 45%;
     --accent-foreground: 0 0% 100%;
 
+    --markbot: 190 92% 46%; /* #0ABEDF Markbot AI brand */
+    --markbot-foreground: 0 0% 100%;
+
     --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 100%;
 
