@@ -63,6 +63,7 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [context, setContext] = useState<Record<string, unknown> | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<{ id: string; name: string } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -85,7 +86,7 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
     setLoading(true);
     try {
       const { data, error } = await supabase.functions.invoke('markbot-chat', {
-        body: { messages: history.map((m) => ({ role: m.role, content: m.content })), context },
+        body: { messages: history.map((m) => ({ role: m.role, content: m.content })), context, conversation_id: conversationId },
       });
       if (error) {
         let msg = error.message;
@@ -96,6 +97,7 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
         throw new Error(msg);
       }
       if (data?.context) setContext(data.context);
+      if (data?.conversation_id) setConversationId(data.conversation_id);
       setMessages((prev) => [
         ...prev,
         {
@@ -151,7 +153,7 @@ export function MarkbotPanel({ open, onOpenChange, canViewTab, onOpenTab }: Mark
             </div>
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" className="h-7 w-7" title="New chat" aria-label="New chat"
-                onClick={() => { setMessages([]); setContext(null); setInput(''); inputRef.current?.focus(); }} disabled={loading}>
+                onClick={() => { setMessages([]); setContext(null); setConversationId(null); setInput(''); inputRef.current?.focus(); }} disabled={loading}>
                 <Plus className="w-4 h-4" />
               </Button>
               <Button variant="ghost" size="icon" className="h-7 w-7" title="Close" aria-label="Close" onClick={() => onOpenChange(false)}>

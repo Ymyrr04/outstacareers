@@ -622,6 +622,7 @@ const BodySchema = z.union([
       content: z.string().min(1).max(8000),
     })).min(1).max(50),
     context: ContextSchema.optional().nullable(),
+    conversation_id: z.string().uuid().optional().nullable(),
   }),
 ]);
 
@@ -724,10 +725,36 @@ Deno.serve(async (req) => {
     const restrictedTabs = TAB_IDS.filter((t) => !allowedTabs.includes(t));
 
     const msgs = (body as { messages: { role: "user" | "assistant"; content: string }[] }).messages;
-    const recent = msgs.slice(-CONTEXT_MESSAGES);
-    const convCtx: ConvContext = { client: null, role_title: null, hiring_request_id: null, job_id: null, applicant_ids: [], date_range: null, ...((body as any).context ?? {}) };
     const question = msgs[msgs.length - 1];
     if (question.role !== "user") return json({ error: "The last message must be from the user" }, 400);
+
+    // ---- Saved conversation (owned by the caller) ----
+    let conversationId = (body as any).conversation_id as string | null | undefined;
+    let savedCtx: Record<string, unknown> = {};
+    let saved: { role: "user" | "assistant"; content: string }[] = [];
+    if (conversationId) {
+      const { data: conv, error: cvErr } = await sb.from("markbot_conversations")
+        .select("id, context").eq("id", conversationId).eq("admin_user_id", userId).maybeSingle();
+      if (cvErr) throw cvErr;
+      if (!conv) return json({ error: "Conversation not found" }, 404);
+      savedCtx = (conv.context as Record<string, unknown>) ?? {};
+      const { data: rows, error: mErr } = await sb.from("markbot_messages")
+        .select("role, content").eq("conversation_id", conversationId)
+        .order("created_at", { ascending: false }).limit(CONTEXT_MESSAGES - 1);
+      if (mErr) throw mErr;
+      saved = ((rows ?? []) as any[]).reverse();
+    } else {
+      const { data: conv, error: cvErr } = await sb.from("markbot_conversations")
+        .insert({ admin_user_id: userId, title: question.content.trim().slice(0, 60) }).select("id").single();
+      if (cvErr) throw cvErr;
+      conversationId = conv.id;
+    }
+    const { error: umErr } = await sb.from("markbot_messages")
+      .insert({ conversation_id: conversationId, role: "user", content: question.content });
+    if (umErr) throw umErr;
+    // Last 6 saved messages (including this question) form the model's context
+    const recent = [...saved, question].slice(-CONTEXT_MESSAGES);
+    const convCtx: ConvContext = { client: null, role_title: null, hiring_request_id: null, job_id: null, applicant_ids: [], date_range: null, ...savedCtx, ...((body as any).context ?? {}) };
 
     let promptTokens = 0, completionTokens = 0;
     const toolsUsed: { name: string; ok: boolean }[] = [];
@@ -831,7 +858,16 @@ Deno.serve(async (req) => {
       }).select("id").single();
       if (lErr) console.error("markbot-chat log insert failed:", lErr.message);
 
-      return json({ answer, sources, blocked, log_id: log?.id ?? null, context: convCtx });
+      const [{ error: amErr }, { error: ucErr }] = await Promise.all([
+        sb.from("markbot_messages").insert({
+          conversation_id: conversationId, role: "assistant", content: answer, sources, blocked, log_id: log?.id ?? null,
+        }),
+        sb.from("markbot_conversations").update({ context: convCtx, updated_at: new Date().toISOString() }).eq("id", conversationId),
+      ]);
+      if (amErr) console.error("markbot-chat answer save failed:", amErr.message);
+      if (ucErr) console.error("markbot-chat conversation update failed:", ucErr.message);
+
+      return json({ answer, sources, blocked, log_id: log?.id ?? null, context: convCtx, conversation_id: conversationId });
     } catch (e) {
       if (e instanceof GatewayError) {
         console.error("markbot-chat gateway error:", e.status, e.message);
