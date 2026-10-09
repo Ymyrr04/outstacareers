@@ -1,6 +1,8 @@
 import { useEffect, useState, useMemo, useCallback, useRef, useTransition } from 'react';
 import { format } from 'date-fns';
 import HelpDeskWidget from '@/components/HelpDeskWidget';
+import { MarkbotPanel } from '@/components/MarkbotPanel';
+import { Sparkles } from 'lucide-react';
 import { useNavigate, Link, useParams, useSearchParams } from 'react-router-dom';
 import outstaLogo from '@/assets/outsta-logo.png';
 import { supabase } from '@/integrations/supabase/client';
